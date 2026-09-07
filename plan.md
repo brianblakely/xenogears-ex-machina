@@ -1,92 +1,139 @@
-# Xenogears Ex Machina — Native PC Port Plan
+# Xenogears Ex Machina — Independent Decompilation and Native PC Port Plan
 
-**Native core → modern PC features → Lua modding → graphical editors.**
+**Original-game analysis → independent decompilation → new native runtime → modern PC features → Lua modding → graphical editors.**
 
-Build **an Arch-first native game runtime and a companion editor suite sharing the same engine**. The important sequencing decision is to design deterministic state, scripting, and asset replacement early—even though rewind and the graphical tools arrive later.
+Xenogears Ex Machina is a new project. Independently decompile the original Xenogears game and implement a new native runtime and companion editor suite, with Arch Linux as the leading platform. Do not start from, fork, extend, or adopt another Xenogears decompilation, recompilation, fan port, or game engine implementation.
 
-There is already work worth evaluating: **Noah** is a partial, non-matching C++ reimplementation that runs on Linux and Windows, while **xenogears-decomp** pursues a matching decompilation. Neither should be treated as an already-complete foundation. ([Noah](https://github.com/yaz0r/Noah), [xenogears-decomp](https://github.com/ladysilverberg/xenogears-decomp))
+## Project boundaries
 
-## Phase 0 — Audit existing work and establish the project
+- **Independent game-specific work:** Recover behavior, formats, algorithms, and scripts from the original game binaries, disc data, and observed execution. Develop this project's own analysis records, decompiled source, importers, runtime, renderer, and editors. Do not use other Xenogears projects' source code or reverse-engineering results as the implementation foundation.
+- **Original-game evidence:** Use the original game as the behavioral reference. General-purpose disassemblers, decompilers, debuggers, and an external emulator may assist inspection and testing; an emulator is neither the shipping runtime nor a source of borrowed game-specific implementation.
+- **General-purpose dependencies:** SDL3, Lua, compiler/build tools, shader tools, codecs, and other infrastructure libraries are permitted. Starting a new game-specific implementation does not require reinventing general-purpose infrastructure. Record dependency choices and licenses explicitly.
+- **Mod-inspired options, not a mod-based engine:** Research popular existing mods only to identify desired player-facing options. Implement those capabilities independently. No existing mod, patched disc, translation package, or texture pack is required to build or play the base port; separately installed content packs remain optional.
+- **Native execution:** Ship platform-native binaries, not a PS1 executable running inside a CPU emulator. Interpret the original game's event bytecode through this project's own recovered script runtime where appropriate.
+- **Data separation:** Import original game data from user-supplied disc images into a local asset store. Keep disc images, original executables, extracted copyrighted assets, and personal saves out of distributed source and build artifacts.
+- **Behavior versus presentation:** Preserve gameplay-relevant behavior and intentional effects while replacing PS1 rendering limitations. Binary-identical recompilation is not a release gate; independent decompilation, documented understanding, and behavioral validation are.
 
-**Goal:** Choose the foundation and define what “complete” means.
+All tasks below begin unchecked. A phase is complete only when its exit criterion has been demonstrated.
 
-- [ ] **Audit Noah on Arch Linux.** Build it, identify reusable systems, reproduce its documented limitations, and assess how much its rendering, game-state ownership, and scripting architecture need to change.
-- [ ] Review the matching decompilation as a source of verified behavior and reverse-engineering discoveries. **Do not make 100% binary matching a prerequisite for the native port.** ([xenogears-decomp](https://github.com/ladysilverberg/xenogears-decomp))
-- [ ] Compare the separate XenogearsRecomp effort for useful discoveries and testing approaches, while distinguishing static recompilation from the readable, extensible implementation needed here. Its current documentation describes an alpha focused on the US first disc, without end-to-end validation. ([XenogearsRecomp](https://github.com/OpokXeno/xenogears-recomp))
-- [ ] Select a reference release and verify source-image hashes. Start with **both US discs**, with explicit identification of supported revisions.
-- [ ] Create a subsystem inventory covering fields, world map, battles, menus, event scripting, audio, FMVs, saves, and every minigame.
-- [ ] Create a mod inventory with features, authors, dependencies, conflicts, and available popularity evidence. Use the shortlist in Phase 7 as the initial research set.
-- [ ] Establish source provenance, upstream licensing, and attribution rules. Keep original game assets separate from distributed engine code.
-- [ ] Turn every requested feature into a tracked requirement with an acceptance test and an assigned phase.
+## Phase 0 — Establish scope, evidence standards, and the repository
 
-**Exit criterion:** A documented foundation decision, a reproducible Arch build, and a prioritized compatibility backlog.
+**Goal:** Define a new project's scope and workflow without selecting another project's codebase.
 
-## Phase 1 — Build the architecture that later features depend on
+- [ ] Create a requirement-to-test matrix covering every requested feature, platform, default setting, and editor capability.
+- [ ] Select and hash the reference source images. Initially target both US discs and identify their supported revisions explicitly; record region/revision support rather than guessing from filenames.
+- [ ] Inventory the original game's fields, world map, battles, menus, event sequences, audio, FMVs, saves, optional activities, and minigames.
+- [ ] Establish repository areas for runtime source, independent analysis, extraction tools, editors, tests, and packaging. Ignore original disc data and generated local asset stores.
+- [ ] Record research findings with disc/revision, file or sector offset, executable/overlay identity, address where applicable, observed behavior, confidence, and a reproducible validation procedure.
+- [ ] Track each subsystem through identified, analyzed, decompiled, natively implemented, and behaviorally validated states. Distinguish unknown behavior from intentionally changed behavior.
+- [ ] Establish an Arch Linux development environment and a C++/CMake/Ninja build with debug configurations, sanitizers, formatting, and automated tests.
+- [ ] Define contributor provenance and dependency-review rules consistent with the independent implementation boundary.
+- [ ] Define representative test scenarios and progression checkpoints across both discs before implementation begins.
 
-**Goal:** Avoid having to redesign the engine for rewind, mods, or editors.
+**Exit criterion:** A reproducible empty-project build, original-game coverage inventory, evidence workflow, and complete requirements matrix exist.
 
-- [ ] Establish a **C++/CMake/Ninja** build with pinned dependencies, debug builds, sanitizers, and automated tests. Make Arch the primary development and release-validation environment.
-- [ ] Separate the code into game simulation, original-script runtime, rendering, audio/media, input/UI, asset management, persistence, and editing modules.
-- [ ] Use **SDL3 for windowing, input, and platform integration**.
-- [ ] Prototype **SDL3 GPU as the shared rendering abstraction**, explicitly selecting Vulkan on Linux, Direct3D 12 on Windows, and Metal on macOS. Its supported backends match this requirement; establish the cross-platform shader pipeline now rather than maintaining three unrelated renderers. ([SDL3 GPU documentation](https://wiki.libsdl.org/SDL3/CategoryGPU))
-- [ ] Implement asset import from the user’s source images into a versioned local asset store. Assign stable IDs to maps, entities, textures, dialogue, sounds, and other resources.
-- [ ] **Separate simulation time from rendering time.** Recover the original subsystem update cadences and preserve gameplay-relevant arithmetic independently of high-precision rendering.
-- [ ] Define a serializable authoritative state model: entities, party, inventory, story flags, random-number generators, script execution, timers, battle state, and minigame state.
-- [ ] Represent references with stable IDs or handles rather than saved raw pointers. Keep GPU resources and other rebuildable presentation caches outside authoritative state.
-- [ ] Define the Lua persistence contract now: explicit saved data, resumable scripted tasks, deterministic scheduling, and version migration.
-- [ ] Add a headless test runner, recorded-input playback, state hashes, and commands to load particular maps, encounters, and cutscenes.
-- [ ] Start Windows and macOS compilation checks immediately, while keeping Arch as the primary runtime-testing platform.
+## Phase 1 — Independently reverse-engineer and decompile the original game
 
-**Exit criterion:** A minimal scene can run, serialize, restore, and replay deterministically without depending on the rendering backend.
+**Goal:** Produce this project's own understanding and source reconstruction directly from the original binaries and data.
 
-## Phase 2 — Recover and complete the native game
+- [ ] Analyze disc layout, boot metadata, executable loading, archives, sector references, compression, and shared versus disc-specific resources.
+- [ ] Map the main executable and dynamically loaded code/data. Track overlay identity alongside addresses so reused memory locations do not become ambiguous symbols.
+- [ ] Disassemble the original MIPS code and recover function boundaries, calling conventions, globals, structures, tables, dispatchers, and subsystem relationships.
+- [ ] Decompile functions into readable, reviewed source. Resolve inferred types, control flow, pointer arithmetic, signedness, fixed-point arithmetic, and overflow behavior rather than treating automatic pseudocode as finished code.
+- [ ] Identify hardware-facing code, BIOS interfaces, GPU command generation, audio interfaces, controller reads, and disc I/O; separate their gameplay intent from the PS1-specific mechanism.
+- [ ] Trace original execution to validate uncertain findings. Capture inputs, seeds, state transitions, script instructions, and timing observations for focused scenarios.
+- [ ] Recover field, geometry, sprite, animation, collision, camera, texture/palette, UI, dialogue, battle, world-map, audio, and FMV data formats through direct analysis.
+- [ ] Recover event-script bytecode, operands, scheduling, waits, branching, concurrent actors, and side effects. Build this project's own disassembler and instruction reference.
+- [ ] Recover movement and jump rules, encounter logic, random-number generation, battle formulas, enemy behavior, story-state changes, minigame rules, and save formats.
+- [ ] Identify simulation cadences and dependencies on frame counters, asynchronous loads, interrupts, and hardware timing. Document which timings are gameplay rules and which are implementation artifacts.
+- [ ] Create original parser fixtures and behavioral tests for each finding. Generate tests requiring original data locally from the user's imported assets; use synthetic or redistributable fixtures in public CI.
+- [ ] Maintain explicit unresolved-symbol, unknown-format, and unimplemented-instruction inventories. Never silently treat unknown behavior as a no-op.
 
-**Goal:** Make the original game work before judging enhancements against it.
+**Exit criterion:** The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, with a tracked backlog for the rest of the game.
 
-- [ ] Recover field systems: movement, running, jumping, collision, elevation, ladders, triggers, interaction, party following, camera behavior, and map transitions.
-- [ ] Complete the original event-script interpreter and document its instructions, scheduling rules, waits, and side effects.
-- [ ] Complete menus, inventory, equipment, shops, party management, dialogue, and ordinary save/load functionality.
-- [ ] Complete on-foot battles: action selection, combos, Deathblows, targeting, status effects, enemy behavior, rewards, and scripted battle events.
-- [ ] Complete Gear battles and their distinct rules, animation, equipment, resources, and interfaces.
-- [ ] Complete world-map navigation, transportation, location entry, and story-dependent changes.
-- [ ] Complete music, sound effects, FMV playback, and synchronization between these systems and event scripts.
-- [ ] Complete every minigame and optional activity—not just the main story route.
-- [ ] Complete both discs, including their shared resources, transitions, and late-game event behavior.
-- [ ] Replace assumptions about PS1 addresses, overlays, memory layout, and hardware I/O with explicit native systems.
-- [ ] Build behavioral regression tests against the original game. Use an emulator as a **test reference**, not as the shipping game runtime.
+**Execution rule:** Continue this analysis throughout development. Do not wait for a complete decompilation of both discs before implementing an understood subsystem.
 
-**Milestone 2A — Playable slice:** Field exploration → dialogue/cutscene → battle → menu → save/load works on Arch.
+## Phase 2 — Build the new runtime, asset pipeline, and state architecture
 
-**Milestone 2B — Complete baseline:** Both discs and optional activities are playable without debugger intervention or progression workarounds.
+**Goal:** Establish this project's own engine with the foundations for modern rendering, snapshots, mods, and editors.
 
-**Parallelization:** Renderer, input, and mod infrastructure work can begin after 2A while game-completion work continues toward 2B.
+- [ ] Separate simulation, original-script execution, rendering, input/UI, audio/media, asset management, persistence, and editor services behind explicit interfaces.
+- [ ] Implement original asset extractors and decoders from Phase 1 findings. Add bounded reads, corruption checks, source hashes, versioned caches, and clear unsupported-revision errors.
+- [ ] Give imported resources stable IDs independent of PS1 memory addresses. Preserve source provenance and unknown data needed for later investigation.
+- [ ] Use SDL3 for windowing, platform integration, and input. Bring up a Vulkan renderer on Arch first.
+- [ ] Define the rendering abstraction and shader pipeline for Vulkan on Linux, Direct3D 12 on Windows, and Metal on macOS. Evaluate SDL3 GPU as general-purpose infrastructure, with small backend validation programs rather than borrowing a game renderer.
+- [ ] Replace PS1 memory-layout and hardware assumptions with native resource management, typed state, and explicit services. Do not make the native game depend on original BIOS execution or a PS1 CPU loop.
+- [ ] Separate simulation time from render time. Preserve recovered gameplay arithmetic and subsystem update rules while using high-precision transforms for presentation.
+- [ ] Define authoritative state for entities, party, inventory, story flags, RNGs, events, battles, minigames, logical audio positions, and media timelines.
+- [ ] Use stable IDs or handles for serializable references. Keep GPU objects, decoder internals, caches, and platform handles rebuildable and outside authoritative state.
+- [ ] Define a deterministic scheduling and persistence contract for both original scripts and future Lua tasks. Store explicit task progress; do not assume arbitrary Lua stacks can later be serialized.
+- [ ] Make asynchronous asset availability and background jobs unable to silently change simulation outcomes or event ordering.
+- [ ] Add headless simulation, recorded-input replay, canonical state hashing, map/event launch commands, and inspection/debug overlays.
+- [ ] Start Windows and macOS compile checks now while Arch remains the primary execution and integration platform.
 
-## Phase 3 — Modern rendering, arbitrary resolution, aspect ratio, and framerate
+**Exit criterion:** A scene using the new runtime can load independently imported assets, simulate, serialize, restore, and replay without a dependency on another Xenogears implementation.
 
-**Goal:** Preserve the game’s artwork and presentation intent without reproducing PS1 rendering defects.
+## Phase 3 — Deliver an independently implemented playable slice
 
-- [ ] Render from usable geometry, materials, textures, and camera transforms rather than treating the final PS1 framebuffer as the game’s presentation.
-- [ ] Eliminate intentional emulation of affine texture distortion, vertex snapping/wobble, low-color framebuffer quantization, PS1 dithering, and low-resolution rasterization.
-- [ ] Preserve intentional visual effects—transparency, masking, palette animation, fog, and compositing—through modern rendering techniques.
-- [ ] Support arbitrary window and internal rendering resolutions, independent render scaling, fullscreen/windowed modes, resizing, and high-DPI displays.
-- [ ] Support arbitrary aspect ratios with correct projection, configurable field of view, UI anchoring, and safe-area handling. Do not stretch character portraits, text, or FMVs.
-- [ ] Audit wider views for missing geometry, incomplete backgrounds, and objects placed outside the original framing. Track required content fixes separately from renderer fixes.
-- [ ] Support arbitrary presentation framerates, including custom caps and uncapped rendering, with configurable synchronization and frame pacing.
-- [ ] Interpolate camera motion, entity transforms, and suitable animations between simulation updates. Preserve intentional sprite-frame timing rather than assuming every animation needs invented intermediate frames.
-- [ ] Verify that changing framerate does **not** change movement speed, jump behavior, encounter calculations, combat timing, minigames, or script execution.
-- [ ] **Default optional geometry culling to off.** Expose legacy visibility rejection, distance, frustum/occlusion, and back-face culling separately. Keep clipping, depth testing, authored hidden-object states, and gameplay activation rules independent.
-- [ ] Add **independent world-texture and UI filtering controls**. Consider a separate sprite setting so filtering scenery does not necessarily blur characters.
-- [ ] Test depth ordering, sprite edges, transparency, texture seams, and rendering consistency across the three backends.
+**Goal:** Prove the full pipeline from original-game evidence to native gameplay.
 
-**Exit criterion:** The same recorded gameplay produces equivalent game state at different resolutions, aspect ratios, and rendering framerates.
+- [ ] Select a compact field-to-battle scenario with enough variety to exercise the engine rather than a display-only room.
+- [ ] Implement field loading, character rendering, movement, running, jumping, collision, camera rotation, interaction, and map transitions.
+- [ ] Implement the original-script instructions needed for the slice, including dialogue, concurrent activity, waits, triggers, and story-state changes.
+- [ ] Implement a representative on-foot encounter with action selection, attacks, targeting, damage, enemy behavior, rewards, and return to the field.
+- [ ] Implement the required game menus, inventory/equipment interactions, ordinary save/load, and basic keyboard/controller input.
+- [ ] Implement the required music sequence/sample playback, sound effects, and one FMV-to-gameplay transition using this project's own game-specific decoding and playback integration.
+- [ ] Capture original-game reference runs and compare meaningful states, outcomes, and timing rather than requiring PS1 framebuffer artifacts to match.
+- [ ] Test state restore across the field/event/battle boundaries and fix architectural gaps before broad content expansion.
 
-## Phase 4 — Native keyboard, mouse, controller, and menu interaction
+**Exit criterion:** Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch without debugger intervention or emulator execution inside the game.
 
-**Goal:** Make this behave like a PC game, not a controller-only game with keyboard emulation.
+## Phase 4 — Complete both discs and all original gameplay systems
 
-- [ ] Build an action-based input system with separate contexts for exploration, combat, minigames, game menus, the app menu, and editors.
-- [ ] Support SDL3 gamepad input, hot-plugging, remapping, dead zones, analog movement, rumble, and appropriate button prompts.
-- [ ] Support **XInput on Windows through SDL3’s controller handling**, without processing the same controller through two competing input paths. SDL3 exposes an XInput backend setting. ([SDL3 XInput setting](https://wiki.libsdl.org/SDL3/SDL_HINT_XINPUT_ENABLED))
+**Goal:** Expand independent decompilation and implementation until the complete game is playable.
+
+- [ ] Complete field behavior: terrain/elevation, ladders, traversal, party following, triggers, camera rules, map transitions, and story-dependent variants.
+- [ ] Complete the recovered event interpreter and all used instructions. Track coverage by map, scene, branch, and original instruction family.
+- [ ] Complete menus, dialogue, shops, equipment, inventory, party management, and ordinary save/load; implement original-save import/export from independently recovered formats where supported.
+- [ ] Complete on-foot battles, including combos, Deathblows, status effects, enemy AI, scripted encounters, rewards, and progression.
+- [ ] Complete Gear battles, resources, equipment, animation, enemy behavior, and their distinct rules and interfaces.
+- [ ] Complete the world map, transportation, location entry, and story-dependent world changes.
+- [ ] Complete music sequencing, sample playback, sound effects, mixing, FMV demux/decoding integration, and event/media synchronization.
+- [ ] Complete every minigame, optional activity, side quest, boss, ending sequence, and relevant failure/retry path.
+- [ ] Complete both discs' content and transitions, with unified imported-data access instead of requiring a physical disc swap during native play.
+- [ ] Eliminate silent fallback logic and progression workarounds; account for remaining unimplemented or unvalidated behavior explicitly.
+- [ ] Build automated progression checkpoints plus manual coverage for interactions that scripted runs do not meaningfully exercise.
+
+**Exit criterion:** Both discs and optional activities are playable from beginning to end, with subsystem coverage and no known progression-blocking gaps.
+
+**Parallelization:** After Phase 3, rendering, input, and mod infrastructure may advance alongside this phase. Complete-game validation remains mandatory before the playable PC alpha checkpoint.
+
+## Phase 5 — Modern rendering, arbitrary resolution, aspect ratio, and framerate
+
+**Goal:** Preserve the artwork and intentional effects without reproducing PS1 rendering defects.
+
+- [ ] Render independently decoded geometry, materials, sprites, textures, and camera transforms rather than scaling a PS1 framebuffer.
+- [ ] Remove affine texture distortion, vertex snapping/wobble, low-color framebuffer quantization, PS1 dithering, and low-resolution rasterization as rendering behaviors.
+- [ ] Reproduce intentional transparency, masking, palette animation, fog, and compositing with modern rendering techniques.
+- [ ] Support arbitrary window/internal resolutions within device limits, independent render scaling, resizing, fullscreen/windowed modes, and high-DPI displays.
+- [ ] Support arbitrary aspect ratios with correct projection, configurable FOV, UI anchors, and safe areas. Do not stretch portraits, text, or FMVs.
+- [ ] Audit wider framing for missing surfaces, incomplete backgrounds, and out-of-frame staging. Record content repairs separately from renderer changes.
+- [ ] Support arbitrary presentation framerates, custom caps, uncapped rendering, synchronization options, and stable frame pacing.
+- [ ] Interpolate camera/entity transforms and suitable animations between simulation updates. Preserve authored sprite timing and do not equate high refresh rates with mandatory invented animation frames.
+- [ ] Verify that presentation framerate does not alter movement, jumping, encounters, battle timing, scripts, minigames, or RNG progression.
+- [ ] Default optional rendering culling to off. Expose legacy visibility rejection, distance, frustum, occlusion, and back-face culling separately; do not conflate culling with clipping, depth testing, intentional hidden entities, or gameplay activation.
+- [ ] Add independent world-texture and UI filtering settings, with a separate sprite-filter setting where useful. Support clear nearest/smoothed choices without forcing UI blur when filtering the world.
+- [ ] Validate depth ordering, alpha edges, texture seams, palette effects, and shader behavior on Vulkan, Direct3D 12, and Metal.
+
+**Exit criterion:** Recorded gameplay reaches equivalent authoritative state at different resolutions, aspect ratios, framerates, and rendering backends, with the requested modern presentation.
+
+## Phase 6 — Native keyboard, mouse, SDL3 input, and XInput
+
+**Goal:** Make the full game usable as a native PC application rather than through controller-button emulation alone.
+
+- [ ] Implement action-based input contexts for exploration, combat, minigames, game menus, the app menu, and editors.
+- [ ] Implement SDL3 gamepad support, hot-plugging, remapping, dead zones, analog movement, rumble, and appropriate prompts.
+- [ ] Support XInput devices on Windows through the selected SDL3 input path; validate that one physical controller cannot generate duplicate actions through overlapping providers.
 - [ ] Implement rebindable keyboard defaults:
 
 | Action | Proposed default |
@@ -101,158 +148,191 @@ There is already work worth evaluating: **Noah** is a partial, non-matching C++ 
 | Toggle app menu | **Esc** |
 | Toggle first-person mode | V |
 
-- [ ] Bind all additional combat and minigame actions; do not stop at the exploration controls.
-- [ ] Make **all game menus mouse-browsable**, including inventory, equipment, shops, battle commands, targeting where appropriate, save/load, and configuration.
-- [ ] Implement genuine hit-testing, hover feedback, selection, clicking, disabled-item behavior, and tooltips—not simulated directional-button presses.
-- [ ] Make **every scrollable menu respond to the scroll wheel**, including nested lists. Support high-resolution wheel and trackpad scrolling with correct focus handling.
-- [ ] Keep keyboard/controller selection and mouse hover coordinated without the cursor repeatedly stealing focus.
-- [ ] Make Tab toggle the game menu where opening it is permitted. Make Esc toggle the app menu, including during cutscenes; **do not overload Esc as ordinary game-menu Cancel**.
-- [ ] Define menu pause behavior and input priority so a click or keypress cannot activate both an overlay and the game beneath it.
-- [ ] Handle mouse capture, focus loss, controller disconnection, and restoration cleanly.
+- [ ] Provide bindings for every battle and minigame action, not just exploration. Detect conflicts within active contexts.
+- [ ] Make game menus mouse-browsable: inventory, equipment, shops, battle commands, applicable targeting, save/load, and configuration.
+- [ ] Implement real hit-testing, hover feedback, selection, clicking, disabled states, and tooltips instead of translating clicks into repeated directional inputs.
+- [ ] Make every scrollable menu respond to the scroll wheel, including nested lists and high-resolution wheel/trackpad events.
+- [ ] Keep keyboard/controller selection and mouse focus coordinated without a stationary cursor stealing focus.
+- [ ] Make Tab toggle the game menu where gameplay permits it. Make Esc toggle the app menu, including during cutscenes; Esc is not ordinary game-menu Cancel.
+- [ ] Specify pause behavior and input routing so overlays cannot leak actions to gameplay beneath them. Resolve text-entry/editor focus explicitly.
+- [ ] Handle mouse capture, cursor visibility, focus loss, controller disconnection, and device switching cleanly.
 
-**Exit criterion:** The entire game is operable without a controller, and all player-facing menus support appropriate mouse interaction.
+**Exit criterion:** The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel.
 
-## Phase 5 — Lua scripting and the mod framework
+## Phase 7 — Lua scripting and the native mod framework
 
-**Goal:** Provide the same extension system that the graphical editors will eventually use.
+**Goal:** Build the extension system used by both player mods and the graphical editors.
 
-- [ ] Define mod packages with stable IDs, versions, dependencies, compatibility requirements, load order, declared conflicts, and optional configuration schemas.
-- [ ] Implement asset replacement and structured data patches for textures, portraits, UI, models, maps, dialogue, audio, FMVs, encounters, and gameplay data.
-- [ ] Expose documented Lua APIs for entities, levels, triggers, dialogue, cameras, cutscenes, combat, minigames, audio, and UI.
-- [ ] Keep untouched original scripts executable through the recovered script runtime. Allow Lua to extend or replace individual behaviors without requiring an immediate translation of the entire game.
-- [ ] Make mod state explicitly serializable and versioned. Represent long-running scripted activities as resumable tasks whose progress can be saved and rewound.
-- [ ] Specify deterministic event ordering, random-number access, and time access for gameplay scripts.
-- [ ] Restrict script access to files, processes, native modules, and networking; enforce execution and memory budgets and contain script errors.
-- [ ] Add a graphical mod manager with installation, enable/disable controls, profiles, dependency resolution, conflict reporting, and safe mode.
-- [ ] Support controlled hot reload at safe boundaries. Invalidate or migrate affected snapshots rather than silently restoring incompatible state.
-- [ ] Build converters or import assistance for selected existing mod formats. Do not assume an emulator texture pack or ROM patch is automatically a native-engine mod.
-- [ ] Ship sample mods that alter a level event, a cutscene, combat behavior, and a minigame through Lua.
+- [ ] Define native mod packages with stable IDs, versions, dependencies, compatibility requirements, load order, conflicts, and configurable settings.
+- [ ] Implement asset overrides and structured data patches for maps, models, textures, sprites, portraits, UI, dialogue, audio, FMVs, encounters, and gameplay tables.
+- [ ] Expose documented Lua APIs for entities, levels, triggers, dialogue, cameras, cutscenes, battles, minigames, audio, and UI.
+- [ ] Run original bytecode in this project's independent interpreter; let Lua extend or replace specific behaviors without requiring a wholesale rewrite of original content first.
+- [ ] Make the underlying battle and minigame rule boundaries replaceable, so later tools can change mechanics rather than only constants.
+- [ ] Implement explicit, versioned Lua state and resumable tasks compatible with snapshots, rewind, and editor scrubbing. Reject unsupported persistence patterns with actionable diagnostics.
+- [ ] Specify deterministic event order, task scheduling, RNG access, and simulation-time access. Distinguish presentation-only scripts from state-changing logic.
+- [ ] Restrict filesystem, process, native-module, and network access; apply memory/execution budgets and contain script failures.
+- [ ] Build a graphical mod manager with installation, profiles, enable/disable controls, dependency resolution, conflict reporting, and safe mode.
+- [ ] Allow hot reload only at defined safe boundaries. Invalidate or migrate snapshots whose scripts, assets, or state schemas changed.
+- [ ] Define optional content-pack import interfaces independently. Treat existing texture/audio/translation packs as separately supplied content, not dependencies or automatically compatible engine code.
+- [ ] Ship original example mods changing a level event, cutscene, battle behavior, and minigame through Lua without recompiling the engine.
 
-**Exit criterion:** Those four sample mods work without recompiling the engine, and their state survives save/restore.
+**Exit criterion:** All four example mods run, their state survives save/restore, and the unmodified base game runs with no third-party mod installed.
 
-## Phase 6 — Save states, rewind, and fast forward
+## Phase 8 — Native save states, rewind, and fast forward
 
-**Goal:** Implement these as native-engine capabilities rather than emulator-style bolt-ons.
+**Goal:** Implement time-control features through authoritative native state rather than an embedded emulator.
 
-- [ ] Build versioned save-state files containing game state, script/task progress, random-number state, active content identifiers, and mod versions.
-- [ ] Keep **ordinary game saves** distinct from **full execution snapshots**. Define migration rules and clear incompatibility messages for both.
-- [ ] Add snapshot slots, quick-save/load actions, thumbnails, timestamps, and an undo-load safeguard.
-- [ ] Include in-progress battles, field events, minigames, and supported cutscene states—not merely “save anywhere” at otherwise safe locations.
-- [ ] Implement configurable fast-forward speeds and hold/toggle controls. Advance simulation faster without confusing this with raising the rendering framerate.
-- [ ] Add audio policies for fast forward, such as time-stretched playback or muting above a chosen speed.
-- [ ] Implement rewind using periodic snapshots, recorded inputs/events, and deterministic replay. Add a configurable duration or memory budget.
-- [ ] Discard the abandoned future when the player resumes from a rewound point.
-- [ ] Reconstruct audio playback and FMV playback from their logical positions after restore; do not serialize platform-specific decoder or GPU handles.
-- [ ] Handle map changes, battles, cutscene boundaries, and disc transitions. Make any remaining rewind boundaries explicit.
-- [ ] Prevent rewind or repeated replay from duplicating external side effects, overwriting ordinary saves unexpectedly, or awarding the same persistent reward twice.
+- [ ] Implement versioned snapshot files containing game state, original-script/Lua task progress, RNGs, content IDs, and active mod versions.
+- [ ] Keep ordinary game saves separate from full execution snapshots. Define migration and compatibility rules for each.
+- [ ] Add snapshot slots, quick-save/load, timestamps, thumbnails, and an undo-load safeguard, with atomic writes and corruption checks.
+- [ ] Support snapshots during field events, battles, minigames, and cutscenes, not just at ordinary save-safe locations.
+- [ ] Implement configurable fast-forward speeds with hold/toggle controls. Advance simulation faster without confusing fast forward with a higher presentation framerate.
+- [ ] Add audio policies such as time stretching or muting above a selected speed, with correct return to normal playback.
+- [ ] Build rewind from periodic snapshots and recorded input/events with deterministic replay. Expose a duration or memory budget and a timeline indicator.
+- [ ] Discard the abandoned future when play resumes after rewind. Prevent duplicated rewards, persistent writes, or other external side effects during replay.
+- [ ] Restore audio and FMVs from logical playback positions; rebuild platform-specific decoder, audio-device, and GPU state.
+- [ ] Support map changes, battles, cutscenes, and disc-content transitions across rewind. Track and resolve unsupported boundaries before feature completion.
+- [ ] Test replay/state equivalence across supported platforms and representative mod combinations. Declare incompatible snapshots rather than silently accepting divergent state.
 
-**Exit criterion:** Record → rewind → replay returns to equivalent authoritative state, including with supported Lua mods enabled.
+**Exit criterion:** Save → restore and record → rewind → replay produce equivalent authoritative state throughout the game and with supported Lua mods.
 
-## Phase 7 — Gameplay options, existing-mod features, and modern cutscene skipping
+## Phase 9 — Mod-inspired options, encounter defaults, and cutscene skipping
 
-**Goal:** Add the preferred defaults without making unrelated rebalance choices mandatory.
+**Goal:** Independently implement the requested convenience features without basing the project on a preexisting mod.
 
-### Initial mod-derived options
+### Identify options from popular mods
 
-Use these projects as the initial feature-research shortlist, then prioritize the broader inventory using the evidence collected in Phase 0.
+- [ ] Research player-facing descriptions and documented behavior of popular Xenogears mods. Record dated adoption evidence such as downloads or community usage where available; do not label an unranked shortlist as a verified popularity ranking.
+- [ ] Translate the findings into this project's own option specifications, defaults, tests, and conflict rules. Do not adopt mod source, binary patches, or another project's implementation as the base.
+- [ ] Evaluate independently implemented encounter-rate controls, separate experience/money multipliers, fast/instant text, optional bug fixes, combat/item/character rebalance settings, and other strongly supported convenience requests.
+- [ ] Provide optional dialogue/localization, FMV audio/subtitle, portrait/UI, and texture replacement support. Keep third-party authored content separately installable and unnecessary for the base runtime.
+- [ ] Separate correctness fixes, convenience features, balance changes, translations, and visual replacements. Do not hide unrelated modifications behind one mandatory preset.
 
-| Reference | Native options to investigate |
-|---|---|
-| **Perfect Works Build — quality of life** | Encounter-rate controls, separate experience/money multipliers, and faster text. Its documented options include reduced encounters and 1.5×/2× reward multipliers. ([Extra QOL Features](https://github.com/PWBuild-Team/Perfect_Works_Build/wiki/Extra-QOL-Features)) |
-| **Perfect Works Build — translation and gameplay changes** | Optional revised script, selected bug fixes, and independently selectable battle/item/character rebalance packages. ([Perfect Works Build](https://github.com/NoharOSP/Perfect_Works_Build)) |
-| **Perfect Works FMV Undub** | Optional Japanese FMV audio and subtitle choices, separate from visual enhancement. ([FMV Undub](https://github.com/PWBuild-Team/Perfect_Works_Build/wiki/FMV-Undub)) |
-| **Perfect ART Works** | Optional improved portrait and UI packs, with independently selectable visual variants. ([Perfect ART Works](https://scientia.godsibb.net/t/xenogears-perfect-art-works-paw-retroarch-texture-pack/1158)) |
-| **Existing HD texture packs** | Importable texture replacements with category-level enable/disable controls and original-asset fallback. ([Xenogears HD texture pack](https://sites.google.com/view/vierockretrohd/ps1/xenogears)) |
+### Platforming and encounter behavior
 
-- [ ] Turn the selected features into native settings or mod packages rather than requiring users to patch their source images.
-- [ ] Separate correctness fixes, convenience features, translation changes, visual replacements, and balance changes.
-- [ ] **Identify platforming-heavy areas by exact map/room IDs and disable random battles there by default.** Preserve bosses, required fights, and other scripted encounters.
-- [ ] Add global and per-area encounter overrides, with an explanation of why an area is exempt.
-- [ ] Prevent encounter preparation from consuming jump input or interrupting traversal unsafely. Perfect Works’ documentation specifically identifies swallowed jump inputs during encounter loading as a platforming problem. ([Extra QOL Features](https://github.com/PWBuild-Team/Perfect_Works_Build/wiki/Extra-QOL-Features))
-- [ ] Offer reward compensation separately rather than silently changing experience or money gains when encounters are reduced.
-- [ ] Implement faster/instant text by separating text reveal from cutscene timing and script completion. Regression-test rapidly advanced and automatically closing dialogue; existing fast-text changes document timing and crash-sensitive scenes. ([Extra QOL Features](https://github.com/PWBuild-Team/Perfect_Works_Build/wiki/Extra-QOL-Features))
-- [ ] Add modern cutscene controls: pause, a visible skip action, and optional hold-to-skip protection.
-- [ ] Implement **semantic cutscene skipping**: execute required story changes and transitions while bypassing presentation. Do not merely jump the instruction pointer to an apparent ending.
-- [ ] Stop skipping at meaningful choices, mandatory gameplay, or combat boundaries. Apply party changes, rewards, flags, and transitions exactly once.
-- [ ] Give difficult original scenes explicit completion handlers, and expose equivalent skip/completion hooks to Lua.
-- [ ] Compare watched-versus-skipped outcomes for story state, inventory, party, destination, camera ownership, and returned player control.
+- [ ] Identify platforming-heavy areas by original-game inspection and exact map/room IDs; document the default list and rationale.
+- [ ] Disable random battles in those areas by default while preserving bosses, mandatory encounters, and scripted fights.
+- [ ] Provide global/per-area overrides and visible settings explaining the area-specific default.
+- [ ] Independently test and fix input loss or unsafe traversal interruptions during encounter preparation, especially jump inputs and transitions while airborne.
+- [ ] Offer reward compensation separately rather than silently increasing experience or money when encounter rates change.
 
-**Exit criterion:** Platforming-area defaults work, optional changes remain independent, and skipping cannot break progression.
+### Text and modern cutscene controls
 
-## Phase 8 — First-person mode and improved FMVs
+- [ ] Separate text reveal speed from event timing and completion. Validate fast/instant text against waits, automatic dialogue closure, concurrent actor movement, and rapidly advanced conversations.
+- [ ] Provide pause, a visible skip action, and configurable hold-to-skip protection. Keep the app menu on Esc independent from skipping.
+- [ ] Implement semantic skipping: bypass presentation while preserving required story flags, party changes, inventory/rewards, transitions, and other consequential actions.
+- [ ] Stop at meaningful choices, mandatory gameplay, and battle boundaries rather than silently choosing an outcome.
+- [ ] Give complex original scenes explicit completion handlers or validated safe skip segments; expose equivalent skip/completion hooks to Lua and the cutscene editor.
+- [ ] Apply consequential changes exactly once and return the correct camera, location, actors, and player control.
+- [ ] Compare watched and skipped outcomes for every supported scene path, including scenes entered after load or rewind.
 
-**Goal:** Add the two presentation features requiring substantial content-specific validation.
+**Exit criterion:** Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod.
 
-- [ ] Implement a playable first-person camera with mouse look, controller look, camera-relative movement, adjustable field of view, sensitivity, and inversion.
-- [ ] Preserve normal running, jumping, collision, interaction, and traversal rather than making this only a detached inspection camera.
-- [ ] Define behavior for on-foot exploration, Gear exploration, battles, and minigames. Make camera handoffs explicit where a mode requires authored framing.
-- [ ] Hide or adapt the controlled character’s representation, prevent near-plane problems, and handle sprite orientation and interaction targeting.
-- [ ] Allow scripted scenes to take camera control and restore the player’s selected camera mode afterward.
-- [ ] Audit first-person and wide-angle views for missing surfaces and scenery. Repair these through identifiable content overrides; disabling culling alone is not a content-repair strategy.
-- [ ] Implement high-quality playback of the original FMVs, preserving their proportions, timing, and audio synchronization.
-- [ ] Add an enhanced FMV pipeline with deblocking/denoising and carefully reviewed upscaling, using cached results or replacement video assets.
-- [ ] Provide an explicit **Original / Enhanced** FMV setting, with per-video fallback.
-- [ ] Keep sharpening, scaling, and any frame interpolation separate. Do not require invented intermediate video frames to support a high-framerate game renderer.
-- [ ] Validate enhanced videos for faces, linework, text, motion artifacts, and transitions back into gameplay.
+## Phase 10 — First-person mode and clearer FMVs
 
-**Exit criterion:** First-person exploration is genuinely playable, and every enhanced FMV has a working original-quality alternative.
+**Goal:** Deliver the requested alternative camera and media presentation without sacrificing normal gameplay or original video availability.
 
-## Phase 9 — Graphical level and cutscene editors
+- [ ] Implement a playable first-person camera with mouse/controller look, camera-relative movement, configurable FOV, sensitivity, and inversion.
+- [ ] Preserve running, jumping, collisions, interaction, and traversal; this is not merely a detached inspection camera.
+- [ ] Define on-foot and Gear exploration behavior and explicit transitions for battles, minigames, and authored cinematic framing.
+- [ ] Hide or adapt the controlled character's representation, handle sprite orientation and targeting, and prevent near-plane clipping through the player or scenery.
+- [ ] Let scripted scenes temporarily own the camera, then restore the user's selected mode and orientation appropriately.
+- [ ] Inspect first-person and wide-FOV views for missing surfaces or incomplete scenery. Create original content overrides where needed; disabling culling does not manufacture missing geometry.
+- [ ] Implement high-quality original FMV decoding/playback with correct proportions, color interpretation, timing, and audio synchronization.
+- [ ] Add an enhanced pipeline using reviewed deblocking/denoising and upscaling, with cached derived media or optional replacement assets.
+- [ ] Provide an explicit Original / Enhanced FMV setting with per-video original fallback. Enhanced media must not be required to play.
+- [ ] Keep scaling, sharpening, and any motion interpolation independent; high-framerate gameplay must not force synthetic FMV frames.
+- [ ] Review faces, linework, subtitles, motion, compression artifacts, skip/seek behavior, and transitions back to gameplay in both video modes.
 
-**Goal:** Make content authoring use the real runtime rather than a disconnected approximation.
+**Exit criterion:** First-person exploration is playable, camera handoffs work, and every enhanced FMV retains a functional original option.
 
-- [ ] Build a shared editor shell with project management, asset browsing, inspectors, console output, undo/redo, autosave, and validation.
-- [ ] Reuse the game’s renderer, asset loaders, simulation, and Lua APIs for editor previews.
-- [ ] Build the level editor: geometry editing/import/export, object placement, collision, spawn points, connections, trigger volumes, encounter zones, and camera regions.
-- [ ] Add views for otherwise invisible information: collisions, event volumes, navigation constraints, visibility rules, and missing-geometry problems.
-- [ ] Build the cutscene editor with a timeline and branching event graph covering actors, movement, cameras, dialogue, audio, FMVs, state changes, and battle transitions.
-- [ ] Import original event scripts into inspectable representations while retaining unconverted constructs losslessly.
+## Phase 11 — Graphical level and cutscene editors
+
+**Goal:** Author and inspect content using the same independently built runtime as the game.
+
+- [ ] Create a shared editor shell with project management, asset browser, inspectors, console, undo/redo, autosave, and validation.
+- [ ] Reuse this project's renderer, importers, simulation, state system, and Lua APIs for exact in-engine previews.
+- [ ] Build graphical level tools for geometry editing/import/export, object placement, collision, spawns, map connections, trigger volumes, encounter regions, and cameras.
+- [ ] Visualize collisions, event volumes, navigation constraints, visibility rules, and missing-geometry problems that are otherwise difficult to inspect.
+- [ ] Build a cutscene timeline and branching event graph for actors, movement, cameras, dialogue, audio, FMVs, story changes, interactions, and battles.
+- [ ] Import original scripts through this project's recovered instruction model. Preserve opaque or not-yet-converted constructs losslessly and flag them instead of destructively guessing their meaning.
 - [ ] Integrate Lua editing with diagnostics, API completion, breakpoints, variable inspection, and execution stepping.
-- [ ] Define how visual graphs and timelines coexist with handwritten Lua. Preserve custom Lua nodes rather than destructively regenerating their contents.
-- [ ] Use snapshots and deterministic replay for timeline scrubbing and previews; dragging the timeline must not permanently duplicate story changes.
-- [ ] Add graphical authoring of cutscene skip points, completion handlers, and mandatory interaction boundaries.
-- [ ] Store projects in version-control-friendly formats and export changes as mod packages without modifying the original asset store.
+- [ ] Define lossless boundaries between visual graphs/timelines and handwritten Lua. Preserve custom Lua nodes when visual content is edited or regenerated.
+- [ ] Use snapshots and deterministic replay for timeline scrubbing and preview; scrubbing must not duplicate or permanently apply story consequences.
+- [ ] Add graphical authoring and validation of skip segments, completion handlers, mandatory choices, and return-to-gameplay behavior.
+- [ ] Store projects in version-control-friendly formats and export native mod packages without modifying the original imported asset store.
 
-**Exit criterion:** Create or modify a level and a branching cutscene, export them, and play them in a normal game build.
+**Exit criterion:** A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build.
 
-## Phase 10 — Graphical battle-system and minigame modding
+## Phase 12 — Graphical battle-system and minigame modding
 
-**Goal:** Support meaningful redesigns, not just edits to numerical tables.
+**Goal:** Enable substantial rules changes, not just texture replacements or numerical table edits.
 
-- [ ] Build graphical editors for characters, Gears, enemies, items, equipment, abilities, status effects, progression, encounters, and rewards.
-- [ ] Expose combat rules for action availability, action costs, turn scheduling, targeting, damage, defense, combos, Deathblows, Gear mechanics, victory, and defeat.
-- [ ] Support replacing battle-rule modules through Lua—not merely attaching callbacks to an otherwise immutable battle system.
-- [ ] Add battle animation, effect, camera, and interface editing with immediate preview.
-- [ ] Build minigame-specific editors for arenas/layouts, entities, input actions, rules, scoring, timing, opponent behavior, and win/loss conditions.
-- [ ] Allow Lua to change a minigame’s runtime behavior and state machine rather than limiting editing to assets and difficulty values.
-- [ ] Provide isolated battle/minigame test sessions with configurable starting states, deterministic seeds, step-through execution, and automated test runs.
-- [ ] Validate references, required resources, script errors, save compatibility, and package dependencies before export.
-- [ ] Publish example projects demonstrating a substantially different battle ruleset and a materially altered minigame.
+- [ ] Build editors for characters, Gears, enemies, equipment, items, abilities, status effects, progression, encounters, and rewards.
+- [ ] Expose combat action availability/costs, turn scheduling, targeting, damage/defense, combos, Deathblows, Gear rules, victory, and defeat.
+- [ ] Allow replaceable battle-rule modules through Lua rather than limiting creators to callbacks around an immutable battle system.
+- [ ] Add battle animation, effects, camera, and interface editing with immediate runtime preview.
+- [ ] Build minigame-specific tools for arenas/layouts, entities, input actions, rules, scoring, timing, opponent behavior, and win/loss conditions.
+- [ ] Let Lua change minigame state machines and runtime behavior, not just assets or difficulty values.
+- [ ] Provide isolated battle/minigame test sessions with configurable starting state, deterministic seeds, pause/step inspection, and repeatable automated runs.
+- [ ] Validate references, resources, script failures, dependencies, persistence, and compatibility before export.
+- [ ] Publish original example projects demonstrating a substantially changed battle ruleset and a materially redesigned minigame using only the tools and Lua.
 
-**Exit criterion:** A mod author can make those changes entirely through the graphical tools and Lua, without rebuilding C++.
+**Exit criterion:** A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++.
 
-## Phase 11 — Platform hardening, packaging, and release
+## Phase 13 — Platform hardening, packaging, and release
 
-**Goal:** Make the whole feature set dependable on the promised platforms.
+**Goal:** Validate and ship the complete feature set, led by Arch Linux.
 
-- [ ] Validate **Arch Linux + Vulkan first**, including Wayland/Hyprland, X11, fractional scaling, mixed-DPI monitors, ultrawide displays, fullscreen changes, focus loss, and controller reconnection.
-- [ ] Validate Windows + Direct3D 12, including XInput and SDL3 controller behavior.
-- [ ] Validate macOS + Metal on the explicitly supported processor and OS targets.
-- [ ] Test shader compilation, resource management, rendering output, and state equivalence across backends.
-- [ ] Run full-playthrough and optional-content coverage with the default settings, original-gameplay settings, and representative mod combinations.
-- [ ] Stress-test high framerates, fast forward, repeated rewind/load, cutscene skipping, device changes, malformed mods, and interrupted writes.
-- [ ] Package an Arch `PKGBUILD`, Windows releases, and a macOS application bundle.
-- [ ] Add first-run asset import, configuration migration, controller setup, and understandable failure reporting.
-- [ ] Verify clean-install defaults: **culling off; platforming-area random battles off; Tab for game menu; Esc for app menu; independent texture/UI filtering; original FMVs selectable**.
-- [ ] Publish player documentation, developer setup, reverse-engineering notes, the Lua API, editor tutorials, and mod compatibility/versioning guidance.
-- [ ] Complete the requirement-to-test matrix from Phase 0. Do not equate “the story is completable” with “the requested feature set is finished.”
+- [ ] Validate Arch Linux + Vulkan first: Wayland/Hyprland, X11, fractional scaling, mixed-DPI displays, ultrawide framing, fullscreen changes, focus loss, and controller reconnects.
+- [ ] Validate Windows + Direct3D 12, including both the SDL3 input system and XInput controller behavior.
+- [ ] Validate macOS + Metal on explicitly declared processor/OS targets, with correct application lifecycle, input, and display behavior.
+- [ ] Test shader compilation, rendering correctness, resource lifetime, frame pacing, and authoritative state equivalence across the backends/platforms.
+- [ ] Run complete-playthrough and optional-content coverage with default settings, original-gameplay settings, and representative mod combinations. Original-gameplay settings do not reintroduce PS1 rendering quirks.
+- [ ] Stress-test arbitrary presentation framerates, fast forward, repeated rewind/load, cutscene skipping, device changes, malformed assets/mods, and interrupted writes.
+- [ ] Measure CPU/GPU, memory, snapshot-storage, loading, and editor performance; address regressions against documented test hardware.
+- [ ] Package an Arch PKGBUILD, Windows releases, and a macOS application bundle, including the editor suite.
+- [ ] Add first-run disc-data import, hash/revision validation, configuration migration, controller setup, and understandable failure reporting.
+- [ ] Verify clean-install defaults: culling off; random battles off in the platforming-area list; Tab for game menu; Esc for app menu; independent texture/UI filtering; original FMVs selectable.
+- [ ] Verify the base game builds and runs with no other Xenogears project, preexisting mod, or third-party game-specific code installed.
+- [ ] Review distributed artifacts to exclude original source images, executable dumps, extracted game assets, private saves, and unintended development files.
+- [ ] Publish developer setup, independent research/decompilation notes, player documentation, the Lua API, editor tutorials, content-pack guidance, and compatibility/versioning policies.
+- [ ] Close the requirement-to-test matrix. Story completion alone is not completion of the requested port and creator toolkit.
+
+**Exit criterion:** The complete requirements matrix passes on the declared platform targets, packages install cleanly, and both the game and editors are documented and independently reproducible.
 
 ## Release checkpoints
 
 | Checkpoint | Required result |
 |---|---|
-| **Engineering preview** | Phase 2A: a reproducible native gameplay slice on Arch |
-| **Playable PC alpha** | Phase 2B plus modern rendering and complete PC controls |
-| **Feature-complete runtime beta** | Lua mods, rewind/save states, fast forward, gameplay options, safe skipping, first-person mode, and enhanced FMVs |
-| **Creator-toolkit beta** | Level, cutscene, battle-system, and minigame editing works through the shared runtime |
-| **1.0** | All requested features validated, packaged, and documented across Linux/Vulkan, Windows/DX12, and macOS/Metal |
+| Research/tooling baseline | Phases 0–2 support independently imported original content and a serializable new runtime. |
+| Engineering preview | Phase 3: a native field/event/battle/save-load slice runs on Arch. |
+| Playable PC alpha | Phase 4 completes both discs; Phases 5–6 provide modern rendering and full native PC controls. |
+| Feature-complete runtime beta | Phases 7–10 provide Lua mods, save states, rewind, fast forward, optional gameplay changes, safe skipping, first-person mode, and enhanced/original FMVs. |
+| Creator-toolkit beta | Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared runtime and Lua. |
+| 1.0 | Phase 13 validates and packages the full feature set across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal, with Arch leading development and release testing. |
+
+## Required feature coverage
+
+| Requirement | Primary phases |
+|---|---|
+| Independent decompilation and native implementation; no foundation in another Xenogears project | 0–4, 13 |
+| Arch Linux as the leading platform | 0, 2–3, 13 |
+| Vulkan / Direct3D 12 / Metal on Linux / Windows / macOS | 2, 5, 13 |
+| Arbitrary resolution, aspect ratio, and presentation framerate | 2, 5 |
+| Culling off by default; no PS1 rendering quirks | 5, 13 |
+| Keyboard/mouse controls, mouse-browsable menus, wheel scrolling | 6 |
+| SDL3 input and Windows XInput | 2, 6, 13 |
+| Direction, run, jump, confirm, cancel, and left/right camera bindings | 6 |
+| Tab toggles game menu; Esc toggles app menu | 6, 9, 13 |
+| Save states, rewind, and fast forward | 2, 7–8 |
+| Native mod support and graphical mod management | 7 |
+| Lua for level, cutscene, battle, minigame, and other mod editing | 2, 7, 11–12 |
+| Random battles off by default in identified platforming-heavy areas | 9, 13 |
+| Independently implemented options informed by popular existing mods | 9 |
+| Modern cutscene skipping with correct story outcomes | 9, 11 |
+| Playable first-person mode | 10 |
+| Clearer FMVs with an original option | 10 |
+| Independent texture and UI filtering | 5, 13 |
+| Graphical level and cutscene editors | 11 |
+| Graphical battle-system and minigame mod tools | 12 |
