@@ -62,7 +62,50 @@
         "display",
         "shader compilation"
       ]
+    },
+    {
+      "id": "arch-headless",
+      "os": "Arch Linux",
+      "renderer": null,
+      "status": "planned_unvalidated",
+      "scope": "Native authoritative simulation and protocol with display/GPU/input/audio devices unavailable; images are separately renderer-dependent.",
+      "required_environments": [
+        "no display server",
+        "no GPU access",
+        "no physical input",
+        "no audio output",
+        "plain local pipe protocol"
+      ]
+    },
+    {
+      "id": "windows-headless",
+      "os": "Windows",
+      "renderer": null,
+      "status": "planned_unvalidated",
+      "scope": "Native authoritative simulation and protocol with display/GPU/input/audio devices unavailable; images are separately renderer-dependent.",
+      "required_environments": [
+        "no display server",
+        "no GPU access",
+        "no physical input",
+        "no audio output",
+        "plain local pipe protocol"
+      ]
+    },
+    {
+      "id": "macos-headless",
+      "os": "macOS",
+      "renderer": null,
+      "status": "planned_unvalidated",
+      "scope": "Native authoritative simulation and protocol with display/GPU/input/audio devices unavailable; images are separately renderer-dependent.",
+      "required_environments": [
+        "no display server",
+        "no GPU access",
+        "no physical input",
+        "no audio output",
+        "plain local pipe protocol"
+      ]
     }
   ],
-  "validation": "Every gameplay/editor facet applies to all three planned native target families unless explicitly scoped. Nix shell evaluation or cross-compilation is not native execution proof. No Phase 0 observation claims Vulkan, Windows or macOS gameplay support."
+  "validation": "Every gameplay/editor facet applies to all three planned native target families unless explicitly scoped. Nix shell evaluation or cross-compilation is not native execution proof. No Phase 0 observation claims Vulkan, Windows or macOS gameplay support.",
+  "mixed_mode_evidence": "For a requirement spanning rendered and device-free execution, pair the corresponding platform runs: verify images on the rendering target and no-device operation, explicit renderer-unavailable errors and equivalent state on the headless target. An image-enabled assertion never requires a GPU in the device-denied run."
 }

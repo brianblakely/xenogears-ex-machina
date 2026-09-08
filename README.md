@@ -17,6 +17,13 @@ The [plan](plan.md) defines the full project. The
 [requirement-to-test matrix](docs/requirements.md) covers every requested feature,
 default, platform and editor capability. A defined test is not an executed pass.
 
+The [native agent contract](docs/agent/README.md) specifies direct engine input,
+full state access, debugging, typed scenario setup, exact/unlocked time and optional
+spectator images. Its schemas and acceptance gates are established before native
+gameplay; `xem-baseline` does not yet implement this interface. The versioned
+[emulator parity inventory](docs/agent/emulator-parity.json) records verified
+reference paths, unsupported adapters and required native extensions separately.
+
 [Reference profiles](analysis/reference-profiles.json) identify the exact measured
 original inputs. [Coverage](analysis/coverage/README.md) grounds all ten content
 categories on both discs in original evidence and preserves unresolved content,

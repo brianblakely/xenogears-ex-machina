@@ -9,12 +9,14 @@ import subprocess
 from pathlib import Path
 
 if __package__:
+    from .agent_contract import validate as validate_agent_contract
     from .matrix import ROOT, build_matrix, generated_files
     from .phase1_slice import validate_evidence as validate_slice_evidence
     from .phase1_slice import validate_structure as validate_slice_structure
     from .projections import validate_projections
     from .source_archive import source_files
 else:
+    from agent_contract import validate as validate_agent_contract
     from matrix import ROOT, build_matrix, generated_files
     from phase1_slice import validate_evidence as validate_slice_evidence
     from phase1_slice import validate_structure as validate_slice_structure
@@ -595,7 +597,12 @@ def validate_traceability(matrix: dict) -> None:
         [row["source"] for row in cross["execution_rules"]] == source["execution_rules"],
         "Unmapped/changed execution rule",
     )
-    for table in ("feature_summary", "keyboard_defaults", "release_checkpoints"):
+    require(
+        cross["foundational_requirement"]["source"] == source["foundational_requirement"]
+        and bool(source["foundational_requirement"]),
+        "Unmapped/changed foundational requirement",
+    )
+    for table in ("feature_summary", "keyboard_defaults", "release_checkpoints", "agent_contract"):
         require(
             [row["source_row"] for row in cross[table]] == source["tables"][table],
             f"Unmapped/changed {table}",
@@ -604,6 +611,8 @@ def validate_traceability(matrix: dict) -> None:
     require(exits == source["exits"], "Unmapped/changed phase exit criterion")
     rows = {row["id"]: row for row in matrix["requirements"]}
     for collection in cross.values():
+        if isinstance(collection, dict):
+            collection = [collection]
         if not isinstance(collection, list):
             continue
         for item in collection:
@@ -799,6 +808,7 @@ def validate(root: Path = ROOT) -> dict:
             "Incomplete dependency provenance/license review",
         )
 
+    agent_contract = validate_agent_contract(root, matrix)
     files = source_files(root)
     names = {path.relative_to(root).as_posix() for path in files}
     validate_slice_evidence(root, matrix, findings, registry, set(profiles), names)
@@ -831,6 +841,7 @@ def validate(root: Path = ROOT) -> dict:
         "content_catalog_complete": inventory["catalog_complete"],
         "checkpoint_definitions": len(checkpoints),
         "public_sources": len(files),
+        **agent_contract,
     }
 
 

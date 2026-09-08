@@ -1,0 +1,283 @@
+{
+  "schema_version": 1,
+  "contract_version": "0.1",
+  "phase0_scope": "Specified acceptance obligations only; native evidence is required before any gate can pass.",
+  "gates": [
+    {
+      "id": "GATE-PROTOCOL",
+      "tasks": [
+        "P02-T14",
+        "P02-T22",
+        "P02-T24",
+        "P13-T09"
+      ],
+      "preconditions": "Installed native server; independent pipe client; no assets required for hello/discovery.",
+      "stimulus": "Negotiate versions, query capabilities, send malformed/oversized/duplicate messages, reconnect and cancel running operations.",
+      "acceptance": "Exact schemas and stable errors; no mutation on rejection; bounded memory; one terminal outcome per ID; responsive service and explicit history loss.",
+      "artifacts": "Wire transcripts; allocation limits; build/schema IDs; operation history.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-HEADLESS",
+      "tasks": [
+        "P02-T04",
+        "P02-T28",
+        "P02-T41",
+        "P13-T06"
+      ],
+      "preconditions": "Same actual native slice build with display/GPU/input/audio device access denied.",
+      "stimulus": "Cold-start, play and query all implemented content in image-free mode; audit device opens and dependency initialization.",
+      "acceptance": "No device/window/server requirement; same state and legal actions as interactive play; unavailable renderer causes only an explicit image error.",
+      "artifacts": "Host isolation record; device-access audit; complete action/state trace.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-INPUT",
+      "tasks": [
+        "P02-T15",
+        "P02-T16",
+        "P02-T17",
+        "P02-T18",
+        "P06-T13"
+      ],
+      "preconditions": "Recovered eligible and ineligible states for each implemented action.",
+      "stimulus": "Replay simultaneous press/hold/release, axes extremes, semantic menu/dialogue/battle choices, scroll and pointer cases from physical and direct clients.",
+      "acceptance": "Same handler, eligibility, cost and applied tick; atomic invalid-batch rejection; no OS/SDL injection; stale IDs fail.",
+      "artifacts": "Canonical action traces; per-tick hashes; disabled reasons; handler-path audit.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-STATE",
+      "tasks": [
+        "P02-T19",
+        "P02-T20",
+        "P02-T21",
+        "P07-T13"
+      ],
+      "preconditions": "Every authoritative serializer field inventoried independently against all implemented subsystem schemas.",
+      "stimulus": "Mutate valid state in each domain, query full and filtered pages while running, expire cursors, diff across restore and exhaust subscriptions.",
+      "acceptance": "All internal/offscreen state typed and visible; one immutable snapshot per page series; explicit expiry/loss; new unregistered state fails gate.",
+      "artifacts": "Serializer-to-schema field audit; query/delta transcripts; round-trip hashes; omission negative test.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-CONTROL",
+      "tasks": [
+        "P02-T22",
+        "P02-T23",
+        "P02-T24",
+        "P06-T14",
+        "P07-T14"
+      ],
+      "preconditions": "Controller, debug client, observer and untrusted Lua in one session.",
+      "stimulus": "Race cycles and stale guards; hand off with held input; disconnect controller and spectator; attempt forbidden actions/clock/debug and Lua escalation.",
+      "acceptance": "One owner; atomic admission; deterministic release/cancel on handoff; controller EOF pauses; spectator has no state effect; no role escalation.",
+      "artifacts": "Role/ownership matrix; denial traces; handoff ticks; state hashes.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-TIME",
+      "tasks": [
+        "P02-T09",
+        "P02-T25",
+        "P02-T26",
+        "P02-T27",
+        "P02-T28",
+        "P02-T40"
+      ],
+      "preconditions": "Evidence-qualified rational native timebase and deterministic original-qualified trace.",
+      "stimulus": "Run paused/exact, real-time, fixed and unthrottled modes; stall render/audio, saturate work budget, trigger a never-true predicate and inject worker hang.",
+      "acceptance": "Every required update retained; identical tick hashes/events; exact stop boundaries and reasons; separate work/tick/wall budgets; no artificial unlocked pacing.",
+      "artifacts": "Timebase findings; work counters; tick and wall metrics; watchdog report; equivalence traces.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-SNAPSHOT",
+      "tasks": [
+        "P02-T29",
+        "P08-T12",
+        "P08-T13"
+      ],
+      "preconditions": "Native field/event/battle boundaries, held actions, pending jobs and resumable original/Lua tasks.",
+      "stimulus": "Snapshot, restore in a fresh process, reset and branch; use incompatible schema/content/mods; repeat with images off/on.",
+      "acceptance": "Exact subsequent state and input order; new epoch invalidates old guards; isolated saves; incompatible restore leaves state unchanged; transient output rebuilt.",
+      "artifacts": "Snapshot manifest; branch save paths; hashes; compatibility errors; replay record.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-DEBUG",
+      "tasks": [
+        "P02-T30",
+        "P02-T31",
+        "P02-T32"
+      ],
+      "preconditions": "Trusted debug session and independently recovered script/source correlations.",
+      "stimulus": "Pause/step tick/task/instruction; hit conditional breakpoint, event break and watchpoint; perform guarded multi-field edit with an invalid last field; induce assertion/crash/hang.",
+      "acceptance": "Correct stop phase and resume exactly once; full stacks/state; rollback failed edit; unsafe raw access separately privileged; native debugger resolves stacks and memory.",
+      "artifacts": "Breakpoint/watchpoint trace; before/after diffs; native debugger transcript; failure artifacts and replay.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-SCENARIO",
+      "tasks": [
+        "P02-T33",
+        "P02-T34",
+        "P02-T35",
+        "P02-T36",
+        "P02-T37",
+        "P02-T38",
+        "P02-T39"
+      ],
+      "preconditions": "Both exact source profiles, reviewed native catalog and every implemented entry/setup schema; no prior save.",
+      "stimulus": "Cold-create each field/world/battle/minigame/event/menu family; test missing assets, incompatible source, invalid position/progression; query distinct readiness stages.",
+      "acceptance": "Same loaders/validators as ordinary play; atomic setup; typed dependencies complete; map initialized never implies control; unsupported setup fails; parity backlog remains honest.",
+      "artifacts": "Parity case results; setup/source/catalog manifest; readiness observations; negative-case state hashes.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-SPECTATOR",
+      "tasks": [
+        "P02-T41",
+        "P02-T42",
+        "P02-T43",
+        "P02-T44",
+        "P02-T45",
+        "P05-T16"
+      ],
+      "preconditions": "Renderer-capable native host and the same trace as GATE-HEADLESS.",
+      "stimulus": "Attach/detach viewer mid-run, capture while paused, vary resolution/cadence/profile, stop consumer and saturate queues.",
+      "acceptance": "Metadata identifies immutable state; paused capture advances zero ticks; queue at most two; oldest images drop with counts; no forced real-time cap; identical authoritative hashes.",
+      "artifacts": "Image metadata; drop/queue metrics; equal per-tick traces; viewer transcript.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-ARTIFACTS",
+      "tasks": [
+        "P02-T32",
+        "P02-T39",
+        "P13-T09"
+      ],
+      "preconditions": "Native bounded history and private output storage with injected low-space and process-failure cases.",
+      "stimulus": "Complete, cancel, exhaust budgets, fail assertion and crash a run; reproduce failure from normalized setup/actions.",
+      "acceptance": "Terminal status cannot be inferred from started/capture; identities, seeds, applied ticks, expected/observed conditions, hashes and available stacks retained; missing artifacts disclosed.",
+      "artifacts": "Success/failure manifests; replay result; storage-exhaustion and abrupt-death reports.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-FIRST-SLICE",
+      "tasks": [
+        "P03-T01",
+        "P03-T02",
+        "P03-T03",
+        "P03-T04",
+        "P03-T05",
+        "P03-T06",
+        "P03-T07",
+        "P03-T08",
+        "P03-T09",
+        "P03-T10",
+        "P03-T11"
+      ],
+      "preconditions": "Frozen independently observed original field/event/battle/reward/menu/ordinary-save route; GATE-PROTOCOL through GATE-ARTIFACTS passed for implemented systems.",
+      "stimulus": "Human and plain direct agent clients complete traversal/jump/interaction/dialogue/concurrent event, legal battle/reward/return, menu/equipment and ordinary save/load; debug demonstrations and streamed/unlocked repeats.",
+      "acceptance": "Original-qualified outcomes; no corrective debug progression or emulator in runtime; device-free actual play; full state/debug/setup; real-time/unlocked hashes equal; optional spectator independent.",
+      "artifacts": "Original comparisons; complete human/agent traces; all architecture gate results; setup versus ordinary-play classification.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-SUBSYSTEM",
+      "tasks": [
+        "P04-T13",
+        "P04-T14",
+        "P07-T13",
+        "P11-T12",
+        "P12-T10"
+      ],
+      "preconditions": "Each new original/mod/editor subsystem and its independently qualified catalog.",
+      "stimulus": "Extend schemas, actions, setup, readiness and debug; cold-launch and continuously play its content at unlocked speed with images off/on.",
+      "acceptance": "No subsystem completion until state/actions/setup/time/debug are exercised through the same runtime; full both-disc coverage cannot be inferred from first slice.",
+      "artifacts": "Coverage reconciliation; native extension and parity rows; mod-schema evidence; continuous versus setup run classification.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-VISUAL",
+      "tasks": [
+        "P01-T06",
+        "P05-T02",
+        "P05-T03",
+        "P05-T04",
+        "P05-T05",
+        "P05-T12",
+        "P05-T15"
+      ],
+      "preconditions": "Recovered PS1 render operations and source-qualified original captures; all rendering backends.",
+      "stimulus": "Clean-start Modern and toggle each fidelity operation/preset under varied aspect/refresh/filter/culling, including spectator rendering.",
+      "acceptance": "Stage-correct original fidelity; Modern quirks off; independent settings preserved; identical authoritative state in all combinations.",
+      "artifacts": "Original and native captures; effective configuration; backend matrix; state hashes.",
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "GATE-WIDE",
+      "tasks": [
+        "P01-T07",
+        "P02-T07",
+        "P04-T08",
+        "P08-T10",
+        "P10-T12",
+        "P10-T13",
+        "P10-T14",
+        "P10-T15",
+        "P10-T16",
+        "P10-T17",
+        "P10-T18",
+        "P10-T19",
+        "P10-T20",
+        "P10-T21",
+        "P13-T10"
+      ],
+      "preconditions": "Original matched Mono/Stereo/Wide signals and reviewed intended spatial reference; validated native Wide tap; reviewed decoder/HRTF provenance.",
+      "stimulus": "Test raw signal, reconstruction and HRTF separately with synthetic phase/polarity/panning and original captures on both discs; level-match listening; restore/accelerate/reconnect on ordinary two-channel devices.",
+      "acceptance": "Exactly two binaural channels; no invented spatial cues, generic widening or double processing; original modes retained/restored; linked phase/gain and history correct; no external processor required.",
+      "artifacts": "Original findings; stage signal metrics; listening protocol/results; license review; device/restore traces.",
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "phase2_required": [
+    "GATE-PROTOCOL",
+    "GATE-HEADLESS",
+    "GATE-INPUT",
+    "GATE-STATE",
+    "GATE-CONTROL",
+    "GATE-TIME",
+    "GATE-SNAPSHOT",
+    "GATE-DEBUG",
+    "GATE-SCENARIO",
+    "GATE-SPECTATOR",
+    "GATE-ARTIFACTS"
+  ],
+  "phase3_required": [
+    "GATE-FIRST-SLICE"
+  ],
+  "subsystem_required": [
+    "GATE-SUBSYSTEM"
+  ],
+  "later_feature_gates": [
+    "GATE-VISUAL",
+    "GATE-WIDE"
+  ]
+}

@@ -1,6 +1,187 @@
 {
   "schema_version": 1,
-  "results": {
+  "baseline_commit": "24132ed",
+  "expanded_plan_commit": "d3c8f9c",
+  "scope": "Reviewed requirement-ID migration; historical evidence is preserved in its original scope. No native feature gains an execution pass.",
+  "task_mapping": {
+    "P00-T01": "P00-T01",
+    "P00-T02": "P00-T02",
+    "P00-T03": "P00-T03",
+    "P00-T04": "P00-T04",
+    "P00-T05": "P00-T05",
+    "P00-T06": "P00-T06",
+    "P00-T07": "P00-T07",
+    "P00-T08": "P00-T08",
+    "P00-T09": "P00-T09",
+    "P00-T10": "P00-T10",
+    "P01-T01": "P01-T01",
+    "P01-T02": "P01-T02",
+    "P01-T03": "P01-T03",
+    "P01-T04": "P01-T04",
+    "P01-T05": "P01-T05",
+    "P01-T06": "P01-T08",
+    "P01-T07": "P01-T09",
+    "P01-T08": "P01-T10",
+    "P01-T09": "P01-T11",
+    "P01-T10": "P01-T12",
+    "P01-T11": "P01-T14",
+    "P01-T12": "P01-T15",
+    "P02-T01": "P02-T01",
+    "P02-T02": "P02-T02",
+    "P02-T03": "P02-T03",
+    "P02-T04": "P02-T04",
+    "P02-T05": "P02-T05",
+    "P02-T06": "P02-T08",
+    "P02-T07": "P02-T09",
+    "P02-T08": "P02-T10",
+    "P02-T09": "P02-T11",
+    "P02-T10": "P02-T12",
+    "P02-T11": "P02-T13",
+    "P02-T12": "P02-T33",
+    "P02-T13": "P02-T46",
+    "P03-T01": "P03-T01",
+    "P03-T02": "P03-T02",
+    "P03-T03": "P03-T03",
+    "P03-T04": "P03-T04",
+    "P03-T05": "P03-T05",
+    "P03-T06": "P03-T06",
+    "P03-T07": "P03-T07",
+    "P03-T08": "P03-T08",
+    "P04-T01": "P04-T01",
+    "P04-T02": "P04-T02",
+    "P04-T03": "P04-T03",
+    "P04-T04": "P04-T04",
+    "P04-T05": "P04-T05",
+    "P04-T06": "P04-T06",
+    "P04-T07": "P04-T07",
+    "P04-T08": "P04-T09",
+    "P04-T09": "P04-T10",
+    "P04-T10": "P04-T11",
+    "P04-T11": "P04-T12",
+    "P05-T01": "P05-T01",
+    "P05-T02": "P05-T02",
+    "P05-T03": "P05-T06",
+    "P05-T04": "P05-T07",
+    "P05-T05": "P05-T08",
+    "P05-T06": "P05-T09",
+    "P05-T07": "P05-T10",
+    "P05-T08": "P05-T11",
+    "P05-T09": "P05-T12",
+    "P05-T10": "P05-T13",
+    "P05-T11": "P05-T14",
+    "P05-T12": "P05-T15",
+    "P06-T01": "P06-T01",
+    "P06-T02": "P06-T02",
+    "P06-T03": "P06-T03",
+    "P06-T04": "P06-T04",
+    "P06-T05": "P06-T05",
+    "P06-T06": "P06-T06",
+    "P06-T07": "P06-T07",
+    "P06-T08": "P06-T08",
+    "P06-T09": "P06-T09",
+    "P06-T10": "P06-T10",
+    "P06-T11": "P06-T11",
+    "P06-T12": "P06-T12",
+    "P07-T01": "P07-T01",
+    "P07-T02": "P07-T02",
+    "P07-T03": "P07-T03",
+    "P07-T04": "P07-T04",
+    "P07-T05": "P07-T05",
+    "P07-T06": "P07-T06",
+    "P07-T07": "P07-T07",
+    "P07-T08": "P07-T08",
+    "P07-T09": "P07-T09",
+    "P07-T10": "P07-T10",
+    "P07-T11": "P07-T11",
+    "P07-T12": "P07-T12",
+    "P08-T01": "P08-T01",
+    "P08-T02": "P08-T02",
+    "P08-T03": "P08-T03",
+    "P08-T04": "P08-T04",
+    "P08-T05": "P08-T05",
+    "P08-T06": "P08-T06",
+    "P08-T07": "P08-T07",
+    "P08-T08": "P08-T08",
+    "P08-T09": "P08-T09",
+    "P08-T10": "P08-T11",
+    "P08-T11": "P08-T13",
+    "P09-T01": "P09-T01",
+    "P09-T02": "P09-T02",
+    "P09-T03": "P09-T03",
+    "P09-T04": "P09-T04",
+    "P09-T05": "P09-T05",
+    "P09-T06": "P09-T06",
+    "P09-T07": "P09-T07",
+    "P09-T08": "P09-T08",
+    "P09-T09": "P09-T09",
+    "P09-T10": "P09-T10",
+    "P09-T11": "P09-T11",
+    "P09-T12": "P09-T12",
+    "P09-T13": "P09-T13",
+    "P09-T14": "P09-T14",
+    "P09-T15": "P09-T15",
+    "P09-T16": "P09-T16",
+    "P09-T17": "P09-T17",
+    "P10-T01": "P10-T01",
+    "P10-T02": "P10-T02",
+    "P10-T03": "P10-T03",
+    "P10-T04": "P10-T04",
+    "P10-T05": "P10-T05",
+    "P10-T06": "P10-T06",
+    "P10-T07": "P10-T07",
+    "P10-T08": "P10-T08",
+    "P10-T09": "P10-T09",
+    "P10-T10": "P10-T10",
+    "P10-T11": "P10-T11",
+    "P11-T01": "P11-T01",
+    "P11-T02": "P11-T02",
+    "P11-T03": "P11-T03",
+    "P11-T04": "P11-T04",
+    "P11-T05": "P11-T05",
+    "P11-T06": "P11-T06",
+    "P11-T07": "P11-T07",
+    "P11-T08": "P11-T08",
+    "P11-T09": "P11-T09",
+    "P11-T10": "P11-T10",
+    "P11-T11": "P11-T11",
+    "P12-T01": "P12-T01",
+    "P12-T02": "P12-T02",
+    "P12-T03": "P12-T03",
+    "P12-T04": "P12-T04",
+    "P12-T05": "P12-T05",
+    "P12-T06": "P12-T06",
+    "P12-T07": "P12-T07",
+    "P12-T08": "P12-T08",
+    "P12-T09": "P12-T09",
+    "P13-T01": "P13-T01",
+    "P13-T02": "P13-T02",
+    "P13-T03": "P13-T03",
+    "P13-T04": "P13-T04",
+    "P13-T05": "P13-T05",
+    "P13-T06": "P13-T11",
+    "P13-T07": "P13-T12",
+    "P13-T08": "P13-T13",
+    "P13-T09": "P13-T14",
+    "P13-T10": "P13-T15",
+    "P13-T11": "P13-T16",
+    "P13-T12": "P13-T17",
+    "P13-T13": "P13-T18",
+    "P13-T14": "P13-T19"
+  },
+  "split_task": {
+    "old": "P02-T12",
+    "replacements": [
+      "P02-T19",
+      "P02-T21",
+      "P02-T25",
+      "P02-T29",
+      "P02-T30",
+      "P02-T33",
+      "P02-T35"
+    ],
+    "reason": "Former early headless/debug task expanded into foundational native services; no prior executed result."
+  },
+  "preserved_results": {
     "P00-T01-F01": {
       "status": "passed",
       "evidence": [
@@ -438,168 +619,83 @@
       "evidence": [
         "VERIFY-PHASE0-SCENARIOS"
       ]
-    },
-    "P00-T11-F01": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F02": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F03": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F04": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F05": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F06": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F07": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F08": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F09": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T11-F10": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F01": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F02": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F03": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F04": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F05": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F06": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F07": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T12-F08": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F01": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F02": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F03": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F04": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F05": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F06": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F07": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F08": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
-    },
-    "P00-T13-F09": {
-      "status": "passed",
-      "evidence": [
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
-      ]
     }
-  }
+  },
+  "new_tasks": [
+    "P00-T11",
+    "P00-T12",
+    "P00-T13",
+    "P01-T06",
+    "P01-T07",
+    "P01-T13",
+    "P02-T06",
+    "P02-T07",
+    "P02-T14",
+    "P02-T15",
+    "P02-T16",
+    "P02-T17",
+    "P02-T18",
+    "P02-T19",
+    "P02-T20",
+    "P02-T21",
+    "P02-T22",
+    "P02-T23",
+    "P02-T24",
+    "P02-T25",
+    "P02-T26",
+    "P02-T27",
+    "P02-T28",
+    "P02-T29",
+    "P02-T30",
+    "P02-T31",
+    "P02-T32",
+    "P02-T34",
+    "P02-T35",
+    "P02-T36",
+    "P02-T37",
+    "P02-T38",
+    "P02-T39",
+    "P02-T40",
+    "P02-T41",
+    "P02-T42",
+    "P02-T43",
+    "P02-T44",
+    "P02-T45",
+    "P03-T09",
+    "P03-T10",
+    "P03-T11",
+    "P04-T08",
+    "P04-T13",
+    "P04-T14",
+    "P05-T03",
+    "P05-T04",
+    "P05-T05",
+    "P05-T16",
+    "P06-T13",
+    "P06-T14",
+    "P07-T13",
+    "P07-T14",
+    "P08-T10",
+    "P08-T12",
+    "P09-T18",
+    "P10-T12",
+    "P10-T13",
+    "P10-T14",
+    "P10-T15",
+    "P10-T16",
+    "P10-T17",
+    "P10-T18",
+    "P10-T19",
+    "P10-T20",
+    "P10-T21",
+    "P10-T22",
+    "P10-T23",
+    "P11-T12",
+    "P12-T10",
+    "P13-T06",
+    "P13-T07",
+    "P13-T08",
+    "P13-T09",
+    "P13-T10"
+  ]
 }

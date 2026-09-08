@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -11,7 +12,14 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def plan_sources(text: str) -> dict:
-    sources = {"tasks": {}, "exits": {}, "boundaries": [], "tables": {}, "execution_rules": []}
+    sources = {
+        "tasks": {},
+        "exits": {},
+        "boundaries": [],
+        "tables": {},
+        "execution_rules": [],
+        "foundational_requirement": "",
+    }
     phase, task, table = -1, 0, None
     for line in text.splitlines():
         if match := re.match(r"## Phase (\d+) —", line):
@@ -23,10 +31,14 @@ def plan_sources(text: str) -> dict:
             sources["exits"][f"P{phase:02}"] = line.removeprefix("**Exit criterion:** ")
         if phase < 0 and line.startswith("- **"):
             sources["boundaries"].append(line[2:])
+        if line.startswith("**Foundational requirement:**"):
+            sources["foundational_requirement"] = line
         if line.startswith(("**Execution rule:**", "**Parallelization:**")):
             sources["execution_rules"].append(line)
         if line.startswith("| Action |"):
             table = "keyboard_defaults"
+        elif line.startswith("| Capability |"):
+            table = "agent_contract"
         elif line.startswith("| Checkpoint |"):
             table = "release_checkpoints"
         elif line.startswith("| Requirement |"):
@@ -63,6 +75,18 @@ def build_matrix(root: Path = ROOT) -> dict:
         missing = sources["tasks"].keys() - specs.keys()
         extra = specs.keys() - sources["tasks"].keys()
         raise ValueError(f"Unmapped plan tasks: {sorted(missing)}; stale specs: {sorted(extra)}")
+    review = json.loads((root / "docs/requirement-review.json").read_text())
+    if review.get("schema_version") != 1 or review["tasks"].keys() != specs.keys():
+        raise ValueError("Requirement coverage review omits tasks or uses an unknown schema")
+    for key, spec in specs.items():
+        expected = {
+            "source_sha256": hashlib.sha256(sources["tasks"][key].encode()).hexdigest(),
+            "spec_sha256": hashlib.sha256(
+                json.dumps(spec, sort_keys=True, ensure_ascii=False).encode()
+            ).hexdigest(),
+        }
+        if review["tasks"][key] != expected:
+            raise ValueError(f"Requirement needs renewed source/facet coverage review: {key}")
     results = json.loads((root / "tests/validation-results.json").read_text())
     rows = []
     for source_id, spec in specs.items():
@@ -106,13 +130,51 @@ def build_matrix(root: Path = ROOT) -> dict:
 def target_scope(source_id: str) -> list[str]:
     if source_id.startswith("P01-"):
         return ["original-reference-analysis"]
-    if source_id in {"P02-T04", "P03-T01", "P13-T01"}:
+    if source_id in {"P02-T04", "P03-T01", "P03-T09", "P03-T10", "P03-T11", "P13-T01"}:
+        if source_id in {"P03-T09", "P03-T10", "P03-T11"}:
+            return ["arch-vulkan", "arch-headless"]
         return ["arch-vulkan"]
     if source_id in {"P06-T03", "P13-T02"}:
         return ["windows-d3d12"]
     if source_id == "P13-T03":
         return ["macos-metal"]
-    return ["arch-vulkan", "windows-d3d12", "macos-metal"]
+    targets = ["arch-vulkan", "windows-d3d12", "macos-metal"]
+    if (
+        source_id.startswith("P02-")
+        and 14 <= int(source_id[5:]) <= 40
+        or source_id
+        in {
+            "P02-T01",
+            "P02-T08",
+            "P02-T09",
+            "P02-T10",
+            "P02-T11",
+            "P02-T12",
+            "P02-T13",
+            "P02-T41",
+            "P02-T45",
+            "P02-T46",
+            "P04-T13",
+            "P04-T14",
+            "P06-T13",
+            "P06-T14",
+            "P07-T13",
+            "P07-T14",
+            "P08-T12",
+            "P08-T13",
+            "P09-T18",
+            "P10-T23",
+            "P11-T12",
+            "P12-T10",
+            "P13-T06",
+            "P13-T07",
+            "P13-T08",
+            "P13-T09",
+            "P13-T19",
+        }
+    ):
+        targets += ["arch-headless", "windows-headless", "macos-headless"]
+    return targets
 
 
 def markdown(data: dict) -> str:
@@ -151,8 +213,10 @@ def markdown(data: dict) -> str:
     lines += [
         "## Crosscutting sources and default policy",
         "",
-        "`docs/traceability.json` maps all seven project boundaries, all required-feature summary",
-        "rows, all nine keyboard-default rows, execution rules and release checkpoints to tests.",
+        "`docs/traceability.json` maps every project boundary, foundational agent-contract row,",
+        "required-feature row, keyboard default, execution rule and release checkpoint to tests.",
+        "`docs/requirement-review.json` binds reviewed source text to facet specifications;",
+        "`docs/requirements-migration.json` preserves the earlier evidence and task mapping.",
         "`docs/defaults.json` records prescribed defaults and leaves other choices undecided.",
         "`docs/platforms.json` separates declared target plans from executed platform coverage.",
         "",

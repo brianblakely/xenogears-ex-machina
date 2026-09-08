@@ -1,0 +1,715 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native scenario and direct actions 0.1",
+  "$defs": {
+    "action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "button"
+            },
+            "action": {
+              "enum": [
+                "run",
+                "jump",
+                "confirm",
+                "cancel",
+                "camera_left",
+                "camera_right",
+                "game_menu",
+                "app_menu",
+                "first_person",
+                "skip"
+              ]
+            },
+            "phase": {
+              "enum": [
+                "press",
+                "release"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "action",
+            "phase"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "axes"
+            },
+            "space": {
+              "enum": [
+                "world",
+                "camera",
+                "menu",
+                "minigame"
+              ]
+            },
+            "x": {
+              "type": "integer",
+              "minimum": -32767,
+              "maximum": 32767
+            },
+            "y": {
+              "type": "integer",
+              "minimum": -32767,
+              "maximum": 32767
+            }
+          },
+          "required": [
+            "kind",
+            "space",
+            "x",
+            "y"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "select"
+            },
+            "context_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "choice_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "target_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "maxItems": 32,
+              "minItems": 0
+            }
+          },
+          "required": [
+            "kind",
+            "context_id",
+            "choice_id",
+            "target_ids"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "scroll"
+            },
+            "context_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "delta": {
+              "type": "integer",
+              "minimum": -32767,
+              "maximum": 32767
+            }
+          },
+          "required": [
+            "kind",
+            "context_id",
+            "delta"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "pointer"
+            },
+            "viewport_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "x": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "y": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "phase": {
+              "enum": [
+                "move",
+                "press",
+                "release"
+              ]
+            },
+            "button": {
+              "enum": [
+                "none",
+                "primary",
+                "secondary"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "viewport_id",
+            "x",
+            "y",
+            "phase",
+            "button"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "invoke"
+            },
+            "action_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "schema_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "arguments": {
+              "$ref": "state.schema.json#/$defs/value"
+            }
+          },
+          "required": [
+            "kind",
+            "action_id",
+            "schema_id",
+            "arguments"
+          ]
+        }
+      ]
+    },
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "compare"
+            },
+            "path": {
+              "type": "string",
+              "pattern": "^/[^\\s]*$",
+              "maxLength": 1024
+            },
+            "operator": {
+              "enum": [
+                "eq",
+                "ne",
+                "lt",
+                "le",
+                "gt",
+                "ge"
+              ]
+            },
+            "value": {
+              "$ref": "state.schema.json#/$defs/value"
+            }
+          },
+          "required": [
+            "kind",
+            "path",
+            "operator",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "readiness"
+            },
+            "predicate": {
+              "enum": [
+                "assets_available",
+                "map_initialized",
+                "scripts_complete",
+                "dialogue_actionable",
+                "menu_actionable",
+                "battle_ready",
+                "player_control"
+              ]
+            },
+            "scope_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "maxItems": 256,
+              "minItems": 0
+            },
+            "stable_ticks": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000000
+            }
+          },
+          "required": [
+            "kind",
+            "predicate",
+            "scope_ids",
+            "stable_ticks"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "event"
+            },
+            "event_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          },
+          "required": [
+            "kind",
+            "event_id"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "all"
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              },
+              "maxItems": 16,
+              "minItems": 1
+            }
+          },
+          "required": [
+            "kind",
+            "conditions"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "any"
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/condition"
+              },
+              "maxItems": 16,
+              "minItems": 1
+            }
+          },
+          "required": [
+            "kind",
+            "conditions"
+          ]
+        }
+      ]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_ticks": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "positive-uint64"
+        },
+        "max_work_units": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "positive-uint64"
+        },
+        "watchdog_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 86400000
+        }
+      },
+      "required": [
+        "max_ticks",
+        "max_work_units",
+        "watchdog_ms"
+      ]
+    },
+    "mode": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "paused",
+                "realtime",
+                "unthrottled"
+              ]
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "fixed"
+            },
+            "multiplier": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "numerator": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                },
+                "denominator": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                }
+              },
+              "required": [
+                "numerator",
+                "denominator"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "multiplier"
+          ]
+        }
+      ]
+    },
+    "setup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "values": {
+          "$ref": "state.schema.json#/$defs/value"
+        }
+      },
+      "required": [
+        "schema_id",
+        "values"
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "field",
+            "world_map",
+            "battle",
+            "minigame",
+            "event",
+            "menu"
+          ]
+        },
+        "catalog_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "selector": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647
+            }
+          ]
+        },
+        "variant_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "catalog_id",
+        "selector",
+        "variant_id"
+      ]
+    },
+    "step": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "actions"
+            },
+            "actions": {
+              "type": "array",
+              "items": {
+                "$ref": "scenario.schema.json#/$defs/action"
+              },
+              "maxItems": 64,
+              "minItems": 1
+            },
+            "ticks": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "positive-uint64"
+            }
+          },
+          "required": [
+            "kind",
+            "actions",
+            "ticks"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "wait"
+            },
+            "until": {
+              "$ref": "#/$defs/condition"
+            },
+            "budget": {
+              "$ref": "#/$defs/budget"
+            }
+          },
+          "required": [
+            "kind",
+            "until",
+            "budget"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "assert"
+            },
+            "condition": {
+              "$ref": "#/$defs/condition"
+            }
+          },
+          "required": [
+            "kind",
+            "condition"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "snapshot"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "image"
+            },
+            "name": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          },
+          "required": [
+            "kind",
+            "name"
+          ]
+        }
+      ]
+    },
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "0.1"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "source_profile": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "asset_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "catalog_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "mods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "sha256"
+            ]
+          },
+          "maxItems": 128,
+          "minItems": 0
+        },
+        "entry": {
+          "$ref": "#/$defs/entry"
+        },
+        "setup": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/setup"
+          },
+          "maxItems": 64,
+          "minItems": 0
+        },
+        "seed": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "configuration": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/setup"
+          },
+          "maxItems": 64,
+          "minItems": 0
+        },
+        "ready": {
+          "$ref": "#/$defs/condition"
+        },
+        "budget": {
+          "$ref": "#/$defs/budget"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          },
+          "maxItems": 1024,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "source_profile",
+        "asset_manifest_sha256",
+        "catalog_sha256",
+        "mods",
+        "entry",
+        "setup",
+        "seed",
+        "configuration",
+        "ready",
+        "budget",
+        "steps"
+      ]
+    }
+  }
+}

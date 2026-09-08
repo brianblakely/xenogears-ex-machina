@@ -1,0 +1,720 @@
+{
+  "schema_version": 1,
+  "parity_version": "1.0.0",
+  "protocol_version": "0.1",
+  "review_date": "2026-09-07",
+  "status_semantics": {
+    "observed_original": "Original finding establishes only the named observed paths; tools tests additionally verify rejection/bounds.",
+    "tooling_tested": "Inspected implementation and public synthetic tests; no original gameplay capability promotion.",
+    "unsupported": "Explicit adapter backlog; reject typed requests.",
+    "not_present": "Native extension beyond the inspected emulator interface."
+  },
+  "baseline_sources": [
+    {
+      "path": "analysis/coverage/field-pairs.json",
+      "sha256": "3a57bd7b7400851bd23d415775ea26ed60aa01f8a368e217479b31bcc32cbc62"
+    },
+    {
+      "path": "analysis/findings/EVID-REF-013.json",
+      "sha256": "1ac84cd1bfcdf558bca1b5eff3d86427b07511824564d3b6c6690bcab2b6b36c"
+    },
+    {
+      "path": "analysis/scenarios/README.md",
+      "sha256": "b2f695e4614c96548b61c6dc1e9a96a4ca4bb1bf17bc281c07bd8bc3594b8990"
+    },
+    {
+      "path": "analysis/scenarios/schema.json",
+      "sha256": "54e968e66a941c73ff5f991a9018055f4ddd49122f4031c680c34fc6c8b800ae"
+    },
+    {
+      "path": "nix/flake.nix",
+      "sha256": "4e43776c5efa15824cdc698a88c0219e78d8360e07dbac167a67baa7180a42d5"
+    },
+    {
+      "path": "nix/reference-trace-patch.py",
+      "sha256": "8720566b1631a17634db4dcf6fcea75259a882c3ced9ef85c60a7faf7d8caf10"
+    },
+    {
+      "path": "nix/reference-trace.h",
+      "sha256": "ffeff7ab130c7f99f2d4c394d7120de319f05f359c165a73acfaaaac74577c6d"
+    },
+    {
+      "path": "tests/test_instruction_trace.py",
+      "sha256": "7bba3cc4e781cd3e68fcc3186bdecb3e865c5bd5eda54e06b74ced48b691661c"
+    },
+    {
+      "path": "tests/test_memory_sampler.py",
+      "sha256": "e5528da6b1eff750d39a8fdad238ad426bcf6fa395ca7923b1ad93ec2d69e99c"
+    },
+    {
+      "path": "tests/test_observe.py",
+      "sha256": "80f8b4d6bebf08cbfbb88c907d626760838585089ec3b7f8144f4647075b8e6e"
+    },
+    {
+      "path": "tests/test_scenario.py",
+      "sha256": "604925e561cb511885dacc46a31edb5e93eda8a4c7f89f96680645c602822c04"
+    },
+    {
+      "path": "tests/test_scenario_program.py",
+      "sha256": "1cf5c7f39193243d71e26a9a7ca4dbdc8a03b2c4e95def43cdcdd28f44b50d4e"
+    },
+    {
+      "path": "tools/reference/instruction_trace.py",
+      "sha256": "2083b28e090a5648773575e8abe77dac7a00fb7ea95e14f3cfc6761c11ca8433"
+    },
+    {
+      "path": "tools/reference/memory_sampler.py",
+      "sha256": "d1c0a9e692ac3bc196b06c94ad658a7cb33069be948ed42ded1484e13506426f"
+    },
+    {
+      "path": "tools/reference/observe.py",
+      "sha256": "dd53b3457462399c34229c4964954d9c9718c1a1fe0951f55b73d7c6fef2ee65"
+    },
+    {
+      "path": "tools/reference/scenario.py",
+      "sha256": "165312f7f0ed9b37bcd7d5edc4571b7f79f0a6fbc67ee1d9ba526c0f4cade20d"
+    },
+    {
+      "path": "tools/reference/scenario_program.py",
+      "sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59"
+    }
+  ],
+  "rows": [
+    {
+      "id": "PARITY-COLD-BOOT",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Reset, guarded startup dispatch, original Kernel loop and original field loader; no checkpoint prerequisite. Kernel observed on both exact profiles; initialized fields 14 on Disc 1 and 15 on Disc 2 do not imply universal scene coverage.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "tools/reference/scenario.py",
+          "tools/reference/scenario_program.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "session.create",
+          "session.reset"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-SOURCE",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Exact CHD profile; source raw-track/index/catalog fingerprints and field-slot formula checked. Numeric field availability is not semantic validity or entry-script completion. Dummy/absent/relabelled pairs rejected.",
+        "sources": [
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py",
+          "analysis/coverage/field-pairs.json"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_observe.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "protocol.discover",
+          "session.create"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-SELECT",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "Three named presets, JSON-path scenarios, numeric --map, explicit --profile and overrides; --list and --dry-run compile without emulation. Only kernel and field entry types.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "protocol.discover",
+          "session.create"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-READINESS",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Kernel or selected map plus two original initialization indicators stable for two frontend boundaries; timeout default 5000 (1..30000); settle default 120 (1..3600). Only ready: map. Not player-control readiness.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "tools/reference/scenario.py",
+          "tools/reference/scenario_program.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "simulation.advance",
+          "state.query"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-INPUT",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Ordered 14 digital button names; hold default 8 (1..3600), release all then after default 60 (1..30000); wait 1..30000. At most 100 scenario steps. Counts are retro_run calls, not recovered logical ticks; empty button arrays allowed.",
+        "sources": [
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py",
+          "tools/reference/scenario_program.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "command.submit",
+          "simulation.advance",
+          "control.cycle"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-INPUT",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-GUARDS",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "Expected/value equal-length lowercase bytes; all guards tested before writes; no overlaps and launcher controls protected; 2 MiB physical RAM bounds. Custom field writes become analysis_probe, not typed progression; kernel custom writes rejected.",
+        "sources": [
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py",
+          "tools/reference/scenario_program.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "debug.mutate",
+          "diagnostics.native"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-DEBUG",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-CONDITIONS",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "Lower-level observe --program supports bounded RAM width 1/2/4, masked eq/ne/lt/le/gt/ge and stable frames at pre-retro_run boundaries. It is an analysis interface, not live breakpoint/watchpoint control.",
+        "sources": [
+          "tools/reference/scenario_program.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "simulation.advance",
+          "debug.breakpoint",
+          "debug.watchpoint"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-DEBUG",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-BUDGET",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Compiled total budget <=36000 frontend calls; individual executor steps also bounded. Actual readiness timeout recorded as failure. No independent worker-hang wall watchdog in this runner.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "tools/reference/scenario.py",
+          "tools/reference/scenario_program.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "simulation.advance"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-TIME",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-CAPTURE",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Requested step images/RAM plus periodic 600-frame captures; accumulated audio and final external-core state. Capture is original output with hashes, not structured native introspection or an attachable live spectator stream.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_observe.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "state.query",
+          "image.capture",
+          "snapshot.capture"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-ARTIFACTS",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-PROVENANCE",
+      "emulator": {
+        "status": "observed_original",
+        "scope": "Normalized scenario/program/catalog, started hashes, compiler/executor/core/BIOS/source/Nix identities, options and ordered condition/write events; private new .local output. Only successful report.json means completion; runtime errors write capture/failure.json. Preflight rejects may occur before capture creation.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py",
+          "tests/test_observe.py"
+        ],
+        "original_findings": [
+          "EVID-REF-007"
+        ]
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "events.read",
+          "diagnostics.query"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-ARTIFACTS",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-CORE-BIOS",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "Pinned external interpreter avoids stale translated instructions after guarded code writes; default HLE explicitly labeled. Optional supplied BIOS hashed; detected HLE fallback rejected. Neither HLE nor core output is hardware equivalence.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "tools/reference/observe.py",
+          "nix/flake.nix"
+        ],
+        "tests": [
+          "tests/test_observe.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "protocol.discover",
+          "session.create"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-REFERENCE-RESTORE",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "observe --load-state can validate same content/core/BIOS/options and captured state hash; scenario.py deliberately always cold-boots. Final external state is not portable native serialization or proof of deterministic full-game replay.",
+        "sources": [
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_observe.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "snapshot.capture",
+          "snapshot.restore",
+          "session.branch"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SNAPSHOT",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-MEMORY-SAMPLING",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "--sample-memory optional bounded read-only direct or one-pointer RAM sampling after prior retro_run and before scenario tick; re-resolves aliases and reports null/out-of-range reads. <=32 ranges, 8192 bytes/sample, 64 MiB payload, 1 million range records. Scope here is tested tooling, not full semantic state coverage.",
+        "sources": [
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py",
+          "tools/reference/memory_sampler.py"
+        ],
+        "tests": [
+          "tests/test_memory_sampler.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "state.query",
+          "state.subscribe",
+          "debug.trace"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-STATE",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-INSTRUCTION-TRACE",
+      "emulator": {
+        "status": "tooling_tested",
+        "scope": "--trace-instructions optional read-only guarded configured interpreter PCs, registers and bounded memory ranges; <=16 hooks, 1 million candidate callbacks, 64 MiB per-hook payload bound. Mismatched guards count against budget. No complete instruction coverage, interactive debugger or hardware timing claim.",
+        "sources": [
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py",
+          "tools/reference/instruction_trace.py",
+          "tools/reference/memory_sampler.py",
+          "nix/reference-trace.h",
+          "nix/reference-trace-patch.py"
+        ],
+        "tests": [
+          "tests/test_instruction_trace.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "equivalent",
+        "methods": [
+          "debug.trace",
+          "debug.step",
+          "diagnostics.native"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-DEBUG",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-POSITION",
+      "emulator": {
+        "status": "unsupported",
+        "scope": "Player/party position and facing adapter unrecovered; typed fields rejected. Need actor identity, units, initialization order and collision-safe spawn evidence. Guarded raw probes do not establish support.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "session.create",
+          "debug.mutate"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-PROGRESSION",
+      "emulator": {
+        "status": "unsupported",
+        "scope": "Typed party, stats, equipment, inventory, flags and progression unrecovered/rejected. Native must add typed dependent initialization for every supported subsystem, not inherit this limit.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "session.create",
+          "debug.mutate"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-BATTLE",
+      "emulator": {
+        "status": "unsupported",
+        "scope": "Direct battle/formation launch is not a recovered scenario entry. Kernel Battle-mode research in EVID-REF-013 is an analysis probe with unresolved valid setup/readiness/return, not a supported battle adapter.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py",
+          "analysis/findings/EVID-REF-013.json"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": [
+          "EVID-REF-013"
+        ]
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "session.create",
+          "protocol.discover"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-OTHER-ENTRY",
+      "emulator": {
+        "status": "unsupported",
+        "scope": "World map, Battling, movie and event-specific entry lack dedicated recovered adapters; observed Kernel labels do not prove valid parameterization/readiness. Native adds world-map, minigame, event and semantic menu entry as systems arrive.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "session.create",
+          "protocol.discover"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-CONTROL-READY",
+      "emulator": {
+        "status": "unsupported",
+        "scope": "Player-control, actionable dialogue/menu, script-completion and battle-ready predicates unavailable; ready values other than map rejected. Native must distinguish them from asset/map initialization.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "simulation.advance",
+          "state.query"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SCENARIO",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-LIVE-API",
+      "emulator": {
+        "status": "not_present",
+        "scope": "No discoverable live semantic agent API, analog actions, concurrent inspectors, controller handoff or cancellation service in scenario runner. Native protocol adds them over the actual shared engine.",
+        "sources": [
+          "analysis/scenarios/README.md",
+          "analysis/scenarios/schema.json",
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "protocol.hello",
+          "control.acquire",
+          "control.handoff",
+          "control.cycle",
+          "operation.cancel"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-CONTROL",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-CLOCK",
+      "emulator": {
+        "status": "not_present",
+        "scope": "Runner executes bounded frontend frames without realtime pacing in its Python loop; it does not expose recovered exact simulation ticks, real-time/fixed/unlocked mode selection, wall watchdog or throughput contract.",
+        "sources": [
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "simulation.mode",
+          "simulation.advance"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-TIME",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-LIVE-IMAGES",
+      "emulator": {
+        "status": "not_present",
+        "scope": "Static emulator captures exist; no optional attachable read-only native image stream, queue/drop policy or presentation-independent state-equivalence proof.",
+        "sources": [
+          "tools/reference/scenario.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_observe.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "image.capture",
+          "image.stream"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-SPECTATOR",
+        "evidence": []
+      }
+    },
+    {
+      "id": "PARITY-FULL-DEBUG",
+      "emulator": {
+        "status": "not_present",
+        "scope": "No complete native semantic state schemas, transactional native editing, portable snapshots, native/Lua task stepping, native debugger integration or both-disc typed full-game go-anywhere. These remain mandatory native extensions.",
+        "sources": [
+          "tools/reference/scenario.py",
+          "tools/reference/scenario_program.py",
+          "tools/reference/observe.py"
+        ],
+        "tests": [
+          "tests/test_scenario_program.py"
+        ],
+        "original_findings": []
+      },
+      "native": {
+        "relationship": "extension",
+        "methods": [
+          "state.query",
+          "debug.mutate",
+          "snapshot.restore",
+          "debug.step",
+          "diagnostics.native"
+        ],
+        "status": "unimplemented",
+        "acceptance_gate": "GATE-DEBUG",
+        "evidence": []
+      }
+    }
+  ],
+  "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation."
+}

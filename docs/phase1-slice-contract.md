@@ -47,6 +47,15 @@ Unobserved expected outcomes remain unknown.
 | Time and services | Original controller/disc/BIOS/GPU/audio/interrupt-facing intent and native service contracts; observed simulation cadences, waits, asynchronous ordering and arithmetic; HLE/core observations distinguished from hardware timing proof |
 | Reproducibility and remainder | Immutable original runs and source checks, reviewed source-only tests, independent replay/state comparisons, and explicit unresolved symbol/format/opcode/content inventories with owners/next experiments |
 
+The expanded plan also requires source-qualified visual and Mono/Stereo/Wide
+signal references for the frozen slice, and recovered state ownership, semantic
+actions, spawn/setup validity and distinct readiness predicates for native agent
+queries. These obligations are now explicitly mapped into the unresolved field
+representation, required-media and field-behavior proofs. No tick rate, decoder,
+typed setup or original behavior is inferred from the Phase 0 protocol design.
+The [native first-slice gates](agent/acceptance.json) additionally govern the later
+Phase 2/3 implementation and do not receive a pass from this analysis manifest.
+
 This gate cannot pass if a required path uses a guessed formula, synthetic
 behavioral oracle, silent unknown opcode, debugger-only progression bypass,
 unexplained state mask, or an unreviewed resource interpretation. Readiness and

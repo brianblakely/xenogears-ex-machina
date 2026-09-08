@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "status": "coverage_obligations_not_game_layouts",
+  "authoritative": [
+    {
+      "id": "interfaces",
+      "path": "/interfaces",
+      "required_fields": [
+        "menu and dialogue context IDs",
+        "choices and targets",
+        "enabled/disabled actions and reasons",
+        "focus",
+        "scroll state",
+        "input contexts",
+        "control owner"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "entities",
+      "path": "/entities",
+      "required_fields": [
+        "active/inactive entities",
+        "component IDs and generations",
+        "transforms",
+        "hierarchy",
+        "lifecycle"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "terrain",
+      "path": "/terrain",
+      "required_fields": [
+        "collision meshes and bounds",
+        "terrain",
+        "navigation constraints",
+        "triggers and volumes"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "camera",
+      "path": "/camera",
+      "required_fields": [
+        "authoritative camera orientation and ownership",
+        "control handoffs",
+        "exploration modes"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "maps",
+      "path": "/maps",
+      "required_fields": [
+        "current and pending maps",
+        "resource IDs",
+        "transitions",
+        "initialization state"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "story",
+      "path": "/story",
+      "required_fields": [
+        "story flags",
+        "variables",
+        "progression",
+        "branch outcomes"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "party",
+      "path": "/party",
+      "required_fields": [
+        "members",
+        "stats",
+        "equipment",
+        "inventory",
+        "money",
+        "experience"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "encounters",
+      "path": "/encounters",
+      "required_fields": [
+        "encounter state and seeds",
+        "pending and mandatory triggers"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "battle",
+      "path": "/battle",
+      "required_fields": [
+        "participants",
+        "action costs",
+        "targets",
+        "turn scheduler",
+        "AI",
+        "rewards",
+        "return state"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "minigames",
+      "path": "/minigames",
+      "required_fields": [
+        "rules",
+        "entities",
+        "controls",
+        "timing",
+        "scores",
+        "opponent state",
+        "outcomes"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "original_scripts",
+      "path": "/original_scripts",
+      "required_fields": [
+        "resource and overlay source identity",
+        "actor/task stacks",
+        "instruction pointers",
+        "waits",
+        "variables",
+        "continuation and scheduler phase"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "lua",
+      "path": "/lua",
+      "required_fields": [
+        "mod and schema IDs",
+        "explicit resumable tasks",
+        "stacks/diagnostics",
+        "gameplay values",
+        "errors",
+        "budgets"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "rng",
+      "path": "/rng",
+      "required_fields": [
+        "every RNG algorithm identity",
+        "exact state",
+        "independent stream IDs"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "scheduler",
+      "path": "/scheduler",
+      "required_fields": [
+        "tick",
+        "subrate accumulators",
+        "ordered pending events",
+        "timers",
+        "deterministic jobs and commands",
+        "held inputs",
+        "semantic control ownership"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    },
+    {
+      "id": "audio_media",
+      "path": "/audio_media",
+      "required_fields": [
+        "logical music/effect/FMVs positions",
+        "modes",
+        "routing",
+        "event synchronization",
+        "logical completion"
+      ],
+      "status": "unimplemented",
+      "concrete_schema": null,
+      "promotion_gate": "GATE-STATE"
+    }
+  ],
+  "diagnostic": [
+    {
+      "id": "resources",
+      "path": "/diagnostics/resources",
+      "status": "unimplemented"
+    },
+    {
+      "id": "loading",
+      "path": "/diagnostics/loading",
+      "status": "unimplemented"
+    },
+    {
+      "id": "renderer",
+      "path": "/diagnostics/renderer",
+      "status": "unimplemented"
+    },
+    {
+      "id": "audio_output",
+      "path": "/diagnostics/audio_output",
+      "status": "unimplemented"
+    },
+    {
+      "id": "native_symbols",
+      "path": "/diagnostics/native_symbols",
+      "status": "unimplemented"
+    },
+    {
+      "id": "performance",
+      "path": "/diagnostics/performance",
+      "status": "unimplemented"
+    },
+    {
+      "id": "logs",
+      "path": "/diagnostics/logs",
+      "status": "unimplemented"
+    },
+    {
+      "id": "coverage",
+      "path": "/diagnostics/coverage",
+      "status": "unimplemented"
+    },
+    {
+      "id": "crash",
+      "path": "/diagnostics/crash",
+      "status": "unimplemented"
+    }
+  ],
+  "rule": "Each implemented domain supplies a closed field schema, types/units/mutability/source correlations, full query and serializer coverage. Empty payloads cannot stand for unimplemented state."
+}

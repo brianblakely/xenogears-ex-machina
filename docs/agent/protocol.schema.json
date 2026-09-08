@@ -1,0 +1,4716 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native agent wire contract 0.1",
+  "$defs": {
+    "advanceParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "ticks"
+                },
+                "count": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,19})$",
+                  "maxLength": 20,
+                  "format": "positive-uint64"
+                }
+              },
+              "required": [
+                "kind",
+                "count"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "until"
+                },
+                "condition": {
+                  "$ref": "scenario.schema.json#/$defs/condition"
+                }
+              },
+              "required": [
+                "kind",
+                "condition"
+              ]
+            }
+          ]
+        },
+        "budget": {
+          "$ref": "scenario.schema.json#/$defs/budget"
+        }
+      },
+      "required": [
+        "guard",
+        "target",
+        "budget"
+      ]
+    },
+    "protocol_helloParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "maxItems": 8,
+          "minItems": 1
+        },
+        "client_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "versions",
+        "client_id"
+      ]
+    },
+    "protocol_helloResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "0.1"
+        },
+        "connection_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "role": {
+          "enum": [
+            "observe",
+            "control",
+            "debug",
+            "unsafe_debug"
+          ]
+        },
+        "max_line_bytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1048576
+        },
+        "max_operations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      },
+      "required": [
+        "version",
+        "connection_id",
+        "role",
+        "max_line_bytes",
+        "max_operations"
+      ]
+    },
+    "protocol_discoverParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {},
+      "required": []
+    },
+    "protocol_discoverResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contract_version": {
+          "const": "0.1"
+        },
+        "contract_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "build_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "methods": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "status": {
+                "enum": [
+                  "unimplemented",
+                  "available",
+                  "unavailable"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "request_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "result_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "reason",
+              "scope",
+              "request_schema",
+              "result_schema"
+            ]
+          },
+          "maxItems": 128,
+          "minItems": 0
+        },
+        "state_domains": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "status": {
+                "enum": [
+                  "unimplemented",
+                  "available",
+                  "unavailable"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "request_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "result_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "reason",
+              "scope",
+              "request_schema",
+              "result_schema"
+            ]
+          },
+          "maxItems": 128,
+          "minItems": 0
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "status": {
+                "enum": [
+                  "unimplemented",
+                  "available",
+                  "unavailable"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "request_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "result_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "reason",
+              "scope",
+              "request_schema",
+              "result_schema"
+            ]
+          },
+          "maxItems": 1024,
+          "minItems": 0
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "status": {
+                "enum": [
+                  "unimplemented",
+                  "available",
+                  "unavailable"
+                ]
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256
+              },
+              "scope": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "request_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "result_schema": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              }
+            },
+            "required": [
+              "id",
+              "status",
+              "reason",
+              "scope",
+              "request_schema",
+              "result_schema"
+            ]
+          },
+          "maxItems": 1024,
+          "minItems": 0
+        },
+        "timebase": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "state.schema.json#/$defs/timebase"
+            }
+          ]
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "contract_version",
+        "contract_sha256",
+        "build_id",
+        "methods",
+        "state_domains",
+        "actions",
+        "entries",
+        "timebase",
+        "sessions"
+      ]
+    },
+    "schema_readParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 49152
+        }
+      },
+      "required": [
+        "schema_id",
+        "offset",
+        "limit"
+      ]
+    },
+    "schema_readResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "total_size": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "utf8": {
+          "type": "string",
+          "maxLength": 49152
+        },
+        "next_offset": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_id",
+        "sha256",
+        "total_size",
+        "offset",
+        "utf8",
+        "next_offset"
+      ]
+    },
+    "session_createParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scenario": {
+          "$ref": "scenario.schema.json#/$defs/scenario"
+        },
+        "mode": {
+          "$ref": "scenario.schema.json#/$defs/mode"
+        }
+      },
+      "required": [
+        "scenario",
+        "mode"
+      ]
+    },
+    "session_createResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "timebase": {
+          "$ref": "state.schema.json#/$defs/timebase"
+        },
+        "setup_class": {
+          "enum": [
+            "canonical_new_game",
+            "validated_setup",
+            "unsafe_probe"
+          ]
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "session_id",
+        "state",
+        "timebase",
+        "setup_class",
+        "artifact_id"
+      ]
+    },
+    "session_closeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "guard"
+      ]
+    },
+    "session_closeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "closed": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "closed"
+      ]
+    },
+    "control_acquireParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "expected_owner": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "expected_owner"
+      ]
+    },
+    "control_acquireResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "owner",
+        "lease_id",
+        "state"
+      ]
+    },
+    "control_handoffParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "connection_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "guard",
+        "lease_id",
+        "connection_id"
+      ]
+    },
+    "control_handoffResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "owner": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "owner",
+        "lease_id",
+        "state"
+      ]
+    },
+    "command_submitParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "at_tick": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "scenario.schema.json#/$defs/action"
+          },
+          "maxItems": 64,
+          "minItems": 1
+        }
+      },
+      "required": [
+        "guard",
+        "lease_id",
+        "at_tick",
+        "actions"
+      ]
+    },
+    "command_submitResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "applied_tick": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "action_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64
+        }
+      },
+      "required": [
+        "applied_tick",
+        "state",
+        "action_count"
+      ]
+    },
+    "control_cycleParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "scenario.schema.json#/$defs/action"
+          },
+          "maxItems": 64,
+          "minItems": 0
+        },
+        "advance": {
+          "$ref": "protocol.schema.json#/$defs/advanceParams"
+        },
+        "query": {
+          "$ref": "state.schema.json#/$defs/query"
+        }
+      },
+      "required": [
+        "guard",
+        "lease_id",
+        "actions",
+        "advance",
+        "query"
+      ]
+    },
+    "control_cycleResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "execution": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "state": {
+              "$ref": "state.schema.json#/$defs/token"
+            },
+            "stop_reason": {
+              "enum": [
+                "target",
+                "condition",
+                "breakpoint",
+                "watchpoint",
+                "budget",
+                "cancelled",
+                "failure",
+                "watchdog"
+              ]
+            },
+            "matched": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "maxItems": 64,
+              "minItems": 0
+            },
+            "ticks_advanced": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "work_units": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "wall_ns": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "uint64"
+            },
+            "operation_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "artifacts": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "maxItems": 128,
+              "minItems": 0
+            }
+          },
+          "required": [
+            "state",
+            "stop_reason",
+            "matched",
+            "ticks_advanced",
+            "work_units",
+            "wall_ns",
+            "operation_id",
+            "artifacts"
+          ]
+        },
+        "observation": {
+          "$ref": "state.schema.json#/$defs/queryResult"
+        }
+      },
+      "required": [
+        "execution",
+        "observation"
+      ]
+    },
+    "simulation_modeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "mode": {
+          "$ref": "scenario.schema.json#/$defs/mode"
+        }
+      },
+      "required": [
+        "guard",
+        "mode"
+      ]
+    },
+    "simulation_modeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "$ref": "scenario.schema.json#/$defs/mode"
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "mode",
+        "state"
+      ]
+    },
+    "simulation_advanceParams": {
+      "$ref": "protocol.schema.json#/$defs/advanceParams"
+    },
+    "simulation_advanceResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "stop_reason": {
+          "enum": [
+            "target",
+            "condition",
+            "breakpoint",
+            "watchpoint",
+            "budget",
+            "cancelled",
+            "failure",
+            "watchdog"
+          ]
+        },
+        "matched": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 0
+        },
+        "ticks_advanced": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "work_units": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "wall_ns": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 128,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "state",
+        "stop_reason",
+        "matched",
+        "ticks_advanced",
+        "work_units",
+        "wall_ns",
+        "operation_id",
+        "artifacts"
+      ]
+    },
+    "state_queryParams": {
+      "$ref": "state.schema.json#/$defs/query"
+    },
+    "state_queryResult": {
+      "$ref": "state.schema.json#/$defs/queryResult"
+    },
+    "state_diffParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "target": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/[^\\s]*$",
+            "maxLength": 1024
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "cursor": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "base",
+        "target",
+        "paths",
+        "limit",
+        "cursor"
+      ]
+    },
+    "state_diffResult": {
+      "$ref": "state.schema.json#/$defs/diffResult"
+    },
+    "state_subscribeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/[^\\s]*$",
+            "maxLength": 1024
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "after_sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        }
+      },
+      "required": [
+        "paths",
+        "after_sequence"
+      ]
+    },
+    "state_subscribeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "next_sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        }
+      },
+      "required": [
+        "subscription_id",
+        "next_sequence"
+      ]
+    },
+    "state_unsubscribeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "subscription_id"
+      ]
+    },
+    "state_unsubscribeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "released": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "released"
+      ]
+    },
+    "state_releaseParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "snapshot_id"
+      ]
+    },
+    "state_releaseResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "released": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "released"
+      ]
+    },
+    "artifact_readParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 49152
+        }
+      },
+      "required": [
+        "artifact_id",
+        "offset",
+        "limit"
+      ]
+    },
+    "artifact_readResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "mime_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "total_size": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "offset": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "base64": {
+          "type": "string",
+          "maxLength": 65536,
+          "pattern": "^[A-Za-z0-9+/]*={0,2}$"
+        },
+        "next_offset": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          ]
+        }
+      },
+      "required": [
+        "artifact_id",
+        "mime_type",
+        "sha256",
+        "total_size",
+        "offset",
+        "base64",
+        "next_offset"
+      ]
+    },
+    "events_readParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "after_sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        }
+      },
+      "required": [
+        "after_sequence",
+        "limit"
+      ]
+    },
+    "events_readResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "events": {
+          "type": "array",
+          "items": {
+            "$ref": "state.schema.json#/$defs/event"
+          },
+          "maxItems": 4096,
+          "minItems": 0
+        },
+        "next_sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "lost_range": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "first": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,19})$",
+                  "maxLength": 20,
+                  "format": "uint64"
+                },
+                "last": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,19})$",
+                  "maxLength": 20,
+                  "format": "uint64"
+                }
+              },
+              "required": [
+                "first",
+                "last"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "events",
+        "next_sequence",
+        "lost_range"
+      ]
+    },
+    "operation_statusParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "operation_id"
+      ]
+    },
+    "operation_statusResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "status": {
+          "enum": [
+            "accepted",
+            "running",
+            "completed",
+            "error"
+          ]
+        },
+        "last_state": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "state.schema.json#/$defs/token"
+            }
+          ]
+        },
+        "terminal_event_sequence": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "uint64"
+            }
+          ]
+        }
+      },
+      "required": [
+        "operation_id",
+        "status",
+        "last_state",
+        "terminal_event_sequence"
+      ]
+    },
+    "operation_cancelParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "operation_id"
+      ]
+    },
+    "operation_cancelResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "cancellation_requested": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "operation_id",
+        "cancellation_requested"
+      ]
+    },
+    "snapshot_captureParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "guard",
+        "name"
+      ]
+    },
+    "snapshot_captureResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "snapshot_id",
+        "sha256",
+        "state"
+      ]
+    },
+    "snapshot_restoreParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "guard",
+        "snapshot_id"
+      ]
+    },
+    "snapshot_restoreResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "state",
+        "artifact_id"
+      ]
+    },
+    "session_resetParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "scenario": {
+          "$ref": "scenario.schema.json#/$defs/scenario"
+        }
+      },
+      "required": [
+        "guard",
+        "scenario"
+      ]
+    },
+    "session_resetResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "state",
+        "artifact_id"
+      ]
+    },
+    "session_branchParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "guard",
+        "snapshot_id"
+      ]
+    },
+    "session_branchResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "session_id",
+        "state",
+        "artifact_id"
+      ]
+    },
+    "debug_mutateParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "edits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^/[^\\s]*$",
+                "maxLength": 1024
+              },
+              "schema_id": {
+                "type": "string",
+                "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                "maxLength": 160
+              },
+              "expected": {
+                "$ref": "state.schema.json#/$defs/value"
+              },
+              "value": {
+                "$ref": "state.schema.json#/$defs/value"
+              }
+            },
+            "required": [
+              "path",
+              "schema_id",
+              "expected",
+              "value"
+            ]
+          },
+          "maxItems": 256,
+          "minItems": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "guard",
+        "edits",
+        "reason"
+      ]
+    },
+    "debug_mutateResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "before": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "after": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "state.schema.json#/$defs/delta"
+          },
+          "maxItems": 256,
+          "minItems": 0
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "before",
+        "after",
+        "changes",
+        "artifact_id"
+      ]
+    },
+    "debug_breakpointParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "target": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "condition"
+                },
+                "condition": {
+                  "$ref": "scenario.schema.json#/$defs/condition"
+                }
+              },
+              "required": [
+                "kind",
+                "condition"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "instruction"
+                },
+                "resource_id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                  "maxLength": 160
+                },
+                "task_id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                  "maxLength": 160
+                },
+                "instruction_id": {
+                  "type": "string",
+                  "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                  "maxLength": 160
+                }
+              },
+              "required": [
+                "kind",
+                "resource_id",
+                "task_id",
+                "instruction_id"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "guard",
+        "id",
+        "enabled",
+        "target"
+      ]
+    },
+    "debug_breakpointResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "id",
+        "state"
+      ]
+    },
+    "debug_watchpointParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/[^\\s]*$",
+          "maxLength": 1024
+        },
+        "condition": {
+          "$ref": "scenario.schema.json#/$defs/condition"
+        }
+      },
+      "required": [
+        "guard",
+        "id",
+        "enabled",
+        "path",
+        "condition"
+      ]
+    },
+    "debug_watchpointResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "id",
+        "state"
+      ]
+    },
+    "debug_stepParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "unit": {
+          "enum": [
+            "tick",
+            "original_instruction",
+            "lua_instruction",
+            "task"
+          ]
+        },
+        "task_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        },
+        "budget": {
+          "$ref": "scenario.schema.json#/$defs/budget"
+        }
+      },
+      "required": [
+        "guard",
+        "unit",
+        "task_id",
+        "count",
+        "budget"
+      ]
+    },
+    "debug_stepResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "stop_reason": {
+          "enum": [
+            "target",
+            "condition",
+            "breakpoint",
+            "watchpoint",
+            "budget",
+            "cancelled",
+            "failure",
+            "watchdog"
+          ]
+        },
+        "matched": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 0
+        },
+        "ticks_advanced": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "work_units": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "wall_ns": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 128,
+          "minItems": 0
+        }
+      },
+      "required": [
+        "state",
+        "stop_reason",
+        "matched",
+        "ticks_advanced",
+        "work_units",
+        "wall_ns",
+        "operation_id",
+        "artifacts"
+      ]
+    },
+    "debug_traceParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "max_events": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000000
+        }
+      },
+      "required": [
+        "guard",
+        "domains",
+        "enabled",
+        "max_events"
+      ]
+    },
+    "debug_traceResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "trace_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        }
+      },
+      "required": [
+        "trace_id",
+        "state"
+      ]
+    },
+    "diagnostics_queryParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        }
+      },
+      "required": [
+        "domains",
+        "limit"
+      ]
+    },
+    "diagnostics_queryResult": {
+      "$ref": "state.schema.json#/$defs/queryResult"
+    },
+    "diagnostics_nativeParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "guard": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "operation": {
+          "enum": [
+            "attach_debugger",
+            "read_memory",
+            "write_memory"
+          ]
+        },
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "arguments": {
+          "$ref": "state.schema.json#/$defs/value"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        }
+      },
+      "required": [
+        "guard",
+        "operation",
+        "schema_id",
+        "arguments",
+        "reason"
+      ]
+    },
+    "diagnostics_nativeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "setup_class": {
+          "const": "unsafe_probe"
+        },
+        "state": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "state.schema.json#/$defs/token"
+            }
+          ]
+        }
+      },
+      "required": [
+        "artifact_id",
+        "setup_class",
+        "state"
+      ]
+    },
+    "image_captureParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8192
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8192
+            },
+            "profile": {
+              "enum": [
+                "Modern",
+                "PS1-style",
+                "Custom"
+              ]
+            },
+            "format": {
+              "enum": [
+                "png",
+                "jpeg"
+              ]
+            }
+          },
+          "required": [
+            "width",
+            "height",
+            "profile",
+            "format"
+          ]
+        }
+      },
+      "required": [
+        "at",
+        "image"
+      ]
+    },
+    "image_captureResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "image_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "timebase_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "profile": {
+          "enum": [
+            "Modern",
+            "PS1-style",
+            "Custom"
+          ]
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "dropped": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "image_id",
+        "state",
+        "timebase_id",
+        "width",
+        "height",
+        "profile",
+        "sequence",
+        "dropped",
+        "artifact_id"
+      ]
+    },
+    "image_streamParams": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "width": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8192
+            },
+            "height": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 8192
+            },
+            "profile": {
+              "enum": [
+                "Modern",
+                "PS1-style",
+                "Custom"
+              ]
+            },
+            "format": {
+              "enum": [
+                "png",
+                "jpeg"
+              ]
+            }
+          },
+          "required": [
+            "width",
+            "height",
+            "profile",
+            "format"
+          ]
+        },
+        "cadence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "ticks"
+                },
+                "interval": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 1000000
+                }
+              },
+              "required": [
+                "kind",
+                "interval"
+              ]
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "wall_hz"
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 240
+                }
+              },
+              "required": [
+                "kind",
+                "maximum"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "enabled",
+        "image",
+        "cadence"
+      ]
+    },
+    "image_streamResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stream_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "queue_capacity": {
+          "const": 2
+        },
+        "policy": {
+          "const": "drop_oldest"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "stream_id",
+        "queue_capacity",
+        "policy",
+        "enabled"
+      ]
+    },
+    "request": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "protocol.hello"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/protocol_helloParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "protocol.discover"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/protocol_discoverParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "schema.read"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/schema_readParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.create"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/session_createParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.close"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/session_closeParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "control.acquire"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/control_acquireParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "control.handoff"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/control_handoffParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "command.submit"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/command_submitParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "control.cycle"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/control_cycleParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "simulation.mode"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/simulation_modeParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "simulation.advance"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/simulation_advanceParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.query"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/state_queryParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.diff"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/state_diffParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.subscribe"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/state_subscribeParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.unsubscribe"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/state_unsubscribeParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.release"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/state_releaseParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "artifact.read"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/artifact_readParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "events.read"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/events_readParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "operation.status"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/operation_statusParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "operation.cancel"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/operation_cancelParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "snapshot.capture"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/snapshot_captureParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "snapshot.restore"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/snapshot_restoreParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.reset"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/session_resetParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.branch"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/session_branchParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.mutate"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/debug_mutateParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.breakpoint"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/debug_breakpointParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.watchpoint"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/debug_watchpointParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.step"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/debug_stepParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.trace"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/debug_traceParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "diagnostics.query"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/diagnostics_queryParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "diagnostics.native"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/diagnostics_nativeParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "image.capture"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/image_captureParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "image.stream"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "params": {
+              "$ref": "protocol.schema.json#/$defs/image_streamParams"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "params"
+          ]
+        }
+      ]
+    },
+    "completed": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "protocol.hello"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/protocol_helloResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "protocol.discover"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/protocol_discoverResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "schema.read"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/schema_readResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.create"
+            },
+            "session_id": {
+              "type": "null"
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/session_createResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.close"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/session_closeResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "control.acquire"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/control_acquireResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "control.handoff"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/control_handoffResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "command.submit"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/command_submitResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "control.cycle"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/control_cycleResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "simulation.mode"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/simulation_modeResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "simulation.advance"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/simulation_advanceResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.query"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/state_queryResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.diff"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/state_diffResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.subscribe"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/state_subscribeResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.unsubscribe"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/state_unsubscribeResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "state.release"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/state_releaseResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "artifact.read"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/artifact_readResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "events.read"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/events_readResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "operation.status"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/operation_statusResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "operation.cancel"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/operation_cancelResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "snapshot.capture"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/snapshot_captureResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "snapshot.restore"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/snapshot_restoreResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.reset"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/session_resetResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "session.branch"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/session_branchResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.mutate"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/debug_mutateResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.breakpoint"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/debug_breakpointResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.watchpoint"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/debug_watchpointResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.step"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/debug_stepResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "debug.trace"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/debug_traceResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "diagnostics.query"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/diagnostics_queryResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "diagnostics.native"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/diagnostics_nativeResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "image.capture"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/image_captureResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "version": {
+              "const": "0.1"
+            },
+            "id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "method": {
+              "const": "image.stream"
+            },
+            "session_id": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            },
+            "status": {
+              "const": "completed"
+            },
+            "result": {
+              "$ref": "protocol.schema.json#/$defs/image_streamResult"
+            }
+          },
+          "required": [
+            "version",
+            "id",
+            "method",
+            "session_id",
+            "status",
+            "result"
+          ]
+        }
+      ]
+    },
+    "accepted": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "0.1"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "method": {
+          "enum": [
+            "session.create",
+            "control.handoff",
+            "command.submit",
+            "control.cycle",
+            "simulation.mode",
+            "simulation.advance",
+            "snapshot.restore",
+            "session.reset",
+            "session.branch",
+            "debug.step",
+            "image.capture"
+          ]
+        },
+        "session_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        },
+        "status": {
+          "const": "accepted"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "method",
+        "session_id",
+        "status",
+        "operation_id"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "0.1"
+        },
+        "id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        },
+        "method": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        },
+        "session_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        },
+        "status": {
+          "const": "error"
+        },
+        "error": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "code": {
+              "enum": [
+                "invalid_request",
+                "unsupported_version",
+                "unknown_method",
+                "unsupported_capability",
+                "duplicate_request",
+                "permission_denied",
+                "not_owner",
+                "stale_state",
+                "stale_cursor",
+                "stale_id",
+                "invalid_action",
+                "invalid_setup",
+                "incompatible_snapshot",
+                "source_mismatch",
+                "resource_limit",
+                "history_lost",
+                "cancelled",
+                "watchdog",
+                "internal_error"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "path": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "string",
+                  "pattern": "^/[^\\s]*$",
+                  "maxLength": 1024
+                }
+              ]
+            },
+            "retriable": {
+              "type": "boolean"
+            },
+            "state": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "$ref": "state.schema.json#/$defs/token"
+                }
+              ]
+            }
+          },
+          "required": [
+            "code",
+            "message",
+            "path",
+            "retriable",
+            "state"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "id",
+        "method",
+        "session_id",
+        "status",
+        "error"
+      ]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "const": "0.1"
+        },
+        "subscription_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "event": {
+          "$ref": "state.schema.json#/$defs/event"
+        }
+      },
+      "required": [
+        "version",
+        "subscription_id",
+        "event"
+      ]
+    },
+    "imageEventPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "image_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "state": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "timebase_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8192
+        },
+        "profile": {
+          "enum": [
+            "Modern",
+            "PS1-style",
+            "Custom"
+          ]
+        },
+        "sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "dropped": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "artifact_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "image_id",
+        "state",
+        "timebase_id",
+        "width",
+        "height",
+        "profile",
+        "sequence",
+        "dropped",
+        "artifact_id"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "$ref": "#/$defs/request"
+    },
+    {
+      "$ref": "#/$defs/completed"
+    },
+    {
+      "$ref": "#/$defs/accepted"
+    },
+    {
+      "$ref": "#/$defs/error"
+    },
+    {
+      "$ref": "#/$defs/event"
+    }
+  ]
+}

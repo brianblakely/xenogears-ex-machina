@@ -1,0 +1,323 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "synthetic_specification_only",
+  "examples": [
+    {
+      "id": "hello",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "hello",
+        "method": "protocol.hello",
+        "session_id": null,
+        "params": {
+          "versions": [
+            "0.1"
+          ],
+          "client_id": "plain-client"
+        }
+      }
+    },
+    {
+      "id": "discover",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "discover",
+        "method": "protocol.discover",
+        "session_id": null,
+        "params": {}
+      }
+    },
+    {
+      "id": "create",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "create",
+        "method": "session.create",
+        "session_id": null,
+        "params": {
+          "scenario": {
+            "schema_version": "0.1",
+            "id": "example-slice",
+            "source_profile": "example-source",
+            "asset_manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "catalog_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "mods": [],
+            "entry": {
+              "kind": "field",
+              "catalog_id": "example-catalog",
+              "selector": "field:example",
+              "variant_id": null
+            },
+            "setup": [],
+            "seed": "7",
+            "configuration": [],
+            "ready": {
+              "kind": "readiness",
+              "predicate": "player_control",
+              "scope_ids": [
+                "example-player"
+              ],
+              "stable_ticks": 2
+            },
+            "budget": {
+              "max_ticks": "120000",
+              "max_work_units": "100000000",
+              "watchdog_ms": 30000
+            },
+            "steps": [
+              {
+                "kind": "actions",
+                "actions": [
+                  {
+                    "kind": "button",
+                    "action": "jump",
+                    "phase": "press"
+                  }
+                ],
+                "ticks": "1"
+              },
+              {
+                "kind": "actions",
+                "actions": [
+                  {
+                    "kind": "button",
+                    "action": "jump",
+                    "phase": "release"
+                  }
+                ],
+                "ticks": "1"
+              },
+              {
+                "kind": "assert",
+                "condition": {
+                  "kind": "readiness",
+                  "predicate": "player_control",
+                  "scope_ids": [
+                    "example-player"
+                  ],
+                  "stable_ticks": 2
+                }
+              }
+            ]
+          },
+          "mode": {
+            "kind": "unthrottled"
+          }
+        }
+      }
+    },
+    {
+      "id": "query",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "query",
+        "method": "state.query",
+        "session_id": "example-session",
+        "params": {
+          "at": "latest",
+          "paths": [
+            "/party",
+            "/original_scripts"
+          ],
+          "limit": 128
+        }
+      }
+    },
+    {
+      "id": "press",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "press",
+        "method": "command.submit",
+        "session_id": "example-session",
+        "params": {
+          "guard": {
+            "session_id": "example-session",
+            "epoch": "0",
+            "tick": "0",
+            "revision": "0",
+            "state_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "boundary": "tick",
+            "continuation_id": null
+          },
+          "lease_id": "example-lease",
+          "at_tick": "1",
+          "actions": [
+            {
+              "kind": "button",
+              "action": "jump",
+              "phase": "press"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "advance",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "advance",
+        "method": "simulation.advance",
+        "session_id": "example-session",
+        "params": {
+          "guard": {
+            "session_id": "example-session",
+            "epoch": "0",
+            "tick": "0",
+            "revision": "0",
+            "state_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "boundary": "tick",
+            "continuation_id": null
+          },
+          "target": {
+            "kind": "until",
+            "condition": {
+              "kind": "readiness",
+              "predicate": "player_control",
+              "scope_ids": [
+                "example-player"
+              ],
+              "stable_ticks": 2
+            }
+          },
+          "budget": {
+            "max_ticks": "120000",
+            "max_work_units": "100000000",
+            "watchdog_ms": 30000
+          }
+        }
+      }
+    },
+    {
+      "id": "mutation",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "mutation",
+        "method": "debug.mutate",
+        "session_id": "example-session",
+        "params": {
+          "guard": {
+            "session_id": "example-session",
+            "epoch": "0",
+            "tick": "0",
+            "revision": "0",
+            "state_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "boundary": "tick",
+            "continuation_id": null
+          },
+          "edits": [
+            {
+              "path": "/party/example/stats/hp",
+              "schema_id": "example-hp",
+              "expected": 10,
+              "value": 20
+            }
+          ],
+          "reason": "Authored contract example; requires a registered native field and debug role."
+        }
+      }
+    },
+    {
+      "id": "image",
+      "schema": "protocol.schema.json#/$defs/request",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "image",
+        "method": "image.capture",
+        "session_id": "example-session",
+        "params": {
+          "at": {
+            "session_id": "example-session",
+            "epoch": "0",
+            "tick": "0",
+            "revision": "0",
+            "state_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "boundary": "tick",
+            "continuation_id": null
+          },
+          "image": {
+            "width": 640,
+            "height": 480,
+            "profile": "Modern",
+            "format": "png"
+          }
+        }
+      }
+    },
+    {
+      "id": "query-result",
+      "schema": "protocol.schema.json#/$defs/completed",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "query",
+        "method": "state.query",
+        "session_id": "example-session",
+        "status": "completed",
+        "result": {
+          "snapshot": {
+            "session_id": "example-session",
+            "epoch": "0",
+            "tick": "0",
+            "revision": "0",
+            "state_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "boundary": "tick",
+            "continuation_id": null
+          },
+          "snapshot_id": "example-snapshot",
+          "fields": [
+            {
+              "path": "/party/example/stats/hp",
+              "schema_id": "example-hp",
+              "value": 10
+            }
+          ],
+          "complete": true,
+          "next_cursor": null
+        }
+      }
+    },
+    {
+      "id": "permission-error",
+      "schema": "protocol.schema.json#/$defs/error",
+      "valid": true,
+      "value": {
+        "version": "0.1",
+        "id": "mutation",
+        "method": "debug.mutate",
+        "session_id": "example-session",
+        "status": "error",
+        "error": {
+          "code": "permission_denied",
+          "message": "Host debug authority required",
+          "path": null,
+          "retriable": false,
+          "state": {
+            "session_id": "example-session",
+            "epoch": "0",
+            "tick": "0",
+            "revision": "0",
+            "state_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+            "boundary": "tick",
+            "continuation_id": null
+          }
+        }
+      }
+    }
+  ]
+}

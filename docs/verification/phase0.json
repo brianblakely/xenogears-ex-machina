@@ -59,7 +59,7 @@
     "P00-T09-F05"
   ],
   "date": "2026-09-07",
-  "phase_status": "complete: all Phase 0 todo facets and the exit criterion demonstrated in their recorded scopes",
+  "phase_status": "Historical baseline completion for plan revision 24132ed; current expanded Phase 0 exit is in VERIFY-PHASE0-AGENT-FOUNDATION.",
   "host": {
     "os": "Omarchy 4.0.2, ID_LIKE=arch",
     "architecture": "x86_64-linux",
@@ -285,6 +285,9 @@
     "all_phase_todos_checked": true,
     "baseline_inventory_ready": true,
     "catalog_complete": false,
-    "scope": "Reproducible empty C++ project, complete requirement-to-test definitions, demonstrated evidence/provenance workflow, original-source baseline inventory and original go-anywhere testing system. No later gameplay implementation or exhaustive catalog claim."
-  }
+    "scope": "Reproducible empty C++ project, complete requirement-to-test definitions, demonstrated evidence/provenance workflow, original-source baseline inventory and original go-anywhere testing system. No later gameplay implementation or exhaustive catalog claim.",
+    "applies_to_plan_commit": "24132ed"
+  },
+  "applies_to_plan_commit": "24132ed",
+  "current_exit_record": "docs/verification/phase0-agent.json"
 }

@@ -1,0 +1,456 @@
+{
+  "schema_version": 1,
+  "protocol_version": "0.1",
+  "status": "specified_unimplemented",
+  "methods": [
+    {
+      "id": "protocol.hello",
+      "minimum_role": "observe",
+      "requires_session": false,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/protocol_helloParams",
+      "result_schema": "protocol.schema.json#/$defs/protocol_helloResult",
+      "tasks": [
+        "P02-T14"
+      ]
+    },
+    {
+      "id": "protocol.discover",
+      "minimum_role": "observe",
+      "requires_session": false,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/protocol_discoverParams",
+      "result_schema": "protocol.schema.json#/$defs/protocol_discoverResult",
+      "tasks": [
+        "P02-T14",
+        "P02-T20",
+        "P02-T38"
+      ]
+    },
+    {
+      "id": "schema.read",
+      "minimum_role": "observe",
+      "requires_session": false,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/schema_readParams",
+      "result_schema": "protocol.schema.json#/$defs/schema_readResult",
+      "tasks": [
+        "P02-T14",
+        "P02-T20"
+      ]
+    },
+    {
+      "id": "session.create",
+      "minimum_role": "control",
+      "requires_session": false,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/session_createParams",
+      "result_schema": "protocol.schema.json#/$defs/session_createResult",
+      "tasks": [
+        "P02-T33",
+        "P02-T35",
+        "P02-T36"
+      ]
+    },
+    {
+      "id": "session.close",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/session_closeParams",
+      "result_schema": "protocol.schema.json#/$defs/session_closeResult",
+      "tasks": [
+        "P02-T22"
+      ]
+    },
+    {
+      "id": "control.acquire",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/control_acquireParams",
+      "result_schema": "protocol.schema.json#/$defs/control_acquireResult",
+      "tasks": [
+        "P06-T14"
+      ]
+    },
+    {
+      "id": "control.handoff",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/control_handoffParams",
+      "result_schema": "protocol.schema.json#/$defs/control_handoffResult",
+      "tasks": [
+        "P02-T22",
+        "P06-T14"
+      ]
+    },
+    {
+      "id": "command.submit",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/command_submitParams",
+      "result_schema": "protocol.schema.json#/$defs/command_submitResult",
+      "tasks": [
+        "P02-T15",
+        "P02-T16",
+        "P02-T17"
+      ]
+    },
+    {
+      "id": "control.cycle",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/control_cycleParams",
+      "result_schema": "protocol.schema.json#/$defs/control_cycleResult",
+      "tasks": [
+        "P02-T22"
+      ]
+    },
+    {
+      "id": "simulation.mode",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/simulation_modeParams",
+      "result_schema": "protocol.schema.json#/$defs/simulation_modeResult",
+      "tasks": [
+        "P02-T25"
+      ]
+    },
+    {
+      "id": "simulation.advance",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/simulation_advanceParams",
+      "result_schema": "protocol.schema.json#/$defs/simulation_advanceResult",
+      "tasks": [
+        "P02-T26",
+        "P02-T27",
+        "P02-T28",
+        "P02-T40"
+      ]
+    },
+    {
+      "id": "state.query",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/state_queryParams",
+      "result_schema": "protocol.schema.json#/$defs/state_queryResult",
+      "tasks": [
+        "P02-T19",
+        "P02-T21"
+      ]
+    },
+    {
+      "id": "state.diff",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/state_diffParams",
+      "result_schema": "protocol.schema.json#/$defs/state_diffResult",
+      "tasks": [
+        "P02-T21"
+      ]
+    },
+    {
+      "id": "state.subscribe",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/state_subscribeParams",
+      "result_schema": "protocol.schema.json#/$defs/state_subscribeResult",
+      "tasks": [
+        "P02-T21"
+      ]
+    },
+    {
+      "id": "state.unsubscribe",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/state_unsubscribeParams",
+      "result_schema": "protocol.schema.json#/$defs/state_unsubscribeResult",
+      "tasks": [
+        "P02-T21"
+      ]
+    },
+    {
+      "id": "state.release",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/state_releaseParams",
+      "result_schema": "protocol.schema.json#/$defs/state_releaseResult",
+      "tasks": [
+        "P02-T21"
+      ]
+    },
+    {
+      "id": "artifact.read",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/artifact_readParams",
+      "result_schema": "protocol.schema.json#/$defs/artifact_readResult",
+      "tasks": [
+        "P02-T39",
+        "P02-T43"
+      ]
+    },
+    {
+      "id": "events.read",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/events_readParams",
+      "result_schema": "protocol.schema.json#/$defs/events_readResult",
+      "tasks": [
+        "P02-T21",
+        "P02-T32"
+      ]
+    },
+    {
+      "id": "operation.status",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/operation_statusParams",
+      "result_schema": "protocol.schema.json#/$defs/operation_statusResult",
+      "tasks": [
+        "P02-T22"
+      ]
+    },
+    {
+      "id": "operation.cancel",
+      "minimum_role": "control",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/operation_cancelParams",
+      "result_schema": "protocol.schema.json#/$defs/operation_cancelResult",
+      "tasks": [
+        "P02-T22",
+        "P02-T26"
+      ]
+    },
+    {
+      "id": "snapshot.capture",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/snapshot_captureParams",
+      "result_schema": "protocol.schema.json#/$defs/snapshot_captureResult",
+      "tasks": [
+        "P02-T29"
+      ]
+    },
+    {
+      "id": "snapshot.restore",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/snapshot_restoreParams",
+      "result_schema": "protocol.schema.json#/$defs/snapshot_restoreResult",
+      "tasks": [
+        "P02-T29",
+        "P08-T12"
+      ]
+    },
+    {
+      "id": "session.reset",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/session_resetParams",
+      "result_schema": "protocol.schema.json#/$defs/session_resetResult",
+      "tasks": [
+        "P02-T29",
+        "P02-T35"
+      ]
+    },
+    {
+      "id": "session.branch",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/session_branchParams",
+      "result_schema": "protocol.schema.json#/$defs/session_branchResult",
+      "tasks": [
+        "P02-T29",
+        "P08-T12"
+      ]
+    },
+    {
+      "id": "debug.mutate",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/debug_mutateParams",
+      "result_schema": "protocol.schema.json#/$defs/debug_mutateResult",
+      "tasks": [
+        "P02-T23",
+        "P02-T31"
+      ]
+    },
+    {
+      "id": "debug.breakpoint",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/debug_breakpointParams",
+      "result_schema": "protocol.schema.json#/$defs/debug_breakpointResult",
+      "tasks": [
+        "P02-T30"
+      ]
+    },
+    {
+      "id": "debug.watchpoint",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/debug_watchpointParams",
+      "result_schema": "protocol.schema.json#/$defs/debug_watchpointResult",
+      "tasks": [
+        "P02-T30"
+      ]
+    },
+    {
+      "id": "debug.step",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/debug_stepParams",
+      "result_schema": "protocol.schema.json#/$defs/debug_stepResult",
+      "tasks": [
+        "P02-T30"
+      ]
+    },
+    {
+      "id": "debug.trace",
+      "minimum_role": "debug",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/debug_traceParams",
+      "result_schema": "protocol.schema.json#/$defs/debug_traceResult",
+      "tasks": [
+        "P02-T30",
+        "P02-T32"
+      ]
+    },
+    {
+      "id": "diagnostics.query",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/diagnostics_queryParams",
+      "result_schema": "protocol.schema.json#/$defs/diagnostics_queryResult",
+      "tasks": [
+        "P02-T20",
+        "P02-T32"
+      ]
+    },
+    {
+      "id": "diagnostics.native",
+      "minimum_role": "unsafe_debug",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/diagnostics_nativeParams",
+      "result_schema": "protocol.schema.json#/$defs/diagnostics_nativeResult",
+      "tasks": [
+        "P02-T30",
+        "P02-T31"
+      ]
+    },
+    {
+      "id": "image.capture",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": true,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/image_captureParams",
+      "result_schema": "protocol.schema.json#/$defs/image_captureResult",
+      "tasks": [
+        "P02-T41",
+        "P02-T43"
+      ]
+    },
+    {
+      "id": "image.stream",
+      "minimum_role": "observe",
+      "requires_session": true,
+      "long_running": false,
+      "status": "unimplemented",
+      "request_schema": "protocol.schema.json#/$defs/image_streamParams",
+      "result_schema": "protocol.schema.json#/$defs/image_streamResult",
+      "tasks": [
+        "P02-T42",
+        "P02-T44",
+        "P02-T45"
+      ]
+    }
+  ],
+  "error_codes": [
+    "invalid_request",
+    "unsupported_version",
+    "unknown_method",
+    "unsupported_capability",
+    "duplicate_request",
+    "permission_denied",
+    "not_owner",
+    "stale_state",
+    "stale_cursor",
+    "stale_id",
+    "invalid_action",
+    "invalid_setup",
+    "incompatible_snapshot",
+    "source_mismatch",
+    "resource_limit",
+    "history_lost",
+    "cancelled",
+    "watchdog",
+    "internal_error"
+  ],
+  "role_order": [
+    "observe",
+    "control",
+    "debug",
+    "unsafe_debug"
+  ],
+  "role_constraints": "Host policy grants roles; one active controller lease is additionally required for every state/clock/debug mutation. Session creation shortcuts require debug. No Lua escalation."
+}

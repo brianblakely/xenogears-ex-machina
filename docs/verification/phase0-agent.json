@@ -1,0 +1,431 @@
+{
+  "schema_version": 1,
+  "id": "VERIFY-PHASE0-AGENT-FOUNDATION",
+  "date": "2026-09-07",
+  "evidence_kind": "infrastructure_only",
+  "targets": [
+    "repository"
+  ],
+  "covers": [
+    "P00-T11-F01",
+    "P00-T11-F02",
+    "P00-T11-F03",
+    "P00-T11-F04",
+    "P00-T11-F05",
+    "P00-T11-F06",
+    "P00-T11-F07",
+    "P00-T11-F08",
+    "P00-T11-F09",
+    "P00-T11-F10",
+    "P00-T12-F01",
+    "P00-T12-F02",
+    "P00-T12-F03",
+    "P00-T12-F04",
+    "P00-T12-F05",
+    "P00-T12-F06",
+    "P00-T12-F07",
+    "P00-T12-F08",
+    "P00-T13-F01",
+    "P00-T13-F02",
+    "P00-T13-F03",
+    "P00-T13-F04",
+    "P00-T13-F05",
+    "P00-T13-F06",
+    "P00-T13-F07",
+    "P00-T13-F08",
+    "P00-T13-F09",
+    "P00-EXIT"
+  ],
+  "status": "passed",
+  "scope": "Expanded Phase 0 specification and baseline revalidation; no native game/protocol runtime or audiovisual implementation claim.",
+  "author": "Codex, independent repository work from plan.md and original local evidence; no delegated or external game-specific sources.",
+  "host": {
+    "os": "Omarchy 4.0.2",
+    "id_like": "arch",
+    "architecture": "x86_64-linux",
+    "nix_lock_sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3"
+  },
+  "todo_audit": [
+    {
+      "task": "P00-T01",
+      "status": "verified",
+      "sources": [
+        "docs/requirements.json",
+        "docs/requirement-facets.txt",
+        "docs/requirement-review.json",
+        "docs/traceability.json"
+      ],
+      "verification": "238 verbatim tasks, 1633 individually tracked facets, 14 phase exits, 6 checkpoints, 32 feature rows, 10 boundaries, 8 agent-contract rows and 9 keyboard defaults reviewed. Source/facet binding, migration, default/platform references and omission/drift rejection tests pass."
+    },
+    {
+      "task": "P00-T02",
+      "status": "verified",
+      "sources": [
+        "analysis/reference-profiles.json",
+        ".local/verification/phase0-agent-source-audit.json"
+      ],
+      "verification": "Both CHDs pass fresh chdman integrity and exact CHD/raw-track size/SHA256 comparisons. North America, DS01/DS02 and exact hash revisions remain grounded in original metadata/findings; no guessed retail revision names."
+    },
+    {
+      "task": "P00-T03",
+      "status": "verified",
+      "sources": [
+        "analysis/coverage/inventory.json",
+        "docs/verification/phase0-inventory.json"
+      ],
+      "verification": "All ten categories on each selected disc have original source catalogs, attributed families or observed entrypoints. Physical/source projections and category links pass validation; exhaustive semantic catalog remains explicitly incomplete."
+    },
+    {
+      "task": "P00-T04",
+      "status": "verified",
+      "sources": [
+        "CMakeLists.txt",
+        "src/runtime/main.cpp",
+        "analysis/README.md",
+        "tools/extraction/README.md",
+        "editors/README.md",
+        "tests/fixtures/README.md",
+        "packaging/source-files.txt",
+        ".gitignore"
+      ],
+      "verification": "Owned repository areas and private-data exclusions verified. Source-only archives reject private/binary/unsafe/symlink payloads; both clean builds/installations contain only the baseline executable and license."
+    },
+    {
+      "task": "P00-T05",
+      "status": "verified",
+      "sources": [
+        "docs/evidence-workflow.md",
+        "analysis/templates/finding.json",
+        "analysis/findings/EVID-REF-007.json",
+        ".local/verification/phase0-agent-evidence-audit.json"
+      ],
+      "verification": "Finding schemas require profile, coordinates, executable/overlay/address applicability, observation/inference, confidence and reproduction. All 250 existing finding artifacts rehashed successfully; new original runs reproduce supported loader paths."
+    },
+    {
+      "task": "P00-T06",
+      "status": "verified",
+      "sources": [
+        "analysis/subsystems.json",
+        "analysis/decisions/README.md",
+        "tests/test_workflow.py"
+      ],
+      "verification": "23 subsystems retain the five evidence-gated maturity states; unknown versus intentional change stays distinct. No gameplay/native implementation stage is promoted by specification tests."
+    },
+    {
+      "task": "P00-T07",
+      "status": "verified",
+      "sources": [
+        "docs/development.md",
+        "nix/flake.lock",
+        "CMakePresets.json",
+        "cmake/ProjectOptions.cmake",
+        ".local/verification/phase0-agent-public.log"
+      ],
+      "verification": "Pinned C++20/Clang/CMake/Ninja environment on Omarchy 4.0.2 (Arch-derived). Debug, ASan+UBSan and Release each pass 3 CTest suites including 103 public tests; formatting/lint pass. Two isolated source-only builds/tests/installs produce identical Release binaries."
+    },
+    {
+      "task": "P00-T08",
+      "status": "verified",
+      "sources": [
+        "CONTRIBUTING.md",
+        "docs/dependencies.json"
+      ],
+      "verification": "Independent original-source provenance and infrastructure-only dependency review retained. No new dependency, game-specific third-party implementation, system customization or runtime emulator was introduced. New protocol/tooling/schema prose and fixtures are authored with Codex assistance."
+    },
+    {
+      "task": "P00-T09",
+      "status": "verified",
+      "sources": [
+        "analysis/coverage/checkpoints.json",
+        "analysis/slices/forest23.json",
+        "docs/phase1-slice-contract.md"
+      ],
+      "verification": "16 prospective checkpoint definitions cover both discs, every category and disc transition with prerequisites, stimuli, observables and explicitly uncaptured oracles. Expanded first-slice original visual/audio/semantic readiness obligations remain unresolved; no analysis or gameplay pass inferred."
+    },
+    {
+      "task": "P00-T10",
+      "status": "verified",
+      "sources": [
+        "analysis/scenarios/README.md",
+        "analysis/scenarios/schema.json",
+        "tools/reference/scenario.py",
+        "docs/verification/phase0-scenarios.json"
+      ],
+      "verification": "Inspected compiler/executor and retained original evidence; fresh painting-room Disc 1 (3609 frontend calls) and Disc 2 field 15 (970) runs complete from reset using guarded original loaders. Images inspected: original main menu and rocky outdoor field. Map initialization scope preserved; synthetic negative tests reject unsupported battle/position/progression and invalid guards/budgets."
+    },
+    {
+      "task": "P00-T11",
+      "status": "verified",
+      "sources": [
+        "docs/requirements-migration.json",
+        "docs/requirements.json",
+        "docs/defaults.json",
+        "docs/platforms.json"
+      ],
+      "verification": "All expanded agent, debug, setup, clock, streaming, PS1 and Wide/HRTF requirements receive explicit test facets and procedures. Existing 73 Phase 0 results remain unchanged. Later-phase requirements and all 15 native architecture/feature gates remain defined, with separate renderer-free platform targets and reviewed defaults."
+    },
+    {
+      "task": "P00-T12",
+      "status": "verified",
+      "sources": [
+        "docs/agent/README.md",
+        "docs/agent/methods.json",
+        "docs/agent/protocol.schema.json",
+        "docs/agent/state.schema.json",
+        "docs/agent/state-domains.json",
+        "docs/agent/scenario.schema.json",
+        "docs/agent/examples.json",
+        "docs/agent/acceptance.json",
+        "tests/test_agent_contract.py"
+      ],
+      "verification": "33 methods, typed wire/query/action/scenario schemas, 15 authoritative domain obligations and 15 future acceptance gates reviewed together. Defines exact versioning, state tokens, input order, guarded cycles, portable snapshots, microsteps, ownership/permissions, work/tick/wall budgets, image retrieval/drop semantics, artifacts and no-device operation. Timebase and game layouts await original recovery; architecture gates bind Phase 2/3 exits."
+    },
+    {
+      "task": "P00-T13",
+      "status": "verified",
+      "sources": [
+        "docs/agent/emulator-parity.json",
+        "tools/repository/agent_contract.py",
+        "tests/test_scenario.py",
+        "tests/test_scenario_program.py",
+        "tests/test_memory_sampler.py",
+        "tests/test_instruction_trace.py"
+      ],
+      "verification": "23 versioned parity rows bind 17 source/test files. Reviewed mandatory contract/schema/runner plus executor, observation, optional sampling/instruction trace, BIOS/state behavior. Original observed paths, tested tooling, rejected adapters and native extensions remain distinct; source drift and backlog promotion rejection pass."
+    }
+  ],
+  "commands": [
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/matrix.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/validate.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/format.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "public_test_count": 103,
+  "artifacts": [
+    {
+      "path": ".local/verification/phase0-agent-public.log",
+      "sha256": "6848895c36b16cbf61567ac837ffa586eb5a094205547ca98019b6f1cb240b0e",
+      "scope": "All three preset builds/tests plus matrix/source/evidence/format checks; exact public command outcomes.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase0-agent-source-audit.json",
+      "sha256": "3984344b5cd22baa295306c8fd6820916ba007865215773ee1eece090f851fb5",
+      "scope": "Fresh selected image/raw identities and container integrity.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase0-agent-evidence-audit.json",
+      "sha256": "4809f7feab55c48b99fa807074dc3f0fe2617f88e0758852076f387cb0a81829",
+      "scope": "250 original-finding artifact digests all match.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase0-agent-reproduce.log",
+      "sha256": "29b1606b841dc90dfc55a2c6de66746dc9b2fb580de93c5af8bf82957afc09f6",
+      "scope": "Two isolated source-only Release configure/build/test/install runs and byte-identical output.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc1/report.json",
+      "sha256": "e71a4c14b55ea13f6411bc561ef86c9e8f7c27dd98b0411eb0bbb187f4ee6118",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc1/scenario.json",
+      "sha256": "7475a5ee84e298072039c697775d1c43943c6d8bea507d480776704338866773",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc1/program.json",
+      "sha256": "587ce4a1c6c78dbfd4f90cb0e2ddde71b019dd5d4442ec7b26bc95854075935a",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc1/started.json",
+      "sha256": "495abbf1c4cf8e755f45cf859bc0b5c5b01e8251ebd4fad70f960ed25cf53800",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc1/capture/observation.json",
+      "sha256": "9bb624890fb3e97adcc38cf0c6fe9077683b6e69c0db44933f1acc3f2c55cc6b",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc2/report.json",
+      "sha256": "57e977c47fa410b0a54944274cf2e7fa3bee7e388f019fe2109396a03d486683",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc2/scenario.json",
+      "sha256": "be8e92577e87b09df1f3cec1049abc9c8a30f06741cf2d38559298538587c1ba",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc2/program.json",
+      "sha256": "bd1d4912357224ca40702ef927ff11986e0b732468c3321bafd9514cec6ab9ef",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc2/started.json",
+      "sha256": "d5114a9a00cf2b39e867b7a2cc4364602b44833910b9d8fcad350c86964c9e7c",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/scenarios/phase0-agent-audit-disc2/capture/observation.json",
+      "sha256": "25af9c2f4debf7c8e1d288c4e40574ca16c9bd48035628af47efaeea91f1fe97",
+      "scope": "Fresh supported original cold-boot scenario; initialized field/menu scope only.",
+      "distribution": "private_local_only"
+    }
+  ],
+  "reproducibility_proof": {
+    "schema_version": 1,
+    "source_archive": ".local/verification/proof-fvq8isrx/source.tar.gz",
+    "source_archive_sha256": "098d1b58ca688758c58fafbf863e9448d7dfe51fab7559c275b4f0abd1f81cb9",
+    "source_archive_reproducible": true,
+    "release_binary_reproducible": true,
+    "builds": [
+      {
+        "build": "a",
+        "binary_sha256": "05cbc9df59936b7abce3f7e571975a1cadcef447d3a3dc87c450538083239059",
+        "installed_files": [
+          "bin/xem-baseline",
+          "share/licenses/xenogears-ex-machina/LICENSE"
+        ],
+        "log": ".local/verification/proof-fvq8isrx/source-only-a.log",
+        "log_sha256": "113f68978b5ce66896bd96c28f22c4cda07f4b114446552fc755ecbb5cf87aba",
+        "original_data_present": false
+      },
+      {
+        "build": "b",
+        "binary_sha256": "05cbc9df59936b7abce3f7e571975a1cadcef447d3a3dc87c450538083239059",
+        "installed_files": [
+          "bin/xem-baseline",
+          "share/licenses/xenogears-ex-machina/LICENSE"
+        ],
+        "log": ".local/verification/proof-fvq8isrx/source-only-b.log",
+        "log_sha256": "71db6a90d736089bf019d5deec2bd5945d2fdeddafb996d283a8d34cb8d093e3",
+        "original_data_present": false
+      }
+    ],
+    "scope": "Same pinned x86_64 Linux Nix environment, two isolated source-only directories; not cross-platform binary identity or gameplay validation."
+  },
+  "phase_exit": {
+    "id": "P00-EXIT",
+    "status": "passed",
+    "verified_todos": 13,
+    "verified_facets": 100,
+    "native_gates_passed": 0,
+    "baseline_inventory_ready": true,
+    "catalog_complete": false
+  },
+  "limitations": [
+    "The native executable remains the empty C++ baseline; all later-phase tests are definitions, not passes. Pure headless gameplay, streaming, debug, PS1 rendering and Wide/HRTF await implementation and original evidence.",
+    "Parity tooling-tested rows deliberately do not claim original behavior from synthetic tests; EVID-REF-013 battle research remains an analysis probe, not a supported typed adapter.",
+    "The immutable source-only reproduction archive contains the fully tested implementation/specification before this completion receipt, checkbox updates and associated generated status metadata. Final metadata receives the repository gate; tested code and schema contents are unchanged.",
+    "No Windows/macOS native runtime, Vulkan gameplay, exhaustive content catalog, original hardware timing, retail revision label, Wide decoder choice or HRTF dataset is claimed."
+  ]
+}

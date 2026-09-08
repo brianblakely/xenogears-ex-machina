@@ -8,12 +8,13 @@
     "source_slot": 652,
     "track_lba": 124528,
     "entry": "Original entry dialogue and forest traversal",
-    "encounter": "Actor14\u201317 interaction entries request field formation0; actual selected trigger and outcome await original observation.",
+    "encounter": "Actor14–17 interaction entries request field formation0; actual selected trigger and outcome await original observation.",
     "frozen_route": null
   },
   "review": {
     "contract": "Parent approved the nine-domain, Phase1-only exit correction in this session; final frozen manifest and completed evidence still require independent review.",
-    "exit_reviewers": []
+    "exit_reviewers": [],
+    "expanded_contract_review": "Phase 0 adds slice visual/signal references and semantic agent setup/query readiness to unresolved proof domains; no Phase 1 exit or native pass."
   },
   "proofs": [
     {
@@ -39,7 +40,7 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Required field, geometry, sprite, animation, collision, camera, texture and palette structures remains required before the Phase 1 exit."
+      "open_work": "Required field, geometry, sprite, animation, collision, camera, texture and palette structures remains required before the Phase 1 exit. Recover game-visible PS1 rendering behaviors needed by the optional fidelity settings, including projected-vertex precision, texture interpolation, color quantization, dithering, rasterization resolution, primitive ordering, and transparency. Capture representative original-game visual references. Recover the paths used by the frozen slice; full-game coverage stays open."
     },
     {
       "id": "P01-SLICE-SCRIPT-EXECUTION",
@@ -63,7 +64,7 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Original movement, running, jumping, collision, camera, interaction and map transitions remains required before the Phase 1 exit."
+      "open_work": "Original movement, running, jumping, collision, camera, interaction and map transitions remains required before the Phase 1 exit. Recover state ownership, action eligibility, menu/dialogue structure, event/control readiness, spawn/transition preconditions, and subsystem initialization needed for native agent queries and typed go-anywhere setup. Map original addresses and symbols to native semantic fields without making raw memory offsets the native API. Recover the paths used by the frozen slice; full-game coverage stays open."
     },
     {
       "id": "P01-SLICE-ENCOUNTER-RETURN",
@@ -99,7 +100,7 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Required music/samples/effects and an FMV-to-gameplay transition remains required before the Phase 1 exit."
+      "open_work": "Required music/samples/effects and an FMV-to-gameplay transition remains required before the Phase 1 exit. Trace original Mono, Stereo, and Wide sound paths, including panning/polarity, reverb, master output, and streamed/FMVs' routing. Capture matched unprocessed two-channel signals and establish Wide's actual changes and intended playback model from original-game evidence and primary documentation where available. Distinguish matrix encoding from phase-based stereo expansion before selecting a decoder. Recover the paths used by the frozen slice; full-game coverage stays open."
     },
     {
       "id": "P01-SLICE-TIME-SERVICES",
@@ -420,276 +421,113 @@
       ]
     },
     {
-      "facet": "P01-T06-F01",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION",
-        "P01-SLICE-ENCOUNTER-RETURN",
-        "P01-SLICE-TIME-SERVICES"
-      ]
-    },
-    {
-      "facet": "P01-T06-F02",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION",
-        "P01-SLICE-ENCOUNTER-RETURN",
-        "P01-SLICE-TIME-SERVICES"
-      ]
-    },
-    {
-      "facet": "P01-T06-F03",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION",
-        "P01-SLICE-ENCOUNTER-RETURN",
-        "P01-SLICE-TIME-SERVICES"
-      ]
-    },
-    {
-      "facet": "P01-T06-F04",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION",
-        "P01-SLICE-ENCOUNTER-RETURN",
-        "P01-SLICE-TIME-SERVICES"
-      ]
-    },
-    {
-      "facet": "P01-T06-F05",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION",
-        "P01-SLICE-ENCOUNTER-RETURN",
-        "P01-SLICE-TIME-SERVICES"
-      ]
-    },
-    {
-      "facet": "P01-T06-F06",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION",
-        "P01-SLICE-ENCOUNTER-RETURN",
-        "P01-SLICE-TIME-SERVICES"
-      ]
-    },
-    {
-      "facet": "P01-T07-F01",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F02",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F03",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F04",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F05",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F06",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F07",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F08",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-FIELD-REPRESENTATION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F09",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-MENU-PERSISTENCE"
-      ]
-    },
-    {
-      "facet": "P01-T07-F10",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
-      ]
-    },
-    {
-      "facet": "P01-T07-F11",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-ENCOUNTER-RETURN"
-      ]
-    },
-    {
-      "facet": "P01-T07-F12",
-      "disposition": "deferred",
-      "reason": "world-map formats is not executed by the selected field23 route; the complete game still requires it.",
-      "backlog": [
-        "BACKLOG-P01-T07-F12"
-      ]
-    },
-    {
-      "facet": "P01-T07-F13",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-REQUIRED-MEDIA"
-      ]
-    },
-    {
-      "facet": "P01-T07-F14",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-REQUIRED-MEDIA"
-      ]
-    },
-    {
       "facet": "P01-T08-F01",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-SCRIPT-EXECUTION",
+        "P01-SLICE-ENCOUNTER-RETURN",
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T08-F02",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-SCRIPT-EXECUTION",
+        "P01-SLICE-ENCOUNTER-RETURN",
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T08-F03",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-SCRIPT-EXECUTION",
+        "P01-SLICE-ENCOUNTER-RETURN",
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T08-F04",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-SCRIPT-EXECUTION",
+        "P01-SLICE-ENCOUNTER-RETURN",
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T08-F05",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-SCRIPT-EXECUTION",
+        "P01-SLICE-ENCOUNTER-RETURN",
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T08-F06",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
-      ]
-    },
-    {
-      "facet": "P01-T08-F07",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
-      ]
-    },
-    {
-      "facet": "P01-T08-F08",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
-      ]
-    },
-    {
-      "facet": "P01-T08-F09",
-      "disposition": "required",
-      "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-SCRIPT-EXECUTION",
+        "P01-SLICE-ENCOUNTER-RETURN",
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T09-F01",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-FIELD-BEHAVIOR"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F02",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-FIELD-BEHAVIOR"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F03",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-ENCOUNTER-RETURN"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F04",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-ENCOUNTER-RETURN"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F05",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-ENCOUNTER-RETURN"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F06",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-ENCOUNTER-RETURN"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F07",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-SCRIPT-EXECUTION"
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
       "facet": "P01-T09-F08",
-      "disposition": "deferred",
-      "reason": "minigame rules is not executed by the selected field23 route; the complete game still requires it.",
-      "backlog": [
-        "BACKLOG-P01-T09-F08"
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
       ]
     },
     {
@@ -700,121 +538,466 @@
       ]
     },
     {
+      "facet": "P01-T09-F10",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-SCRIPT-EXECUTION"
+      ]
+    },
+    {
+      "facet": "P01-T09-F11",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-ENCOUNTER-RETURN"
+      ]
+    },
+    {
+      "facet": "P01-T09-F12",
+      "disposition": "deferred",
+      "reason": "world-map formats is not executed by the selected field23 route; the complete game still requires it.",
+      "backlog": [
+        "BACKLOG-P01-T09-F12"
+      ]
+    },
+    {
+      "facet": "P01-T09-F13",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T09-F14",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
       "facet": "P01-T10-F01",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T10-F02",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T10-F03",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T10-F04",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T10-F05",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T10-F06",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T10-F07",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-TIME-SERVICES"
+        "P01-SLICE-SCRIPT-EXECUTION"
+      ]
+    },
+    {
+      "facet": "P01-T10-F08",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-SCRIPT-EXECUTION"
+      ]
+    },
+    {
+      "facet": "P01-T10-F09",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-SCRIPT-EXECUTION"
       ]
     },
     {
       "facet": "P01-T11-F01",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-FIELD-BEHAVIOR"
       ]
     },
     {
       "facet": "P01-T11-F02",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-FIELD-BEHAVIOR"
       ]
     },
     {
       "facet": "P01-T11-F03",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-ENCOUNTER-RETURN"
       ]
     },
     {
       "facet": "P01-T11-F04",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-ENCOUNTER-RETURN"
       ]
     },
     {
       "facet": "P01-T11-F05",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-ENCOUNTER-RETURN"
+      ]
+    },
+    {
+      "facet": "P01-T11-F06",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-ENCOUNTER-RETURN"
+      ]
+    },
+    {
+      "facet": "P01-T11-F07",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-SCRIPT-EXECUTION"
+      ]
+    },
+    {
+      "facet": "P01-T11-F08",
+      "disposition": "deferred",
+      "reason": "minigame rules is not executed by the selected field23 route; the complete game still requires it.",
+      "backlog": [
+        "BACKLOG-P01-T11-F08"
+      ]
+    },
+    {
+      "facet": "P01-T11-F09",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-MENU-PERSISTENCE"
       ]
     },
     {
       "facet": "P01-T12-F01",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T12-F02",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T12-F03",
       "disposition": "required",
       "proofs": [
-        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+        "P01-SLICE-TIME-SERVICES"
       ]
     },
     {
       "facet": "P01-T12-F04",
       "disposition": "required",
       "proofs": [
+        "P01-SLICE-TIME-SERVICES"
+      ]
+    },
+    {
+      "facet": "P01-T12-F05",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-TIME-SERVICES"
+      ]
+    },
+    {
+      "facet": "P01-T12-F06",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-TIME-SERVICES"
+      ]
+    },
+    {
+      "facet": "P01-T12-F07",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-TIME-SERVICES"
+      ]
+    },
+    {
+      "facet": "P01-T14-F01",
+      "disposition": "required",
+      "proofs": [
         "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T14-F02",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T14-F03",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T14-F04",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T14-F05",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T15-F01",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T15-F02",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T15-F03",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T15-F04",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+      ]
+    },
+    {
+      "facet": "P01-T06-F01",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F02",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F03",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F04",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F05",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F06",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F07",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T06-F08",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-REPRESENTATION"
+      ]
+    },
+    {
+      "facet": "P01-T07-F01",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F02",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F03",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F04",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F05",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F06",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F07",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F08",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F09",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T07-F10",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-REQUIRED-MEDIA"
+      ]
+    },
+    {
+      "facet": "P01-T13-F01",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F02",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F03",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F04",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F05",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F06",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F07",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
+      ]
+    },
+    {
+      "facet": "P01-T13-F08",
+      "disposition": "required",
+      "proofs": [
+        "P01-SLICE-FIELD-BEHAVIOR"
       ]
     }
   ],
   "backlog": [
     {
-      "id": "BACKLOG-P01-T07-F12",
+      "id": "BACKLOG-P01-T09-F12",
       "kind": "outside_slice",
       "requirement": "world-map formats",
       "later_facets": [
@@ -824,11 +1007,11 @@
       "next_experiment": "Independently recover world-map formats from source-qualified ordinary original scenarios before complete-game coverage."
     },
     {
-      "id": "BACKLOG-P01-T09-F08",
+      "id": "BACKLOG-P01-T11-F08",
       "kind": "outside_slice",
       "requirement": "minigame rules",
       "later_facets": [
-        "P04-T09-F01"
+        "P04-T10-F01"
       ],
       "status": "unresolved",
       "next_experiment": "Independently recover minigame rules from source-qualified ordinary original scenarios before complete-game coverage."

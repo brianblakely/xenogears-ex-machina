@@ -1,0 +1,495 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Native state/query contract 0.1",
+  "$defs": {
+    "u64": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]{0,19})$",
+      "maxLength": 20,
+      "format": "uint64"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "maxLength": 65536
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/value"
+          },
+          "maxItems": 4096,
+          "minItems": 0
+        },
+        {
+          "type": "object",
+          "maxProperties": 4096,
+          "additionalProperties": {
+            "$ref": "#/$defs/value"
+          }
+        }
+      ]
+    },
+    "token": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "epoch": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "tick": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "revision": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "state_hash": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "boundary": {
+          "enum": [
+            "tick",
+            "instruction"
+          ]
+        },
+        "continuation_id": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "session_id",
+        "epoch",
+        "tick",
+        "revision",
+        "state_hash",
+        "boundary",
+        "continuation_id"
+      ]
+    },
+    "timebase": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "seconds_per_tick": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "numerator": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "positive-uint64"
+            },
+            "denominator": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,19})$",
+              "maxLength": 20,
+              "format": "positive-uint64"
+            }
+          },
+          "required": [
+            "numerator",
+            "denominator"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "scheduler_schema": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        }
+      },
+      "required": [
+        "id",
+        "seconds_per_tick",
+        "evidence",
+        "scheduler_schema"
+      ]
+    },
+    "query": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "oneOf": [
+            {
+              "const": "latest"
+            },
+            {
+              "$ref": "state.schema.json#/$defs/token"
+            }
+          ]
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/[^\\s]*$",
+            "maxLength": 1024
+          },
+          "maxItems": 64,
+          "minItems": 1
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "cursor": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "at",
+        "paths",
+        "limit"
+      ]
+    },
+    "field": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^/[^\\s]*$",
+          "maxLength": 1024
+        },
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "value": {
+          "$ref": "#/$defs/value"
+        },
+        "chunk": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "offset": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,19})$",
+                  "maxLength": 20,
+                  "format": "uint64"
+                },
+                "total_size": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,19})$",
+                  "maxLength": 20,
+                  "format": "uint64"
+                },
+                "next_cursor": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+                      "maxLength": 160
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "offset",
+                "total_size",
+                "next_cursor"
+              ]
+            }
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "schema_id",
+        "value"
+      ]
+    },
+    "queryResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "snapshot": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "snapshot_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/field"
+          },
+          "maxItems": 4096,
+          "minItems": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "snapshot",
+        "snapshot_id",
+        "fields",
+        "complete",
+        "next_cursor"
+      ]
+    },
+    "delta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "operation": {
+          "enum": [
+            "add",
+            "replace",
+            "remove"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^/[^\\s]*$",
+          "maxLength": 1024
+        },
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "value": {
+          "$ref": "#/$defs/value"
+        }
+      },
+      "required": [
+        "operation",
+        "path",
+        "schema_id",
+        "value"
+      ]
+    },
+    "diffResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "base": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "target": {
+          "$ref": "state.schema.json#/$defs/token"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/delta"
+          },
+          "maxItems": 4096,
+          "minItems": 0
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "next_cursor": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+              "maxLength": 160
+            }
+          ]
+        }
+      },
+      "required": [
+        "base",
+        "target",
+        "changes",
+        "complete",
+        "next_cursor"
+      ]
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sequence": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "session_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "epoch": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "tick": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]{0,19})$",
+          "maxLength": 20,
+          "format": "uint64"
+        },
+        "kind": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "payload": {
+          "$ref": "#/$defs/value"
+        }
+      },
+      "required": [
+        "sequence",
+        "session_id",
+        "epoch",
+        "tick",
+        "kind",
+        "schema_id",
+        "payload"
+      ]
+    },
+    "fieldDescriptor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^/[^\\s]*$",
+          "maxLength": 1024
+        },
+        "schema_id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+          "maxLength": 160
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "mutability": {
+          "enum": [
+            "read_only",
+            "gameplay",
+            "debug",
+            "unsafe"
+          ]
+        },
+        "source_correlations": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:/-]{0,159}$",
+            "maxLength": 160
+          },
+          "maxItems": 64,
+          "minItems": 0
+        },
+        "coverage": {
+          "enum": [
+            "implemented",
+            "unrecovered",
+            "unimplemented"
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "schema_id",
+        "unit",
+        "mutability",
+        "source_correlations",
+        "coverage"
+      ]
+    }
+  }
+}

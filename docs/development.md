@@ -45,6 +45,15 @@ configuration on unsupported platforms rather than silently disabling themselves
 generated headers, compile databases and install experiments belong under ignored
 `build/` or `.local/`. Optional local presets belong in ignored CMakeUserPresets.json.
 
+The public repository gate also checks the [native agent specification](agent/README.md):
+wire/query/scenario schemas, examples, architecture acceptance definitions, full
+plan traceability and emulator parity source hashes. These are specification and
+tooling checks; native gameplay/agent acceptance remains unexecuted. After a plan
+edit, review task-to-facet coverage and update `docs/requirement-review.json` before
+regenerating the matrix. After changing a reference runner dependency, inspect the
+parity rows and bump their version and reviewed hashes. Do not refresh these
+records merely to silence drift errors.
+
 For private original-source measurement, enter the separate analysis shell:
 
 ```sh

@@ -40,6 +40,15 @@ analysis/slices/forest23.json
 analysis/subsystems.json
 analysis/templates/finding.json
 cmake/ProjectOptions.cmake
+docs/agent/README.md
+docs/agent/acceptance.json
+docs/agent/emulator-parity.json
+docs/agent/examples.json
+docs/agent/methods.json
+docs/agent/protocol.schema.json
+docs/agent/scenario.schema.json
+docs/agent/state-domains.json
+docs/agent/state.schema.json
 docs/defaults.json
 docs/dependencies.json
 docs/development.md
@@ -48,9 +57,12 @@ docs/phase1-handoff.md
 docs/phase1-slice-contract.md
 docs/platforms.json
 docs/requirement-facets.txt
+docs/requirement-review.json
+docs/requirements-migration.json
 docs/requirements.json
 docs/requirements.md
 docs/traceability.json
+docs/verification/phase0-agent.json
 docs/verification/phase0-gaps.json
 docs/verification/phase0-inventory.json
 docs/verification/phase0-scenarios.json
@@ -73,6 +85,7 @@ tests/reference-inputs/kernel-mode-observation-route.json
 tests/reference-inputs/menu-observation-route.json
 tests/reference-inputs/opening-observation-route.json
 tests/reference-inputs/title-new-game.json
+tests/test_agent_contract.py
 tests/test_baseline.py
 tests/test_fingerprint_survey.py
 tests/test_index_survey.py
@@ -108,6 +121,7 @@ tools/reference/observe.py
 tools/reference/scenario.py
 tools/reference/scenario_program.py
 tools/reference/sector_survey.py
+tools/repository/agent_contract.py
 tools/repository/check.py
 tools/repository/format.py
 tools/repository/matrix.py

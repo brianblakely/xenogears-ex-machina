@@ -6,8 +6,8 @@
       "source": "**Independent game-specific work:** Recover behavior, formats, algorithms, and scripts from the original game binaries, disc data, and observed execution. Develop this project's own analysis records, decompiled source, importers, runtime, renderer, and editors. Do not use other Xenogears projects' source code or reverse-engineering results as the implementation foundation.",
       "tasks": [
         "P00-T08",
-        "P01-T06",
-        "P13-T11"
+        "P01-T04",
+        "P13-T16"
       ],
       "status": "defined",
       "evidence": []
@@ -17,8 +17,8 @@
       "source": "**Original-game evidence:** Use the original game as the behavioral reference. General-purpose disassemblers, decompilers, debuggers, and an external emulator may assist inspection and testing; an emulator is neither the shipping runtime nor a source of borrowed game-specific implementation.",
       "tasks": [
         "P00-T05",
-        "P01-T06",
-        "P02-T06"
+        "P01-T08",
+        "P02-T08"
       ],
       "status": "defined",
       "evidence": []
@@ -41,7 +41,7 @@
         "P09-T01",
         "P09-T02",
         "P07-T11",
-        "P13-T11"
+        "P13-T16"
       ],
       "status": "defined",
       "evidence": []
@@ -50,32 +50,67 @@
       "id": "BOUNDARY-05",
       "source": "**Native execution:** Ship platform-native binaries, not a PS1 executable running inside a CPU emulator. Interpret the original game's event bytecode through this project's own recovered script runtime where appropriate.",
       "tasks": [
-        "P02-T06",
+        "P02-T08",
         "P07-T04",
-        "P13-T11"
+        "P13-T16"
       ],
       "status": "defined",
       "evidence": []
     },
     {
       "id": "BOUNDARY-06",
-      "source": "**Data separation:** Import original game data from user-supplied disc images into a local asset store. Keep disc images, original executables, extracted copyrighted assets, and personal saves out of distributed source and build artifacts.",
+      "source": "**One runtime for humans and agents:** Interactive play, headless agent play, automated tests, and editor previews must use the same simulation, state, rules, loaders, and command handlers. The human UI and agent API are clients of that runtime; headless execution must not substitute a simplified game model or require simulated OS input.",
       "tasks": [
-        "P00-T04",
-        "P02-T02",
-        "P13-T12"
+        "P02-T01",
+        "P02-T16",
+        "P04-T13"
       ],
       "status": "defined",
       "evidence": []
     },
     {
       "id": "BOUNDARY-07",
-      "source": "**Behavior versus presentation:** Preserve gameplay-relevant behavior and intentional effects while replacing PS1 rendering limitations. Binary-identical recompilation is not a release gate; independent decompilation, documented understanding, and behavioral validation are.",
+      "source": "**Presentation-independent execution:** Logical simulation must run without a window, display server, GPU, physical input device, or audio output device. Optional offscreen rendering and spectator streaming may use a renderer, but neither rendering nor a spectator may govern the simulation clock or be required for agent control.",
       "tasks": [
-        "P01-T10",
+        "P02-T04",
+        "P02-T27",
+        "P02-T28",
+        "P13-T06"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-08",
+      "source": "**Data separation:** Import original game data from user-supplied disc images into a local asset store. Keep disc images, original executables, extracted copyrighted assets, and personal saves out of distributed source and build artifacts.",
+      "tasks": [
+        "P00-T04",
+        "P02-T02",
+        "P13-T17"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-09",
+      "source": "**Behavior versus presentation:** Preserve gameplay-relevant behavior and intentional effects. Modern rendering remains the default; preserve PS1 rendering quirks as independently selectable options and a PS1-style preset in the native renderer. Binary-identical recompilation is not a release gate; independent decompilation, documented understanding, and behavioral validation are.",
+      "tasks": [
+        "P01-T06",
         "P05-T02",
         "P05-T03",
-        "P13-T05"
+        "P05-T12"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-10",
+      "source": "**Wide-derived headphone surround:** Provide an optional mode that decodes/reconstructs the original game's Wide spatial signal and binaurally renders its verified intended sound field to exactly two headphone channels. Recover the actual Wide behavior before selecting a decoder; do not substitute generic stereo widening or assume a particular surround matrix from the mode name.",
+      "tasks": [
+        "P01-T07",
+        "P10-T12",
+        "P10-T15",
+        "P13-T10"
       ],
       "status": "defined",
       "evidence": []
@@ -86,13 +121,13 @@
       "id": "FEATURE-01",
       "source_row": [
         "Independent decompilation and native implementation; no foundation in another Xenogears project",
-        "0\u20134, 13"
+        "0–4, 13"
       ],
       "tasks": [
         "P00-T08",
         "P01-T04",
-        "P02-T06",
-        "P13-T11"
+        "P02-T08",
+        "P13-T16"
       ],
       "status": "defined",
       "evidence": []
@@ -101,7 +136,7 @@
       "id": "FEATURE-02",
       "source_row": [
         "Arch Linux as the leading platform",
-        "0, 2\u20133, 13"
+        "0, 2–3, 13"
       ],
       "tasks": [
         "P00-T07",
@@ -115,12 +150,144 @@
     {
       "id": "FEATURE-03",
       "source_row": [
-        "Vulkan / Direct3D 12 / Metal on Linux / Windows / macOS",
+        "Foundational agent-playable native runtime, not a later automation layer",
+        "0–4; maintained through every later phase"
+      ],
+      "tasks": [
+        "P00-T12",
+        "P02-T14",
+        "P03-T09",
+        "P04-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-04",
+      "source_row": [
+        "True headless gameplay without a display, GPU, physical input, or audio output device",
+        "2–4, 8, 10, 13"
+      ],
+      "tasks": [
+        "P02-T04",
+        "P02-T41",
+        "P13-T06"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-05",
+      "source_row": [
+        "Direct typed engine input; no simulated OS/SDL keyboard, mouse, or controller events",
+        "2–4, 6–7, 13"
+      ],
+      "tasks": [
+        "P02-T15",
+        "P02-T16",
+        "P06-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-06",
+      "source_row": [
+        "Full structured introspection, snapshots/deltas/events, and discoverable versioned agent API",
+        "0–4, 7, 11–13"
+      ],
+      "tasks": [
+        "P00-T12",
+        "P02-T19",
+        "P02-T21",
+        "P07-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-07",
+      "source_row": [
+        "Full debug access: stepping, breakpoints/watchpoints, state editing, stacks/traces, snapshots, replay, and failure diagnostics",
+        "2–4, 7–8, 11–13"
+      ],
+      "tasks": [
+        "P02-T29",
+        "P02-T30",
+        "P02-T31",
+        "P02-T32"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-08",
+      "source_row": [
+        "Native go-anywhere parity with the emulator test apparatus plus complete typed native scenario setup",
+        "0–4, 11–13"
+      ],
+      "tasks": [
+        "P00-T13",
+        "P02-T33",
+        "P02-T35",
+        "P04-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-09",
+      "source_row": [
+        "Agent-unlocked simulation speed, exact ticks, bounded run-until, and no required real-time pacing",
+        "2–4, 8–10, 12–13"
+      ],
+      "tasks": [
+        "P02-T25",
+        "P02-T26",
+        "P02-T27",
+        "P02-T28"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-10",
+      "source_row": [
+        "Optional live image stream and on-demand images for human spectators, independent from simulation pacing",
+        "2–3, 5, 10–13"
+      ],
+      "tasks": [
+        "P02-T41",
+        "P02-T42",
+        "P02-T43",
+        "P02-T44"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-11",
+      "source_row": [
+        "Same authoritative game and command semantics for humans, agents, tests, and editors",
+        "2–13"
+      ],
+      "tasks": [
+        "P02-T01",
+        "P02-T16",
+        "P11-T12"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-12",
+      "source_row": [
+        "Vulkan / Direct3D 12 / Metal on Linux / Windows / macOS when rendering is enabled",
         "2, 5, 13"
       ],
       "tasks": [
         "P02-T05",
-        "P05-T12",
+        "P05-T15",
         "P13-T01",
         "P13-T02",
         "P13-T03"
@@ -129,37 +296,52 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-04",
+      "id": "FEATURE-13",
       "source_row": [
         "Arbitrary resolution, aspect ratio, and presentation framerate",
         "2, 5"
       ],
       "tasks": [
-        "P02-T07",
-        "P05-T04",
-        "P05-T05",
+        "P02-T09",
         "P05-T07",
-        "P05-T09"
+        "P05-T08",
+        "P05-T10"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-05",
+      "id": "FEATURE-14",
       "source_row": [
-        "Culling off by default; no PS1 rendering quirks",
+        "Culling off by default",
         "5, 13"
       ],
       "tasks": [
-        "P05-T02",
-        "P05-T10",
-        "P13-T10"
+        "P05-T13",
+        "P13-T15"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-06",
+      "id": "FEATURE-15",
+      "source_row": [
+        "Modern rendering by default; PS1 quirks preserved as individual options and a PS1-style preset",
+        "1–2, 5, 13"
+      ],
+      "tasks": [
+        "P01-T06",
+        "P05-T02",
+        "P05-T03",
+        "P05-T04",
+        "P05-T05",
+        "P13-T15"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-16",
       "source_row": [
         "Keyboard/mouse controls, mouse-browsable menus, wheel scrolling",
         "6"
@@ -174,7 +356,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-07",
+      "id": "FEATURE-17",
       "source_row": [
         "SDL3 input and Windows XInput",
         "2, 6, 13"
@@ -189,7 +371,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-08",
+      "id": "FEATURE-18",
       "source_row": [
         "Direction, run, jump, confirm, cancel, and left/right camera bindings",
         "6"
@@ -202,7 +384,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-09",
+      "id": "FEATURE-19",
       "source_row": [
         "Tab toggles game menu; Esc toggles app menu",
         "6, 9, 13"
@@ -210,29 +392,29 @@
       "tasks": [
         "P06-T10",
         "P09-T12",
-        "P13-T10"
+        "P13-T15"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-10",
+      "id": "FEATURE-20",
       "source_row": [
-        "Save states, rewind, and fast forward",
-        "2, 7\u20138"
+        "Player save states, rewind, and fast forward built on foundational agent snapshots/clock control",
+        "2–3, 7–8"
       ],
       "tasks": [
-        "P02-T08",
-        "P07-T06",
+        "P02-T29",
         "P08-T01",
         "P08-T05",
-        "P08-T07"
+        "P08-T07",
+        "P08-T12"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-11",
+      "id": "FEATURE-21",
       "source_row": [
         "Native mod support and graphical mod management",
         "7"
@@ -245,14 +427,15 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-12",
+      "id": "FEATURE-22",
       "source_row": [
-        "Lua for level, cutscene, battle, minigame, and other mod editing",
-        "2, 7, 11\u201312"
+        "Lua for level, cutscene, battle, minigame, and other mod editing, with full agent/debug integration",
+        "2, 7, 11–12"
       ],
       "tasks": [
-        "P02-T10",
+        "P02-T12",
         "P07-T03",
+        "P07-T13",
         "P11-T07",
         "P12-T03",
         "P12-T06"
@@ -261,7 +444,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-13",
+      "id": "FEATURE-23",
       "source_row": [
         "Random battles off by default in identified platforming-heavy areas",
         "9, 13"
@@ -269,13 +452,13 @@
       "tasks": [
         "P09-T06",
         "P09-T07",
-        "P13-T10"
+        "P13-T15"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-14",
+      "id": "FEATURE-24",
       "source_row": [
         "Independently implemented options informed by popular existing mods",
         "9"
@@ -289,7 +472,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-15",
+      "id": "FEATURE-25",
       "source_row": [
         "Modern cutscene skipping with correct story outcomes",
         "9, 11"
@@ -307,7 +490,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-16",
+      "id": "FEATURE-26",
       "source_row": [
         "Playable first-person mode",
         "10"
@@ -324,7 +507,7 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-17",
+      "id": "FEATURE-27",
       "source_row": [
         "Clearer FMVs with an original option",
         "10"
@@ -340,20 +523,59 @@
       "evidence": []
     },
     {
-      "id": "FEATURE-18",
+      "id": "FEATURE-28",
       "source_row": [
-        "Independent texture and UI filtering",
-        "5, 13"
+        "Wide-specific decoding/spatial reconstruction and HRTF headphone surround faithful to verified Wide intent, with exactly two output channels",
+        "1–2, 4, 8, 10, 13"
       ],
       "tasks": [
-        "P05-T11",
+        "P01-T07",
+        "P02-T07",
+        "P04-T08",
+        "P08-T10",
+        "P10-T12",
+        "P10-T13",
+        "P10-T14",
+        "P10-T15",
+        "P10-T16",
+        "P10-T17",
+        "P10-T18",
+        "P10-T19",
+        "P10-T20",
+        "P10-T21",
         "P13-T10"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-19",
+      "id": "FEATURE-29",
+      "source_row": [
+        "Original Mono, Stereo, and undecoded Wide playback remain selectable",
+        "4, 10, 13"
+      ],
+      "tasks": [
+        "P04-T08",
+        "P10-T16"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-30",
+      "source_row": [
+        "Independent texture and UI filtering",
+        "5, 13"
+      ],
+      "tasks": [
+        "P05-T14",
+        "P13-T15"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-31",
       "source_row": [
         "Graphical level and cutscene editors",
         "11"
@@ -362,13 +584,14 @@
         "P11-T01",
         "P11-T03",
         "P11-T05",
-        "P11-T11"
+        "P11-T11",
+        "P11-T12"
       ],
       "status": "defined",
       "evidence": []
     },
     {
-      "id": "FEATURE-20",
+      "id": "FEATURE-32",
       "source_row": [
         "Graphical battle-system and minigame mod tools",
         "12"
@@ -380,7 +603,10 @@
         "P12-T04",
         "P12-T05",
         "P12-T06",
-        "P12-T09"
+        "P12-T07",
+        "P12-T08",
+        "P12-T09",
+        "P12-T10"
       ],
       "status": "defined",
       "evidence": []
@@ -511,19 +737,20 @@
   "phase_exits": [
     {
       "id": "P00-EXIT",
-      "source": "A reproducible empty-project build, original-game coverage inventory, evidence workflow, complete requirements matrix, and go-anywhere original-game testing system exist.",
+      "source": "A reproducible empty-project build, original-game coverage inventory, evidence workflow, updated requirements matrix, original-game testing system, and foundational native-agent contract exist.",
       "phase": 0,
       "requires_all_phase_facets": true,
       "status": "passed",
       "evidence": [
         "VERIFY-PHASE0-FOUNDATION",
         "VERIFY-PHASE0-INVENTORY",
-        "VERIFY-PHASE0-SCENARIOS"
+        "VERIFY-PHASE0-SCENARIOS",
+        "VERIFY-PHASE0-AGENT-FOUNDATION"
       ]
     },
     {
       "id": "P01-EXIT",
-      "source": "The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, with a tracked backlog for the rest of the game.",
+      "source": "The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, including its agent-visible state and scenario-entry semantics, with a tracked backlog for the rest of the game.",
       "phase": 1,
       "requires_all_phase_facets": false,
       "status": "defined",
@@ -533,23 +760,39 @@
     },
     {
       "id": "P02-EXIT",
-      "source": "A scene using the new runtime can load independently imported assets, simulate, serialize, restore, and replay without a dependency on another Xenogears implementation.",
+      "source": "The new runtime independently imports original assets and supports direct agent commands, full structured state access, exact stepping and unthrottled execution, debug snapshots/breakpoints, and valid scenario launch for its implemented systems. The same session runs image-free without a display/GPU/audio device or with an optional offscreen spectator stream. Identical actions produce equivalent authoritative state across those modes. These capabilities must exist before Phase 3 is declared complete.",
       "phase": 2,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_agent_gates": [
+        "GATE-PROTOCOL",
+        "GATE-HEADLESS",
+        "GATE-INPUT",
+        "GATE-STATE",
+        "GATE-CONTROL",
+        "GATE-TIME",
+        "GATE-SNAPSHOT",
+        "GATE-DEBUG",
+        "GATE-SCENARIO",
+        "GATE-SPECTATOR",
+        "GATE-ARTIFACTS"
+      ]
     },
     {
       "id": "P03-EXIT",
-      "source": "Field exploration \u2192 dialogue/cutscene \u2192 battle \u2192 reward \u2192 menu \u2192 save/load works natively on Arch without debugger intervention or emulator execution inside the game.",
+      "source": "Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention.",
       "phase": 3,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_agent_gates": [
+        "GATE-FIRST-SLICE"
+      ]
     },
     {
       "id": "P04-EXIT",
-      "source": "Both discs and optional activities are playable from beginning to end, with subsystem coverage and no known progression-blocking gaps.",
+      "source": "Both discs and optional activities are playable from beginning to end, with no known progression-blocking gaps. All game systems are accessible through the foundational agent/debug interface and valid native go-anywhere setup; no gameplay subsystem requires a desktop UI or real-time pacing.",
       "phase": 4,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -557,7 +800,7 @@
     },
     {
       "id": "P05-EXIT",
-      "source": "Recorded gameplay reaches equivalent authoritative state at different resolutions, aspect ratios, framerates, and rendering backends, with the requested modern presentation.",
+      "source": "Recorded gameplay reaches equivalent authoritative state across resolutions, aspect ratios, framerates, backends, visual profiles, and render-disabled execution. Modern is the default; supported PS1 quirks are selectable and validated, including in agent spectator images.",
       "phase": 5,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -565,7 +808,7 @@
     },
     {
       "id": "P06-EXIT",
-      "source": "The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel.",
+      "source": "The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel. Agents can invoke the equivalent validated engine actions directly without any synthesized OS/SDL input.",
       "phase": 6,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -573,7 +816,7 @@
     },
     {
       "id": "P07-EXIT",
-      "source": "All four example mods run, their state survives save/restore, and the unmodified base game runs with no third-party mod installed.",
+      "source": "All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed.",
       "phase": 7,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -581,7 +824,7 @@
     },
     {
       "id": "P08-EXIT",
-      "source": "Save \u2192 restore and record \u2192 rewind \u2192 replay produce equivalent authoritative state throughout the game and with supported Lua mods.",
+      "source": "Save → restore and record → rewind → replay produce equivalent authoritative state throughout the game and with supported Lua mods. Agent-controlled execution remains independent of real-time pacing and rendering; audiovisual state resumes without stale processing history.",
       "phase": 8,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -589,7 +832,7 @@
     },
     {
       "id": "P09-EXIT",
-      "source": "Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod.",
+      "source": "Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod or real-time-only test path.",
       "phase": 9,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -597,7 +840,7 @@
     },
     {
       "id": "P10-EXIT",
-      "source": "First-person exploration is playable, camera handoffs work, and every enhanced FMV retains a functional original option.",
+      "source": "First-person exploration is playable, camera handoffs work, every enhanced FMV retains an original option, and Wide headphone surround reproduces the verified intended presentation through exactly two channels. These features remain inspectable/testable by agents without forcing real-time simulation or physical audiovisual devices.",
       "phase": 10,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -605,7 +848,7 @@
     },
     {
       "id": "P11-EXIT",
-      "source": "A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build.",
+      "source": "A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build. The same content can be launched, inspected, and tested headlessly through the native agent interface.",
       "phase": 11,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -613,7 +856,7 @@
     },
     {
       "id": "P12-EXIT",
-      "source": "A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++.",
+      "source": "A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++. Agents can play, inspect, debug, and rapidly test the modified battles/minigames through the same native interface.",
       "phase": 12,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -621,7 +864,7 @@
     },
     {
       "id": "P13-EXIT",
-      "source": "The complete requirements matrix passes on the declared platform targets, packages install cleanly, and both the game and editors are documented and independently reproducible.",
+      "source": "The complete requirements matrix passes on the declared platforms. Human and agent play, image-free and optional streamed execution, complete debugging/go-anywhere access, and unlocked-speed testing are shipped and documented alongside all audiovisual and editing features.",
       "phase": 13,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -633,7 +876,7 @@
       "id": "RELEASE-01",
       "source_row": [
         "Research/tooling baseline",
-        "Phases 0\u20132 support independently imported original content and a serializable new runtime."
+        "Phases 0–2 provide independently imported original content and a serializable native runtime with direct agent commands, full introspection, debug/scenario control, exact stepping/unlocked execution, and optional spectator images for implemented systems."
       ],
       "required_phases": [
         0,
@@ -648,7 +891,7 @@
       "id": "RELEASE-02",
       "source_row": [
         "Engineering preview",
-        "Phase 3: a native field/event/battle/save-load slice runs on Arch."
+        "Phase 3: the same field/event/battle/save-load slice runs under human control and a direct headless agent on Arch, with debug demonstrations, no-image operation, optional live images, and no required real-time pacing."
       ],
       "required_phases": [
         3
@@ -661,7 +904,7 @@
       "id": "RELEASE-03",
       "source_row": [
         "Playable PC alpha",
-        "Phase 4 completes both discs; Phases 5\u20136 provide modern rendering and full native PC controls."
+        "Phase 4 completes both discs and full agent/debug/go-anywhere coverage; Phases 5–6 provide modern-default rendering, optional PS1 quirks, and complete physical PC controls alongside the direct agent API."
       ],
       "required_phases": [
         4,
@@ -676,7 +919,7 @@
       "id": "RELEASE-04",
       "source_row": [
         "Feature-complete runtime beta",
-        "Phases 7\u201310 provide Lua mods, save states, rewind, fast forward, optional gameplay changes, safe skipping, first-person mode, and enhanced/original FMVs."
+        "Phases 7–10 provide agent-compatible Lua mods, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround."
       ],
       "required_phases": [
         7,
@@ -692,7 +935,7 @@
       "id": "RELEASE-05",
       "source_row": [
         "Creator-toolkit beta",
-        "Phases 11\u201312 provide graphical level, cutscene, battle-system, and minigame editing through the shared runtime and Lua."
+        "Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared runtime/Lua and the existing agent/debug services, with unlocked headless testing and optional human observation."
       ],
       "required_phases": [
         11,
@@ -706,7 +949,7 @@
       "id": "RELEASE-06",
       "source_row": [
         "1.0",
-        "Phase 13 validates and packages the full feature set across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal, with Arch leading development and release testing."
+        "Phase 13 validates and packages all features, including the native agent interface, across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal. Arch leads development and release testing; pure headless simulation does not require a rendering backend."
       ],
       "required_phases": [
         0,
@@ -735,14 +978,147 @@
       "source": "**Execution rule:** Continue this analysis throughout development. Do not wait for a complete decompilation of both discs before implementing an understood subsystem.",
       "status": "defined",
       "evidence": [],
-      "procedure": "Review phase handoff records: continue independent analysis throughout implementation; after Phase 3 parallel work cannot bypass complete-game validation before alpha."
+      "procedure": "Audit phase handoffs: agent services and their first-slice demonstration precede broad game expansion; later parallel subsystem development cannot bypass complete-game or headless gates."
     },
     {
       "id": "EXECUTION-02",
-      "source": "**Parallelization:** After Phase 3, rendering, input, and mod infrastructure may advance alongside this phase. Complete-game validation remains mandatory before the playable PC alpha checkpoint.",
+      "source": "**Parallelization:** After Phase 3, rendering, human input, and mod infrastructure may advance alongside this phase. The agent interface is already required, not a parallel task that can be deferred. Complete-game validation remains mandatory before the playable PC alpha checkpoint.",
       "status": "defined",
       "evidence": [],
-      "procedure": "Review phase handoff records: continue independent analysis throughout implementation; after Phase 3 parallel work cannot bypass complete-game validation before alpha."
+      "procedure": "Audit phase handoffs: agent services and their first-slice demonstration precede broad game expansion; later parallel subsystem development cannot bypass complete-game or headless gates."
+    }
+  ],
+  "foundational_requirement": {
+    "source": "**Foundational requirement:** The native application must be fully playable by agents through a first-class headless interface with direct engine input, full game introspection, complete debugging and go-anywhere capabilities, unlocked simulation speed, and an optional image stream for human spectators. This is part of the native runtime's initial architecture and first playable milestone, not a later automation layer, emulator wrapper, or editor-only feature.",
+    "tasks": [
+      "P00-T12",
+      "P02-T01",
+      "P03-T09",
+      "P03-T10",
+      "P03-T11"
+    ],
+    "status": "defined",
+    "evidence": []
+  },
+  "agent_contract": [
+    {
+      "id": "AGENT-01",
+      "source_row": [
+        "Same complete game",
+        "Agents can play every implemented field, battle, menu, cutscene interaction, world-map activity, and minigame through the actual native runtime. No separate mock simulation or screenshot-driven UI automation is required."
+      ],
+      "tasks": [
+        "P02-T16",
+        "P04-T13",
+        "P04-T14"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-02",
+      "source_row": [
+        "Direct input",
+        "Accept typed gameplay actions and commands at the engine boundary, including analog/directional state, held/released actions, menu selections, dialogue choices, and battle commands. Do not inject keyboard/mouse/controller events into the OS, synthesize SDL events, or require virtual devices."
+      ],
+      "tasks": [
+        "P02-T15",
+        "P02-T17",
+        "P06-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-03",
+      "source_row": [
+        "Full introspection",
+        "Expose structured, consistent game-state snapshots, targeted queries, deltas, events, and diagnostics, including non-visible state. Do not limit agents to screenshots, textual summaries, or public-facing player information."
+      ],
+      "tasks": [
+        "P02-T19",
+        "P02-T20",
+        "P02-T21"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-04",
+      "source_row": [
+        "Complete debug and go-anywhere access",
+        "Provide pause/step, breakpoints, watchpoints, traces, state inspection/editing, snapshots, deterministic replay, arbitrary valid scenario setup, and native parity with every supported emulator-test capability. Extend typed setup to the complete native game rather than inheriting current emulator-adapter limitations."
+      ],
+      "tasks": [
+        "P02-T29",
+        "P02-T30",
+        "P02-T31",
+        "P02-T35"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-05",
+      "source_row": [
+        "Agent-controlled time",
+        "Support exact stepping, bounded run-until conditions, real-time play, fixed acceleration, and fully unthrottled execution as fast as the simulation can run. Removing pacing must not change tick semantics or skip required gameplay work."
+      ],
+      "tasks": [
+        "P02-T25",
+        "P02-T26",
+        "P02-T27",
+        "P02-T28"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-06",
+      "source_row": [
+        "Optional human observation",
+        "Offer on-demand images and an attachable live image stream from the native renderer. Viewing is optional and read-only by default; attaching, disconnecting, slowing, or dropping a spectator must not change game state or force real-time execution."
+      ],
+      "tasks": [
+        "P02-T41",
+        "P02-T42",
+        "P02-T43",
+        "P02-T44",
+        "P02-T45"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-07",
+      "source_row": [
+        "Stable automation interface",
+        "Provide a documented, versioned, discoverable machine-readable API with explicit capabilities, IDs, tick semantics, errors, cancellation, and reproducible run artifacts. It must be usable without a GUI or a specific agent vendor."
+      ],
+      "tasks": [
+        "P02-T14",
+        "P02-T22",
+        "P02-T24",
+        "P02-T39"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AGENT-08",
+      "source_row": [
+        "Architectural gate",
+        "No subsystem is considered complete until its state, valid actions, setup, time progression, and debugging are available headlessly. The first native playable slice must demonstrate agent play and optional human observation before broad game-completion work advances."
+      ],
+      "tasks": [
+        "P00-T12",
+        "P03-T09",
+        "P03-T10",
+        "P03-T11",
+        "P04-T13"
+      ],
+      "status": "defined",
+      "evidence": []
     }
   ]
 }
