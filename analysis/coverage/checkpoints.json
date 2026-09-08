@@ -1,0 +1,978 @@
+{
+  "schema_version": 1,
+  "checkpoints": [
+    {
+      "id": "CP-D1-START",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "event_sequences",
+        "fmvs",
+        "menus",
+        "fields"
+      ],
+      "purpose": "Start of disc 1: boot, new game, opening media/event and first controllable field",
+      "progression_stage": "Start of disc 1: boot, new game, opening media/event and first controllable field",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Start unmodified original from reset, choose New Game and advance only with recorded inputs.",
+      "capture_marks": [
+        "reset",
+        "title/menu",
+        "FMV start/end",
+        "first player control"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D1-SLICE",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "fields",
+        "event_sequences",
+        "battles",
+        "menus",
+        "saves",
+        "audio"
+      ],
+      "purpose": "Early compact field-to-battle candidate for Phase 3",
+      "progression_stage": "Early compact field-to-battle candidate for Phase 3",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "From the earliest suitable captured field, move/run/jump, interact, enter a foot battle, win, return, edit inventory/equipment and ordinary save/reload.",
+      "capture_marks": [
+        "field entry",
+        "dialogue/wait",
+        "battle entry",
+        "attack/reward",
+        "field return",
+        "menu",
+        "save/reload"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D1-TRAVERSAL",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "fields",
+        "battles"
+      ],
+      "purpose": "Platforming and encounter-preparation edge cases",
+      "progression_stage": "Platforming and encounter-preparation edge cases",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture a directly observed traversal route; schedule jump/airborne/transition inputs near encounter preparation and compare accepted input/control outcomes.",
+      "capture_marks": [
+        "takeoff",
+        "encounter preparation",
+        "landing",
+        "transition"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D1-GEAR",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "battles",
+        "menus",
+        "audio"
+      ],
+      "purpose": "Representative Gear encounter and resource/equipment flow",
+      "progression_stage": "Representative Gear encounter and resource/equipment flow",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Reach a verified original Gear encounter; record legal actions, resources/equipment, enemy turn, victory/reward and return.",
+      "capture_marks": [
+        "Gear setup",
+        "turn boundaries",
+        "resource use",
+        "victory",
+        "return"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D1-WORLD",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "world_map",
+        "fields",
+        "event_sequences"
+      ],
+      "purpose": "Mid-disc world travel and story-dependent location access",
+      "progression_stage": "Mid-disc world travel and story-dependent location access",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture a verified transport/location route and repeat after an observed story change; record exact world/field identifiers when recovered.",
+      "capture_marks": [
+        "world entry",
+        "transport change",
+        "location entry",
+        "story variant"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D1-EVENT",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "event_sequences",
+        "fields",
+        "audio",
+        "fmvs"
+      ],
+      "purpose": "Branching/concurrent event with consequential changes",
+      "progression_stage": "Branching/concurrent event with consequential changes",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture every reachable meaningful choice with actor movement, waits and media; retain pre-branch saves/input logs for watched-versus-skipped future comparison.",
+      "capture_marks": [
+        "concurrent task start",
+        "wait",
+        "choice",
+        "consequence",
+        "control return"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D1-OPTIONAL",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6"
+      ],
+      "categories": [
+        "optional_activities",
+        "minigames"
+      ],
+      "purpose": "Optional activity and minigame coverage candidate",
+      "progression_stage": "Optional activity and minigame coverage candidate",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Locate original optional/minigame entry points through play or original references; record entry, full action set, win/loss and retry without inventing unavailable content.",
+      "capture_marks": [
+        "optional entry",
+        "action/rule boundary",
+        "win",
+        "loss",
+        "retry",
+        "exit"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-CROSS-DISC",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1,
+        2
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6",
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "event_sequences",
+        "saves",
+        "fields",
+        "fmvs"
+      ],
+      "purpose": "Late disc 1 to disc 2 progression boundary",
+      "progression_stage": "Late disc 1 to disc 2 progression boundary",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture last pre-boundary ordinary save and original transition request; switch only the requested original disc, record destination/control and state. Later native test uses unified data with no physical swap.",
+      "capture_marks": [
+        "pre-boundary save",
+        "disc request",
+        "disc 2 resume",
+        "post-boundary state"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D2-START",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        2
+      ],
+      "profiles": [
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "event_sequences",
+        "menus",
+        "saves",
+        "fmvs"
+      ],
+      "purpose": "Start of disc 2 from a legitimate progression state",
+      "progression_stage": "Start of disc 2 from a legitimate progression state",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Load a captured original cross-disc prerequisite, record event/media/control handoffs and ordinary save behavior; a fabricated state is not an oracle.",
+      "capture_marks": [
+        "load",
+        "event/media handoff",
+        "choice if present",
+        "save/control"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D2-FIELD",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        2
+      ],
+      "profiles": [
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "fields",
+        "event_sequences",
+        "battles",
+        "menus"
+      ],
+      "purpose": "Disc 2 field/event/foot-battle integration",
+      "progression_stage": "Disc 2 field/event/foot-battle integration",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Choose an originally observed disc 2 field route with interaction and battle return; capture progression-dependent variants and menu actions.",
+      "capture_marks": [
+        "field entry",
+        "trigger",
+        "battle",
+        "return",
+        "menu"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D2-GEAR",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        2
+      ],
+      "profiles": [
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "battles",
+        "menus",
+        "audio"
+      ],
+      "purpose": "Disc 2 Gear/scripted encounter and failure/retry",
+      "progression_stage": "Disc 2 Gear/scripted encounter and failure/retry",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture a verified Gear/scripted battle from a legitimate save, exercise distinct rules and both victory and defeat/retry outcomes.",
+      "capture_marks": [
+        "setup",
+        "scripted phase",
+        "resource/target boundary",
+        "victory",
+        "defeat",
+        "retry"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D2-WORLD",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        2
+      ],
+      "profiles": [
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "world_map",
+        "fields",
+        "event_sequences"
+      ],
+      "purpose": "Disc 2 world/story-state coverage",
+      "progression_stage": "Disc 2 world/story-state coverage",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture the available world/transport/location transitions and story variants; mark absent routes only with direct evidence, never by assumption.",
+      "capture_marks": [
+        "world entry if available",
+        "transport/location",
+        "story change"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D2-OPTIONAL",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        2
+      ],
+      "profiles": [
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "optional_activities",
+        "minigames"
+      ],
+      "purpose": "Late-game optional content and minigame availability",
+      "progression_stage": "Late-game optional content and minigame availability",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Enumerate original optional content reachable from legitimate late-game state; exercise action/rule, failure/retry and exit paths. If a category is unavailable, record original proof and link its shared-disc coverage.",
+      "capture_marks": [
+        "availability check",
+        "entry",
+        "rule/scoring",
+        "win/loss",
+        "exit"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-D2-FINALE",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        2
+      ],
+      "profiles": [
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "battles",
+        "event_sequences",
+        "fmvs",
+        "audio",
+        "saves"
+      ],
+      "purpose": "Final progression, ending sequence and relevant failure paths",
+      "progression_stage": "Final progression, ending sequence and relevant failure paths",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Reach the original ending through recorded legitimate progression; capture final battles, consequential changes, ending media and any post-ending/save behavior actually present.",
+      "capture_marks": [
+        "pre-finale state",
+        "final encounter",
+        "defeat/retry",
+        "final consequence",
+        "ending media",
+        "post-ending state"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-BOTH-MENUS-SAVES",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1,
+        2
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6",
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "menus",
+        "saves"
+      ],
+      "purpose": "Menu and ordinary-save compatibility coverage across discs",
+      "progression_stage": "Menu and ordinary-save compatibility coverage across discs",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Inventory every reachable menu/shop/party screen and valid original save variant; capture read/write/reload and failure messages with no personal save distribution.",
+      "capture_marks": [
+        "menu entry/edit/exit",
+        "shop transaction",
+        "party edit",
+        "ordinary save",
+        "reset/load",
+        "invalid/missing save"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    },
+    {
+      "id": "CP-BOTH-AUDIO-FMV",
+      "status": "defined_uncaptured",
+      "intended_discs": [
+        1,
+        2
+      ],
+      "profiles": [
+        "na-slus-00664-39c547a9afc6",
+        "na-slus-00669-5eab85c683d4"
+      ],
+      "categories": [
+        "audio",
+        "fmvs",
+        "event_sequences"
+      ],
+      "purpose": "Cross-disc media catalog and event synchronization",
+      "progression_stage": "Cross-disc media catalog and event synchronization",
+      "preconditions": [
+        "Verify the exact original source profile and original disc sequence.",
+        "Record observation tool/version/settings and BIOS or explicitly declared HLE limitations.",
+        "Use original reset or legitimate original save with hash and recorded route; keep it private.",
+        "Bind original map/scene/encounter IDs and offsets before treating this as an executable checkpoint."
+      ],
+      "input_procedure": "Capture every identified music/sample/SFX/FMV entry or referenced reuse; record source extent and logical starts/stops/loops/seek-relevant boundaries with original audio sync observations.",
+      "capture_marks": [
+        "start",
+        "loop/sequence change",
+        "event sync",
+        "FMV transition",
+        "stop/control return"
+      ],
+      "observables": [
+        "entities/position/collision/camera and player-control ownership",
+        "party/inventory/equipment/currency/rewards",
+        "story flags and event/task order",
+        "battle/minigame rule state and RNG when recovered",
+        "logical audio/FMV timeline and observed timing units"
+      ],
+      "original_binding": {
+        "map_scene_encounter_ids": [],
+        "source_offsets": [],
+        "save_hash": null,
+        "input_log_hash": null,
+        "rng_state": null
+      },
+      "oracle": {
+        "status": "unknown_until_original_capture",
+        "expected_outcome": null,
+        "tolerances": null,
+        "policy": "Record original observed outcomes first; never use native implementation output or an invented synthetic save as expected original behavior."
+      },
+      "evidence": [],
+      "future_native_variants": [
+        "default settings and original-gameplay settings",
+        "save/restore at each capture mark",
+        "rewind/replay across boundaries",
+        "fast forward independent of render cadence",
+        "supported Lua mod profiles",
+        "Linux/Vulkan, Windows/Direct3D 12, macOS/Metal"
+      ]
+    }
+  ],
+  "definition_gate": "Every original category and both intended discs have prospective stimulus/observable/oracle/provenance contracts before native gameplay implementation. This is a definition gate only.",
+  "execution_gate": "Bind IDs, legitimate starting states, original inputs, timings and independent oracles; verify disc sequence and all category/progression paths. Uncaptured checkpoints cannot pass behavioral tests."
+}

@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-003",
+  "kind": "original_execution_observation",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 0,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "The complete original boot program is the execution context. The specific instruction/overlay responsible for this UI output has not been recovered; no CPU address is claimed."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 0,
+      "track_lba": 172918,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "The complete original boot program is the execution context. The specific instruction/overlay responsible for this UI output has not been recovered; no CPU address is claimed."
+    }
+  ],
+  "observation": "Using the same independently recorded reset/title/New Game input schedule, source SLUS_006.64 displays opening text at frontend frame 2400, while source SLUS_006.69 visibly displays INSERT DISC 1. Both final screenshots were visually inspected by the Phase 0 agent and parent. The documented observer reproduced the prototype screenshot hashes exactly.",
+  "interpretation": "The original-program response supports the supplied two-image roles: SLUS_006.64 is the Disc 1/start source, and the supplied SLUS_006.69 source is the second-disc role requiring Disc 1 for New Game. This combines direct program output with the user-supplied two-disc provenance; it does not derive sequence from filenames or ISO volume_sequence_number. Named retail revision/authenticity beyond exact measured bytes remains unestablished.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Pinned Nix observation shell and selected CHD profiles",
+      "PCSX-ReARMed core SHA256 e61a8d4ac1f5fb1ec0d511ac643a7a0b0f8f0389b81c29e99cee001d8c07c458",
+      "HLE BIOS explicitly selected; no original BIOS claimed",
+      "Reset start, no emulated checkpoint; exact versioned input schedule"
+    ],
+    "commands": [
+      "python3 tools/reference/observe.py --content <source-1.chd> --output .local/observations/new-source-1-identity --frames 2400 --capture-every 600 --inputs tests/reference-inputs/title-new-game.json",
+      "python3 tools/reference/observe.py --content <source-2.chd> --output .local/observations/new-source-2-identity --frames 2400 --capture-every 600 --inputs tests/reference-inputs/title-new-game.json"
+    ],
+    "expected": "At frontend frame 2400, source 006.64 opens the introductory text and source 006.69 displays INSERT DISC 1; screenshot hashes recorded as scoped reproduction evidence.",
+    "actual": "Documented observer completed on both sources and reproduced the reviewed final screenshots exactly: e0fb799372c8c5f38f8712e0e73b81f1e5c35537f4d3239d24ea45eba85e971f, a71e792379098e7a4afc62008ac535750322ed1f457252b7c26954f1c2e081fa",
+    "result": "passed",
+    "tolerance": "Exact screenshots for this pinned reset/input path only; no recovered simulation timing or full machine-state equivalence asserted.",
+    "artifacts": [
+      {
+        "path": ".local/observations/reference-disc1-identity/observation.json",
+        "sha256": "0e4cea71b6afdf1bbe97b7fd0a2ae31d6ae5dc42ef1940a06cd9e83592179b5a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-identity/frame-002400.png",
+        "sha256": "e0fb799372c8c5f38f8712e0e73b81f1e5c35537f4d3239d24ea45eba85e971f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc2-identity/observation.json",
+        "sha256": "99a42144ed965f6a87312ec476f6b21846bec0a11683c1ff83fe5c6938238899",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc2-identity/frame-002400.png",
+        "sha256": "a71e792379098e7a4afc62008ac535750322ed1f457252b7c26954f1c2e081fa",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "tool_identity": {
+    "tool_sha256": "bfcd9b7480505eac0c5dc3f48adef421be865d77fed48e787384b1e7e081f3fd",
+    "nix_lock_sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+    "core_sha256": "e61a8d4ac1f5fb1ec0d511ac643a7a0b0f8f0389b81c29e99cee001d8c07c458",
+    "core_name": "PCSX-ReARMed",
+    "core_version": "r26",
+    "bios": "HLE"
+  },
+  "limitations": [
+    "HLE BIOS and external emulation require corroboration for timing, compatibility and uncertain gameplay semantics.",
+    "The observed path is title/New Game only, not complete game-content or progression coverage.",
+    "Frontend frames count retro_run calls, not recovered game simulation ticks.",
+    "A separate exploratory emulator-state restore experiment matched a final image but differed in full emulated RAM; it establishes no deterministic authoritative-state equivalence and is not native snapshot validation.",
+    "No disabled-New-Game interpretation is claimed; selection was moved explicitly before confirmation."
+  ],
+  "author": "Parent-authored general-purpose libretro capture; direct original-source measurement and joint visual review",
+  "reviewers": [
+    "Parent agent",
+    "Phase 0 agent"
+  ]
+}

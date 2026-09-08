@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-006",
+  "kind": "original_execution_observation",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 0,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "The complete original boot program is the execution context. The specific instruction/overlay responsible for this UI output has not been recovered; no CPU address is claimed."
+    }
+  ],
+  "observation": "The recorded route reaches opening cinematic images, narrated prologue text, a burning-location sequence with on-screen dialogue, and a room containing a painting and furniture. Cross returns from the painting close-up in the recorded room-menu stage. A later Square input opens a vertical menu with Status, Equip, Items, Abilities, Gear, File and Exit. Independently restored branches enter visible status, equipment, item, ability and memory-card management screens; the Gear branch remains on the main menu at this checkpoint and Exit returns to the room.",
+  "interpretation": "These are observed original-program entry points for a partial content inventory. They identify visible presentation and menu paths at this early progression state, not original numeric resource IDs, complete category counts, save data formats, battle mechanics or native implementation. A resource index and direct byte correlations can guide later attribution, but source-level scene/overlay identities remain unrecovered.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Pinned Nix observation shell and the selected original Disc 1 CHD",
+      "PCSX-ReARMed core identity and HLE mode matching EVID-REF-003",
+      "Seven sequential capture stages and seven independent menu branches defined in the versioned route",
+      "An empty new local output directory for reproduction"
+    ],
+    "commands": [
+      "Enter the pinned Nix observation shell: nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "Run the route procedure in tools/reference/README.md with tests/reference-inputs/opening-observation-route.json and the selected Disc 1 CHD; retain output locally.",
+      "For each stage, use its frames, capture_every and exact inputs with tools/reference/observe.py. Start opening from reset. Restore the previous stage final.state for each later stage. Run every branch from room-square/final.state, not from the preceding branch."
+    ],
+    "expected": "Review the final branch images and the named scene captures; main-menu labels and visible branch behavior match the independently recorded descriptions.",
+    "actual": "All fourteen capture sessions completed. Parent visually reviewed the seventeen scene/branch images listed as artifacts. No full-game enumeration or native behavior claim is made.",
+    "result": "passed",
+    "tolerance": "Visual presence and menu path only. External-emulator checkpoints are navigation aids; no strict RAM or timing equivalence asserted.",
+    "artifacts": [
+      {
+        "path": ".local/observations/reference-disc1-opening/observation.json",
+        "sha256": "770615cb69023f581e4769f0346255951db2f9d253cf9bae6715bbefe5defb1d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-prologue/observation.json",
+        "sha256": "72b7ad24b064190d5d8dc7bcee04ebfaf80ef7179f63e7bef34e47c358a9c946",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-first-field/observation.json",
+        "sha256": "df5906cc84044b018b433992ebc0dfded343f666e18dbaa6df8be3d4bc086e7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-prologue-continued/observation.json",
+        "sha256": "f5e8822dca4e203df680d5eb258afa7bc60baa7ab8d1a2125c63f1ed9e1f5913",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-dream/observation.json",
+        "sha256": "592a0981f93f9dfb7b66891706ebc128fee5bb758fd41649fe5e8f1616cc6027",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-room-menu/observation.json",
+        "sha256": "34615d66797fd2fc62a7bc995f07b080462ddab671d9082f3117c3db5f38e3b8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-room-square/observation.json",
+        "sha256": "aa4b21cd5e02cc564ff0dc8a8a42dc9fa3303ae84fd6404893d42cad8ebc466b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-status/observation.json",
+        "sha256": "523e6913f67a32b2271b6304281860787e9f90a5915098ed0929eae8f2d69afc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-equip/observation.json",
+        "sha256": "c20e73efc700d459019e4ba7ce131453b1bb96b22d9a0f2165ee4f4104f744f4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-items/observation.json",
+        "sha256": "66f417ce4c3cec74079bf44a5ce198572bb80ce87a5aa38eb3c6d4edfa560a67",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-abilities/observation.json",
+        "sha256": "73df23b46bdc394896387061b1f4fe1a82e7dda9019cdeb34a1514bc8a1e3b06",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-gear/observation.json",
+        "sha256": "c02cfccf13bd400d7d0641b9a68a6103a194a5ed6725e5269d7c38e4a0fa32d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-file/observation.json",
+        "sha256": "b2c900db6562b646e06138ee588fd7ebbd187c47c3a5131922096e677f6d74fc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-exit/observation.json",
+        "sha256": "2aef8db873bf91589b5758f469d2dfec5d8c2bc6497741b65a5c5fd5a3c1c548",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-opening/frame-006000.png",
+        "sha256": "328954e07d723aa56eabd8d85f55986f61fccce5d88c5188b28804f0c793e860",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-opening/frame-018000.png",
+        "sha256": "af8b2f9caabf0dc8f25bf8b5939f323c0ec71a6ad4cb76749b5fdf6a986a5f86",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-opening/frame-030000.png",
+        "sha256": "c9d1fffe4041cd21578d417177d0a1640e6e7b6a939c6e13c053b8877f4c27d5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-prologue-continued/frame-001500.png",
+        "sha256": "662157c76049853ffbbb119ed8b9c8d831d950b314ebd8793d8365a17d7d4961",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-prologue-continued/frame-006000.png",
+        "sha256": "6ab5949cffe1704e25c1e8b12cfcde4781229f2697542c7e0299f5c13258e2ea",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-dream/frame-001000.png",
+        "sha256": "ab82c0cc2eb3f846f961666aaa83075901ea1c0de7a93f45549a3a13bd8c21f5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-dream/frame-003000.png",
+        "sha256": "02dd0f5264358a490c1ed05b53628f2c0968380eefe835837c6689279ec1bd94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-dream/frame-006000.png",
+        "sha256": "4933b3805efdb39dd52450a3b0e87dfb9b661a87614c290c80830f75e13850f9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-room-menu/frame-000120.png",
+        "sha256": "02dd0f5264358a490c1ed05b53628f2c0968380eefe835837c6689279ec1bd94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-room-square/frame-000600.png",
+        "sha256": "68495d09ff39982a6a534227ddddd997cefb9623dd781301b50c2836bde638ce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-status/frame-000960.png",
+        "sha256": "1540e09a32b06f0cb27a8df977c9a10808f7bd5b8d497c962e4454bebef23ac6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-equip/frame-000960.png",
+        "sha256": "cc7851851b2e626c9a82e9e3ad23166dfecd6c2863e703329850cb006cc35b17",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-items/frame-000960.png",
+        "sha256": "6cff37a1a2c02694a4b822460153a7f60c4c62bf45fbef862beaa303a79c33ed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-abilities/frame-000960.png",
+        "sha256": "7ee849cd632a1def41435e8d5fa4dcd2f3a84be6de961509823563da76f63108",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-gear/frame-000960.png",
+        "sha256": "0a68a6d84a0fd8edae6988db721df8b1c103c10592ddc93ebe712b03e77df3ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-file/frame-000960.png",
+        "sha256": "6064cd5bcdad745fe1f3d230427013f76b60157e210ec0c48b7c986ccc7f3d41",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-menu-exit/frame-000960.png",
+        "sha256": "c364d1429b1f2fc2da8dec18aff165ec6b39f480c8fc8f6163181a3117ee8596",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "tool_identity": {
+    "tool_sha256": "bfcd9b7480505eac0c5dc3f48adef421be865d77fed48e787384b1e7e081f3fd",
+    "nix_lock_sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+    "core_sha256": "e61a8d4ac1f5fb1ec0d511ac643a7a0b0f8f0389b81c29e99cee001d8c07c458",
+    "core_name": "PCSX-ReARMed",
+    "core_version": "r26",
+    "bios": "HLE"
+  },
+  "route": {
+    "path": "tests/reference-inputs/opening-observation-route.json",
+    "sha256": "ed2f2e8f307f118a034bec68de4a96bae62ac8a654a90dfcadb7922150a004c3"
+  },
+  "limitations": [
+    "All observations use HLE BIOS and the same externally emulated core; corroboration remains necessary.",
+    "Frontend frames count retro_run calls, not recovered simulation ticks.",
+    "The route uses emulator-state restores after its first stage. A separate measured restore experiment matched the final image while differing in two RAM bytes at offsets 0x57844 and 0x595c4; no deterministic state equivalence is asserted.",
+    "Menu availability and contents were observed only at the initial room checkpoint. Gear access at later progression states remains untested.",
+    "File displays card-slot grids and Copy/Delete choices here; ordinary save creation, loading, slot serialization and save format were not validated.",
+    "Cinematic or scripted battle-looking scenes do not demonstrate battle rule coverage.",
+    "The responsible instructions, overlays, event IDs, resource IDs and all-content totals remain unrecovered."
+  ],
+  "author": "Parent-authored input route and direct visual review of original-program output",
+  "reviewers": [
+    "Parent agent"
+  ]
+}

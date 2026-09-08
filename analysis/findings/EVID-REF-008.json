@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-008",
+  "kind": "original_static_metadata",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static source-index/projection coordinate. 2048-byte payload starts at offset 24; the explicitly defined 2336-byte projection starts at offset 16. No executed CPU/overlay address is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 41,
+      "sector_bytes": 2352,
+      "user_data_offset": 16,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static source-index/projection coordinate. 2048-byte payload starts at offset 24; the explicitly defined 2336-byte projection starts at offset 16. No executed CPU/overlay address is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 276768,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static source-index/projection coordinate. 2048-byte payload starts at offset 24; the explicitly defined 2336-byte projection starts at offset 16. No executed CPU/overlay address is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static source-index/projection coordinate. 2048-byte payload starts at offset 24; the explicitly defined 2336-byte projection starts at offset 16. No executed CPU/overlay address is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 41,
+      "sector_bytes": 2352,
+      "user_data_offset": 16,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static source-index/projection coordinate. 2048-byte payload starts at offset 24; the explicitly defined 2336-byte projection starts at offset 16. No executed CPU/overlay address is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 185066,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static source-index/projection coordinate. 2048-byte payload starts at offset 24; the explicitly defined 2336-byte projection starts at offset 16. No executed CPU/overlay address is asserted by this finding."
+    }
+  ],
+  "observation": "The selected byte projections for every positive candidate entry fit consecutive source-sector extents starting at LBA 41; the only trailing gap is 150 sectors per disc. Each source has 3711 Form 1 logical 2048-byte projections and respectively 17 or 12 explicit 2336-byte projections. Their independently measured CNF and boot executable hashes match exactly. Disc 1 has 3181 distinct projection keys, Disc 2 has 2194, with 2181 shared; 1000 and 13 respectively are absent on the other source. A complete 24-byte source projection explicitly reads \"It's CDMAKE Dummy !\" followed by CRLF/CRLF/space, SHA256 aafefb97ceb8e4667c719b99c4250b286e03087315b61848d196300140a95a2c; 11 Disc 1 slots and 1061 Disc 2 slots contain it. In the 1460-entry source group, all 730 consecutive pairs on Disc 1 contain non-dummy data; Disc 2 has 205 non-dummy pairs and 525 exact-dummy pairs, with no mixed pairs.",
+  "interpretation": "These are reproducible physical source-byte relationships, including an explicit original dummy marker. Pair/source-slot availability can reject known missing data before scenario launch, but a non-dummy pair alone does not establish a valid scene, event state, original map name or controllable gameplay. Equal projections do not imply unique game-content counts or equivalent behavior. Game loader size conventions and full field mapping require separate execution evidence.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Both exact selected raw-track profiles",
+      "Pinned Nix default development shell",
+      "Independent candidate index with boot/EOF cross-checks"
+    ],
+    "commands": [
+      "nix --extra-experimental-features \"nix-command flakes\" develop path:./nix",
+      "python3 tools/reference/fingerprint_survey.py scan --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --output .local/references/source-1/review-fingerprints.json",
+      "python3 tools/reference/fingerprint_survey.py scan --raw .local/references/source-2/disc.bin --profile na-slus-00669-5eab85c683d4 --output .local/references/source-2/review-fingerprints.json",
+      "python3 tools/reference/fingerprint_survey.py compare .local/references/source-1/review-fingerprints.json .local/references/source-2/review-fingerprints.json --output .local/references/review-fingerprint-comparison.json",
+      "Compare both fingerprints by the recorded projection unit/length/SHA256; review complete 24-byte dummy entries at the listed coordinates and consecutive pair availability in field-pairs.json."
+    ],
+    "expected": "No selected extent overlap, exact independent boot/CNF hashes, bounds-safe complete projected reads; measured shared/distinct counts remain explicit and zero/dummy/duplicate source slots remain separately represented.",
+    "actual": "Both complete original scans and comparison passed. Three tests using invented data separately verify clipping/projection scope, malformed/truncated sectors, bounds, duplicate-slot preservation and unit-sensitive comparison. Exact dummy bytes were directly inspected under Nix Python.",
+    "result": "passed",
+    "tolerance": "Exact source coordinates, projected byte lengths and SHA256; no game-state, timing or native-runtime assertion.",
+    "artifacts": [
+      {
+        "path": ".local/references/source-1/fingerprint-survey.json",
+        "sha256": "20b01b9dd0378c24ce3b62a2baa2562716d4e810bc97dc9468583188ef1f3db1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-2/fingerprint-survey.json",
+        "sha256": "f160b99eafcaa5e2f551760c400e4edba9599f9e4f1c2a2b5fef0c997fa442c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/fingerprint-comparison.json",
+        "sha256": "2a483e2199b016eec9668a369121b7d4ce91b3af7ab807e3d156f13cc4edf23e",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "limitations": [
+    "Equal unit/length/SHA256 means equal selected source-byte projections, not equal gameplay behavior or unique original content IDs.",
+    "Duplicate and zero-byte projections remain separate source slots; their loader/game meaning is unresolved.",
+    "The 2336-byte projection is not an audio/video decoder or media asset count.",
+    "Private prefixes aid direct inspection and must not enter public metadata or distributed assets.",
+    "No native extractor, decoder, loader or game implementation is provided.",
+    "Non-dummy source bytes do not guarantee a valid or reachable field, story state, controllable player, or correct scene setup.",
+    "Known dummy pairs must be rejected before scenario launch; never treat their contents as field data or a no-op.",
+    "EVID-REF-007 separately corroborates these indices as original field selectors; this physical finding itself does not establish named scenes or progression paths.",
+    "Pair bounds come from the original source group. No unmeasured index or unknown adapter is silently accepted."
+  ],
+  "author": "Phase 0 agent, original-source projection scan and direct dummy-marker inspection",
+  "reviewers": []
+}

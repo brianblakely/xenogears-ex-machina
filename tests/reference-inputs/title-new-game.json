@@ -1,0 +1,7 @@
+[
+  {"start": 901, "end": 910, "buttons": ["start"]},
+  {"start": 1300, "end": 1310, "buttons": ["start"]},
+  {"start": 1500, "end": 1510, "buttons": ["cross"]},
+  {"start": 1750, "end": 1760, "buttons": ["up"]},
+  {"start": 1810, "end": 1820, "buttons": ["cross"]}
+]

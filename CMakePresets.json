@@ -1,0 +1,26 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {"BUILD_TESTING": true, "XEM_WARNINGS_AS_ERRORS": true}
+    },
+    {"name": "debug", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Debug"}},
+    {"name": "sanitize", "inherits": "debug", "cacheVariables": {"XEM_SANITIZERS": true}},
+    {"name": "release", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}}
+  ],
+  "buildPresets": [
+    {"name": "debug", "configurePreset": "debug"},
+    {"name": "sanitize", "configurePreset": "sanitize"},
+    {"name": "release", "configurePreset": "release"}
+  ],
+  "testPresets": [
+    {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}},
+    {"name": "sanitize", "configurePreset": "sanitize", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}, "environment": {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"}},
+    {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}}
+  ]
+}

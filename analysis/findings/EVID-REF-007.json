@@ -1,0 +1,954 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-007",
+  "kind": "original_static_and_instrumented_execution",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 41264,
+      "track_lba": 108626,
+      "sector_bytes": 2352,
+      "user_data_offset": 328,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80019930",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident boot program; no dynamically loaded overlay. PS-X EXE header is 2048 bytes; loaded payload begins at 0x80010000."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": ".local/observations/reference-disc1-room-menu/final.ram",
+      "file_offset": 457452,
+      "track_lba": null,
+      "sector_bytes": null,
+      "user_data_offset": null,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "kind": "original mode 1 Field overlay in captured RAM",
+        "ram_sha256": "36da55364c6d310b5303c64920d12bffa1265c6049641ba89851934cc1758ab0",
+        "code_range": [
+          "0x8006faec",
+          "0x800af5e4"
+        ],
+        "code_range_end_exclusive": true,
+        "captured_range_sha256": "7803bec63e65956d61f7f6b3f24241acf0be941603e5caba48e7221eef39e475",
+        "packed_source_slot": 36,
+        "packed_source_lba": 108933,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "measured_load_address": "0x8006faf0"
+      },
+      "address": "0x80077e88",
+      "address_space": "PS1 KSEG0 virtual address in the stated captured field overlay",
+      "not_applicable": "File coordinate is captured original RAM. Source-byte corroboration below verifies three instruction windows after a bounded transcription of the original decoder, with measured destination 0x8006faf0. The captured range includes four bytes before that destination; it is not a packed-file offset or a claim that every captured byte is executable code."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80010004",
+      "address_space": "PS1 KSEG0 virtual address of original source table in captured RAM",
+      "not_applicable": "Full 30720-byte seven-byte record table from logical sectors 24 through 38; no ISO filename is assigned. This is runtime data, not an overlay entry point."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80018004",
+      "address_space": "PS1 KSEG0 virtual address of original source table in captured RAM",
+      "not_applicable": "First 128 bytes of the halfword directory table from logical sector 40; no ISO filename is assigned. This is runtime data, not an overlay entry point."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 41264,
+      "track_lba": 172938,
+      "sector_bytes": 2352,
+      "user_data_offset": 328,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80019930",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident boot program; no dynamically loaded overlay. PS-X EXE header is 2048 bytes; loaded payload begins at 0x80010000."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": ".local/scenarios/disc2-field-15-reviewed/capture/final.ram",
+      "file_offset": 457452,
+      "track_lba": null,
+      "sector_bytes": null,
+      "user_data_offset": null,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "kind": "original mode 1 Field overlay in captured RAM",
+        "ram_sha256": "47a75c54338d116737a7e10d6ebc9ab65046ab7ac5a3b8e0e95991f6a09cd609",
+        "code_range": [
+          "0x8006faec",
+          "0x800af5e4"
+        ],
+        "code_range_end_exclusive": true,
+        "captured_range_sha256": "7aabd6ced1e34c4abe6e96487ec18405effc93485a9a48e78c09fb6edd03c218",
+        "packed_source_slot": 31,
+        "packed_source_lba": 173245,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "measured_load_address": "0x8006faf0"
+      },
+      "address": "0x80077e88",
+      "address_space": "PS1 KSEG0 virtual address in the stated captured field overlay",
+      "not_applicable": "File coordinate is captured original RAM. Source-byte corroboration below verifies three instruction windows after a bounded transcription of the original decoder, with measured destination 0x8006faf0. The captured range includes four bytes before that destination; it is not a packed-file offset or a claim that every captured byte is executable code."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80010004",
+      "address_space": "PS1 KSEG0 virtual address of original source table in captured RAM",
+      "not_applicable": "Full 30720-byte seven-byte record table from logical sectors 24 through 38; no ISO filename is assigned. This is runtime data, not an overlay entry point."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80018004",
+      "address_space": "PS1 KSEG0 virtual address of original source table in captured RAM",
+      "not_applicable": "First 128 bytes of the halfword directory table from logical sector 40; no ISO filename is assigned. This is runtime data, not an overlay entry point."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 145076,
+      "track_lba": 108676,
+      "sector_bytes": 2352,
+      "user_data_offset": 1740,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80032eb4",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original packed-resource decoder used by dispatcher 0x80019b90; no overlay coordinate applies to this instruction."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 145076,
+      "track_lba": 172988,
+      "sector_bytes": 2352,
+      "user_data_offset": 1740,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80032eb4",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original packed-resource decoder used by dispatcher 0x80019b90; no overlay coordinate applies to this instruction."
+    }
+  ],
+  "observation": "Both measured original boot programs contain a startup mode selection of 6 at 0x80019930. Guarding and changing that immediate to 0 before the first frontend frame reaches the original XENOGEARS Kernel MENU. Its labels identify Field, Battle, Worldmap, Battling, Menu and Movie. From its ready loop, the recorded persistent field selector and normal mode request enter field 14 on Disc 1 and field 15 on Disc 2. The field loader requests files 0xb8+2*(map&0xfff) and 0xb9+2*(map&0xfff) under directory entry 4. The full runtime index and the first 128 directory bytes match their respective original disc sectors on both sources.",
+  "interpretation": "The normal original dispatcher and loader support a checkpoint-free numeric-field test adapter with fingerprinted setup. The recovered directory/file arithmetic maps field m to adjacent source slots 606+2*m and 607+2*m on Disc 1, or 601+2*m and 602+2*m on Disc 2. This corroborates the original-map/source-pair correspondence in the physical inventory. Availability of a non-dummy pair alone does not establish successful initialization, player control, story validity, or complete content coverage.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Selected original CHDs and decoded raw tracks measured in EVID-REF-001/002/005",
+      "Pinned Nix observation shell, recorded PCSX-ReARMed core, HLE BIOS, interpreter execution for instrumented code",
+      "No gameplay checkpoint or emulator state is imported by scenario execution",
+      "New ignored .local/ output directories"
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "python3 tools/reference/scenario.py painting-room --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/painting-room-reviewed-a",
+      "Repeat the previous command with a new output .local/scenarios/painting-room-reviewed-b. Compare every frame-*.png, audio.wav, final.ram and final.state byte-for-byte between capture directories.",
+      "python3 tools/reference/scenario.py disc2-field-15 --content 'discs/Xenogears disc 2.chd' --output .local/scenarios/disc2-field-15-reviewed",
+      "python3 tools/reference/scenario.py kernel-menu --profile na-slus-00669-5eab85c683d4 --content 'discs/Xenogears disc 2.chd' --output .local/scenarios/kernel-disc2-reviewed",
+      "For each selected raw track, concatenate 2048 bytes at raw offset 2352*LBA+24 for LBAs 24..38. Read the little-endian pointer at captured RAM offset 0x4fdf0, mask with 0x1fffff, and compare 30720 bytes there. Read the pointer at 0x4fdf4, mask likewise, and compare 128 bytes with logical LBA 40. Interpret its first 16 entries as u16 little-endian.",
+      "Use the pinned disassembly Nix shell and Capstone MIPS32 little-endian on the original boot payload at 0x80010000 and captured field overlay range [0x8006faec,0x800af5e4). Inspect the source coordinates and instruction paths recorded below. Do not distribute the resulting original instruction listing.",
+      "python3 -m unittest tests.test_scenario tests.test_scenario_program tests.test_observe",
+      "For source corroboration, inspect original decoder instructions at 0x80032eb4..0x80032f50 and the private bounded transcription identified by the attached source-corroboration report. Compare the reported main-program and decoded-overlay windows with original CHD-derived bytes and the two final RAM captures. The measured overlay destination comes from RAM global 0x80018084, not the beginning of the disassembly window.",
+      "Exercise the scenario CLI with a Kernel timeout of one frame, a Disc 2 preset paired with the selected Disc 1 CHD, and Disc 2 map 14. Require nonzero exits; only the timeout may enter emulation, and it must retain failure.json without report.json. The exact measured failures are preserved in negative-launch-checks.json."
+    ],
+    "expected": "Guarded cold boots reach their selected original entry points. Field 14 completes the recorded painting dialogue route and opens the main menu; field 15 displays a rocky outdoor path; Kernel MENU displays the mode list. Source-index and directory byte correlations match exactly.",
+    "actual": "All four final public-CLI captures completed. Disc 1 field readiness occurred at frontend frame 645 and the menu route ended at 3609. Disc 2 field readiness occurred at 670 and capture ended at 970. Disc 2 Kernel MENU capture ended at 436. Both Disc 1 cold boots matched all ten captured PNGs, all 2097152 RAM bytes, all 4456448 external state bytes and the 10610244-byte WAV. Full table and 128-byte directory source comparisons passed on both discs. Eighteen focused synthetic capture/compiler/executor tests passed. Independent review additionally matched six resident-code windows and three field-code windows to both original sources and both captured RAM images. A one-frame Kernel wait timed out with a failure record and no success report; a mismatched CHD and an exact dummy field pair were rejected. The final menu, rocky path, Kernel labels and painting-room dialogue were independently visually reviewed.",
+    "result": "passed",
+    "tolerance": "Exact byte comparison within this same-source/core/BIOS scenario repeat only. Map readiness means initialized original field loop; no hardware timing, arbitrary progression, or native-runtime equivalence is asserted.",
+    "artifacts": [
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/report.json",
+        "sha256": "64c6c34d9b298e0061253a8373143aa5fbaa1758022ba29dd0038fbaa4115f61",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/scenario.json",
+        "sha256": "7475a5ee84e298072039c697775d1c43943c6d8bea507d480776704338866773",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/program.json",
+        "sha256": "587ce4a1c6c78dbfd4f90cb0e2ddde71b019dd5d4442ec7b26bc95854075935a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/source-catalog.json",
+        "sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/capture/observation.json",
+        "sha256": "38da79761481312ae182d0478231ee6a1a90f7ed00c7837ea76a72f866c6ad85",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/capture/final.ram",
+        "sha256": "4b8454b54ec2522035778317aad06dd75aec7353f3238a7c65dcc4fcaac8ef8a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/capture/final.state",
+        "sha256": "0542066f423cb388cb95741d57cfc937dbd8a7bfda6c74a40dcfd23847cbc086",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/capture/frame-003609.png",
+        "sha256": "6834d3ce57e296585005183170685e60f01074a10eaf2216108091cf6dd17e5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/report.json",
+        "sha256": "4c4db1bd724a96d9a993b1c405ca6f74f8aeeccf2d6754fb60843cbb534586c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/scenario.json",
+        "sha256": "7475a5ee84e298072039c697775d1c43943c6d8bea507d480776704338866773",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/program.json",
+        "sha256": "587ce4a1c6c78dbfd4f90cb0e2ddde71b019dd5d4442ec7b26bc95854075935a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/source-catalog.json",
+        "sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/capture/observation.json",
+        "sha256": "264d13a60337b57f16184a7dabaf1d898067e02c0cdea9d2592f43b304ffac8d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/capture/final.ram",
+        "sha256": "4b8454b54ec2522035778317aad06dd75aec7353f3238a7c65dcc4fcaac8ef8a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/capture/final.state",
+        "sha256": "0542066f423cb388cb95741d57cfc937dbd8a7bfda6c74a40dcfd23847cbc086",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-b/capture/frame-003609.png",
+        "sha256": "6834d3ce57e296585005183170685e60f01074a10eaf2216108091cf6dd17e5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/report.json",
+        "sha256": "228bd632f5347d1b203cc976445c70619fec9dca37e39961518dd7db0d94376b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/scenario.json",
+        "sha256": "be8e92577e87b09df1f3cec1049abc9c8a30f06741cf2d38559298538587c1ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/program.json",
+        "sha256": "bd1d4912357224ca40702ef927ff11986e0b732468c3321bafd9514cec6ab9ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/source-catalog.json",
+        "sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/capture/observation.json",
+        "sha256": "8a02ffdbcad5107eaedc46500ee28b69ca5d009445e7290c551c64d6d3a82cd0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/capture/final.ram",
+        "sha256": "47a75c54338d116737a7e10d6ebc9ab65046ab7ac5a3b8e0e95991f6a09cd609",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/capture/final.state",
+        "sha256": "6950ff2c821ef644108c644e955e21a2efc3cfc8e161b8586531e0971340345b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-field-15-reviewed/capture/frame-000970.png",
+        "sha256": "e7454635eb996f771d6de6a94ac11371be8bfd2a362565a6d04010186ff0f080",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/report.json",
+        "sha256": "fdcb9a88a6b71a60378303fbe62d618aa7148c6d806e148f2f2ac8e8fb5e90c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/scenario.json",
+        "sha256": "448fbdcc6d4f1ee6a6af9c4f4982e1d4a0770ab0ccc9ba98893400353080b2ed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/program.json",
+        "sha256": "6e10dd4dba81108c42d1d95c1d8a8acbd33a2f99a485156af03bd36ad230a094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/source-catalog.json",
+        "sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/capture/observation.json",
+        "sha256": "bfd5cf83130072b2a6f69bf4e8cb58e94777fcd4749b40fdb892ab8705dfaefb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/capture/final.ram",
+        "sha256": "1ed5137122fcd4da9edb535371f6f0dd8a6eb826a4c3d95c09bcbe0ec25d350a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/capture/final.state",
+        "sha256": "5a0a6463eefc94c269fd437a251b70e755ea198b11b363d397114739213e7656",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-disc2-reviewed/capture/frame-000436.png",
+        "sha256": "f89e59ba17a5b094873663985ca65dcea7f54fe4b1611d1397380e9f9ad2126a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-comparison.json",
+        "sha256": "6abe1ebb0ca670b3a9ad3ded966855dfdfb9bf71c70cdc0bf641d840a4ee40f9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/observations/reference-disc1-room-menu/final.ram",
+        "sha256": "36da55364c6d310b5303c64920d12bffa1265c6049641ba89851934cc1758ab0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/field-loader-source-corroboration.json",
+        "sha256": "066bfe30cbe1097b3aeee8392dfef8b549f1561b068c1abec43de498644179db",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_field_loader_source.py",
+        "sha256": "3e02c28853a50b48f790ce8327de7320047c240cb305341afa6680802a869d83",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/negative-launch-checks.json",
+        "sha256": "d6c65331521cb6403ddd1f1863676c62f194f0b0c844351889b4afc7b6fb7b54",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/expected-kernel-timeout/capture/failure.json",
+        "sha256": "89e2f185de0001b6ae64de81c05a9ebb0b2308ccfaa085f01f927e5e0bb5fa8f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-reviewed-a/capture/frame-002445.png",
+        "sha256": "38d1768990cd82fc3183d2574b023103c36ef876377bff6784764fb9ec0ce883",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "loader_paths": {
+    "reset_dispatch": {
+      "request_helper": "0x8001996c",
+      "dispatcher": "0x80019acc",
+      "mode_table": "0x8001808c",
+      "mode_record_bytes": 16,
+      "boot_mode_instruction": "0x80019930",
+      "guarded_original_bytes": "06000434",
+      "test_replacement_bytes": "00000434",
+      "meaning": "Choose original mode 0 after stock reset initialization; both source-specific exact CHD identities are required."
+    },
+    "kernel_controls": {
+      "mode_request": "0x80018088",
+      "ready_loop_flag": "0x800592d0",
+      "normal_field_mode": 1,
+      "persistent_field_selector": "0x8006f94e",
+      "observed_reset_selector_u16": 490,
+      "meaning": "After the Kernel loop is ready, set the persistent map selector, request mode 1 and finish the original loop. All expected bytes are validated before the request-step writes."
+    },
+    "field_initialization": {
+      "entry": "0x80077e88",
+      "selector_load": "0x80078048",
+      "current_map_store": "0x80078070",
+      "current_map_global": "0x8004f34c",
+      "readiness_conditions": [
+        {
+          "address": "0x8004f34c",
+          "width": 4,
+          "value": "selected numeric map"
+        },
+        {
+          "address": "0x8004f2f8",
+          "width": 4,
+          "value": 1,
+          "store_instruction": "0x80078e68"
+        },
+        {
+          "address": "0x800adb04",
+          "width": 1,
+          "value": 1,
+          "store_instruction": "0x80078164"
+        }
+      ],
+      "stable_frontend_boundaries": 2,
+      "scope": "Map initialization only; original entry scripts may continue."
+    },
+    "first_field_resource": {
+      "map_selector_path": "0x800777ec",
+      "resource_helper": "0x8001b484",
+      "file_number_addition": "0x8001b53c/0x8001b544",
+      "file_formula": "0xb8 + 2*(map & 0xfff)"
+    },
+    "second_field_resource": {
+      "caller_directory_selection": "0x80078e74..0x80078e7c selects (4,0)",
+      "caller": "0x80078e88 calls 0x80070488",
+      "map_load": "0x800704bc/0x800704c0",
+      "mask": "0x800704e8",
+      "multiply_two": "0x800704ec",
+      "request": "0x800704f0 calls 0x80029eb0",
+      "file_addition_delay_slot": "0x800704f4 adds 0xb9",
+      "file_formula": "0xb9 + 2*(map & 0xfff)"
+    },
+    "directory_and_index": {
+      "set_directory": "0x80028470",
+      "directory_base_global": "0x8004fe14",
+      "directory_base_formula": "u16le(directory[a0+a1]) - 1",
+      "file_size_lookup": "0x80028738",
+      "index_slot_formula": "file_number + directory_base - 1",
+      "record_bytes": 7,
+      "record_fields": [
+        "u24le source LBA",
+        "s32le length or group count"
+      ],
+      "second_request_helpers": {
+        "size": "0x80029f34 -> 0x80028738",
+        "source_lba": "0x80029fa4 -> 0x800289d0",
+        "aligned_size": "0x80029fb4 -> 0x800288ec"
+      }
+    }
+  },
+  "source_correlations": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+      "fat_pointer_global": "0x8004fdf0",
+      "fat_pointer_value": "0x80010004",
+      "fat_logical_sectors": [
+        24,
+        38
+      ],
+      "fat_bytes": 30720,
+      "fat_sha256": "3ae8e513a0f759eed5f39ff23594fc67a49ab601810b850c9f75e34979ab3afc",
+      "fat_matches_original_source": true,
+      "directory_pointer_global": "0x8004fdf4",
+      "directory_pointer_value": "0x80018004",
+      "directory_logical_sector": 40,
+      "directory_compared_bytes": 128,
+      "directory_128_sha256": "0f4c5e6f28453bb79a4611b0b2c9e12a07f7b9307b47be63624d6246bc3274fe",
+      "directory_matches_original_source": true,
+      "directory_first_16_u16le": [
+        22,
+        24,
+        65535,
+        65535,
+        424,
+        65535,
+        65535,
+        65535,
+        65535,
+        65535,
+        65535,
+        65535,
+        2613,
+        2618,
+        3381,
+        2771
+      ],
+      "field_directory_entry": 424,
+      "field_pair_first_slot": 606,
+      "field_overlay_source_slot": 36
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+      "fat_pointer_global": "0x8004fdf0",
+      "fat_pointer_value": "0x80010004",
+      "fat_logical_sectors": [
+        24,
+        38
+      ],
+      "fat_bytes": 30720,
+      "fat_sha256": "60377123a0a598fe9686177fe27dde7cf79b6e6ef58d576d7ea529b10945b536",
+      "fat_matches_original_source": true,
+      "directory_pointer_global": "0x8004fdf4",
+      "directory_pointer_value": "0x80018004",
+      "directory_logical_sector": 40,
+      "directory_compared_bytes": 128,
+      "directory_128_sha256": "a6570438045c3f55351ad756ae4bbf401a9f3787acb84cd4be52f15245118707",
+      "directory_matches_original_source": true,
+      "directory_first_16_u16le": [
+        17,
+        19,
+        65535,
+        65535,
+        419,
+        65535,
+        65535,
+        65535,
+        65535,
+        65535,
+        65535,
+        65535,
+        2608,
+        2613,
+        3376,
+        2766
+      ],
+      "field_directory_entry": 419,
+      "field_pair_first_slot": 601,
+      "field_overlay_source_slot": 31
+    }
+  ],
+  "runs": [
+    {
+      "name": "painting-room-reviewed-a",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frames": 3609,
+      "compiler_sha256": "691e431362387e4bbd69f3b2b9c3c1e5e91c46436971f9aa689d1e571d837e3c",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "587ce4a1c6c78dbfd4f90cb0e2ddde71b019dd5d4442ec7b26bc95854075935a",
+      "scenario_sha256": "7475a5ee84e298072039c697775d1c43943c6d8bea507d480776704338866773",
+      "catalog_sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+      "events": [
+        {
+          "step": "guard-reset-dispatch",
+          "started_frame": 0,
+          "completed_frame": 0
+        },
+        {
+          "step": "kernel-ready",
+          "started_frame": 317,
+          "completed_frame": 318
+        },
+        {
+          "step": "request-field",
+          "started_frame": 318,
+          "completed_frame": 318
+        },
+        {
+          "step": "map-initialized",
+          "started_frame": 645,
+          "completed_frame": 2445
+        },
+        {
+          "step": "step-000-press",
+          "started_frame": 2445,
+          "completed_frame": 2453
+        },
+        {
+          "step": "step-000-release",
+          "started_frame": 2453,
+          "completed_frame": 2693
+        },
+        {
+          "step": "step-001-press",
+          "started_frame": 2693,
+          "completed_frame": 2701
+        },
+        {
+          "step": "step-001-release",
+          "started_frame": 2701,
+          "completed_frame": 3301
+        },
+        {
+          "step": "step-002-press",
+          "started_frame": 3301,
+          "completed_frame": 3309
+        },
+        {
+          "step": "step-002-release",
+          "started_frame": 3309,
+          "completed_frame": 3609
+        }
+      ]
+    },
+    {
+      "name": "painting-room-reviewed-b",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frames": 3609,
+      "compiler_sha256": "691e431362387e4bbd69f3b2b9c3c1e5e91c46436971f9aa689d1e571d837e3c",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "587ce4a1c6c78dbfd4f90cb0e2ddde71b019dd5d4442ec7b26bc95854075935a",
+      "scenario_sha256": "7475a5ee84e298072039c697775d1c43943c6d8bea507d480776704338866773",
+      "catalog_sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+      "events": [
+        {
+          "step": "guard-reset-dispatch",
+          "started_frame": 0,
+          "completed_frame": 0
+        },
+        {
+          "step": "kernel-ready",
+          "started_frame": 317,
+          "completed_frame": 318
+        },
+        {
+          "step": "request-field",
+          "started_frame": 318,
+          "completed_frame": 318
+        },
+        {
+          "step": "map-initialized",
+          "started_frame": 645,
+          "completed_frame": 2445
+        },
+        {
+          "step": "step-000-press",
+          "started_frame": 2445,
+          "completed_frame": 2453
+        },
+        {
+          "step": "step-000-release",
+          "started_frame": 2453,
+          "completed_frame": 2693
+        },
+        {
+          "step": "step-001-press",
+          "started_frame": 2693,
+          "completed_frame": 2701
+        },
+        {
+          "step": "step-001-release",
+          "started_frame": 2701,
+          "completed_frame": 3301
+        },
+        {
+          "step": "step-002-press",
+          "started_frame": 3301,
+          "completed_frame": 3309
+        },
+        {
+          "step": "step-002-release",
+          "started_frame": 3309,
+          "completed_frame": 3609
+        }
+      ]
+    },
+    {
+      "name": "disc2-field-15-reviewed",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frontend_frames": 970,
+      "compiler_sha256": "691e431362387e4bbd69f3b2b9c3c1e5e91c46436971f9aa689d1e571d837e3c",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "bd1d4912357224ca40702ef927ff11986e0b732468c3321bafd9514cec6ab9ef",
+      "scenario_sha256": "be8e92577e87b09df1f3cec1049abc9c8a30f06741cf2d38559298538587c1ba",
+      "catalog_sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+      "events": [
+        {
+          "step": "guard-reset-dispatch",
+          "started_frame": 0,
+          "completed_frame": 0
+        },
+        {
+          "step": "kernel-ready",
+          "started_frame": 316,
+          "completed_frame": 317
+        },
+        {
+          "step": "request-field",
+          "started_frame": 317,
+          "completed_frame": 317
+        },
+        {
+          "step": "map-initialized",
+          "started_frame": 670,
+          "completed_frame": 970
+        }
+      ]
+    },
+    {
+      "name": "kernel-disc2-reviewed",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frontend_frames": 436,
+      "compiler_sha256": "691e431362387e4bbd69f3b2b9c3c1e5e91c46436971f9aa689d1e571d837e3c",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "6e10dd4dba81108c42d1d95c1d8a8acbd33a2f99a485156af03bd36ad230a094",
+      "scenario_sha256": "448fbdcc6d4f1ee6a6af9c4f4982e1d4a0770ab0ccc9ba98893400353080b2ed",
+      "catalog_sha256": "6d9b67ce1287a5d097864b19b5048a67f965764096b36a99c5b8ceddc7970c95",
+      "events": [
+        {
+          "step": "guard-reset-dispatch",
+          "started_frame": 0,
+          "completed_frame": 0
+        },
+        {
+          "step": "kernel-ready",
+          "started_frame": 316,
+          "completed_frame": 436
+        }
+      ]
+    }
+  ],
+  "repeatability": {
+    "scope": "Two independent cold boots of the same original scenario on the same external core and HLE BIOS",
+    "comparison": ".local/scenarios/painting-room-reviewed-comparison.json",
+    "all_compared_bytes_equal": true,
+    "final_ram_sha256": "4b8454b54ec2522035778317aad06dd75aec7353f3238a7c65dcc4fcaac8ef8a",
+    "final_state_sha256": "0542066f423cb388cb95741d57cfc937dbd8a7bfda6c74a40dcfd23847cbc086",
+    "final_image_sha256": "6834d3ce57e296585005183170685e60f01074a10eaf2216108091cf6dd17e5d",
+    "wav_sha256": "8f00b6505027beae7c19295c8f54703a220a5df3fff700a05ec520096238ea50"
+  },
+  "negative_evidence": [
+    "An earlier analysis probe expecting zero at persistent selector 0x8006f94e was rejected before any request-step mutation; observed bytes were ea01. Final adapter guards that measured reset default.",
+    "Synthetic tests reject unavailable/dummy source pairs, relabeled source identities, shifted source slots, unsupported entry/setup/readiness fields, overlapping or unguarded writes and incomplete readiness. Custom writes cannot inherit recovered-loader evidence."
+  ],
+  "limitations": [
+    "Only the exact selected source identities have recovered adapters.",
+    "The Kernel MENU reset state is not assumed to equal every normal New Game initialization or later story state.",
+    "A numeric field data pair is not proof that its event scripts accept reset-default progression. Only the explicitly captured field cases are claimed initialized here.",
+    "Typed battle, party, inventory, equipment, progression, player-position and player-control-readiness adapters remain unimplemented and unsupported.",
+    "HLE BIOS and external-emulator execution require corroboration for uncertain hardware behavior.",
+    "The first 128 directory bytes and full 15-sector resource table are correlated; the remaining sector-40 bytes are not characterized by this finding.",
+    "Two identical cold boots do not establish general determinism, checkpoint-restore equivalence, or native correctness.",
+    "The sibling Slap Stick repository informed testing architecture only; no game-specific symbols, offsets, reverse engineering or code were used as Xenogears evidence.",
+    "Packed-overlay corroboration is limited to the stated original resource and instruction windows. The private decoder probe consumes three measured zero sector-padding bytes beyond the candidate source length; neither generic packed-resource semantics nor a production decoder is claimed."
+  ],
+  "author": "Parent: independent original-source analysis, scenario implementation and direct original-output review",
+  "reviewers": [
+    "Parent agent",
+    "Phase 0 agent: independently reviewed final field/menu/Kernel captures, both resource-request paths, and exact source/decoded/runtime instruction-window equality on both discs"
+  ],
+  "source_byte_corroboration": {
+    "evidence": ".local/analysis/field-loader-source-corroboration.json",
+    "scope": "Source and runtime instruction-window equality only; private decoder probe is not a complete format decoder or native implementation.",
+    "profiles": [
+      {
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "overlay_source": {
+          "slot": 36,
+          "source_lba": 108933,
+          "source_sector_count": 62,
+          "projected_bytes": 125304,
+          "projection_unit": 2048,
+          "projection_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+          "all_projected_bytes_zero": false,
+          "following_sector_gap": 0
+        },
+        "private_decoding": {
+          "original_decoder_address": "0x80032eb4",
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 260862,
+          "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+          "consumed_source_bytes": 125307,
+          "physical_user_data_bytes": 126976,
+          "physical_user_data_sha256": "7b1d7c26a48c0bc3258aa91c03dfc9d9d453338285381e3d108e97b75827dccc",
+          "bytes_consumed_beyond_candidate_length": 3,
+          "consumed_sector_padding_all_zero": true
+        },
+        "main_instruction_windows": [
+          {
+            "address": "0x80019b88",
+            "file_offset": 41864,
+            "length": 16,
+            "sha256": "65a19b1f250166e39881ac5c40226044d0f7a0546ed1e0633774b20304a968fd",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x8001b53c",
+            "file_offset": 48444,
+            "length": 32,
+            "sha256": "6d4b06a0c25f5498f9029807a7bb762e69612a3a0a1ac06649b76c1ff0709c57",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80028470",
+            "file_offset": 101488,
+            "length": 80,
+            "sha256": "7a14e34a8f19b84c080c357e854b8405f3922da1f1658f4c302c5975db429d86",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80028738",
+            "file_offset": 102200,
+            "length": 180,
+            "sha256": "c3fd377fe088ed916a656c9bd5835371771dda21040a2c863983bf289651c50f",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80029eb0",
+            "file_offset": 108208,
+            "length": 280,
+            "sha256": "315f5391ff572ccf7580b1a1b8b8a93cd1d5a97110eaf42f2c56876cd73fea99",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80032eb4",
+            "file_offset": 145076,
+            "length": 160,
+            "sha256": "603f626038f3ee725fe0b5a79988343ff0aca07e6c2a72a95791d3d565f926ed",
+            "source_matches_disassembly_and_runtime": true
+          }
+        ],
+        "field_instruction_windows": [
+          {
+            "address": "0x80070488",
+            "decoded_offset": 2456,
+            "length": 128,
+            "sha256": "9dcb56a1c2d9622d35c06069f53bef350a73440dd1b3bdf62ad27a19c686b639",
+            "decoded_source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x800777ec",
+            "decoded_offset": 31996,
+            "length": 28,
+            "sha256": "84246050c6f45175e01294656e9b85e248bc5bbc77d414d796d59beacafc09f9",
+            "decoded_source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80078e74",
+            "decoded_offset": 37764,
+            "length": 28,
+            "sha256": "189920ea79866d368e349141ffe1b71f3150772aa0df185510394676784902cb",
+            "decoded_source_matches_disassembly_and_runtime": true
+          }
+        ]
+      },
+      {
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "overlay_source": {
+          "slot": 31,
+          "source_lba": 173245,
+          "source_sector_count": 62,
+          "projected_bytes": 125304,
+          "projection_unit": 2048,
+          "projection_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+          "all_projected_bytes_zero": false,
+          "following_sector_gap": 0
+        },
+        "private_decoding": {
+          "original_decoder_address": "0x80032eb4",
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 260862,
+          "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+          "consumed_source_bytes": 125307,
+          "physical_user_data_bytes": 126976,
+          "physical_user_data_sha256": "7b1d7c26a48c0bc3258aa91c03dfc9d9d453338285381e3d108e97b75827dccc",
+          "bytes_consumed_beyond_candidate_length": 3,
+          "consumed_sector_padding_all_zero": true
+        },
+        "main_instruction_windows": [
+          {
+            "address": "0x80019b88",
+            "file_offset": 41864,
+            "length": 16,
+            "sha256": "65a19b1f250166e39881ac5c40226044d0f7a0546ed1e0633774b20304a968fd",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x8001b53c",
+            "file_offset": 48444,
+            "length": 32,
+            "sha256": "6d4b06a0c25f5498f9029807a7bb762e69612a3a0a1ac06649b76c1ff0709c57",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80028470",
+            "file_offset": 101488,
+            "length": 80,
+            "sha256": "7a14e34a8f19b84c080c357e854b8405f3922da1f1658f4c302c5975db429d86",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80028738",
+            "file_offset": 102200,
+            "length": 180,
+            "sha256": "c3fd377fe088ed916a656c9bd5835371771dda21040a2c863983bf289651c50f",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80029eb0",
+            "file_offset": 108208,
+            "length": 280,
+            "sha256": "315f5391ff572ccf7580b1a1b8b8a93cd1d5a97110eaf42f2c56876cd73fea99",
+            "source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80032eb4",
+            "file_offset": 145076,
+            "length": 160,
+            "sha256": "603f626038f3ee725fe0b5a79988343ff0aca07e6c2a72a95791d3d565f926ed",
+            "source_matches_disassembly_and_runtime": true
+          }
+        ],
+        "field_instruction_windows": [
+          {
+            "address": "0x80070488",
+            "decoded_offset": 2456,
+            "length": 128,
+            "sha256": "9dcb56a1c2d9622d35c06069f53bef350a73440dd1b3bdf62ad27a19c686b639",
+            "decoded_source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x800777ec",
+            "decoded_offset": 31996,
+            "length": 28,
+            "sha256": "84246050c6f45175e01294656e9b85e248bc5bbc77d414d796d59beacafc09f9",
+            "decoded_source_matches_disassembly_and_runtime": true
+          },
+          {
+            "address": "0x80078e74",
+            "decoded_offset": 37764,
+            "length": 28,
+            "sha256": "189920ea79866d368e349141ffe1b71f3150772aa0df185510394676784902cb",
+            "decoded_source_matches_disassembly_and_runtime": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "name": "disc2-field-15",
+  "source_profile": "na-slus-00669-5eab85c683d4",
+  "description": "Direct numeric field 15 on the measured second-disc source; semantic scene name remains unidentified.",
+  "entry": { "type": "field", "map": 15 },
+  "launch": { "ready": "map", "timeout_frames": 5000, "settle_frames": 300 }
+}

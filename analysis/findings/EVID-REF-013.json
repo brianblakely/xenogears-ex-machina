@@ -1,0 +1,493 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-013",
+  "kind": "original_battle_entry_flag_and_input_probe",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5472
+      },
+      "address": "0x80071050",
+      "address_space": "PS1 KSEG0 virtual address in independently decoded original mode 2 resource",
+      "not_applicable": "Sector identifies the packed source start. The decoded offset identifies the studied original conditional path. Its instruction windows match the new battle and matched-control RAM captures for the stated profile."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 173353,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "source_slot": 33,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5472
+      },
+      "address": "0x80071050",
+      "address_space": "PS1 KSEG0 virtual address in independently decoded original mode 2 resource",
+      "not_applicable": "Sector identifies the packed source start. The decoded offset identifies the studied original conditional path. Its instruction windows match the new battle and matched-control RAM captures for the stated profile."
+    }
+  ],
+  "observation": "At original Kernel readiness, a guarded change of byte0x800594f8 from observed01 to00 followed by the original Down/Cross Battle-menu input reaches visible original battle presentation on both discs. Disc1 reaches frame4065 and Disc2 frame4064. A matched Disc1 control preserving01, with identical timing and controller input, remains flat teal at4065. Three additional Disc1 Cross inputs visibly alter command/attack-point and actor/target presentation. Twelve entry/conditional/table-copy instruction windows across four captures match independently decoded original sources. Two Disc1 coldboots have byte-identical full RAM at4065 before additional inputs.",
+  "interpretation": "The original mode2 byte is a useful battle-entry research control. Original instructions at0x80071050 read it, with zero branching to0x800710f0; the nonzero path loads directory(16,2) file1 at0x801e0000 and conditionally calls0x801e0a34. This supports further battle-adapter recovery. It does not yet establish a complete retail state setup, a typed formation selector, battle readiness, combat rules or return semantics. The byte has other original consumers, so the debug-gate label identifies the studied conditional rather than its complete meaning.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Exact original profiles and mode2 source identities from EVID-REF-001/002/012",
+      "Pinned Nix observation and disassembly infrastructure",
+      "Fresh ignored local output paths, original reset state, no imported checkpoints",
+      "Explicit analysis_probe programs with guarded original setup writes"
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "Write one exact case.program object from tests/reference-inputs/battle-gate-probe-route.json to a fresh .local/scenarios JSON file.",
+      "python3 tools/reference/observe.py --content 'discs/Xenogears disc <1-or-2>.chd' --program .local/scenarios/<case>.json --frames 15000 --capture-every 600 --output .local/scenarios/<fresh-output>",
+      "Compare the two Disc1 programs: excluding descriptive name/reason fields, their guard setup differs only in the byte value01 versus00. Review their frame4065 outputs and recorded write events.",
+      "Reproduce each mode2 source from the original full measured sectors with the bounded transcription of original decoder0x80032eb4. Compare decoded windows0x80070f40+128,0x80071050+160 and0x80071130+40 with the recorded original RAM.",
+      "Compare baseline final.ram at4065 with the input-response run's ram-004065.bin; preserve exact whole-RAM equality without masks."
+    ],
+    "expected": "Original source-window equality and exact guarded inputs; a matched original control distinguishes outcomes without claiming a general adapter. Unknown gameplay semantics remain explicit.",
+    "actual": "Both original sources decode to the recorded343936-byte mode2 identity. All12 instruction windows match. Both gate-zero disc runs display battle UI; the gate-one matched control remains flat. Three Cross inputs change visible command/action presentation. The two pre-input Disc1 RAM captures match exactly across2097152 bytes with SHA256 bf9fdb93bbc1dddc358781d4c7382c76e995ff4af0ae1ec092e794ac13510944.",
+    "result": "passed",
+    "tolerance": "Exact bytes, hashes and guarded setup within the pinned HLE/interpreter configuration; visual outcomes are limited to the captured paths. No native gameplay or hardware timing equivalence.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/battle-debug-gate-source-review.json",
+        "sha256": "e6a0d65f81ff8d54a6d27b2406de16075acee038c303138408ca83fdb85b75d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_battle_gate.py",
+        "sha256": "8dce5859fe580547aab3d3bd1a315383ba26225395cf1bb19df46745499e1ea1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/publish_battle_probe.py",
+        "sha256": "f7b7b0cd186060123c39ad3f56e5cb26db72401dadce8de681fe88fd80ad45ac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_field_loader_source.py",
+        "sha256": "3e02c28853a50b48f790ce8327de7320047c240cb305341afa6680802a869d83",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-reset-debug-gate-disabled-probe.json",
+        "sha256": "e84ea8939d8438af21da8bea38396b54190630ff65f846fdefed1cfc992a5267",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-reset-debug-gate-disabled-probe/observation.json",
+        "sha256": "4e283c54438558f08255d726293e582a622dcb0f129d7843f686dfa07a7e9a6c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-reset-debug-gate-disabled-probe/final.ram",
+        "sha256": "bf9fdb93bbc1dddc358781d4c7382c76e995ff4af0ae1ec092e794ac13510944",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-reset-debug-gate-disabled-probe/frame-004065.png",
+        "sha256": "9bbd1c15991bcf4585f15b9308fde14c3add381f5858171c5f5dc964e17cdd74",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe.json",
+        "sha256": "9e17410f101141d98844a59b481cabb57eee19e20704d171ab0704825c7cab2e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/observation.json",
+        "sha256": "3677c3fafbcb2aa263e0a2c48a3f54e85bd3fcf3f12202b736e367d9b742d258",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/final.ram",
+        "sha256": "0e31b6639a14b5cdc8e3471ffe208be750a1bfebbe15a8575f4aa2f419f290bb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/frame-005889.png",
+        "sha256": "31c801ad2c171193cb43b8465d9fc471ae591b5a6d80fdd9a8a72b527f56ed98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/frame-004065.png",
+        "sha256": "9bbd1c15991bcf4585f15b9308fde14c3add381f5858171c5f5dc964e17cdd74",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/frame-004673.png",
+        "sha256": "b528e3594f6e9194a95a2d1a5f694c93eea957a62fcd512cb3464b66c00e4a72",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/frame-005281.png",
+        "sha256": "3acd265f3e0a62b1f81fd0c6428a1d990cb840f68542455e227fc94da7140f2c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-input-response-probe/ram-004065.bin",
+        "sha256": "bf9fdb93bbc1dddc358781d4c7382c76e995ff4af0ae1ec092e794ac13510944",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe.json",
+        "sha256": "90ad32a14c50b74607d69404d4118c27360cea20ff61ea867341fb36e9b710ee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe/observation.json",
+        "sha256": "2102b18057f21d0853390d80448ee25f6ac5ca4b8b617dcbe84ea2106166790f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe/final.ram",
+        "sha256": "1e49bd6363c4d060013bc17855a7e7e68d80ce62d691a37a768cd376f467df3b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe/frame-004064.png",
+        "sha256": "6053c73075879bbb1a68c178a64d08f02890b0a7b136d54518ce8f8ef93e61df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-debug-gate-control-probe.json",
+        "sha256": "b0bc277a5501722adf812e210c246bc8f4a6bb5483242fc10def93396d3d2664",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-debug-gate-control-probe/observation.json",
+        "sha256": "ab67a0ddbef54cf3a580758f9b25ce85de1b315a3defc4beb38c4714fde57e67",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-debug-gate-control-probe/final.ram",
+        "sha256": "b78bf7f91748cb551e0cb93d469775bb77dce2a25eaa9a7bd4f3fa23313b7317",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battle-debug-gate-control-probe/frame-004065.png",
+        "sha256": "06659eac8223f60da7fd514e9108400e0dfdca041d90343b0a18f66b536f23c9",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "source_family": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+      "resource": {
+        "slot": 38,
+        "source_lba": 109041,
+        "source_sector_count": 82,
+        "projected_bytes": 166564,
+        "projection_unit": 2048,
+        "projection_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "decoded_bytes": 343936,
+      "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+      "consumed_source_bytes": 166564,
+      "decoded_base": "0x8006faf0"
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+      "resource": {
+        "slot": 33,
+        "source_lba": 173353,
+        "source_sector_count": 82,
+        "projected_bytes": 166564,
+        "projection_unit": 2048,
+        "projection_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "decoded_bytes": 343936,
+      "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+      "consumed_source_bytes": 166564,
+      "decoded_base": "0x8006faf0"
+    }
+  ],
+  "execution_cases": [
+    {
+      "scenario": "battle-reset-debug-gate-disabled-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frames": 4065,
+      "program_path": ".local/scenarios/battle-reset-debug-gate-disabled-probe.json",
+      "program_sha256": "e84ea8939d8438af21da8bea38396b54190630ff65f846fdefed1cfc992a5267",
+      "observation_path": ".local/scenarios/battle-reset-debug-gate-disabled-probe/observation.json",
+      "observation_sha256": "4e283c54438558f08255d726293e582a622dcb0f129d7843f686dfa07a7e9a6c",
+      "ram_path": ".local/scenarios/battle-reset-debug-gate-disabled-probe/final.ram",
+      "ram_sha256": "bf9fdb93bbc1dddc358781d4c7382c76e995ff4af0ae1ec092e794ac13510944",
+      "observed_gate_byte": 0,
+      "gate_event": {
+        "step": "probe-original-debug-gate-disabled",
+        "started_frame": 437,
+        "conditions": [],
+        "writes": [
+          {
+            "offset": 365816,
+            "expected": "01",
+            "value": "00",
+            "reason": "Explore bypass of the original conditional debug-resource path at0x80071050. Observed reset byte is1; formation validity and battle readiness are not asserted.",
+            "before": "01"
+          }
+        ],
+        "completed_frame": 437
+      },
+      "windows": [
+        {
+          "address": "0x80070f40",
+          "decoded_offset": 5200,
+          "size": 128,
+          "sha256": "ca2cec01c25f50ad135ff5cb30222213e3badf2d076ce97459ef8ce6e85a9162",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071050",
+          "decoded_offset": 5472,
+          "size": 160,
+          "sha256": "a496852aab5fd73144bfd929da151d28bdacb7e38e2868d0415a22c017c26831",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071130",
+          "decoded_offset": 5696,
+          "size": 40,
+          "sha256": "d5e63e5743aa5a730191af92860eabca5b468a3c34d3c441838ce3055d8a5c21",
+          "matches_original_source": true
+        }
+      ],
+      "selected_table_index_u8": 0,
+      "selected_table_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_matches_table_at_capture": true,
+      "selected_table_role": "Original code copies32 bytes from0x800658dc+index*32 to0x8006f9dc; full descriptor semantics and formation ID are unresolved.",
+      "observed_output": "Original battle presentation with party/enemy sprites, HP displays and command UI.",
+      "readiness_scope": "Original Kernel readiness only; subsequent battle output is visually reviewed, without a battle readiness assertion."
+    },
+    {
+      "scenario": "battle-input-response-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frames": 5889,
+      "program_path": ".local/scenarios/battle-input-response-probe.json",
+      "program_sha256": "9e17410f101141d98844a59b481cabb57eee19e20704d171ab0704825c7cab2e",
+      "observation_path": ".local/scenarios/battle-input-response-probe/observation.json",
+      "observation_sha256": "3677c3fafbcb2aa263e0a2c48a3f54e85bd3fcf3f12202b736e367d9b742d258",
+      "ram_path": ".local/scenarios/battle-input-response-probe/final.ram",
+      "ram_sha256": "0e31b6639a14b5cdc8e3471ffe208be750a1bfebbe15a8575f4aa2f419f290bb",
+      "observed_gate_byte": 0,
+      "gate_event": {
+        "step": "probe-original-debug-gate-disabled",
+        "started_frame": 437,
+        "conditions": [],
+        "writes": [
+          {
+            "offset": 365816,
+            "expected": "01",
+            "value": "00",
+            "reason": "Explore bypass of the original conditional debug-resource path at0x80071050. Observed reset byte is1; formation validity and battle readiness are not asserted.",
+            "before": "01"
+          }
+        ],
+        "completed_frame": 437
+      },
+      "windows": [
+        {
+          "address": "0x80070f40",
+          "decoded_offset": 5200,
+          "size": 128,
+          "sha256": "ca2cec01c25f50ad135ff5cb30222213e3badf2d076ce97459ef8ce6e85a9162",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071050",
+          "decoded_offset": 5472,
+          "size": 160,
+          "sha256": "a496852aab5fd73144bfd929da151d28bdacb7e38e2868d0415a22c017c26831",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071130",
+          "decoded_offset": 5696,
+          "size": 40,
+          "sha256": "d5e63e5743aa5a730191af92860eabca5b468a3c34d3c441838ce3055d8a5c21",
+          "matches_original_source": true
+        }
+      ],
+      "selected_table_index_u8": 0,
+      "selected_table_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_matches_table_at_capture": true,
+      "selected_table_role": "Original code copies32 bytes from0x800658dc+index*32 to0x8006f9dc; full descriptor semantics and formation ID are unresolved.",
+      "observed_output": "Original battle presentation with party/enemy sprites, HP displays and command UI. Three subsequent Cross inputs produce an attack-point button UI, changed target/pose/camera presentation and a later active party selection. Combat arithmetic and full action semantics remain unrecovered.",
+      "readiness_scope": "Original Kernel readiness only; subsequent battle output is visually reviewed, without a battle readiness assertion."
+    },
+    {
+      "scenario": "disc2-battle-debug-gate-disabled-probe",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frames": 4064,
+      "program_path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe.json",
+      "program_sha256": "90ad32a14c50b74607d69404d4118c27360cea20ff61ea867341fb36e9b710ee",
+      "observation_path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe/observation.json",
+      "observation_sha256": "2102b18057f21d0853390d80448ee25f6ac5ca4b8b617dcbe84ea2106166790f",
+      "ram_path": ".local/scenarios/disc2-battle-debug-gate-disabled-probe/final.ram",
+      "ram_sha256": "1e49bd6363c4d060013bc17855a7e7e68d80ce62d691a37a768cd376f467df3b",
+      "observed_gate_byte": 0,
+      "gate_event": {
+        "step": "probe-original-debug-gate-disabled",
+        "started_frame": 436,
+        "conditions": [],
+        "writes": [
+          {
+            "offset": 365816,
+            "expected": "01",
+            "value": "00",
+            "reason": "Explore bypass of the original conditional debug-resource path at0x80071050. Observed reset byte is1; formation validity and battle readiness are not asserted.",
+            "before": "01"
+          }
+        ],
+        "completed_frame": 436
+      },
+      "windows": [
+        {
+          "address": "0x80070f40",
+          "decoded_offset": 5200,
+          "size": 128,
+          "sha256": "ca2cec01c25f50ad135ff5cb30222213e3badf2d076ce97459ef8ce6e85a9162",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071050",
+          "decoded_offset": 5472,
+          "size": 160,
+          "sha256": "a496852aab5fd73144bfd929da151d28bdacb7e38e2868d0415a22c017c26831",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071130",
+          "decoded_offset": 5696,
+          "size": 40,
+          "sha256": "d5e63e5743aa5a730191af92860eabca5b468a3c34d3c441838ce3055d8a5c21",
+          "matches_original_source": true
+        }
+      ],
+      "selected_table_index_u8": 0,
+      "selected_table_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_matches_table_at_capture": true,
+      "selected_table_role": "Original code copies32 bytes from0x800658dc+index*32 to0x8006f9dc; full descriptor semantics and formation ID are unresolved.",
+      "observed_output": "Original battle presentation with party/enemy sprites, HP displays and command UI.",
+      "readiness_scope": "Original Kernel readiness only; subsequent battle output is visually reviewed, without a battle readiness assertion."
+    },
+    {
+      "scenario": "battle-debug-gate-control-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frames": 4065,
+      "program_path": ".local/scenarios/battle-debug-gate-control-probe.json",
+      "program_sha256": "b0bc277a5501722adf812e210c246bc8f4a6bb5483242fc10def93396d3d2664",
+      "observation_path": ".local/scenarios/battle-debug-gate-control-probe/observation.json",
+      "observation_sha256": "ab67a0ddbef54cf3a580758f9b25ce85de1b315a3defc4beb38c4714fde57e67",
+      "ram_path": ".local/scenarios/battle-debug-gate-control-probe/final.ram",
+      "ram_sha256": "b78bf7f91748cb551e0cb93d469775bb77dce2a25eaa9a7bd4f3fa23313b7317",
+      "observed_gate_byte": 1,
+      "gate_event": {
+        "step": "preserve-original-debug-gate",
+        "started_frame": 437,
+        "conditions": [],
+        "writes": [
+          {
+            "offset": 365816,
+            "expected": "01",
+            "value": "01",
+            "reason": "Preserve observed original byte1 for a matched input/time control of the debug gate experiment.",
+            "before": "01"
+          }
+        ],
+        "completed_frame": 437
+      },
+      "windows": [
+        {
+          "address": "0x80070f40",
+          "decoded_offset": 5200,
+          "size": 128,
+          "sha256": "ca2cec01c25f50ad135ff5cb30222213e3badf2d076ce97459ef8ce6e85a9162",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071050",
+          "decoded_offset": 5472,
+          "size": 160,
+          "sha256": "a496852aab5fd73144bfd929da151d28bdacb7e38e2868d0415a22c017c26831",
+          "matches_original_source": true
+        },
+        {
+          "address": "0x80071130",
+          "decoded_offset": 5696,
+          "size": 40,
+          "sha256": "d5e63e5743aa5a730191af92860eabca5b468a3c34d3c441838ce3055d8a5c21",
+          "matches_original_source": true
+        }
+      ],
+      "selected_table_index_u8": 0,
+      "selected_table_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_sha256": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "active_row_matches_table_at_capture": true,
+      "selected_table_role": "Original code copies32 bytes from0x800658dc+index*32 to0x8006f9dc; full descriptor semantics and formation ID are unresolved.",
+      "observed_output": "Flat teal presentation at the same frame4065 and with the same controller schedule as the gate-zero Disc1 run.",
+      "readiness_scope": "Original Kernel readiness only; subsequent battle output is visually reviewed, without a battle readiness assertion."
+    }
+  ],
+  "repeatability": {
+    "scope": "Two Disc1 coldboots at frame4065 before added inputs",
+    "ram_bytes": 2097152,
+    "sha256": "bf9fdb93bbc1dddc358781d4c7382c76e995ff4af0ae1ec092e794ac13510944",
+    "exact_match": true
+  },
+  "original_table_copy": {
+    "code_address": "0x80071130",
+    "selector_address": "0x80059508",
+    "selector_width": 1,
+    "source_table": "0x800658dc",
+    "row_bytes": 32,
+    "destination": "0x8006f9dc",
+    "observed_index": 0,
+    "observation": "The selected row and active copy match in all four captures.",
+    "meaning": "Full descriptor semantics, available index domain and formation identity are unresolved."
+  },
+  "limitations": [
+    "Only Kernel readiness is asserted; no battle readiness predicate or typed battle adapter is established.",
+    "All four programs are explicit analysis probes; the gate write is not a recovered retail progression setup.",
+    "No native battle, battle formulas, formation schema, victory/reward/return-to-field behavior or hardware timing is established.",
+    "The observed original byte1 at Kernel readiness is not claimed to be its static executable initializer; other original stores/consumers require review.",
+    "The matched entry control supports the observed byte-level setup difference, not the claim that every effect of that byte is confined to the debug overlay.",
+    "Visible input response is not a recovered damage formula, target-state hash, victory/reward result or field-return validation.",
+    "The original-source decoder remains a private evidence probe, not a reviewed general importer.",
+    "This finding is a Phase1 research seed and does not retroactively alter the preserved Phase0 verification snapshot."
+  ],
+  "author": "Codex /root, independent original source and execution inspection",
+  "reviewers": []
+}

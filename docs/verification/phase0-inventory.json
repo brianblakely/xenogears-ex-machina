@@ -1,0 +1,255 @@
+{
+  "schema_version": 1,
+  "id": "VERIFY-PHASE0-INVENTORY",
+  "evidence_kind": "original_source_coverage_inventory",
+  "targets": [
+    "repository"
+  ],
+  "covers": [
+    "P00-T03-F01",
+    "P00-T03-F02",
+    "P00-T03-F03",
+    "P00-T03-F04",
+    "P00-T03-F05",
+    "P00-T03-F06",
+    "P00-T03-F07",
+    "P00-T03-F08",
+    "P00-T03-F09",
+    "P00-T03-F10"
+  ],
+  "status": "passed",
+  "scope": "Each of the ten requested categories has original-source catalog, source-family or directly observed entry evidence on both exact selected discs, plus explicit unknowns and next evidence. This establishes the Phase 0 coverage inventory. catalog_complete remains false: exhaustive semantic IDs, story variants, complete progression, format recovery and behavior validation are later-phase work.",
+  "verified_categories": [
+    {
+      "id": "INV-D1-FIELDS",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "fields",
+      "anchors": 3,
+      "evidence": [
+        "EVID-REF-006",
+        "EVID-REF-007",
+        "EVID-REF-011"
+      ]
+    },
+    {
+      "id": "INV-D1-WORLD_MAP",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "world_map",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-009"
+      ]
+    },
+    {
+      "id": "INV-D1-BATTLES",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "battles",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-012"
+      ]
+    },
+    {
+      "id": "INV-D1-MENUS",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "menus",
+      "anchors": 9,
+      "evidence": [
+        "EVID-REF-006",
+        "EVID-REF-007",
+        "EVID-REF-011"
+      ]
+    },
+    {
+      "id": "INV-D1-EVENT_SEQUENCES",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "event_sequences",
+      "anchors": 3,
+      "evidence": [
+        "EVID-REF-006"
+      ]
+    },
+    {
+      "id": "INV-D1-AUDIO",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "audio",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-010"
+      ]
+    },
+    {
+      "id": "INV-D1-FMVS",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "fmvs",
+      "anchors": 2,
+      "evidence": [
+        "EVID-REF-006",
+        "EVID-REF-010"
+      ]
+    },
+    {
+      "id": "INV-D1-SAVES",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "saves",
+      "anchors": 3,
+      "evidence": [
+        "EVID-REF-011"
+      ]
+    },
+    {
+      "id": "INV-D1-OPTIONAL_ACTIVITIES",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "optional_activities",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-009"
+      ]
+    },
+    {
+      "id": "INV-D1-MINIGAMES",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "category": "minigames",
+      "anchors": 5,
+      "evidence": [
+        "EVID-REF-009"
+      ]
+    },
+    {
+      "id": "INV-D2-FIELDS",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "fields",
+      "anchors": 3,
+      "evidence": [
+        "EVID-REF-007",
+        "EVID-REF-011"
+      ]
+    },
+    {
+      "id": "INV-D2-WORLD_MAP",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "world_map",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-009"
+      ]
+    },
+    {
+      "id": "INV-D2-BATTLES",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "battles",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-012"
+      ]
+    },
+    {
+      "id": "INV-D2-MENUS",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "menus",
+      "anchors": 3,
+      "evidence": [
+        "EVID-REF-003",
+        "EVID-REF-007",
+        "EVID-REF-011"
+      ]
+    },
+    {
+      "id": "INV-D2-EVENT_SEQUENCES",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "event_sequences",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-003"
+      ]
+    },
+    {
+      "id": "INV-D2-AUDIO",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "audio",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-010"
+      ]
+    },
+    {
+      "id": "INV-D2-FMVS",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "fmvs",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-010"
+      ]
+    },
+    {
+      "id": "INV-D2-SAVES",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "saves",
+      "anchors": 2,
+      "evidence": [
+        "EVID-REF-011"
+      ]
+    },
+    {
+      "id": "INV-D2-OPTIONAL_ACTIVITIES",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "optional_activities",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-009"
+      ]
+    },
+    {
+      "id": "INV-D2-MINIGAMES",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "category": "minigames",
+      "anchors": 1,
+      "evidence": [
+        "EVID-REF-009"
+      ]
+    }
+  ],
+  "original_findings": [
+    "EVID-REF-001",
+    "EVID-REF-002",
+    "EVID-REF-003",
+    "EVID-REF-004",
+    "EVID-REF-005",
+    "EVID-REF-006",
+    "EVID-REF-007",
+    "EVID-REF-008",
+    "EVID-REF-009",
+    "EVID-REF-010",
+    "EVID-REF-011",
+    "EVID-REF-012"
+  ],
+  "verification": {
+    "category_coverage": "Exactly twenty unique profile/category rows cover all ten named plan categories on both original discs. Each baseline anchor has a concrete category relationship and passed original-source evidence, linked to an independently verified projection, source catalog or captured entry.",
+    "source_and_execution_counts": "Complete measured physical/source-slot surveys, 730/205 non-dummy field data pairs, observed fields14/290 and15/290, 17/12 movie selectors, 305 audio-signature slots per source, shared Battle and card-menu source families, and 32 scoped original execution observations are recorded separately. These counts are not unique semantic content totals.",
+    "open_work": "Every partially enumerated row retains unknown IDs, behavior or variants and the next required original evidence. The exhaustive catalog flag remains false. Successful direct battle readiness, actual save/load, complete story progression and full formats are not Phase 0 inventory claims.",
+    "original_review": "Both-source source bytes and instruction relationships were measured from supplied originals. Captures were actually viewed, including negative/limited outcomes. Source mapping is not inferred from source filenames or another game project.",
+    "public_gate": "Pinned Nix Debug gate passed matrix/schema/source audit/format/build and all three CTest suites with 71 tooling tests, including seven adversarial baseline-inventory cases. Public metadata fixtures test consistency and do not establish original behavior."
+  },
+  "artifacts": [
+    {
+      "path": ".local/verification/phase0-inventory-gate.json",
+      "sha256": "9c911abde2e5b939764471c50979cfd6d3d3b2a28c02c3e5d6fdaf541aa26bf1",
+      "scope": "Passed 99-file matrix/schema/format/Debug build and CTest command record."
+    },
+    {
+      "path": ".local/verification/phase0-inventory-contracts.log",
+      "sha256": "c3799e4f3a59a79d8d115659e327ba613718ef9552a58421f8f6f9c565520e7a",
+      "scope": "Exact 71 tooling-test and three CTest suite results."
+    },
+    {
+      "path": ".local/verification/phase0-inventory-reviewed.json",
+      "sha256": "4b813593f51e871a5aca7360167feffc548907cff52b75743b07863988546ef6",
+      "scope": "Exact reviewed inventory/observation/finding hashes and per-category original anchors."
+    }
+  ],
+  "limitations": [
+    "This verifies that the original-game coverage inventory exists; it does not claim exhaustive semantic enumeration or gameplay implementation.",
+    "Native runtime, editor, full data formats, scripts and behavior remain later-phase work.",
+    "HLE/reference instrumentation limitations and unobserved ordinary progression remain explicit in each finding."
+  ]
+}

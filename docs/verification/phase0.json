@@ -1,0 +1,290 @@
+{
+  "schema_version": 1,
+  "id": "VERIFY-PHASE0-FOUNDATION",
+  "evidence_kind": "infrastructure_only",
+  "targets": [
+    "repository"
+  ],
+  "covers": [
+    "P00-T01-F01",
+    "P00-T01-F02",
+    "P00-T01-F03",
+    "P00-T01-F04",
+    "P00-T02-F01",
+    "P00-T02-F02",
+    "P00-T02-F03",
+    "P00-T02-F04",
+    "P00-T02-F05",
+    "P00-T02-F06",
+    "P00-T02-F07",
+    "P00-T04-F01",
+    "P00-T04-F02",
+    "P00-T04-F03",
+    "P00-T04-F04",
+    "P00-T04-F05",
+    "P00-T04-F06",
+    "P00-T04-F07",
+    "P00-T04-F08",
+    "P00-T05-F01",
+    "P00-T05-F02",
+    "P00-T05-F03",
+    "P00-T05-F04",
+    "P00-T05-F05",
+    "P00-T05-F06",
+    "P00-T05-F07",
+    "P00-T05-F08",
+    "P00-T06-F01",
+    "P00-T06-F02",
+    "P00-T06-F03",
+    "P00-T06-F04",
+    "P00-T06-F05",
+    "P00-T06-F06",
+    "P00-T06-F07",
+    "P00-T07-F01",
+    "P00-T07-F02",
+    "P00-T07-F03",
+    "P00-T07-F04",
+    "P00-T07-F05",
+    "P00-T07-F06",
+    "P00-T07-F07",
+    "P00-T07-F08",
+    "P00-T07-F09",
+    "P00-T08-F01",
+    "P00-T08-F02",
+    "P00-T08-F03",
+    "P00-T09-F01",
+    "P00-T09-F02",
+    "P00-T09-F03",
+    "P00-T09-F04",
+    "P00-T09-F05"
+  ],
+  "date": "2026-09-07",
+  "phase_status": "complete: all Phase 0 todo facets and the exit criterion demonstrated in their recorded scopes",
+  "host": {
+    "os": "Omarchy 4.0.2, ID_LIKE=arch",
+    "architecture": "x86_64-linux",
+    "scope": "Arch-derived native development host; no Vulkan gameplay, Windows or macOS execution claim"
+  },
+  "toolchain": {
+    "nix": "2.35.2",
+    "nixpkgs_revision": "dc5d91f840324650bac8c379428c7037a416959a",
+    "clang": "21.1.8",
+    "cmake": "4.3.4",
+    "ninja": "1.13.2",
+    "python": "3.14.7",
+    "ruff": "0.16.5",
+    "nixfmt": "1.4.0",
+    "chdman": "0.289"
+  },
+  "verification": {
+    "matrix": "163 verbatim source tasks, 987 individually testable facets, 14 phase exits, 6 release checkpoints, 20 feature summary rows, 9 keyboard-default rows, 7 boundaries and 2 execution rules. Parent structurally and manually reviewed full requested coverage; automated checks reject drift/omission. Includes the user-requested original-game scenario system as P00-T10.",
+    "source_profiles": "EVID-REF-001/002 measure integrity, container/raw/boot hashes and North America markers; EVID-REF-003 independently reproduces original-program title/New Game responses. Only exact measured revisions are accepted; retail revision names remain unknown. Subsequent EVID-REF-005 directly measures explicit DS01/DS02 disc tags, confirming sequence without any filename or HLE inference.",
+    "repository": "Owned runtime/analysis/extraction/editor/test/packaging areas exist; explicit source allowlist and private-data/symlink/unsafe-path rejection tests pass. No game assets enter Nix input or source archive.",
+    "evidence": "Finding template and executable validation require source profile, coordinates, executable/overlay/address applicability, observation versus interpretation, confidence and reproducible commands/artifacts. Original static and execution findings demonstrate the workflow.",
+    "subsystems": "23 subsystems track all five maturity states; unknown/intentional-change classification is separate. Adversarial tests reject premature promotion and unsupported changes; no gameplay subsystem is claimed decompiled or implemented.",
+    "build": "Final Debug, ASan+UBSan and Release CMake/Ninja/CTest presets all passed: each ran all three CTest suites, including 71 public tooling tests. No sanitizer report occurred. The native baseline implements only its documented version/help interface.",
+    "format": "clang-format, Ruff format/lint and nixfmt passed on reviewed authored sources.",
+    "reproducibility": "Two isolated copies of the preserved 101-file source-only archive independently configured, built, passed all CTest suites and installed without original data. Both Release binary hashes match; exact source archive, immutable logs and binary identities appear below.",
+    "provenance": "CONTRIBUTING.md and actual pinned dependency/license inventory document independent authorship, permissible infrastructure, optional content, review and redistribution boundaries.",
+    "checkpoints": "16 prospective capture contracts cover both discs, all ten inventory categories and the disc boundary, with prerequisites, inputs, capture marks, observables and explicitly unrecorded original oracles; definitions are not executed progression passes.",
+    "inventory": "VERIFY-PHASE0-INVENTORY demonstrates twenty grounded category/profile rows covering all ten requested original categories, backed by source catalogs, attributed original families and 32 scoped observations. baseline_inventory_ready is true; catalog_complete remains false and later format/behavior/progression work is explicit."
+  },
+  "commands": [
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/matrix.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/validate.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/format.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "reproducibility_proof": {
+    "schema_version": 1,
+    "source_archive": ".local/verification/proof-i1cjg9hq/source.tar.gz",
+    "source_archive_sha256": "ad6cb17a442c690e4c1550958848f7ec0bda7fa360ae431bd99eb4af1ae47cdd",
+    "source_archive_reproducible": true,
+    "release_binary_reproducible": true,
+    "builds": [
+      {
+        "build": "a",
+        "binary_sha256": "05cbc9df59936b7abce3f7e571975a1cadcef447d3a3dc87c450538083239059",
+        "installed_files": [
+          "bin/xem-baseline",
+          "share/licenses/xenogears-ex-machina/LICENSE"
+        ],
+        "log": ".local/verification/proof-i1cjg9hq/source-only-a.log",
+        "log_sha256": "6144bccc2204b71932c6b563ee3db98150cbb92417cfce4606f14a8a3c2d60e8",
+        "original_data_present": false
+      },
+      {
+        "build": "b",
+        "binary_sha256": "05cbc9df59936b7abce3f7e571975a1cadcef447d3a3dc87c450538083239059",
+        "installed_files": [
+          "bin/xem-baseline",
+          "share/licenses/xenogears-ex-machina/LICENSE"
+        ],
+        "log": ".local/verification/proof-i1cjg9hq/source-only-b.log",
+        "log_sha256": "70e24de4f9dade0d142d1dee74e17bb5f1e33af2646f47913373ff9dd99cbd91",
+        "original_data_present": false
+      }
+    ],
+    "scope": "Same pinned x86_64 Linux Nix environment, two isolated source-only directories; not cross-platform binary identity or gameplay validation."
+  },
+  "original_findings": [
+    "EVID-REF-001",
+    "EVID-REF-002",
+    "EVID-REF-003",
+    "EVID-REF-004",
+    "EVID-REF-005",
+    "EVID-REF-006",
+    "EVID-REF-007",
+    "EVID-REF-008",
+    "EVID-REF-009",
+    "EVID-REF-010",
+    "EVID-REF-011",
+    "EVID-REF-012"
+  ],
+  "limitations": [
+    "The Phase 0 original coverage inventory is ready; exhaustive semantic content and behavior remain open for later phases.",
+    "Synthetic tools and empty builds do not prove original behavior or later phase requirements.",
+    "The immutable reproduction archive identifies the exact 101-file snapshot before this final evidence update and exit-status change. Those metadata updates receive the final repository gate; the native source and tested tooling remain unchanged.",
+    "Declared future platform targets are not supported runtime releases."
+  ],
+  "user_steering_matrix_review": {
+    "source": "User requested emulator use through a go-anywhere testing system, analogous to the sibling general testing workflow.",
+    "plan_task": "P00-T10",
+    "facets": 12,
+    "review": "The twelve P00-T10 facets now pass with original-run, source-corroboration and negative-path evidence in VERIFY-PHASE0-SCENARIOS. Unrecovered battle, position and progression adapters remain explicitly tracked and rejected.",
+    "current_matrix_source_tasks": 163,
+    "current_matrix_test_facets": 987,
+    "historical_build_record_note": "Earlier command logs and counts describe the explicitly recorded earlier source snapshot. The native baseline code and its completed tests remain unchanged; later additions require the integrated repository gate again."
+  },
+  "status": "passed",
+  "final_gate_artifacts": [
+    {
+      "path": ".local/verification/phase0-final-debug-ctest.log",
+      "sha256": "a52ac2f6ea65cdd84f0b7dbc893da3eca3430e10286ee604fa836bdf51818ba4",
+      "scope": "All three CTest suites passed, including 71 public tooling contract tests."
+    },
+    {
+      "path": ".local/verification/phase0-final-sanitize-ctest.log",
+      "sha256": "b28ac732466dccbee7104ebec9fda87c193fb67b10e311c728a60bdd919b91f9",
+      "scope": "All three CTest suites passed, including 71 public tooling contract tests."
+    },
+    {
+      "path": ".local/verification/phase0-final-release-ctest.log",
+      "sha256": "d1aa522f26cfb6b5dc3a586842ef6c60a19c5a00fa70189c1efb167122753b17",
+      "scope": "All three CTest suites passed, including 71 public tooling contract tests."
+    },
+    {
+      "path": ".local/verification/phase0-final-gate.json",
+      "sha256": "4b84bebd156f4c3ae7bc3991553e6369a1b0c382aec1f8fd03708335b7180c94",
+      "scope": "Exact final 101-file source snapshot matrix, evidence/source audit, format and all-preset build/test commands."
+    }
+  ],
+  "phase_exit": {
+    "id": "P00-EXIT",
+    "status": "passed",
+    "evidence": [
+      "VERIFY-PHASE0-FOUNDATION",
+      "VERIFY-PHASE0-INVENTORY",
+      "VERIFY-PHASE0-SCENARIOS"
+    ],
+    "required_facets": 73,
+    "all_phase_todos_checked": true,
+    "baseline_inventory_ready": true,
+    "catalog_complete": false,
+    "scope": "Reproducible empty C++ project, complete requirement-to-test definitions, demonstrated evidence/provenance workflow, original-source baseline inventory and original go-anywhere testing system. No later gameplay implementation or exhaustive catalog claim."
+  }
+}

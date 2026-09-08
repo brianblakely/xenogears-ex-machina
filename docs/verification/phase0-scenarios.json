@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "VERIFY-PHASE0-SCENARIOS",
+  "evidence_kind": "original_reference_testing_system",
+  "targets": [
+    "repository"
+  ],
+  "covers": [
+    "P00-T10-F01",
+    "P00-T10-F02",
+    "P00-T10-F03",
+    "P00-T10-F04",
+    "P00-T10-F05",
+    "P00-T10-F06",
+    "P00-T10-F07",
+    "P00-T10-F08",
+    "P00-T10-F09",
+    "P00-T10-F10",
+    "P00-T10-F11",
+    "P00-T10-F12"
+  ],
+  "status": "passed",
+  "original_findings": [
+    "EVID-REF-007"
+  ],
+  "implementation": [
+    "tools/reference/scenario.py",
+    "tools/reference/scenario_program.py",
+    "tools/reference/observe.py",
+    "analysis/scenarios/schema.json",
+    "analysis/scenarios/README.md"
+  ],
+  "verification": {
+    "architecture": "The sibling testing framework informed checkpoint-free scene setup, readiness waits, bounded execution and ordered inputs. All original Xenogears source addresses, loader arithmetic and resource identities were independently recovered from the selected original discs.",
+    "cold_boot_and_loader": "Four documented public-CLI original runs start from reset, fingerprint the original startup instruction, reach the original Kernel loop, and use its dispatcher/field loader. No imported gameplay save or emulator checkpoint is required.",
+    "declarative_setup": "Named and numeric field scenarios bind source profile and field-pair availability. Kernel and original field adapters have explicit guarded setup; arbitrary research writes are isolated and classified as analysis probes.",
+    "readiness": "Two stable frontend boundaries verify original Kernel or field-initialization conditions. Field readiness explicitly means map initialized; no player-control predicate is claimed.",
+    "timeouts_and_rejections": "An actual one-frame Kernel wait failed with a captured timeout and no success report. Actual source mismatch and exact dummy field requests were rejected. Synthetic tests separately exercise conditions, atomic guards, invalid boundaries, overlap, source/catalog drift, input release and execution budgets.",
+    "ordered_inputs": "The painting-room scenario waits for its original entry dialogue, sends two Cross presses with explicit releases/waits, then Square. It reaches the visibly reviewed original main menu. Two independent cold boots match ten PNGs, complete RAM, external state and audio exactly within the recorded reference environment.",
+    "provenance": "Every run snapshots exact scenario, compiled program and source catalog before execution and records compiler, observer, executor, Nix lock, original content, core and BIOS identities plus all condition values and guarded memory mutations.",
+    "unsupported_adapters": "Typed direct-battle, position and progression setup remain an explicit documented backlog and are rejected by the compiler. Unknown readiness modes and unexpected JSON fields cannot silently fall back. No party or progression meaning is assigned to arbitrary low-level memory writes.",
+    "integrated_checks": "Matrix, original evidence and public source audit, all formatters and Debug/ASan+UBSan/Release CMake-Ninja-CTest checks passed with 56 tooling tests in each repository-contracts suite. Subsequent inventory validation additions are recorded separately by the latest public check."
+  },
+  "artifact": {
+    "path": ".local/verification/scenario-system-gate.json",
+    "sha256": "4b84bebd156f4c3ae7bc3991553e6369a1b0c382aec1f8fd03708335b7180c94",
+    "scope": "Successful matrix/format/validation and all three build presets at the integrated 88-file snapshot."
+  },
+  "limitations": [
+    "This is an external original-game reference testing system; the native runtime has no emulator or gameplay implementation.",
+    "HLE observations do not prove hardware timing, general original-game determinism or checkpoint-restore equivalence.",
+    "The reference adapters and tested routes do not establish exhaustive content or behavior. The separate Phase 0 category inventory passes through original source/entry anchors in VERIFY-PHASE0-INVENTORY; catalog_complete remains false."
+  ]
+}

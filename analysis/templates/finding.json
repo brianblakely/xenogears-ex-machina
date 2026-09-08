@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "TEMPLATE-DO-NOT-PROMOTE",
+  "kind": "original_static_or_execution",
+  "source_profiles": [],
+  "locations": [{"profile": "REQUIRED", "file": null, "file_offset": null, "track_lba": null, "sector_bytes": null, "user_data_offset": null, "executable": null, "overlay": null, "address": null, "address_space": null, "not_applicable": "Explain any absent coordinate or executable/overlay/address context"}],
+  "observation": "Record only facts actually observed from the stated original profile",
+  "interpretation": "Separate inference from observation; include alternatives",
+  "confidence": "unknown",
+  "validation": {"preconditions": [], "commands": [], "expected": "Unknown until independently established", "actual": "Not run", "result": "not_run", "tolerance": "Not yet established", "artifacts": []},
+  "limitations": [],
+  "author": "REQUIRED",
+  "reviewers": []
+}

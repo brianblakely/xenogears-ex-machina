@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Original-game cold-boot scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "source_profile", "entry"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"},
+    "description": {"type": "string"},
+    "source_profile": {"enum": ["na-slus-00664-39c547a9afc6", "na-slus-00669-5eab85c683d4"]},
+    "entry": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["type"], "properties": {"type": {"const": "kernel"}}},
+        {"type": "object", "additionalProperties": false, "required": ["type", "map"], "properties": {"type": {"const": "field"}, "map": {"type": "integer", "minimum": 0, "maximum": 4095}}}
+      ]
+    },
+    "launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ready": {"const": "map"},
+        "timeout_frames": {"type": "integer", "minimum": 1, "maximum": 30000},
+        "settle_frames": {"type": "integer", "minimum": 1, "maximum": 3600}
+      }
+    },
+    "steps": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["wait_frames"],
+            "properties": {"wait_frames": {"type": "integer", "minimum": 1, "maximum": 30000}, "capture": {"type": "boolean"}}
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["buttons"],
+            "properties": {
+              "buttons": {"type": "array", "uniqueItems": true, "items": {"enum": ["up", "down", "left", "right", "cross", "circle", "square", "triangle", "start", "select", "l1", "r1", "l2", "r2"]}},
+              "hold_frames": {"type": "integer", "minimum": 1, "maximum": 3600},
+              "after_frames": {"type": "integer", "minimum": 1, "maximum": 30000},
+              "capture": {"type": "boolean"}
+            }
+          }
+        ]
+      }
+    },
+    "state_writes": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["offset", "expected", "value", "reason"],
+        "properties": {
+          "offset": {"type": "integer", "minimum": 0, "maximum": 2097151},
+          "expected": {"type": "string", "pattern": "^(?:[0-9a-f]{2}){1,256}$"},
+          "value": {"type": "string", "pattern": "^(?:[0-9a-f]{2}){1,256}$"},
+          "reason": {"type": "string", "pattern": "\\S"}
+        }
+      }
+    }
+  }
+}

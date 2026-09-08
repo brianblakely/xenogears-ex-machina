@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "stages": [
+    "identified",
+    "analyzed",
+    "decompiled",
+    "natively_implemented",
+    "behaviorally_validated"
+  ],
+  "transition_rule": "Each stage requires its own cited evidence and all preceding stages. No field can be promoted by synthetic tooling tests or by relabeling unknown behavior as an intentional change.",
+  "subsystems": [
+    {
+      "id": "disc_container_and_identity",
+      "stage": "identified",
+      "stage_evidence": {
+        "identified": [
+          "EVID-REF-001",
+          "EVID-REF-002",
+          "EVID-REF-005"
+        ],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "Named retail revision is unestablished; exact hash-defined DS01/DS02 sources are selected.",
+        "Container identity does not establish gameplay or whole-catalog behavior."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "disc_layout_and_loader",
+      "stage": "identified",
+      "stage_evidence": {
+        "identified": [
+          "EVID-REF-001",
+          "EVID-REF-002",
+          "EVID-REF-004",
+          "EVID-REF-005"
+        ],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "Loader use of candidate table fields/groups and auxiliary sector40 metadata is untraced.",
+        "Gameplay categories and runtime resource IDs remain unrecovered."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "archives_and_compression",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "field_geometry_and_collision",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "sprites_models_animation",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "camera_and_visibility",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "original_event_interpreter",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "movement_jump_and_encounters",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "rng_and_simulation_timing",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "on_foot_battles",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "gear_battles",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "world_map_and_transportation",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "menus_dialogue_shops",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "party_inventory_progression",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "audio_sequencing_samples_effects",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "fmv_and_media_sync",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "ordinary_saves_and_original_save_formats",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "minigames_and_optional_activities",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "native_state_snapshots_replay",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "native_renderer_and_platform_services",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "native_input_and_app_ui",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "lua_mod_packages_and_manager",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    },
+    {
+      "id": "editor_services_and_tools",
+      "stage": "unidentified",
+      "stage_evidence": {
+        "identified": [],
+        "analyzed": [],
+        "decompiled": [],
+        "natively_implemented": [],
+        "behaviorally_validated": []
+      },
+      "behavior_status": "unknown",
+      "intentional_change_records": [],
+      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "unknowns": [
+        "All original gameplay behavior in this subsystem remains unvalidated."
+      ],
+      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+    }
+  ]
+}

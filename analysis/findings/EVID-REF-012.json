@@ -1,0 +1,446 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-012",
+  "kind": "original_battle_source_inventory_and_unsuccessful_entry_observation",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 35576,
+      "track_lba": 108623,
+      "sector_bytes": 2352,
+      "user_data_offset": 784,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800182f8",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 41496,
+      "track_lba": 108626,
+      "sector_bytes": 2352,
+      "user_data_offset": 560,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80019a18",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 41836,
+      "track_lba": 108626,
+      "sector_bytes": 2352,
+      "user_data_offset": 900,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80019b6c",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 48836,
+      "track_lba": 108629,
+      "sector_bytes": 2352,
+      "user_data_offset": 1756,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001b6c4",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 101488,
+      "track_lba": 108655,
+      "sector_bytes": 2352,
+      "user_data_offset": 1160,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028470",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 102200,
+      "track_lba": 108655,
+      "sector_bytes": 2352,
+      "user_data_offset": 1872,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028738",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80070f40",
+      "address_space": "PS1 KSEG0 virtual address in independently decoded original mode 2 resource",
+      "not_applicable": "Sector identifies the packed source start, not a direct instruction offset. Both source windows match the Disc 1 failed-target RAM capture; no Disc 2 battle execution is claimed."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 35576,
+      "track_lba": 172935,
+      "sector_bytes": 2352,
+      "user_data_offset": 784,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x800182f8",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 41496,
+      "track_lba": 172938,
+      "sector_bytes": 2352,
+      "user_data_offset": 560,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80019a18",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 41836,
+      "track_lba": 172938,
+      "sector_bytes": 2352,
+      "user_data_offset": 900,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80019b6c",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 48836,
+      "track_lba": 172941,
+      "sector_bytes": 2352,
+      "user_data_offset": 1756,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x8001b6c4",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 101488,
+      "track_lba": 172967,
+      "sector_bytes": 2352,
+      "user_data_offset": 1160,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80028470",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 102200,
+      "track_lba": 172967,
+      "sector_bytes": 2352,
+      "user_data_offset": 1872,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80028738",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Original resident Kernel labels, dispatch or directory/source helper; no overlay applies to this coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 173353,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "source_slot": 33,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80070f40",
+      "address_space": "PS1 KSEG0 virtual address in independently decoded original mode 2 resource",
+      "not_applicable": "Sector identifies the packed source start, not a direct instruction offset. Both source windows match the Disc 1 failed-target RAM capture; no Disc 2 battle execution is claimed."
+    }
+  ],
+  "observation": "The original Kernel text labels mode 2 Battle. Its resident entry is 0x8001b6c4; the dispatcher uses directory (0,1) and resource number 16, selecting source slot 38 on Disc 1 and 33 on Disc 2. Both packed projections contain 166564 bytes and independently decode to identical 343936-byte resources. The resident path calls the original overlay at 0x80070f40. Its first 128 bytes match the preserved Disc 1 reset-default attempt. That bounded attempt ends in a uniform teal image, without a visible playable battle.",
+  "interpretation": "This gives both discs an original-source battle-family inventory entry and preserves the unsuccessful launch as a research gap. It does not catalogue formations, enemies, arenas, on-foot/Gear distinctions or battle behavior. The source family is one shared code identity, not two battles.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Both full-hash original raw-track profiles and independent source projections",
+      "Pinned Nix Python environment",
+      "Original source decoder instructions and directory/dispatcher evidence from EVID-REF-007",
+      "Preserved bounded cold-boot Battle input attempt from EVID-REF-009"
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix",
+      "Read original boot labels at 0x800182f8, mode entry at 0x8001808c+2*16, resource number at 0x8004eaa0+2*4 and directory halfword 1 at logical LBA 40. Follow the stated original dispatcher/source helpers to compute slot = directory_halfword_1 + 16 - 2.",
+      "Read and hash complete original source entries at the recorded slots. Decode complete measured source sectors using the independently transcribed original 0x80032eb4 routine; compare the 128-byte window at decoded offset 0x1450 with preserved Disc 1 RAM at 0x70f40.",
+      "Reproduce the kernel-cross-battle-probe case in tests/reference-inputs/kernel-mode-observation-route.json using the documented scenario CLI and a fresh private directory; inspect the final image. Input-program completion is not battle readiness."
+    ],
+    "expected": "Exact source identity and original dispatch attribution, with the reset-default unsuccessful output retained and no gameplay pass.",
+    "actual": "Both complete raw-track hashes and boot identities passed. Source-slot arithmetic, packed/decoded identities, five resident windows and the overlay window matched. The final Disc 1 image was independently viewed as flat teal; no battle launch or combat claim is made.",
+    "result": "passed",
+    "tolerance": "Exact bytes and hashes for source attribution; only the observed unsuccessful target output is asserted. No deterministic gameplay, formation setup or native implementation.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/battle-source-corroboration.json",
+        "sha256": "b72a53002ab858f83afc84adf9c9dcb0193f863573d86d639814378c0c63dfac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_battle_source.py",
+        "sha256": "ebf97f23c4357a4af2f3c580c6dcefd744cc570e45fe3b57bf2917f3a6d72bd5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/report.json",
+        "sha256": "d1b9b37e8d1bcad1b8b0b50141bf08d1e5325d37d4cc3ebc4fa5b3001e0cb935",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/scenario.json",
+        "sha256": "ce1bab7bfcfbbd04b2920d686e6f574c2bfe375c9ec94fcf2f0ded8908992a1b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/program.json",
+        "sha256": "924aeebb4ae257e57dfdd04277c96b6063814d12301688016f547f9d8db0def8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/capture/observation.json",
+        "sha256": "8ee9fa9e09e483ab28f80d1537ccd1766d97552e36397ba692b14c97dfa09fdb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/capture/final.ram",
+        "sha256": "09774d5b9a75fc9f6d7898ed7fc3f933fe24e0095e4525140b76fe0fdac1eb62",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/capture/frame-002265.png",
+        "sha256": "06659eac8223f60da7fd514e9108400e0dfdca041d90343b0a18f66b536f23c9",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "source_family": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+      "boot_executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "original_mode": 2,
+      "original_label": "Battle",
+      "source_resource": {
+        "slot": 38,
+        "source_lba": 109041,
+        "source_sector_count": 82,
+        "projected_bytes": 166564,
+        "projection_unit": 2048,
+        "projection_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "directory_halfword_1": 24,
+      "resource_number": 16,
+      "source_slot_arithmetic": "directory_halfword_1 + resource_number - 2",
+      "mode_table_entry_u32": [
+        2147595972,
+        2148285036,
+        2148350448,
+        1
+      ],
+      "resident_entry": "0x8001b6c4",
+      "decoded_destination": "0x8006faf0",
+      "decoded_bytes": 343936,
+      "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+      "consumed_source_bytes": 166564,
+      "kernel_labels_file_offset": 35576,
+      "kernel_labels": "    Field\n    Battle\n    Worldmap\n    Battling\n    Menu\n    Movie\n\n",
+      "resident_windows": [
+        {
+          "address": "0x80019a18",
+          "file_offset": 41496,
+          "length": 48,
+          "sha256": "09de6ca5782f17103f0b294e6f94292c4ebe0c8a5a958bfda4ed9e909101a245",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x80019b6c",
+          "file_offset": 41836,
+          "length": 44,
+          "sha256": "4c196d7897c69e889a7fb15aa3bd36bfebc4f71fcafbeb1d54db6420aa3af353",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x8001b6c4",
+          "file_offset": 48836,
+          "length": 160,
+          "sha256": "ab4e340d54fde177d5b5dad5456e41168c73c3eb242739820cc1688e213bf983",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x80028470",
+          "file_offset": 101488,
+          "length": 80,
+          "sha256": "7a14e34a8f19b84c080c357e854b8405f3922da1f1658f4c302c5975db429d86",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x80028738",
+          "file_offset": 102200,
+          "length": 180,
+          "sha256": "c3fd377fe088ed916a656c9bd5835371771dda21040a2c863983bf289651c50f",
+          "matches_disc1_attempt_ram": true
+        }
+      ],
+      "overlay_window": {
+        "address": "0x80070f40",
+        "decoded_offset": 5200,
+        "length": 128,
+        "sha256": "ca2cec01c25f50ad135ff5cb30222213e3badf2d076ce97459ef8ce6e85a9162",
+        "matches_disc1_attempt_ram": true
+      },
+      "execution_scope": "Static source identity on both discs; only the Disc 1 failed/reset-default target attempt is matched to captured RAM."
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+      "boot_executable_sha256": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "original_mode": 2,
+      "original_label": "Battle",
+      "source_resource": {
+        "slot": 33,
+        "source_lba": 173353,
+        "source_sector_count": 82,
+        "projected_bytes": 166564,
+        "projection_unit": 2048,
+        "projection_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "directory_halfword_1": 19,
+      "resource_number": 16,
+      "source_slot_arithmetic": "directory_halfword_1 + resource_number - 2",
+      "mode_table_entry_u32": [
+        2147595972,
+        2148285036,
+        2148350448,
+        1
+      ],
+      "resident_entry": "0x8001b6c4",
+      "decoded_destination": "0x8006faf0",
+      "decoded_bytes": 343936,
+      "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+      "consumed_source_bytes": 166564,
+      "kernel_labels_file_offset": 35576,
+      "kernel_labels": "    Field\n    Battle\n    Worldmap\n    Battling\n    Menu\n    Movie\n\n",
+      "resident_windows": [
+        {
+          "address": "0x80019a18",
+          "file_offset": 41496,
+          "length": 48,
+          "sha256": "09de6ca5782f17103f0b294e6f94292c4ebe0c8a5a958bfda4ed9e909101a245",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x80019b6c",
+          "file_offset": 41836,
+          "length": 44,
+          "sha256": "4c196d7897c69e889a7fb15aa3bd36bfebc4f71fcafbeb1d54db6420aa3af353",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x8001b6c4",
+          "file_offset": 48836,
+          "length": 160,
+          "sha256": "ab4e340d54fde177d5b5dad5456e41168c73c3eb242739820cc1688e213bf983",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x80028470",
+          "file_offset": 101488,
+          "length": 80,
+          "sha256": "7a14e34a8f19b84c080c357e854b8405f3922da1f1658f4c302c5975db429d86",
+          "matches_disc1_attempt_ram": true
+        },
+        {
+          "address": "0x80028738",
+          "file_offset": 102200,
+          "length": 180,
+          "sha256": "c3fd377fe088ed916a656c9bd5835371771dda21040a2c863983bf289651c50f",
+          "matches_disc1_attempt_ram": true
+        }
+      ],
+      "overlay_window": {
+        "address": "0x80070f40",
+        "decoded_offset": 5200,
+        "length": 128,
+        "sha256": "ca2cec01c25f50ad135ff5cb30222213e3badf2d076ce97459ef8ce6e85a9162",
+        "matches_disc1_attempt_ram": true
+      },
+      "execution_scope": "Static source identity on both discs; only the Disc 1 failed/reset-default target attempt is matched to captured RAM."
+    }
+  ],
+  "execution_attempts": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "scenario": "kernel-cross-battle-probe",
+      "frontend_final_frame": 2265,
+      "input_program_completed": true,
+      "battle_readiness_proven": false,
+      "output": "Uniform teal image; no visible playable battle."
+    }
+  ],
+  "limitations": [
+    "Formation IDs, arenas, enemy/party structures, battle rules and successful direct-battle readiness remain unrecovered.",
+    "Disc 2 attribution is original static source identity; no Disc 2 battle attempt is claimed.",
+    "Original source decoded with a private bounded evidence probe is not decompiled, reviewed native battle code.",
+    "External HLE emulation is qualified reference instrumentation; no hardware-timing equivalence is asserted."
+  ],
+  "author": "Phase 0 agent: independent original source and preserved execution inspection",
+  "reviewers": []
+}

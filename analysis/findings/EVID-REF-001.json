@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-001",
+  "kind": "original_static_metadata",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 16,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "ISO descriptor observation; no executable/overlay/CPU address applies."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 76,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static PS-X EXE header metadata; no dynamically loaded overlay or executed CPU instruction address observed."
+    }
+  ],
+  "observation": "chdman 0.289 verified the supplied CHD successfully. The decoded track has 305586 raw sectors. ISO9660 names volume XENOGEARS with exactly SYSTEM.CNF;1 and SLUS_006.64;1. SYSTEM.CNF explicitly names this boot executable. The executable contains a North America marker at file offset 0x4c. Both-endian ISO fields and bounds were checked.",
+  "interpretation": "These bytes establish a reproducible North American research profile and boot identity, not an exhaustive content catalog, disc sequence, retail revision label, clean-dump provenance or game behavior.",
+  "confidence": "confirmed",
+  "validation": {
+    "preconditions": [
+      "Pinned nix/flake.lock and analysis shell",
+      "User-supplied source CHD matching recorded SHA256",
+      "A new output directory under ignored .local/"
+    ],
+    "commands": [
+      "python3 tools/reference/capture.py <source-1.chd> .local/references/new-source-1"
+    ],
+    "expected": "Recorded container, raw track, CNF and executable SHA256 values; explicit ISO and PS-X EXE metadata in reference profile.",
+    "actual": "Container verification returned 0; bounded metadata inspection returned the recorded measurement. Independently reviewed against private verification logs by parent agent.",
+    "result": "passed",
+    "tolerance": "Exact byte hashes and integer/string metadata; no gameplay or timing tolerance is inferred.",
+    "artifacts": [
+      {
+        "path": ".local/references/source-1/chdman-info.log",
+        "sha256": "8ffa6a2938d11e51b23d7fd554c1013ea09960d7c2d758930bda72012bcf21f8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-1/chdman-verify.log",
+        "sha256": "cdf3e3ea0a9ffc66ffdb74fdb4c94935e066856995df45677d98fbe0f2390645",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-1/chdman-extract.log",
+        "sha256": "621d521b5843f747f036058aad04e25c9d86bbe4ae09915ffe610e5d68c864b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-1/measurement.json",
+        "sha256": "1d5b4236382a11f8a9f8fc1849b6498f3df51c6037bfdf8af0fa531082d47a4d",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "limitations": [
+    "No gameplay execution observed.",
+    "No game-specific archive or file meaning recovered.",
+    "ISO volume sequence does not establish the game's disc number.",
+    "Serial and timestamps do not establish a named retail revision.",
+    "This inspector checks bounds and metadata, not CD ECC/EDC authenticity.",
+    "This static measurement did not establish disc sequence. See EVID-REF-003 for subsequent scoped original-program evidence supporting the supplied disc roles."
+  ],
+  "author": "Phase 0 implementation agent, independent local original-data measurement",
+  "reviewers": [
+    "Parent agent independently inspected both measurement files and chdman integrity logs; metadata scope only"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "VERIFY-PHASE0-INVENTORY-GAP",
+  "evidence_kind": "unresolved_original_evidence",
+  "targets": [
+    "repository"
+  ],
+  "covers": [],
+  "status": "open_later_phase_research",
+  "blocking_reason": "No Phase 0 inventory blocker remains. Exhaustive semantic content, formats and behavioral coverage stay open for Phase 1 onward.",
+  "known_evidence": [
+    "EVID-REF-001",
+    "EVID-REF-002",
+    "EVID-REF-003",
+    "EVID-REF-004",
+    "EVID-REF-005",
+    "EVID-REF-006",
+    "EVID-REF-007",
+    "EVID-REF-008",
+    "EVID-REF-009",
+    "EVID-REF-010",
+    "EVID-REF-011",
+    "EVID-REF-012"
+  ],
+  "next_steps": [
+    "Recover sector/resource references directly from original data/code and bind stable project inventory IDs to original offsets.",
+    "Use the reviewed checkpoint-free original-game scenario system to enumerate additional scenes and extend explicitly unsupported battle, position and progression adapters only after recovering their original setup/readiness semantics.",
+    "Reconcile category counts and shared/disc-specific content without converting unknown entries to synthetic or guessed oracles."
+  ],
+  "goal_status": "Phase 0 baseline and exit criterion demonstrated; these remaining content/format/behavior questions are an explicit Phase 1 onward backlog.",
+  "measured_progress": "Complete measured physical/source-slot surveys, 730/205 non-dummy field data pairs, observed fields14/290 and15/290, 17/12 movie selectors, 305 audio-signature slots per source, shared Battle and card-menu source families, and 32 scoped original execution observations are recorded separately. These counts are not unique semantic content totals.",
+  "scope": "This retained gap ledger tracks full-catalog and behavioral analysis, not a failed Phase 0 baseline inventory. See VERIFY-PHASE0-INVENTORY for the demonstrated category/source gate."
+}

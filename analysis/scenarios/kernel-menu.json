@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "name": "kernel-menu",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "entry": { "type": "kernel" },
+  "launch": { "settle_frames": 120 }
+}

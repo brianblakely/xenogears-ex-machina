@@ -20,17 +20,19 @@ All tasks below begin unchecked. A phase is complete only when its exit criterio
 
 **Goal:** Define a new project's scope and workflow without selecting another project's codebase.
 
-- [ ] Create a requirement-to-test matrix covering every requested feature, platform, default setting, and editor capability.
-- [ ] Select and hash the reference source images. Initially target both US discs and identify their supported revisions explicitly; record region/revision support rather than guessing from filenames.
-- [ ] Inventory the original game's fields, world map, battles, menus, event sequences, audio, FMVs, saves, optional activities, and minigames.
-- [ ] Establish repository areas for runtime source, independent analysis, extraction tools, editors, tests, and packaging. Ignore original disc data and generated local asset stores.
-- [ ] Record research findings with disc/revision, file or sector offset, executable/overlay identity, address where applicable, observed behavior, confidence, and a reproducible validation procedure.
-- [ ] Track each subsystem through identified, analyzed, decompiled, natively implemented, and behaviorally validated states. Distinguish unknown behavior from intentionally changed behavior.
-- [ ] Establish an Arch Linux development environment and a C++/CMake/Ninja build with debug configurations, sanitizers, formatting, and automated tests.
-- [ ] Define contributor provenance and dependency-review rules consistent with the independent implementation boundary.
-- [ ] Define representative test scenarios and progression checkpoints across both discs before implementation begins.
+- [x] Create a requirement-to-test matrix covering every requested feature, platform, default setting, and editor capability.
+- [x] Select and hash the reference source images. Initially target both US discs and identify their supported revisions explicitly; record region/revision support rather than guessing from filenames.
+- [x] Inventory the original game's fields, world map, battles, menus, event sequences, audio, FMVs, saves, optional activities, and minigames.
+- [x] Establish repository areas for runtime source, independent analysis, extraction tools, editors, tests, and packaging. Ignore original disc data and generated local asset stores.
+- [x] Record research findings with disc/revision, file or sector offset, executable/overlay identity, address where applicable, observed behavior, confidence, and a reproducible validation procedure.
+- [x] Track each subsystem through identified, analyzed, decompiled, natively implemented, and behaviorally validated states. Distinguish unknown behavior from intentionally changed behavior.
+- [x] Establish an Arch Linux development environment and a C++/CMake/Ninja build with debug configurations, sanitizers, formatting, and automated tests.
+- [x] Define contributor provenance and dependency-review rules consistent with the independent implementation boundary.
+- [x] Define representative test scenarios and progression checkpoints across both discs before implementation begins.
+- [x] Use an original-game go-anywhere testing system, informed by the general testing design in `../slapstick-english-translation`: checkpoint-free cold boot through original loaders, declarative setup through verified scene adapters, explicit readiness conditions, bounded timeouts, ordered inputs, and original-source/tool/write provenance. Track unrecovered battle, position, and progression adapters as an explicit backlog and reject unsupported setup.
 
-**Exit criterion:** A reproducible empty-project build, original-game coverage inventory, evidence workflow, and complete requirements matrix exist.
+**Exit criterion:** A reproducible empty-project build, original-game coverage inventory, evidence workflow, complete requirements matrix, and go-anywhere original-game testing system exist.
+
 
 ## Phase 1 — Independently reverse-engineer and decompile the original game
 

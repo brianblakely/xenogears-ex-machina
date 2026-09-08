@@ -1,0 +1,790 @@
+{
+  "schema_version": 1,
+  "id": "original-kernel-observation-routes",
+  "scope": "Independently recorded cold-boot Kernel MENU input paths. Names preserve exploratory capture identities; outcome labels describe reviewed output, not assumed menu selection. Only Kernel MENU readiness is asserted by these programs.",
+  "cases": [
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "kernel-cross-field-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original title presentation; reset field selector is 490."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "kernel-cross-battle-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Uniform teal output after the input schedule. No successful battle scene or readiness claim."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "kernel-cross-worldmap-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Terrain, sky, a flying machine and minimap are visible."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "kernel-cross-battling-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Four selectable entries: Bonus Battling, Practice, Tutorial, Exit; Bonus Battling is initially highlighted."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "kernel-cross-menu-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Black output after the input schedule. No successful game-menu claim."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "kernel-cross-movie-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original title presentation."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "disc2-kernel-worldmap-probe",
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Terrain, sky, a flying machine and minimap are visible."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "disc2-kernel-battling-probe",
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Bonus Battling, Practice, Tutorial and Exit are visible."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "disc2-kernel-movie-probe",
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original title presentation."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "battling-practice-input-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 1200,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Despite the exploratory name, this selects Bonus Battling and displays match settings with Player1 vs COM, Player1 vs Player2 and COM vs COM."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "battling-tutorial-input-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 1200,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Despite the exploratory name, one Down selects Practice and reaches Weltall versus Vierge Gear selection."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "battling-exit-input-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 1200,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Despite the exploratory name, two Downs select Tutorial and reach a Gear arena with tutorial dialogue."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "battling-verified-exit-input-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 12,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 12,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 12,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 1200,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Three Downs visibly select Exit; confirmation returns to the original title presentation."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "battling-navigation-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "up"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Successive Down, Down and Up highlights show Practice, Tutorial and Practice, then confirmation reaches Gear selection."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "worldmap-motion-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Observe one original Kernel MENU input path. Completion only means input schedule finished; target-mode readiness is not asserted.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "up"
+            ],
+            "hold_frames": 60,
+            "after_frames": 60,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "left"
+            ],
+            "hold_frames": 30,
+            "after_frames": 60,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Recorded Up and Left inputs change the flying-machine/world-view presentation; no recovered coordinate or travel-distance claim."
+    }
+  ]
+}

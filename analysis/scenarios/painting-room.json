@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "name": "painting-room",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "description": "Original field 14 entry scene, using original reset defaults.",
+  "entry": { "type": "field", "map": 14 },
+  "launch": { "ready": "map", "timeout_frames": 5000, "settle_frames": 1800 },
+  "steps": [
+    { "buttons": ["cross"], "after_frames": 240, "capture": true },
+    { "buttons": ["cross"], "after_frames": 600, "capture": true },
+    { "buttons": ["square"], "after_frames": 300, "capture": true }
+  ]
+}

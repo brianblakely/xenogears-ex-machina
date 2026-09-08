@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-004",
+  "kind": "original_static_metadata",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 0,
+      "sector_bytes": 2352,
+      "user_data_offset": 16,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 0,
+      "sector_bytes": 2352,
+      "user_data_offset": 16,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    }
+  ],
+  "observation": "Every raw sector was measured under the selected exact track SHA256. Source1 has 305586 sectors: 196912 Form1 data-declared, 94281 Form1 video-declared, 13562 Form2 audio-declared, 827 Form1 untyped and 4 Form2 untyped. Source2 has 292815: 119829 data-declared, 150486 video-declared, 21604 audio-declared, 892 Form1 untyped and 4 Form2 untyped. Both have 3720 data-sector subheaders 0x89 and one 0x09. Exact header signatures, ranges and marker locations are recorded locally; compact public counts/spans are in coverage/sector-survey.json.",
+  "interpretation": "XA header flags and end markers provide measured physical inventory leads. They do not by themselves identify a file, video/audio asset, field or minigame, and interleaving makes fine-span counts unsuitable as content counts.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Selected reference profiles and verified decoded raw tracks",
+      "Pinned Nix development shell"
+    ],
+    "commands": [
+      "python3 tools/reference/sector_survey.py --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --output .local/references/source-1/new-sector-survey.json",
+      "python3 tools/reference/sector_survey.py --raw .local/references/source-2/disc.bin --profile na-slus-00669-5eab85c683d4 --output .local/references/source-2/new-sector-survey.json"
+    ],
+    "expected": "Exact full-track hash, every sector accounted for, header counts sum to track length, contiguous spans cover the full half-open LBA range.",
+    "actual": "Both complete scans passed, reproduced the selected raw SHA256 and recorded all XA end-marker LBAs. Original synthetic boundary/truncation/marker tests passed separately.",
+    "result": "passed",
+    "tolerance": "Exact structural counts/hashes; no content identity or playback-timing claim.",
+    "artifacts": [
+      {
+        "path": ".local/references/source-1/sector-survey-markers.json",
+        "sha256": "0bb30f351832d10139f3c51f1940f85e46f5e29a5c103b5bd1f29253ff539c5f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-2/sector-survey-markers.json",
+        "sha256": "9dbd13cd189b53552b52f437d30942be38ffcfaab9c6cab227e9d08b2932acc7",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "limitations": [
+    "Header flags describe declared sector types, not independently decoded media.",
+    "A contiguous header span is not necessarily one resource, audio track or FMV.",
+    "Interleaving, padding and reused streams prevent deriving content counts here.",
+    "Fields, event IDs, battle/minigame logic and archive tables remain unidentified.",
+    "This survey does not verify CD ECC/EDC or original hardware behavior."
+  ],
+  "author": "Phase 0 agent, direct original-data header survey",
+  "reviewers": []
+}

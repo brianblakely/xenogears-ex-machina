@@ -1,0 +1,748 @@
+{
+  "schema_version": 1,
+  "boundaries": [
+    {
+      "id": "BOUNDARY-01",
+      "source": "**Independent game-specific work:** Recover behavior, formats, algorithms, and scripts from the original game binaries, disc data, and observed execution. Develop this project's own analysis records, decompiled source, importers, runtime, renderer, and editors. Do not use other Xenogears projects' source code or reverse-engineering results as the implementation foundation.",
+      "tasks": [
+        "P00-T08",
+        "P01-T06",
+        "P13-T11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-02",
+      "source": "**Original-game evidence:** Use the original game as the behavioral reference. General-purpose disassemblers, decompilers, debuggers, and an external emulator may assist inspection and testing; an emulator is neither the shipping runtime nor a source of borrowed game-specific implementation.",
+      "tasks": [
+        "P00-T05",
+        "P01-T06",
+        "P02-T06"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-03",
+      "source": "**General-purpose dependencies:** SDL3, Lua, compiler/build tools, shader tools, codecs, and other infrastructure libraries are permitted. Starting a new game-specific implementation does not require reinventing general-purpose infrastructure. Record dependency choices and licenses explicitly.",
+      "tasks": [
+        "P00-T08",
+        "P02-T04",
+        "P02-T05"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-04",
+      "source": "**Mod-inspired options, not a mod-based engine:** Research popular existing mods only to identify desired player-facing options. Implement those capabilities independently. No existing mod, patched disc, translation package, or texture pack is required to build or play the base port; separately installed content packs remain optional.",
+      "tasks": [
+        "P09-T01",
+        "P09-T02",
+        "P07-T11",
+        "P13-T11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-05",
+      "source": "**Native execution:** Ship platform-native binaries, not a PS1 executable running inside a CPU emulator. Interpret the original game's event bytecode through this project's own recovered script runtime where appropriate.",
+      "tasks": [
+        "P02-T06",
+        "P07-T04",
+        "P13-T11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-06",
+      "source": "**Data separation:** Import original game data from user-supplied disc images into a local asset store. Keep disc images, original executables, extracted copyrighted assets, and personal saves out of distributed source and build artifacts.",
+      "tasks": [
+        "P00-T04",
+        "P02-T02",
+        "P13-T12"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-07",
+      "source": "**Behavior versus presentation:** Preserve gameplay-relevant behavior and intentional effects while replacing PS1 rendering limitations. Binary-identical recompilation is not a release gate; independent decompilation, documented understanding, and behavioral validation are.",
+      "tasks": [
+        "P01-T10",
+        "P05-T02",
+        "P05-T03",
+        "P13-T05"
+      ],
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "feature_summary": [
+    {
+      "id": "FEATURE-01",
+      "source_row": [
+        "Independent decompilation and native implementation; no foundation in another Xenogears project",
+        "0\u20134, 13"
+      ],
+      "tasks": [
+        "P00-T08",
+        "P01-T04",
+        "P02-T06",
+        "P13-T11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-02",
+      "source_row": [
+        "Arch Linux as the leading platform",
+        "0, 2\u20133, 13"
+      ],
+      "tasks": [
+        "P00-T07",
+        "P02-T04",
+        "P03-T01",
+        "P13-T01"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-03",
+      "source_row": [
+        "Vulkan / Direct3D 12 / Metal on Linux / Windows / macOS",
+        "2, 5, 13"
+      ],
+      "tasks": [
+        "P02-T05",
+        "P05-T12",
+        "P13-T01",
+        "P13-T02",
+        "P13-T03"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-04",
+      "source_row": [
+        "Arbitrary resolution, aspect ratio, and presentation framerate",
+        "2, 5"
+      ],
+      "tasks": [
+        "P02-T07",
+        "P05-T04",
+        "P05-T05",
+        "P05-T07",
+        "P05-T09"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-05",
+      "source_row": [
+        "Culling off by default; no PS1 rendering quirks",
+        "5, 13"
+      ],
+      "tasks": [
+        "P05-T02",
+        "P05-T10",
+        "P13-T10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-06",
+      "source_row": [
+        "Keyboard/mouse controls, mouse-browsable menus, wheel scrolling",
+        "6"
+      ],
+      "tasks": [
+        "P06-T04",
+        "P06-T06",
+        "P06-T07",
+        "P06-T08"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-07",
+      "source_row": [
+        "SDL3 input and Windows XInput",
+        "2, 6, 13"
+      ],
+      "tasks": [
+        "P02-T04",
+        "P06-T02",
+        "P06-T03",
+        "P13-T02"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-08",
+      "source_row": [
+        "Direction, run, jump, confirm, cancel, and left/right camera bindings",
+        "6"
+      ],
+      "tasks": [
+        "P06-T04",
+        "P06-T05"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-09",
+      "source_row": [
+        "Tab toggles game menu; Esc toggles app menu",
+        "6, 9, 13"
+      ],
+      "tasks": [
+        "P06-T10",
+        "P09-T12",
+        "P13-T10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-10",
+      "source_row": [
+        "Save states, rewind, and fast forward",
+        "2, 7\u20138"
+      ],
+      "tasks": [
+        "P02-T08",
+        "P07-T06",
+        "P08-T01",
+        "P08-T05",
+        "P08-T07"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-11",
+      "source_row": [
+        "Native mod support and graphical mod management",
+        "7"
+      ],
+      "tasks": [
+        "P07-T01",
+        "P07-T09"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-12",
+      "source_row": [
+        "Lua for level, cutscene, battle, minigame, and other mod editing",
+        "2, 7, 11\u201312"
+      ],
+      "tasks": [
+        "P02-T10",
+        "P07-T03",
+        "P11-T07",
+        "P12-T03",
+        "P12-T06"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-13",
+      "source_row": [
+        "Random battles off by default in identified platforming-heavy areas",
+        "9, 13"
+      ],
+      "tasks": [
+        "P09-T06",
+        "P09-T07",
+        "P13-T10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-14",
+      "source_row": [
+        "Independently implemented options informed by popular existing mods",
+        "9"
+      ],
+      "tasks": [
+        "P09-T01",
+        "P09-T02",
+        "P09-T03"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-15",
+      "source_row": [
+        "Modern cutscene skipping with correct story outcomes",
+        "9, 11"
+      ],
+      "tasks": [
+        "P09-T12",
+        "P09-T13",
+        "P09-T14",
+        "P09-T15",
+        "P09-T16",
+        "P09-T17",
+        "P11-T10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-16",
+      "source_row": [
+        "Playable first-person mode",
+        "10"
+      ],
+      "tasks": [
+        "P10-T01",
+        "P10-T02",
+        "P10-T03",
+        "P10-T04",
+        "P10-T05",
+        "P10-T06"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-17",
+      "source_row": [
+        "Clearer FMVs with an original option",
+        "10"
+      ],
+      "tasks": [
+        "P10-T07",
+        "P10-T08",
+        "P10-T09",
+        "P10-T10",
+        "P10-T11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-18",
+      "source_row": [
+        "Independent texture and UI filtering",
+        "5, 13"
+      ],
+      "tasks": [
+        "P05-T11",
+        "P13-T10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-19",
+      "source_row": [
+        "Graphical level and cutscene editors",
+        "11"
+      ],
+      "tasks": [
+        "P11-T01",
+        "P11-T03",
+        "P11-T05",
+        "P11-T11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-20",
+      "source_row": [
+        "Graphical battle-system and minigame mod tools",
+        "12"
+      ],
+      "tasks": [
+        "P12-T01",
+        "P12-T02",
+        "P12-T03",
+        "P12-T04",
+        "P12-T05",
+        "P12-T06",
+        "P12-T09"
+      ],
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "keyboard_defaults": [
+    {
+      "id": "DEFAULT-01",
+      "source_row": [
+        "Move / navigate",
+        "WASD and arrow keys"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F02",
+        "P06-T04-F03"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-02",
+      "source_row": [
+        "Run",
+        "Shift, with hold/toggle setting"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F04",
+        "P06-T04-F05"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-03",
+      "source_row": [
+        "Jump",
+        "Space"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F06"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-04",
+      "source_row": [
+        "Confirm",
+        "Enter"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F07"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-05",
+      "source_row": [
+        "Cancel / back",
+        "Backspace"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F08"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-06",
+      "source_row": [
+        "Rotate camera left / right",
+        "Q / E"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F09",
+        "P06-T04-F10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-07",
+      "source_row": [
+        "Toggle game menu",
+        "**Tab**"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F11"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-08",
+      "source_row": [
+        "Toggle app menu",
+        "**Esc**"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F12"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "DEFAULT-09",
+      "source_row": [
+        "Toggle first-person mode",
+        "V"
+      ],
+      "facets": [
+        "P06-T04-F01",
+        "P06-T04-F13"
+      ],
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "phase_exits": [
+    {
+      "id": "P00-EXIT",
+      "source": "A reproducible empty-project build, original-game coverage inventory, evidence workflow, complete requirements matrix, and go-anywhere original-game testing system exist.",
+      "phase": 0,
+      "requires_all_phase_facets": true,
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-FOUNDATION",
+        "VERIFY-PHASE0-INVENTORY",
+        "VERIFY-PHASE0-SCENARIOS"
+      ]
+    },
+    {
+      "id": "P01-EXIT",
+      "source": "The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, with a tracked backlog for the rest of the game.",
+      "phase": 1,
+      "requires_all_phase_facets": false,
+      "status": "defined",
+      "evidence": [],
+      "requires_reviewed_slice": "analysis/slices/forest23.json",
+      "scope": "Nine mandatory first-slice original-analysis proof domains; every broad facet accounted for and deferred facets remain unpassed. Other phase/native gates are unchanged."
+    },
+    {
+      "id": "P02-EXIT",
+      "source": "A scene using the new runtime can load independently imported assets, simulate, serialize, restore, and replay without a dependency on another Xenogears implementation.",
+      "phase": 2,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P03-EXIT",
+      "source": "Field exploration \u2192 dialogue/cutscene \u2192 battle \u2192 reward \u2192 menu \u2192 save/load works natively on Arch without debugger intervention or emulator execution inside the game.",
+      "phase": 3,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P04-EXIT",
+      "source": "Both discs and optional activities are playable from beginning to end, with subsystem coverage and no known progression-blocking gaps.",
+      "phase": 4,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P05-EXIT",
+      "source": "Recorded gameplay reaches equivalent authoritative state at different resolutions, aspect ratios, framerates, and rendering backends, with the requested modern presentation.",
+      "phase": 5,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P06-EXIT",
+      "source": "The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel.",
+      "phase": 6,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P07-EXIT",
+      "source": "All four example mods run, their state survives save/restore, and the unmodified base game runs with no third-party mod installed.",
+      "phase": 7,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P08-EXIT",
+      "source": "Save \u2192 restore and record \u2192 rewind \u2192 replay produce equivalent authoritative state throughout the game and with supported Lua mods.",
+      "phase": 8,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P09-EXIT",
+      "source": "Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod.",
+      "phase": 9,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P10-EXIT",
+      "source": "First-person exploration is playable, camera handoffs work, and every enhanced FMV retains a functional original option.",
+      "phase": 10,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P11-EXIT",
+      "source": "A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build.",
+      "phase": 11,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P12-EXIT",
+      "source": "A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++.",
+      "phase": 12,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "P13-EXIT",
+      "source": "The complete requirements matrix passes on the declared platform targets, packages install cleanly, and both the game and editors are documented and independently reproducible.",
+      "phase": 13,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "release_checkpoints": [
+    {
+      "id": "RELEASE-01",
+      "source_row": [
+        "Research/tooling baseline",
+        "Phases 0\u20132 support independently imported original content and a serializable new runtime."
+      ],
+      "required_phases": [
+        0,
+        1,
+        2
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "RELEASE-02",
+      "source_row": [
+        "Engineering preview",
+        "Phase 3: a native field/event/battle/save-load slice runs on Arch."
+      ],
+      "required_phases": [
+        3
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "RELEASE-03",
+      "source_row": [
+        "Playable PC alpha",
+        "Phase 4 completes both discs; Phases 5\u20136 provide modern rendering and full native PC controls."
+      ],
+      "required_phases": [
+        4,
+        5,
+        6
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "RELEASE-04",
+      "source_row": [
+        "Feature-complete runtime beta",
+        "Phases 7\u201310 provide Lua mods, save states, rewind, fast forward, optional gameplay changes, safe skipping, first-person mode, and enhanced/original FMVs."
+      ],
+      "required_phases": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "RELEASE-05",
+      "source_row": [
+        "Creator-toolkit beta",
+        "Phases 11\u201312 provide graphical level, cutscene, battle-system, and minigame editing through the shared runtime and Lua."
+      ],
+      "required_phases": [
+        11,
+        12
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "RELEASE-06",
+      "source_row": [
+        "1.0",
+        "Phase 13 validates and packages the full feature set across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal, with Arch leading development and release testing."
+      ],
+      "required_phases": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "execution_rules": [
+    {
+      "id": "EXECUTION-01",
+      "source": "**Execution rule:** Continue this analysis throughout development. Do not wait for a complete decompilation of both discs before implementing an understood subsystem.",
+      "status": "defined",
+      "evidence": [],
+      "procedure": "Review phase handoff records: continue independent analysis throughout implementation; after Phase 3 parallel work cannot bypass complete-game validation before alpha."
+    },
+    {
+      "id": "EXECUTION-02",
+      "source": "**Parallelization:** After Phase 3, rendering, input, and mod infrastructure may advance alongside this phase. Complete-game validation remains mandatory before the playable PC alpha checkpoint.",
+      "status": "defined",
+      "evidence": [],
+      "procedure": "Review phase handoff records: continue independent analysis throughout implementation; after Phase 3 parallel work cannot bypass complete-game validation before alpha."
+    }
+  ]
+}

@@ -1,0 +1,409 @@
+{
+  "schema_version": 1,
+  "id": "INPUT-BATTLE-GATE-PROBE-ROUTE",
+  "scope": "Exact cold-boot original battle-entry analysis programs; readiness is limited to Kernel and guarded setup remains a research probe.",
+  "cases": [
+    {
+      "program": {
+        "schema_version": 1,
+        "name": "battle-reset-debug-gate-disabled-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "kind": "analysis_probe",
+        "steps": [
+          {
+            "name": "guard-reset-dispatch",
+            "timeout_frames": 1,
+            "when": [
+              {
+                "offset": 104752,
+                "width": 4,
+                "operator": "eq",
+                "value": 872677382
+              }
+            ],
+            "writes": [
+              {
+                "offset": 104752,
+                "expected": "06000434",
+                "value": "00000434",
+                "reason": "Choose the original Kernel MENU after normal reset initialization."
+              }
+            ],
+            "evidence": [
+              "EVID-REF-007"
+            ]
+          },
+          {
+            "name": "kernel-ready",
+            "timeout_frames": 5000,
+            "when": [
+              {
+                "offset": 365264,
+                "width": 4,
+                "operator": "eq",
+                "value": 1
+              }
+            ],
+            "stable_frames": 2,
+            "run_frames": 120,
+            "capture": true
+          },
+          {
+            "name": "probe-original-debug-gate-disabled",
+            "timeout_frames": 1,
+            "writes": [
+              {
+                "offset": 365816,
+                "expected": "01",
+                "value": "00",
+                "reason": "Explore bypass of the original conditional debug-resource path at0x80071050. Observed reset byte is1; formation validity and battle readiness are not asserted."
+              }
+            ]
+          },
+          {
+            "name": "step-000-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "down"
+            ]
+          },
+          {
+            "name": "step-000-release",
+            "timeout_frames": 1,
+            "run_frames": 12,
+            "capture": false
+          },
+          {
+            "name": "step-001-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "step-001-release",
+            "timeout_frames": 1,
+            "run_frames": 3600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original battle presentation with party/enemy sprites, HP displays and command UI.",
+      "expected_final_frontend_frame": 4065
+    },
+    {
+      "program": {
+        "schema_version": 1,
+        "name": "battle-input-response-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "kind": "analysis_probe",
+        "steps": [
+          {
+            "name": "guard-reset-dispatch",
+            "timeout_frames": 1,
+            "when": [
+              {
+                "offset": 104752,
+                "width": 4,
+                "operator": "eq",
+                "value": 872677382
+              }
+            ],
+            "writes": [
+              {
+                "offset": 104752,
+                "expected": "06000434",
+                "value": "00000434",
+                "reason": "Choose the original Kernel MENU after normal reset initialization."
+              }
+            ],
+            "evidence": [
+              "EVID-REF-007"
+            ]
+          },
+          {
+            "name": "kernel-ready",
+            "timeout_frames": 5000,
+            "when": [
+              {
+                "offset": 365264,
+                "width": 4,
+                "operator": "eq",
+                "value": 1
+              }
+            ],
+            "stable_frames": 2,
+            "run_frames": 120,
+            "capture": true
+          },
+          {
+            "name": "probe-original-debug-gate-disabled",
+            "timeout_frames": 1,
+            "writes": [
+              {
+                "offset": 365816,
+                "expected": "01",
+                "value": "00",
+                "reason": "Explore bypass of the original conditional debug-resource path at0x80071050. Observed reset byte is1; formation validity and battle readiness are not asserted."
+              }
+            ]
+          },
+          {
+            "name": "step-000-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "down"
+            ]
+          },
+          {
+            "name": "step-000-release",
+            "timeout_frames": 1,
+            "run_frames": 12,
+            "capture": false
+          },
+          {
+            "name": "step-001-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "step-001-release",
+            "timeout_frames": 1,
+            "run_frames": 3600,
+            "capture": true
+          },
+          {
+            "name": "probe-confirm-0-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "probe-confirm-0-release",
+            "timeout_frames": 1,
+            "run_frames": 600,
+            "capture": true
+          },
+          {
+            "name": "probe-confirm-1-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "probe-confirm-1-release",
+            "timeout_frames": 1,
+            "run_frames": 600,
+            "capture": true
+          },
+          {
+            "name": "probe-confirm-2-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "probe-confirm-2-release",
+            "timeout_frames": 1,
+            "run_frames": 600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original battle presentation with party/enemy sprites, HP displays and command UI. Three subsequent Cross inputs produce an attack-point button UI, changed target/pose/camera presentation and a later active party selection. Combat arithmetic and full action semantics remain unrecovered.",
+      "expected_final_frontend_frame": 5889
+    },
+    {
+      "program": {
+        "schema_version": 1,
+        "name": "disc2-battle-debug-gate-disabled-probe",
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "kind": "analysis_probe",
+        "steps": [
+          {
+            "name": "guard-reset-dispatch",
+            "timeout_frames": 1,
+            "when": [
+              {
+                "offset": 104752,
+                "width": 4,
+                "operator": "eq",
+                "value": 872677382
+              }
+            ],
+            "writes": [
+              {
+                "offset": 104752,
+                "expected": "06000434",
+                "value": "00000434",
+                "reason": "Choose the original Kernel MENU after normal reset initialization."
+              }
+            ],
+            "evidence": [
+              "EVID-REF-007"
+            ]
+          },
+          {
+            "name": "kernel-ready",
+            "timeout_frames": 5000,
+            "when": [
+              {
+                "offset": 365264,
+                "width": 4,
+                "operator": "eq",
+                "value": 1
+              }
+            ],
+            "stable_frames": 2,
+            "run_frames": 120,
+            "capture": true
+          },
+          {
+            "name": "probe-original-debug-gate-disabled",
+            "timeout_frames": 1,
+            "writes": [
+              {
+                "offset": 365816,
+                "expected": "01",
+                "value": "00",
+                "reason": "Explore bypass of the original conditional debug-resource path at0x80071050. Observed reset byte is1; formation validity and battle readiness are not asserted."
+              }
+            ]
+          },
+          {
+            "name": "step-000-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "down"
+            ]
+          },
+          {
+            "name": "step-000-release",
+            "timeout_frames": 1,
+            "run_frames": 12,
+            "capture": false
+          },
+          {
+            "name": "step-001-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "step-001-release",
+            "timeout_frames": 1,
+            "run_frames": 3600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original battle presentation with party/enemy sprites, HP displays and command UI.",
+      "expected_final_frontend_frame": 4064
+    },
+    {
+      "program": {
+        "schema_version": 1,
+        "name": "battle-debug-gate-control-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "kind": "analysis_probe",
+        "steps": [
+          {
+            "name": "guard-reset-dispatch",
+            "timeout_frames": 1,
+            "when": [
+              {
+                "offset": 104752,
+                "width": 4,
+                "operator": "eq",
+                "value": 872677382
+              }
+            ],
+            "writes": [
+              {
+                "offset": 104752,
+                "expected": "06000434",
+                "value": "00000434",
+                "reason": "Choose the original Kernel MENU after normal reset initialization."
+              }
+            ],
+            "evidence": [
+              "EVID-REF-007"
+            ]
+          },
+          {
+            "name": "kernel-ready",
+            "timeout_frames": 5000,
+            "when": [
+              {
+                "offset": 365264,
+                "width": 4,
+                "operator": "eq",
+                "value": 1
+              }
+            ],
+            "stable_frames": 2,
+            "run_frames": 120,
+            "capture": true
+          },
+          {
+            "name": "preserve-original-debug-gate",
+            "timeout_frames": 1,
+            "writes": [
+              {
+                "offset": 365816,
+                "expected": "01",
+                "value": "01",
+                "reason": "Preserve observed original byte1 for a matched input/time control of the debug gate experiment."
+              }
+            ]
+          },
+          {
+            "name": "step-000-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "down"
+            ]
+          },
+          {
+            "name": "step-000-release",
+            "timeout_frames": 1,
+            "run_frames": 12,
+            "capture": false
+          },
+          {
+            "name": "step-001-press",
+            "timeout_frames": 1,
+            "run_frames": 8,
+            "buttons": [
+              "cross"
+            ]
+          },
+          {
+            "name": "step-001-release",
+            "timeout_frames": 1,
+            "run_frames": 3600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Flat teal presentation at the same frame4065 and with the same controller schedule as the gate-zero Disc1 run.",
+      "expected_final_frontend_frame": 4065
+    }
+  ]
+}

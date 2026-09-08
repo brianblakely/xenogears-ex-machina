@@ -1,0 +1,510 @@
+{
+  "schema_version": 1,
+  "catalog_complete": false,
+  "scope": "Observed entry points only; OBS identifiers belong to this project. original_content_ids are populated only with separately recovered original identifiers in the stated namespace. These records do not establish total game-content counts.",
+  "entries": [
+    {
+      "id": "OBS-D1-OPENING-CINEMATIC",
+      "category": "fmvs",
+      "label": "Opening cinematic presentation",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "opening",
+      "frontend_frame": 6000,
+      "image_sha256": "328954e07d723aa56eabd8d85f55986f61fccce5d88c5188b28804f0c793e860",
+      "observation": "Moving cinematic images were captured at multiple points; original stream boundaries and asset IDs are not recovered."
+    },
+    {
+      "id": "OBS-D1-PROLOGUE-TEXT",
+      "category": "event_sequences",
+      "label": "Narrated prologue text",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "opening",
+      "frontend_frame": 30000,
+      "image_sha256": "c9d1fffe4041cd21578d417177d0a1640e6e7b6a939c6e13c053b8877f4c27d5",
+      "observation": "Original text pages progress along the recorded input route; script identity is unknown."
+    },
+    {
+      "id": "OBS-D1-BURNING-SCENE",
+      "category": "event_sequences",
+      "label": "Burning-location scripted scene",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "prologue-continued",
+      "frontend_frame": 6000,
+      "image_sha256": "6ab5949cffe1704e25c1e8b12cfcde4781229f2697542c7e0299f5c13258e2ea",
+      "observation": "Original scene contains on-screen character dialogue and large machines; no battle-rule behavior is inferred."
+    },
+    {
+      "id": "OBS-D1-PAINTING-ROOM",
+      "category": "fields",
+      "label": "Opening room containing a painting",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [
+        14
+      ],
+      "evidence": [
+        "EVID-REF-006",
+        "EVID-REF-007"
+      ],
+      "route_stage": "painting-room/map-initialized",
+      "frontend_frame": 2445,
+      "image_sha256": "38d1768990cd82fc3183d2574b023103c36ef876377bff6784764fb9ec0ce883",
+      "observation": "A guarded cold boot requests original field selector 14, initializes its original scene, and displays Fei beside the painting with dialogue. The later recorded Cross/Cross/Square route opens the menu; selector identity is corroborated by the original loader and source slots 634/635.",
+      "original_id_namespace": "original_field_selector"
+    },
+    {
+      "id": "OBS-D1-PAINTING-INTERACTION",
+      "category": "event_sequences",
+      "label": "Painting close-up and return",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "room-menu",
+      "frontend_frame": 120,
+      "image_sha256": "02dd0f5264358a490c1ed05b53628f2c0968380eefe835837c6689279ec1bd94",
+      "observation": "The observed close-up returns to room presentation after the recorded Cross input."
+    },
+    {
+      "id": "OBS-D1-MENU-MAIN",
+      "category": "menus",
+      "label": "Opening-room main menu",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006",
+        "EVID-REF-007"
+      ],
+      "route_stage": "room-square",
+      "frontend_frame": 600,
+      "image_sha256": "68495d09ff39982a6a534227ddddd997cefb9623dd781301b50c2836bde638ce",
+      "observation": "Square opens Status, Equip, Items, Abilities, Gear, File and Exit. Independently reproduced from cold boot through original field 14 with the reviewed painting-room scenario.",
+      "scenario_reproduction": "analysis/scenarios/painting-room.json"
+    },
+    {
+      "id": "OBS-D1-MENU-STATUS",
+      "category": "menus",
+      "label": "Status at opening progression",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-status",
+      "frontend_frame": 960,
+      "image_sha256": "1540e09a32b06f0cb27a8df977c9a10808f7bd5b8d497c962e4454bebef23ac6",
+      "observation": "Character statistics and Skills/Abilities/Equip choices are visible."
+    },
+    {
+      "id": "OBS-D1-MENU-EQUIP",
+      "category": "menus",
+      "label": "Equipment at opening progression",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-equip",
+      "frontend_frame": 960,
+      "image_sha256": "cc7851851b2e626c9a82e9e3ad23166dfecd6c2863e703329850cb006cc35b17",
+      "observation": "Weapon and Accessories sections plus character-stat comparison are visible."
+    },
+    {
+      "id": "OBS-D1-MENU-ITEMS",
+      "category": "menus",
+      "label": "Items at opening progression",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-items",
+      "frontend_frame": 960,
+      "image_sha256": "6cff37a1a2c02694a4b822460153a7f60c4c62bf45fbef862beaa303a79c33ed",
+      "observation": "An empty item list is visible."
+    },
+    {
+      "id": "OBS-D1-MENU-ABILITIES",
+      "category": "menus",
+      "label": "Abilities at opening progression",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-abilities",
+      "frontend_frame": 960,
+      "image_sha256": "7ee849cd632a1def41435e8d5fa4dcd2f3a84be6de961509823563da76f63108",
+      "observation": "An ability list and description/resource panels are visible."
+    },
+    {
+      "id": "OBS-D1-MENU-GEAR",
+      "category": "menus",
+      "label": "Gear selection at opening progression",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-gear",
+      "frontend_frame": 960,
+      "image_sha256": "0a68a6d84a0fd8edae6988db721df8b1c103c10592ddc93ebe712b03e77df3ef",
+      "observation": "The recorded confirmation leaves the main menu visible; later availability is unknown."
+    },
+    {
+      "id": "OBS-D1-MENU-FILE",
+      "category": "menus",
+      "label": "Memory-card management at opening progression",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-file",
+      "frontend_frame": 960,
+      "image_sha256": "6064cd5bcdad745fe1f3d230427013f76b60157e210ec0c48b7c986ccc7f3d41",
+      "observation": "Card 1 and Card 2 slot grids plus Copy/Delete choices are visible; save creation and loading are not tested."
+    },
+    {
+      "id": "OBS-D1-MENU-EXIT",
+      "category": "menus",
+      "label": "Exit from opening-room menu",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-006"
+      ],
+      "route_stage": "menu-exit",
+      "frontend_frame": 960,
+      "image_sha256": "c364d1429b1f2fc2da8dec18aff165ec6b39f480c8fc8f6163181a3117ee8596",
+      "observation": "Exit returns to room presentation."
+    },
+    {
+      "id": "OBS-D2-FIELD-0015",
+      "category": "fields",
+      "label": "Rocky outdoor path",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [
+        15
+      ],
+      "original_id_namespace": "original_field_selector",
+      "evidence": [
+        "EVID-REF-007"
+      ],
+      "route_stage": "disc2-field-15/map-initialized",
+      "frontend_frame": 970,
+      "image_sha256": "e7454635eb996f771d6de6a94ac11371be8bfd2a362565a6d04010186ff0f080",
+      "observation": "Guarded cold boot requests original field selector 15; the initialized scene visibly contains Fei on a rocky path with a compass. Location name, original progression validity and player-control readiness are unresolved."
+    },
+    {
+      "id": "OBS-D2-KERNEL-MENU",
+      "category": "menus",
+      "label": "Original Kernel MENU",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-007"
+      ],
+      "route_stage": "kernel-menu/kernel-ready",
+      "frontend_frame": 436,
+      "image_sha256": "f89e59ba17a5b094873663985ca65dcea7f54fe4b1611d1397380e9f9ad2126a",
+      "observation": "The original Kernel MENU visibly lists Field, Battle, Worldmap, Battling, Menu and Movie. Label presence is not evidence that each target mode has been initialized or tested."
+    },
+    {
+      "id": "OBS-D1-WORLDMAP",
+      "category": "world_map",
+      "label": "Original Worldmap mode",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "kernel-cross-worldmap-probe",
+      "frontend_frame": 2285,
+      "image_sha256": "63259c44881640db83611306c075292c6ebc3d1eb75791e1354a0d1b22a833e0",
+      "original_mode": 3,
+      "observation": "Terrain, sky, a flying machine and minimap are visible; original terrain/location IDs remain unresolved."
+    },
+    {
+      "id": "OBS-D2-WORLDMAP",
+      "category": "world_map",
+      "label": "Original Worldmap mode",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "disc2-kernel-worldmap-probe",
+      "frontend_frame": 2284,
+      "image_sha256": "7fec30ae3e3c67f4f2a4264f2f930b9a46d7d73518e52a7a42a6c373278d0435",
+      "original_mode": 3,
+      "observation": "Terrain, sky, a flying machine and minimap are visible; original terrain/location IDs remain unresolved."
+    },
+    {
+      "id": "OBS-D1-BATTLING",
+      "category": "minigames",
+      "label": "Original Battling menu",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "kernel-cross-battling-probe",
+      "frontend_frame": 2305,
+      "image_sha256": "9a942c13148898c61bf36a45cdb3a6a2a92580a48533e65475c4cbb6fc666d88",
+      "original_mode": 4,
+      "observation": "Bonus Battling, Practice, Tutorial and Exit are four selectable entries; Bonus Battling is highlighted initially."
+    },
+    {
+      "id": "OBS-D2-BATTLING",
+      "category": "minigames",
+      "label": "Original Battling menu",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "disc2-kernel-battling-probe",
+      "frontend_frame": 2304,
+      "image_sha256": "2df80364752622d8a5c89ad79470fa68eeb49fbf9f8abb24dd28167d8aa4f44a",
+      "original_mode": 4,
+      "observation": "Bonus Battling, Practice, Tutorial and Exit are visible."
+    },
+    {
+      "id": "OBS-D1-BATTLING-BONUS",
+      "category": "minigames",
+      "label": "Bonus Battling match setup",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "battling-practice-input-probe",
+      "frontend_frame": 3513,
+      "image_sha256": "b2a2b43460b2c0a5e18ace7160aaed856ec46fc4b2a37c2cda1ab89ae36c2d69",
+      "original_mode": 4,
+      "observation": "Bonus Battling displays Player1 vs COM, Player1 vs Player2 and COM vs COM, plus match count, COM level and rubber-band options. Match behavior is untested."
+    },
+    {
+      "id": "OBS-D1-BATTLING-PRACTICE",
+      "category": "minigames",
+      "label": "Practice Gear selection",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "battling-tutorial-input-probe",
+      "frontend_frame": 3533,
+      "image_sha256": "1408e28cf7a33b36bf970ba94ececcd13c39b4cc3964c2793cdf3f1c1332abea",
+      "original_mode": 4,
+      "observation": "Practice presents Weltall versus Vierge Gear selection; the exploratory capture filename is not the selected branch label."
+    },
+    {
+      "id": "OBS-D1-BATTLING-TUTORIAL",
+      "category": "minigames",
+      "label": "Battling Tutorial arena",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "battling-exit-input-probe",
+      "frontend_frame": 3553,
+      "image_sha256": "d836d88b745c74c6b53cb41cfd20dcc0a88e4e586ed9f1be3428c8cc7d197650",
+      "original_mode": 4,
+      "observation": "Tutorial opens an arena with two Gears and instructional dialogue. Complete tutorial/minigame rules are not recovered."
+    },
+    {
+      "id": "OBS-D1-BATTLING-EXIT",
+      "category": "minigames",
+      "label": "Exit from Battling",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "route_stage": "battling-verified-exit-input-probe",
+      "frontend_frame": 3573,
+      "image_sha256": "72261feb872e294b1ccb7c1876f247a066b869ede98bc52374e442d957f8b438",
+      "original_mode": 4,
+      "observation": "The explicitly selected Exit option returns to the original title presentation."
+    },
+    {
+      "id": "OBS-D2-NEW-GAME-DISC-REQUEST",
+      "category": "event_sequences",
+      "label": "Original New Game disc-request transition",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-003"
+      ],
+      "route_stage": ".local/observations",
+      "frontend_frame": 2400,
+      "image_sha256": "a71e792379098e7a4afc62008ac535750322ed1f457252b7c26954f1c2e081fa",
+      "observation": "The recorded cold boot explicitly selects New Game; the original program displays INSERT DISC 1. This identifies one original transition, without identifying a script opcode, event ID or disc-swap progression behavior."
+    },
+    {
+      "id": "OBS-D2-TITLE-DISC-REQUEST",
+      "category": "menus",
+      "label": "Original title disc-request dialog",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-003"
+      ],
+      "route_stage": ".local/observations",
+      "frontend_frame": 2400,
+      "image_sha256": "a71e792379098e7a4afc62008ac535750322ed1f457252b7c26954f1c2e081fa",
+      "observation": "Original New Game selection displays an INSERT DISC 1 dialog over the title. This UI observation shares a capture with the separately classified transition; it is not a second unique scene."
+    },
+    {
+      "id": "OBS-D1-BRIDGE",
+      "category": "fields",
+      "label": "Original populated bridge scene",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [
+        290
+      ],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/disc1-bridge-file-menu-probe",
+      "frontend_frame": 2893,
+      "image_sha256": "2e17dacd7fd575ebe575d890e8a32460466b254263ed24c5a5c1aa02f0a0d1f6",
+      "observation": "The reviewed Square input from the original world-map presentation enters this populated bridge scene. Captured original field selector is 290; retail story access and a dedicated bridge-readiness adapter remain unknown.",
+      "original_id_namespace": "original_field_selector"
+    },
+    {
+      "id": "OBS-D1-BRIDGE-MAIN-MENU",
+      "category": "menus",
+      "label": "Original bridge main menu",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/disc1-bridge-file-menu-probe",
+      "frontend_frame": 3501,
+      "image_sha256": "02597b809f4fd01c27ccfed27510bb29df9689220b4ef23b6b4e7b4cbc0189a1",
+      "observation": "A second Square opens Status, Equip, Items, Abilities, Gear, File and Exit in the original bridge scene. Visible menu output does not establish every branch or progression variant."
+    },
+    {
+      "id": "OBS-D1-BRIDGE-CARD-UI",
+      "category": "saves",
+      "label": "Original bridge File/card-management UI",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/disc1-bridge-file-menu-probe",
+      "frontend_frame": 4299,
+      "image_sha256": "c18fc27ddf68e0582f90806a33399f4c2a783af302f996135bf3302223ded1d0",
+      "observation": "The original File branch displays Card 1 and Card 2 with fifteen outlined slots each, plus Copy and Delete. No card file is written or loaded, and no ordinary save format or save/load round trip is claimed."
+    },
+    {
+      "id": "OBS-D2-BRIDGE",
+      "category": "fields",
+      "label": "Original populated bridge scene",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [
+        290
+      ],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/disc2-bridge-file-menu-probe",
+      "frontend_frame": 2892,
+      "image_sha256": "c2d207aa0ac28c4181490eb699f7028c13484e3c00a38762a74497f7cb4af7b9",
+      "observation": "The reviewed Square input from the original world-map presentation enters this populated bridge scene. Captured original field selector is 290; retail story access and a dedicated bridge-readiness adapter remain unknown.",
+      "original_id_namespace": "original_field_selector"
+    },
+    {
+      "id": "OBS-D2-BRIDGE-MAIN-MENU",
+      "category": "menus",
+      "label": "Original bridge main menu",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/disc2-bridge-file-menu-probe",
+      "frontend_frame": 3500,
+      "image_sha256": "bde1f812c60b351a7cd9b4f1f81867494bb45c692634bf9e562d8f29b793f380",
+      "observation": "A second Square opens Status, Equip, Items, Abilities, Gear, File and Exit in the original bridge scene. Visible menu output does not establish every branch or progression variant."
+    },
+    {
+      "id": "OBS-D2-BRIDGE-CARD-UI",
+      "category": "saves",
+      "label": "Original bridge File/card-management UI",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/disc2-bridge-file-menu-probe",
+      "frontend_frame": 4298,
+      "image_sha256": "d96f2264a51ad854be8d8a8579a622bac9a9d9a14fa38d7e7ff577d80111f4ce",
+      "observation": "The original File branch displays Card 1 and Card 2 with fifteen outlined slots each, plus Copy and Delete. No card file is written or loaded, and no ordinary save format or save/load round trip is claimed."
+    },
+    {
+      "id": "OBS-D1-ROOM-CARD-UI",
+      "category": "saves",
+      "label": "Original room File/card-management UI",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "status": "observed_original_execution",
+      "original_content_ids": [],
+      "evidence": [
+        "EVID-REF-011"
+      ],
+      "route_stage": ".local/scenarios/painting-room-file-menu-probe",
+      "frontend_frame": 4407,
+      "image_sha256": "c9150d492ffc392fa5d7182d2201b97ba7484369153150c0e55bb5156fa93ffc",
+      "observation": "The original painting-room File branch displays two fifteen-slot card grids and Copy/Delete. This records save-related UI, not an executed card write, load or persistence test."
+    }
+  ]
+}

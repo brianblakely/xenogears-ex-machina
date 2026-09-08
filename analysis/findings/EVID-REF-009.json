@@ -1,0 +1,980 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-009",
+  "kind": "original_static_and_execution_observation",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 43844,
+      "track_lba": 108627,
+      "sector_bytes": 2352,
+      "user_data_offset": 860,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001a344",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original boot code; no overlay applies to this Kernel input/dispatch instruction coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 41676,
+      "track_lba": 108626,
+      "sector_bytes": 2352,
+      "user_data_offset": 740,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80019acc",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original boot code; no overlay applies to this Kernel input/dispatch instruction coordinate."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": ".local/scenarios/kernel-cross-worldmap-probe/capture/final.ram",
+      "file_offset": 462076,
+      "track_lba": 108995,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "mode": 3,
+        "original_label": "worldmap",
+        "source_slot": 37,
+        "packed_projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+        "ram_sha256": "13c51e018beb202ef808f8308aae3c5d558728270e5558f48ba0416db69c2bee",
+        "decoded_destination": "0x8006faf0",
+        "decoded_entry_offset": 4620,
+        "entry_window_sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f"
+      },
+      "address": "0x80070cfc",
+      "address_space": "PS1 KSEG0 virtual address in the stated original overlay",
+      "not_applicable": "File offset is in the private original RAM capture; sector coordinate identifies the beginning of the packed source resource. The private original-decoder transcription corroborates the 128-byte decoded entry window, not a direct packed-source offset for each instruction."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": ".local/scenarios/kernel-cross-battling-probe/capture/final.ram",
+      "file_offset": 560784,
+      "track_lba": 108893,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "mode": 4,
+        "original_label": "battling",
+        "source_slot": 35,
+        "packed_projection_sha256": "1449e55e665200c0d363938815ef23a77e53620228cb6b14ef5937f8f43ed3cf",
+        "ram_sha256": "22be1f7a761c4dba1248f717eac458cad2767cf4fec97603850570393d517283",
+        "decoded_destination": "0x8006faf0",
+        "decoded_entry_offset": 103328,
+        "entry_window_sha256": "fcc9ba349ab2a60638601ecf54767686230ffc333672ba26e88088437891514d"
+      },
+      "address": "0x80088e90",
+      "address_space": "PS1 KSEG0 virtual address in the stated original overlay",
+      "not_applicable": "File offset is in the private original RAM capture; sector coordinate identifies the beginning of the packed source resource. The private original-decoder transcription corroborates the 128-byte decoded entry window, not a direct packed-source offset for each instruction."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 43844,
+      "track_lba": 172939,
+      "sector_bytes": 2352,
+      "user_data_offset": 860,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x8001a344",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original boot code; no overlay applies to this Kernel input/dispatch instruction coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 41676,
+      "track_lba": 172938,
+      "sector_bytes": 2352,
+      "user_data_offset": 740,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80019acc",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original boot code; no overlay applies to this Kernel input/dispatch instruction coordinate."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": ".local/scenarios/disc2-kernel-worldmap-probe/capture/final.ram",
+      "file_offset": 462076,
+      "track_lba": 173307,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "mode": 3,
+        "original_label": "worldmap",
+        "source_slot": 32,
+        "packed_projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+        "ram_sha256": "192c638036c73021cf933831b85fae09d5d053222632a0ea137a781967020a4f",
+        "decoded_destination": "0x8006faf0",
+        "decoded_entry_offset": 4620,
+        "entry_window_sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f"
+      },
+      "address": "0x80070cfc",
+      "address_space": "PS1 KSEG0 virtual address in the stated original overlay",
+      "not_applicable": "File offset is in the private original RAM capture; sector coordinate identifies the beginning of the packed source resource. The private original-decoder transcription corroborates the 128-byte decoded entry window, not a direct packed-source offset for each instruction."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": ".local/scenarios/disc2-kernel-battling-probe/capture/final.ram",
+      "file_offset": 560784,
+      "track_lba": 173205,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "mode": 4,
+        "original_label": "battling",
+        "source_slot": 30,
+        "packed_projection_sha256": "1449e55e665200c0d363938815ef23a77e53620228cb6b14ef5937f8f43ed3cf",
+        "ram_sha256": "e36a03338fc459c3150fa3a56e00f54dbc9d94829705fb14c9e073e13b2f7240",
+        "decoded_destination": "0x8006faf0",
+        "decoded_entry_offset": 103328,
+        "entry_window_sha256": "fcc9ba349ab2a60638601ecf54767686230ffc333672ba26e88088437891514d"
+      },
+      "address": "0x80088e90",
+      "address_space": "PS1 KSEG0 virtual address in the stated original overlay",
+      "not_applicable": "File offset is in the private original RAM capture; sector coordinate identifies the beginning of the packed source resource. The private original-decoder transcription corroborates the 128-byte decoded entry window, not a direct packed-source offset for each instruction."
+    }
+  ],
+  "observation": "Cold-boot Kernel menu input paths on both selected original discs reach visible world-map terrain, sky, a flying machine and minimap, and the original Battling menu. That menu has four selectable entries: Bonus Battling, Practice, Tutorial and Exit. Disc 1 recorded branches display Bonus Battling match settings, Practice Gear selection with Weltall and Vierge, a Tutorial arena with instructions, and a return to the original title via Exit. Ordered Up/Left world-map inputs change the rendered machine/world view. The world-map and Battling overlay entry windows match decoded original source resources on both discs.",
+  "interpretation": "These add observed world-map and minigame entry points to the coverage inventory, with original mode/overlay provenance. They validate these recorded input paths through the existing Kernel adapter. Dedicated world-map/minigame state setup, target readiness, movement arithmetic, minigame rules, complete location/encounter counts and native gameplay remain unimplemented. Kernel Battle produced flat teal output and Kernel Menu produced black output under reset-default setup; neither is a successful gameplay reference.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Selected measured Disc 1/Disc 2 CHDs; original-source catalogs and scenario adapter from EVID-REF-007",
+      "Pinned Nix observation shell with the recorded external core and HLE BIOS",
+      "Fresh ignored output directories and no imported checkpoints"
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "Follow the Kernel route reproduction procedure in tools/reference/README.md using tests/reference-inputs/kernel-mode-observation-route.json. Write each recorded scenario object unchanged to its own local file, invoke scenario.py with that file and the matching original CHD, and use a new output folder per case.",
+      "Review the final images and the named navigation/movement step captures against the recorded output descriptions; a completed input program alone is not target-mode readiness.",
+      "For the stated world-map and Battling source slots, read the complete 2048-byte logical source-sector extents, verify their catalogued projected-prefix hashes, decode using the independently transcribed original 0x80032eb4 routine described in EVID-REF-007, and compare 128 bytes at decoded offset entry_address - captured_global_0x80018084 with original captured RAM at entry_address & 0x1fffff. Retain original bytes and disassembly locally."
+    ],
+    "expected": "Recorded Kernel routes produce the independently reviewed visible results, with source-specific original overlay attribution. Unsupported/reset-default Battle and Menu outcomes remain explicit gaps.",
+    "actual": "All fifteen bounded cold-boot input programs completed. Parent reviewed the final world-map/Battling/title/flat/black outputs and the navigation/motion captures. The three-down Battling route visibly selected Exit and returned to the title. Exact 128-byte original entry-window source/RAM comparisons passed for Worldmap and Battling on both discs. Battle and Menu did not establish successful target initialization.",
+    "result": "passed",
+    "tolerance": "Visual entry-point and exact source-entry-window correspondence only. No battle success, minigame rule, target readiness, authoritative coordinate, native runtime or hardware timing equivalence is asserted.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/kernel-mode-source-correspondence.json",
+        "sha256": "303e88e4ba5f0e1ca50516877ddcbcf4d943d808576e367117344583256ef61b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-field-probe/report.json",
+        "sha256": "31280d00c3ee01184349703d76f7e05d50a2efc55267d8328f99fb1298f5d96f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-field-probe/scenario.json",
+        "sha256": "cee5d61634b0efae3244d4a14fe8ee96e0e60889a1ebe169f0adc14425cd78d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-field-probe/program.json",
+        "sha256": "741621828a0c48693d30addff60ce081adbe44666f8fb5a82b282e53e7385aa7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-field-probe/capture/observation.json",
+        "sha256": "fa5b189123afc06f10218ec0c33c1f28de329d4bbbee952c7fa5070668229ea4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-field-probe/capture/frame-002245.png",
+        "sha256": "72261feb872e294b1ccb7c1876f247a066b869ede98bc52374e442d957f8b438",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/report.json",
+        "sha256": "d1b9b37e8d1bcad1b8b0b50141bf08d1e5325d37d4cc3ebc4fa5b3001e0cb935",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/scenario.json",
+        "sha256": "ce1bab7bfcfbbd04b2920d686e6f574c2bfe375c9ec94fcf2f0ded8908992a1b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/program.json",
+        "sha256": "924aeebb4ae257e57dfdd04277c96b6063814d12301688016f547f9d8db0def8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/capture/observation.json",
+        "sha256": "8ee9fa9e09e483ab28f80d1537ccd1766d97552e36397ba692b14c97dfa09fdb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battle-probe/capture/frame-002265.png",
+        "sha256": "06659eac8223f60da7fd514e9108400e0dfdca041d90343b0a18f66b536f23c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/report.json",
+        "sha256": "32c2c44367cd921dc0b369b41d265bd300b51b9eb5b928900550b6f03614ca08",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/scenario.json",
+        "sha256": "18c574d14cd55b6773c5b5ad815bb0c37cdd99f6ef1cedb7c52545a7edd5c330",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/program.json",
+        "sha256": "b445cc6c6a2e85369c596236fd866ca43c8a204f027e0b75942f1ed0c66083e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/capture/observation.json",
+        "sha256": "4b542e3e0acf2e1c2ad72e02445ee5d2d2306ec9fba82f2a4c65e65da2b5b2ed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/capture/frame-002285.png",
+        "sha256": "63259c44881640db83611306c075292c6ebc3d1eb75791e1354a0d1b22a833e0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/capture/final.ram",
+        "sha256": "13c51e018beb202ef808f8308aae3c5d558728270e5558f48ba0416db69c2bee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battling-probe/report.json",
+        "sha256": "228f56fe65f8877ba3360e06edbe6aa8fe600cd123848d561c1454a45941c55b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battling-probe/scenario.json",
+        "sha256": "1a66c8406ddc17897d1726805db0dcff1f066f87a21bfad2759f57747968104d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battling-probe/program.json",
+        "sha256": "4f3ae7a064fdd8312de22623293d74fbfc85924caf86f4e4910f3beed215e4c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battling-probe/capture/observation.json",
+        "sha256": "843b503fdb9bf9e85e20d35529fdfb17e81dc0b64793b6a524213f13427e46ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battling-probe/capture/frame-002305.png",
+        "sha256": "9a942c13148898c61bf36a45cdb3a6a2a92580a48533e65475c4cbb6fc666d88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-battling-probe/capture/final.ram",
+        "sha256": "22be1f7a761c4dba1248f717eac458cad2767cf4fec97603850570393d517283",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-menu-probe/report.json",
+        "sha256": "f09867bedcff731da486b7069126b3e35688ce6a9f1795e7d95bacfa42d48999",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-menu-probe/scenario.json",
+        "sha256": "b8b5ad99e7bc540c4cc6eadce7af3d460b2d651c98066e60c0e4a29ccc7a3c00",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-menu-probe/program.json",
+        "sha256": "402a45a1ec8c1a02fbe1ce3246b6f4d1eba847019122d557641387610afefd8c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-menu-probe/capture/observation.json",
+        "sha256": "20ea11d4ccfe8c73f8491ad50051faf6678a0dc0c51015dc3151a490ab3a5d3e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-menu-probe/capture/frame-002325.png",
+        "sha256": "f8919e417f3af6aa277c1c6f802130118bd9ca3f43a3fbe95f0378872be6df12",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-movie-probe/report.json",
+        "sha256": "926b9f98e52236c871a4826f90efd691db1fcbae6e1795fe66f5d93cc0507d4e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-movie-probe/scenario.json",
+        "sha256": "fb61bc8f53bc39545fc21c5c0597c8080f0113c7d05d4db1024ac835ba8273a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-movie-probe/program.json",
+        "sha256": "e2b2d15499f3ea30d8eef21aa126b9783bc8558878c5e088ee4dff93cd90874c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-movie-probe/capture/observation.json",
+        "sha256": "5e56754f5056c7aafee8a69a0b8683942299db7f86c64ef2e4f060b7f0e4fe05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/kernel-cross-movie-probe/capture/frame-002345.png",
+        "sha256": "72261feb872e294b1ccb7c1876f247a066b869ede98bc52374e442d957f8b438",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/report.json",
+        "sha256": "9e41ec35f02db8375433c6529d03fd21536f6d0083d2c5702bab282b0c4cc745",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/scenario.json",
+        "sha256": "5a630815495c4d882245cb2f8035e04d6bab9bd74185cd3d3f9957ca2a8a9244",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/program.json",
+        "sha256": "6744420ac3e84497d272f41da0c90acaece08a0484a5a04b747dbe5598dc3a0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/capture/observation.json",
+        "sha256": "ee55b38813b1ab920ac9cb5ab9c73b5a4cc2294184aaf496351efdebf42aad0a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/capture/frame-002284.png",
+        "sha256": "7fec30ae3e3c67f4f2a4264f2f930b9a46d7d73518e52a7a42a6c373278d0435",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/capture/final.ram",
+        "sha256": "192c638036c73021cf933831b85fae09d5d053222632a0ea137a781967020a4f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/report.json",
+        "sha256": "391544bd51e5b380faf691390fdeebc936d24332b63edd949885925e23322e99",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/scenario.json",
+        "sha256": "be36aafaaedb95b4da41c66de2ee9b78616bc43c6bc3d99ccc9aa81237654074",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/program.json",
+        "sha256": "545217bab0e25daa065e29023214f63dfaf14a00999014edaeaac1b71b97426c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/capture/observation.json",
+        "sha256": "33fa0c216d3b27549a6a4b0f786326176fb5a8fbd529a33f7a6e21948949ae2b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/capture/frame-002304.png",
+        "sha256": "2df80364752622d8a5c89ad79470fa68eeb49fbf9f8abb24dd28167d8aa4f44a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/capture/final.ram",
+        "sha256": "e36a03338fc459c3150fa3a56e00f54dbc9d94829705fb14c9e073e13b2f7240",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-movie-probe/report.json",
+        "sha256": "f20d0dcaa3ca00ddf642d59a367d6df24921cee9c8af7a6b36fef54f2eaf7df0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-movie-probe/scenario.json",
+        "sha256": "560b023640db25411ea96b5a583aad38a7e3b6f136bd1936cb1b55789cd5373a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-movie-probe/program.json",
+        "sha256": "9c6dbf00d220211c7a395b68e3bfb321dba7adc4e32620abf7c1a8f56a29e67d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-movie-probe/capture/observation.json",
+        "sha256": "8a14116819e96f6bd7c93099ba0583dab0f75c959ffb38b5310c2fd05a94fee5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-kernel-movie-probe/capture/frame-002344.png",
+        "sha256": "72261feb872e294b1ccb7c1876f247a066b869ede98bc52374e442d957f8b438",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-practice-input-probe/report.json",
+        "sha256": "5b525fb8bbfd14923e1befbafe734b6cd36f6f18b4bf581d17f6eba94bc163c0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-practice-input-probe/scenario.json",
+        "sha256": "897dc07adfc6d95c71a2ff584c4009e3068c06e27d115646ff21a6a734d20ecb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-practice-input-probe/program.json",
+        "sha256": "88f4a3f73004e87c6974e7714c05e4e16dafb47d2142aa92d5f786d3d209d19f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-practice-input-probe/capture/observation.json",
+        "sha256": "931b7ba73967bf48093c743ee11408fe973db88ee12a126045ed51b06feec170",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-practice-input-probe/capture/frame-003513.png",
+        "sha256": "b2a2b43460b2c0a5e18ace7160aaed856ec46fc4b2a37c2cda1ab89ae36c2d69",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-tutorial-input-probe/report.json",
+        "sha256": "1c858831179d1750d914e53308d988965ba913c0cd38123dc12d62efe1b3813b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-tutorial-input-probe/scenario.json",
+        "sha256": "ecc5f8f6aae8a3685d6cb6e3a47f2e340e61139156125fd20d7eb4c6b37194a3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-tutorial-input-probe/program.json",
+        "sha256": "22ccea648eb457c62e8a5c839afb0d52178763f202ad7c338448b264117f3482",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-tutorial-input-probe/capture/observation.json",
+        "sha256": "4ebf47197d5f466015b445d5bc35b5c95fc020d7acb808e74ac5a0ecb4e3c589",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-tutorial-input-probe/capture/frame-003533.png",
+        "sha256": "1408e28cf7a33b36bf970ba94ececcd13c39b4cc3964c2793cdf3f1c1332abea",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-exit-input-probe/report.json",
+        "sha256": "eb72a15e3244ebfca0d27446f57feb704d8ee8ecfc3534cf13af79ec227d0a8c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-exit-input-probe/scenario.json",
+        "sha256": "95a855d75052b9fbce831d7d7b3c85109ebe31bca7ecc93c6474b0b164721923",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-exit-input-probe/program.json",
+        "sha256": "5e614be0db1ce098f8bf776830e571a1af75c8f2b95c191d8aee2d0db8516e9b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-exit-input-probe/capture/observation.json",
+        "sha256": "ae695e115960b8720cc2414cdbc23ea90d1b7b929daeab0881ce4971c5c21279",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-exit-input-probe/capture/frame-003553.png",
+        "sha256": "d836d88b745c74c6b53cb41cfd20dcc0a88e4e586ed9f1be3428c8cc7d197650",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-verified-exit-input-probe/report.json",
+        "sha256": "81cd8bd05eb8458a5f38f537489b0d96fb77e6c8177f872391519f74486a794f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-verified-exit-input-probe/scenario.json",
+        "sha256": "184cce956062c7281ddcc4327c9af6367dbe423eb898f209ca58259f5e571c48",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-verified-exit-input-probe/program.json",
+        "sha256": "c85f06b1a5645daaa2b23acf1a48bfe3e4d8027ebfac1753009656819fd5d4ed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-verified-exit-input-probe/capture/observation.json",
+        "sha256": "4006ecfd85ea23562da9a1203f1e483eab428cf11f66cfaf83c074d7de8c99d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-verified-exit-input-probe/capture/frame-003573.png",
+        "sha256": "72261feb872e294b1ccb7c1876f247a066b869ede98bc52374e442d957f8b438",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/report.json",
+        "sha256": "d851bf3aa2338d19cd69a659b66320cb2d39cef51bc14133e85d7b7cad87d046",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/scenario.json",
+        "sha256": "cc21317564d99c3f3ee14e27567a4ba7ea6108cbc055a42b8d8ed5bb37fff67e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/program.json",
+        "sha256": "0ba7d4453988e0f0b97e138413aba65d03e5095550a65ded1ddc73fd42e5c4b7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/capture/observation.json",
+        "sha256": "ed55c42fc7bcaf618219d410563e87951b668de9ce3b7409e27c57bed2692ee9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/capture/frame-002973.png",
+        "sha256": "db1c7c0dc8623c3ba6317fc5c0e5925d7066d930a4be72c5245b2e0c357b1efc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/worldmap-motion-probe/report.json",
+        "sha256": "5fa84ae01ede484df6f94d05bf9756b767315da25ac231b0f9ba7b7acf8726a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/worldmap-motion-probe/scenario.json",
+        "sha256": "d6df1d3c45e9356b1717d3fb44164fd2e2fe8a03eebdc8aac603b0ced48c5aaa",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/worldmap-motion-probe/program.json",
+        "sha256": "5e8dfb1d09ba39399f49dced25ab6946628e4c6d6d31931191fbf031a429dabb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/worldmap-motion-probe/capture/observation.json",
+        "sha256": "b4f6c5928d2409298fecadb67dd0e27623f0a12b9bbe2130ab9212271baffcb3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/worldmap-motion-probe/capture/frame-002495.png",
+        "sha256": "165061b84563174302698e5202ad9778a5a392b64f8c96ac3e319bcd75691f22",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/capture/frame-002325.png",
+        "sha256": "5f8629eb87f6c29a377bc0da90b3e1484696b046025fac41c228e5cf96a37811",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/capture/frame-002345.png",
+        "sha256": "8484ae764a418a83abb5983563b35b159733c824d5f3c632b22bccc4bbf1f47f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-navigation-probe/capture/frame-002365.png",
+        "sha256": "e7333f13a3bfd90acc87b4a43648695440bd03f191bc0b93f56133e2676ec8b5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/worldmap-motion-probe/capture/frame-002405.png",
+        "sha256": "6a7d50d52df206509ee36ce97177fb4661f7774264fe2d7d57f3783f9f9888a6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/battling-verified-exit-input-probe/capture/frame-002365.png",
+        "sha256": "9473cd290bf9520f2b763ba0e310b9c120390ca67e34758952cc96a57092a6fd",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "route": {
+    "path": "tests/reference-inputs/kernel-mode-observation-route.json",
+    "sha256": "7a40da63c7286f99e93ee391f47930388345b71506781cb9d39b8b7ff414e2e9",
+    "case_count": 15
+  },
+  "runs": [
+    {
+      "name": "kernel-cross-field-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2245,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "741621828a0c48693d30addff60ce081adbe44666f8fb5a82b282e53e7385aa7",
+      "observed_output": "Original title presentation; reset field selector is 490.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "kernel-cross-battle-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2265,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "924aeebb4ae257e57dfdd04277c96b6063814d12301688016f547f9d8db0def8",
+      "observed_output": "Uniform teal output after the input schedule. No successful battle scene or readiness claim.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "kernel-cross-worldmap-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2285,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "b445cc6c6a2e85369c596236fd866ca43c8a204f027e0b75942f1ed0c66083e5",
+      "observed_output": "Terrain, sky, a flying machine and minimap are visible.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "kernel-cross-battling-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2305,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "4f3ae7a064fdd8312de22623293d74fbfc85924caf86f4e4910f3beed215e4c3",
+      "observed_output": "Four selectable entries: Bonus Battling, Practice, Tutorial, Exit; Bonus Battling is initially highlighted.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "kernel-cross-menu-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2325,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "402a45a1ec8c1a02fbe1ce3246b6f4d1eba847019122d557641387610afefd8c",
+      "observed_output": "Black output after the input schedule. No successful game-menu claim.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "kernel-cross-movie-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2345,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "e2b2d15499f3ea30d8eef21aa126b9783bc8558878c5e088ee4dff93cd90874c",
+      "observed_output": "Original title presentation.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "disc2-kernel-worldmap-probe",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frontend_frame": 2284,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "6744420ac3e84497d272f41da0c90acaece08a0484a5a04b747dbe5598dc3a0b",
+      "observed_output": "Terrain, sky, a flying machine and minimap are visible.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "disc2-kernel-battling-probe",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frontend_frame": 2304,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "545217bab0e25daa065e29023214f63dfaf14a00999014edaeaac1b71b97426c",
+      "observed_output": "Bonus Battling, Practice, Tutorial and Exit are visible.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "disc2-kernel-movie-probe",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frontend_frame": 2344,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "9c6dbf00d220211c7a395b68e3bfb321dba7adc4e32620abf7c1a8f56a29e67d",
+      "observed_output": "Original title presentation.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "battling-practice-input-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 3513,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "88f4a3f73004e87c6974e7714c05e4e16dafb47d2142aa92d5f786d3d209d19f",
+      "observed_output": "Despite the exploratory name, this selects Bonus Battling and displays match settings with Player1 vs COM, Player1 vs Player2 and COM vs COM.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "battling-tutorial-input-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 3533,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "22ccea648eb457c62e8a5c839afb0d52178763f202ad7c338448b264117f3482",
+      "observed_output": "Despite the exploratory name, one Down selects Practice and reaches Weltall versus Vierge Gear selection.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "battling-exit-input-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 3553,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "5e614be0db1ce098f8bf776830e571a1af75c8f2b95c191d8aee2d0db8516e9b",
+      "observed_output": "Despite the exploratory name, two Downs select Tutorial and reach a Gear arena with tutorial dialogue.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "battling-verified-exit-input-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 3573,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "c85f06b1a5645daaa2b23acf1a48bfe3e4d8027ebfac1753009656819fd5d4ed",
+      "observed_output": "Three Downs visibly select Exit; confirmation returns to the original title presentation.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "battling-navigation-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2973,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "0ba7d4453988e0f0b97e138413aba65d03e5095550a65ded1ddc73fd42e5c4b7",
+      "observed_output": "Successive Down, Down and Up highlights show Practice, Tutorial and Practice, then confirmation reaches Gear selection.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    },
+    {
+      "name": "worldmap-motion-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_frame": 2495,
+      "compiler_sha256": "a2f285f9a3b1c430bff9849f73ccb7d280623cc36d5e74a21f17e3c1c41fdc7a",
+      "observer_sha256": "2687189cf56de03d4fffebb82a4a25211200d656e0eb181dff361b1e7a62e2eb",
+      "executor_sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+      "program_sha256": "5e8dfb1d09ba39399f49dced25ab6946628e4c6d6d31931191fbf031a429dabb",
+      "observed_output": "Recorded Up and Left inputs change the flying-machine/world-view presentation; no recovered coordinate or travel-distance claim.",
+      "readiness_scope": "Original Kernel MENU only; later target-mode readiness is not asserted."
+    }
+  ],
+  "source_correlations": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "kernel_mode": 3,
+      "original_label": "worldmap",
+      "mode_table_address": "0x800180bc",
+      "mode_table_boot_file_offset": 35004,
+      "entry_address": "0x80070cfc",
+      "bss": [
+        "0x8009bbb0",
+        "0x8009d80c"
+      ],
+      "file_number": 15,
+      "directory_selector": [
+        0,
+        1
+      ],
+      "directory_entry": 24,
+      "source_record": {
+        "slot": 37,
+        "source_lba": 108995,
+        "source_sector_count": 46,
+        "projected_bytes": 92180,
+        "projection_unit": 2048,
+        "projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "decoded_destination": "0x8006faf0",
+      "decoded_bytes": 180422,
+      "decoded_sha256": "4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70",
+      "consumed_source_bytes": 92180,
+      "bytes_consumed_beyond_candidate_length": 0,
+      "entry_window": {
+        "decoded_offset": 4620,
+        "bytes": 128,
+        "sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f",
+        "matches_captured_original_ram": true
+      },
+      "ram": {
+        "path": ".local/scenarios/kernel-cross-worldmap-probe/capture/final.ram",
+        "sha256": "13c51e018beb202ef808f8308aae3c5d558728270e5558f48ba0416db69c2bee"
+      }
+    },
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "kernel_mode": 4,
+      "original_label": "battling",
+      "mode_table_address": "0x800180cc",
+      "mode_table_boot_file_offset": 35020,
+      "entry_address": "0x80088e90",
+      "bss": [
+        "0x800925d0",
+        "0x8009b554"
+      ],
+      "file_number": 13,
+      "directory_selector": [
+        0,
+        1
+      ],
+      "directory_entry": 24,
+      "source_record": {
+        "slot": 35,
+        "source_lba": 108893,
+        "source_sector_count": 40,
+        "projected_bytes": 80284,
+        "projection_unit": 2048,
+        "projection_sha256": "1449e55e665200c0d363938815ef23a77e53620228cb6b14ef5937f8f43ed3cf",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "decoded_destination": "0x8006faf0",
+      "decoded_bytes": 142953,
+      "decoded_sha256": "3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea1575646e",
+      "consumed_source_bytes": 80289,
+      "bytes_consumed_beyond_candidate_length": 5,
+      "entry_window": {
+        "decoded_offset": 103328,
+        "bytes": 128,
+        "sha256": "fcc9ba349ab2a60638601ecf54767686230ffc333672ba26e88088437891514d",
+        "matches_captured_original_ram": true
+      },
+      "ram": {
+        "path": ".local/scenarios/kernel-cross-battling-probe/capture/final.ram",
+        "sha256": "22be1f7a761c4dba1248f717eac458cad2767cf4fec97603850570393d517283"
+      }
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "kernel_mode": 3,
+      "original_label": "worldmap",
+      "mode_table_address": "0x800180bc",
+      "mode_table_boot_file_offset": 35004,
+      "entry_address": "0x80070cfc",
+      "bss": [
+        "0x8009bbb0",
+        "0x8009d80c"
+      ],
+      "file_number": 15,
+      "directory_selector": [
+        0,
+        1
+      ],
+      "directory_entry": 19,
+      "source_record": {
+        "slot": 32,
+        "source_lba": 173307,
+        "source_sector_count": 46,
+        "projected_bytes": 92180,
+        "projection_unit": 2048,
+        "projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "decoded_destination": "0x8006faf0",
+      "decoded_bytes": 180422,
+      "decoded_sha256": "4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70",
+      "consumed_source_bytes": 92180,
+      "bytes_consumed_beyond_candidate_length": 0,
+      "entry_window": {
+        "decoded_offset": 4620,
+        "bytes": 128,
+        "sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f",
+        "matches_captured_original_ram": true
+      },
+      "ram": {
+        "path": ".local/scenarios/disc2-kernel-worldmap-probe/capture/final.ram",
+        "sha256": "192c638036c73021cf933831b85fae09d5d053222632a0ea137a781967020a4f"
+      }
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "kernel_mode": 4,
+      "original_label": "battling",
+      "mode_table_address": "0x800180cc",
+      "mode_table_boot_file_offset": 35020,
+      "entry_address": "0x80088e90",
+      "bss": [
+        "0x800925d0",
+        "0x8009b554"
+      ],
+      "file_number": 13,
+      "directory_selector": [
+        0,
+        1
+      ],
+      "directory_entry": 19,
+      "source_record": {
+        "slot": 30,
+        "source_lba": 173205,
+        "source_sector_count": 40,
+        "projected_bytes": 80284,
+        "projection_unit": 2048,
+        "projection_sha256": "1449e55e665200c0d363938815ef23a77e53620228cb6b14ef5937f8f43ed3cf",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "decoded_destination": "0x8006faf0",
+      "decoded_bytes": 142953,
+      "decoded_sha256": "3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea1575646e",
+      "consumed_source_bytes": 80289,
+      "bytes_consumed_beyond_candidate_length": 5,
+      "entry_window": {
+        "decoded_offset": 103328,
+        "bytes": 128,
+        "sha256": "fcc9ba349ab2a60638601ecf54767686230ffc333672ba26e88088437891514d",
+        "matches_captured_original_ram": true
+      },
+      "ram": {
+        "path": ".local/scenarios/disc2-kernel-battling-probe/capture/final.ram",
+        "sha256": "e36a03338fc459c3150fa3a56e00f54dbc9d94829705fb14c9e073e13b2f7240"
+      }
+    }
+  ],
+  "mode_mapping": {
+    "table": "0x8001808c",
+    "record_bytes": 16,
+    "worldmap_mode": 3,
+    "battling_mode": 4,
+    "original_file_number_table": "0x8004eaa0",
+    "directory_selector": [
+      0,
+      1
+    ],
+    "source_slot_formula": "original file number + u16le(directory[1]) - 2",
+    "worldmap_file_number": 15,
+    "battling_file_number": 13,
+    "worldmap_source_slots": {
+      "disc1": 37,
+      "disc2": 32
+    },
+    "battling_source_slots": {
+      "disc1": 35,
+      "disc2": 30
+    }
+  },
+  "limitations": [
+    "Only recorded entry points are observed; complete world-map regions, vehicles, progression variants and minigame configurations remain unenumerated.",
+    "Bonus Battling is selectable, not merely a heading. Private names containing practice/tutorial/exit preserve early exploratory labels; the route records their corrected observed meanings.",
+    "Kernel mode selection supplies reset defaults rather than a normal campaign checkpoint.",
+    "The scene program asserts only original Kernel MENU readiness, then executes its input schedule. Its completion is not a recovered readiness assertion for the selected mode.",
+    "The original battle configuration overlay and its Start instruction text are visible in captured bytes, but flat output and unsuccessful further exploration remain unresolved; no battle rendering or interaction is claimed.",
+    "Source matching covers specified original instruction windows; it does not implement or validate all overlay loading, data decoding or gameplay.",
+    "All captures use the same pinned external emulator with HLE BIOS; native runtime and hardware corroboration are separate requirements."
+  ],
+  "author": "Parent: original Kernel input analysis, cold-boot execution, direct visual review and exact original overlay-entry source comparison",
+  "reviewers": [
+    "Parent agent",
+    "Phase 0 agent: independently viewed both Worldmap images, both Battling main menus, Bonus match settings, Practice Gear selection, Tutorial arena and actual Exit-to-title result"
+  ]
+}

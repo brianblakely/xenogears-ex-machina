@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "id": "INPUT-MENU-OBSERVATION-ROUTE",
+  "scope": "Exact portable cold-boot scenario inputs used by EVID-REF-011; later targets require separate output review, and no card save/load success is asserted.",
+  "cases": [
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "painting-room-file-menu-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "description": "Cold-boot field 14, open the game menu and select File through original controller input. Only field entry has a readiness assertion; inspect the final File UI separately.",
+        "entry": {
+          "type": "field",
+          "map": 14
+        },
+        "launch": {
+          "ready": "map",
+          "timeout_frames": 5000,
+          "settle_frames": 1800
+        },
+        "steps": [
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 240,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 600,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "square"
+            ],
+            "after_frames": 300,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Original File UI shows Card 1 and Card 2, each with 15 outlined slots, plus Copy and Delete options."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "disc1-bridge-file-menu-probe",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Cold-boot Kernel worldmap input path, enter the visible bridge and inspect its game File menu. Only Kernel readiness is asserted; later output requires visual review.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "square"
+            ],
+            "after_frames": 600,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "square"
+            ],
+            "after_frames": 600,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Square from the world-map flying-machine presentation enters a populated bridge; a second Square opens Status/Equip/Items/Abilities/Gear/File/Exit. Original File UI shows Card 1 and Card 2, each with 15 outlined slots, plus Copy and Delete options."
+    },
+    {
+      "scenario": {
+        "schema_version": 1,
+        "name": "disc2-bridge-file-menu-probe",
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "entry": {
+          "type": "kernel"
+        },
+        "launch": {
+          "settle_frames": 120
+        },
+        "description": "Cold-boot Kernel worldmap input path, enter the visible bridge and inspect its game File menu. Only Kernel readiness is asserted; later output requires visual review.",
+        "steps": [
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "hold_frames": 8,
+            "after_frames": 12
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "hold_frames": 8,
+            "after_frames": 1800,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "square"
+            ],
+            "after_frames": 600,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "square"
+            ],
+            "after_frames": 600,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30
+          },
+          {
+            "buttons": [
+              "down"
+            ],
+            "after_frames": 30,
+            "capture": true
+          },
+          {
+            "buttons": [
+              "cross"
+            ],
+            "after_frames": 600,
+            "capture": true
+          }
+        ]
+      },
+      "observed_output": "Square from the world-map flying-machine presentation enters a populated bridge; a second Square opens Status/Equip/Items/Abilities/Gear/File/Exit. Original File UI shows Card 1 and Card 2, each with 15 outlined slots, plus Copy and Delete options."
+    }
+  ]
+}

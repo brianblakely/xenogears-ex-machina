@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-005",
+  "kind": "original_static_metadata",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 23,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 23,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Static original track coordinate; no executed instruction, overlay or CPU address is asserted."
+    }
+  ],
+  "observation": "Logical LBA23 starts with DS01_XENOGEARS on source1 and DS02_XENOGEARS on source2; all remaining bytes in that 2048-byte block are zero. Independently proposed 7-byte records at LBA24 decode as a 24-bit little-endian LBA and signed 32-bit candidate length. All 43 negative records per disc have magnitudes exactly matching consecutive positive child records with matching start LBA. Source1 has 3728 positive entries; source2 has 3723. Every positive extent has an XA EOF under at least one tested 2048/2336-byte unit, and ISO CNF/executable LBA/size pairs match unique slots exactly. Source1 terminal candidate (0xffffff,0) occurs at slot4151; source2 at4146, followed by zeros. Nonzero zero-length markers and empty slots are preserved.",
+  "interpretation": "The explicit DS01/DS02 labels confirm disc sequence directly. The candidate physical index layout is strongly supported by independent boot and XA boundary checks, but loader access, group/directory semantics, small-file size units, auxiliary LBA40 values and every gameplay category remain unresolved. The public source-slot catalog is not a game-content coverage claim.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Both exact selected raw profiles",
+      "Pinned Nix development shell",
+      "Independent original ISO boot and raw-sector EOF measurements"
+    ],
+    "commands": [
+      "python3 tools/reference/index_survey.py --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --output .local/references/source-1/new-index-survey.json",
+      "python3 tools/reference/index_survey.py --raw .local/references/source-2/disc.bin --profile na-slus-00669-5eab85c683d4 --output .local/references/source-2/new-index-survey.json"
+    ],
+    "expected": "Explicit DS01/DS02 marker; 43 valid negative-count groups per profile; unique exact CNF/executable entries; no positive candidate without a measured EOF under either tested unit; retain unknown/padding slots and terminal marker.",
+    "actual": "All stated structural cross-checks passed for both originals. Parent independently observed both LBA23 labels. Parser bounds, negative-count consistency, unknown-slot preservation and terminal/truncation rejection passed original synthetic tests.",
+    "result": "passed",
+    "tolerance": "Exact static bytes/counts/coordinates. No runtime resource-ID, loader-decompilation, game-state or behavioral equivalence asserted.",
+    "artifacts": [
+      {
+        "path": ".local/references/source-1/index-survey.json",
+        "sha256": "a1a2cefd8801cbfa75be7ee3f86dca52ffa52ec6ecad5d4e05a22c95ca9eb1e6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-2/index-survey.json",
+        "sha256": "06fc934d0dd1bf3b53c4ba77e1199dea2891314ebd549fd439b13b859ca7db15",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "limitations": [
+    "Slots are source coordinates/project keys, not recovered runtime content IDs.",
+    "Negative counts match consecutive entries; directory meaning needs loader evidence.",
+    "EOF checks corroborate boundaries; size units remain ambiguous for small files.",
+    "Zero slots/length markers retain unknown meaning and are never executed as no-ops.",
+    "No field, battle, menu, audio, FMV, save or minigame meaning is assigned here.",
+    "This read-only inventory probe is not a game decoder, extractor or native loader."
+  ],
+  "author": "Phase 0 agent, independently inferred and measured original source structure",
+  "reviewers": [
+    "Parent independently corroborated original LBA23 disc labels; full table interpretation remains supported and requires loader review."
+  ]
+}

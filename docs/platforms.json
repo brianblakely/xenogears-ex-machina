@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "targets": [
+    {
+      "id": "repository",
+      "scope": "platform-independent source/evidence workflow and Linux native empty build",
+      "status": "baseline_only"
+    },
+    {
+      "id": "original-reference-analysis",
+      "scope": "Source-qualified original-game analysis and independently reconstructed source; does not claim native platform implementation or hardware timing proof.",
+      "status": "analysis_in_progress"
+    },
+    {
+      "id": "arch-vulkan",
+      "os": "Arch Linux",
+      "renderer": "Vulkan",
+      "priority": "leading development, execution, integration and release",
+      "cpu_targets": [
+        "x86_64 for Phase 0 development"
+      ],
+      "os_version_policy": "Record rolling package set at each test run",
+      "status": "game_not_implemented",
+      "required_environments": [
+        "Wayland",
+        "Hyprland",
+        "X11",
+        "fractional scaling",
+        "mixed DPI",
+        "ultrawide",
+        "fullscreen changes",
+        "focus loss",
+        "controller reconnect"
+      ]
+    },
+    {
+      "id": "windows-d3d12",
+      "os": "Windows",
+      "renderer": "Direct3D 12",
+      "priority": "compile checks from Phase 2; complete native runtime/release validation",
+      "cpu_targets": [],
+      "os_version_policy": "Exact OS/build/CPU support must be declared and validated before release",
+      "status": "planned_unvalidated",
+      "required_environments": [
+        "SDL3 input",
+        "XInput",
+        "overlapping provider deduplication",
+        "display and lifecycle"
+      ]
+    },
+    {
+      "id": "macos-metal",
+      "os": "macOS",
+      "renderer": "Metal",
+      "priority": "compile checks from Phase 2; complete native runtime/release validation",
+      "cpu_targets": [],
+      "os_version_policy": "Exact OS/processor targets must be declared and validated before release",
+      "status": "planned_unvalidated",
+      "required_environments": [
+        "application lifecycle",
+        "input",
+        "display",
+        "shader compilation"
+      ]
+    }
+  ],
+  "validation": "Every gameplay/editor facet applies to all three planned native target families unless explicitly scoped. Nix shell evaluation or cross-compilation is not native execution proof. No Phase 0 observation claims Vulkan, Windows or macOS gameplay support."
+}

@@ -1,0 +1,588 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-011",
+  "kind": "original_menu_and_card_source_inventory",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 239335,
+      "sector_bytes": 2352,
+      "user_data_offset": 820,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "kind": "original uncompressed menu-code source region",
+        "source_slot": 2597,
+        "source_lba": 239335,
+        "source_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "source_bytes": 153864,
+        "loaded_address": "0x801c5000",
+        "source_offset": 796
+      },
+      "address": "0x801c531c",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resource is addressed by the original hidden source index, without an ISO filename. Sector and offset point directly to uncompressed instruction bytes."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 239337,
+      "sector_bytes": 2352,
+      "user_data_offset": 1548,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "kind": "original uncompressed menu-code source region",
+        "source_slot": 2597,
+        "source_lba": 239335,
+        "source_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "source_bytes": 153864,
+        "loaded_address": "0x801c5000",
+        "source_offset": 5620
+      },
+      "address": "0x801c65f4",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resource is addressed by the original hidden source index, without an ISO filename. Sector and offset point directly to uncompressed instruction bytes."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 239376,
+      "sector_bytes": 2352,
+      "user_data_offset": 1968,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "kind": "original uncompressed menu-code source region",
+        "source_slot": 2597,
+        "source_lba": 239335,
+        "source_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "source_bytes": 153864,
+        "loaded_address": "0x801c5000",
+        "source_offset": 85912
+      },
+      "address": "0x801d9f98",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resource is addressed by the original hidden source index, without an ISO filename. Sector and offset point directly to uncompressed instruction bytes."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 226564,
+      "sector_bytes": 2352,
+      "user_data_offset": 820,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "kind": "original uncompressed menu-code source region",
+        "source_slot": 2592,
+        "source_lba": 226564,
+        "source_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "source_bytes": 153864,
+        "loaded_address": "0x801c5000",
+        "source_offset": 796
+      },
+      "address": "0x801c531c",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resource is addressed by the original hidden source index, without an ISO filename. Sector and offset point directly to uncompressed instruction bytes."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 226566,
+      "sector_bytes": 2352,
+      "user_data_offset": 1548,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "kind": "original uncompressed menu-code source region",
+        "source_slot": 2592,
+        "source_lba": 226564,
+        "source_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "source_bytes": 153864,
+        "loaded_address": "0x801c5000",
+        "source_offset": 5620
+      },
+      "address": "0x801c65f4",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resource is addressed by the original hidden source index, without an ISO filename. Sector and offset point directly to uncompressed instruction bytes."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 226605,
+      "sector_bytes": 2352,
+      "user_data_offset": 1968,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "kind": "original uncompressed menu-code source region",
+        "source_slot": 2592,
+        "source_lba": 226564,
+        "source_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "source_bytes": 153864,
+        "loaded_address": "0x801c5000",
+        "source_offset": 85912
+      },
+      "address": "0x801d9f98",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resource is addressed by the original hidden source index, without an ISO filename. Sector and offset point directly to uncompressed instruction bytes."
+    }
+  ],
+  "observation": "Five resources per disc contain the same original menu code: two packed copies and three direct copies. All ten yield identical 153864-byte content, and the entire region matches the previously captured Disc 1 room-menu RAM at 0x801c5000. New cold-boot scenarios open the File UI in field 14 on Disc 1 and in field 290 on both discs. The UI displays two 15-slot card grids and Copy/Delete. Original code windows match all three final RAM captures. In each capture the code's menu-data pointer leads to bytes 53 43 11 01 at offset0x4b94 and the original BASLUS-00664 and BASLUS-01160 prefixes at offsets0x4fce and0x501c.",
+  "interpretation": "This identifies an original menu/card-management source family on both discs and concrete original execution paths. The resident menu-context pointer, static dispatcher, card-device strings and in-memory header construction provide starting coordinates for save-format analysis. The second prefix's purpose and ordinary save-file schema remain unknown. A File menu observation and initialized header buffer do not establish card writes or a save/load round trip.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Exact original raw-track profiles and source-index projection hashes from EVID-REF-001/002/005/008",
+      "Pinned Nix observation shell and recovered cold-boot adapters from EVID-REF-007",
+      "Original reset defaults; isolated local core directories; no imported checkpoint or personal save",
+      "Fresh ignored local output paths"
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "Write one exact case.scenario object from tests/reference-inputs/menu-observation-route.json to a fresh .local/scenarios JSON file.",
+      "python3 tools/reference/scenario.py .local/scenarios/<case>.json --content 'discs/Xenogears disc <1-or-2>.chd' --output .local/scenarios/<fresh-output>",
+      "Inspect the recorded frame sequence and final RAM. Resolve the original context pointer at0x800625a0 and its menu-data pointer at+0x32c; compare the stated source windows and header/prefix offsets.",
+      "Read exact source variants from both hashed raw tracks using the original index coordinates. For the four packed copies use the bounded private transcription of original decoder0x80032eb4; compare all ten153864-byte results and the recorded original RAM region."
+    ],
+    "expected": "Exact source identities and code-window correspondence; bounded cold-boot input completion followed by independent visual inspection of original menu output. Save/load behavior remains unknown.",
+    "actual": "All ten source variants matched. The full original region matched the existing Disc1 room-menu RAM. Three new scenario runs completed at frontend frames4407,4299,4298; their original File UIs, source instruction windows, field selectors and initialized header/prefix bytes were inspected and verified.",
+    "result": "passed",
+    "tolerance": "Exact source bytes, hashes, source coordinates and RAM values within the recorded configurations. No retail progression, card persistence, frame-rate or original/native equivalence claim.",
+    "artifacts": [
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/scenario.json",
+        "sha256": "a0952e238dbda0f7a1c4557829307893825157242f0dbaf668968473bff40336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/program.json",
+        "sha256": "30cba169a2c7bd81cd72d25c9aa38e2bc45054d6431e43d7676bb82a1f31fcef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/report.json",
+        "sha256": "e52cc07306b10f3d5cb5a5eacd3e46643b1e78f22b45f25ae8e81c7e1007bdd4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/capture/observation.json",
+        "sha256": "08c79ae9afb66476793a5b516e5e15628dacb3df8d0bd2f69101f3f2576219cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/capture/final.ram",
+        "sha256": "39460e09629d16c469ffd7ec8ba1cc81ecd311a15111805fb769cb3884d2c611",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/capture/frame-003609.png",
+        "sha256": "6834d3ce57e296585005183170685e60f01074a10eaf2216108091cf6dd17e5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/capture/frame-003799.png",
+        "sha256": "37d02bb5ce776596d451f821dae595f7fb948f675d9f336191e9d46bea991bee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/painting-room-file-menu-probe/capture/frame-004407.png",
+        "sha256": "c9150d492ffc392fa5d7182d2201b97ba7484369153150c0e55bb5156fa93ffc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/scenario.json",
+        "sha256": "2a4f5206ea3730c29146bd4055d6dad0c729c88a79792c35620d8f5614e12642",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/program.json",
+        "sha256": "56b5d579b9cbc9ad252c9c6080d947bc4ed2754ffbb0e0918504a64e3dbf7fef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/report.json",
+        "sha256": "70d951262afe72e4a69fae6fb25cb9f0c61607539bd30d9b793fd173afc67744",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/observation.json",
+        "sha256": "27124a7ff3c1112c1a2051709186f6e16daf051e024c47a83b42ff7b89cd94d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/final.ram",
+        "sha256": "c7002b38b65af8f0ff9f21a18d4beb2771205c08c83a4b62dd86054c4a362a77",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/frame-002285.png",
+        "sha256": "63259c44881640db83611306c075292c6ebc3d1eb75791e1354a0d1b22a833e0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/frame-002893.png",
+        "sha256": "2e17dacd7fd575ebe575d890e8a32460466b254263ed24c5a5c1aa02f0a0d1f6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/frame-003501.png",
+        "sha256": "02597b809f4fd01c27ccfed27510bb29df9689220b4ef23b6b4e7b4cbc0189a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/frame-003691.png",
+        "sha256": "4df101c765437f40033afe154b8cb1b83ff003e43468fe05a62b005a1c31895b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/frame-004299.png",
+        "sha256": "c18fc27ddf68e0582f90806a33399f4c2a783af302f996135bf3302223ded1d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/scenario.json",
+        "sha256": "42c51895d80af7ab1ffe0b3381925555c5c2fe1446c1515765e7739bbad5e455",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/program.json",
+        "sha256": "0d345826a762a2ab940cbbef8a3919e3becceaf0dbf2f6be86b4613c6d4b9def",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/report.json",
+        "sha256": "3c325d48b7efa90570606e540dcd8e6c3811fabd904b2fc8c778da034bd82ce0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/observation.json",
+        "sha256": "21f79fdad1711060ac7b2e9b53577ac69217c8ab8c466e6bfa6b442403a2a992",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/final.ram",
+        "sha256": "67e16868f3bc087da80aebaab84d2669a763309f77f3ade2b79aae510648c644",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/frame-002284.png",
+        "sha256": "7fec30ae3e3c67f4f2a4264f2f930b9a46d7d73518e52a7a42a6c373278d0435",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/frame-002892.png",
+        "sha256": "c2d207aa0ac28c4181490eb699f7028c13484e3c00a38762a74497f7cb4af7b9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/frame-003500.png",
+        "sha256": "bde1f812c60b351a7cd9b4f1f81867494bb45c692634bf9e562d8f29b793f380",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/frame-003690.png",
+        "sha256": "15ec3af2a1f43d07230357bb5e459b022ff1a5602cb34f13187fd9634c525b19",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/frame-004298.png",
+        "sha256": "d96f2264a51ad854be8d8a8579a622bac9a9d9a14fa38d7e7ff577d80111f4ce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/menu-overlay-source-runtime-correspondence.json",
+        "sha256": "529f22caea4038135b041fb40ce615d27ac1c0e6b96881af91e65048580d6780",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/menu-header-runtime-measurement.json",
+        "sha256": "44b0e7671e2772ca47fdefec7939b1da4593c336ef142add8205df3c9d38108d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_menu_source.py",
+        "sha256": "ecf6b4501d199af4ab9d5f6590a1b55e41faaf896319fe405cafe4866f6db631",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/publish_menu_inventory.py",
+        "sha256": "88c12076ce68f4c5a38fcd7017dc466f2174483d4f3b78fd8bab1b37903f7de3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_field_loader_source.py",
+        "sha256": "3e02c28853a50b48f790ce8327de7320047c240cb305341afa6680802a869d83",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/menu-media-independent-review.json",
+        "sha256": "a55c51185867b518a24c8102c8b00637a0e2add7a37fc494f18558544e6d1695",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/review_menu_media_source.py",
+        "sha256": "c42868658e723eea63846559a4736f99b55b458545e859c3286a2534a4255502",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "source_family": {
+    "loaded_address": "0x801c5000",
+    "bytes": 153864,
+    "sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+    "profiles": [
+      {
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+        "variants": [
+          {
+            "source": {
+              "slot": 39,
+              "source_lba": 109123,
+              "source_sector_count": 35,
+              "projected_bytes": 70944,
+              "projection_unit": 2048,
+              "projection_sha256": "f3b8d9516c519ee7b1580716c653c54804f205f43eaef3567355700e45d13261",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "original_decoder_probe",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 70941,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 3957,
+              "source_lba": 278303,
+              "source_sector_count": 35,
+              "projected_bytes": 70944,
+              "projection_unit": 2048,
+              "projection_sha256": "f3b8d9516c519ee7b1580716c653c54804f205f43eaef3567355700e45d13261",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "original_decoder_probe",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 70941,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 2597,
+              "source_lba": 239335,
+              "source_sector_count": 76,
+              "projected_bytes": 153864,
+              "projection_unit": 2048,
+              "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "direct_source_bytes",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 153864,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 2599,
+              "source_lba": 239424,
+              "source_sector_count": 76,
+              "projected_bytes": 153864,
+              "projection_unit": 2048,
+              "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "direct_source_bytes",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 153864,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 2603,
+              "source_lba": 239583,
+              "source_sector_count": 76,
+              "projected_bytes": 153864,
+              "projection_unit": 2048,
+              "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "direct_source_bytes",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 153864,
+            "full_region_matches_disc1_runtime": true
+          }
+        ]
+      },
+      {
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+        "variants": [
+          {
+            "source": {
+              "slot": 34,
+              "source_lba": 173435,
+              "source_sector_count": 35,
+              "projected_bytes": 70944,
+              "projection_unit": 2048,
+              "projection_sha256": "f3b8d9516c519ee7b1580716c653c54804f205f43eaef3567355700e45d13261",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "original_decoder_probe",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 70941,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 3952,
+              "source_lba": 265532,
+              "source_sector_count": 35,
+              "projected_bytes": 70944,
+              "projection_unit": 2048,
+              "projection_sha256": "f3b8d9516c519ee7b1580716c653c54804f205f43eaef3567355700e45d13261",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "original_decoder_probe",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 70941,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 2592,
+              "source_lba": 226564,
+              "source_sector_count": 76,
+              "projected_bytes": 153864,
+              "projection_unit": 2048,
+              "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "direct_source_bytes",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 153864,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 2594,
+              "source_lba": 226653,
+              "source_sector_count": 76,
+              "projected_bytes": 153864,
+              "projection_unit": 2048,
+              "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "direct_source_bytes",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 153864,
+            "full_region_matches_disc1_runtime": true
+          },
+          {
+            "source": {
+              "slot": 2598,
+              "source_lba": 226812,
+              "source_sector_count": 76,
+              "projected_bytes": 153864,
+              "projection_unit": 2048,
+              "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            "transformation": "direct_source_bytes",
+            "decoded_bytes": 153864,
+            "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "consumed_bytes": 153864,
+            "full_region_matches_disc1_runtime": true
+          }
+        ]
+      }
+    ],
+    "full_region_runtime_match": {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "ram_path": ".local/scenarios/painting-room-reviewed-a/capture/final.ram",
+      "ram_sha256": "4b8454b54ec2522035778317aad06dd75aec7353f3238a7c65dcc4fcaac8ef8a",
+      "region_address": "0x801c5000",
+      "region_bytes": 153864,
+      "region_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d"
+    }
+  },
+  "original_code_coordinates": {
+    "menu_context_global": "0x800625a0",
+    "menu_data_pointer_offset": "0x32c",
+    "menu_selection_byte_offset": "0x336",
+    "dispatcher": "0x801c531c uses selection plus its byte-sized argument and a ten-entry jump table at0x801c5000",
+    "file_branch": "Jump-table index1 reaches0x801c53b8 and calls0x801d9f98 with a0=0 and a1 from0x801e96a4",
+    "card_device_strings": {
+      "0x801c50a8": "bu00:",
+      "0x801c50b0": "bu10:"
+    },
+    "header_initialization": "0x801c6670 copies the first prefix;0x801c66c4 copies the second;0x801c66fc..0x801c6748 writes53,43,11,01;0x801c675c clears0x5c following bytes;0x801c6778/0x801c6798 copy0x20 and0x80 resource bytes to+0x4bf4/+0x4c14",
+    "unresolved_menu_variant": "0x801c62e4 dispatches on original byte0x80059460; value6 calls0x801c57a4, which temporarily sets0x801e96a4/0x801e96a5. Its player-facing purpose is not established by this finding."
+  },
+  "execution_cases": [
+    {
+      "scenario": "painting-room-file-menu-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_final_frame": 4407,
+      "observed_field_selector": 14,
+      "output": "Original File UI shows Card 1 and Card 2, each with 15 outlined slots, plus Copy and Delete options.",
+      "readiness_scope": "Original map loop initialization; scripted entry events may still be running.",
+      "ordinary_save_written_or_loaded": false
+    },
+    {
+      "scenario": "disc1-bridge-file-menu-probe",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "frontend_final_frame": 4299,
+      "observed_field_selector": 290,
+      "output": "Square from the world-map flying-machine presentation enters a populated bridge; a second Square opens Status/Equip/Items/Abilities/Gear/File/Exit. Original File UI shows Card 1 and Card 2, each with 15 outlined slots, plus Copy and Delete options.",
+      "readiness_scope": "Kernel MENU readiness only; later input targets have no readiness assertion.",
+      "ordinary_save_written_or_loaded": false
+    },
+    {
+      "scenario": "disc2-bridge-file-menu-probe",
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "frontend_final_frame": 4298,
+      "observed_field_selector": 290,
+      "output": "Square from the world-map flying-machine presentation enters a populated bridge; a second Square opens Status/Equip/Items/Abilities/Gear/File/Exit. Original File UI shows Card 1 and Card 2, each with 15 outlined slots, plus Copy and Delete options.",
+      "readiness_scope": "Kernel MENU readiness only; later input targets have no readiness assertion.",
+      "ordinary_save_written_or_loaded": false
+    }
+  ],
+  "limitations": [
+    "Only field/Kernel launch readiness is asserted by the scenario compiler; later menu and bridge outputs were reviewed visually.",
+    "Field290 is an observed original selector, not a recovered semantic location name or a tested general bridge adapter.",
+    "The exact byte identities establish one shared source family, not ten different menu or save formats.",
+    "The second BASLUS prefix's purpose, all save modes, card write/read/checksum behavior, corruption recovery, ordinary save-file fields and save/load equivalence remain unrecovered.",
+    "No card save was written or loaded; these initialized RAM buffers are not exported ordinary saves.",
+    "Reset-default access does not establish retail story requirements or optional-activity availability.",
+    "The private packed-source transcription remains an evidence probe, not a reviewed general importer or native runtime implementation."
+  ],
+  "author": "Codex /root, original source and execution inspection",
+  "reviewers": [
+    "Phase 0 agent: independently viewed all three File grids, both bridge scenes and both main menus; verified ten exact source variants, the full original room-menu region, all three source/RAM instruction windows, field selectors and initialized header/prefix bytes. No save/load or second-prefix meaning inferred."
+  ]
+}

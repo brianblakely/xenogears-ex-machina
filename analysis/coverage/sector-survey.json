@@ -1,0 +1,2290 @@
+{
+  "schema_version": 1,
+  "kind": "physical_sector_header_inventory",
+  "profiles": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+      "raw_track_bytes": 718738272,
+      "sector_bytes": 2352,
+      "surveyed_sectors": 305586,
+      "header_class_counts": {
+        "mode2_form1_data": 196912,
+        "mode2_form1_untyped": 827,
+        "mode2_form1_video": 94281,
+        "mode2_form2_audio": 13562,
+        "mode2_form2_untyped": 4
+      },
+      "xa_signature_counts": {
+        "file=0,channel=0,submode=0x00,coding=0x00": 150,
+        "file=0,channel=0,submode=0x08,coding=0x00": 193191,
+        "file=0,channel=0,submode=0x09,coding=0x00": 1,
+        "file=0,channel=0,submode=0x20,coding=0x00": 4,
+        "file=0,channel=0,submode=0x89,coding=0x00": 3720,
+        "file=1,channel=0,submode=0x00,coding=0x00": 677,
+        "file=1,channel=1,submode=0x42,coding=0x80": 94278,
+        "file=1,channel=1,submode=0x64,coding=0x01": 13548,
+        "file=1,channel=1,submode=0xc2,coding=0x80": 3,
+        "file=1,channel=1,submode=0xe4,coding=0x01": 14
+      },
+      "fine_interleaving_span_count": 27144,
+      "xa_record_marker_count": 3738,
+      "coarse_header_spans": [
+        {
+          "start_lba": 0,
+          "end_lba_exclusive": 12,
+          "header_class": "mode2_form1_data"
+        },
+        {
+          "start_lba": 12,
+          "end_lba_exclusive": 16,
+          "header_class": "mode2_form2_untyped"
+        },
+        {
+          "start_lba": 16,
+          "end_lba_exclusive": 41,
+          "header_class": "mode2_form1_data"
+        },
+        {
+          "start_lba": 41,
+          "end_lba_exclusive": 821,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 821,
+          "end_lba_exclusive": 824,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 824,
+          "end_lba_exclusive": 4625,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4625,
+          "end_lba_exclusive": 4632,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4632,
+          "end_lba_exclusive": 4633,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4633,
+          "end_lba_exclusive": 4640,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4640,
+          "end_lba_exclusive": 4641,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4641,
+          "end_lba_exclusive": 4648,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4648,
+          "end_lba_exclusive": 4649,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4649,
+          "end_lba_exclusive": 4656,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4656,
+          "end_lba_exclusive": 4657,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4657,
+          "end_lba_exclusive": 4664,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4664,
+          "end_lba_exclusive": 4665,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4665,
+          "end_lba_exclusive": 4672,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4672,
+          "end_lba_exclusive": 4673,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4673,
+          "end_lba_exclusive": 4680,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4680,
+          "end_lba_exclusive": 4681,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4681,
+          "end_lba_exclusive": 4688,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4688,
+          "end_lba_exclusive": 4689,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4689,
+          "end_lba_exclusive": 4696,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4696,
+          "end_lba_exclusive": 4697,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 4697,
+          "end_lba_exclusive": 4704,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 4704,
+          "end_lba_exclusive": 8405,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 8405,
+          "end_lba_exclusive": 8408,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 8408,
+          "end_lba_exclusive": 8409,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 8409,
+          "end_lba_exclusive": 8416,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 8416,
+          "end_lba_exclusive": 8417,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 8417,
+          "end_lba_exclusive": 8424,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 8424,
+          "end_lba_exclusive": 16705,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 16705,
+          "end_lba_exclusive": 16710,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 16710,
+          "end_lba_exclusive": 16711,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 16711,
+          "end_lba_exclusive": 16718,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 16718,
+          "end_lba_exclusive": 16719,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 16719,
+          "end_lba_exclusive": 16726,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 16726,
+          "end_lba_exclusive": 16727,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 16727,
+          "end_lba_exclusive": 16734,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 16734,
+          "end_lba_exclusive": 16735,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 16735,
+          "end_lba_exclusive": 16742,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 16742,
+          "end_lba_exclusive": 22843,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22843,
+          "end_lba_exclusive": 22846,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22846,
+          "end_lba_exclusive": 22847,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22847,
+          "end_lba_exclusive": 22854,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22854,
+          "end_lba_exclusive": 22855,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22855,
+          "end_lba_exclusive": 22862,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22862,
+          "end_lba_exclusive": 22863,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22863,
+          "end_lba_exclusive": 22870,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22870,
+          "end_lba_exclusive": 22871,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22871,
+          "end_lba_exclusive": 22878,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22878,
+          "end_lba_exclusive": 22879,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22879,
+          "end_lba_exclusive": 22886,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22886,
+          "end_lba_exclusive": 22887,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22887,
+          "end_lba_exclusive": 22894,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22894,
+          "end_lba_exclusive": 22895,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22895,
+          "end_lba_exclusive": 22902,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22902,
+          "end_lba_exclusive": 22903,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 22903,
+          "end_lba_exclusive": 22910,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 22910,
+          "end_lba_exclusive": 36561,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36561,
+          "end_lba_exclusive": 36564,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36564,
+          "end_lba_exclusive": 36565,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36565,
+          "end_lba_exclusive": 36572,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36572,
+          "end_lba_exclusive": 36573,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36573,
+          "end_lba_exclusive": 36580,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36580,
+          "end_lba_exclusive": 36581,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36581,
+          "end_lba_exclusive": 36588,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36588,
+          "end_lba_exclusive": 36589,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36589,
+          "end_lba_exclusive": 36596,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36596,
+          "end_lba_exclusive": 36597,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36597,
+          "end_lba_exclusive": 36604,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36604,
+          "end_lba_exclusive": 36605,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36605,
+          "end_lba_exclusive": 36612,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36612,
+          "end_lba_exclusive": 36613,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36613,
+          "end_lba_exclusive": 36620,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36620,
+          "end_lba_exclusive": 36621,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36621,
+          "end_lba_exclusive": 36628,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36628,
+          "end_lba_exclusive": 36629,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 36629,
+          "end_lba_exclusive": 36636,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 36636,
+          "end_lba_exclusive": 45507,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45507,
+          "end_lba_exclusive": 45508,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45508,
+          "end_lba_exclusive": 45509,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45509,
+          "end_lba_exclusive": 45516,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45516,
+          "end_lba_exclusive": 45517,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45517,
+          "end_lba_exclusive": 45524,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45524,
+          "end_lba_exclusive": 45525,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45525,
+          "end_lba_exclusive": 45532,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45532,
+          "end_lba_exclusive": 45533,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45533,
+          "end_lba_exclusive": 45540,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45540,
+          "end_lba_exclusive": 45541,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45541,
+          "end_lba_exclusive": 45548,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45548,
+          "end_lba_exclusive": 45549,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45549,
+          "end_lba_exclusive": 45556,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45556,
+          "end_lba_exclusive": 45557,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45557,
+          "end_lba_exclusive": 45564,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45564,
+          "end_lba_exclusive": 45565,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45565,
+          "end_lba_exclusive": 45572,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45572,
+          "end_lba_exclusive": 45573,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 45573,
+          "end_lba_exclusive": 45580,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 45580,
+          "end_lba_exclusive": 50811,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50811,
+          "end_lba_exclusive": 50812,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50812,
+          "end_lba_exclusive": 50813,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50813,
+          "end_lba_exclusive": 50820,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50820,
+          "end_lba_exclusive": 50821,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50821,
+          "end_lba_exclusive": 50828,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50828,
+          "end_lba_exclusive": 50829,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50829,
+          "end_lba_exclusive": 50836,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50836,
+          "end_lba_exclusive": 50837,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50837,
+          "end_lba_exclusive": 50844,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50844,
+          "end_lba_exclusive": 50845,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50845,
+          "end_lba_exclusive": 50852,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50852,
+          "end_lba_exclusive": 50853,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50853,
+          "end_lba_exclusive": 50860,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50860,
+          "end_lba_exclusive": 50861,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50861,
+          "end_lba_exclusive": 50868,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50868,
+          "end_lba_exclusive": 50869,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50869,
+          "end_lba_exclusive": 50876,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50876,
+          "end_lba_exclusive": 50877,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50877,
+          "end_lba_exclusive": 50884,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50884,
+          "end_lba_exclusive": 50885,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 50885,
+          "end_lba_exclusive": 50892,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 50892,
+          "end_lba_exclusive": 52143,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 52143,
+          "end_lba_exclusive": 52148,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 52148,
+          "end_lba_exclusive": 52149,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 52149,
+          "end_lba_exclusive": 52156,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 52156,
+          "end_lba_exclusive": 52157,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 52157,
+          "end_lba_exclusive": 52164,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 52164,
+          "end_lba_exclusive": 53115,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 53115,
+          "end_lba_exclusive": 53116,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 53116,
+          "end_lba_exclusive": 53117,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 53117,
+          "end_lba_exclusive": 53124,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 53124,
+          "end_lba_exclusive": 53125,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 53125,
+          "end_lba_exclusive": 53132,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 53132,
+          "end_lba_exclusive": 53133,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 53133,
+          "end_lba_exclusive": 53140,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 53140,
+          "end_lba_exclusive": 53141,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 53141,
+          "end_lba_exclusive": 53148,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 53148,
+          "end_lba_exclusive": 54099,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 54099,
+          "end_lba_exclusive": 54100,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 54100,
+          "end_lba_exclusive": 54101,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 54101,
+          "end_lba_exclusive": 54108,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 54108,
+          "end_lba_exclusive": 54109,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 54109,
+          "end_lba_exclusive": 54116,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 54116,
+          "end_lba_exclusive": 54117,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 54117,
+          "end_lba_exclusive": 54124,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 54124,
+          "end_lba_exclusive": 54125,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 54125,
+          "end_lba_exclusive": 54132,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 54132,
+          "end_lba_exclusive": 98793,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98793,
+          "end_lba_exclusive": 98796,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98796,
+          "end_lba_exclusive": 98797,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98797,
+          "end_lba_exclusive": 98804,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98804,
+          "end_lba_exclusive": 98805,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98805,
+          "end_lba_exclusive": 98812,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98812,
+          "end_lba_exclusive": 98813,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98813,
+          "end_lba_exclusive": 98820,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98820,
+          "end_lba_exclusive": 98821,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98821,
+          "end_lba_exclusive": 98828,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98828,
+          "end_lba_exclusive": 98829,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98829,
+          "end_lba_exclusive": 98836,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98836,
+          "end_lba_exclusive": 98837,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98837,
+          "end_lba_exclusive": 98844,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98844,
+          "end_lba_exclusive": 98845,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98845,
+          "end_lba_exclusive": 98852,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98852,
+          "end_lba_exclusive": 98853,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98853,
+          "end_lba_exclusive": 98860,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98860,
+          "end_lba_exclusive": 98861,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98861,
+          "end_lba_exclusive": 98868,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98868,
+          "end_lba_exclusive": 98869,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98869,
+          "end_lba_exclusive": 98876,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98876,
+          "end_lba_exclusive": 98877,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98877,
+          "end_lba_exclusive": 98884,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98884,
+          "end_lba_exclusive": 98885,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98885,
+          "end_lba_exclusive": 98892,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98892,
+          "end_lba_exclusive": 98893,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98893,
+          "end_lba_exclusive": 98900,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98900,
+          "end_lba_exclusive": 98901,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98901,
+          "end_lba_exclusive": 98908,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98908,
+          "end_lba_exclusive": 98909,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 98909,
+          "end_lba_exclusive": 98916,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 98916,
+          "end_lba_exclusive": 104692,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 104692,
+          "end_lba_exclusive": 104693,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 104693,
+          "end_lba_exclusive": 106067,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 106067,
+          "end_lba_exclusive": 106072,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 106072,
+          "end_lba_exclusive": 106073,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 106073,
+          "end_lba_exclusive": 106080,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 106080,
+          "end_lba_exclusive": 106081,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 106081,
+          "end_lba_exclusive": 106088,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 106088,
+          "end_lba_exclusive": 106089,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 106089,
+          "end_lba_exclusive": 106096,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 106096,
+          "end_lba_exclusive": 106097,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 106097,
+          "end_lba_exclusive": 106104,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 106104,
+          "end_lba_exclusive": 108475,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108475,
+          "end_lba_exclusive": 108480,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108480,
+          "end_lba_exclusive": 108481,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108481,
+          "end_lba_exclusive": 108488,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108488,
+          "end_lba_exclusive": 108489,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108489,
+          "end_lba_exclusive": 108496,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108496,
+          "end_lba_exclusive": 108497,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108497,
+          "end_lba_exclusive": 108504,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108504,
+          "end_lba_exclusive": 108505,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108505,
+          "end_lba_exclusive": 108512,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108512,
+          "end_lba_exclusive": 108513,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108513,
+          "end_lba_exclusive": 108520,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108520,
+          "end_lba_exclusive": 108521,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108521,
+          "end_lba_exclusive": 108528,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108528,
+          "end_lba_exclusive": 108529,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108529,
+          "end_lba_exclusive": 108536,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108536,
+          "end_lba_exclusive": 108537,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108537,
+          "end_lba_exclusive": 108544,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108544,
+          "end_lba_exclusive": 108545,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108545,
+          "end_lba_exclusive": 108552,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108552,
+          "end_lba_exclusive": 108553,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108553,
+          "end_lba_exclusive": 108560,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 108560,
+          "end_lba_exclusive": 108561,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 108561,
+          "end_lba_exclusive": 305436,
+          "header_class": "mode2_form1_data"
+        },
+        {
+          "start_lba": 305436,
+          "end_lba_exclusive": 305586,
+          "header_class": "mode2_form1_untyped"
+        }
+      ],
+      "evidence": [
+        "EVID-REF-004"
+      ]
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+      "raw_track_bytes": 688700880,
+      "sector_bytes": 2352,
+      "surveyed_sectors": 292815,
+      "header_class_counts": {
+        "mode2_form1_data": 119829,
+        "mode2_form1_untyped": 892,
+        "mode2_form1_video": 150486,
+        "mode2_form2_audio": 21604,
+        "mode2_form2_untyped": 4
+      },
+      "xa_signature_counts": {
+        "file=0,channel=0,submode=0x00,coding=0x00": 150,
+        "file=0,channel=0,submode=0x08,coding=0x00": 116108,
+        "file=0,channel=0,submode=0x09,coding=0x00": 1,
+        "file=0,channel=0,submode=0x20,coding=0x00": 4,
+        "file=0,channel=0,submode=0x89,coding=0x00": 3720,
+        "file=1,channel=0,submode=0x00,coding=0x00": 742,
+        "file=1,channel=1,submode=0x42,coding=0x80": 150486,
+        "file=1,channel=1,submode=0x64,coding=0x01": 21592,
+        "file=1,channel=1,submode=0xe4,coding=0x01": 12
+      },
+      "fine_interleaving_span_count": 43222,
+      "xa_record_marker_count": 3733,
+      "coarse_header_spans": [
+        {
+          "start_lba": 0,
+          "end_lba_exclusive": 12,
+          "header_class": "mode2_form1_data"
+        },
+        {
+          "start_lba": 12,
+          "end_lba_exclusive": 16,
+          "header_class": "mode2_form2_untyped"
+        },
+        {
+          "start_lba": 16,
+          "end_lba_exclusive": 41,
+          "header_class": "mode2_form1_data"
+        },
+        {
+          "start_lba": 41,
+          "end_lba_exclusive": 67291,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67291,
+          "end_lba_exclusive": 67296,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67296,
+          "end_lba_exclusive": 67297,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67297,
+          "end_lba_exclusive": 67304,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67304,
+          "end_lba_exclusive": 67305,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67305,
+          "end_lba_exclusive": 67312,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67312,
+          "end_lba_exclusive": 67313,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67313,
+          "end_lba_exclusive": 67320,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67320,
+          "end_lba_exclusive": 67321,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67321,
+          "end_lba_exclusive": 67328,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67328,
+          "end_lba_exclusive": 67329,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67329,
+          "end_lba_exclusive": 67336,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67336,
+          "end_lba_exclusive": 67337,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67337,
+          "end_lba_exclusive": 67344,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67344,
+          "end_lba_exclusive": 67345,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67345,
+          "end_lba_exclusive": 67352,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67352,
+          "end_lba_exclusive": 67353,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67353,
+          "end_lba_exclusive": 67360,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67360,
+          "end_lba_exclusive": 67361,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67361,
+          "end_lba_exclusive": 67368,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67368,
+          "end_lba_exclusive": 67369,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67369,
+          "end_lba_exclusive": 67376,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67376,
+          "end_lba_exclusive": 67377,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67377,
+          "end_lba_exclusive": 67384,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67384,
+          "end_lba_exclusive": 67385,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67385,
+          "end_lba_exclusive": 67392,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67392,
+          "end_lba_exclusive": 67393,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67393,
+          "end_lba_exclusive": 67400,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67400,
+          "end_lba_exclusive": 67401,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67401,
+          "end_lba_exclusive": 67408,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67408,
+          "end_lba_exclusive": 67409,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67409,
+          "end_lba_exclusive": 67416,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67416,
+          "end_lba_exclusive": 67417,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67417,
+          "end_lba_exclusive": 67424,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67424,
+          "end_lba_exclusive": 67425,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 67425,
+          "end_lba_exclusive": 67432,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 67432,
+          "end_lba_exclusive": 72483,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 72483,
+          "end_lba_exclusive": 72488,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 72488,
+          "end_lba_exclusive": 72489,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 72489,
+          "end_lba_exclusive": 72496,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 72496,
+          "end_lba_exclusive": 72497,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 72497,
+          "end_lba_exclusive": 72504,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 72504,
+          "end_lba_exclusive": 74035,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74035,
+          "end_lba_exclusive": 74040,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74040,
+          "end_lba_exclusive": 74041,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74041,
+          "end_lba_exclusive": 74048,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74048,
+          "end_lba_exclusive": 74049,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74049,
+          "end_lba_exclusive": 74056,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74056,
+          "end_lba_exclusive": 74057,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74057,
+          "end_lba_exclusive": 74064,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74064,
+          "end_lba_exclusive": 74065,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74065,
+          "end_lba_exclusive": 74072,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74072,
+          "end_lba_exclusive": 74073,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74073,
+          "end_lba_exclusive": 74080,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74080,
+          "end_lba_exclusive": 74081,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74081,
+          "end_lba_exclusive": 74088,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74088,
+          "end_lba_exclusive": 74089,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 74089,
+          "end_lba_exclusive": 74096,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 74096,
+          "end_lba_exclusive": 79497,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79497,
+          "end_lba_exclusive": 79504,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79504,
+          "end_lba_exclusive": 79505,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79505,
+          "end_lba_exclusive": 79512,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79512,
+          "end_lba_exclusive": 79513,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79513,
+          "end_lba_exclusive": 79520,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79520,
+          "end_lba_exclusive": 79521,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79521,
+          "end_lba_exclusive": 79528,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79528,
+          "end_lba_exclusive": 79529,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79529,
+          "end_lba_exclusive": 79536,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79536,
+          "end_lba_exclusive": 79537,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79537,
+          "end_lba_exclusive": 79544,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79544,
+          "end_lba_exclusive": 79545,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79545,
+          "end_lba_exclusive": 79552,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79552,
+          "end_lba_exclusive": 79553,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79553,
+          "end_lba_exclusive": 79560,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79560,
+          "end_lba_exclusive": 79561,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 79561,
+          "end_lba_exclusive": 79568,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 79568,
+          "end_lba_exclusive": 117569,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117569,
+          "end_lba_exclusive": 117576,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117576,
+          "end_lba_exclusive": 117577,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117577,
+          "end_lba_exclusive": 117584,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117584,
+          "end_lba_exclusive": 117585,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117585,
+          "end_lba_exclusive": 117592,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117592,
+          "end_lba_exclusive": 117593,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117593,
+          "end_lba_exclusive": 117600,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117600,
+          "end_lba_exclusive": 117601,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117601,
+          "end_lba_exclusive": 117608,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117608,
+          "end_lba_exclusive": 117609,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117609,
+          "end_lba_exclusive": 117616,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117616,
+          "end_lba_exclusive": 117617,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117617,
+          "end_lba_exclusive": 117624,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117624,
+          "end_lba_exclusive": 117625,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117625,
+          "end_lba_exclusive": 117632,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117632,
+          "end_lba_exclusive": 117633,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117633,
+          "end_lba_exclusive": 117640,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117640,
+          "end_lba_exclusive": 117641,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117641,
+          "end_lba_exclusive": 117648,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117648,
+          "end_lba_exclusive": 117649,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117649,
+          "end_lba_exclusive": 117656,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117656,
+          "end_lba_exclusive": 117657,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117657,
+          "end_lba_exclusive": 117664,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117664,
+          "end_lba_exclusive": 117665,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117665,
+          "end_lba_exclusive": 117672,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117672,
+          "end_lba_exclusive": 117673,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117673,
+          "end_lba_exclusive": 117680,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117680,
+          "end_lba_exclusive": 117681,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117681,
+          "end_lba_exclusive": 117688,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117688,
+          "end_lba_exclusive": 117689,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 117689,
+          "end_lba_exclusive": 117696,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 117696,
+          "end_lba_exclusive": 120247,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120247,
+          "end_lba_exclusive": 120248,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120248,
+          "end_lba_exclusive": 120249,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120249,
+          "end_lba_exclusive": 120256,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120256,
+          "end_lba_exclusive": 120257,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120257,
+          "end_lba_exclusive": 120264,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120264,
+          "end_lba_exclusive": 120265,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120265,
+          "end_lba_exclusive": 120272,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120272,
+          "end_lba_exclusive": 120273,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120273,
+          "end_lba_exclusive": 120280,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120280,
+          "end_lba_exclusive": 120281,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120281,
+          "end_lba_exclusive": 120288,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120288,
+          "end_lba_exclusive": 120289,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120289,
+          "end_lba_exclusive": 120296,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120296,
+          "end_lba_exclusive": 120297,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120297,
+          "end_lba_exclusive": 120304,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120304,
+          "end_lba_exclusive": 120305,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 120305,
+          "end_lba_exclusive": 120312,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 120312,
+          "end_lba_exclusive": 146833,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 146833,
+          "end_lba_exclusive": 146840,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 146840,
+          "end_lba_exclusive": 146841,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 146841,
+          "end_lba_exclusive": 146848,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 146848,
+          "end_lba_exclusive": 146849,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 146849,
+          "end_lba_exclusive": 146856,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 146856,
+          "end_lba_exclusive": 149227,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149227,
+          "end_lba_exclusive": 149232,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149232,
+          "end_lba_exclusive": 149233,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149233,
+          "end_lba_exclusive": 149240,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149240,
+          "end_lba_exclusive": 149241,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149241,
+          "end_lba_exclusive": 149248,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149248,
+          "end_lba_exclusive": 149249,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149249,
+          "end_lba_exclusive": 149256,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149256,
+          "end_lba_exclusive": 149257,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149257,
+          "end_lba_exclusive": 149264,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149264,
+          "end_lba_exclusive": 149265,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149265,
+          "end_lba_exclusive": 149272,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149272,
+          "end_lba_exclusive": 149273,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149273,
+          "end_lba_exclusive": 149280,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149280,
+          "end_lba_exclusive": 149281,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149281,
+          "end_lba_exclusive": 149288,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149288,
+          "end_lba_exclusive": 149289,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149289,
+          "end_lba_exclusive": 149296,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149296,
+          "end_lba_exclusive": 149297,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149297,
+          "end_lba_exclusive": 149304,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149304,
+          "end_lba_exclusive": 149305,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 149305,
+          "end_lba_exclusive": 149312,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 149312,
+          "end_lba_exclusive": 158323,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158323,
+          "end_lba_exclusive": 158328,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158328,
+          "end_lba_exclusive": 158329,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158329,
+          "end_lba_exclusive": 158336,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158336,
+          "end_lba_exclusive": 158337,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158337,
+          "end_lba_exclusive": 158344,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158344,
+          "end_lba_exclusive": 158345,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158345,
+          "end_lba_exclusive": 158352,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158352,
+          "end_lba_exclusive": 158353,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158353,
+          "end_lba_exclusive": 158360,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158360,
+          "end_lba_exclusive": 158361,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158361,
+          "end_lba_exclusive": 158368,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158368,
+          "end_lba_exclusive": 158369,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 158369,
+          "end_lba_exclusive": 158376,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 158376,
+          "end_lba_exclusive": 160677,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160677,
+          "end_lba_exclusive": 160680,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160680,
+          "end_lba_exclusive": 160681,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160681,
+          "end_lba_exclusive": 160688,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160688,
+          "end_lba_exclusive": 160689,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160689,
+          "end_lba_exclusive": 160696,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160696,
+          "end_lba_exclusive": 160697,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160697,
+          "end_lba_exclusive": 160704,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160704,
+          "end_lba_exclusive": 160705,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160705,
+          "end_lba_exclusive": 160712,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160712,
+          "end_lba_exclusive": 160713,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160713,
+          "end_lba_exclusive": 160720,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160720,
+          "end_lba_exclusive": 160721,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160721,
+          "end_lba_exclusive": 160728,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160728,
+          "end_lba_exclusive": 160729,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160729,
+          "end_lba_exclusive": 160736,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160736,
+          "end_lba_exclusive": 160737,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 160737,
+          "end_lba_exclusive": 160744,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 160744,
+          "end_lba_exclusive": 166245,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166245,
+          "end_lba_exclusive": 166248,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166248,
+          "end_lba_exclusive": 166249,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166249,
+          "end_lba_exclusive": 166256,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166256,
+          "end_lba_exclusive": 166257,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166257,
+          "end_lba_exclusive": 166264,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166264,
+          "end_lba_exclusive": 166265,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166265,
+          "end_lba_exclusive": 166272,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166272,
+          "end_lba_exclusive": 166273,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166273,
+          "end_lba_exclusive": 166280,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166280,
+          "end_lba_exclusive": 166281,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166281,
+          "end_lba_exclusive": 166288,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166288,
+          "end_lba_exclusive": 166289,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 166289,
+          "end_lba_exclusive": 166296,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 166296,
+          "end_lba_exclusive": 172797,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172797,
+          "end_lba_exclusive": 172800,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172800,
+          "end_lba_exclusive": 172801,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172801,
+          "end_lba_exclusive": 172808,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172808,
+          "end_lba_exclusive": 172809,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172809,
+          "end_lba_exclusive": 172816,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172816,
+          "end_lba_exclusive": 172817,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172817,
+          "end_lba_exclusive": 172824,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172824,
+          "end_lba_exclusive": 172825,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172825,
+          "end_lba_exclusive": 172832,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172832,
+          "end_lba_exclusive": 172833,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172833,
+          "end_lba_exclusive": 172840,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172840,
+          "end_lba_exclusive": 172841,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172841,
+          "end_lba_exclusive": 172848,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172848,
+          "end_lba_exclusive": 172849,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172849,
+          "end_lba_exclusive": 172856,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172856,
+          "end_lba_exclusive": 172857,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172857,
+          "end_lba_exclusive": 172864,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172864,
+          "end_lba_exclusive": 172865,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172865,
+          "end_lba_exclusive": 172872,
+          "header_class": "mode2_form1_untyped"
+        },
+        {
+          "start_lba": 172872,
+          "end_lba_exclusive": 172873,
+          "header_class": "declared_audio_or_video"
+        },
+        {
+          "start_lba": 172873,
+          "end_lba_exclusive": 292665,
+          "header_class": "mode2_form1_data"
+        },
+        {
+          "start_lba": 292665,
+          "end_lba_exclusive": 292815,
+          "header_class": "mode2_form1_untyped"
+        }
+      ],
+      "evidence": [
+        "EVID-REF-004"
+      ]
+    }
+  ],
+  "content_catalog_complete": false,
+  "limitations": [
+    "Header flags describe declared sector types, not independently decoded media.",
+    "A contiguous header span is not necessarily one resource, audio track or FMV.",
+    "Interleaving, padding and reused streams prevent deriving content counts here.",
+    "Fields, event IDs, battle/minigame logic and archive tables remain unidentified.",
+    "This survey does not verify CD ECC/EDC or original hardware behavior.",
+    "Coarse audio/video spans merge declared sector types only; they are not counts of movies or audio tracks."
+  ]
+}

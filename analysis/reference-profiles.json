@@ -1,0 +1,238 @@
+{
+  "schema_version": 1,
+  "profiles": [
+    {
+      "id": "na-slus-00664-39c547a9afc6",
+      "intended_disc": 1,
+      "disc_sequence": 1,
+      "disc_sequence_status": "confirmed_explicit_original_DS01_DS02_tag",
+      "disc_sequence_evidence": [
+        "EVID-REF-005",
+        "EVID-REF-003"
+      ],
+      "source_selection": "User-supplied original CHD selected for the initial both-US-discs target; filename is a locator only.",
+      "region": {
+        "declared_target": "US / North America",
+        "evidence": "EVID-REF-001",
+        "observed_marker": "Sony Computer Entertainment Inc. for North America area"
+      },
+      "revision": {
+        "kind": "exact_hash_defined_reference",
+        "match_policy": "full_raw_track_sha256",
+        "retail_revision_label": null,
+        "retail_revision_status": "not_established",
+        "scope": "Only these exact decoded bytes are accepted as a selected research revision; no serial/date-based compatibility inference."
+      },
+      "runtime_support": false,
+      "measurement": {
+        "schema_version": 1,
+        "observation_kind": "original_source_static_metadata",
+        "tool": "tools/reference/inspect_disc.py",
+        "source": {
+          "chd": {
+            "sha256": "14aec5ccd2589fb07f86334b1b2cab57d63ef6c34dbd163d8ee569028c6f7f86",
+            "size": 357651775
+          },
+          "raw_track": {
+            "sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+            "size": 718738272,
+            "sector_bytes": 2352
+          },
+          "cue": {
+            "sha256": "775ac604f9d1d1e94540275a9a08c25ed2c149a3bb2d5b5406e41d3cd3f804f7",
+            "track_type": "MODE2/2352"
+          }
+        },
+        "iso9660": {
+          "pvd_lba": 16,
+          "volume_id": "XENOGEARS",
+          "system_id": "PLAYSTATION",
+          "volume_blocks": 305586,
+          "volume_set_size": 1,
+          "volume_sequence_number": 1,
+          "creation_timestamp_raw": "3139393830383237313733303030303000",
+          "root_lba": 22,
+          "entries": [
+            {
+              "lba": 108606,
+              "size": 303104,
+              "directory": false,
+              "path": "/SLUS_006.64;1"
+            },
+            {
+              "lba": 108605,
+              "size": 67,
+              "directory": false,
+              "path": "/SYSTEM.CNF;1"
+            }
+          ]
+        },
+        "boot": {
+          "system_cnf": {
+            "lba": 108605,
+            "size": 67,
+            "directory": false,
+            "path": "/SYSTEM.CNF;1",
+            "sha256": "89ff2f38133369d947720116c2f9b879aef5e19c064f53c4b0f8e5cbc0520a3b"
+          },
+          "boot_path": "/SLUS_006.64;1",
+          "executable": {
+            "lba": 108606,
+            "size": 303104,
+            "directory": false,
+            "path": "/SLUS_006.64;1",
+            "sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119"
+          },
+          "executable_header": {
+            "initial_pc": "0x80019524",
+            "load_address": "0x80010000",
+            "load_size": 301056,
+            "marker_offset": "0x4c",
+            "marker": "Sony Computer Entertainment Inc. for North America area"
+          }
+        },
+        "limits": [
+          "No gameplay execution observed.",
+          "No game-specific archive or file meaning recovered.",
+          "ISO volume sequence does not establish the game's disc number.",
+          "Serial and timestamps do not establish a named retail revision.",
+          "This inspector checks bounds and metadata, not CD ECC/EDC authenticity."
+        ],
+        "container_verification": {
+          "command": "chdman verify -i <source.chd>",
+          "exit_code": 0,
+          "log": "chdman-verify.log"
+        }
+      },
+      "findings": [
+        "EVID-REF-001",
+        "EVID-REF-003",
+        "EVID-REF-005"
+      ],
+      "local_reproduction": "python3 tools/reference/capture.py <user-source-1.chd> .local/references/new-source-1",
+      "source_disc_tag": {
+        "lba": 23,
+        "user_data_offset": 24,
+        "text": "DS01_XENOGEARS",
+        "remaining_logical_block_zero": true
+      }
+    },
+    {
+      "id": "na-slus-00669-5eab85c683d4",
+      "intended_disc": 2,
+      "disc_sequence": 2,
+      "disc_sequence_status": "confirmed_explicit_original_DS01_DS02_tag",
+      "disc_sequence_evidence": [
+        "EVID-REF-005",
+        "EVID-REF-003"
+      ],
+      "source_selection": "User-supplied original CHD selected for the initial both-US-discs target; filename is a locator only.",
+      "region": {
+        "declared_target": "US / North America",
+        "evidence": "EVID-REF-002",
+        "observed_marker": "Sony Computer Entertainment Inc. for North America area"
+      },
+      "revision": {
+        "kind": "exact_hash_defined_reference",
+        "match_policy": "full_raw_track_sha256",
+        "retail_revision_label": null,
+        "retail_revision_status": "not_established",
+        "scope": "Only these exact decoded bytes are accepted as a selected research revision; no serial/date-based compatibility inference."
+      },
+      "runtime_support": false,
+      "measurement": {
+        "schema_version": 1,
+        "observation_kind": "original_source_static_metadata",
+        "tool": "tools/reference/inspect_disc.py",
+        "source": {
+          "chd": {
+            "sha256": "2fe782d85f3bded421ef9f21db1896439576bfd51d4f480877be7660d07b0c29",
+            "size": 380024950
+          },
+          "raw_track": {
+            "sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+            "size": 688700880,
+            "sector_bytes": 2352
+          },
+          "cue": {
+            "sha256": "775ac604f9d1d1e94540275a9a08c25ed2c149a3bb2d5b5406e41d3cd3f804f7",
+            "track_type": "MODE2/2352"
+          }
+        },
+        "iso9660": {
+          "pvd_lba": 16,
+          "volume_id": "XENOGEARS",
+          "system_id": "PLAYSTATION",
+          "volume_blocks": 292815,
+          "volume_set_size": 1,
+          "volume_sequence_number": 1,
+          "creation_timestamp_raw": "3139393830383237313830303030303000",
+          "root_lba": 22,
+          "entries": [
+            {
+              "lba": 172918,
+              "size": 303104,
+              "directory": false,
+              "path": "/SLUS_006.69;1"
+            },
+            {
+              "lba": 172917,
+              "size": 67,
+              "directory": false,
+              "path": "/SYSTEM.CNF;1"
+            }
+          ]
+        },
+        "boot": {
+          "system_cnf": {
+            "lba": 172917,
+            "size": 67,
+            "directory": false,
+            "path": "/SYSTEM.CNF;1",
+            "sha256": "7fb5975c5f4e6133b32d4c6b6f4e048d08a230383ca93de0fce9eba15c68b2eb"
+          },
+          "boot_path": "/SLUS_006.69;1",
+          "executable": {
+            "lba": 172918,
+            "size": 303104,
+            "directory": false,
+            "path": "/SLUS_006.69;1",
+            "sha256": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35"
+          },
+          "executable_header": {
+            "initial_pc": "0x80019524",
+            "load_address": "0x80010000",
+            "load_size": 301056,
+            "marker_offset": "0x4c",
+            "marker": "Sony Computer Entertainment Inc. for North America area"
+          }
+        },
+        "limits": [
+          "No gameplay execution observed.",
+          "No game-specific archive or file meaning recovered.",
+          "ISO volume sequence does not establish the game's disc number.",
+          "Serial and timestamps do not establish a named retail revision.",
+          "This inspector checks bounds and metadata, not CD ECC/EDC authenticity."
+        ],
+        "container_verification": {
+          "command": "chdman verify -i <source.chd>",
+          "exit_code": 0,
+          "log": "chdman-verify.log"
+        }
+      },
+      "findings": [
+        "EVID-REF-002",
+        "EVID-REF-003",
+        "EVID-REF-005"
+      ],
+      "local_reproduction": "python3 tools/reference/capture.py <user-source-2.chd> .local/references/new-source-2",
+      "source_disc_tag": {
+        "lba": 23,
+        "user_data_offset": 24,
+        "text": "DS02_XENOGEARS",
+        "remaining_logical_block_zero": true
+      }
+    }
+  ],
+  "support_policy": "Only exact hash-defined North American research revisions are selected. Explicit original DS01/DS02 tags confirm disc sequence, with independent original-program corroboration. Named retail revisions and other regions/images are not inferred or advertised as supported; gameplay/runtime support remains false."
+}

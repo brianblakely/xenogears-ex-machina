@@ -1,0 +1,570 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-010",
+  "kind": "original_static_media_inventory",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6",
+    "na-slus-00669-5eab85c683d4"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 102696,
+      "track_lba": 108656,
+      "sector_bytes": 2352,
+      "user_data_offset": 320,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028928",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 165848,
+      "track_lba": 108686,
+      "sector_bytes": 2352,
+      "user_data_offset": 2032,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80037fd8",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 167044,
+      "track_lba": 108687,
+      "sector_bytes": 2352,
+      "user_data_offset": 1180,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80038484",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 172112,
+      "track_lba": 108690,
+      "sector_bytes": 2352,
+      "user_data_offset": 104,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80039850",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 196116,
+      "track_lba": 108701,
+      "sector_bytes": 2352,
+      "user_data_offset": 1580,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8003f614",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109158,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "kind": "independently decoded original mode 6 resource, static inspection",
+        "source_slot": 40,
+        "packed_source_sha256": "0b7ad43d33fff081ba74010c7c3af3ed166fed694efb852f1f50a062b3a06af5",
+        "decoded_sha256": "50e1a9d9e08b90eed0c2da1c289507e71cbf51749893a92f457ce79a59701f9a",
+        "decoded_destination": "0x8006faf0",
+        "instruction_decoded_offset": 20832
+      },
+      "address": "0x80074c50",
+      "address_space": "PS1 KSEG0 virtual address under the independently recovered original overlay transformation",
+      "not_applicable": "Sector is the beginning of the packed source resource. The instruction has a decoded offset, not a direct packed byte offset. No matching runtime window or playback observation is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original counted movie source-group header; static source coordinate, no executed instruction address."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 74,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original directory halfword 25, used by the original mode 6 movie source path; static source coordinate, no executed instruction address."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 41,
+      "sector_bytes": 2352,
+      "user_data_offset": 16,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "First original movie source projection, including its eight XA subheader bytes; static source coordinate, no executed instruction address."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 102696,
+      "track_lba": 172968,
+      "sector_bytes": 2352,
+      "user_data_offset": 320,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80028928",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 165848,
+      "track_lba": 172998,
+      "sector_bytes": 2352,
+      "user_data_offset": 2032,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80037fd8",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 167044,
+      "track_lba": 172999,
+      "sector_bytes": 2352,
+      "user_data_offset": 1180,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80038484",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 172112,
+      "track_lba": 173002,
+      "sector_bytes": 2352,
+      "user_data_offset": 104,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x80039850",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": "/SLUS_006.69;1",
+      "file_offset": 196116,
+      "track_lba": 173013,
+      "sector_bytes": 2352,
+      "user_data_offset": 1580,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": null,
+      "address": "0x8003f614",
+      "address_space": "PS1 KSEG0 virtual address, little-endian MIPS",
+      "not_applicable": "Resident original group-count/audio-header/resource-consumer instruction; no overlay applies."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 173470,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "overlay": {
+        "kind": "independently decoded original mode 6 resource, static inspection",
+        "source_slot": 35,
+        "packed_source_sha256": "0b7ad43d33fff081ba74010c7c3af3ed166fed694efb852f1f50a062b3a06af5",
+        "decoded_sha256": "50e1a9d9e08b90eed0c2da1c289507e71cbf51749893a92f457ce79a59701f9a",
+        "decoded_destination": "0x8006faf0",
+        "instruction_decoded_offset": 20832
+      },
+      "address": "0x80074c50",
+      "address_space": "PS1 KSEG0 virtual address under the independently recovered original overlay transformation",
+      "not_applicable": "Sector is the beginning of the packed source resource. The instruction has a decoded offset, not a direct packed byte offset. No matching runtime window or playback observation is asserted by this finding."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original counted movie source-group header; static source coordinate, no executed instruction address."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 74,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original directory halfword 25, used by the original mode 6 movie source path; static source coordinate, no executed instruction address."
+    },
+    {
+      "profile": "na-slus-00669-5eab85c683d4",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 41,
+      "sector_bytes": 2352,
+      "user_data_offset": 16,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "First original movie source projection, including its eight XA subheader bytes; static source coordinate, no executed instruction address."
+    }
+  ],
+  "observation": "The original mode 6 resource contains movie-selection labels and a loader path selecting directory (24,1), reading the negative-count group through file 1, checking the movie selector, requesting file selector+2, and choosing 2336-byte sectors. Original directory halfword 25 is 1 on both discs, making the counted movie group slot 0 and movie data slots selector+1. The groups contain 17 and 12 entries. Every measured video frame has all declared chunks, without duplicates, disagreements or gaps in frame numbering. Each source also contains 153 wds, 106 smds and 46 seds header slots, with 105, 63 and 26 distinct source hashes respectively; all 305 corresponding audio slots are byte-identical between discs. Original wave/music path strings call the same resource consumers seen in the resident audio code.",
+  "interpretation": "This establishes original numeric movie data catalogs and an audio resource-signature catalog with exact source provenance. It does not enumerate unique audible songs/effects, decode media, prove playback, or recover all embedded subresources. Twelve SMDS slots per source explicitly contain the original Movie dammy music label. Six SMDS slots use versions 0 or 0x100 and have nonzero additive header sums; the resident SMDS validation hook at 0x8003f67c returns zero unconditionally, so the diagnostic sums are not grounds to reject these original files.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Both exact original raw-track profiles measured in EVID-REF-001/002",
+      "Pinned Nix default and disassembly shells",
+      "Independent original source index, projection hashes and packed-resource transcription from EVID-REF-005/007/008",
+      "New ignored local output paths"
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix",
+      "python3 tools/reference/media_survey.py --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --output .local/references/source-1/review-media.json",
+      "python3 tools/reference/media_survey.py --raw .local/references/source-2/disc.bin --profile na-slus-00669-5eab85c683d4 --output .local/references/source-2/review-media.json",
+      "Compare all movie/audio source coordinates and projected hashes against source-fingerprints.json. Compare corresponding audio slots with Disc 1 slot = Disc 2 slot + 5. Preserve duplicates and older header variants.",
+      "Inspect original packed mode 6 source slot 40 on Disc 1 and 35 on Disc 2 with the bounded original decoder transcription; read complete measured source sectors (not only the 14360-byte projected prefix), then read the stated loader, original development-path and resident audio-consumer coordinates. Resulting original bytes and disassembly remain private.",
+      "python3 -m unittest tests.test_media_survey"
+    ],
+    "expected": "Exact original identities and bounded metadata reads, complete recorded video chunk groups, independently matched source projections, and explicit audio format variants without invented semantic names or playback claims.",
+    "actual": "Both public-tool full-source scans passed and reproduced the earlier private survey. All 29 movie resources have complete, unique chunk sets and contiguous video frame numbering; header dimension candidates are consistently 320 by 224. Every media projection matches the independently measured source inventory. All 305 paired audio slots match between discs; six nonzero word sums are retained as original SMDS variants. Four tests using invented packets/headers pass for completeness, duplicate/inconsistent chunks, invalid raw sectors, additive sums, old versions and bounds. Independent remeasurement confirms each 29779-byte mode 6 overlay consumes 14364 source bytes: its 14360-byte projected prefix plus four original zero bytes within the measured source sectors.",
+    "result": "passed",
+    "tolerance": "Exact source hashes, coordinates, packet-header relationships and arithmetic; no payload decoding, observed movie timing or original/native audio equivalence.",
+    "artifacts": [
+      {
+        "path": ".local/references/source-1/media-survey.json",
+        "sha256": "f6e4c57d34f1122fb8e37a9224f8e38112997faf18d53365bc9a31350813084b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/references/source-2/media-survey.json",
+        "sha256": "d4bfd30ba3aea18a3a8891acafcee51852ac1eeb2b863213fc8afceb66ee5327",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/media-inventory-measurement.json",
+        "sha256": "bea22d35d8cc549a74c16c4e3ad871dd18d6f6aed8b4cdc7443ea623f128bd46",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/resource-semantics-probe-v2.json",
+        "sha256": "89d3725d18377e2b6a39ed85bcce69a65aeb9d45c7dd2705eebaa3e029e6f9b5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/media-static-source-correspondence.json",
+        "sha256": "c79cfe2d32a0514191d5a805c3a891e6d8e4d6ae0d9ed944af0d59b2fbe2bdd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/probe_resource_semantics.py",
+        "sha256": "3fa149baa1c48e39a607b42a2942d26f83fbce3cb101b5c3ffbefce13a475b04",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/verify_media_source_windows.py",
+        "sha256": "c9b026d3128e49d369c3337664a52f3c50c2905b218fea04a8dc63eba4ecb6b8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/menu-media-independent-review.json",
+        "sha256": "a55c51185867b518a24c8102c8b00637a0e2add7a37fc494f18558544e6d1695",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/tools/review_menu_media_source.py",
+        "sha256": "c42868658e723eea63846559a4736f99b55b458545e859c3286a2534a4255502",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "loader_paths": {
+    "movie": {
+      "source_mode": 6,
+      "directory_call": "0x80074c54: set_directory(24,1)",
+      "count_call": "0x80074c5c: group_count(1)",
+      "selector_global": "0x8007711c",
+      "count_bound_check": "0x80074c70/0x80074c78",
+      "file_number": "0x80074c7c: selector+2",
+      "sector_unit": "0x80074c8c: 0x920 = 2336",
+      "source_slot_formula": "selector+1",
+      "packet_frame_and_chunk_fields": "0x80075118..0x80075144 tests header marker0x160, reads chunk counts and compares frame index",
+      "runtime_status": "Static original-code path only; the final Kernel Movie/title capture does not retain these windows."
+    },
+    "audio": {
+      "wave_consumer": "0x80037fd8 reads source payload size+0x14 and payload offset+0x18; original mode6 paths under sound/wave call it at0x800753dc/0x800754b0",
+      "music_consumer": "Original sound/music/battle2.smd path at0x80070394 is loaded at0x800754dc and passed to0x80039850 at0x800754e4",
+      "sound_event_header_check": "0x80038484 loads expected signature0x73646573 and version0x101, then calls0x8003f614",
+      "header_validation": "0x8003f614 compares signature, additive header word sum and version; checksum loop0x8003f684 uses word+8 as length",
+      "smd_validation_hook": "0x80039860 calls0x8003f67c, whose original implementation returns zero; no checksum-based original rejection is asserted"
+    }
+  },
+  "source_code_metadata": [
+    {
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "boot_executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "packed_source_slot": 40,
+      "packed_source_sha256": "0b7ad43d33fff081ba74010c7c3af3ed166fed694efb852f1f50a062b3a06af5",
+      "decoded_sha256": "50e1a9d9e08b90eed0c2da1c289507e71cbf51749893a92f457ce79a59701f9a",
+      "decoded_bytes": 29779,
+      "decoded_destination": "0x8006faf0",
+      "windows": [
+        {
+          "address": "0x80074c50",
+          "decoded_offset": 20832,
+          "size": 80,
+          "sha256": "389cf5fc5787114fc1f509225528f9f7ed5cba22d8212a37c6393f1f22bddd24",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        },
+        {
+          "address": "0x80075118",
+          "decoded_offset": 22056,
+          "size": 48,
+          "sha256": "7cadca93cd432808f4130baf1d112fa452cea408759787b69d5e135a64b8cbe4",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        },
+        {
+          "address": "0x800753b8",
+          "decoded_offset": 22728,
+          "size": 104,
+          "sha256": "0c78a843b4f1766486c1dbace8647e2f916e89a2b86bb6b5520192cae6dbf0a7",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        },
+        {
+          "address": "0x8007548c",
+          "decoded_offset": 22940,
+          "size": 104,
+          "sha256": "36d48884a5c478f23c24d341a94cbc3959fe1234a05b9de943aa06ac7ac1b0ca",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        }
+      ],
+      "main_windows": [
+        {
+          "address": "0x80028928",
+          "file_offset": 102696,
+          "size": 112,
+          "sha256": "4799560d04acd14cb3e57ffdcea36d9cced1a5da67cbe5cbabb7bad81a63253f"
+        },
+        {
+          "address": "0x80037fd8",
+          "file_offset": 165848,
+          "size": 140,
+          "sha256": "884e5bca9780808bcd70cf8f9d702760e4f2718d66b6741a165fd332e4d1b601"
+        },
+        {
+          "address": "0x80038484",
+          "file_offset": 167044,
+          "size": 20,
+          "sha256": "ef278f74ec8576be7db78eaced3e06e28cbfc7a2ad38ca4b29046e88c505a9fb"
+        },
+        {
+          "address": "0x80039850",
+          "file_offset": 172112,
+          "size": 56,
+          "sha256": "4a8a46160d9cf21935df4440c9177b395ba41cfe8b8c4eb97f219113066cfbb6"
+        },
+        {
+          "address": "0x8003f614",
+          "file_offset": 196116,
+          "size": 160,
+          "sha256": "3df668674d95374a5b3a952a9c64e854b35b3d682dd82e88e1973dd9d971e7c9"
+        }
+      ],
+      "original_development_path_strings": [
+        {
+          "address": "0x80070304",
+          "decoded_offset": 2068,
+          "source_text": "c:\\work\\cdrom\\sound\\wave\\main_se.wd",
+          "sha256": "104afa921d74cb85c64ec7686ef41fb7480bb1dfe4e86a2f8093e8b27128ec14"
+        },
+        {
+          "address": "0x80070370",
+          "decoded_offset": 2176,
+          "source_text": "c:\\work\\cdrom\\sound\\wave\\battle2.wd",
+          "sha256": "fecff909886e1102b672a8d1ffea645579c13adfbb1ec58eb0914a2ffc3f0cfe"
+        },
+        {
+          "address": "0x80070394",
+          "decoded_offset": 2212,
+          "source_text": "c:\\work\\cdrom\\sound\\music\\battle2.smd",
+          "sha256": "21e2bd72d1ce354d930ecbc61332e0941c68aaade04639a1740b77c6de0491fa"
+        }
+      ],
+      "private_decoding_bounds": {
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "source_slot": 40,
+        "projected_bytes": 14360,
+        "decoded_bytes": 29779,
+        "decoded_sha256": "50e1a9d9e08b90eed0c2da1c289507e71cbf51749893a92f457ce79a59701f9a",
+        "consumed_source_bytes": 14364,
+        "physical_user_data_bytes": 16384,
+        "bytes_consumed_beyond_candidate_length": 4,
+        "consumed_sector_padding_all_zero": true
+      }
+    },
+    {
+      "source_profile": "na-slus-00669-5eab85c683d4",
+      "boot_executable_sha256": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+      "packed_source_slot": 35,
+      "packed_source_sha256": "0b7ad43d33fff081ba74010c7c3af3ed166fed694efb852f1f50a062b3a06af5",
+      "decoded_sha256": "50e1a9d9e08b90eed0c2da1c289507e71cbf51749893a92f457ce79a59701f9a",
+      "decoded_bytes": 29779,
+      "decoded_destination": "0x8006faf0",
+      "windows": [
+        {
+          "address": "0x80074c50",
+          "decoded_offset": 20832,
+          "size": 80,
+          "sha256": "389cf5fc5787114fc1f509225528f9f7ed5cba22d8212a37c6393f1f22bddd24",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        },
+        {
+          "address": "0x80075118",
+          "decoded_offset": 22056,
+          "size": 48,
+          "sha256": "7cadca93cd432808f4130baf1d112fa452cea408759787b69d5e135a64b8cbe4",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        },
+        {
+          "address": "0x800753b8",
+          "decoded_offset": 22728,
+          "size": 104,
+          "sha256": "0c78a843b4f1766486c1dbace8647e2f916e89a2b86bb6b5520192cae6dbf0a7",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        },
+        {
+          "address": "0x8007548c",
+          "decoded_offset": 22940,
+          "size": 104,
+          "sha256": "36d48884a5c478f23c24d341a94cbc3959fe1234a05b9de943aa06ac7ac1b0ca",
+          "runtime_correspondence": "not_asserted: final title capture does not retain this window"
+        }
+      ],
+      "main_windows": [
+        {
+          "address": "0x80028928",
+          "file_offset": 102696,
+          "size": 112,
+          "sha256": "4799560d04acd14cb3e57ffdcea36d9cced1a5da67cbe5cbabb7bad81a63253f"
+        },
+        {
+          "address": "0x80037fd8",
+          "file_offset": 165848,
+          "size": 140,
+          "sha256": "884e5bca9780808bcd70cf8f9d702760e4f2718d66b6741a165fd332e4d1b601"
+        },
+        {
+          "address": "0x80038484",
+          "file_offset": 167044,
+          "size": 20,
+          "sha256": "ef278f74ec8576be7db78eaced3e06e28cbfc7a2ad38ca4b29046e88c505a9fb"
+        },
+        {
+          "address": "0x80039850",
+          "file_offset": 172112,
+          "size": 56,
+          "sha256": "4a8a46160d9cf21935df4440c9177b395ba41cfe8b8c4eb97f219113066cfbb6"
+        },
+        {
+          "address": "0x8003f614",
+          "file_offset": 196116,
+          "size": 160,
+          "sha256": "3df668674d95374a5b3a952a9c64e854b35b3d682dd82e88e1973dd9d971e7c9"
+        }
+      ],
+      "original_development_path_strings": [
+        {
+          "address": "0x80070304",
+          "decoded_offset": 2068,
+          "source_text": "c:\\work\\cdrom\\sound\\wave\\main_se.wd",
+          "sha256": "104afa921d74cb85c64ec7686ef41fb7480bb1dfe4e86a2f8093e8b27128ec14"
+        },
+        {
+          "address": "0x80070370",
+          "decoded_offset": 2176,
+          "source_text": "c:\\work\\cdrom\\sound\\wave\\battle2.wd",
+          "sha256": "fecff909886e1102b672a8d1ffea645579c13adfbb1ec58eb0914a2ffc3f0cfe"
+        },
+        {
+          "address": "0x80070394",
+          "decoded_offset": 2212,
+          "source_text": "c:\\work\\cdrom\\sound\\music\\battle2.smd",
+          "sha256": "21e2bd72d1ce354d930ecbc61332e0941c68aaade04639a1740b77c6de0491fa"
+        }
+      ],
+      "private_decoding_bounds": {
+        "source_profile": "na-slus-00669-5eab85c683d4",
+        "source_slot": 35,
+        "projected_bytes": 14360,
+        "decoded_bytes": 29779,
+        "decoded_sha256": "50e1a9d9e08b90eed0c2da1c289507e71cbf51749893a92f457ce79a59701f9a",
+        "consumed_source_bytes": 14364,
+        "physical_user_data_bytes": 16384,
+        "bytes_consumed_beyond_candidate_length": 4,
+        "consumed_sector_padding_all_zero": true
+      }
+    }
+  ],
+  "limitations": [
+    "Movie selectors follow the separately recovered original loader path; source presence and complete packet headers do not prove decoded playback.",
+    "Audio signature counts preserve source slots and duplicates; they are not song, instrument, sound-effect or audible-event totals.",
+    "The original additive-word helper is applied as a header diagnostic; older version semantics remain unknown and nonzero sums do not imply bad discs.",
+    "Dimensions are header candidates; no picture/audio payload is decoded here.",
+    "No native extractor, media player, sequence interpreter or runtime is implemented.",
+    "Raw movie headers are catalogued under the original movie selector; semantic cinematic names and original-script references remain unresolved.",
+    "The scanned audio signature families do not prove that every embedded sound source has been identified.",
+    "The original mode 6 movie/audio diagnostic source paths are static evidence; no separate emulator execution of those particular functions is claimed."
+  ],
+  "author": "Phase 0 agent: independent original-source instruction review and complete bounded media-header measurements",
+  "reviewers": [
+    "Parent agent: independently decoded both original mode 6 resources and verified the counted-group, selector and sector-unit instructions with pinned Capstone; retained older audio variants and original dummy labels."
+  ]
+}
