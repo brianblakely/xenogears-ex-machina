@@ -1,0 +1,1590 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-023",
+  "kind": "original_planar_motion_and_sprite_pc_stores",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 35800,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800183d8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "ee73be97683cbf2affa5db0d128e5083ac4b273da3bc5c2f0bfc12bfb75ee0f8",
+      "source_window_bytes": 460
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 66532,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001fbe4",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "9411efafd1c30edf50ed99ff557d37b4d8913cb623b8f614a4f74c09a2ac3d3e",
+      "source_window_bytes": 80
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 74072,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021958",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "959b24c6e34bc6eb1880135b1856777b6fe4bfe2b3fd877a87f8aaa05f713c64",
+      "source_window_bytes": 84
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 75744,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021fe0",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "ae7dedf42d5581e07867862da9b6e43bafe1a11110d44ce68c81a8ee6f522411",
+      "source_window_bytes": 32
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 78196,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80022974",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "d455d43fbd61b5080bbb67d0308a518ad0fdc974bccd76a720854439212c7fed",
+      "source_window_bytes": 140
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 86284,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8002490c",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "78ffa59d92fb4ef4b39d21788e9bb4e53e4a9f9e55a905797bb2865e4d241430",
+      "source_window_bytes": 1556
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 196784,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8003f8b0",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "9687ca637b21311f891dd33fa756f8f1c31ff274ccf92923c699b087b44e4c92",
+      "source_window_bytes": 56
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 263232,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004fc40",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "f329de9c682e328cd9ca4718972691f3bb716046f2f57803c3a24e9b19326c0a",
+      "source_window_bytes": 256
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 273392,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800523f0",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite dispatch/width/trigonometric data; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "b40c47b014ca8650c539760fd4c519cabce6f091628566ca0dd22318bb2c5b7a",
+      "source_window_bytes": 16384
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 6076,
+        "window_bytes": 56
+      },
+      "address": "0x800712ac",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "a60d7fb092d1a65dd645aeec24c731edaea7e07a42c763e5d73ca752e46f0158",
+      "source_window_bytes": 56
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 74896,
+        "window_bytes": 628
+      },
+      "address": "0x80081f80",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "a5a63bd43543f2ba945861f60457da8ce88596beacba11385d14142d6495843e",
+      "source_window_bytes": 628
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 78024,
+        "window_bytes": 212
+      },
+      "address": "0x80082bb8",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "17981a513cfd7a23d742a88b7bc9cc92b6078f302789f73df12fbaac7623a5a7",
+      "source_window_bytes": 212
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 79452,
+        "window_bytes": 44
+      },
+      "address": "0x8008314c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "2fadbf02cefb042f3f6a53eadd5c5b25a684d51e38ba4affaca5b82f5418e41f",
+      "source_window_bytes": 44
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 200388,
+        "window_bytes": 80
+      },
+      "address": "0x800a09b4",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "89256dffe1b14d6a5320313414d020af3d7143be1b6089524bf7b156014de835",
+      "source_window_bytes": 80
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 124528,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original packed field file; component3 supplies the source sprite index and additional observed opcodes. This source data has no executable address.",
+      "source_slot": 652,
+      "source_window_bytes": 110052,
+      "source_window_sha256": "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add"
+    }
+  ],
+  "observation": "The qualified 43414-record original window compares 470 motion prefixes, 470 inhibited returns, 19 A0 speed commands, 567 sprite vectors, 548 field vectors, 2445 sine and 2445 cosine lookups, and 10921 committed width-based sprite-PC stores. All 82 corruption cases are rejected, and every one of 66 artifacts equals the independently built uninstrumented control.",
+  "interpretation": "The original sprite A0 command supplies signed scaled speed, a source-table vector routine preserves the original shift/wrap order, and the ordinary field wrapper quantizes X/Z to sixteenth units. The sprite PC store uses its post-handler pointer and the original unsigned width table. Full active motion and remaining sprite handlers/loop paths remain unreconstructed.",
+  "confidence": "supported",
+  "author": "Codex /root, independent original-source and execution analysis on 2026-09-08",
+  "reviewers": [],
+  "validation": {
+    "preconditions": [
+      "Exact selected original Disc 1, pinned Nix shells, original-data imports and fresh private outputs.",
+      "Reuse the existing field23-control-observation route and memory sampler, with no new setup writes.",
+      "Reuse or reproduce the fully qualified party-loader capture from EVID-REF-022; keep read-only instruction probes separate from the independently built uninstrumented control."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "python tools/reference/scenario.py tests/reference-inputs/field23-control-observation.json --content \"discs/Xenogears disc 1.chd\" --sample-memory .local/analysis/phase1-field-motion-20260908/control-sampler-v1.json --output <new-private-control>",
+      "python tools/analysis/verify_planar_motion.py prepare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --ram <control>/capture/final.ram --output <new-private-planar-spec>",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace",
+      "Run the same original scenario with --trace-instructions <planar-spec> and a fresh private output directory.",
+      "python tools/analysis/verify_planar_motion.py compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --loader-capture <loader>/capture --planar-capture <planar>/capture --output <new-private-comparison>",
+      "env PYTHONPATH=. python .local/analysis/phase1-planar-motion-20260908/audit-planar-v2.py <fresh-version> (set capture paths for new runs)",
+      "python -m unittest discover -s tests -p test_planar_motion.py -v",
+      "python tools/repository/check.py",
+      "python tools/repository/reproduce.py"
+    ],
+    "expected": "Exact source identities, input-derived arithmetic, complete shared captured bytes, pointer storage, original return/stack/order relationships and committed stores. Reject corrupted evidence and preserve the full independent control.",
+    "actual": "43414 records qualify without guard mismatches, unavailable ranges, exhausted budgets or collector failures. Every compared stage matches. Eighty-two corruption cases are rejected and all 66 control artifacts are exact. Sixteen synthetic arithmetic, branch and index-boundary tests pass.",
+    "result": "passed",
+    "tolerance": "Exact signed integer and byte/hash equality. Shared state sets are explicit; no inferred mask for field-resource mutations, no host-generated trig table, no inferred no-op handlers or universal cadence.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/control-sampler-v1.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/audit-planar-v1.py",
+        "sha256": "124d735f4d44645bdd227d8b667dda66aeb8c667283d0a3014614f6e179a7e9e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/audit-planar-v2.py",
+        "sha256": "b9d90831ff8ba4d3fe746cc0d9798da1cc5e8fe1f6ffb70bb90b525a2cc86342",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/check-planar-v3.py",
+        "sha256": "49c39cca66de0b15e71f13a8d9b92ee977642e3728d1db975a6b95edd3197b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/check-planar-v4.py",
+        "sha256": "acac08a93c144a5a2a022d3429c0f9c498775d1f0b0c1b669e793633970750c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/inspect-correlations-v1.py",
+        "sha256": "f3b700e64f4a2665e44794a7285b3cd5dcc25cad839e5662e2345f95bf9c8c02",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/inspect-field-sprites-v1.py",
+        "sha256": "f5ae9e2f2700c5127843d0de495f4cc4bbb5c61c8d617b23b4164dbf707f7ea5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/planar-check-v4.json",
+        "sha256": "a780b91885605f6d54f7cec5a65fb11ba16ed6b8347512ecd157a948d509fba5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/planar-comparison-v2.json",
+        "sha256": "86a4b72cbe3b21da59c7318514c0fe2211de6094c591d5f3338a668e42142a48",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/planar-controls-v2.json",
+        "sha256": "03c6be236d0ceeecd2a3b5030b300ccba0dbb97dcb856f89dc58997171230943",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/planar-negative-v2.json",
+        "sha256": "cfd0a1ea37f23bf7f7319701f4852b0b9b0cf6c0ef0c92c520a94dde69862aa0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/planar-spec-v3.json",
+        "sha256": "4cf00cab5e41700cf3e3453f08139b2ca0361a3684523ea8e0f9d24f2ee53d08",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/prepare-planar-v1.py",
+        "sha256": "5df425c177a40cc86a95b4e98f138718a054941f0fccf314c1b090a5bcddc734",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/prepare-planar-v2.py",
+        "sha256": "33cff62be334b6664a4fbf9083b9ab4e73fe2f0767097a60ee69fcec4ce271e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/prepare-planar-v3.py",
+        "sha256": "335ce9e585795859048be77f1d179245e78581cadb6a1d4b30cedd6dc33c19ea",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-planar-motion-20260908/record-planar-v1.py",
+        "sha256": "8b673e6ea6d03500ff874b4e688eff822217d715f0ca78c3f5e8f2972266e246",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/observation.json",
+        "sha256": "da9c053886f6434c7080449667b3cd4f421c68a6a9faac0ab75375a8cb7d7286",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/report.json",
+        "sha256": "b94be9f6321d240d6b2551dcec238a29719533d1dc72596a344d1454565f640f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/instruction-trace-spec.json",
+        "sha256": "8b7e6cd9d13f255aadd67be6e007775fc5853bfd8b587d38b1e5a8ff51f46a30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/instruction-trace.jsonl",
+        "sha256": "86119df13daacb65b4c7ee3da91750ec36634050fd9294794b376850b0b852e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/observation.json",
+        "sha256": "2a9a3d3d084c71dce5f766de22f2c1acae4c36df1a819dcd832961012849bb1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/instruction-trace-spec.json",
+        "sha256": "4cf00cab5e41700cf3e3453f08139b2ca0361a3684523ea8e0f9d24f2ee53d08",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/instruction-trace.jsonl",
+        "sha256": "f70feb786d6da79dff0a16282cf7d8b008af64e7ec82204daa8cabb3ce9a3f43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/observation.json",
+        "sha256": "a3bcd3ef531be102ca4de316dd8a105efe17a41818e72adeca5ac830b1bb7154",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-planar-20260908-v3-trace/report.json",
+        "sha256": "10b83d825a25cb1b62ed7761dcef06bd1dfa1b37e996fceedf62fb7fcb0b88a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "analysis/formats/planar-motion.md",
+        "sha256": "9c6bcdcbf0e6b2b9c608795a42f9f00e4fe30d54e8961230591ebde6af28a71f",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-control-observation.json",
+        "sha256": "dcd7f8e25df15cb32bef04404eed350ddd0f154b606cb2278d5edc0a1e305ff3",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_planar_motion.py",
+        "sha256": "ca0fec54cae4b8d13394b3e8d7af71757b1be7ee695129ef2588e66128f0a950",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/planar_motion.py",
+        "sha256": "405eb6610ccdba27853955e347f64e3551f5739b4896747d66832be0604fb1ba",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_planar_motion.py",
+        "sha256": "c8d84750640030a7597994d3b257099645432d2a6941be0d1b2f87ce24f2fef2",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_planar": {
+    "result": "passed",
+    "records": 43414,
+    "counts": {
+      "cosine-result": 2445,
+      "sine-result": 2445,
+      "motion-ready": 940,
+      "motion-mode": 470,
+      "motion-after": 940,
+      "field-velocity-before": 548,
+      "field-actor": 548,
+      "sprite-velocity-before": 567,
+      "sprite-velocity-after": 567,
+      "field-velocity-after": 548,
+      "sprite-pc-loop": 22437,
+      "sprite-pc-advance": 10921,
+      "speed-before": 19,
+      "speed-after": 19
+    },
+    "outcomes": {
+      "cosine-result": 2445,
+      "sine-result": 2445,
+      "active_motion_body_opaque": 470,
+      "inhibited_motion": 470,
+      "sprite_velocity": 567,
+      "field_velocity": 548,
+      "other_sprite_loop_entries_opaque": 11516,
+      "committed_pc_stores": 10921,
+      "speed_commands": 19
+    },
+    "motion_modes": {
+      "1": 456,
+      "2": 14
+    },
+    "pc_opcodes": [
+      {
+        "opcode": "0x84",
+        "width": 1,
+        "count": 7
+      },
+      {
+        "opcode": "0x86",
+        "width": 1,
+        "count": 6
+      },
+      {
+        "opcode": "0x87",
+        "width": 1,
+        "count": 6
+      },
+      {
+        "opcode": "0x94",
+        "width": 1,
+        "count": 4700
+      },
+      {
+        "opcode": "0xa0",
+        "width": 2,
+        "count": 19
+      },
+      {
+        "opcode": "0xa1",
+        "width": 2,
+        "count": 6
+      },
+      {
+        "opcode": "0xa6",
+        "width": 2,
+        "count": 153
+      },
+      {
+        "opcode": "0xb4",
+        "width": 2,
+        "count": 186
+      },
+      {
+        "opcode": "0xbc",
+        "width": 2,
+        "count": 4706
+      },
+      {
+        "opcode": "0xc6",
+        "width": 2,
+        "count": 6
+      },
+      {
+        "opcode": "0xce",
+        "width": 3,
+        "count": 940
+      },
+      {
+        "opcode": "0xe4",
+        "width": 3,
+        "count": 186
+      }
+    ],
+    "speed_commands": [
+      {
+        "frontend_run": 4497,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4529,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4537,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4561,
+        "sprite_pointer": "0x80183778",
+        "operand": 64,
+        "speed": 1048576,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4563,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4593,
+        "sprite_pointer": "0x80183778",
+        "operand": 64,
+        "speed": 1048576,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4595,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4601,
+        "sprite_pointer": "0x80184060",
+        "operand": 64,
+        "speed": 1048576,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4625,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4627,
+        "sprite_pointer": "0x80184060",
+        "operand": 64,
+        "speed": 1048576,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4661,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4663,
+        "sprite_pointer": "0x80184060",
+        "operand": 64,
+        "speed": 1048576,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4665,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4697,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4885,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4989,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 4993,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 5089,
+        "sprite_pointer": "0x80183778",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      },
+      {
+        "frontend_run": 5091,
+        "sprite_pointer": "0x80184060",
+        "operand": 20,
+        "speed": 327680,
+        "scale": 8192,
+        "rate_control": 1
+      }
+    ],
+    "observed_inputs": [
+      {
+        "field": "command_source_base",
+        "value": 2148315664,
+        "count": 28
+      },
+      {
+        "field": "command_source_base",
+        "value": 2148397592,
+        "count": 22
+      },
+      {
+        "field": "command_source_base",
+        "value": 2148702060,
+        "count": 1471
+      },
+      {
+        "field": "command_source_base",
+        "value": 2148704468,
+        "count": 3760
+      },
+      {
+        "field": "command_source_base",
+        "value": 2148705692,
+        "count": 1880
+      },
+      {
+        "field": "command_source_base",
+        "value": 2148707132,
+        "count": 3760
+      },
+      {
+        "field": "field_actor_flags",
+        "value": 67175424,
+        "count": 548
+      },
+      {
+        "field": "sprite_angle",
+        "value": 512,
+        "count": 109
+      },
+      {
+        "field": "sprite_angle",
+        "value": 1024,
+        "count": 205
+      },
+      {
+        "field": "sprite_angle",
+        "value": 2048,
+        "count": 8
+      },
+      {
+        "field": "sprite_angle",
+        "value": 2560,
+        "count": 78
+      },
+      {
+        "field": "sprite_angle",
+        "value": 3072,
+        "count": 167
+      },
+      {
+        "field": "sprite_divisor",
+        "value": 256,
+        "count": 567
+      },
+      {
+        "field": "sprite_speed",
+        "value": 0,
+        "count": 415
+      },
+      {
+        "field": "sprite_speed",
+        "value": 262144,
+        "count": 18
+      },
+      {
+        "field": "sprite_speed",
+        "value": 327680,
+        "count": 101
+      },
+      {
+        "field": "sprite_speed",
+        "value": 393216,
+        "count": 4
+      },
+      {
+        "field": "sprite_speed",
+        "value": 1048576,
+        "count": 29
+      }
+    ],
+    "trig_table_sha256": "b40c47b014ca8650c539760fd4c519cabce6f091628566ca0dd22318bb2c5b7a",
+    "command_widths_sha256": "f329de9c682e328cd9ca4718972691f3bb716046f2f57803c3a24e9b19326c0a",
+    "field_sprite_component": {
+      "source": {
+        "slot": 652,
+        "source_lba": 124528,
+        "source_sector_count": 54,
+        "projected_bytes": 110052,
+        "projection_unit": 2048,
+        "projection_sha256": "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "component": 3,
+      "source_offset": 95212,
+      "logical_bytes": 8380,
+      "logical_sha256": "87d35166d968eb0807f2dce209d9d0b3f97e36630554adf0b3fb898bce430d51",
+      "pointer_global": "0x800afb1c",
+      "base": "0x801294e0",
+      "source_index_offsets": [
+        24,
+        652,
+        3060,
+        4284,
+        5724
+      ],
+      "index_bytes_equal": 24,
+      "runtime_sha256": "4fb1adeb7a0a8c148c8b236e07d8cbfde85dd8c47aca75bcc75a28d839d15e26",
+      "runtime_differing_byte_offsets_unreconstructed": [
+        2420,
+        2428,
+        2429,
+        2430,
+        2431,
+        2432,
+        2433,
+        2434,
+        2435,
+        2436,
+        2437,
+        2438,
+        2439,
+        2440,
+        2441,
+        2442,
+        2443,
+        3484,
+        3492,
+        3493,
+        3494,
+        3495,
+        3496,
+        3497,
+        3498,
+        3499,
+        3500,
+        3501,
+        3502,
+        3503,
+        3504,
+        3505,
+        3506,
+        3507,
+        4928,
+        4936,
+        4937,
+        4938,
+        4939,
+        4940,
+        4941,
+        4942,
+        4943,
+        4944,
+        4945,
+        4946,
+        4947,
+        4948,
+        4949,
+        4950,
+        4951,
+        6844,
+        6852,
+        6853,
+        6854,
+        6855,
+        6856,
+        6857,
+        6858,
+        6859,
+        6860,
+        6861,
+        6862,
+        6863,
+        6864,
+        6865,
+        6866,
+        6867
+      ]
+    }
+  },
+  "prior_resource_evidence": [
+    "EVID-REF-014",
+    "EVID-REF-022"
+  ],
+  "unobserved_source_branches": [
+    "Different A0 operands, signed scales, rate controls and packed divisors; zero-divisor hardware behavior.",
+    "Ordinary field direction sentinel, descriptor-bit-clear ratio path, alternate actor/ratio/Gear paths.",
+    "Non-owner active motion prefixes, alternative airborne old-mode choices and complete motion-counter/collision semantics.",
+    "Other sprite opcodes/widths, command effects, frame/pose/wait branches and field source index0 command execution."
+  ],
+  "limitations": [
+    "470 complete active motion bodies and 11516 other VM loop entries remain opaque. Their presence is counted, not decompiled.",
+    "Only 50 compared PC stores use party resources; 10871 use four field-indexed resources. Source indices and used opcode bytes qualify, but 68 other runtime field-component bytes differ and remain unexplained.",
+    "Source-width stores do not implement handler semantics; missing rows in opaque VM paths are rejected by whole-capture fingerprints and original callback counts, not by invented handler rules.",
+    "The additional field actor range supplies branch input but is not captured at every non-player return. Shared captured state, nested sprite stores and original pointers are exact; uncaptured memory is not claimed compared.",
+    "Ground sprite speed is not final collision-resolved displacement or universal per-frame cadence. Full motion, floor/layer/ceiling/rollback/history/follower/camera and readiness remain required.",
+    "All 15 broad Phase 1 todos and nine slice proof domains remain open; independent review and native gameplay remain unimplemented."
+  ],
+  "provenance": {
+    "game_specific_sources": "Only supplied original discs, binaries, data and original execution; no other Xenogears implementation or reverse-engineering results.",
+    "authorship": "Project-authored typed reconstruction, explicit original-memory comparison, synthetic fixtures and prose with Codex assistance. Draft probes and failed exploratory qualification remain private history."
+  }
+}

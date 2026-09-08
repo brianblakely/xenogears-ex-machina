@@ -1,0 +1,539 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-016",
+  "kind": "original_field_slot_selection_and_event_state",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 185548,
+        "window_bytes": 68
+      },
+      "address": "0x8009cfbc",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 187668,
+        "window_bytes": 140
+      },
+      "address": "0x8009d804",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 187808,
+        "window_bytes": 140
+      },
+      "address": "0x8009d890",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 187948,
+        "window_bytes": 68
+      },
+      "address": "0x8009d91c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 188016,
+        "window_bytes": 68
+      },
+      "address": "0x8009d960",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 188084,
+        "window_bytes": 120
+      },
+      "address": "0x8009d9a4",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 188996,
+        "window_bytes": 184
+      },
+      "address": "0x8009dd34",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 204700,
+        "window_bytes": 228
+      },
+      "address": "0x800a1a8c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 204928,
+        "window_bytes": 96
+      },
+      "address": "0x800a1b70",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 205700,
+        "window_bytes": 40
+      },
+      "address": "0x800a1e74",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 206144,
+        "window_bytes": 632
+      },
+      "address": "0x800a2030",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 210160,
+        "window_bytes": 212
+      },
+      "address": "0x800a2fe0",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 250508,
+        "window_bytes": 168
+      },
+      "address": "0x800acd7c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 255920,
+        "window_bytes": 1024
+      },
+      "address": "0x800ae2a0",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    }
+  ],
+  "observation": "Three independently captured runs of the same original field 23 entry-dialogue route yield 30166 end/jump/reset transitions, 4884 wait/variable transitions and 29968 slot selections. All 65018 reconstructed transitions equal original after-state for the entire captured 256-byte actor prefix and both interpreter controls. Wait/variable transitions also compare every variable-bank and type-bitmap byte. The route executes immediate waits 1,20,60 in 2,21,61 calls, respectively. All runs match the uninstrumented control full RAM, external state, audio and all 18 PNGs.",
+  "interpretation": "The recovered event state distinguishes slot resume PCs from a working PC, byte countdowns, priority and event tags. The selector chooses minimum priority and restores event one in slot zero when every slot is ended. Waits count dispatches; the reconstruction does not infer a frontend-frame or native-tick clock. Variable destinations alias odd byte references and store modulo 65536. These are readable analysis transitions; other handlers, dispatch-loop policy, actor eligibility and gameplay readiness remain required.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Use the exact supplied Disc 1 source profile and pinned Nix observation-trace environment. Both CHD containers and raw tracks were freshly revalidated in the local source audit.",
+      "Use the authored field23-entry-dialogue route and three separate bounded read-only trace specifications. Preserve the original bytecode and after states independently of the reconstruction."
+    ],
+    "commands": [
+      "python3 tools/analysis/verify_event_state.py prepare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --group slot-control --output <new-private-spec.json>",
+      "python3 tools/reference/scenario.py tests/reference-inputs/field23-entry-dialogue.json --content \"discs/Xenogears disc 1.chd\" --trace-instructions <new-private-spec.json> --output <new-private-run>",
+      "python3 tools/analysis/verify_event_state.py compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --group slot-control --capture <run>/capture --output <new-private-comparison.json>",
+      "Repeat prepare, capture and compare separately with groups wait-variables and slot-selection.",
+      "python3 -m unittest tests.test_event_analysis tests.test_event_state",
+      "env PYTHONPATH=. python3 .local/analysis/phase1-event-state-20260908/audit-negative.py (use a new private output directory when reproducing)"
+    ],
+    "expected": "Each guarded original before/after pair must have identical field/actor identity and exact recovered actor/control state. All opaque captured bytes must be preserved. All variables and types must match for the wait/variable group. Source functions, operand helpers, dispatch table, immutable field package, trace hashes and complete record counts must qualify the comparison.",
+    "actual": "65018 exact transitions with no dropped records, guard failures or exhausted budgets. All three controls match full RAM, external state, audio and 18 PNGs. The 18 public event/branch tests pass, including 10 new synthetic state tests. An actual original positive pair passes and eleven independently corrupted inputs are rejected, including opaque bytes, slot state, interpreter control, unrelated variable, type bitmap, identity, field, code, pointer relocation and record completeness/order.",
+    "result": "passed",
+    "tolerance": "Exact captured integer state and opaque bytes; no state mask. This comparison does not establish hardware timing, native ticks, complete actor state outside the 256-byte prefix, or unobserved paths.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/source-audit.json",
+        "sha256": "ed825242e521b76cf478c832e536ca4868796c70e6b80cfc59c174ae5d3b5cc5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/chd1-verify.log",
+        "sha256": "7801209627008d4bb97ce7b5660fe11297d7a2728b5594fc41bbd6d0f2425a8a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/chd2-verify.log",
+        "sha256": "97848cf7d683bff3970dd11aa33a66f686e7e66894db819bf796e633e9a2669b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/control-comparison.json",
+        "sha256": "df38f140261ed9b24646dd2b8c50f7cb084b6ac7f298546b4514bb6327fd1989",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/audit-negative.py",
+        "sha256": "72a72321731d32bed7158c2217e085ee5004ba8c9c9970c89b3d53144008fcd2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/negative/results.json",
+        "sha256": "deacc3b48bc050abdcf099e842ca061cee7336b98c8ace6d455dec1b078f5543",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/slot-control-comparison.json",
+        "sha256": "fb56771cecae1e6265865797e6adf2c84086d02373a9c9338f87de494ae9a875",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/report.json",
+        "sha256": "b360f2f318d4947faf6ca1e1e3cb3181faba06e248592480314126e68ac05a34",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/capture/observation.json",
+        "sha256": "ef83f974556d989aa88df3fc00c8f66d276be89e049db82402ac8e1032e1083e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/capture/instruction-trace-spec.json",
+        "sha256": "c10a3840ac336bd2fd35934ff1ff79df6d558110cc3621aeea08ae80c438ef9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/capture/instruction-trace.jsonl",
+        "sha256": "564ee436876dd4750d71f291a61d9feed99c4c8e9a5d9d8dbef61741355c4e32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-control-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/wait-variables-comparison.json",
+        "sha256": "026a67a48503265c69f63c239675d3e3573187ead63855c2889c2cefcb406ced",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/report.json",
+        "sha256": "09e85c31a711cea0ec42a569393a56e9029855c7f0d85e6194212f85ff354d15",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/capture/observation.json",
+        "sha256": "2927be5d32f13f959d399492b6277f19772d9efe9b57d57601721a6b2e2e12c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/capture/instruction-trace-spec.json",
+        "sha256": "bf4d01430b0b3d278580f48ec3eef2d8e59a0bf0e112715eeef9b1577d15393f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/capture/instruction-trace.jsonl",
+        "sha256": "01ad656a33b6272dd2be5a97a6f3ad6f10165e173b236399fa469f66bac24a7b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-wait-variables-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/slot-selection-comparison.json",
+        "sha256": "e50c4de6c88337c1858fef5d611bc487fe6cb60ece1e02b42f27d19192e096dd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/report.json",
+        "sha256": "abdccae848f96912afbffc3953646720d0704a78c5a009b851179761e3122469",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/capture/observation.json",
+        "sha256": "5811ac26e4463b56e02f0a0d31065fb3947226038afbb6730f21036f36cb52fc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/capture/instruction-trace-spec.json",
+        "sha256": "8f7e3d46b50951e909efa8eed7359b91e369ab3ea60479d97188917351fea626",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/capture/instruction-trace.jsonl",
+        "sha256": "36f46cf34de121cc2bcbe17dba8645f6675fa177f5dbf7298abe56c8d1bac3f7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-slot-selection-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-media-ready-20260908/previous-sources/tools/analysis/events.py",
+        "sha256": "ab61132f13c278f3b18fa0d545bf50fdb9bc6be660da8006b0667e331a6b4a54",
+        "distribution": "private_local_only",
+        "original_public_path": "tools/analysis/events.py"
+      },
+      {
+        "path": "tools/analysis/event_state.py",
+        "sha256": "f9d5bcc1f948115abcede975f4993af046292793dd8a393518b694b8a75ad329",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_event_state.py",
+        "sha256": "88fa2d392bc3714fedb72538247e024e208889aeb7db55db776f21b38b809214",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": ".local/analysis/phase1-media-ready-20260908/previous-sources/tests/test_event_analysis.py",
+        "sha256": "d039553aff559977eb8c42e4621191575089d8b5d2713f56a6dcb10a13d489b9",
+        "distribution": "private_local_only",
+        "original_public_path": "tests/test_event_analysis.py"
+      },
+      {
+        "path": "tests/test_event_state.py",
+        "sha256": "84bb490408fe51ca5710b458c68d5d98c9202f398ed7970367fa9db7c283c27e",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-entry-dialogue.json",
+        "sha256": "1c5757629034aeba726dbd268432f63df4c2e4b3be6b681e37c2139a3903f616",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_groups": {
+    "slot-control": {
+      "transitions": 30166,
+      "counts": {
+        "op-00": 27620,
+        "op-01": 1833,
+        "op-04": 713
+      }
+    },
+    "wait-variables": {
+      "transitions": 4884,
+      "counts": {
+        "op-26": 84,
+        "op-35": 1454,
+        "op-36": 23,
+        "op-37": 1875,
+        "op-38": 21,
+        "op-39": 1427
+      }
+    },
+    "slot-selection": {
+      "transitions": 29968,
+      "counts": {
+        "select": 29968
+      }
+    }
+  },
+  "limitations": [
+    "Independent review is outstanding.",
+    "Slot selections observe unique active minima and all-ended fallback; active-slot tie breaking has original source and synthetic evidence only.",
+    "Waits use immediate values 1,20,60 in budget mode one; variable waits, byte truncation and initialization-mode waits are not observed.",
+    "Variable selector 00/40 are observed for set, 00 for add and 40 for subtract. Other selector bits and arithmetic boundary behavior have source/synthetic evidence only.",
+    "Reset opcode 04 is observed only in budget mode one; its preservation of other budget values needs an original case.",
+    "Full actor eligibility, dispatch-loop behavior, concurrent scheduling, dialogue, movement, encounter/return and semantic readiness remain open.",
+    "The authored route is a candidate and does not satisfy the required battle, menu/save, media, visuals or sound-mode slice proofs."
+  ],
+  "provenance": {
+    "game_specific_sources": "Only the qualified original overlay, field package and original execution captures were consulted in this work. No other Xenogears implementation or reverse-engineering material was used.",
+    "authorship": "Project-authored Python reconstruction and tests with Codex assistance. No original instructions, event bytes, RAM, images or audio are distributed.",
+    "infrastructure": "Existing pinned external instruction-trace observation core and Nix analysis tools; dependency records and independent implementation boundary are unchanged."
+  },
+  "author": "Codex /root, original source and execution analysis on 2026-09-08",
+  "reviewers": [],
+  "source_snapshot_note": "The exact previously validated events.py and test_event_analysis.py are preserved locally before extended-dispatch additions. Their original hashes and results remain unchanged; new behavior requires separate evidence."
+}

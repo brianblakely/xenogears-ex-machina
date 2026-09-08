@@ -8,7 +8,7 @@
     "source_slot": 652,
     "track_lba": 124528,
     "entry": "Original entry dialogue and forest traversal",
-    "encounter": "Actor14–17 interaction entries request field formation0; actual selected trigger and outcome await original observation.",
+    "encounter": "Actor 14 event 2 queues selector zero and an ordinary four-enemy encounter-victory-return route is observed in EVID-REF-020. Complete semantics and the reviewed frozen route remain required.",
     "frozen_route": null
   },
   "review": {
@@ -28,7 +28,25 @@
         "na-slus-00669-5eab85c683d4"
       ],
       "reconstruction": [],
-      "open_work": "Exact sources, sectors, resource decoding, executable/overlay identity and lifecycle remains required before the Phase 1 exit."
+      "open_work": "Exact sources, sectors, resource decoding, executable/overlay identity and lifecycle remains required before the Phase 1 exit.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-014",
+          "scope": "Original decoder and source-memory boundary on three fields; full resource lifetime/loading proof remains open."
+        },
+        {
+          "finding": "EVID-REF-018",
+          "scope": "Two complete SMDS inputs and the initial 8192-byte WDS block match qualified source files. Full wave transfer and lifecycle remain open."
+        },
+        {
+          "finding": "EVID-REF-022",
+          "scope": "Two complete party sprite decodes, observed header/gravity/impulse/vertical stages, 14 synthetic tests, 53 rejected corruptions and full control equality. Animation, complete movement/collision, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-FIELD-REPRESENTATION",
@@ -40,7 +58,41 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Required field, geometry, sprite, animation, collision, camera, texture and palette structures remains required before the Phase 1 exit. Recover game-visible PS1 rendering behaviors needed by the optional fidelity settings, including projected-vertex precision, texture interpolation, color quantization, dithering, rasterization resolution, primitive ordering, and transparency. Capture representative original-game visual references. Recover the paths used by the frozen slice; full-game coverage stays open."
+      "open_work": "Required field, geometry, sprite, animation, collision, camera, texture and palette structures remains required before the Phase 1 exit. Recover game-visible PS1 rendering behaviors needed by the optional fidelity settings, including projected-vertex precision, texture interpolation, color quantization, dithering, rasterization resolution, primitive ordering, and transparency. Capture representative original-game visual references. Recover the paths used by the frozen slice; full-game coverage stays open.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-014",
+          "scope": "Selected bounded field/event/collision structures; geometry, rendering and movement remain open."
+        },
+        {
+          "finding": "EVID-REF-019",
+          "scope": "Exact original normalization, height, successful point-location and actor floor-normal stores; public synthetic tests, 22 rejected corruptions and unchanged controls. Full movement, contact, rendering and slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-022",
+          "scope": "Two complete party sprite decodes, observed header/gravity/impulse/vertical stages, 14 synthetic tests, 53 rejected corruptions and full control equality. Animation, complete movement/collision, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-023",
+          "scope": "Exact motion prefix/inhibition, A0 speed, sprite/field vectors, original trig lookups and committed PC stores; 16 synthetic tests, 82 rejected corruptions and 66 exact control artifacts. Full motion/VM, runtime field-sprite changes, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-024",
+          "scope": "729 exact sweeps,3230 queries,10538 areas,5594 heights and nested edge/slope math;36 authored tests,157 rejected corruptions and119 exact control artifacts. Later integration, hardware timing, independent review and full slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-025",
+          "scope": "69 full observed animation changes, 1,479 facing updates including 65 replays, 198 frame calls and 2,889 matrices; 33 authored tests, 67 rejected corruptions, 3,088 exact shared records and 66 exact controls. Other VM/resource/rendering paths, full movement, timing and slice completion remain open."
+        },
+        {
+          "finding": "EVID-REF-026",
+          "scope": "2,836 complete party motion calls, 729 computed sweeps, 40 animation changes and 5,868 compiled m2c predicate agreements. All 119 distinct control artifacts, 25 authored tests and 73 rejected corruptions pass. NPC paths, later integration, timing and broad slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-SCRIPT-EXECUTION",
@@ -52,7 +104,37 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Required bytecode, operands, scheduling, waits, dialogue, triggers and side effects remains required before the Phase 1 exit."
+      "open_work": "Required bytecode, operands, scheduling, waits, dialogue, triggers and side effects remains required before the Phase 1 exit.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-015",
+          "scope": "Exact operands and PCs for mode 40 comparisons 0,1,2,5 in the entry-dialogue route; all remaining script and scheduler work stays required."
+        },
+        {
+          "finding": "EVID-REF-016",
+          "scope": "65018 exact observed event-state and slot-selection transitions, synthetic tests, eleven rejected corrupted inputs and unchanged original controls; full scheduling, remaining handlers and route proofs stay required."
+        },
+        {
+          "finding": "EVID-REF-017",
+          "scope": "Exact original batch policy across 29993 batches and 73257 post-handler decisions, including initialization break suppression and 1025-dispatch safeguard. Handler semantics, actor eligibility, native/hardware cadence and complete slice proof remain required."
+        },
+        {
+          "finding": "EVID-REF-018",
+          "scope": "2921 original extended-prefix increments and 993 pending fe/a2 music waits; ready branch and remaining handlers remain open."
+        },
+        {
+          "finding": "EVID-REF-020",
+          "scope": "Repeatable ordinary encounter, victory, rewards, field return, movement and party-menu observation; exact slot/request stores and 124 control artifacts. Complete semantics, public reconstruction/fixtures and final review remain required."
+        },
+        {
+          "finding": "EVID-REF-021",
+          "scope": "4669 exact original control requests, 78 encounter early returns, three terrain predicates, 14 public fixtures, 22 rejected corruptions and complete uninstrumented control equality. Full physics/readiness and unobserved branches remain required."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Reviewed core C++ event execution and connected loader/state documentation; qualified battle/menu C surveys and corrected shared calling context. Complete handler, return, combat, menu and persistence behavior remains open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-FIELD-BEHAVIOR",
@@ -64,7 +146,45 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Original movement, running, jumping, collision, camera, interaction and map transitions remains required before the Phase 1 exit. Recover state ownership, action eligibility, menu/dialogue structure, event/control readiness, spawn/transition preconditions, and subsystem initialization needed for native agent queries and typed go-anywhere setup. Map original addresses and symbols to native semantic fields without making raw memory offsets the native API. Recover the paths used by the frozen slice; full-game coverage stays open."
+      "open_work": "Original movement, running, jumping, collision, camera, interaction and map transitions remains required before the Phase 1 exit. Recover state ownership, action eligibility, menu/dialogue structure, event/control readiness, spawn/transition preconditions, and subsystem initialization needed for native agent queries and typed go-anywhere setup. Map original addresses and symbols to native semantic fields without making raw memory offsets the native API. Recover the paths used by the frozen slice; full-game coverage stays open.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-019",
+          "scope": "Exact original normalization, height, successful point-location and actor floor-normal stores; public synthetic tests, 22 rejected corruptions and unchanged controls. Full movement, contact, rendering and slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-020",
+          "scope": "Repeatable ordinary encounter, victory, rewards, field return, movement and party-menu observation; exact slot/request stores and 124 control artifacts. Complete semantics, public reconstruction/fixtures and final review remain required."
+        },
+        {
+          "finding": "EVID-REF-021",
+          "scope": "4669 exact original control requests, 78 encounter early returns, three terrain predicates, 14 public fixtures, 22 rejected corruptions and complete uninstrumented control equality. Full physics/readiness and unobserved branches remain required."
+        },
+        {
+          "finding": "EVID-REF-022",
+          "scope": "Two complete party sprite decodes, observed header/gravity/impulse/vertical stages, 14 synthetic tests, 53 rejected corruptions and full control equality. Animation, complete movement/collision, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-023",
+          "scope": "Exact motion prefix/inhibition, A0 speed, sprite/field vectors, original trig lookups and committed PC stores; 16 synthetic tests, 82 rejected corruptions and 66 exact control artifacts. Full motion/VM, runtime field-sprite changes, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-024",
+          "scope": "729 exact sweeps,3230 queries,10538 areas,5594 heights and nested edge/slope math;36 authored tests,157 rejected corruptions and119 exact control artifacts. Later integration, hardware timing, independent review and full slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-025",
+          "scope": "69 full observed animation changes, 1,479 facing updates including 65 replays, 198 frame calls and 2,889 matrices; 33 authored tests, 67 rejected corruptions, 3,088 exact shared records and 66 exact controls. Other VM/resource/rendering paths, full movement, timing and slice completion remain open."
+        },
+        {
+          "finding": "EVID-REF-026",
+          "scope": "2,836 complete party motion calls, 729 computed sweeps, 40 animation changes and 5,868 compiled m2c predicate agreements. All 119 distinct control artifacts, 25 authored tests and 73 rejected corruptions pass. NPC paths, later integration, timing and broad slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-ENCOUNTER-RETURN",
@@ -76,7 +196,17 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Original encounter, targeting/actions, arithmetic, enemy behavior, reward and field return remains required before the Phase 1 exit."
+      "open_work": "Original encounter, targeting/actions, arithmetic, enemy behavior, reward and field return remains required before the Phase 1 exit.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-020",
+          "scope": "Repeatable ordinary encounter, victory, rewards, field return, movement and party-menu observation; exact slot/request stores and 124 control artifacts. Complete semantics, public reconstruction/fixtures and final review remain required."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Reviewed core C++ event execution and connected loader/state documentation; qualified battle/menu C surveys and corrected shared calling context. Complete handler, return, combat, menu and persistence behavior remains open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-MENU-PERSISTENCE",
@@ -88,7 +218,17 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Required menus, inventory/equipment, ordinary valid save/load and failure cases remains required before the Phase 1 exit."
+      "open_work": "Required menus, inventory/equipment, ordinary valid save/load and failure cases remains required before the Phase 1 exit.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-020",
+          "scope": "Repeatable ordinary encounter, victory, rewards, field return, movement and party-menu observation; exact slot/request stores and 124 control artifacts. Complete semantics, public reconstruction/fixtures and final review remain required."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Reviewed core C++ event execution and connected loader/state documentation; qualified battle/menu C surveys and corrected shared calling context. Complete handler, return, combat, menu and persistence behavior remains open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-REQUIRED-MEDIA",
@@ -100,7 +240,13 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Required music/samples/effects and an FMV-to-gameplay transition remains required before the Phase 1 exit. Trace original Mono, Stereo, and Wide sound paths, including panning/polarity, reverb, master output, and streamed/FMVs' routing. Capture matched unprocessed two-channel signals and establish Wide's actual changes and intended playback model from original-game evidence and primary documentation where available. Distinguish matrix encoding from phase-based stereo expansion before selecting a decoder. Recover the paths used by the frozen slice; full-game coverage stays open."
+      "open_work": "Required music/samples/effects and an FMV-to-gameplay transition remains required before the Phase 1 exit. Trace original Mono, Stereo, and Wide sound paths, including panning/polarity, reverb, master output, and streamed/FMVs' routing. Capture matched unprocessed two-channel signals and establish Wide's actual changes and intended playback model from original-game evidence and primary documentation where available. Distinguish matrix encoding from phase-based stereo expansion before selecting a decoder. Recover the paths used by the frozen slice; full-game coverage stays open.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-018",
+          "scope": "35 exact music polls/commits and six correlated sequence service calls. Full sequence/sample decoding, playback, Mono/Stereo/Wide and FMV remain open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-TIME-SERVICES",
@@ -112,7 +258,41 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Original update timing, hardware-facing intent and native service boundaries remains required before the Phase 1 exit."
+      "open_work": "Original update timing, hardware-facing intent and native service boundaries remains required before the Phase 1 exit.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-017",
+          "scope": "Exact original batch policy across 29993 batches and 73257 post-handler decisions, including initialization break suppression and 1025-dispatch safeguard. Handler semantics, actor eligibility, native/hardware cadence and complete slice proof remain required."
+        },
+        {
+          "finding": "EVID-REF-018",
+          "scope": "Source-derived asynchronous music-load policy with exact observed state and original service returns. Hardware/native cadence and player readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-022",
+          "scope": "Two complete party sprite decodes, observed header/gravity/impulse/vertical stages, 14 synthetic tests, 53 rejected corruptions and full control equality. Animation, complete movement/collision, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-023",
+          "scope": "Exact motion prefix/inhibition, A0 speed, sprite/field vectors, original trig lookups and committed PC stores; 16 synthetic tests, 82 rejected corruptions and 66 exact control artifacts. Full motion/VM, runtime field-sprite changes, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-024",
+          "scope": "729 exact sweeps,3230 queries,10538 areas,5594 heights and nested edge/slope math;36 authored tests,157 rejected corruptions and119 exact control artifacts. Later integration, hardware timing, independent review and full slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-025",
+          "scope": "69 full observed animation changes, 1,479 facing updates including 65 replays, 198 frame calls and 2,889 matrices; 33 authored tests, 67 rejected corruptions, 3,088 exact shared records and 66 exact controls. Other VM/resource/rendering paths, full movement, timing and slice completion remain open."
+        },
+        {
+          "finding": "EVID-REF-026",
+          "scope": "2,836 complete party motion calls, 729 computed sweeps, 40 animation changes and 5,868 compiled m2c predicate agreements. All 119 distinct control artifacts, 25 authored tests and 73 rejected corruptions pass. NPC paths, later integration, timing and broad slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+        }
+      ]
     },
     {
       "id": "P01-SLICE-REPRODUCIBILITY-REMAINDER",
@@ -124,7 +304,65 @@
         "na-slus-00664-39c547a9afc6"
       ],
       "reconstruction": [],
-      "open_work": "Original-data comparisons, public tests and explicit rest-of-game inventories remains required before the Phase 1 exit."
+      "open_work": "Original-data comparisons, public tests and explicit rest-of-game inventories remains required before the Phase 1 exit.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-014",
+          "scope": "Private original comparisons, synthetic bounds tests and unchanged reference controls."
+        },
+        {
+          "finding": "EVID-REF-015",
+          "scope": "Scoped event traces and explicit unresolved inventory; independent review and complete route remain required."
+        },
+        {
+          "finding": "EVID-REF-016",
+          "scope": "65018 exact observed event-state and slot-selection transitions, synthetic tests, eleven rejected corrupted inputs and unchanged original controls; full scheduling, remaining handlers and route proofs stay required."
+        },
+        {
+          "finding": "EVID-REF-017",
+          "scope": "Exact original batch policy across 29993 batches and 73257 post-handler decisions, including initialization break suppression and 1025-dispatch safeguard. Handler semantics, actor eligibility, native/hardware cadence and complete slice proof remain required."
+        },
+        {
+          "finding": "EVID-REF-018",
+          "scope": "Three private original comparisons with unchanged controls, 21 rejected original corruptions, current-decoder prior comparisons and public synthetic tests; complete domain remains open."
+        },
+        {
+          "finding": "EVID-REF-019",
+          "scope": "Exact original normalization, height, successful point-location and actor floor-normal stores; public synthetic tests, 22 rejected corruptions and unchanged controls. Full movement, contact, rendering and slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-020",
+          "scope": "Repeatable ordinary encounter, victory, rewards, field return, movement and party-menu observation; exact slot/request stores and 124 control artifacts. Complete semantics, public reconstruction/fixtures and final review remain required."
+        },
+        {
+          "finding": "EVID-REF-021",
+          "scope": "4669 exact original control requests, 78 encounter early returns, three terrain predicates, 14 public fixtures, 22 rejected corruptions and complete uninstrumented control equality. Full physics/readiness and unobserved branches remain required."
+        },
+        {
+          "finding": "EVID-REF-022",
+          "scope": "Two complete party sprite decodes, observed header/gravity/impulse/vertical stages, 14 synthetic tests, 53 rejected corruptions and full control equality. Animation, complete movement/collision, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-023",
+          "scope": "Exact motion prefix/inhibition, A0 speed, sprite/field vectors, original trig lookups and committed PC stores; 16 synthetic tests, 82 rejected corruptions and 66 exact control artifacts. Full motion/VM, runtime field-sprite changes, cadence and remaining slice requirements stay open."
+        },
+        {
+          "finding": "EVID-REF-024",
+          "scope": "729 exact sweeps,3230 queries,10538 areas,5594 heights and nested edge/slope math;36 authored tests,157 rejected corruptions and119 exact control artifacts. Later integration, hardware timing, independent review and full slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-025",
+          "scope": "69 full observed animation changes, 1,479 facing updates including 65 replays, 198 frame calls and 2,889 matrices; 33 authored tests, 67 rejected corruptions, 3,088 exact shared records and 66 exact controls. Other VM/resource/rendering paths, full movement, timing and slice completion remain open."
+        },
+        {
+          "finding": "EVID-REF-026",
+          "scope": "2,836 complete party motion calls, 729 computed sweeps, 40 animation changes and 5,868 compiled m2c predicate agreements. All 119 distinct control artifacts, 25 authored tests and 73 rejected corruptions pass. NPC paths, later integration, timing and broad slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-027",
+          "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+        }
+      ]
     }
   ],
   "facet_dispositions": [

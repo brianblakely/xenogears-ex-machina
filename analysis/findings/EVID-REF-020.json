@@ -1,0 +1,945 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-020",
+  "kind": "original_field_encounter_victory_return_observation",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 81580,
+        "window_bytes": 1980
+      },
+      "address": "0x8008399c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "973c768052da8e2c0630598c325452807cbc3c5ad221ce34dac9ec701a7afdd3",
+      "source_window_bytes": 1980
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 146040,
+        "window_bytes": 252
+      },
+      "address": "0x80093568",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "0a861eb6b3d40d6f4718901325007984b10dff5ce01ac555a620e5aa4ce564ca",
+      "source_window_bytes": 252
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 124528,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original field data bundle, not executable code; numeric source slot and selector retain distinct namespaces.",
+      "source_slot": 652,
+      "map_selector": 23,
+      "source_sha256": "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add"
+    }
+  ],
+  "observation": "A cold boot through the guarded field 23 adapter, followed only by ordinary inputs, reaches actor 14 interaction event 2, a four-enemy battle, victory, experience and item rewards, field return, movement and the party menu. The trace compares one complete event-slot insertion and six opcode 71 calls: five music-result retries and one accepted selector-zero request. All 124 whole-run control artifacts are identical.",
+  "interpretation": "This establishes a repeatable original encounter route and bounds the observed contact-slot and battle-request stores. The successful field return preserves the player position before subsequent ordinary movement. These observations supply a concrete route for combat, reward, menu and lifecycle reconstruction; they do not establish those complete semantics.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Use the exact selected Disc 1 source and pinned Nix observation-trace environment. Keep original payload private.",
+      "Keep the existing guarded field adapter separate from ordinary gameplay; this route adds no setup writes. Use fresh private capture and report names when reproducing."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace",
+      "python tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content \"discs/Xenogears disc 1.chd\" --output <new-private-control>",
+      "env PYTHONPATH=. python .local/analysis/phase1-field-interaction-20260908/prepare-request-v1.py (use a fresh spec output name)",
+      "python tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content \"discs/Xenogears disc 1.chd\" --trace-instructions <source-qualified-spec> --output <new-private-trace>",
+      "env PYTHONPATH=. python .local/analysis/phase1-field-interaction-20260908/audit-route-v1.py (point at the new captures and fresh report names)",
+      "env PYTHONPATH=. python .local/analysis/phase1-field-interaction-20260908/negative-route-v1.py (use the corresponding comparison and fresh output names)",
+      "python tools/analysis/verify_field.py --raw .local/references/source-1/disc.bin --ram <new-private-trace>/capture/ram-005902.bin --profile na-slus-00664-39c547a9afc6 --map 23 --output <new-private-source-comparison>; repeat for return frames 10762 and 10794",
+      "python tools/repository/check.py"
+    ],
+    "expected": "Exact source-qualified slot/request state changes and complete control equality, with visible victory, reward, field-return and menu checkpoints. Reject corruptions; retain the full Phase 1 backlog.",
+    "actual": "One event-2 insertion at frontend run 5903 and all six opcode-71 state changes match. The accepted selector is zero at run 5915. All 15 deliberately corrupted traces are rejected. All 124 capture artifacts match the control exactly. Source comparison passes before battle and twice after return. The final menu shows Fei level 2 with HP 50/56 and EP 10/11, Citan level 3 with HP 200/200 and EP 40/40, and 100 G.",
+    "result": "passed",
+    "tolerance": "Exact integer and sampled-byte equality, complete images/audio/RAM/external state, no masks. Visual reward observations do not establish formulas or native simulation timing.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/audit-route-v1.py",
+        "sha256": "e557d50c95431869472bc3d118ae901c70222d25ece84678495a2d0f22fda997",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/battle-request-spec-v1.json",
+        "sha256": "4c95b71fd22f4c3f0a68eba7d5e722308dc23c51d796e0d06262023a4f0e190e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/battle-route-v6.json",
+        "sha256": "5a92857bd32598dc522cdc4da83dfb7a7ff59d70ab44f72e85ff29a63cc24683",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/negative-route-v1.json",
+        "sha256": "02d1aeb1bc466a8b6ceab1b91d558c560da193ab8a402115a19507b4cfb00e52",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/negative-route-v1.py",
+        "sha256": "52cacef75ee43acb1b65fb4a355b0bdcd9a85f8fcf576082d01b14d8576e84c6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/prepare-request-v1.py",
+        "sha256": "f85d35ab25649baa9346d0ac4bfa446cabc441ac9f0ba67aaafee8105dad5235",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/record-route-v1.py",
+        "sha256": "4e44db3176ec86f198ed143d22aab2e72237c131af7a020b25de4be0890d86c7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/request-comparison-v1.json",
+        "sha256": "f113d8a3c8d74744d4efd8c51a195a70d4942480c8d267bb3e880a0145119bf7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/source-frame-10762-v1.json",
+        "sha256": "8f653392c9aac1eeccc00a989fbb3469074549dc9803b9e631d361252a8e51db",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/source-frame-10794-v1.json",
+        "sha256": "18fadf8b6e5fc75d2f7b310d1333dc87f266e169442fc586a1e5d81a7ef6933b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/source-frame-5902-v1.json",
+        "sha256": "0c4c7e3ae5312aa2b8060f89bec12d6a49e252df40ab5c872eca9ea61eebcb4e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-interaction-20260908/whole-route-control-v1.json",
+        "sha256": "c56703a1e29e89e69ec038df0a53c8c815cf09f2a1acd5af0e23d423cfec1021",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/observation.json",
+        "sha256": "494a78d0bbc7d3bb83effc77487d7bb39776bad397bd8e2ea74a08b3549b5784",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/report.json",
+        "sha256": "8fd4afc23bc8bc52ff7b86253ea07f56135376448b4fc97f48833e14b68004ff",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/instruction-trace.jsonl",
+        "sha256": "d7f4fb8a60572695c607a885bbc2671640a988c3e6e48503dabf37a262c4b902",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/observation.json",
+        "sha256": "efbc95c4ca2b9573b28bb8e780dffeeb0c4b832dc8240209e60fcb61f3be38c6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/report.json",
+        "sha256": "98dea157eaf2b87c83aaf754e72e03bc4c01168928ec0bd7f4dc4942815c7d27",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "analysis/formats/field-encounter-observations.md",
+        "sha256": "4789d40fafc1c2ab0966f40b24acdbb8dd6999b24edeac2285fba0abf4602089",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-encounter-observation.json",
+        "sha256": "5a92857bd32598dc522cdc4da83dfb7a7ff59d70ab44f72e85ff29a63cc24683",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "reviewers": [],
+  "observed_transitions": {
+    "result": "passed",
+    "counts": {
+      "candidate-before": 350,
+      "candidate-decision": 350,
+      "candidate-after": 350,
+      "slot-before": 1,
+      "request-before": 6,
+      "request-after": 6,
+      "request-resolved": 1
+    },
+    "slots": [
+      {
+        "frontend_run": 5903,
+        "actor": 14,
+        "event": 2,
+        "slot": 1,
+        "entry_pc": 2216,
+        "priority": 3,
+        "result": "exact"
+      }
+    ],
+    "requests": [
+      {
+        "frontend_run": 5905,
+        "pc_before": 2219,
+        "pc_after": 2219,
+        "outcome": "retry",
+        "music_result": 4294967295,
+        "selector": null,
+        "result": "exact"
+      },
+      {
+        "frontend_run": 5907,
+        "pc_before": 2219,
+        "pc_after": 2219,
+        "outcome": "retry",
+        "music_result": 4294967295,
+        "selector": null,
+        "result": "exact"
+      },
+      {
+        "frontend_run": 5909,
+        "pc_before": 2219,
+        "pc_after": 2219,
+        "outcome": "retry",
+        "music_result": 4294967295,
+        "selector": null,
+        "result": "exact"
+      },
+      {
+        "frontend_run": 5911,
+        "pc_before": 2219,
+        "pc_after": 2219,
+        "outcome": "retry",
+        "music_result": 4294967295,
+        "selector": null,
+        "result": "exact"
+      },
+      {
+        "frontend_run": 5913,
+        "pc_before": 2219,
+        "pc_after": 2219,
+        "outcome": "retry",
+        "music_result": 4294967295,
+        "selector": null,
+        "result": "exact"
+      },
+      {
+        "frontend_run": 5915,
+        "pc_before": 2219,
+        "pc_after": 2222,
+        "outcome": "accepted",
+        "music_result": 0,
+        "selector": 0,
+        "result": "exact"
+      }
+    ],
+    "scope": "Exact full actor-slot stores and sampled opcode 71 state changes; full contact eligibility, other selector modes, combat and reward formulas remain unresolved."
+  },
+  "visual_checkpoints": {
+    "battle_frame": 6582,
+    "victory_frame": 9230,
+    "level_up_frame": 9846,
+    "items_frame": 10154,
+    "field_return_frame": 10762,
+    "movement_frame": 10794,
+    "party_menu_frame": 11402
+  },
+  "position_observation": {
+    "representation": "original signed 16.16, x/y/z",
+    "before_battle": [
+      6298887,
+      -18874368,
+      -17383881
+    ],
+    "returned": [
+      6298887,
+      -18874368,
+      -17383881
+    ],
+    "after_movement": [
+      8264487,
+      -18874368,
+      -17383881
+    ]
+  },
+  "limitations": [
+    "Complete contact eligibility, movement/jump rules and other battle-request gates/selectors remain unresolved.",
+    "Combat formulas, target/menu eligibility, AI, experience/drop rules and complete reward/return lifecycle require source reconstruction and public fixtures.",
+    "Opcode 71 remains rejected by the public event disassembler. Native gameplay remains unimplemented.",
+    "Battle replaces the field overlay; field globals have no field meaning during that interval.",
+    "The candidate route is not the reviewed frozen slice manifest. All nine proof domains and 15 broad Phase 1 todos remain open."
+  ],
+  "author": "Codex /root, original source and execution analysis on 2026-09-08",
+  "provenance": {
+    "game_specific_sources": "Only the supplied original disc, executable/field data and original execution; no other Xenogears project or reverse-engineering results.",
+    "authorship": "Project-authored route, bounded comparisons and evidence prose with Codex assistance. Original payload remains private. The record-generation script is preserved as a historical artifact; the final command, authorship and distribution metadata were reviewed afterward."
+  }
+}

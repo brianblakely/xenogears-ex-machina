@@ -1,6 +1,7 @@
 """Invented registers/code/RAM exercise guarded, bounded instruction observations."""
 
 import copy
+import hashlib
 import unittest
 
 from tools.reference.instruction_trace import guarded_record, validate_instruction_trace
@@ -101,6 +102,109 @@ class InstructionTraceTests(unittest.TestCase):
         for variant in variants:
             with self.subTest(variant=variant), self.assertRaises(ValueError):
                 validate_instruction_trace(variant)
+
+    def test_scratchpad_aliases_read_only_the_bounded_backing_bytes(self):
+        scratchpad = bytearray(1024)
+        scratchpad[130:134] = bytes.fromhex("deadbeef")
+        memory_before, scratch_before = bytes(self.memory), bytes(scratchpad)
+        for base in (0x1F800000, 0x9F800000, 0xBF800000):
+            self.gpr[2] = base + 128
+            registers = list(self.gpr)
+            result = guarded_record(
+                self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory, scratchpad
+            )["ranges"][2]
+            self.assertEqual(result["hex"], "deadbeef")
+            self.assertEqual(result["resolved_space"], "scratchpad")
+            self.assertEqual(result["resolved_offset"], 130)
+            self.assertEqual(registers, self.gpr)
+        self.assertEqual(memory_before, bytes(self.memory))
+        self.assertEqual(scratch_before, bytes(scratchpad))
+
+    def test_scratchpad_reads_cannot_cross_into_ram_or_hardware(self):
+        scratchpad = bytes(1024)
+        for pointer, relative, reason in (
+            (0x1F800000, -1, "range_outside_scratchpad"),
+            (0x1F8003FE, 0, "range_outside_scratchpad"),
+            (0x1F800400, 0, "pointer_outside_system_ram"),
+            (0x1F801000, 0, "pointer_outside_system_ram"),
+            (0x9F7FFFFF, 1, "pointer_outside_system_ram"),
+        ):
+            self.gpr[2] = pointer
+            self.hook["ranges"][2]["relative_offset"] = relative
+            row = guarded_record(
+                self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory, scratchpad
+            )["ranges"][2]
+            with self.subTest(pointer=pointer, relative=relative):
+                self.assertEqual(row["unavailable"], reason)
+                self.assertNotIn("hex", row)
+        for wrong_size in (0, 1023, 1025, 8192):
+            with self.assertRaises(ValueError):
+                guarded_record(
+                    self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory, bytes(wrong_size)
+                )
+
+    def test_full_region_hashes_do_not_copy_payload_or_modify_state(self):
+        self.hook["digests"] = [
+            {"name": "fixed", "pointer_offset": 16, "size": 128, "max_bytes": 128},
+            {"name": "registers", "register": 2, "end_register": 3, "max_bytes": 128},
+        ]
+        self.gpr[3] = 0x80000100
+        validate_instruction_trace(self.spec)
+        memory, registers = bytes(self.memory), list(self.gpr)
+        result = guarded_record(self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory)
+        for digest in result["digests"]:
+            self.assertEqual(digest["sha256"], hashlib.sha256(memory[128:]).hexdigest())
+            self.assertEqual(digest["size"], 128)
+            self.assertNotIn("hex", digest)
+        self.assertEqual(bytes(self.memory), memory)
+        self.assertEqual(self.gpr, registers)
+
+    def test_digest_lengths_pointers_and_aliases_never_wrap(self):
+        self.hook["digests"] = [
+            {"name": "output", "register": 2, "end_register": 3, "max_bytes": 128}
+        ]
+        for start, end, reason in [
+            (0, 1, "null_pointer"),
+            (0x1F800000, 0x1F800004, "pointer_outside_system_ram"),
+            (0x80000080, 0x8000007F, "length_outside_digest_bound"),
+            (0x80000080, 0xA0000084, "length_outside_digest_bound"),
+            (0x80000080, 0x80000101, "length_outside_digest_bound"),
+            (0x800000FF, 0x80000101, "range_outside_exposed_ram"),
+        ]:
+            self.gpr[2:4] = [start, end]
+            result = guarded_record(self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory)
+            with self.subTest(start=start, end=end):
+                self.assertEqual(result["digests"][0]["unavailable"], reason)
+                self.assertNotIn("sha256", result["digests"][0])
+        self.gpr[2:4] = [0x80000080, 0x80000080]
+        result = guarded_record(self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory)
+        self.assertEqual(result["digests"][0]["sha256"], hashlib.sha256(b"").hexdigest())
+
+    def test_digest_pointer_source_is_bounded(self):
+        self.hook["digests"] = [{"name": "fixed", "pointer_offset": 254, "size": 1, "max_bytes": 1}]
+        result = guarded_record(self.hook, self.hook["pc"], 0x90420000, self.gpr, self.memory)
+        self.assertEqual(result["digests"][0]["unavailable"], "pointer_source_outside_exposed_ram")
+
+    def test_digest_configuration_and_hashing_budget_are_bounded(self):
+        valid = {"name": "digest", "register": 2, "end_register": 3, "max_bytes": 128}
+        variants = [[], [valid, valid]]
+        for key, value in [
+            ("register", 34),
+            ("end_register", -1),
+            ("max_bytes", True),
+            ("max_bytes", 0x200001),
+            ("size", 128),
+            ("pointer_offset", 16),
+            ("max_bytes", 0x200000),
+            ("name", "invalid/name"),
+            ("mutate", True),
+        ]:
+            variants.append([{**valid, key: value}])
+        variants += [[{k: v for k, v in valid.items() if k != key}] for key in valid]
+        for digests in variants:
+            self.hook["digests"] = digests
+            with self.subTest(digests=digests), self.assertRaises(ValueError):
+                validate_instruction_trace(self.spec)
 
 
 if __name__ == "__main__":

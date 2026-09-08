@@ -823,12 +823,27 @@ def validate(root: Path = ROOT) -> dict:
             f"{sorted(repository_files - names)}",
         )
     require(
-        {path.name for path in (root / "nix").iterdir()}
-        == {"flake.nix", "flake.lock", "reference-trace.h", "reference-trace-patch.py"},
+        {path.relative_to(root / "nix").as_posix() for path in (root / "nix").rglob("*")}
+        == {
+            "flake.nix",
+            "flake.lock",
+            "reference-trace.h",
+            "reference-trace-patch.py",
+            "ghidra",
+            "ghidra/flake.nix",
+            "ghidra/flake.lock",
+        },
         "Nix input boundary contains unexpected files",
     )
     require(
-        "../" not in (root / "nix/flake.nix").read_text(),
+        all(not path.is_symlink() for path in (root / "nix").rglob("*")),
+        "Nix input boundary must not contain symlinks",
+    )
+    require(
+        all(
+            "../" not in (root / name).read_text()
+            for name in ("nix/flake.nix", "nix/ghidra/flake.nix")
+        ),
         "Development flake must not import the repository/data parent",
     )
     return {

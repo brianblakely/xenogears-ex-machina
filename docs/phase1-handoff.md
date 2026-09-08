@@ -1,5 +1,11 @@
 # Phase 0 evidence and Phase 1 handoff
 
+This is the starting handoff. See [current Phase 1 progress](phase1-progress.md)
+for subsequent source reconstruction, original-data comparisons and open work.
+The [current source and state handoff](../analysis/formats/field-lifecycle.md)
+connects the reusable event library and position models to the qualified Ghidra
+surveys and the remaining subsystem dependencies.
+
 Phase 0 establishes the independent project's build, evidence standards, complete
 requirements matrix, original coverage inventory and go-anywhere reference test
 system. It does not implement native gameplay. No Phase 1 checkbox is complete,

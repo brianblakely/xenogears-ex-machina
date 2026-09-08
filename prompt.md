@@ -1,0 +1,1 @@
+/goal Read plan.md and spawn an agent for each phase in sequence. Each agent should use Astra Max and /goal mode. Tell each agent to execute the phase it is given extremely well. For all dev environment tooling, use nix, which you have authority to go outside your sandbox to do, if needed. When each todo is verified complete, mark it such in plan.md.

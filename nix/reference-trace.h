@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 typedef void (*xem_trace_callback)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t,
-                                   const uint32_t *, const uint8_t *);
+                                   const uint32_t *, const uint8_t *, const uint8_t *);
 
 static uint32_t xem_trace_pcs[16];
 static uint32_t xem_trace_pc_count;
@@ -16,7 +16,7 @@ static xem_trace_callback xem_trace_sink;
 
 #define XEM_TRACE_EXPORT __attribute__((visibility("default")))
 
-XEM_TRACE_EXPORT uint32_t retro_xem_trace_version(void) { return 1; }
+XEM_TRACE_EXPORT uint32_t retro_xem_trace_version(void) { return 2; }
 
 XEM_TRACE_EXPORT int retro_xem_trace_configure(const uint32_t *pcs, uint32_t count, uint32_t budget,
                                                xem_trace_callback callback) {
@@ -54,7 +54,7 @@ static inline void xem_trace_instruction(const psxRegisters *regs, uint32_t pc, 
         if (pc == xem_trace_pcs[i]) {
             xem_trace_seen++;
             xem_trace_sink(i, pc, code, regs->cycle, regs->subCycle, path, regs->GPR.r,
-                           regs->ptrs.psxM);
+                           regs->ptrs.psxM, regs->ptrs.psxH);
             return;
         }
     }

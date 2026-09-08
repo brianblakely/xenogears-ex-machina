@@ -32,8 +32,11 @@ remains open. [Checkpoint definitions](analysis/coverage/checkpoints.json) prepa
 both discs for original/native validation before gameplay implementation.
 
 The [Phase 1 handoff](docs/phase1-handoff.md) records exact starting evidence and
-the remaining analysis work. No later-phase implementation is claimed by this
-research baseline.
+the remaining analysis work. [Current Phase 1 progress](docs/phase1-progress.md)
+records bounded original format, event, movement and animation comparisons,
+including complete observed party motion updates composed from recovered source,
+together with their unresolved scope.
+The native runtime is still a build baseline.
 
 The [original-game scenario system](analysis/scenarios/README.md) cold-boots
 selected fields through the original loaders, records guarded setup and ordered

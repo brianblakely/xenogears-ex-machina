@@ -36,7 +36,10 @@ def normalize(vector: Vector, reciprocal_table: Sequence[int]) -> Vector:
     values = tuple(signed16(v) for v in vector)
     magnitude = sum(v * v for v in values)
     if magnitude == 0:
-        raise ValueError("unresolved original zero-vector normalization table read")
+        # Original LZCR=32 selects table index -64 and a final shift of 31.
+        # Every product is zero irrespective of that preceding halfword. The
+        # original trace qualifies the read; the semantic result needs no asset.
+        return (0, 0, 0)
     if magnitude > 0x7FFFFFFF:
         raise ValueError("original normalization ADD would overflow signed32")
     even_leading_zeroes = (32 - magnitude.bit_length()) & ~1

@@ -45,33 +45,24 @@ def private_output(path: Path) -> Path:
     return resolved
 
 
-def verify(raw: Path, ram_path: Path, profile_id: str, map_id: int) -> dict:
+def load_sources(raw: Path, profile_id: str, map_id: int) -> dict:
+    """Bind every source read to an exact revision and measured slot identity."""
+    if type(map_id) is not int or not 0 <= map_id < 730:
+        raise ValueError("Map selector outside catalog range")
     profiles = json.loads((ROOT / "analysis/reference-profiles.json").read_text())["profiles"]
-    profile_index, profile = next((i, p) for i, p in enumerate(profiles) if p["id"] == profile_id)
+    profile = next(p for p in profiles if p["id"] == profile_id)
+    disc = profile["disc_sequence"]
+    if disc not in (1, 2):
+        raise ValueError("No recovered source-slot mapping for this disc")
     raw_sha = file_sha(raw)
     if raw_sha != profile["measurement"]["source"]["raw_track"]["sha256"]:
         raise ValueError("Original raw-track fingerprint mismatch")
     catalog = json.loads((ROOT / "analysis/coverage/source-fingerprints.json").read_text())
     source = next(p for p in catalog["profiles"] if p["source_profile"] == profile_id)
     rows = {r[0]: dict(zip(source["records_columns"], r, strict=True)) for r in source["records"]}
-    pair_start = 606 if profile_index == 0 else 601
+    pair_start = 606 if disc == 1 else 601
     slot = pair_start + 2 * map_id
-    overlay_slot = 36 if profile_index == 0 else 31
-    ram = ram_path.read_bytes()
-    if len(ram) != 0x200000:
-        raise ValueError("Expected exactly 2 MiB original RAM")
-    if struct.unpack_from("<I", ram, 0x4F34C)[0] != map_id:
-        raise ValueError("Original captured field selector differs from selected map")
-
-    def original_ram(address: int, size: int) -> bytes:
-        if not 0x80000000 <= address <= 0x80200000 or size > 0x80200000 - address:
-            raise ValueError(f"Original RAM pointer outside selected address space: {address:#x}")
-        offset = address - 0x80000000
-        return ram[offset : offset + size]
-
-    def pointer(address: int) -> int:
-        return int.from_bytes(original_ram(address, 4), "little")
-
+    overlay_slot = 36 if disc == 1 else 31
     with raw.open("rb") as stream:
         cd = RawCd(stream, raw.stat().st_size)
 
@@ -89,6 +80,36 @@ def verify(raw: Path, ram_path: Path, profile_id: str, map_id: int) -> dict:
             raise ValueError("Original executable fingerprint mismatch")
         field_source = physical(rows[slot])
         overlay_packed = physical(rows[overlay_slot])
+    return {
+        "profile": profile,
+        "raw_sha256": raw_sha,
+        "field_record": rows[slot],
+        "overlay_record": rows[overlay_slot],
+        "exe": exe,
+        "field_source": field_source,
+        "overlay_packed": overlay_packed,
+    }
+
+
+def verify(raw: Path, ram_path: Path, profile_id: str, map_id: int) -> dict:
+    sources = load_sources(raw, profile_id, map_id)
+    exe, field_source = sources["exe"], sources["field_source"]
+    overlay_packed = sources["overlay_packed"]
+    ram = ram_path.read_bytes()
+    if len(ram) != 0x200000:
+        raise ValueError("Expected exactly 2 MiB original RAM")
+    if struct.unpack_from("<I", ram, 0x4F34C)[0] != map_id:
+        raise ValueError("Original captured field selector differs from selected map")
+
+    def original_ram(address: int, size: int) -> bytes:
+        if size < 0 or not 0x80000000 <= address <= 0x80200000 or size > 0x80200000 - address:
+            raise ValueError(f"Original RAM pointer outside selected address space: {address:#x}")
+        offset = address - 0x80000000
+        return ram[offset : offset + size]
+
+    def pointer(address: int) -> int:
+        return int.from_bytes(original_ram(address, 4), "little")
+
     overlay = decode_block(overlay_packed)
     decoder_source = exe[0x800 + 0x80032EB4 - 0x80010000 : 0x800 + 0x80032F54 - 0x80010000]
     if decoder_source != original_ram(0x80032EB4, len(decoder_source)):
@@ -160,12 +181,12 @@ def verify(raw: Path, ram_path: Path, profile_id: str, map_id: int) -> dict:
         "schema_version": 1,
         "kind": "private_original_field_structure_validation",
         "source_profile": profile_id,
-        "raw_track_sha256": raw_sha,
+        "raw_track_sha256": sources["raw_sha256"],
         "boot_executable_sha256": sha(exe),
         "map_selector": map_id,
-        "field_source": rows[slot],
+        "field_source": sources["field_record"],
         "field_physical_sha256": sha(field_source),
-        "field_overlay_source": rows[overlay_slot],
+        "field_overlay_source": sources["overlay_record"],
         "decoded_field_overlay_sha256": sha(overlay.data),
         "decoder_source_sha256": sha(decoder_source),
         "instruction_windows": windows,

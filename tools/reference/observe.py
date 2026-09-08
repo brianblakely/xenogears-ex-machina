@@ -541,7 +541,7 @@ def main() -> None:
                 name: sha256_file(ROOT / "nix" / name)
                 for name in ("flake.nix", "reference-trace.h", "reference-trace-patch.py")
             },
-            "core_extension_api_version": 1,
+            "core_extension_api_version": instruction_tracer.api_version,
             "point": "after_original_fetch_and_before_instruction_dispatch",
             "limitations": [
                 "Only configured addresses, guarded by original code windows, are recorded.",

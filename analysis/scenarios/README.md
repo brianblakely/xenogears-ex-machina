@@ -99,6 +99,15 @@ rejected. These are original-game reference observations. The shipped native
 runtime does not embed this core, and cold-boot repeatability is not evidence of
 native behavior or hardware equivalence.
 
+The `#observation-trace` shell additionally accepts `--trace-instructions` with
+source-qualified instruction guards. Optional `digests` on a hook hash a fixed
+memory region or a region bounded by two registers. Each region has an explicit
+byte limit; the callback budget bounds total hashing to 64 MiB per hook. The
+recorder rejects ambiguous pointer/length specifications and reports unavailable
+ranges instead of wrapping addresses. It reads RAM without changing registers,
+memory or emulated cycles. See the [decoder comparison](../formats/packed-field.md)
+for original uses of full-output hashes and actual source-boundary observations.
+
 ## Adapter backlog
 
 | Capability | Current status | Evidence needed to extend it |

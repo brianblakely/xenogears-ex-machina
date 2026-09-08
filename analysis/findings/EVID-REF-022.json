@@ -1,0 +1,1717 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-022",
+  "kind": "original_sprite_loading_and_jump_physics",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 46412,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001ad4c",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "13b71da4f2f7d9e9f598e38ddca23dde91710946df034cedb275c1342ecdb0cf",
+      "source_window_bytes": 364
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 48040,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001b3a8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "ef506d7e2b3a0738990ef28039311766a8adab07a3b0d3a2106a106a2d840f2b",
+      "source_window_bytes": 216
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 101488,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028470",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "0051629ad10ac9949e9229ef5a64dd36ac682f668d7e2cf1ed917e57c6eff2de",
+      "source_window_bytes": 68
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 102200,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028738",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "c96281fd764feeef74c61eeaf356be1f1613d70281f077d48bb78f60ce2ea5ff",
+      "source_window_bytes": 208
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 145076,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80032eb4",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "603f626038f3ee725fe0b5a79988343ff0aca07e6c2a72a95791d3d565f926ed",
+      "source_window_bytes": 160
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 35800,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800183d8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "ee73be97683cbf2affa5db0d128e5083ac4b273da3bc5c2f0bfc12bfb75ee0f8",
+      "source_window_bytes": 460
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 66532,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001fbe4",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "9411efafd1c30edf50ed99ff557d37b4d8913cb623b8f614a4f74c09a2ac3d3e",
+      "source_window_bytes": 80
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 74156,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800219ac",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "549035ea5e3f3f8ea8ab7f530ce2b656471180408026fca6cdd159fd764866e5",
+      "source_window_bytes": 152
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 74424,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021ab8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "5bb6d7ef555d6a079160302382902afbf7fc04dceba6ece3d9dbfb2d899ad637",
+      "source_window_bytes": 32
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 76324,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80022224",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "1a97dac50065b99f4cd744cb9296a2248e6e74b0859008b3b0bbbb4531179d71",
+      "source_window_bytes": 396
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 81208,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80023538",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "1d5ca6026b1c55acd8d2e76276d71cd158b704f9aba577e170d12d6fa72a0cc1",
+      "source_window_bytes": 288
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 85464,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800245d8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "22f2bfe2772245e73e4d32d302b2068a13dd514e04ed08d8d6935e5a53620698",
+      "source_window_bytes": 308
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 87724,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80024eac",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable instructions or sprite-command dispatch table; file_offset includes the PS-X EXE header and this window has no field overlay.",
+      "source_window_sha256": "bcdcf71ce7bce1b5e50dcb0ea9b80f8a698bc778571fd76b7717cc213ab6b78a",
+      "source_window_bytes": 84
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 69240,
+        "window_bytes": 104
+      },
+      "address": "0x80080968",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "528228675716d79cdbd89c0eddef72637921055760c0a57028ee5c0697747389",
+      "source_window_bytes": 104
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 75524,
+        "window_bytes": 392
+      },
+      "address": "0x800821f4",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "1adc0e1bb8383c36809070aeeef6e10e8685bff3c6a6b039031f3af257b90da0",
+      "source_window_bytes": 392
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 87404,
+        "window_bytes": 256
+      },
+      "address": "0x8008505c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "376c14e2dc15b5d997d1b27c838111126bdd481a2369459b0c20262fa1e9825c",
+      "source_window_bytes": 256
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 24,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original logical source index; this is source data, with no executable address.",
+      "source_slot": null,
+      "source_window_bytes": 30720,
+      "source_window_sha256": "3ae8e513a0f759eed5f39ff23594fc67a49ab601810b850c9f75e34979ab3afc"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 40,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original logical directory metadata; this is source data, with no executable address.",
+      "source_slot": null,
+      "source_window_bytes": 2048,
+      "source_window_sha256": "e42c60491ea11bb2a47ff86e8b33d882942fb876be4afba75c31412dcd8da2a3"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 119504,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original packed party sprite source. Decoded addresses and adjacent runtime input belong to the separately captured loader context.",
+      "source_slot": 427,
+      "source_window_bytes": 56632,
+      "source_window_sha256": "657d25413a07c2323c0856a8a9c3aefa9ae1e952cf4fb111eef97cced44450b3"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 119559,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original packed party sprite source. Decoded addresses and adjacent runtime input belong to the separately captured loader context.",
+      "source_slot": 429,
+      "source_window_bytes": 55060,
+      "source_window_sha256": "f551818a2e4b9c892674f746ed838e45b15cadd1388cb6f204c4787b848a7188"
+    }
+  ],
+  "observation": "Two original party sprite decodes reproduce all 163483 output bytes, including the captured adjacent source-memory inputs. Seventeen directory changes and 43 source-index observations correlate exactly. The qualified physics window compares 61 source-header gravity prefixes, six sprite-A1 impulses and 126 vertical stages: 63 airborne and 63 floor outcomes. All 53 corrupted traces are rejected, and both captures preserve all 66 artifacts from the independently built uninstrumented control.",
+  "interpretation": "The original jump impulse is supplied by sprite animation command A1, in a namespace separate from field-event bytecode. Observed headers supply gravity, and the bounded field stage integrates old velocity before acceleration and floor handling. Full animation, walking/running, floor selection and later collision/ceiling/layer response remain unreconstructed. This exact subset does not close player readiness or timing proof.",
+  "confidence": "supported",
+  "author": "Codex /root, independent original-source and execution analysis on 2026-09-08",
+  "reviewers": [],
+  "validation": {
+    "preconditions": [
+      "Use the exact selected original Disc 1, the pinned Nix shells and fresh private capture/report paths.",
+      "The existing field23 control route uses the previously qualified field adapter and ordinary inputs; no new setup writes are added.",
+      "The loader entry hook follows the MIPS argument-load delay. Observe adjacent source bytes rather than substituting disc padding."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "python tools/reference/scenario.py tests/reference-inputs/field23-control-observation.json --content \"discs/Xenogears disc 1.chd\" --sample-memory .local/analysis/phase1-field-motion-20260908/control-sampler-v1.json --output <new-private-control>",
+      "python tools/analysis/verify_jump_physics.py prepare-loader --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --output <new-private-loader-spec>",
+      "python tools/analysis/verify_jump_physics.py prepare-physics --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --ram <new-private-control>/capture/final.ram --output <new-private-physics-spec>",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace",
+      "Run the same scenario command twice, adding --trace-instructions <loader-spec> or <physics-spec> and distinct fresh output directories.",
+      "python tools/analysis/verify_jump_physics.py compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --loader-capture <loader-run>/capture --physics-capture <physics-run>/capture --output <new-private-comparison>",
+      "env PYTHONPATH=. python .local/analysis/phase1-field-motion-20260908/audit-jump-v2.py <fresh-version> (set capture paths when using new runs)",
+      "python -m unittest discover -s tests -p test_jump_physics.py -v",
+      "python tools/repository/check.py",
+      "python tools/repository/reproduce.py"
+    ],
+    "expected": "Exact original source, state, full output bytes, source boundaries and call correlations. Reject altered input/output evidence and preserve all independent control artifacts.",
+    "actual": "81 loader records and 7720 physics records qualify with no guard failures, unavailable ranges, exhausted budgets or collector errors. Two complete resource decodes, 61 gravity prefixes, six impulses and 126 vertical stages compare exactly. All 53 corruptions are rejected; each capture matches all 66 uninstrumented control artifacts. Fourteen public synthetic boundary tests pass.",
+    "result": "passed",
+    "tolerance": "Exact integer arithmetic and complete captured-byte/hash equality with original pointer storage, overlapping ranges, call order and return/stack checks. Other animation-command effects remain explicitly opaque. No output masks, universal cadence inference or hardware exception emulation.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/audit-jump-v1.py",
+        "sha256": "39d70ce3fd3d5638f47ec40756d82a941a03ffd3e31cd0f018ca5044e578b167",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/audit-jump-v2.py",
+        "sha256": "588cf3bdc727af59045cf6c09477b2c88eea7558f7b53b57823319ca93c0e8a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/control-sampler-v1.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/jump-comparison-v2.json",
+        "sha256": "cccf3cec0e06f12ab37dc99e02ba71636ddf75d41e7360854e60fb366b4c2266",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/jump-controls-v2.json",
+        "sha256": "c9179299ea05b3655693f3a1e65a55edead7d55c744c99fd4dc388ec5f0bf0d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/jump-negative-v2.json",
+        "sha256": "dbb0824ee07654b916a4a231d17de2768783dabfc0908950506eccda47f348a3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/jump-observed-inputs-v2.json",
+        "sha256": "acbd788bfbf0e84b5c841047a0937dd58bf43d05c97d3d435a1fcc40736ff360",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/party-loader-spec-v2.json",
+        "sha256": "8b7e6cd9d13f255aadd67be6e007775fc5853bfd8b587d38b1e5a8ff51f46a30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/physics-spec-v3.json",
+        "sha256": "07e974fd756e97ed75073454e4a6e3cec33aca3c37887f668d2101303264dc79",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/prepare-party-loader-v1.py",
+        "sha256": "46f72aaaaaff322d420c7b3e1da4e757728db39aeaacb0e1614526820a16038d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/prepare-party-loader-v2.py",
+        "sha256": "770ab324b492cba923527845df3d6f30287fb58dc08f27c213cc401589361ddc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/prepare-physics-v1.py",
+        "sha256": "070e568cee625264aa04133218491835c31c5584e183c9f7464f83c453d7d43a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/prepare-physics-v2.py",
+        "sha256": "67ebb54ec064ef7c7d7035209cb3b7ba24447c712c43aa496aeff1b58567d146",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/prepare-physics-v3.py",
+        "sha256": "82a8da685fcbf94368f867746741eddfb2a2b6141e282d2d286038842b7954e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/record-jump-v1.py",
+        "sha256": "a5227da43bacbf1c07b98946be24c5b15001550e1b889a8f463a9ab4114da708",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/observation.json",
+        "sha256": "da9c053886f6434c7080449667b3cd4f421c68a6a9faac0ab75375a8cb7d7286",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/report.json",
+        "sha256": "b94be9f6321d240d6b2551dcec238a29719533d1dc72596a344d1454565f640f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/instruction-trace-spec.json",
+        "sha256": "8b7e6cd9d13f255aadd67be6e007775fc5853bfd8b587d38b1e5a8ff51f46a30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/instruction-trace.jsonl",
+        "sha256": "86119df13daacb65b4c7ee3da91750ec36634050fd9294794b376850b0b852e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/observation.json",
+        "sha256": "2a9a3d3d084c71dce5f766de22f2c1acae4c36df1a819dcd832961012849bb1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/report.json",
+        "sha256": "4865a359f6d5049a27166d550aabe81619ceb764f61ed89a2191c8ea02538929",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/instruction-trace-spec.json",
+        "sha256": "07e974fd756e97ed75073454e4a6e3cec33aca3c37887f668d2101303264dc79",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/instruction-trace.jsonl",
+        "sha256": "aa1da86c5608cc497a100df2dfb4e760cbcc34080b58a3387bb8dd5c08855d0c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/observation.json",
+        "sha256": "c50cbda96b4c868fbd38b9062b36908212e17493a2f068835305b515012c6e5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-physics-20260908-v3-trace/report.json",
+        "sha256": "ada65edf77d1babcfef9fa49ad074280c89b9a9bbb701ea653b20a1710b2d6fd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "analysis/formats/jump-physics.md",
+        "sha256": "336bc3cd456487fa335e896007713c9ec21cc57f10170fc0b30e43ed109bb6b9",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-control-observation.json",
+        "sha256": "dcd7f8e25df15cb32bef04404eed350ddd0f154b606cb2278d5edc0a1e305ff3",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_jump_physics.py",
+        "sha256": "ecc9871100fc5aae50700dfa6e74d3b230b05b3d1111d84199b2169df7983000",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/jump_physics.py",
+        "sha256": "3b0d28544f5f084b6998ab8c0723d1d5b46bd802c574a1341191d56b620842ef",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/original_trace.py",
+        "sha256": "b02284e7430dcaa34eb6b6682bf321c7e8bfcba2ec02611d4f06a963f4ba140e",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/party_sprites.py",
+        "sha256": "1d116de4c34996b5e1eec4cf78be71a2c6ac37b3a09c489df9e41a5b7c6a7b27",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_jump_physics.py",
+        "sha256": "f9c59eab3f29687760696e3e5cbb94688719f4d38298c8f5bfee78bfbb407c9a",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_resources": [
+    {
+      "character_id": 0,
+      "party_index": 0,
+      "source": {
+        "slot": 427,
+        "source_lba": 119504,
+        "source_sector_count": 28,
+        "projected_bytes": 56632,
+        "projection_unit": 2048,
+        "projection_sha256": "657d25413a07c2323c0856a8a9c3aefa9ae1e952cf4fb111eef97cced44450b3",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "input_pointer": "0x80107228",
+      "output_pointer": "0x800cb210",
+      "frontend_entry": 463,
+      "frontend_return": 465,
+      "decoded_bytes": 81576,
+      "decoded_sha256": "8f5e5e99c04c0d8697e2b08004a4526586d27d3b0b912b349cbfd5179d2f34c5",
+      "token_bytes": 56634,
+      "source_bytes_read": 56635,
+      "token_bytes_beyond_catalog": 2,
+      "reads_beyond_catalog": 3
+    },
+    {
+      "character_id": 2,
+      "party_index": 1,
+      "source": {
+        "slot": 429,
+        "source_lba": 119559,
+        "source_sector_count": 27,
+        "projected_bytes": 55060,
+        "projection_unit": 2048,
+        "projection_sha256": "f551818a2e4b9c892674f746ed838e45b15cadd1388cb6f204c4787b848a7188",
+        "all_projected_bytes_zero": false,
+        "following_sector_gap": 0
+      },
+      "input_pointer": "0x80114f68",
+      "output_pointer": "0x800df218",
+      "frontend_entry": 465,
+      "frontend_return": 467,
+      "decoded_bytes": 81907,
+      "decoded_sha256": "3dfd39974ccc45799d6ea8227e850ef1ad72e0c1a5828d37378c72d86eb329d5",
+      "token_bytes": 55063,
+      "source_bytes_read": 55064,
+      "token_bytes_beyond_catalog": 3,
+      "reads_beyond_catalog": 4
+    }
+  ],
+  "observed_physics": {
+    "result": "passed",
+    "records": 7720,
+    "counts": {
+      "sprite-command-after": 7080,
+      "animation-before": 61,
+      "gravity-before": 61,
+      "gravity-after": 61,
+      "animation-after": 61,
+      "vertical-before": 126,
+      "vertical-terrain": 126,
+      "vertical-after": 126,
+      "impulse-before": 6,
+      "impulse-reference": 6,
+      "impulse-store": 6
+    },
+    "outcomes": {
+      "other_sprite_commands_opaque": 7074,
+      "gravity_prefixes": 61,
+      "animation_calls_correlated_not_fully_reconstructed": 61,
+      "vertical_floor": 63,
+      "impulses": 6,
+      "vertical_airborne": 63
+    },
+    "header_modes": {
+      "0x800cb210:mode3": 3,
+      "0x800df218:mode3": 3,
+      "0x800cb210:mode0": 10,
+      "0x800df218:mode0": 30,
+      "0x800cb210:mode1": 5,
+      "0x800df218:mode1": 5,
+      "0x800cb210:mode2": 2,
+      "0x800df218:mode2": 3
+    },
+    "impulses": [
+      {
+        "frontend_run": 4321,
+        "sprite_pointer": "0x80183778",
+        "source_base": "0x800cb210",
+        "velocity": -1359872,
+        "division_numerator": -348127232,
+        "used_reference": false,
+        "reference_value": 0
+      },
+      {
+        "frontend_run": 4339,
+        "sprite_pointer": "0x80184060",
+        "source_base": "0x800df218",
+        "velocity": -1359872,
+        "division_numerator": -348127232,
+        "used_reference": false,
+        "reference_value": 0
+      },
+      {
+        "frontend_run": 4701,
+        "sprite_pointer": "0x80183778",
+        "source_base": "0x800cb210",
+        "velocity": -1359872,
+        "division_numerator": -348127232,
+        "used_reference": false,
+        "reference_value": 0
+      },
+      {
+        "frontend_run": 4719,
+        "sprite_pointer": "0x80184060",
+        "source_base": "0x800df218",
+        "velocity": -1359872,
+        "division_numerator": -348127232,
+        "used_reference": false,
+        "reference_value": 0
+      },
+      {
+        "frontend_run": 4793,
+        "sprite_pointer": "0x80183778",
+        "source_base": "0x800cb210",
+        "velocity": -1359872,
+        "division_numerator": -348127232,
+        "used_reference": false,
+        "reference_value": 0
+      },
+      {
+        "frontend_run": 4793,
+        "sprite_pointer": "0x80184060",
+        "source_base": "0x800df218",
+        "velocity": -1359872,
+        "division_numerator": -348127232,
+        "used_reference": false,
+        "reference_value": 0
+      }
+    ]
+  },
+  "observed_input_domains": {
+    "cases": [
+      [
+        "gravity",
+        66,
+        8192,
+        256,
+        1,
+        61
+      ],
+      [
+        "vertical",
+        0,
+        0,
+        0,
+        false,
+        77
+      ],
+      [
+        "vertical",
+        0,
+        0,
+        0,
+        true,
+        49
+      ]
+    ]
+  },
+  "unobserved_source_branches": [
+    "Nonzero impulse velocity reference, reference-disabled path and differing operand/scale/rate/divisor values.",
+    "Different signed gravity coefficients, zero divisors and hardware exception behavior.",
+    "Terrain-disabled or different-attribute lookups, vertical-stage layer changes and terrain marker retention.",
+    "Negative animation modes and remaining sprite commands, resource/component formats and complete animation state changes."
+  ],
+  "limitations": [
+    "The two resources and this original route do not establish complete sprite formats, resource lifetime, all decoder callers or other profiles.",
+    "All 61 enclosing animation calls are correlated; 7074 other sprite-command returns are counted as opaque and are not claimed reconstructed.",
+    "The selected floor is an input. Complete walking/running, collision, layer, ceiling, rollback, history/follower and camera behavior remain required.",
+    "The source header/impulse values and observed every-second-frontend vertical updates do not establish universal game cadence or hardware timing.",
+    "Independent review, 15 broad Phase 1 todos and nine slice proof domains remain open. Native gameplay is unimplemented."
+  ],
+  "provenance": {
+    "game_specific_sources": "Only supplied original discs, binaries, data and original execution. No other Xenogears implementation or reverse-engineering results.",
+    "authorship": "Project-authored readable reconstruction, original-memory comparison codec, synthetic fixtures and prose with Codex assistance. Exploratory captures remain separate from the final clean v2 loader and v3 physics traces."
+  }
+}

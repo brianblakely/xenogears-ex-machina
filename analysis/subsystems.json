@@ -40,7 +40,9 @@
           "EVID-REF-001",
           "EVID-REF-002",
           "EVID-REF-004",
-          "EVID-REF-005"
+          "EVID-REF-005",
+          "EVID-REF-022",
+          "EVID-REF-027"
         ],
         "analyzed": [],
         "decompiled": [],
@@ -49,18 +51,20 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Selected source identities and observed directory/file arithmetic, including exact party-resource loading; full loader behavior remains open.",
       "unknowns": [
-        "Loader use of candidate table fields/groups and auxiliary sector40 metadata is untraced.",
-        "Gameplay categories and runtime resource IDs remain unrecovered."
+        "Remaining source groups, resource IDs, loader/allocator ownership and lifetime remain unrecovered."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Continue from the connected Ghidra/source dependency map in analysis/recovery.json; complete subsystem boundaries and independent review remain required."
     },
     {
       "id": "archives_and_compression",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-014",
+          "EVID-REF-022"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -68,17 +72,23 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "27 original field-component and two complete Disc1 party-sprite decoder calls are compared. Complete archive formats and caller/lifetime coverage remain open.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Full decoder caller inventory, archive formats and allocator/source-lifetime behavior remain unresolved.",
+        "Adjacent original RAM and physical disc-sector padding are distinct decoder input contexts."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Continue the bounded original-source experiments in analysis/recovery.json; complete slice coverage and independent review remain required."
     },
     {
       "id": "field_geometry_and_collision",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-014",
+          "EVID-REF-019",
+          "EVID-REF-022",
+          "EVID-REF-027"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -86,17 +96,22 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Selected immutable field/collision structures plus exact Disc 1 field 23 normalization, height, point-location and actor floor-normal arithmetic; full geometry/traversal remain open. The terrain lookup and 126 vertical stages also compare exactly.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Complete geometry/materials, adjacency, attributes/layers, floor/ceiling/rollback response, movement/contact and rendering remain unresolved; unobserved arithmetic and vertical-stage branches remain required."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Continue from the connected Ghidra/source dependency map in analysis/recovery.json; complete subsystem boundaries and independent review remain required."
     },
     {
       "id": "sprites_models_animation",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-022",
+          "EVID-REF-023",
+          "EVID-REF-025",
+          "EVID-REF-026"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -104,11 +119,11 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Two complete party resource decodes and the observed header/selection,facing replay,frame queue/metadata and sprite matrix updates are source-reconstructed andcompared. The ordinary animation VM,alternate resources/rendering and complete native behavior remain open. Party main motion now composes the recovered animation model in 40 complete changes across two original routes.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Remaining bundle/frame/pose geometry,ordinary commands/waits,resource rebinding/lifetime,alternate platform/frame/allocation/GTE paths and the 68 field-resource runtime changes remain unresolved."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Recover later position integration and NPC movement in primary Ghidra; extend remaining animation, follower/contact/camera, timing and readiness behavior. Broad slice proof and independent review remain required."
     },
     {
       "id": "camera_and_visibility",
@@ -130,9 +145,16 @@
     },
     {
       "id": "original_event_interpreter",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-015",
+          "EVID-REF-016",
+          "EVID-REF-017",
+          "EVID-REF-018",
+          "EVID-REF-021",
+          "EVID-REF-027"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -140,17 +162,25 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Original event package and 512 dispatch entries; ten reconstructed primary instructions with 16509 branch and 65018 state/selection comparisons; 29993 observed interpreter batches with 73257 exact post-handler decisions. Scope is the observed paths, with handler effects opaque in the batch comparison. Extended FE prefix PC changes and 993 pending a2 music waits also match original execution; ready and other extended paths remain open. Original a7 control requests compare exactly; 0c and alternate/counter paths retain explicit unobserved scope. A reusable C++ library now covers the core handlers, batching and actor pass; 81,527 existing original transitions match. Actor eligibility is source-reviewed with synthetic boundary checks.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Initialization sprite ownership, dialogue/concurrent actor effects, gate producers, unobserved modes and remaining instructions/runtime integration remain unresolved."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Continue from the connected Ghidra/source dependency map in analysis/recovery.json; complete subsystem boundaries and independent review remain required."
     },
     {
       "id": "movement_jump_and_encounters",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-021",
+          "EVID-REF-022",
+          "EVID-REF-023",
+          "EVID-REF-024",
+          "EVID-REF-025",
+          "EVID-REF-026",
+          "EVID-REF-027"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -158,11 +188,11 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Original direction/jump requests, sprite impulses/gravity/vertical stages, planar velocity, movement sweeps and animation subsets compare. EVID-REF-026 composes 2,836 complete party motion calls across two routes, including 729 sweeps and 40 main animation changes. Full position/layer integration, other actor paths and native gameplay remain open. EVID-REF-027 adds all 4,385 captured position calls, layer queries and history writes; active contacts, NPC motion and unobserved position branches remain open.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Complete walking/running, animation, floor/layer/ceiling/collision response, history/follower, active encounter selection, unobserved request/physics branches and readiness remain unresolved."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Continue from the connected Ghidra/source dependency map in analysis/recovery.json; complete subsystem boundaries and independent review remain required."
     },
     {
       "id": "rng_and_simulation_timing",
@@ -184,9 +214,11 @@
     },
     {
       "id": "on_foot_battles",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-020"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -194,11 +226,11 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Exact Disc 1 field23 ordinary encounter, victory/rewards and field return observed. No native gameplay implementation.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Formation/participant formats, command and target eligibility, combat/AI formulas, reward rules and full return lifecycle remain unresolved."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Qualify battle-overlay identity and trace authoritative combat, result-screen and return state using the observed ordinary route."
     },
     {
       "id": "gear_battles",
@@ -274,9 +306,12 @@
     },
     {
       "id": "audio_sequencing_samples_effects",
-      "stage": "unidentified",
+      "stage": "identified",
       "stage_evidence": {
-        "identified": [],
+        "identified": [
+          "EVID-REF-010",
+          "EVID-REF-018"
+        ],
         "analyzed": [],
         "decompiled": [],
         "natively_implemented": [],
@@ -284,11 +319,11 @@
       },
       "behavior_status": "unknown",
       "intentional_change_records": [],
-      "scope": "Both selected North American profiles; no gameplay implementation is present.",
+      "scope": "Exact Disc 1 candidate route: 35 music-loading polls and commits, two complete SMDS inputs and the first 8192-byte selected WDS block. Source-derived policy has synthetic tests; no native audio implementation exists.",
       "unknowns": [
-        "All original gameplay behavior in this subsystem remains unvalidated."
+        "Complete wave transfer, sequencing/sample/effect formats, lifetime and unobserved load paths, playback, Mono/Stereo/Wide and FMV routing remain unresolved."
       ],
-      "next_step": "Collect directly sourced original findings and qualify symbols/data with profile and overlay before advancing."
+      "next_step": "Continue analysis/recovery.json audio experiments and obtain independent review."
     },
     {
       "id": "fmv_and_media_sync",

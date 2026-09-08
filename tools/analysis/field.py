@@ -38,24 +38,28 @@ class FieldComponent:
         return self.decoded.data[: self.logical_size]
 
 
-def field_components(physical_source: bytes) -> tuple[FieldComponent, ...]:
+def field_components(source_memory: bytes) -> tuple[FieldComponent, ...]:
     """Decode the nine source offsets actually read by the original loader.
 
     logical_size is the field header's size, while the packed stream declares
     its own output size. Original allocation adds 16 bytes to the logical size.
     The final flag group can read into the next component and can write padding.
-    Therefore source slices are bounded by the whole measured physical resource,
-    not by the next component's start. Decoded padding is retained separately.
+    Therefore source slices include measured bytes beyond the next component's
+    start. Decoded padding is retained separately. The last component can read
+    beyond the source file into adjacent original RAM. Supplying disc-sector
+    padding instead reproduces that distinct input, not the loaded allocation's
+    padding (EVID-REF-014). Exact runtime comparisons need captured RAM context;
+    never append invented zeros to a truncated source.
     """
-    region(physical_source, 0, 0x154, "field header")
+    region(source_memory, 0, 0x154, "field header")
     result = []
     for index in range(9):
-        logical_size = u32(physical_source, 0x10C + 4 * index)
-        offset = u32(physical_source, 0x130 + 4 * index)
-        if offset < 0x154 or offset >= len(physical_source):
+        logical_size = u32(source_memory, 0x10C + 4 * index)
+        offset = u32(source_memory, 0x130 + 4 * index)
+        if offset < 0x154 or offset >= len(source_memory):
             raise FieldError(f"component {index}: invalid source offset +0x{offset:x}")
         decoded = decode_block(
-            physical_source[offset:], output_limit=min(logical_size + 16, 0x200000)
+            source_memory[offset:], output_limit=min(logical_size + 16, 0x200000)
         )
         if len(decoded.data) < logical_size:
             raise FieldError(f"component {index}: output is shorter than logical size")

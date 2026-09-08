@@ -1,0 +1,2027 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-025",
+  "kind": "original_sprite_animation_facing_replay_frame_queue_and_matrix",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 55984,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001d2b0",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "f874aa3192e347c3ce5ccbf8e437cde4c350fc54d434279f31b3a9984aab8b0f",
+      "source_window_bytes": 324
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 65360,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001f750",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "c0c0a4867aafc577cff547ee25ba63262300059e8114de652af80b28dded2401",
+      "source_window_bytes": 868
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 75000,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021cf8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "3812f85b2f4c361eb6f6137948c8c133a4818dd1037ce5c7f7ffdeb6a74b29cb",
+      "source_window_bytes": 68
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 75776,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80022000",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "70d1d00f7eef466f9c6a9a903503ac31c1d502d0c62a4c4b3e581cab7fff455b",
+      "source_window_bytes": 2420
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 79172,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80022d44",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "b35be3f1ea3b5fa68fc0c1d385aa66dd394675bacc125af23f727a1094a09663",
+      "source_window_bytes": 176
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 81068,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800234ac",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "0cf5ab95284a20e997e950aec063ee8804ee819ddd9141ba583a61f9c796d043",
+      "source_window_bytes": 856
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 85464,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800245d8",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "d52c695e37690895323b4e268f05d19b1f6943017563ca0611e671d36ffd7107",
+      "source_window_bytes": 1580
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 196408,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8003f738",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "7fc22ca6e32404ca5e686638cf10ed556c897420df23d54ce7b2e4fb9b8fe9e1",
+      "source_window_bytes": 376
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 236044,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004920c",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "2cdd7a947dcf65933864dc985431b443aff64da08fe0b62b26cd8e2cdc3c9a30",
+      "source_window_bytes": 268
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 237388,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004974c",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "1011aad3b6c547d9aae4abe7c7bbe570a07f69455a5c20b6a23b1ca3598ebaae",
+      "source_window_bytes": 292
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 239052,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80049dcc",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "6fa6bca1ebd36af6824a61f942ef870aa8600ab2b0d0bbc86ffa868c85a85629",
+      "source_window_bytes": 292
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 263232,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004fc40",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "f329de9c682e328cd9ca4718972691f3bb716046f2f57803c3a24e9b19326c0a",
+      "source_window_bytes": 256
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 273392,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800523f0",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Qualified resident instruction or lookup-table window; file_offset includes the PS-X EXE header. Broader source windows also contain unchanged code outside the reconstructed routines.",
+      "source_window_sha256": "b40c47b014ca8650c539760fd4c519cabce6f091628566ca0dd22318bb2c5b7a",
+      "source_window_bytes": 16384
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 16912,
+        "window_bytes": 256
+      },
+      "address": "0x80073d00",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "220ef9c0be961cfab9ed40a1d52b1640fe57c1ac14938e3531e8dd223c88cca8",
+      "source_window_bytes": 256
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 72720,
+        "window_bytes": 768
+      },
+      "address": "0x80081700",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "9b68c8905575de3f32d3beb9fa47735138db8cacb7728b8150a8431b65221ba8",
+      "source_window_bytes": 768
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 75524,
+        "window_bytes": 392
+      },
+      "address": "0x800821f4",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "1adc0e1bb8383c36809070aeeef6e10e8685bff3c6a6b039031f3af257b90da0",
+      "source_window_bytes": 392
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 78024,
+        "window_bytes": 1472
+      },
+      "address": "0x80082bb8",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "b20736141ce4812df2d9ab4e4d1322dae34af854e337cc95e6c21ce2c89d6846",
+      "source_window_bytes": 1472
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 85564,
+        "window_bytes": 276
+      },
+      "address": "0x8008492c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "ead266dfb95f8dee0c3d2cd27ccfab028a1b67ec196ae9d5049545f6b73ec789",
+      "source_window_bytes": 276
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 124528,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original packed field23 file; decoded component3 supplies the source sprite bundle directory and used frame/header/command windows.",
+      "source_slot": 652,
+      "source_window_bytes": 110052,
+      "source_window_sha256": "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 119504,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original party sprite resource; complete decoded input is qualified through the original loader and EVID-REF-022.",
+      "source_slot": 427,
+      "source_window_bytes": 56632,
+      "source_window_sha256": "657d25413a07c2323c0856a8a9c3aefa9ae1e952cf4fb111eef97cced44450b3"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 119559,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": null,
+      "overlay": null,
+      "address": null,
+      "address_space": null,
+      "not_applicable": "Original party sprite resource; complete decoded input is qualified through the original loader and EVID-REF-022.",
+      "source_slot": 429,
+      "source_window_bytes": 55060,
+      "source_window_sha256": "f551818a2e4b9c892674f746ed838e45b15cadd1388cb6f204c4787b848a7188"
+    }
+  ],
+  "observation": "The original control route supplies 69 complete field animation changes, 1,479 facing updates including 65 command replays, 198 frame scheduling calls, 119 frame lookups, 69 auxiliary clears, 33 previous-frame metadata calls and 2,889 matrices. Two recordings share 3,088 exact call records; all 66 independent control artifacts agree. All 33 authored tests pass and 67 corruptions are rejected.",
+  "interpretation": "Source-derived header, facing, replay, frame-list, metadata and matrix rules explain every captured effect. Header reset preserves facing-group bits, and orientation replay restores its original timer. Frame scheduling uses observed GP 80059170 and the list at 80059190. Matrix scaling overwrites its final padding halfword through a full-word store. Ordinary animation VM effects and other resource/rendering paths remain distinct.",
+  "confidence": "supported",
+  "author": "Codex /root, independent original-source Ghidra and execution analysis on 2026-09-08",
+  "reviewers": [],
+  "validation": {
+    "preconditions": [
+      "Exact supplied Disc 1/profile and the existing 5,241-run field 23 control route, unchanged guarded setup and recorded memory sampler.",
+      "Primary pinned Ghidra 12.1.2/PSX-loader project with reviewed partial types and source-matched selected exports; closed project and scripts remain private.",
+      "Separate uninstrumented control, original party-loader capture and two read-only instruction captures below their callback budgets; all original data remain local."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra",
+      "python -m tools.analysis.ghidra_project --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --output <new-private-import>",
+      "Use the private source-reviewed type/export scripts to reproduce the selected animation, matrix and replay exports. Apply the recorded observed GP context only to the reviewed functions.",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation",
+      "python tools/reference/scenario.py tests/reference-inputs/field23-control-observation.json --content \"discs/Xenogears disc 1.chd\" --output <new-private-control> --sample-memory .local/analysis/phase1-field-motion-20260908/control-sampler-v1.json (use the actual supplied content filename)",
+      "python -m tools.analysis.verify_sprite_animation prepare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --kind <animation|replay> --ram <control>/capture/final.ram --output <new-private-spec>",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace",
+      "Run the same route twice with its memory sampler and each generated --trace-instructions specification in a fresh private directory. Retain the qualified party-loader capture from EVID-REF-022.",
+      "python -m tools.analysis.verify_sprite_animation compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --control-capture <control>/capture --loader-capture <loader>/capture --animation-capture <animation>/capture --replay-capture <replay>/capture --ghidra-animation <animation-types-v2.json> --ghidra-matrix <matrix-functions-v1.json> --ghidra-replay <replay-functions-v2.json> --output <new-private-report>",
+      "env PYTHONPATH=. python .local/analysis/phase1-animation-20260908/negative-animation-v2.py (use new output versions for replay)",
+      "python -m unittest tests.test_sprite_matrix tests.test_sprite_animation tests.test_sprite_replay tests.test_animation_trace",
+      "python tools/repository/check.py",
+      "python tools/repository/reproduce.py"
+    ],
+    "expected": "Exact original source bytes, qualified tool/core/spec/call provenance, source-calculated intermediate and final effects, source resource reads and independent control equality. Reject changed outputs, unsupported sources and provenance substitutions.",
+    "actual": "Both specifications regenerate exactly. All selected Ghidra instructions match original source. Every observed matrix, header, selection, orientation, replay, frame and metadata effect compares; 169 replay steps, 36 list visits, 165 insertions and 205 metadata checkpoints match. Shared 3,088 records and 66 control artifacts are exact; 33 authored tests and 67 negative cases pass.",
+    "result": "passed",
+    "tolerance": "Exact integer, byte and hash equality over captured object/global storage and specified call relationships. Caller stack locals, uncaptured writes, GTE register side effects and hardware timing are not claimed.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-animation-20260908/animation-negative-v2.json",
+        "sha256": "5b182b33e9634f9778af4bd7c17e65dffbdcbb278032ecfe4522d900fa3f735a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/animation-negative-v2.log",
+        "sha256": "f48d2e6daa3b662f5e6a9ea76f5de18cd85b50236ec3426be4bb811e10a07020",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/animation-public-comparison-v3.json",
+        "sha256": "7593d416eb6bc428c5b90d577f3cd84b6fc2786991c28901a86eb9b32199c9e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/animation-spec-v1.json",
+        "sha256": "6e902589a1fbdd4acfc04169d1ef98aaacccfe0e4d92c894ea4e08d092e7b982",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/capture-replay-v1.log",
+        "sha256": "d231b0748ab6ece08572c6db42ee93edb2ffd21a2b44efeb5d41e8507064ab7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/capture-v1.log",
+        "sha256": "7c5c1e1f2ff6c1f5531170f9397c1dfb01efaf0be4aee8d3e44aaee43b568510",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/negative-animation-v2.py",
+        "sha256": "2cc473c5daaab1886e0fad2929901c52a2646661a6b28d06f5fd1600961c9576",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/prepare-animation-v1.py",
+        "sha256": "34786e6064f9bd5e1af62472c7248a977539538c049b2888fac587fe05b686b9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/prepare-replay-v1.py",
+        "sha256": "c710233b5437b715677462e159f52ccf39c13677b145f5d004da4aa5b588e678",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/public-model-tests-v4.log",
+        "sha256": "19d9d9ff76b453db48ca4d9db6e852aa9f8b6812d6ab0014a65f49ff06dba311",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/record-animation-v1.py",
+        "sha256": "960f3cc6ef31c44fc069cf6563735ba25e622b8502c8ca0ce36b0a1ceca78957",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-animation-20260908/replay-spec-v1.json",
+        "sha256": "0786a782b6a5187aa436aa21ca8373eff43824567cb0764230bde0f79b6226c6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-motion-20260908/control-sampler-v1.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/ExportOriginalAnalysis-qualified-v1.java",
+        "sha256": "95cd92c15f303196f8f85dbd92e0a0e3c57ffef2ada8bf5500ebd51fa820ad1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/ghidra_project-qualified-v1.py",
+        "sha256": "c35f9125207d61b2c948912aad45cee091c60bb9f32eb1f4a961dd02d4c307a2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/qualified-disc1-v1/sources.json",
+        "sha256": "deb4014780cfc42f8763d438d6b9d9d49097004a121b3c4054b1c834a48d0239",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/qualified-disc1-v1/verification.json",
+        "sha256": "5b6389fb2d811371d6b819b89baa88c12667e458d1592da7ec44309bbbee2e38",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.gpr",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/idata/00/00000000.prp",
+        "sha256": "9a08cf43169b7e19d36ef2edddd3aed266de9581da3e4878ccb1d3faef585011",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/idata/00/~00000000.db/db.6.gbf",
+        "sha256": "b1674560c2a2a4d042b2e57118fef9997f6fa0bb0b165ceea00a15608326fdc1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/idata/~index.bak",
+        "sha256": "65df5a3c8fd315d5af064c50ee82babe04de6fe24f578d13a375570e506662ae",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/idata/~index.dat",
+        "sha256": "65df5a3c8fd315d5af064c50ee82babe04de6fe24f578d13a375570e506662ae",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/project.prp",
+        "sha256": "b1bab6663c14b5771c9dcdf06a29f8685975a6578db136c80e2c8703580c24d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/user/00/00000000.prp",
+        "sha256": "9cea22b7e55d3a5f0c04472cb4319d285679e6eafa7ad4921085e6705318b662",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/user/00/~00000000.db/db.1.gbf",
+        "sha256": "a65d49d99b64688f8555800ab0ee94e48efa76510fecf523a1ea7da267f543fb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/user/~index.bak",
+        "sha256": "0a5034997e47499d758115fa580ad21d96557d2a32c89f2263bcfd3fa8a9a6e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/user/~index.dat",
+        "sha256": "733aa86c8ba321ddc93905720637769f41f1cb516e011e5dbec25599cd8d7387",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/user/~journal.bak",
+        "sha256": "0ec12522e7e1e1b5a7121d1fbc19707506294191ac928877ee15f78da718f54a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/versioned/~index.bak",
+        "sha256": "0a5034997e47499d758115fa580ad21d96557d2a32c89f2263bcfd3fa8a9a6e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/replay-disc1-v3-closed-project/original.rep/versioned/~index.dat",
+        "sha256": "0a5034997e47499d758115fa580ad21d96557d2a32c89f2263bcfd3fa8a9a6e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/animation-types-v2-console.log",
+        "sha256": "0dcd3fdb96b27ca9f02ee6cd644e23d114d99a110db1ddde6a61bb96f1934e82",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/animation-types-v2.json",
+        "sha256": "192d7630db20c30b7ca2dcd9929da50a63041029c3d58a3d7c2b3cc83ad2fd67",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/animation-types-v2.log",
+        "sha256": "be578483edd2a72053550137d8d725499a8884e8688f7d5af218cd956341cb61",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/matrix-functions-v1-console.log",
+        "sha256": "e6dc58eb7690dceb2badb14eb8290990e18d0d59669f1f2fac271a3f378aa103",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/matrix-functions-v1.json",
+        "sha256": "3fc4d3cded34915d02cf6ca4a357df0756a2a3ea08a8dea4566f36830743d873",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/matrix-functions-v1.log",
+        "sha256": "4d5c4283af278e8cd711d44137b06639180a9a64bde171614848feed96f4e960",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/replay-functions-v2-console.log",
+        "sha256": "37fce5ec5af7b31856a3848432b5a472e1623e96f1873a1d2d746a746817685f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/replay-functions-v2.json",
+        "sha256": "051d7f49ad34379b0f498b5e2388692ac8a75599f608374981b50f3cbbee0128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/reports/replay-functions-v2.log",
+        "sha256": "0904741e288781bcf2408d1a75614510a198ac3dd49b72de3ce049d594f58a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/scripts/ExportAnimationAnalysis.java",
+        "sha256": "376bf2c98778765e996b8564018faa6a5b7bd735ee6b56275ff48e4cb40efc51",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/scripts/ExportMatrixAnalysis.java",
+        "sha256": "637a22f61fbe6291dc01df95fb3f68564c93be415638f7bfcec7eb3128e963bf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/scripts/ExportReplayAnalysis.java",
+        "sha256": "5a6ee8ba71e28612a0e271387ace4c8d48f7755ecdb2e7fbbd27c5a8f9c75762",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/scripts/ReviewMotionTypes.java",
+        "sha256": "2c3982459e1056a2facc90fc2c23fefb7fdf0b17f8b5890736648f59fda503ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/ghidra/scripts/ReviewReplayTypes.java",
+        "sha256": "f597045f211cee676283237690f9187e3abcd5ab165483539167e8f9654cf3d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/instruction-trace-spec.json",
+        "sha256": "6e902589a1fbdd4acfc04169d1ef98aaacccfe0e4d92c894ea4e08d092e7b982",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/instruction-trace.jsonl",
+        "sha256": "69b7f46c230f2b2722a3525e98025269c451eadd3f6a867b6a53df7024cf9175",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/observation.json",
+        "sha256": "6cf5841856f8057874b739a69bf8684946c9a74e0151289ec93dec4bac8a9002",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/program.json",
+        "sha256": "e562b799444191f0d305a55e26971d1350087ff59b1550a577d8f2d01fb3caf2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/report.json",
+        "sha256": "baf8cd74a3678a249722aed7f8ca9950ee28599e2db1ac746e29ebcc17ff4a2c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/scenario.json",
+        "sha256": "dcd7f8e25df15cb32bef04404eed350ddd0f154b606cb2278d5edc0a1e305ff3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/observation.json",
+        "sha256": "da9c053886f6434c7080449667b3cd4f421c68a6a9faac0ab75375a8cb7d7286",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/program.json",
+        "sha256": "e562b799444191f0d305a55e26971d1350087ff59b1550a577d8f2d01fb3caf2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/report.json",
+        "sha256": "b94be9f6321d240d6b2551dcec238a29719533d1dc72596a344d1454565f640f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-control-20260908-v1-control/scenario.json",
+        "sha256": "dcd7f8e25df15cb32bef04404eed350ddd0f154b606cb2278d5edc0a1e305ff3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/instruction-trace-spec.json",
+        "sha256": "8b7e6cd9d13f255aadd67be6e007775fc5853bfd8b587d38b1e5a8ff51f46a30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/instruction-trace.jsonl",
+        "sha256": "86119df13daacb65b4c7ee3da91750ec36634050fd9294794b376850b0b852e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-party-loader-20260908-v2-trace/capture/observation.json",
+        "sha256": "2a9a3d3d084c71dce5f766de22f2c1acae4c36df1a819dcd832961012849bb1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/audio.wav",
+        "sha256": "f8e10eb5ebe89448141ecd35dfdf74aa17c97c9bdd9e23c828d36ad3347ddf0b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/final.ram",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/final.state",
+        "sha256": "6e7de2aefa026cb3b2a88724fe86e8890ab9997d3407e6fb8b58abd6983940ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004497.png",
+        "sha256": "197c0be9fa98dbe4445fd522300508bbb5b6f2010ffaff966c66f3e8c069c078",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004529.png",
+        "sha256": "2ba30e00c146edd15934eea1f47df42f4672cc82250bc6932acbaaf70fe1d419",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004561.png",
+        "sha256": "d07e98e5e0d32fb4b887a443ad9d9785b3cf7a2e6905caea1acc7c849cc76b32",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004593.png",
+        "sha256": "c61985829794b4646a8252501d8da7cab7caf7ee94834b645fdc08a2097471e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004625.png",
+        "sha256": "0113cfc5edbe0cec8997824dc0e6fe59767785cbaeb0ff8acc86ec20ac91be88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004661.png",
+        "sha256": "81a740abd4faac0c7faad359e8f6ea7efd6fff5c029c27b5b381dd440a2d63cd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004697.png",
+        "sha256": "536aa09c9a707e946f77e2181dcba8e60bfd1691e7bc08f8b96827b0265d9a7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004705.png",
+        "sha256": "d39fd42b4722178b2e08a5b6bf0cce49de0966b7f32c82573abb5973c87e652f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004789.png",
+        "sha256": "8d9d2ae45178a4ca7528865b4dcc257fb3909a6c477c49b35bfbd694db67e7a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004800.png",
+        "sha256": "8e925206f9eace4712c284b2cd2fdcafdbd0d27dde7f88f5c4d2202cfc934161",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004885.png",
+        "sha256": "d8a7d6d4a10db5d1727b2d1aa8282f27095f2d9718bbabf32932969df33c1ccd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004921.png",
+        "sha256": "b06a360613a58a043cecb3d06036512e51b95d13fba3426aac7c13a83d4688c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-004989.png",
+        "sha256": "2da26fc2de11bd6c1ae7abe54c2e0c722e577469189819dbcf88d94c304480d7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-005021.png",
+        "sha256": "2be49a129cbc861b67ad63fb83666a3690ac3cefe356a5cf290c27bfa09d5242",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-005089.png",
+        "sha256": "7d31db573aa2459d694ff1576862cf2ff2ea2ac89b9b436fe1a4b3cbb7d9e128",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-005121.png",
+        "sha256": "2fc91a9b4ee58241d63b7acd8da995b431257922f0ec6fd92484eb0e4b7256bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/frame-005241.png",
+        "sha256": "f50fc83604a11c41a5976b8c27f1be68b22b70cc7cf1c9b11b06040cab96a44c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/instruction-trace-spec.json",
+        "sha256": "0786a782b6a5187aa436aa21ca8373eff43824567cb0764230bde0f79b6226c6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/instruction-trace.jsonl",
+        "sha256": "83b3865ceba7594f0a5057fff57812f6c1b1441f77fb4d479e8482220abb515b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/memory-sampling.json",
+        "sha256": "d76999ff350d75979849ad291b25b7c1fb1bf461e32b8e67a463dd1d86fb5b9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/memory-trace.jsonl",
+        "sha256": "b357cb152efe4af100938a76221052c89281699313b6315fe73a0665ebe662ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/observation.json",
+        "sha256": "d845c88d8c93e1f175b8431d8c22e4de45c0ef838411622a30beb18d2ec619bf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004497.bin",
+        "sha256": "0c7ef3abd45c49c97793f4778cea4a744a4c022e03fe1107fc26b4c2750df08a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004529.bin",
+        "sha256": "1749c9bd0d92bffba65145486d985fa237597b5b7be192e6d4324b4d34742537",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004561.bin",
+        "sha256": "d353cc323b639d2e0e1ef770f1707e8d9bc3c566eaa95155687b97d60ec3d3d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004593.bin",
+        "sha256": "a18dab690918b2dddd1913c63145dfb9826eb4dc24f85d71f14d87473fc8fbf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004625.bin",
+        "sha256": "bc0e4c373d31cdc545c5b894b55cb9aabf2be39c0d2e9012e85f46de890f15a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004661.bin",
+        "sha256": "1d0881b52809059a6382a209c61b0d84d357fcb0efcdd89ae8a4401fb40dffd3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004697.bin",
+        "sha256": "a6742d875fe82f21729a8ad82254649776bbcc0eb85b3c5f5429510ee52ca148",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004705.bin",
+        "sha256": "c1db74e95114e3c40c09e022288d5df38498753414203b754d1cb8acc47e0906",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004789.bin",
+        "sha256": "8b46c97a1e2cfe0aa6f9face8a0b15c6f82eb8829839957e6e3e67ea29e0a82e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004885.bin",
+        "sha256": "6b04387ca1d259838123d085960f2c4a7953dd9f8de8c313eb102b8d53ce4291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004921.bin",
+        "sha256": "27c04f6f7518dbf8f06668194e8e95a934d6e609ac6c4a62f610e641b521bff6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-004989.bin",
+        "sha256": "66e974572936857f80c50ab1aef6c2d416e77cb17cfaaedaf2726cc60cc84867",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-005021.bin",
+        "sha256": "460df2eb09aa5d11da0b8e45a8aa2d14e49e3e09eac961208f64aa6ee230a5d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-005089.bin",
+        "sha256": "45ea6eb0b0e434a7050ab0a3e994dcf708ce511840943acf39f0196af98902d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-005121.bin",
+        "sha256": "5f5f55761ef695971b6b694f83b9e35687c74b85460daf3e15cbbb09c06b15c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture/ram-005241.bin",
+        "sha256": "3f44ae51f492b77d68387fbe5c3aa6a911e7cb7e9abe30aa9ce39f1fcd6f1c7d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/program.json",
+        "sha256": "e562b799444191f0d305a55e26971d1350087ff59b1550a577d8f2d01fb3caf2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/report.json",
+        "sha256": "8d8a2e256deec832408c385a638baa40b4cc77a87043dcd9b9e12e4ebd279cd5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/scenario.json",
+        "sha256": "dcd7f8e25df15cb32bef04404eed350ddd0f154b606cb2278d5edc0a1e305ff3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "analysis/formats/sprite-animation.md",
+        "sha256": "8892830b86f6f55effe53181ee73837861aaeda1a3216a1cd14e50f18797180b",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "nix/ghidra/flake.lock",
+        "sha256": "438272c6750d3aafed5cf1cd8a61ca9f7e41f1e846cc8de697f23392be40ff60",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "nix/ghidra/flake.nix",
+        "sha256": "4009603e0d590a71c09b6c2a9d63d49e777f1c0e0d30888c5f6589f148ea08d2",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-control-observation.json",
+        "sha256": "dcd7f8e25df15cb32bef04404eed350ddd0f154b606cb2278d5edc0a1e305ff3",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/sprite_fixtures.py",
+        "sha256": "91cb8f683a3324bce377b4696fcab439946364f22de8f45a77dc498006bde83b",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_animation_trace.py",
+        "sha256": "5e28613ff7fbfa75c14f0bb480e132dc64b7b346ee1152bf17598064105b198f",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_sprite_animation.py",
+        "sha256": "bbd452f7de4ccf899b30c449c7cf89dca94b9920dc9da9f87562c0931559b5d2",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_sprite_matrix.py",
+        "sha256": "ddb304ea8a869f4ed530d8ab7aaef7232197e9631a36d00c62f61622b1245b52",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_sprite_replay.py",
+        "sha256": "42de43b6c4997137cecb8f25abbbfb0f28faad99c3a54407ca1615599bbe37ba",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/animation_trace.py",
+        "sha256": "c36ad1a47a69ff2aa0db7734a56a290a17c75833004dbf4aeb687b46f6ae7281",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/ghidra/ExportOriginalAnalysis.java",
+        "sha256": "2f1e5bcabce0771394f229caf6d8974acfe5fd526d02c7ba280628f612794948",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/ghidra/PrepareOriginalProgram.java",
+        "sha256": "3cd29964680ceafd263815d836bd09997de6056a99fabcfffd6e21bee971deb2",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/ghidra_project.py",
+        "sha256": "ce95f032a5acb6e518bc0bf886110fda15d1ff39ad17de7911eee43e651d4135",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/replay_trace.py",
+        "sha256": "3c5a7be5f93950ee1f13fb783c0d9bd03c3271820e25d32e2ea8aea157ed4949",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/sprite_animation.py",
+        "sha256": "c12e3e3e53d4a0f90713623dd50a6b514d2c71edef28b3647d1cc5b8837894d2",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/sprite_matrix.py",
+        "sha256": "05ef14b005cf6934e0fb3cfcde43c88051d6853fd86b72b3f133191dd5f404dc",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/sprite_replay.py",
+        "sha256": "a918e6c5c90336c7f47e73b2f9e56b0d2e14c13093b54e583443c347007a87a4",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/sprite_state.py",
+        "sha256": "fcb1d6df75d0e44139a64d0ab0cd06b82b7fae09ac4007691430ec4bf27c3c64",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_sprite_animation.py",
+        "sha256": "054a0a497037b24533d40cbfd25bcd8abefaf5c31f4986d6e9f1d84f9276ce0a",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_operations": {
+    "animation": {
+      "counts": {
+        "orientation": 1479,
+        "matrix": 2889,
+        "bind": 69,
+        "header": 69,
+        "select": 69,
+        "field-animation": 69,
+        "replay": 65
+      },
+      "callers": [
+        [
+          "bind",
+          "0x80024698",
+          69
+        ],
+        [
+          "field-animation",
+          "0x80081914",
+          32
+        ],
+        [
+          "field-animation",
+          "0x80081998",
+          13
+        ],
+        [
+          "field-animation",
+          "0x800830f4",
+          24
+        ],
+        [
+          "header",
+          "0x8002470c",
+          69
+        ],
+        [
+          "matrix",
+          "0x80022068",
+          2820
+        ],
+        [
+          "matrix",
+          "0x800236b8",
+          69
+        ],
+        [
+          "orientation",
+          "0x80024718",
+          69
+        ],
+        [
+          "orientation",
+          "0x80073db4",
+          1410
+        ],
+        [
+          "replay",
+          "0x80022614",
+          65
+        ],
+        [
+          "select",
+          "0x800822d0",
+          69
+        ]
+      ]
+    },
+    "replay": {
+      "counts": {
+        "orientation": 1479,
+        "clear": 69,
+        "frame": 198,
+        "lookup": 119,
+        "replay": 65,
+        "previous-frame": 33
+      },
+      "steps": {
+        "frame-insert": 165,
+        "lookup-frame-call": 119,
+        "replay-replay-step": 169,
+        "orientation-replay-step": 169,
+        "previous-frame-part": 205,
+        "frame-list-step": 36,
+        "frame-previous-call": 33
+      },
+      "callers": [
+        [
+          "clear",
+          "0x8001d320",
+          69
+        ],
+        [
+          "frame",
+          "0x8002274c",
+          12
+        ],
+        [
+          "frame",
+          "0x80022de4",
+          119
+        ],
+        [
+          "frame",
+          "0x800249b8",
+          67
+        ],
+        [
+          "lookup",
+          "0x80022724",
+          50
+        ],
+        [
+          "lookup",
+          "0x80024990",
+          69
+        ],
+        [
+          "orientation",
+          "0x80024718",
+          69
+        ],
+        [
+          "orientation",
+          "0x80073db4",
+          1410
+        ],
+        [
+          "previous-frame",
+          "0x8001d398",
+          33
+        ],
+        [
+          "replay",
+          "0x80022614",
+          65
+        ]
+      ]
+    },
+    "captures": {
+      "animation": {
+        "capture": ".local/scenarios/phase1-field23-animation-20260908-v1-trace/capture",
+        "records": 9418,
+        "observation_sha256": "6cf5841856f8057874b739a69bf8684946c9a74e0151289ec93dec4bac8a9002",
+        "trace_sha256": "69b7f46c230f2b2722a3525e98025269c451eadd3f6a867b6a53df7024cf9175",
+        "specification_sha256": "6e902589a1fbdd4acfc04169d1ef98aaacccfe0e4d92c894ea4e08d092e7b982"
+      },
+      "replay": {
+        "capture": ".local/scenarios/phase1-field23-replay-20260908-v1-trace/capture",
+        "records": 4501,
+        "observation_sha256": "d845c88d8c93e1f175b8431d8c22e4de45c0ef838411622a30beb18d2ec619bf",
+        "trace_sha256": "83b3865ceba7594f0a5057fff57812f6c1b1441f77fb4d479e8482220abb515b",
+        "specification_sha256": "0786a782b6a5187aa436aa21ca8373eff43824567cb0764230bde0f79b6226c6"
+      }
+    },
+    "ghidra": {
+      "animation": {
+        "path": ".local/ghidra/reports/animation-types-v2.json",
+        "sha256": "192d7630db20c30b7ca2dcd9929da50a63041029c3d58a3d7c2b3cc83ad2fd67",
+        "functions": 11,
+        "source_instructions": 1050
+      },
+      "matrix": {
+        "path": ".local/ghidra/reports/matrix-functions-v1.json",
+        "sha256": "3fc4d3cded34915d02cf6ca4a357df0756a2a3ea08a8dea4566f36830743d873",
+        "functions": 4,
+        "source_instructions": 307
+      },
+      "replay": {
+        "path": ".local/ghidra/reports/replay-functions-v2.json",
+        "sha256": "051d7f49ad34379b0f498b5e2388692ac8a75599f608374981b50f3cbbee0128",
+        "functions": 6,
+        "source_instructions": 489
+      }
+    },
+    "resource_reads": {
+      "animation": {
+        "reads": 621,
+        "distinct_windows": 50
+      },
+      "replay": {
+        "reads": 3587,
+        "distinct_windows": 475
+      }
+    }
+  },
+  "source_dependencies": [
+    "EVID-REF-014",
+    "EVID-REF-022",
+    "EVID-REF-023",
+    "EVID-REF-024"
+  ],
+  "unobserved_source_branches": [
+    "Different/negative resource selections, alternate platform/model dispatch and resource initialization remain explicit failures.",
+    "Original replay uses A0, 15, 13 and 05 on this route. Other source-reconstructed cases, including S3 duration carry, B3, BE, E2 and packed-stack aliasing, have authored fixtures but no original-run claim here.",
+    "Facing modes 1/3, other header flags/angles/rates/divisors, nonunit or extra matrix scales, alternate frame formats, allocation and GTE product remain outside the observed domain. Source-only implementations are distinguished from explicit unresolved branches."
+  ],
+  "limitations": [
+    "Two captures describe the same input route; shared orientation/replay calls are correlated rather than treated as additional independent executions.",
+    "The 512-byte captured sprite view includes pointed and trailing storage; only its source-reviewed fields are named. It is not a complete original structure-size claim.",
+    "Resource rebinding/lifetime, ordinary VM side effects, complete frame geometry, renderer/texture/palette behavior and 68 previously recorded field-resource runtime byte changes remain open.",
+    "Complete active motion composition, later position/layer/floor/ceiling/rollback, followers/camera/contact, hardware cadence and semantic readiness remain required.",
+    "Observed GP 80059170 qualifies the selected original entries, not the entire program. Extra Ghidra exports do not imply complete function reconstruction.",
+    "All 15 broad Phase 1 todos and nine slice domains remain open; independent review and native gameplay remain unimplemented."
+  ],
+  "provenance": {
+    "game_specific_sources": "Only supplied original discs, binaries, data and execution; no other Xenogears source or reverse-engineering results.",
+    "primary_analysis": "Pinned Ghidra with lab313ru/ghidra_psx_ldr, original-derived partial types and source-qualified function/Pcode review. Secondary original instruction listings cross-check arithmetic and store order.",
+    "authorship": "Independent public byte/algorithm models, strict source and trace verifier, authored synthetic fixtures and prose. Original bytes, generated pseudocode and Ghidra databases remain private."
+  }
+}

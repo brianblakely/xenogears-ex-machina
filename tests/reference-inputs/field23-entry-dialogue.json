@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "name": "phase1-field-23-route",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "entry": {
+    "type": "field",
+    "map": 23
+  },
+  "launch": {
+    "ready": "map",
+    "timeout_frames": 5000,
+    "settle_frames": 600
+  },
+  "steps": [
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    }
+  ]
+}

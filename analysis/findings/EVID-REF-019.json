@@ -1,0 +1,340 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-019",
+  "kind": "original_field_collision_arithmetic",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 234876,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80048d7c",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable code or normalization-table window; file_offset includes its PS-X EXE header and this location has no field overlay.",
+      "source_window_sha256": "c8f498f8d478f193d4ae53ddf77292985c97144a01fe6347b3cc275f8f4ab32a",
+      "source_window_bytes": 280
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 240768,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004a480",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable code or normalization-table window; file_offset includes its PS-X EXE header and this location has no field overlay.",
+      "source_window_sha256": "51199c0b60ef58f1d276b5423b81401363531c429c7f335b84fdef9f4c3b1934",
+      "source_window_bytes": 88
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 46476,
+        "window_bytes": 1020
+      },
+      "address": "0x8007b07c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "e2b599ed61fd043faff3e60697878d58b36da7c96a37bc25f7ebef1b2db23c1d",
+      "source_window_bytes": 1020
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 87228,
+        "window_bytes": 32
+      },
+      "address": "0x80084fac",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream.",
+      "source_window_sha256": "fd25ff4c78c89453a0f1dfc24d7e29198b843d052fda67e0501ce0d7a4d0e599",
+      "source_window_bytes": 32
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 291604,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80056b14",
+      "address_space": "PS1 KSEG0 in the exact Disc 1 resident executable",
+      "not_applicable": "Resident executable code or normalization-table window; file_offset includes its PS-X EXE header and this location has no field overlay.",
+      "source_window_sha256": "7e7e21906ffb76fd4478baab9b5c10dafc148d2a7c99d22d92939262bb8db417",
+      "source_window_bytes": 512
+    }
+  ],
+  "observation": "Two guarded original captures compare 16422 integer normalizations, including 79 zero vectors, 3688 height/normal calculations, 1334 successful point-location queries across three collision layers, and 520 second-normalization actor stores. Each height input matches a source mesh triangle. Lookup parameters, results, pointers and return sites match. The traversal trace reads 15600 scratchpad ranges without modifying the original run.",
+  "interpretation": "The original height helper normalizes two triangle edges and takes their Q12 cross product. A later actor update normalizes that result again before storing the floor normal. Zero-vector normalization reads an earlier halfword but returns zero. Point location uses original triangle order and signed packed-coordinate edge tests. These functions recover a collision arithmetic subset, not the full movement controller.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Use the exact selected Disc 1 source and pinned Nix tools. Original payload remains private; the public reconstruction contains no original table.",
+      "Use the API 2 observation-trace shell for scratchpad ranges. Keep the guarded field adapter and ordinary route inputs distinct from native gameplay."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace",
+      "python tools/analysis/verify_collision_math.py prepare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --start 4300 --end 5600 --output <new-private-spec>",
+      "python tools/reference/scenario.py tests/reference-inputs/field23-ramp-observation.json --content \"discs/Xenogears disc 1.chd\" --trace-instructions <spec> --output <new-private-run>",
+      "python tools/analysis/verify_collision_math.py compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --start 4300 --end 5600 --capture <run>/capture --output <new-private-comparison>",
+      "Repeat for initialization [508,650), using tests/reference-inputs/field23-entry-dialogue.json.",
+      "python -m unittest tests.test_collision_math tests.test_instruction_trace",
+      "env PYTHONPATH=. python .local/analysis/phase1-field-control-20260908/audit-v1.py (use fresh output names when reproducing)"
+    ],
+    "expected": "Exact source-qualified arithmetic, memory regions, pointer/return correlations and complete unchanged control artifacts. Reject altered original inputs.",
+    "actual": "Both original comparisons pass with zero guard mismatches, unavailable ranges, budget exhaustion or trace errors. All 22 deliberately corrupted original traces are rejected. The two captures match their controls in every RAM snapshot, image, audio file and serialized external state. Eight synthetic arithmetic tests and ten observation-tool tests pass.",
+    "result": "passed",
+    "tolerance": "Exact integer results, complete sampled point/normal bytes, source tables, memory-space identities and correlated calls. No floating tolerance or output masks. No-match normal clearing, hardware flags/exceptions and full movement remain outside scope.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/audit-v1.py",
+        "sha256": "1117ff075af828409a6b0b396fe720dc3becce15f9ccdaa53eff80898c6a0eaf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/record-finding-v1.py",
+        "sha256": "a2582394fa9078325cf10a82e0c9b91dca73cf285b586e96d8cad9c2ec780f6f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/controls-v2.json",
+        "sha256": "084e8ef506ab6ab27d8d01e5e662723e8471f7837bcb60f7caed877523790e38",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/negative-v1.json",
+        "sha256": "62f6dd07e39b70a3ac80e99010b1155b314b3bc85577c0541167e59a9ccdf542",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/initialization-source-v1.json",
+        "sha256": "f6c6237010962aa1f0870009a33f6d55d7599167b70294a8591c8938eb854b65",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/traversal-source-v1.json",
+        "sha256": "7df88a335cf5defdea59fb24c16d0598a8c0c85c662fd3820fd5426a4e553127",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/initialization-comparison-v2.json",
+        "sha256": "9a44fb550625dc9f4c2c25804f6d0bb234591140687e488216f98ff13c9e4886",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-control-20260908/traversal-comparison-v2.json",
+        "sha256": "d9e07b82562a07955211bc3e2cf69e73ee6dfaa362791915961c05a0ef4730ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-init-20260908-v1/capture/observation.json",
+        "sha256": "5e3d41fc74870111d9185c419c69406142ed394edb77d4e3b9a0eb9bf6db993b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-init-20260908-v1/capture/instruction-trace-spec.json",
+        "sha256": "6944803d6f30ae2f5e11c2debdacd230150fc8962e174d384083bdad2b702ac4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-init-20260908-v1/capture/instruction-trace.jsonl",
+        "sha256": "3f262077bb14270aed37ce075e5ab83c23bd634bd2096de29b38fa3b0fa887a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-init-20260908-v1/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-init-20260908-v1/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-init-20260908-v1/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-23-route-a/capture/observation.json",
+        "sha256": "d0fd730c4232c06e05e3c2311bf9aae6cae773cb46e3ce07efb4623eedc7d654",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-math-20260908-v2/capture/observation.json",
+        "sha256": "7326d40c380c264701661b42cf72ebbb8933e69652c416bbfc4253782d9a8c04",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-math-20260908-v2/capture/instruction-trace-spec.json",
+        "sha256": "57d6fcc32a43ef2e6caa20a999618d46520311bf7dab9741ed3bde66e417d51e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-math-20260908-v2/capture/instruction-trace.jsonl",
+        "sha256": "3519513f81c3083f7d346edec5a2499a7b0041a71e3eda343e23724680946009",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-math-20260908-v2/capture/final.ram",
+        "sha256": "791b541177e41c155f70d342b0865e4ebcc701ddc2c9cc98f0460c07ddd47282",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-math-20260908-v2/capture/final.state",
+        "sha256": "8f51522c577196df8a6e504afdad6c14a3a6a2341f6702663684eb40743c1430",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-collision-math-20260908-v2/capture/audio.wav",
+        "sha256": "93d71c5e0523837b4a1e3b0edfc9013ea0ce6930afdf400277b34423deea1713",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-east-ramp-20260908-v1/capture/observation.json",
+        "sha256": "adae14de87d28c2faebc8426683ee93ac04b1876919bd9c67f3ddbd91a2de6cb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "tools/analysis/collision_math.py",
+        "sha256": "a30d1a4c601a406b29a4fc17f229af71716dae754975eafba955ae3c735b43b7",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_collision_math.py",
+        "sha256": "5f10537b5bb788878b2c67086a5d37667a0f89be4142022b211e1d83cc331f80",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_collision_math.py",
+        "sha256": "697c7fac7b6d94390581268a0e948d0671f3b4026d0a6405edae1354d188c623",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_instruction_trace.py",
+        "sha256": "d67110336d56432e639715539a03fa1983319f8dfb77d265012eb01177e50ce5",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/reference/instruction_trace.py",
+        "sha256": "51fd6d90f5637191210e9de4bdfadda30b63a902390481a65d690b1879dddbc5",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/reference/observe.py",
+        "sha256": "61e867e5fd167b3cb3f2839a606b8d841f365f03def148477b935d22e40501aa",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "nix/reference-trace.h",
+        "sha256": "7170b2b14dea27023c5cf636d9d200bb5a084ec9ddaad4328bffb609d39e62e0",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "analysis/formats/collision-arithmetic.md",
+        "sha256": "9657f94a5fb6c190c902e1fd8148d753c0d9635594b6dfa9ee098fd573b383b9",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-ramp-observation.json",
+        "sha256": "d21a7bfa1c0798cf9fca74da5422746ff82b9681dc49c0078216984a12c4f801",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_counts": {
+    "initialization": {
+      "locate-before": 34,
+      "height-before": 140,
+      "normalize-before": 563,
+      "normalize-after": 563,
+      "height-after": 140,
+      "locate-after": 34,
+      "actor-normal-after": 32
+    },
+    "traversal": {
+      "locate-before": 1300,
+      "height-before": 3548,
+      "normalize-before": 15859,
+      "normalize-after": 15859,
+      "height-after": 3548,
+      "locate-after": 1300,
+      "actor-normal-after": 488
+    }
+  },
+  "observed_cases": {
+    "initialization": {
+      "location_layer_0": 17,
+      "location_found": 34,
+      "height_plane": 140,
+      "nonzero_vector": 552,
+      "location_layer_1": 17,
+      "zero_vector": 11
+    },
+    "traversal": {
+      "location_layer_2": 1300,
+      "location_found": 1300,
+      "height_plane": 3548,
+      "nonzero_vector": 15791,
+      "zero_vector": 68
+    }
+  },
+  "controls": {
+    "initialization": {
+      "files": 32,
+      "result": "passed"
+    },
+    "traversal": {
+      "files": 53,
+      "result": "passed"
+    }
+  },
+  "limitations": [
+    "Independent review remains outstanding; all 15 Phase 1 todos and nine slice domains remain open.",
+    "No observed location miss or vertical-plane height branch; their semantic reconstructions have source/synthetic evidence only. The miss normal output is not independently captured.",
+    "Signed magnitude overflow, every GTE flag/exception and physical PS1 timing remain unvalidated.",
+    "This does not recover collision traversal/attributes, movement/jump/landing, camera, rendering, contact or encounter completion.",
+    "The numeric field adapter and ramp route do not establish ordinary story progression, player readiness or a frozen slice.",
+    "The optional emulator extension is read-only analysis infrastructure, not part of the native game runtime."
+  ],
+  "provenance": {
+    "game_specific_sources": "Only original supplied disc/executable/field data and observed execution; no other Xenogears project or reverse-engineering results.",
+    "infrastructure": "The already-pinned PCSX-ReARMed source was inspected to qualify scratchpad backing bytes/aliases. Its extension remains GPL-2.0-or-later and separate from the native runtime.",
+    "authorship": "Project-authored source reconstruction, synthetic geometry, comparisons and prose with Codex assistance. Original code, coefficients, geometry, images, RAM and audio remain private."
+  },
+  "author": "Codex /root, original source and execution analysis on 2026-09-08",
+  "reviewers": []
+}

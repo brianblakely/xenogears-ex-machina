@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "name": "phase1-field23-east-ramp",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "entry": {
+    "type": "field",
+    "map": 23
+  },
+  "launch": {
+    "ready": "map",
+    "timeout_frames": 5000,
+    "settle_frames": 600
+  },
+  "steps": [
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 400,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right",
+        "up"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 120,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 160,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 80,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 60,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "wait_frames": 600,
+      "capture": true
+    }
+  ]
+}

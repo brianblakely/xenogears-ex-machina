@@ -1,0 +1,559 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-015",
+  "kind": "original_field_event_conditional_control_flow",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 204928,
+        "window_bytes": 96
+      },
+      "address": "0x800a1b70",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 205024,
+        "window_bytes": 676
+      },
+      "address": "0x800a1bd0",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 205700,
+        "window_bytes": 40
+      },
+      "address": "0x800a1e74",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 210160,
+        "window_bytes": 148
+      },
+      "address": "0x800a2fe0",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 250508,
+        "window_bytes": 112
+      },
+      "address": "0x800acd7c",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 616,
+        "window_bytes": 44
+      },
+      "address": "0x8006fd58",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 255920,
+        "window_bytes": 1024
+      },
+      "address": "0x800ae2a0",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 256944,
+        "window_bytes": 1024
+      },
+      "address": "0x800ae6a0",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    }
+  ],
+  "observation": "The original opcode 02 handler dispatches eleven comparison targets, reading operands through variable-type and little-endian halfword helpers. Two disjoint observation windows of the same field 23 route produce 4350 and 12159 complete before/after pairs. For all 16509 calls, reconstructed operands equal original s1/s0 and successor PC equals original actor PC after the handler. The route exercises only operand mode 40 and comparisons 0,1,2,5. Both primary and extended 256-entry dispatch tables match source and the original field 23 RAM capture.",
+  "interpretation": "The original comparison contract uses variable byte references, per-variable signedness and order-dependent halfword coercion. True advances eight bytes; false uses an absolute u16 PC. A readable analysis reconstruction and partial control-flow disassembler can represent these rules, but original evidence for unexercised operand modes and the rest of the event VM remains required.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Source/container revalidation is recorded in EVID-REF-014.",
+      "Use the pinned Nix observation-trace shell, exact Disc 1 profile and the authored field23-entry-dialogue.json route, with new private outputs.",
+      "Record the full original variable bank, type bitmap, actor state and source-qualified instruction guards; do not supply expected operands from the reconstruction."
+    ],
+    "commands": [
+      "python3 tools/analysis/verify_events.py prepare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --start 0 --end 2000 --output <new-private-spec.json>",
+      "python3 tools/reference/scenario.py tests/reference-inputs/field23-entry-dialogue.json --content \"discs/Xenogears disc 1.chd\" --trace-instructions <new-private-spec.json> --output <new-private-run>",
+      "python3 tools/analysis/verify_events.py compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --start 0 --end 2000 --capture <run>/capture --output <new-private-comparison.json>",
+      "Repeat the same commands for the disjoint window --start 2000 --end 5000.",
+      "python3 -m unittest discover -s tests -p test_event_analysis.py -v"
+    ],
+    "expected": "Resolve operands from original before-state values/type bits and independently compare against the original handler return registers and actor PC. Complete paired records, code/package identity and capture hashes are mandatory.",
+    "actual": "16509 exact operand/PC matches, with no unknown-opcode fallback, dropped trace records or exhausted budget. Both observed runs preserve the uninstrumented control full RAM, external state, audio and all 18 PNGs. Eight authored synthetic tests cover operand boundaries, table dispatch cases, CFG cycles/overlap and explicit unknown/truncated instructions; they do not establish additional original execution paths.",
+    "result": "passed",
+    "tolerance": "Exact integer operands and successor PCs for the observed calls. Frontend frames do not establish native simulation ticks or hardware timing.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-events-20260908/branches-0-2000-comparison.json",
+        "sha256": "4e8f9d57b4d2ca0b11cd7ff174a37205414ad3b16a2d8b81d9033c33ac9210f8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/report.json",
+        "sha256": "4ba12f9c6fc5cbd389a8d694b53a3855dd0a5fbe3986b8350d0014b1a41b1508",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/capture/observation.json",
+        "sha256": "4cfa503588707f2608388fd2cb7dea4699562e918949835ff9b25781ad731176",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/capture/instruction-trace.jsonl",
+        "sha256": "f962c48f412563c754a27f8328e7ea1d638991a2cba6152796b89033fb1fc708",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/capture/instruction-trace-spec.json",
+        "sha256": "cdfc2f06fd4be5bc8aa28783c55698d3ec2677bd907127c21aee7d83d56e6e56",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-0-2000-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-events-20260908/branches-2000-5000-comparison.json",
+        "sha256": "2aecaef167d99d874d362a89ca8a9928f86f719ec6f06e9244812774cadd4413",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/report.json",
+        "sha256": "b17dbc4bc3ce19a463fd400d039cab167f2d039d855cd206be424e3df2604b96",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/capture/observation.json",
+        "sha256": "2e64e91ac6b68b4ee1348c0bf6a6e2844c129834c608490cbd072ae08acde589",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/capture/instruction-trace.jsonl",
+        "sha256": "e3f699f575314e0862e482bc41ae1676e1d4ff9b919a4c6768de3ccd69a169db",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/capture/instruction-trace-spec.json",
+        "sha256": "d24a3ef94c679de6d64a067bbecc483c47424a250c91d695dafb004ce6594d5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-branches-2000-5000-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-events-20260908/control-comparison.json",
+        "sha256": "55d02de7b8a56c640fee1cbfd5fe7f4b5a87d8b05758cc23b60254cff6220ba5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/previous-sources/tools/analysis/events.py",
+        "sha256": "0ab54117e688735c2dc4fb63153db1d4f7328e33d403efd49c1079c0433dde8d",
+        "distribution": "private_local_only",
+        "original_public_path": "tools/analysis/events.py"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/previous-sources/tools/analysis/verify_events.py",
+        "sha256": "758b1d4ecc1f7399f06c2e7c8bf87012d400625fd7282e7590c412a457fc284a",
+        "distribution": "private_local_only",
+        "original_public_path": "tools/analysis/verify_events.py"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/previous-sources/tests/test_event_analysis.py",
+        "sha256": "d039553aff559977eb8c42e4621191575089d8b5d2713f56a6dcb10a13d489b9",
+        "distribution": "private_local_only",
+        "original_public_path": "tests/test_event_analysis.py"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/previous-sources/tests/reference-inputs/field23-entry-dialogue.json",
+        "sha256": "1c5757629034aeba726dbd268432f63df4c2e4b3be6b681e37c2139a3903f616",
+        "distribution": "private_local_only",
+        "original_public_path": "tests/reference-inputs/field23-entry-dialogue.json"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/previous-sources/analysis/formats/event-control.md",
+        "sha256": "4f481c6f453a13866c612bc162e86c294ee3c128f711b1a0b869380ebc4bbd69",
+        "distribution": "private_local_only",
+        "original_public_path": "analysis/formats/event-control.md"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/previous-sources/analysis/recovery.json",
+        "sha256": "93c5ad049dfcd29eac1a2dfaf9ccfba306a6bcb3991a91d0afca5417d9517c0d",
+        "distribution": "private_local_only",
+        "original_public_path": "analysis/recovery.json"
+      }
+    ]
+  },
+  "observed_windows": [
+    {
+      "start": 0,
+      "end": 2000,
+      "calls": 4350,
+      "sites": [
+        [
+          1,
+          447
+        ],
+        [
+          1,
+          463
+        ],
+        [
+          1,
+          476
+        ],
+        [
+          1,
+          485
+        ],
+        [
+          2,
+          574
+        ],
+        [
+          2,
+          588
+        ],
+        [
+          2,
+          602
+        ],
+        [
+          2,
+          616
+        ],
+        [
+          3,
+          1116
+        ],
+        [
+          5,
+          1897
+        ],
+        [
+          18,
+          2686
+        ],
+        [
+          18,
+          2704
+        ],
+        [
+          18,
+          2758
+        ],
+        [
+          18,
+          2798
+        ],
+        [
+          18,
+          2824
+        ],
+        [
+          18,
+          2863
+        ],
+        [
+          18,
+          2922
+        ],
+        [
+          21,
+          3018
+        ],
+        [
+          21,
+          3035
+        ],
+        [
+          22,
+          3179
+        ],
+        [
+          22,
+          3196
+        ],
+        [
+          23,
+          3345
+        ],
+        [
+          23,
+          3362
+        ],
+        [
+          24,
+          3517
+        ]
+      ],
+      "cases": [
+        {
+          "operand_mode": 64,
+          "comparison": 0,
+          "fallthrough": false,
+          "count": 2778
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 0,
+          "fallthrough": true,
+          "count": 432
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 1,
+          "fallthrough": false,
+          "count": 245
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 1,
+          "fallthrough": true,
+          "count": 491
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 2,
+          "fallthrough": false,
+          "count": 270
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 5,
+          "fallthrough": false,
+          "count": 21
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 5,
+          "fallthrough": true,
+          "count": 113
+        }
+      ]
+    },
+    {
+      "start": 2000,
+      "end": 5000,
+      "calls": 12159,
+      "sites": [
+        [
+          1,
+          447
+        ],
+        [
+          1,
+          463
+        ],
+        [
+          1,
+          476
+        ],
+        [
+          1,
+          485
+        ],
+        [
+          2,
+          574
+        ],
+        [
+          2,
+          588
+        ],
+        [
+          2,
+          602
+        ],
+        [
+          2,
+          616
+        ],
+        [
+          18,
+          2704
+        ],
+        [
+          18,
+          2758
+        ],
+        [
+          18,
+          2798
+        ],
+        [
+          18,
+          2863
+        ],
+        [
+          18,
+          2922
+        ]
+      ],
+      "cases": [
+        {
+          "operand_mode": 64,
+          "comparison": 0,
+          "fallthrough": false,
+          "count": 9264
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 1,
+          "fallthrough": false,
+          "count": 1158
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 2,
+          "fallthrough": false,
+          "count": 1158
+        },
+        {
+          "operand_mode": 64,
+          "comparison": 5,
+          "fallthrough": true,
+          "count": 579
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Independent review remains outstanding.",
+    "Only the variable/immediate operand mode and comparisons 0,1,2,5 are observed in original execution.",
+    "Opcode 00/01 encoding/control-flow reconstruction has source inspection but no dedicated full side-effect comparison yet.",
+    "The complete scheduler, waits, concurrent actor rules, dialogue, encounter requests and resumed effects remain unrecovered.",
+    "The 512 dispatch entries are a scoped original table inventory, not a complete function-boundary catalog or instruction reference.",
+    "The selected route advances entry dialogue; it does not complete a field-to-battle-and-return slice, save/load or media acceptance."
+  ],
+  "author": "Codex /root, independent original source and execution analysis on 2026-09-08",
+  "reviewers": [],
+  "source_snapshot_note": "The exact originally validated authored sources are preserved locally before further Phase 1 edits; original hashes and validation results are unchanged. Current source changes require their own new evidence."
+}

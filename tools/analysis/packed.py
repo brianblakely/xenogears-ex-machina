@@ -27,10 +27,11 @@ def decode_block(source: bytes, *, output_limit: int = 0x200000) -> PackedBlock:
 
     The original checks output equality only between groups and speculatively
     reads the following flag even on exit. token_bytes excludes that final
-    read; source_bytes_read includes it. Callers must supply measured physical
-    source bytes, including real padding, and must never synthesize padding to
-    make a truncated resource pass. Unsafe original reads/writes raise instead
-    of reproducing undefined memory access.
+    read; source_bytes_read includes it. Callers must supply measured source
+    memory and must never synthesize padding to make a truncated resource pass.
+    Disc-sector padding and bytes adjacent to the original loaded allocation
+    are distinct inputs: EVID-REF-014 records a concrete difference. Unsafe
+    original reads/writes raise instead of reproducing undefined memory access.
     """
     if output_limit < 0:
         raise PackedError("negative output limit")

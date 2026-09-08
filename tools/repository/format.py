@@ -13,7 +13,7 @@ def main() -> None:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     paths = [path.relative_to(ROOT).as_posix() for path in source_files()]
-    cpp = [path for path in paths if path.endswith((".cpp", ".h", ".hpp", ".hpp.in"))]
+    cpp = [path for path in paths if path.endswith((".cpp", ".h", ".hpp", ".hpp.in", ".java"))]
     python = [path for path in paths if path.endswith(".py")]
     nix = [path for path in paths if path.endswith(".nix")]
     commands = [

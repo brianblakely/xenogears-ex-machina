@@ -68,6 +68,14 @@ both current RAM and the core's fetched opcode. Address reuse with a different
 overlay produces counted guard rejections. No guessed or unmatched instruction
 is silently interpreted.
 
+Extension API 2 also exposes the first 1 KiB of scratchpad backing memory to
+register-based ranges. The physical `1f800000` and pinned-core `9f800000`/`bf800000`
+aliases are bounded independently from RAM. Such records include
+`resolved_space: "scratchpad"` and an offset within that 1 KiB. Adjacent hardware
+registers and ranges crossing the boundary are unavailable; no emulated bus
+read occurs. Direct ranges, pointer-offset ranges and digests remain RAM-only.
+The collector also accepts historical API 1 cores without scratchpad support.
+
 The private `instruction-trace.jsonl` records matched addresses immediately
 before instruction dispatch, with zero-based `frontend_run`, the core's raw
 32-bit cycle/subcycle values, registers and sampled bytes. `gpr_u32` contains

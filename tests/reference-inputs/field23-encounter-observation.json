@@ -1,0 +1,568 @@
+{
+  "schema_version": 1,
+  "name": "phase1-field23-encounter-victory-return",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "entry": {
+    "type": "field",
+    "map": 23
+  },
+  "launch": {
+    "ready": "map",
+    "timeout_frames": 5000,
+    "settle_frames": 600
+  },
+  "steps": [
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 400,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right",
+        "up"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 40,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 200,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 100,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 24,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left",
+        "circle"
+      ],
+      "hold_frames": 100,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left",
+        "circle"
+      ],
+      "hold_frames": 6,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "up",
+        "circle"
+      ],
+      "hold_frames": 44,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right",
+        "circle"
+      ],
+      "hold_frames": 12,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 8,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right",
+        "circle",
+        "cross"
+      ],
+      "hold_frames": 4,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 2,
+      "after_frames": 2,
+      "capture": false
+    },
+    {
+      "wait_frames": 600,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "wait_frames": 600,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 600,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 12,
+      "after_frames": 20,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "square"
+      ],
+      "hold_frames": 8,
+      "after_frames": 600,
+      "capture": true
+    }
+  ]
+}

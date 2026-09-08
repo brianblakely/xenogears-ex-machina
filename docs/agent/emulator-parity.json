@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "parity_version": "1.0.0",
+  "parity_version": "1.2.0",
   "protocol_version": "0.1",
-  "review_date": "2026-09-07",
+  "review_date": "2026-09-08",
   "status_semantics": {
     "observed_original": "Original finding establishes only the named observed paths; tools tests additionally verify rejection/bounds.",
     "tooling_tested": "Inspected implementation and public synthetic tests; no original gameplay capability promotion.",
@@ -20,7 +20,7 @@
     },
     {
       "path": "analysis/scenarios/README.md",
-      "sha256": "b2f695e4614c96548b61c6dc1e9a96a4ca4bb1bf17bc281c07bd8bc3594b8990"
+      "sha256": "200c938e99a64a9cf968abcd166d8a044d47fe5c29ec186ee49c15b5966479e8"
     },
     {
       "path": "analysis/scenarios/schema.json",
@@ -36,11 +36,11 @@
     },
     {
       "path": "nix/reference-trace.h",
-      "sha256": "ffeff7ab130c7f99f2d4c394d7120de319f05f359c165a73acfaaaac74577c6d"
+      "sha256": "7170b2b14dea27023c5cf636d9d200bb5a084ec9ddaad4328bffb609d39e62e0"
     },
     {
       "path": "tests/test_instruction_trace.py",
-      "sha256": "7bba3cc4e781cd3e68fcc3186bdecb3e865c5bd5eda54e06b74ced48b691661c"
+      "sha256": "d67110336d56432e639715539a03fa1983319f8dfb77d265012eb01177e50ce5"
     },
     {
       "path": "tests/test_memory_sampler.py",
@@ -60,7 +60,7 @@
     },
     {
       "path": "tools/reference/instruction_trace.py",
-      "sha256": "2083b28e090a5648773575e8abe77dac7a00fb7ea95e14f3cfc6761c11ca8433"
+      "sha256": "51fd6d90f5637191210e9de4bdfadda30b63a902390481a65d690b1879dddbc5"
     },
     {
       "path": "tools/reference/memory_sampler.py",
@@ -68,7 +68,7 @@
     },
     {
       "path": "tools/reference/observe.py",
-      "sha256": "dd53b3457462399c34229c4964954d9c9718c1a1fe0951f55b73d7c6fef2ee65"
+      "sha256": "61e867e5fd167b3cb3f2839a606b8d841f365f03def148477b935d22e40501aa"
     },
     {
       "path": "tools/reference/scenario.py",
@@ -446,8 +446,8 @@
     {
       "id": "PARITY-INSTRUCTION-TRACE",
       "emulator": {
-        "status": "tooling_tested",
-        "scope": "--trace-instructions optional read-only guarded configured interpreter PCs, registers and bounded memory ranges; <=16 hooks, 1 million candidate callbacks, 64 MiB per-hook payload bound. Mismatched guards count against budget. No complete instruction coverage, interactive debugger or hardware timing claim.",
+        "status": "observed_original",
+        "scope": "--trace-instructions optionally observes guarded interpreter PCs, registers and bounded RAM ranges without writes. Optional region digests use explicit bounds, rejecting invalid pointers, alias wrapping and excessive hashing work. Limits: 16 hooks, one million candidate callbacks, 64 MiB per-hook emitted payload bound and separate 64 MiB hashing-work bound. No complete instruction coverage, interactive debugger or hardware timing claim. API 2 additionally exposes read-only 1 KiB scratchpad backing for register-relative ranges at physical, KSEG0 and KSEG1 aliases. Cross-boundary ranges and hardware-register addresses are rejected. Direct ranges, pointer_offset ranges and digests remain RAM-only. The collector retains API 1 compatibility and records the actual API version.",
         "sources": [
           "tools/reference/scenario.py",
           "tools/reference/observe.py",
@@ -459,7 +459,10 @@
         "tests": [
           "tests/test_instruction_trace.py"
         ],
-        "original_findings": []
+        "original_findings": [
+          "EVID-REF-014",
+          "EVID-REF-019"
+        ]
       },
       "native": {
         "relationship": "equivalent",
@@ -716,5 +719,10 @@
       }
     }
   ],
-  "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation."
+  "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation.",
+  "change_review": {
+    "version": "1.2.0",
+    "author": "Codex /root",
+    "scope": "Reviewed the optional API 2 scratchpad callback and bounded read-only register-range handling, alias and rejection tests, API version metadata, and complete original output/control equality in EVID-REF-019. API 1 remains supported. Native methods remain unimplemented. The extension adds no emulated writes or cycle adjustments; historical Phase 0 audits retain their original hashes."
+  }
 }

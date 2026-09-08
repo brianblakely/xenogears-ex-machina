@@ -68,9 +68,17 @@ metadata inspection. It makes no guesses about game archives, disc sequence or
 retail revision names. Consult the reference profile and evidence workflow before
 promoting a measurement. Source CUE paths and raw bytes remain private.
 
-The `disassembly` shell supplies pinned Capstone Python bindings for independent
-original-MIPS inspection. It replaces the plain Python interpreter with the Nix
-Python environment containing those bindings:
+Ghidra with the pinned PlayStation loader is the primary reverse-engineering
+environment. Follow [the qualified import and review workflow](reverse-engineering.md)
+for both original discs and optional m2c reconstruction:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra
+```
+
+The `disassembly` shell supplies secondary Capstone Python bindings for
+original-MIPS byte inspection. It replaces the plain Python interpreter with the
+Nix Python environment containing those bindings:
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix#disassembly

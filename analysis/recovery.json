@@ -1,0 +1,4532 @@
+{
+  "schema_version": 1,
+  "scope": "Current original-analysis and source handoff inventory. Dispatch windows are enumerated, including non-code extended values. Automatic surveys, annotations, reviewed source and execution subsets remain distinct; complete function/format coverage and P01-T15 remain open.",
+  "coverage_complete": false,
+  "field_overlay": {
+    "decoded_base": "0x8006faf0",
+    "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+    "sources": [
+      {
+        "profile": "na-slus-00664-39c547a9afc6",
+        "resource": {
+          "slot": 36,
+          "source_lba": 108933,
+          "source_sector_count": 62,
+          "projected_bytes": 125304,
+          "projection_unit": 2048,
+          "projection_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+          "all_projected_bytes_zero": false,
+          "following_sector_gap": 0
+        }
+      },
+      {
+        "profile": "na-slus-00669-5eab85c683d4",
+        "resource": {
+          "slot": 31,
+          "source_lba": 173245,
+          "source_sector_count": 62,
+          "projected_bytes": 125304,
+          "projection_unit": 2048,
+          "projection_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+          "all_projected_bytes_zero": false,
+          "following_sector_gap": 0
+        }
+      }
+    ]
+  },
+  "event_dispatch_tables": [
+    {
+      "namespace": "primary",
+      "address": "0x800ae2a0",
+      "sha256": "476d47b2ae1ae0927f8d24991fddd1fb53e91dbf27b2445ef8a4290929479388",
+      "rows": [
+        {
+          "opcode": "0x00",
+          "handler": "0x800a1b70",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "end_slot",
+          "encoding_bytes": 1,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x01",
+          "handler": "0x800a1e74",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "jump",
+          "encoding_bytes": 3,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x02",
+          "handler": "0x800a1bd0",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp",
+          "evidence": [
+            "EVID-REF-027"
+          ]
+        },
+        {
+          "opcode": "0x03",
+          "handler": "0x8009c104",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x04",
+          "handler": "0x800a1a8c",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "reset_idle_and_end",
+          "encoding_bytes": 1,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x05",
+          "handler": "0x800a17f4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x06",
+          "handler": "0x800a1730",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x07",
+          "handler": "0x8009eb78",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x08",
+          "handler": "0x8009ed68",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x09",
+          "handler": "0x8009f0a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0a",
+          "handler": "0x8009533c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0b",
+          "handler": "0x800a1624",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0c",
+          "handler": "0x8009f5a8",
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "unimplemented",
+          "name": "loop_player_control",
+          "encoding_bytes": 1,
+          "evidence": [
+            "EVID-REF-021"
+          ],
+          "reconstruction": "tools/analysis/field_control.py",
+          "scope": "Original source and synthetic only; original execution remains required."
+        },
+        {
+          "opcode": "0x0d",
+          "handler": "0x800a18b8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0e",
+          "handler": "0x80092404",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0f",
+          "handler": "0x800923e4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x10",
+          "handler": "0x80098c00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x11",
+          "handler": "0x80098c3c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x12",
+          "handler": "0x80093200",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x13",
+          "handler": "0x800a2fc0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x14",
+          "handler": "0x80093c48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x15",
+          "handler": "0x80093c6c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x16",
+          "handler": "0x800a08b8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x17",
+          "handler": "0x8009e91c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x18",
+          "handler": "0x8009e83c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x19",
+          "handler": "0x8009e4bc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1a",
+          "handler": "0x8009e428",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1b",
+          "handler": "0x8009e35c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1c",
+          "handler": "0x8009e2c8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1d",
+          "handler": "0x8009e248",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1e",
+          "handler": "0x8009e208",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1f",
+          "handler": "0x8009e1a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x20",
+          "handler": "0x8009e10c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x21",
+          "handler": "0x8009e094",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x22",
+          "handler": "0x8009df10",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x23",
+          "handler": "0x8009e040",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x24",
+          "handler": "0x8009ddec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x25",
+          "handler": "0x8009de94",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x26",
+          "handler": "0x8009dd34",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "wait_countdown",
+          "encoding_bytes": 3,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x27",
+          "handler": "0x8009dc4c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x28",
+          "handler": "0x8009dbc8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x29",
+          "handler": "0x8009dac4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2a",
+          "handler": "0x8009da1c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2b",
+          "handler": "0x8009da44",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2c",
+          "handler": "0x8009a130",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2d",
+          "handler": "0x8009a024",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2e",
+          "handler": "0x80099fc4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2f",
+          "handler": "0x80099ef8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x30",
+          "handler": "0x80099f48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x31",
+          "handler": "0x800961a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x32",
+          "handler": "0x800961c8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x33",
+          "handler": "0x800961f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x34",
+          "handler": "0x80096214",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x35",
+          "handler": "0x8009d9a4",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_variable",
+          "encoding_bytes": 6,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x36",
+          "handler": "0x8009d960",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_variable_one",
+          "encoding_bytes": 3,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x37",
+          "handler": "0x8009d91c",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_variable_zero",
+          "encoding_bytes": 3,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x38",
+          "handler": "0x8009d890",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "add_variable",
+          "encoding_bytes": 6,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x39",
+          "handler": "0x8009d804",
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "subtract_variable",
+          "encoding_bytes": 6,
+          "evidence": [
+            "EVID-REF-016",
+            "EVID-REF-027"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
+        },
+        {
+          "opcode": "0x3a",
+          "handler": "0x8009d644",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3b",
+          "handler": "0x8009d408",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3c",
+          "handler": "0x8009d340",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3d",
+          "handler": "0x8009d3a4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3e",
+          "handler": "0x8009d5b8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3f",
+          "handler": "0x8009d52c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x40",
+          "handler": "0x8009d4a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x41",
+          "handler": "0x8009d2d0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x42",
+          "handler": "0x8009d260",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x43",
+          "handler": "0x8009d198",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x44",
+          "handler": "0x80098184",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x45",
+          "handler": "0x80097864",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x46",
+          "handler": "0x80092808",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x47",
+          "handler": "0x80092ea0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x48",
+          "handler": "0x80093cd0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x49",
+          "handler": "0x80093d48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4a",
+          "handler": "0x80099980",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4b",
+          "handler": "0x80098430",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4c",
+          "handler": "0x800979f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4d",
+          "handler": "0x80097954",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4e",
+          "handler": "0x80098370",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4f",
+          "handler": "0x80098274",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x50",
+          "handler": "0x800977a4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x51",
+          "handler": "0x800976a8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x52",
+          "handler": "0x800980fc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x53",
+          "handler": "0x80098038",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x54",
+          "handler": "0x800975c0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x55",
+          "handler": "0x8009749c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x56",
+          "handler": "0x80093014",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x57",
+          "handler": "0x80099214",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x58",
+          "handler": "0x80094918",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x59",
+          "handler": "0x8009f4cc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5a",
+          "handler": "0x8009524c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5b",
+          "handler": "0x80095284",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5c",
+          "handler": "0x800a0228",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5d",
+          "handler": "0x8009a174",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5e",
+          "handler": "0x8009a1ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5f",
+          "handler": "0x8009ad6c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x60",
+          "handler": "0x8008fdd0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x61",
+          "handler": "0x8008fe2c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x62",
+          "handler": "0x8008ff04",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x63",
+          "handler": "0x8008ff90",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x64",
+          "handler": "0x80090068",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x65",
+          "handler": "0x800900c4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x66",
+          "handler": "0x8009019c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x67",
+          "handler": "0x8009abfc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x68",
+          "handler": "0x8009ac34",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x69",
+          "handler": "0x8009ac7c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6a",
+          "handler": "0x8009acb4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6b",
+          "handler": "0x8009ab5c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6c",
+          "handler": "0x8009abac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6d",
+          "handler": "0x8009a6ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6e",
+          "handler": "0x8009a768",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6f",
+          "handler": "0x8009a2a8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x70",
+          "handler": "0x8009a1e4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x71",
+          "handler": "0x80093568",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x72",
+          "handler": "0x8008f724",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x73",
+          "handler": "0x80086c34",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x74",
+          "handler": "0x8008f668",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x75",
+          "handler": "0x8008f76c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x76",
+          "handler": "0x80093a68",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x77",
+          "handler": "0x80093a98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x78",
+          "handler": "0x800973a4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x79",
+          "handler": "0x80097264",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7a",
+          "handler": "0x800972ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7b",
+          "handler": "0x800969fc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7c",
+          "handler": "0x80096f18",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7d",
+          "handler": "0x80097010",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7e",
+          "handler": "0x80097108",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7f",
+          "handler": "0x80095300",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x80",
+          "handler": "0x80092664",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x81",
+          "handler": "0x800926c8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x82",
+          "handler": "0x80093664",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x83",
+          "handler": "0x80092768",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x84",
+          "handler": "0x80096644",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x85",
+          "handler": "0x800966b4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x86",
+          "handler": "0x80096724",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x87",
+          "handler": "0x80096790",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x88",
+          "handler": "0x800967e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x89",
+          "handler": "0x80095e48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8a",
+          "handler": "0x80095c00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8b",
+          "handler": "0x800962c0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8c",
+          "handler": "0x8009631c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8d",
+          "handler": "0x8009640c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8e",
+          "handler": "0x80095f24",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8f",
+          "handler": "0x80095fb8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x90",
+          "handler": "0x8009601c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x91",
+          "handler": "0x800964b0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x92",
+          "handler": "0x800a19b0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x93",
+          "handler": "0x800a1364",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x94",
+          "handler": "0x800945d4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x95",
+          "handler": "0x80094650",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x96",
+          "handler": "0x8009468c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x97",
+          "handler": "0x8009a634",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x98",
+          "handler": "0x800932d0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x99",
+          "handler": "0x8008fb98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9a",
+          "handler": "0x8008fc4c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9b",
+          "handler": "0x8008fd40",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9c",
+          "handler": "0x8009bb0c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9d",
+          "handler": "0x8009a34c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9e",
+          "handler": "0x8009b9a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9f",
+          "handler": "0x8009ba0c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa0",
+          "handler": "0x8009ba7c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa1",
+          "handler": "0x8009a670",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa2",
+          "handler": "0x8009a58c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa3",
+          "handler": "0x80090228",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa4",
+          "handler": "0x8009a490",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa5",
+          "handler": "0x8009a534",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa6",
+          "handler": "0x80097410",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa7",
+          "handler": "0x8009f5f4",
+          "analysis_status": "observed_subset",
+          "native_status": "unimplemented",
+          "name": "request_player_control",
+          "encoding_bytes": 1,
+          "evidence": [
+            "EVID-REF-021"
+          ],
+          "reconstruction": "tools/analysis/field_control.py",
+          "scope": "4669 exact original calls; active encounter selection and unobserved control branches remain open."
+        },
+        {
+          "opcode": "0xa8",
+          "handler": "0x8009d1f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa9",
+          "handler": "0x8009bc98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xaa",
+          "handler": "0x8009acec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xab",
+          "handler": "0x80090300",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xac",
+          "handler": "0x800903bc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xad",
+          "handler": "0x80090b18",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xae",
+          "handler": "0x80090b9c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xaf",
+          "handler": "0x80090c20",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb0",
+          "handler": "0x80090cb8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb1",
+          "handler": "0x80090d50",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb2",
+          "handler": "0x8009a5e0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb3",
+          "handler": "0x8009731c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb4",
+          "handler": "0x80097364",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb5",
+          "handler": "0x8009b8e4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb6",
+          "handler": "0x8009b6ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb7",
+          "handler": "0x8009addc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb8",
+          "handler": "0x8009ae0c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb9",
+          "handler": "0x80096534",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xba",
+          "handler": "0x800965a8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbb",
+          "handler": "0x800965f4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbc",
+          "handler": "0x800a0d3c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbd",
+          "handler": "0x80094a5c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbe",
+          "handler": "0x80094acc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbf",
+          "handler": "0x80094b3c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc0",
+          "handler": "0x80094bac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc1",
+          "handler": "0x80094c1c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc2",
+          "handler": "0x80094c8c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc3",
+          "handler": "0x800972f4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc4",
+          "handler": "0x80093e30",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc5",
+          "handler": "0x80093fc0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc6",
+          "handler": "0x800a1e9c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc7",
+          "handler": "0x8009b824",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc8",
+          "handler": "0x8009b884",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc9",
+          "handler": "0x80095734",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xca",
+          "handler": "0x8009a824",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcb",
+          "handler": "0x800958c0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcc",
+          "handler": "0x80095520",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcd",
+          "handler": "0x8009da70",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xce",
+          "handler": "0x8009da98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcf",
+          "handler": "0x8009ce48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd0",
+          "handler": "0x8009cee0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd1",
+          "handler": "0x8009cf70",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd2",
+          "handler": "0x8009c0b4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd3",
+          "handler": "0x8009c0dc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd4",
+          "handler": "0x8009c01c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd5",
+          "handler": "0x80092628",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd6",
+          "handler": "0x800925a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd7",
+          "handler": "0x800946bc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd8",
+          "handler": "0x80094710",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd9",
+          "handler": "0x80094764",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xda",
+          "handler": "0x800921e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdb",
+          "handler": "0x80091f84",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdc",
+          "handler": "0x80092044",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdd",
+          "handler": "0x80091e00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xde",
+          "handler": "0x8009d6d8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdf",
+          "handler": "0x8009d768",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe0",
+          "handler": "0x80091e98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe1",
+          "handler": "0x80091bbc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe2",
+          "handler": "0x80096150",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe3",
+          "handler": "0x80096178",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe4",
+          "handler": "0x80091ad4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe5",
+          "handler": "0x80091944",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe6",
+          "handler": "0x80091a08",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe7",
+          "handler": "0x80091a78",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe8",
+          "handler": "0x80094158",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe9",
+          "handler": "0x800943ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xea",
+          "handler": "0x80092dfc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xeb",
+          "handler": "0x800910c0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xec",
+          "handler": "0x80091318",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xed",
+          "handler": "0x800915c4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xee",
+          "handler": "0x80091720",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xef",
+          "handler": "0x8008fa38",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf0",
+          "handler": "0x80090dec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf1",
+          "handler": "0x8008b248",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf2",
+          "handler": "0x8008f90c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf3",
+          "handler": "0x80090e70",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf4",
+          "handler": "0x8009be9c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf5",
+          "handler": "0x8009c12c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf6",
+          "handler": "0x8008e8c8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf7",
+          "handler": "0x8008e85c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf8",
+          "handler": "0x8008e59c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf9",
+          "handler": "0x8008de64",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfa",
+          "handler": "0x800947b0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfb",
+          "handler": "0x8008d780",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfc",
+          "handler": "0x8009bf8c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfd",
+          "handler": "0x800a2fc0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfe",
+          "handler": "0x800869b8",
+          "analysis_status": "observed_subset",
+          "native_status": "unimplemented",
+          "evidence": [
+            "EVID-REF-018"
+          ],
+          "name": "extended_dispatch",
+          "scope": "2921 prefix PC increments; extended handler effects remain unvalidated except pending a2."
+        },
+        {
+          "opcode": "0xff",
+          "handler": "0x800a2fc0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        }
+      ]
+    },
+    {
+      "namespace": "extended",
+      "address": "0x800ae6a0",
+      "sha256": "0c6fd15b0db4c15e038e961225b70998289ba50ced11afb19a8418291107cb79",
+      "rows": [
+        {
+          "opcode": "0x00",
+          "handler": "0x8008d2d8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x01",
+          "handler": "0x8009f424",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x02",
+          "handler": "0x80095b3c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x03",
+          "handler": "0x8008d0f4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x04",
+          "handler": "0x8008d26c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x05",
+          "handler": "0x80095cc4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x06",
+          "handler": "0x80095d6c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x07",
+          "handler": "0x8008d604",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x08",
+          "handler": "0x8008d180",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x09",
+          "handler": "0x8008d078",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0a",
+          "handler": "0x8008d684",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0b",
+          "handler": "0x8008d700",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0c",
+          "handler": "0x8008cfec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0d",
+          "handler": "0x8008cf9c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0e",
+          "handler": "0x8008c84c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x0f",
+          "handler": "0x8008c938",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x10",
+          "handler": "0x8008ca60",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x11",
+          "handler": "0x8008cb4c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x12",
+          "handler": "0x8008cc74",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x13",
+          "handler": "0x8008cd48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x14",
+          "handler": "0x8008cdd4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x15",
+          "handler": "0x800a14f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x16",
+          "handler": "0x8008c7d8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x17",
+          "handler": "0x8009aa00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x18",
+          "handler": "0x8008bdd8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x19",
+          "handler": "0x8008c334",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1a",
+          "handler": "0x8008b894",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1b",
+          "handler": "0x8008b5d4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1c",
+          "handler": "0x80098a7c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1d",
+          "handler": "0x800984ec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1e",
+          "handler": "0x8009fb98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x1f",
+          "handler": "0x8009fdd4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x20",
+          "handler": "0x8009fe4c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x21",
+          "handler": "0x800a06e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x22",
+          "handler": "0x8009b664",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x23",
+          "handler": "0x8009b398",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x24",
+          "handler": "0x8009b210",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x25",
+          "handler": "0x8008d5c8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x26",
+          "handler": "0x8008b2f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x27",
+          "handler": "0x8008b328",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x28",
+          "handler": "0x8008e4ec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x29",
+          "handler": "0x8008e518",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2a",
+          "handler": "0x8008e544",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2b",
+          "handler": "0x8008e570",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2c",
+          "handler": "0x8008debc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2d",
+          "handler": "0x8008df44",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2e",
+          "handler": "0x8008dfcc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x2f",
+          "handler": "0x8008e054",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x30",
+          "handler": "0x8008e3e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x31",
+          "handler": "0x8008e414",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x32",
+          "handler": "0x8008e440",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x33",
+          "handler": "0x8008e46c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x34",
+          "handler": "0x8008e298",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x35",
+          "handler": "0x8008e2ec",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x36",
+          "handler": "0x8008e340",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x37",
+          "handler": "0x8008e394",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x38",
+          "handler": "0x8008e1b4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x39",
+          "handler": "0x8008d230",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3a",
+          "handler": "0x8008ced0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3b",
+          "handler": "0x8008ce64",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3c",
+          "handler": "0x8008b180",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3d",
+          "handler": "0x8008aec8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3e",
+          "handler": "0x8008afd8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x3f",
+          "handler": "0x8008b0e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x40",
+          "handler": "0x80092148",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x41",
+          "handler": "0x8009fc48",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x42",
+          "handler": "0x8009fcac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x43",
+          "handler": "0x8009b15c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x44",
+          "handler": "0x8009b184",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x45",
+          "handler": "0x8009a0fc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x46",
+          "handler": "0x8008ae5c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x47",
+          "handler": "0x8008b144",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x48",
+          "handler": "0x8008b518",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x49",
+          "handler": "0x8008dafc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4a",
+          "handler": "0x8008ace8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4b",
+          "handler": "0x8008a9ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4c",
+          "handler": "0x8008a974",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4d",
+          "handler": "0x8008a93c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4e",
+          "handler": "0x8008aa60",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x4f",
+          "handler": "0x80093bb0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x50",
+          "handler": "0x80093bd4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x51",
+          "handler": "0x80093bfc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x52",
+          "handler": "0x80093c20",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x53",
+          "handler": "0x80093ac8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x54",
+          "handler": "0x80093b10",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x55",
+          "handler": "0x80093740",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x56",
+          "handler": "0x80093930",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x57",
+          "handler": "0x800937e0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x58",
+          "handler": "0x80093824",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x59",
+          "handler": "0x800939a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5a",
+          "handler": "0x80093a04",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5b",
+          "handler": "0x8008b210",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5c",
+          "handler": "0x800a0fd8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5d",
+          "handler": "0x8008f6ac",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5e",
+          "handler": "0x8008f2d8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x5f",
+          "handler": "0x8008f1c8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x60",
+          "handler": "0x8008ec30",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x61",
+          "handler": "0x8008e9f8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x62",
+          "handler": "0x8008f444",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x63",
+          "handler": "0x8008f4a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x64",
+          "handler": "0x8008f5e4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x65",
+          "handler": "0x8008f4fc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x66",
+          "handler": "0x8008f558",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x67",
+          "handler": "0x8008ee14",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x68",
+          "handler": "0x80092c20",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x69",
+          "handler": "0x8008a6e0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6a",
+          "handler": "0x8008a604",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6b",
+          "handler": "0x8008a640",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6c",
+          "handler": "0x8008a5a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6d",
+          "handler": "0x8008fb28",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6e",
+          "handler": "0x8008fabc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x6f",
+          "handler": "0x8008b45c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x70",
+          "handler": "0x80089f54",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x71",
+          "handler": "0x8009899c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x72",
+          "handler": "0x800988b8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x73",
+          "handler": "0x8009861c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x74",
+          "handler": "0x800985bc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x75",
+          "handler": "0x800989f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x76",
+          "handler": "0x80098738",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x77",
+          "handler": "0x8008a2e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x78",
+          "handler": "0x8008a4f0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x79",
+          "handler": "0x8008a4e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7a",
+          "handler": "0x8008a4e0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7b",
+          "handler": "0x8008a518",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7c",
+          "handler": "0x8008a500",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7d",
+          "handler": "0x8008a508",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7e",
+          "handler": "0x8008a510",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x7f",
+          "handler": "0x8008a244",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x80",
+          "handler": "0x80089fd0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x81",
+          "handler": "0x8008a08c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x82",
+          "handler": "0x8008a148",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x83",
+          "handler": "0x80092fb4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x84",
+          "handler": "0x800933f8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x85",
+          "handler": "0x8008a2a0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x86",
+          "handler": "0x80089f94",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x87",
+          "handler": "0x800936e4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x88",
+          "handler": "0x80089bf0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x89",
+          "handler": "0x80089dcc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8a",
+          "handler": "0x80089f18",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8b",
+          "handler": "0x80089b54",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8c",
+          "handler": "0x8008f3d0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8d",
+          "handler": "0x8008f394",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8e",
+          "handler": "0x8008f348",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x8f",
+          "handler": "0x80088790",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x90",
+          "handler": "0x80089004",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x91",
+          "handler": "0x80089174",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x92",
+          "handler": "0x80089374",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x93",
+          "handler": "0x80089574",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x94",
+          "handler": "0x800896d4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x95",
+          "handler": "0x80089880",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x96",
+          "handler": "0x80089a80",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x97",
+          "handler": "0x80089ae4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x98",
+          "handler": "0x800884cc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x99",
+          "handler": "0x8008848c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9a",
+          "handler": "0x8008f0b4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9b",
+          "handler": "0x8008ef5c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9c",
+          "handler": "0x8008efa0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9d",
+          "handler": "0x8008f070",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9e",
+          "handler": "0x8008efe4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0x9f",
+          "handler": "0x800883d4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa0",
+          "handler": "0x8008ea58",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa1",
+          "handler": "0x80088360",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa2",
+          "handler": "0x8008825c",
+          "analysis_status": "observed_subset",
+          "native_status": "unimplemented",
+          "evidence": [
+            "EVID-REF-018"
+          ],
+          "name": "wait_music_load",
+          "scope": "993 pending initialization waits; ready/wrap/normal-mode paths remain source/synthetic only."
+        },
+        {
+          "opcode": "0xa3",
+          "handler": "0x800881e8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa4",
+          "handler": "0x80088198",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa5",
+          "handler": "0x80088c1c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa6",
+          "handler": "0x800888a4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa7",
+          "handler": "0x800889bc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa8",
+          "handler": "0x80090a10",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xa9",
+          "handler": "0x80090a94",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xaa",
+          "handler": "0x8008db2c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xab",
+          "handler": "0x8008dc74",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xac",
+          "handler": "0x8008dd6c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xad",
+          "handler": "0x80096b58",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xae",
+          "handler": "0x80096af4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xaf",
+          "handler": "0x8008800c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb0",
+          "handler": "0x8008aacc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb1",
+          "handler": "0x80087fd4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb2",
+          "handler": "0x80096d28",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb3",
+          "handler": "0x80096e20",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb4",
+          "handler": "0x80096c40",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb5",
+          "handler": "0x80087fa4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb6",
+          "handler": "0x80087e98",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb7",
+          "handler": "0x80087e5c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb8",
+          "handler": "0x80087de0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xb9",
+          "handler": "0x80087b5c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xba",
+          "handler": "0x80087c34",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbb",
+          "handler": "0x80087d30",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbc",
+          "handler": "0x80087d80",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbd",
+          "handler": "0x80088b68",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbe",
+          "handler": "0x80087c0c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xbf",
+          "handler": "0x80087848",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc0",
+          "handler": "0x80087800",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc1",
+          "handler": "0x80088508",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc2",
+          "handler": "0x80088674",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc3",
+          "handler": "0x8009e014",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc4",
+          "handler": "0x8009df78",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc5",
+          "handler": "0x80086f7c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc6",
+          "handler": "0x8008bc80",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc7",
+          "handler": "0x800882b8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc8",
+          "handler": "0x80088cf8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xc9",
+          "handler": "0x80088d18",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xca",
+          "handler": "0x800a0ee8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcb",
+          "handler": "0x800a0eb0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcc",
+          "handler": "0x800a0e54",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcd",
+          "handler": "0x800a0dfc",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xce",
+          "handler": "0x800a0dc0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xcf",
+          "handler": "0x80093888",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd0",
+          "handler": "0x8008764c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd1",
+          "handler": "0x8008754c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd2",
+          "handler": "0x8008752c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd3",
+          "handler": "0x80087420",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd4",
+          "handler": "0x80086fd0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd5",
+          "handler": "0x80087960",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd6",
+          "handler": "0x800879d0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd7",
+          "handler": "0x80087ab8",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd8",
+          "handler": "0x80087a40",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xd9",
+          "handler": "0x80087a7c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xda",
+          "handler": "0x80093790",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdb",
+          "handler": "0x80097200",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdc",
+          "handler": "0x800873c4",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdd",
+          "handler": "0x800871b0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xde",
+          "handler": "0x80087148",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xdf",
+          "handler": "0x80086e1c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe0",
+          "handler": "0x80086de0",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe1",
+          "handler": "0x80087580",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe2",
+          "handler": "0x80086d4c",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe3",
+          "handler": "0x00010007",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe4",
+          "handler": "0x00040002",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe5",
+          "handler": "0x8e008c00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe6",
+          "handler": "0x82008000",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe7",
+          "handler": "0x86008400",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe8",
+          "handler": "0x8a008800",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xe9",
+          "handler": "0x8e008c00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xea",
+          "handler": "0x82008000",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xeb",
+          "handler": "0x86008400",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xec",
+          "handler": "0x8a008800",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xed",
+          "handler": "0x84008c00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xee",
+          "handler": "0x80008800",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xef",
+          "handler": "0x8e008a00",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf0",
+          "handler": "0x82008600",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf1",
+          "handler": "0x00010000",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf2",
+          "handler": "0x00030002",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf3",
+          "handler": "0xfffd0004",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf4",
+          "handler": "0xfffffffe",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf5",
+          "handler": "0x0000ffff",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf6",
+          "handler": "0x00020001",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf7",
+          "handler": "0x00040003",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf8",
+          "handler": "0xfffefffd",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xf9",
+          "handler": "0xfffffffe",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfa",
+          "handler": "0x00010000",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfb",
+          "handler": "0x00030002",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfc",
+          "handler": "0xfffd0004",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfd",
+          "handler": "0xfffefffd",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xfe",
+          "handler": "0x0000ffff",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        },
+        {
+          "opcode": "0xff",
+          "handler": "0x00020001",
+          "analysis_status": "unresolved",
+          "native_status": "unimplemented"
+        }
+      ]
+    }
+  ],
+  "unknown_instruction_policy": "The C++ event library implements primary 00,01,02,04,26,35,36,37,38,39 and raises UnsupportedInstruction with PC/opcode for others. Existing Python additionally models 0c,a7 and fe/a2 within their stated limits. Unresolved services and non-code extended-table values stay explicit; aliases never establish no-ops. A source library is not a complete native VM.",
+  "unresolved_symbols": [
+    {
+      "id": "resident-function-boundaries",
+      "scope": "Both exact resident executables, including code/data separation and BIOS/hardware call relationships",
+      "evidence": [
+        "EVID-REF-007",
+        "EVID-REF-014",
+        "EVID-REF-025",
+        "EVID-REF-026",
+        "EVID-REF-027"
+      ],
+      "next_experiment": "Read related C across the final resident/field/battle/menu surveys; preserve qualified overlay identity. Resolve remaining indirect calls, context restores and automatic boundary ambiguities when they block the slice."
+    },
+    {
+      "id": "field-loader-lifetimes",
+      "addresses": [
+        "0x80070cc8",
+        "0x8007008c"
+      ],
+      "overlay": "field_overlay",
+      "evidence": [
+        "EVID-REF-014",
+        "EVID-REF-027"
+      ],
+      "next_experiment": "Use the reviewed nine-component load/consume/free order. Recover actor-default and sprite-creation service contracts, remaining component consumers and snapshot producer/restore ownership."
+    },
+    {
+      "id": "field-event-scheduler",
+      "addresses": [
+        "0x800a1ec8",
+        "0x800a2030",
+        "0x800a1b70"
+      ],
+      "overlay": "field_overlay",
+      "evidence": [
+        "EVID-REF-015",
+        "EVID-REF-016",
+        "EVID-REF-017",
+        "EVID-REF-027"
+      ],
+      "next_experiment": "Reuse reviewed C++ actor pass, slot selection and real dispatch. Resolve the three gate producers, initialization sprite effects, actor-context replacement handlers and required dialogue/concurrency instructions; observe material boundaries."
+    },
+    {
+      "id": "remaining-overlay-functions",
+      "scope": "Battle, world map, menus, Battling, media and dynamically loaded auxiliary code",
+      "evidence": [
+        "EVID-REF-009",
+        "EVID-REF-010",
+        "EVID-REF-011",
+        "EVID-REF-012",
+        "EVID-REF-013",
+        "EVID-REF-027"
+      ],
+      "next_experiment": "Battle and menu now have qualified provisional C surveys. Next qualify auxiliary loads at 801e0000 and 801de000 using existing original source records, then resolve setup/results/return contracts."
+    },
+    {
+      "id": "field-music-services",
+      "overlay": "field_overlay",
+      "addresses": [
+        "0x80085b20",
+        "0x80085c90",
+        "0x80085c3c",
+        "0x800854d0",
+        "0x800859dc"
+      ],
+      "evidence": [
+        "EVID-REF-018"
+      ],
+      "next_experiment": "Trace all wave chunks and source/SPU destinations, request replacement/stop, shared-bank readiness and resource frees. Recover sequencing, service completion and their native intent without replacing unknown services with no-ops."
+    },
+    {
+      "id": "field-movement-and-contact",
+      "overlay": "field_overlay",
+      "addresses": [
+        "0x80082bb8",
+        "0x80084a40",
+        "0x8009f5f4",
+        "0x8008399c"
+      ],
+      "evidence": [
+        "EVID-REF-019",
+        "EVID-REF-020",
+        "EVID-REF-021",
+        "EVID-REF-022",
+        "EVID-REF-023",
+        "EVID-REF-024",
+        "EVID-REF-025",
+        "EVID-REF-026",
+        "EVID-REF-027"
+      ],
+      "next_experiment": "Position/layer/history observed paths now compare from entry to return. Resolve controlled contact 80084158, active encounters 8008399c, follower updates and excluded NPC motion using connected Ghidra C and existing captures."
+    },
+    {
+      "id": "sprite-vm-and-party-resource-lifetime",
+      "addresses": [
+        "0x8001ad4c",
+        "0x8001b3a8",
+        "0x8001fbe4",
+        "0x80022224",
+        "0x800245d8",
+        "0x8002490c"
+      ],
+      "executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "evidence": [
+        "EVID-REF-022",
+        "EVID-REF-023",
+        "EVID-REF-025"
+      ],
+      "next_experiment": "Observed animation headers, facing replay,frame queue/metadata and matrices now compare. Recover rebinding/lifetime, ordinary VM effects/waits, complete frame geometry, alternate platform/frame/allocation/GTE paths and the 68 field-resource runtime byte changes."
+    }
+  ],
+  "unknown_formats": [
+    {
+      "id": "field-geometry",
+      "status": "unresolved",
+      "next_experiment": "Trace component consumers and primitive/material records used by field 23."
+    },
+    {
+      "id": "sprites-animation",
+      "status": "unresolved",
+      "next_experiment": "Observed animation headers, facing replay,frame queue/metadata and matrices now compare. Recover rebinding/lifetime, ordinary VM effects/waits, complete frame geometry, alternate platform/frame/allocation/GTE paths and the 68 field-resource runtime byte changes.",
+      "evidence": [
+        "EVID-REF-022",
+        "EVID-REF-023",
+        "EVID-REF-025"
+      ]
+    },
+    {
+      "id": "collision-semantics",
+      "status": "unresolved",
+      "next_experiment": "Height/normalization/point-location and one vertical stage compare exactly. Recover floor selection, adjacency, full attribute/layer/ceiling/rollback response and movement integration; observe no-match/vertical-plane and unobserved vertical-stage branches.",
+      "evidence": [
+        "EVID-REF-019",
+        "EVID-REF-022"
+      ]
+    },
+    {
+      "id": "camera-textures-palettes",
+      "status": "unresolved",
+      "next_experiment": "Trace camera transforms, texture/palette uploads and selectable PS1 fidelity behaviors."
+    },
+    {
+      "id": "ui-dialogue",
+      "status": "unresolved",
+      "next_experiment": "Recover dialogue tokens, menu ownership, input eligibility and wait/end semantics."
+    },
+    {
+      "id": "battle-formations-and-rules",
+      "status": "unresolved",
+      "next_experiment": "Use the ordinary field23 encounter-victory-return route to qualify battle overlays, participants, target/command states, combat/AI formulas, rewards and return ownership. Selector zero and observed opcode 71 stores are compared; full semantics and public reconstruction remain required.",
+      "evidence": [
+        "EVID-REF-020"
+      ]
+    },
+    {
+      "id": "world-map",
+      "status": "unresolved",
+      "next_experiment": "Recover terrain/object records, transitions and transport state from original source and execution."
+    },
+    {
+      "id": "audio-and-wide",
+      "status": "unresolved",
+      "next_experiment": "Two SMDS source inputs and initial WDS block are qualified. Recover remaining streaming, sample/sequence/effect formats, mode selection, SPU/reverb/polarity, streamed/FMV routing and matched two-channel outputs.",
+      "evidence": [
+        "EVID-REF-010",
+        "EVID-REF-018"
+      ]
+    },
+    {
+      "id": "fmv",
+      "status": "unresolved",
+      "next_experiment": "Extend measured sector headers to original playback/transition and timing semantics."
+    },
+    {
+      "id": "save-data",
+      "status": "unresolved",
+      "next_experiment": "Recover valid ordinary save context, block layout, checksums, corruption behavior and original round trips."
+    }
+  ],
+  "unverified_behavior": [
+    {
+      "id": "branch-unobserved-modes",
+      "status": "unresolved",
+      "next_experiment": "Observe high-nibble modes 00,80,c0, unsigned boundary cases and remaining comparison targets in original execution."
+    },
+    {
+      "id": "unobserved-slot-and-variable-modes",
+      "status": "unresolved",
+      "next_experiment": "Observed end/jump/reset and variable effects are compared. Exercise active-priority ties, reset with budget mode zero, variable waits, truncation and remaining variable selector/arithmetic boundary paths in original execution.",
+      "evidence": [
+        "EVID-REF-016"
+      ]
+    },
+    {
+      "id": "movement-jump-rng",
+      "status": "unresolved",
+      "next_experiment": "Reuse verified motion and position models. Resolve contact/followers/NPC motion, unobserved rollback/layer branches, RNG ownership, timing and readiness.",
+      "evidence": [
+        "EVID-REF-019",
+        "EVID-REF-020",
+        "EVID-REF-021",
+        "EVID-REF-022",
+        "EVID-REF-023",
+        "EVID-REF-024",
+        "EVID-REF-025",
+        "EVID-REF-026",
+        "EVID-REF-027"
+      ]
+    },
+    {
+      "id": "semantic-readiness-and-setup",
+      "status": "unresolved",
+      "next_experiment": "Recover player/event/menu/battle ownership and valid initialization/transition preconditions."
+    },
+    {
+      "id": "timing-and-hardware-intent",
+      "status": "unresolved",
+      "next_experiment": "Distinguish logical update cadences and waits from HLE/core frontend frames and device timing."
+    },
+    {
+      "id": "actor-zero-initialization-wait",
+      "status": "unresolved",
+      "addresses": [
+        "0x800869b8",
+        "0x8008825c",
+        "0x8004f308"
+      ],
+      "overlay": "field_overlay",
+      "evidence": [
+        "EVID-REF-017",
+        "EVID-REF-018"
+      ],
+      "next_experiment": "Pending fe/a2 and its music-poll producer now have exact original comparisons. Observe the ready branch and ordinary-mode wait, recover request replacement/stop and full media lifetime, and separately establish player readiness. Do not infer a ready wait return from later music completion alone."
+    },
+    {
+      "id": "field-control-unobserved-branches",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-021"
+      ],
+      "next_experiment": "Observe primary0c, dialogue-status-zero blocking, terrain held-retry counter, alternate jump cooldown, terrain rejection and alternate direction-table selection through qualified ordinary scenarios. Public fixtures remain source-only for these cases."
+    },
+    {
+      "id": "jump-physics-unobserved-branches",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-022"
+      ],
+      "next_experiment": "Observe different gravity/scale/rate/divisor values, nonzero or disabled impulse references, terrain-disabled/different attributes, layer changes and terrain marker retention. Keep source-derived synthetic cases separate from original-run proof."
+    },
+    {
+      "id": "planar-motion-unobserved-and-field-sprite-mutations",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-023"
+      ],
+      "next_experiment": "Observe alternate operands/scales/rates/divisors, stop sentinel and ratio/Gear paths. Reconstruct field component3 runtime changes at the 68 recorded bytes and complete sprite VM paths; do not infer handler semantics from PC widths."
+    },
+    {
+      "id": "movement-sweep-unobserved-branches",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-024"
+      ],
+      "next_experiment": "Observe missing/invalid neighbors, mask7, traversal cap, disabled/alternative terrain, query mode80 and special forced floor. Recover scratchpad copy lineage and GTE service intent; keep source-only cases separate from original execution."
+    },
+    {
+      "id": "animation-unobserved-resource-and-rendering-paths",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-025"
+      ],
+      "next_experiment": "Observe other facing/header/matrix/replay cases and recover actual resource rebinding,allocation,alternate frame formats and GTE products. Keep source-only S3 duration/stack-alias fixtures separate from original execution; complete VM and rendering ownership remain open."
+    },
+    {
+      "id": "party-motion-composition-remainder",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-026",
+        "EVID-REF-027"
+      ],
+      "next_experiment": "The later position subset is now reviewed and all captured calls compare. NPC active motion, enabled bounds, other resource/animation modes, contact/followers and unobserved position branches remain open."
+    }
+  ],
+  "sprite_command_dispatch": {
+    "namespace": "sprite",
+    "source_profile": "na-slus-00664-39c547a9afc6",
+    "executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+    "table_address": "0x800183d8",
+    "table_bytes": 460,
+    "table_sha256": "ee73be97683cbf2affa5db0d128e5083ac4b273da3bc5c2f0bfc12bfb75ee0f8",
+    "evidence": [
+      "EVID-REF-022",
+      "EVID-REF-023"
+    ],
+    "scope": "Original generic sprite dispatcher indexes opcode minus 8a for 115 entries. A0 speed and A1 impulse have observed reconstructions. The separate outer VM and other handler effects remain incomplete; observed width-based stores are inventoried separately.",
+    "rows": [
+      {
+        "opcode": "0x8a",
+        "handler": "0x80021794",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x8b",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x8c",
+        "handler": "0x8001fd50",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x8d",
+        "handler": "0x8001fc34",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x8e",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x8f",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x90",
+        "handler": "0x800210f0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x91",
+        "handler": "0x80020de8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x92",
+        "handler": "0x80020df8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x93",
+        "handler": "0x80020e30",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x94",
+        "handler": "0x8001fdc8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x95",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x96",
+        "handler": "0x8001feec",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x97",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x98",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x99",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x9a",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x9b",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x9c",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x9d",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x9e",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0x9f",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa0",
+        "handler": "0x80021958",
+        "analysis_status": "observed_subset",
+        "native_status": "unimplemented",
+        "name": "planar_speed",
+        "operand_bytes_read": 1,
+        "reconstruction": "tools/analysis/planar_motion.py",
+        "evidence": [
+          "EVID-REF-023"
+        ]
+      },
+      {
+        "opcode": "0xa1",
+        "handler": "0x800219ac",
+        "analysis_status": "observed_subset",
+        "native_status": "unimplemented",
+        "name": "vertical_impulse",
+        "operand_bytes_read": 1,
+        "reconstruction": "tools/analysis/jump_physics.py",
+        "evidence": [
+          "EVID-REF-022"
+        ]
+      },
+      {
+        "opcode": "0xa2",
+        "handler": "0x8001ff00",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa3",
+        "handler": "0x800217a4",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa4",
+        "handler": "0x80020d9c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa5",
+        "handler": "0x80021884",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa6",
+        "handler": "0x800218dc",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa7",
+        "handler": "0x8001fdf0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa8",
+        "handler": "0x8002176c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xa9",
+        "handler": "0x80021698",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xaa",
+        "handler": "0x800216f4",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xab",
+        "handler": "0x80021730",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xac",
+        "handler": "0x80021644",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xad",
+        "handler": "0x80021468",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xae",
+        "handler": "0x800214d4",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xaf",
+        "handler": "0x80021570",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb0",
+        "handler": "0x8001fcfc",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb1",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb2",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb3",
+        "handler": "0x800214ac",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb4",
+        "handler": "0x80021480",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb5",
+        "handler": "0x80021318",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb6",
+        "handler": "0x80021518",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb7",
+        "handler": "0x80021544",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb8",
+        "handler": "0x80021494",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xb9",
+        "handler": "0x8001fcf0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xba",
+        "handler": "0x80020f38",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xbb",
+        "handler": "0x80020e14",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xbc",
+        "handler": "0x800202f4",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xbd",
+        "handler": "0x80021410",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xbe",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xbf",
+        "handler": "0x8001fee0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc0",
+        "handler": "0x80020158",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc1",
+        "handler": "0x800201f0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc2",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc3",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc4",
+        "handler": "0x800215b8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc5",
+        "handler": "0x8001fcac",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc6",
+        "handler": "0x8001fc54",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc7",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc8",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xc9",
+        "handler": "0x8001fc78",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xca",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xcb",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xcc",
+        "handler": "0x8001fd2c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xcd",
+        "handler": "0x8001ff0c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xce",
+        "handler": "0x8001ffc0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xcf",
+        "handler": "0x8002008c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd0",
+        "handler": "0x80020d68",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd1",
+        "handler": "0x80020bb0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd2",
+        "handler": "0x80020be8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd3",
+        "handler": "0x80020d68",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd4",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd5",
+        "handler": "0x80020be8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd6",
+        "handler": "0x80020c50",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd7",
+        "handler": "0x80020c74",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd8",
+        "handler": "0x80020c9c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xd9",
+        "handler": "0x80020cc4",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xda",
+        "handler": "0x80020ce8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xdb",
+        "handler": "0x80020d0c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xdc",
+        "handler": "0x80020d34",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xdd",
+        "handler": "0x80020d68",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xde",
+        "handler": "0x80020d68",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xdf",
+        "handler": "0x80020db4",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe0",
+        "handler": "0x80021440",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe1",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe2",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe3",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe4",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe5",
+        "handler": "0x80020c20",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe6",
+        "handler": "0x80020dcc",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe7",
+        "handler": "0x80021340",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe8",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xe9",
+        "handler": "0x80021374",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xea",
+        "handler": "0x800213a8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xeb",
+        "handler": "0x800213dc",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xec",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xed",
+        "handler": "0x80021a44",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xee",
+        "handler": "0x80021a60",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xef",
+        "handler": "0x80021aa0",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf0",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf1",
+        "handler": "0x80020f4c",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf2",
+        "handler": "0x80020fc8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf3",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf4",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf5",
+        "handler": "0x80021140",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf6",
+        "handler": "0x800211dc",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf7",
+        "handler": "0x80021278",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf8",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xf9",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xfa",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xfb",
+        "handler": "0x80021ab8",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      },
+      {
+        "opcode": "0xfc",
+        "handler": "0x8001fe64",
+        "analysis_status": "unresolved",
+        "native_status": "unimplemented"
+      }
+    ]
+  },
+  "sprite_command_pc_store": {
+    "source_profile": "na-slus-00664-39c547a9afc6",
+    "width_table_address": "0x8004fc40",
+    "width_table_bytes": 256,
+    "width_table_sha256": "f329de9c682e328cd9ca4718972691f3bb716046f2f57803c3a24e9b19326c0a",
+    "store_address": "0x80024efc",
+    "reconstruction": "tools/analysis/planar_motion.py",
+    "evidence": [
+      "EVID-REF-023"
+    ],
+    "native_status": "unimplemented",
+    "observed_opcodes": [
+      {
+        "opcode": "0x84",
+        "width": 1,
+        "count": 7
+      },
+      {
+        "opcode": "0x86",
+        "width": 1,
+        "count": 6
+      },
+      {
+        "opcode": "0x87",
+        "width": 1,
+        "count": 6
+      },
+      {
+        "opcode": "0x94",
+        "width": 1,
+        "count": 4700
+      },
+      {
+        "opcode": "0xa0",
+        "width": 2,
+        "count": 19
+      },
+      {
+        "opcode": "0xa1",
+        "width": 2,
+        "count": 6
+      },
+      {
+        "opcode": "0xa6",
+        "width": 2,
+        "count": 153
+      },
+      {
+        "opcode": "0xb4",
+        "width": 2,
+        "count": 186
+      },
+      {
+        "opcode": "0xbc",
+        "width": 2,
+        "count": 4706
+      },
+      {
+        "opcode": "0xc6",
+        "width": 2,
+        "count": 6
+      },
+      {
+        "opcode": "0xce",
+        "width": 3,
+        "count": 940
+      },
+      {
+        "opcode": "0xe4",
+        "width": 3,
+        "count": 186
+      }
+    ],
+    "scope": "10921 exact post-handler width additions and committed stores. Original loop opcode/source and operand-pointer relationships compare; other handler effects and 11516 other loop entries remain opaque."
+  },
+  "movement_sweep_reconstruction": {
+    "source_profile": "na-slus-00664-39c547a9afc6",
+    "overlay": "field_overlay",
+    "ordinary_sweep": "0x8007bac0",
+    "special_sweep": "0x8007b814",
+    "ordinary_query": "0x8007bef4",
+    "special_query": "0x8007c694",
+    "edge_projection": "0x8007b6c4",
+    "models": [
+      "tools/analysis/sweep_math.py",
+      "tools/analysis/collision_query.py",
+      "tools/analysis/movement_sweep.py"
+    ],
+    "verifier": "tools/analysis/verify_movement_sweep.py",
+    "evidence": [
+      "EVID-REF-024"
+    ],
+    "analysis_status": "observed_subset",
+    "native_status": "unimplemented",
+    "scope": "729 sweeps and every nested source-derived query, slope and edge calculation compare; later position integration remains separate."
+  },
+  "sprite_animation_reconstruction": {
+    "source_profile": "na-slus-00664-39c547a9afc6",
+    "field_overlay": "field_overlay",
+    "resident_functions": {
+      "orientation": "0x800223b0",
+      "replay": "0x80022660",
+      "frame_schedule": "0x8001d2b0",
+      "frame_lookup": "0x80022d44",
+      "previous_frame_metadata": "0x8001f8e8",
+      "header": "0x80023538",
+      "selection": "0x800245d8",
+      "matrix": "0x80022090"
+    },
+    "field_selection": "0x800821f4",
+    "observed_gp": "0x80059170",
+    "observed_frame_queue_head": "0x80059190",
+    "models": [
+      "tools/analysis/sprite_state.py",
+      "tools/analysis/sprite_matrix.py",
+      "tools/analysis/sprite_animation.py",
+      "tools/analysis/sprite_replay.py"
+    ],
+    "verifier": "tools/analysis/verify_sprite_animation.py",
+    "evidence": [
+      "EVID-REF-025"
+    ],
+    "analysis_status": "observed_subset",
+    "native_status": "unimplemented",
+    "scope": "69 complete observed animation changes, 1,479 facing updates including 65 replays, 198 frame calls and 2,889 matrices. EVID-REF-026 composes party main motion. Ordinary VM, other resources and rendering remain open."
+  },
+  "party_motion_reconstruction": {
+    "source_profile": "na-slus-00664-39c547a9afc6",
+    "field_overlay": "field_overlay",
+    "functions": {
+      "main": "0x80082bb8",
+      "bounds": "0x80082494",
+      "idle_predicate": "0x8008492c"
+    },
+    "models": [
+      "tools/analysis/active_motion.py"
+    ],
+    "verifier": "tools/analysis/verify_active_motion.py",
+    "evidence": [
+      "EVID-REF-026"
+    ],
+    "analysis_status": "observed_subset",
+    "native_status": "unimplemented",
+    "scope": "2,836 complete party calls across two original routes; 729 computed sweeps, 40 main animation changes and 5,868 compiled C/Python/original predicate agreements. Other actor motion, enabled bounds, later integration and timing remain separate."
+  },
+  "decompiler_surveys": [
+    {
+      "kind": "field",
+      "index": ".local/ghidra/subsystem-survey-disc1-v4/index.json",
+      "index_sha256": "c1dff9edc2e620f5d8df8d7a26956f9cff85820f14b763e07ccb929aaf600785",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+      "base": "0x8006faf0",
+      "counts": {
+        "resident": 960,
+        "field": 781
+      },
+      "complete_c": 1741,
+      "source_bodies_exact": 1741,
+      "computed_calls": 277,
+      "status": "automatic_output_with_explicit_source_annotations"
+    },
+    {
+      "kind": "battle",
+      "index": ".local/ghidra/slice-overlays-disc1-v1/battle-survey-v2/index.json",
+      "index_sha256": "65d1ccc6164616349890774b27f4cc359d6a928404aed2bd8721dd644367e155",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "overlay_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+      "base": "0x8006faf0",
+      "counts": {
+        "resident": 928,
+        "battle": 749
+      },
+      "complete_c": 1677,
+      "source_bodies_exact": 1677,
+      "computed_calls": 348,
+      "status": "automatic_output_with_explicit_source_annotations"
+    },
+    {
+      "kind": "menu",
+      "index": ".local/ghidra/slice-overlays-disc1-v1/menu-survey-v2/index.json",
+      "index_sha256": "956e4283490cafd50664c6756c0e5d977d651f7ce44d3035284f178651447667",
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "overlay_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+      "base": "0x801c5000",
+      "counts": {
+        "resident": 856,
+        "menu": 271
+      },
+      "complete_c": 1127,
+      "source_bodies_exact": 1127,
+      "computed_calls": 200,
+      "status": "automatic_output_with_explicit_source_annotations"
+    }
+  ],
+  "reconstruction_status_rule": "automatic_output is a review aid; inferred annotations require source support; source_reviewed means authored semantic review; observed_subset means only the explicitly compared execution. Authored C++ libraries do not imply a complete native runtime or broad subsystem promotion.",
+  "source_modules": [
+    {
+      "id": "field_events_cpp",
+      "files": [
+        "include/xem/reconstruction/field_events.hpp",
+        "src/reconstruction/field_events.cpp",
+        "tests/test_field_events.cpp"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-027"
+      ],
+      "scope": "Ten primary handlers, slot selection and batch/actor-pass source. 81,527 original state/branch transitions; actor eligibility and connected dispatch remain source/synthetic scope."
+    },
+    {
+      "id": "field_position",
+      "files": [
+        "tools/analysis/position.py",
+        "tools/analysis/position_query.py",
+        "tools/analysis/position_trace.py",
+        "tests/test_position.py"
+      ],
+      "analysis_status": "observed_subset",
+      "native_status": "unimplemented",
+      "evidence": [
+        "EVID-REF-027"
+      ],
+      "scope": "All 4,385 captured position calls, 626 active commits, 1,252 layer queries and 626 history writes. Unobserved rollback/contact/follower/NPC motion remain explicit."
+    }
+  ],
+  "subsystem_dependency_map": [
+    {
+      "id": "field_loading_initialization",
+      "status": "partial_source_review",
+      "depends_on": [
+        "packed_decoder",
+        "field_components",
+        "actor_defaults",
+        "sprite_creation",
+        "event_execution"
+      ],
+      "next_blocker": "Resolve actor defaults, sprite creation and initialization dispatch from 80080a74/80080f44/80076ac0/800a28d4 together."
+    },
+    {
+      "id": "event_execution",
+      "status": "reviewed_core_subset",
+      "depends_on": [
+        "field_loading_initialization",
+        "dialogue",
+        "actor_dispatch",
+        "media_readiness"
+      ],
+      "next_blocker": "Decode required dialogue/concurrent actor handlers using corrected operand and shared actor types; trace gate producers only where material."
+    },
+    {
+      "id": "field_behavior",
+      "status": "observed_motion_position_subset",
+      "depends_on": [
+        "event_execution",
+        "collision",
+        "sprite_animation",
+        "contact",
+        "followers",
+        "camera"
+      ],
+      "next_blocker": "Controlled contact and active encounter selection connect the verified movement models to the observed battle request."
+    },
+    {
+      "id": "encounter_return",
+      "status": "observed_route_partial_source",
+      "depends_on": [
+        "field_snapshot",
+        "battle_setup",
+        "battle_rules",
+        "battle_results",
+        "sprite_rebinding"
+      ],
+      "next_blocker": "Qualify auxiliary code loads; compare snapshot producer with 800a3474 restore and resource rebinding."
+    },
+    {
+      "id": "menus_persistence",
+      "status": "provisional_decompiler_survey",
+      "depends_on": [
+        "menu_state",
+        "resident_party_inventory",
+        "card_services",
+        "save_format"
+      ],
+      "next_blocker": "Type shared menu state at 800625a0; review real menu roots and the corrected 801c531c switch with card/state consumers."
+    },
+    {
+      "id": "required_media",
+      "status": "observed_loading_subset",
+      "depends_on": [
+        "sequence_sample_formats",
+        "logical_media_completion",
+        "spu_intent",
+        "fmv_transition"
+      ],
+      "next_blocker": "Complete source/resource lifetimes and logical completion; playback/Wide behavior remain separate requirements."
+    },
+    {
+      "id": "phase2_handoff",
+      "status": "incomplete",
+      "depends_on": [
+        "field_loading_initialization",
+        "event_execution",
+        "field_behavior",
+        "encounter_return",
+        "menus_persistence",
+        "required_media",
+        "timing_readiness"
+      ],
+      "next_blocker": "Complete the nine-domain slice source/state contract and independent review. Provisional surveys do not close Phase 1."
+    }
+  ]
+}

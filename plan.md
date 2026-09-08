@@ -60,6 +60,8 @@ Verification: [current Phase 0 audit](docs/verification/phase0-agent.json). Nati
 
 **Goal:** Produce this project's own understanding and source reconstruction directly from the original binaries and data.
 
+Use Ghidra as the main reverse-engineering environment, supplemented by lab313ru/ghidra_psx_ldr for PlayStation-specific loading and analysis. Use m2c selectively when a function benefits from matching-oriented reconstruction. Decompiler output still requires source, type, control-flow and original-execution review.
+
 - [ ] Analyze disc layout, boot metadata, executable loading, archives, sector references, compression, and shared versus disc-specific resources.
 - [ ] Map the main executable and dynamically loaded code/data. Track overlay identity alongside addresses so reused memory locations do not become ambiguous symbols.
 - [ ] Disassemble the original MIPS code and recover function boundaries, calling conventions, globals, structures, tables, dispatchers, and subsystem relationships.
@@ -75,6 +77,9 @@ Verification: [current Phase 0 audit](docs/verification/phase0-agent.json). Nati
 - [ ] Recover state ownership, action eligibility, menu/dialogue structure, event/control readiness, spawn/transition preconditions, and subsystem initialization needed for native agent queries and typed go-anywhere setup. Map original addresses and symbols to native semantic fields without making raw memory offsets the native API.
 - [ ] Create original parser fixtures and behavioral tests for each finding. Generate tests requiring original data locally from the user's imported assets; use synthetic or redistributable fixtures in public CI.
 - [ ] Maintain explicit unresolved-symbol, unknown-format, and unimplemented-instruction inventories. Never silently treat unknown behavior as a no-op.
+
+Verification in progress: [Phase 1 evidence and remaining proof](docs/phase1-progress.md).
+The verified decoder, event-control, music-loading, collision-arithmetic, field-control, sprite/jump, planar-motion, movement-sweep, animation/replay, composed party-motion and position subsets, the reusable C++ event library, and the observed encounter-victory-return route do not yet complete a broad todo or the slice exit. Related Ghidra surveys and shared-type corrections support the [source/state handoff](analysis/formats/field-lifecycle.md); provisional decompilation does not close the remaining requirements.
 
 **Exit criterion:** The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, including its agent-visible state and scenario-entry semantics, with a tracked backlog for the rest of the game.
 

@@ -31,6 +31,7 @@ ALLOWED_SUFFIXES = {
     ".lock",
     ".cmake",
     ".cpp",
+    ".java",
     ".h",
     ".hpp",
     ".in",

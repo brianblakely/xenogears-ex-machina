@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-017",
+  "kind": "original_field_interpreter_batch_policy",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 205784,
+        "window_bytes": 360
+      },
+      "address": "0x800a1ec8",
+      "address_space": "PS1 KSEG0 in the source-qualified original field overlay",
+      "not_applicable": "LBA locates the packed overlay; instruction/table offsets refer to its decoded byte stream."
+    }
+  ],
+  "observation": "Two disjoint original trace windows of the field 23 entry-dialogue route capture 29993 complete batches and 73257 post-handler decisions. Reconstructed stage ordering, loop counters, budgets and all 40 captured global bytes match original execution. The 25 initialization batches use budget 65535 and mode zero; 29968 ordinary batches use budget eight and mode one. Observed returns comprise 29256 honored breaks, 736 exhausted budgets and one hard-dispatch safeguard. In 993 initialization handler returns, break requested remains one while execution continues. The first actor-zero batch runs 1025 handlers across frontend runs 510 and 511.",
+  "interpretation": "Budget mode and exact break-flag comparisons govern batching. Initialization may keep executing a yielding instruction until the hard dispatch cap; it cannot be represented by a universal break-on-yield rule. The analysis reconstruction separates this policy from handler effects, which remain opaque original inputs for this comparison. These findings constrain future native timing and scenario initialization without assigning a tick rate or player-readiness meaning to raw globals.",
+  "confidence": "supported",
+  "validation": {
+    "preconditions": [
+      "Use the exact Disc 1 source profile, fresh source audit from EVID-REF-016 and the pinned Nix observation-trace shell.",
+      "Capture four source-guarded instruction points with bounded globals in two independent windows of the authored field23-entry-dialogue route. Preserve original handler execution."
+    ],
+    "commands": [
+      "python3 tools/analysis/verify_event_schedule.py prepare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --start 0 --end 2200 --output <new-private-spec.json>",
+      "python3 tools/reference/scenario.py tests/reference-inputs/field23-entry-dialogue.json --content \"discs/Xenogears disc 1.chd\" --trace-instructions <new-private-spec.json> --output <new-private-run>",
+      "python3 tools/analysis/verify_event_schedule.py compare --raw .local/references/source-1/disc.bin --profile na-slus-00664-39c547a9afc6 --map 23 --start 0 --end 2200 --capture <run>/capture --output <new-private-comparison.json>",
+      "Repeat prepare, capture and compare for --start 2200 --end 5000.",
+      "python3 -m unittest tests.test_event_schedule",
+      "env PYTHONPATH=. python3 .local/analysis/phase1-event-batches-20260908/audit-negative.py (use a new private output directory when reproducing)"
+    ],
+    "expected": "Exact original entry, loop, post-handler and return order with correct counters, original global budgets, exact flag comparisons and preservation of all captured globals across policy-only code. Unknown original handlers are not executed by this reconstruction or treated as no-ops. Source/code identity, record completeness and full control outputs must qualify the result.",
+    "actual": "29993 batches and 73257 post-handler decisions match exactly. All trace guards passed, callback budgets remained below their limits, and record sequences were complete. Six public boundary tests pass. An independent original positive batch passes; eight corruptions are rejected. Both captures equal the uninstrumented control full RAM, external state, audio and all 18 PNGs. The full public suite has 145 passing tests under Debug, Sanitizer and Release.",
+    "result": "passed",
+    "tolerance": "Exact control-flow decisions, u32/signed comparisons, loop counter and 40 captured global bytes. No timing or unknown-handler equivalence is inferred.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-event-batches-20260908/control-comparison.json",
+        "sha256": "d774442430f52684a288c3c49421d0a290f571cd1c854f8da74464b15bc0b7ac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-batches-20260908/negative/results.json",
+        "sha256": "29316a2c8f212bb86851cc6ceeca04b5453080a582362b72b35dbf365671c0f2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-batches-20260908/audit-negative.py",
+        "sha256": "85661155e8a0acadc7722ed1a549e732d5fc6f224785a3da0630db8d9da9dc2a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-batches-20260908/hard-limit.json",
+        "sha256": "099f6171e8a24ee40b9d527a053a8f8839377aac5629e24e41067d61aff28327",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-state-20260908/source-audit.json",
+        "sha256": "ed825242e521b76cf478c832e536ca4868796c70e6b80cfc59c174ae5d3b5cc5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-batches-20260908/batch-0-2200-comparison.json",
+        "sha256": "bf00be360ee649761b0d993d11a486943fbe592e2f2440196e858ff999707246",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/report.json",
+        "sha256": "1ab724e860353902bd51ff7cdbeb6eb217288da86e64e08a9ed0b29c3fa3a805",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/capture/observation.json",
+        "sha256": "b4e46ac1f55a5abf4997b9acbf7182a5cf9628e4f426d7e7d86af8a2046cd827",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/capture/instruction-trace-spec.json",
+        "sha256": "0d79d52d6b962600debf8fb3820318bf494a7e68002bef2e49ae1e012898370c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/capture/instruction-trace.jsonl",
+        "sha256": "f3d88e272e3028b99274ebd7b49e75b92856c46b3684dde966651afa3a411382",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-0-2200-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-batches-20260908/batch-2200-5000-comparison.json",
+        "sha256": "1e785fda500cf4339a987c9ee87aaf00dd4caf7e9221ff05d2df02690103ff48",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/report.json",
+        "sha256": "0ee130c57c25dcf0c6c28484d863708a8926dbdf3dd0cca04681f2c695d994b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/capture/observation.json",
+        "sha256": "79d9f65b1f51310463e1b7ccac37eef29e49ac845f9611a5e48ad27293c9209a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/capture/instruction-trace-spec.json",
+        "sha256": "cef450bf66e01c61918cd56788b751d9df299ee8a37e61bcb6fa09e8d7ec8ddd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/capture/instruction-trace.jsonl",
+        "sha256": "96b1994ebc4c950f96c37739bfb6b68f4ee15f1450b95b5542cb240d4624331b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/capture/final.ram",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/capture/final.state",
+        "sha256": "4deb35bfaf338ddc0b22734d8cdbc9971a7ce7a1c04981878a129b2ed1da93de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-batch-2200-5000-20260908/capture/audio.wav",
+        "sha256": "a966ec62181724557a1632031bd09c9a66748292b03cc81a44f6a9fd41151094",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "tools/analysis/event_schedule.py",
+        "sha256": "9393d819e5aab26b37aa97fdf3175a5323ac3b7dc39a7e1b6cc15ed1049b365b",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_event_schedule.py",
+        "sha256": "802c40c3050d3637437636bcf939dd4cd40356345cf1685407ce8c9b86c5227b",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/verify_event_state.py",
+        "sha256": "88fa2d392bc3714fedb72538247e024e208889aeb7db55db776f21b38b809214",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_event_schedule.py",
+        "sha256": "c2d038c4e6758779dbbc198d1d5e7f3ce6bf4cfc689345ab8dae8e089aba1850",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-entry-dialogue.json",
+        "sha256": "1c5757629034aeba726dbd268432f63df4c2e4b3be6b681e37c2139a3903f616",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_windows": [
+    {
+      "start": 0,
+      "end": 2200,
+      "counts": {
+        "loop_checks": 29880,
+        "handler_returns": 29879,
+        "batches": 13065
+      },
+      "maximum_nesting": 1,
+      "return_reasons": {
+        "break-request": 12857,
+        "budget-exhausted": 207,
+        "hard-dispatch-limit": 1
+      },
+      "entry_budgets": [
+        {
+          "budget_u32": 8,
+          "budget_mode": 1,
+          "count": 13040
+        },
+        {
+          "budget_u32": 65535,
+          "budget_mode": 0,
+          "count": 25
+        }
+      ],
+      "observed_cases": [
+        {
+          "case": [
+            0,
+            0,
+            0,
+            false,
+            "remaining-budget"
+          ],
+          "count": 124
+        },
+        {
+          "case": [
+            0,
+            1,
+            0,
+            false,
+            "remaining-budget"
+          ],
+          "count": 993
+        },
+        {
+          "case": [
+            1,
+            0,
+            1,
+            false,
+            "budget-exhausted"
+          ],
+          "count": 207
+        },
+        {
+          "case": [
+            1,
+            0,
+            1,
+            false,
+            "remaining-budget"
+          ],
+          "count": 15698
+        },
+        {
+          "case": [
+            1,
+            1,
+            0,
+            false,
+            "break-request"
+          ],
+          "count": 24
+        },
+        {
+          "case": [
+            1,
+            1,
+            1,
+            false,
+            "break-request"
+          ],
+          "count": 12833
+        }
+      ]
+    },
+    {
+      "start": 2200,
+      "end": 5000,
+      "counts": {
+        "loop_checks": 43378,
+        "handler_returns": 43378,
+        "batches": 16928
+      },
+      "maximum_nesting": 1,
+      "return_reasons": {
+        "break-request": 16399,
+        "budget-exhausted": 529
+      },
+      "entry_budgets": [
+        {
+          "budget_u32": 8,
+          "budget_mode": 1,
+          "count": 16928
+        }
+      ],
+      "observed_cases": [
+        {
+          "case": [
+            1,
+            0,
+            1,
+            false,
+            "budget-exhausted"
+          ],
+          "count": 529
+        },
+        {
+          "case": [
+            1,
+            0,
+            1,
+            false,
+            "remaining-budget"
+          ],
+          "count": 26450
+        },
+        {
+          "case": [
+            1,
+            1,
+            1,
+            false,
+            "break-request"
+          ],
+          "count": 16399
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Independent review is outstanding.",
+    "Blocking dispatch-gate cases, nonpositive entry budgets, flags beyond zero/one and nested batches are not observed in this route.",
+    "This compares dispatch policy around original handlers; it does not validate every dispatched opcode or replace them with synthetic/no-op effects.",
+    "Actor selection eligibility, surrounding working/resume-PC copies, initialization state producers, dialogue/interaction ownership and semantic readiness remain open.",
+    "The observed hard limit is an original game rule under this external reference core; frontend runs are not proof of a native simulation cadence or original hardware timing.",
+    "The scope remains a candidate entry-dialogue route, not the frozen battle/menu/save/media/visual/audio slice exit."
+  ],
+  "provenance": {
+    "game_specific_sources": "Only the qualified original overlay, field package and original execution captures were consulted in this work. No other Xenogears implementation or reverse-engineering material was used.",
+    "authorship": "Project-authored Python reconstruction and tests with Codex assistance. No original instructions, event bytes, RAM, images or audio are distributed.",
+    "infrastructure": "Existing pinned external instruction-trace observation core and Nix analysis tools; dependency records and independent implementation boundary are unchanged."
+  },
+  "author": "Codex /root, original source and execution analysis on 2026-09-08",
+  "reviewers": []
+}
