@@ -1,10 +1,12 @@
 # Xenogears Ex Machina — Independent Decompilation and Native PC Port Plan
 
-**Original-game analysis → independent decompilation → agent-ready native runtime → modern PC features → Lua modding → graphical editors.**
+**Original-game analysis → independent decompilation → agent-ready native runtime and content pipeline → TypeScript world/geometry authoring → modern PC features and Lua mods → shared graphical editors.**
 
 Xenogears Ex Machina is a new project. Independently decompile the original Xenogears game and implement a new native runtime and companion editor suite, with Arch Linux as the leading platform. Do not start from, fork, extend, or adopt another Xenogears decompilation, recompilation, fan port, or game engine implementation.
 
 **Foundational requirement:** The native application must be fully playable by agents through a first-class headless interface with direct engine input, full game introspection, complete debugging and go-anywhere capabilities, unlocked simulation speed, and an optional image stream for human spectators. This is part of the native runtime's initial architecture and first playable milestone, not a later automation layer, emulator wrapper, or editor-only feature.
+
+**Foundational authoring requirement:** Agents must also be able to create and revise playable mods from prompts through a discover → specify → author → build → play → diagnose → repair → package loop. TypeScript is the primary source language for authored worlds, procedural geometry, reusable components, and declarative event definitions, with optional TSX composition. Authors must be able to construct actual towns, dungeons, environments, and custom objects without importing any geometry, while optionally mixing in external models and locally imported original assets. Graphical editors and agents use the same source contracts, compiler, native loaders, and verification services. A prompt box or GUI automation alone does not satisfy this requirement.
 
 ## Project boundaries
 
@@ -18,6 +20,9 @@ Xenogears Ex Machina is a new project. Independently decompile the original Xeno
 - **Data separation:** Import original game data from user-supplied disc images into a local asset store. Keep disc images, original executables, extracted copyrighted assets, and personal saves out of distributed source and build artifacts.
 - **Behavior versus presentation:** Preserve gameplay-relevant behavior and intentional effects. Modern rendering remains the default; preserve PS1 rendering quirks as independently selectable options and a PS1-style preset in the native renderer. Binary-identical recompilation is not a release gate; independent decompilation, documented understanding, and behavioral validation are.
 - **Wide-derived headphone surround:** Provide an optional mode that decodes/reconstructs the original game's Wide spatial signal and binaurally renders its verified intended sound field to exactly two headphone channels. Recover the actual Wide behavior before selecting a decoder; do not substitute generic stereo widening or assume a particular surround matrix from the mode name.
+- **Authoring is not runtime execution:** TypeScript runs in a supervised build-time Node.js process to manufacture meshes, world definitions, and event instructions. It is not translated into engine C++, evaluated every rendered frame, or automatically shipped as executable gameplay JavaScript. Native C++ systems and explicit event graphs execute ordinary behavior; Lua remains the custom gameplay extension language. Playing a prebuilt package must not require Node.js, a browser, Qt/QML, or an authoring tool.
+- **One source-oriented authoring pipeline:** TypeScript source, explicit parameter data, Lua modules, and referenced assets are authoritative. The intermediate representation, generated GLBs, and compiled packages are derived outputs, not competing editable sources. Preserve reusable components, stable IDs, and handwritten code through graphical and agent edits; do not promise arbitrary source-code round-tripping.
+- **Geometry tools are not a replacement game engine:** Use general-purpose geometry/import/export libraries without adopting another game's implementation or making Three.js, Blender, Qt Quick 3D, or Godot the authoritative runtime. Blender or other external tools may supply optional assets. QML is not the selected world/geometry language; any later editor UI toolkit remains a client of the shared services.
 
 Existing completion marks are retained. New requirements remain unchecked until demonstrated; previously completed work does not automatically satisfy an expanded requirement. A phase is complete only when its current exit criterion has been demonstrated.
 
@@ -33,6 +38,19 @@ Existing completion marks are retained. New requirements remain unchecked until 
 | Optional human observation | Offer on-demand images and an attachable live image stream from the native renderer. Viewing is optional and read-only by default; attaching, disconnecting, slowing, or dropping a spectator must not change game state or force real-time execution. |
 | Stable automation interface | Provide a documented, versioned, discoverable machine-readable API with explicit capabilities, IDs, tick semantics, errors, cancellation, and reproducible run artifacts. It must be usable without a GUI or a specific agent vendor. |
 | Architectural gate | No subsystem is considered complete until its state, valid actions, setup, time progression, and debugging are available headlessly. The first native playable slice must demonstrate agent play and optional human observation before broad game-completion work advances. |
+
+## Foundational agent-authoring contract
+
+| Capability | Required behavior |
+|---|---|
+| Actual geometry creation | Author shapes, surfaces, topology, and complete playable environments from code, not merely place external models or select prepared prefabs. Support reusable parameterized components and an arbitrary-mesh escape hatch alongside imported models. |
+| Discoverable content SDK | Supply types, schemas, exact asset/entity IDs, searchable examples, supported operations, and explicit unsupported/opaque states. An agent must not invent a game capability because it found a resource name. |
+| Native build bridge | Type-check/transpile/execute authoring source, normalize geometry and world definitions, validate, export, and load the resulting package into the actual C++ runtime. Geometry libraries and glTF export do not supply this game-specific bridge automatically. |
+| Shared authoring access | Expose semantic, revision-aware, transactional edits and headless build/test commands. Graphical panels are clients; no content operation may be available only through a GUI callback. |
+| Inspectable behavior | Compile declarative events to native instructions with explicit serializable progress. Custom Lua state, tasks, actions, and errors participate in the same introspection, snapshots, and scheduler as the base game. |
+| Verifiable iteration | Test immutable built content through legal runtime actions, repair failures using source-aware diagnostics, and repeat. Debug setup cannot stand in for gameplay, and changing protected acceptance criteria cannot turn a failed run into a pass. |
+| Human-editable delivery | Produce source, targeted diffs, an installable package, exact build/test provenance, and optional native captures. Follow-up prompts patch the existing project without discarding unrelated human work. |
+| Early architecture gate | Prove a small source-to-playable authoring bridge during Phases 2A–3, before broad content expansion or the full graphical editor suite. Expand the same foundation through Phases 7 and 11–13. |
 
 ## Phase 0 — Establish scope, evidence standards, and the repository
 
@@ -51,10 +69,11 @@ Existing completion marks are retained. New requirements remain unchecked until 
 - [x] Extend the requirements matrix with agent-native execution, introspection, direct commands, full debug/go-anywhere access, optional image streaming, unlocked simulation speed, optional PS1 visuals, and Wide headphone surround. Preserve existing completion evidence without marking these additions complete prematurely.
 - [x] Specify the native agent protocol, state-query schema, command model, simulation-time units, execution modes, and debug permission boundary before implementing gameplay systems. Define headless operation and first-slice acceptance tests as architecture gates.
 - [x] Inventory emulator-test behavior from [the scenario contract](analysis/scenarios/README.md), [its schema](analysis/scenarios/schema.json), and [the reference runner](tools/reference/scenario.py). Maintain a versioned parity table separating verified emulator capabilities, native equivalents, and native extensions; do not confuse an emulator backlog item with an already-supported feature.
+- [ ] Extend the requirement-to-test matrix with the agent-authoring contract, selected TypeScript geometry stack, source/build/runtime boundaries, untrusted-build policy, and source-to-playable acceptance gates. Review and pin authoring dependencies separately from shipping runtime dependencies; do not retroactively mark these additions complete.
 
-Verification: [current Phase 0 audit](docs/verification/phase0-agent.json). Native capabilities remain specified and unimplemented.
+Verification: [current Phase 0 audit](docs/verification/phase0-agent.json). Native capabilities remain specified and unimplemented; this audit also predates the new agent-authoring requirements.
 
-**Exit criterion:** A reproducible empty-project build, original-game coverage inventory, evidence workflow, updated requirements matrix, original-game testing system, and foundational native-agent contract exist.
+**Exit criterion:** A reproducible empty-project build, original-game coverage inventory, evidence workflow, updated requirements matrix, original-game testing system, and foundational native-agent and agent-authoring contracts exist.
 
 ## Phase 1 — Independently reverse-engineer and decompile the original game
 
@@ -104,6 +123,7 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Use stable IDs or handles for serializable references. Keep GPU objects, decoder internals, caches, and platform handles rebuildable and outside authoritative state.
 - [ ] Define a deterministic scheduling and persistence contract for both original scripts and future Lua tasks. Store explicit task progress; do not assume arbitrary Lua stacks can later be serialized.
 - [ ] Make asynchronous asset availability and background jobs unable to silently change simulation outcomes or event ordering. Gate required data explicitly rather than letting host timing decide when gameplay changes happen.
+- [ ] Define shared native content/entity/collision/event interfaces for both original-data import and Phase 2A authored packages. Keep origin-specific decoding separate from common simulation services; generated content must not bypass recovered movement rules or require a second gameplay model.
 
 ### Direct agent control and full introspection
 
@@ -153,6 +173,108 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 
 **Exit criterion:** The new runtime independently imports original assets and supports direct agent commands, full structured state access, exact stepping and unthrottled execution, debug snapshots/breakpoints, and valid scenario launch for its implemented systems. The same session runs image-free without a display/GPU/audio device or with an optional offscreen spectator stream. Identical actions produce equivalent authoritative state across those modes. These capabilities must exist before Phase 3 is declared complete.
 
+## Phase 2A — Agentic TypeScript world authoring and the native content bridge
+
+**Goal:** Make an ordinary coding agent able to author actual geometry and playable content, compile it into native assets, test it in the real game, and repair it without changing engine C++ or automating a graphical editor.
+
+**Ordering:** Start alongside Phase 2 as understood native services become available. The early bridge gate below is required for Phase 3; the broader authoring SDK, geometry vocabulary, and agent workflow continue through Phase 7, with graphical clients in Phases 11–12. Do not wait for both discs or the complete editor suite to prove source-to-playable content. Authored test scenes do not replace original-game behavioral evidence.
+
+### Selected stack and responsibility boundaries
+
+| Layer | Selected technology | Responsibility |
+|---|---|---|
+| Authored source | TypeScript; optional TSX after the function-based SDK works | Reusable world components, geometry recipes, parameters, procedural algorithms, and declarative event graphs. A custom JSX factory returns definitions, not React UI elements. |
+| Type checking and transpilation | `tsc --noEmit` and esbuild | Check types separately from transpiling/bundling. Neither step alone generates playable assets. |
+| Build execution | A pinned supported Node.js toolchain in isolated worker processes | Execute the compiled authoring program with explicit inputs, seeds, budgets, and output paths; never require it during ordinary play of a prebuilt package. |
+| Solid geometry | `manifold-3d` WebAssembly bindings | Primitive solids, union/difference/intersection, profile extrusion, and revolution; normalize results into project-owned mesh data. |
+| Surface and unrestricted geometry | `three` geometry utilities plus project-authored generators | Extrusion/path utilities, terrain/surface generation, and arbitrary vertex/index buffers. Do not use a Three.js scene or renderer as the authoritative world/runtime. |
+| Render-asset packaging | `@gltf-transform/core`, with additional modules only as required | Import/process/export glTF/GLB render assets through an explicit supported-material/extension subset. |
+| Parameters and schemas | Zod and exported JSON Schema | Validate inputs and expose machine-readable parameters; define a serializable schema subset and test native-validator parity. |
+| Native asset import | `cgltf` behind project-owned C++ adapters | Parse supported glTF/GLB and resolve assets; the project still implements decoding, GPU upload, materials, entities, collision, and gameplay. |
+| Native execution | Existing C++/CMake runtime, native renderer, event interpreter, and Lua | Load and run compiled content with the same headless/interactive semantics as the base game. |
+| Search and optimization | SQLite/FTS5 catalog; `meshoptimizer` when justified | Rebuildable content/metadata lookup and measured post-generation mesh optimization, not prerequisites for the first bridge. |
+
+Dependency names are selected implementation targets, not claims that these integrations already exist. Pin compatible versions, review licenses, and test supported platforms before adoption. A Blender/Python asset path may remain optional; an embedded gameplay JavaScript runtime is not part of this plan.
+
+### Source → build → package → runtime
+
+```text
+TypeScript / optional TSX + parameters + assets + Lua modules
+    → type check → transpile/bundle → isolated Node.js execution
+    → typed world/geometry intermediate representation
+    → Manifold / surface generators / imported-model adapters
+    → normalized meshes + collision + entities + event definitions
+    → validation and immutable, versioned content package
+    → native C++ loader
+    → simulation/collision/events + optional GPU resources
+    → actual-runtime tests, diagnostics, source revision, rebuild
+```
+
+- [ ] Define a typed authoring SDK distinguishing solid geometry, open surfaces, render meshes, collision, asset references, entities, and runtime event definitions. Begin with ordinary functions; add a minimal custom TSX factory after equivalent function-based builds pass. Avoid UI lifecycle semantics and implicit per-frame generation.
+- [ ] Define a versioned intermediate representation preserving namespaced content IDs, entity instances, reusable mesh references, transforms, materials, collision, spawn/portal/trigger definitions, NPCs, encounters, and event graphs. Keep object identity independent of file paths, display names, triangle indices, and PS1 addresses; do not flatten a whole town into an anonymous mesh.
+- [ ] Use `.ts`/`.tsx`, explicit parameter files, Lua, and source assets as authoritative inputs. Generated JSON manifests are build products, not a second authoring source; graphical clients may edit exposed parameter data or propose source patches, but must not silently overwrite arbitrary code.
+- [ ] Implement type-checking, transpilation, isolated execution, dependency/reference resolution, validation, and export as distinct build stages with structured errors. Reject unsupported callbacks, nonserializable state, invalid references, and nonfinite geometry rather than emitting a superficially successful package.
+- [ ] Normalize geometry adapters into project-owned mesh data containing positions, indices, normals, UVs, material groups, bounds, and source/object attribution. Validate winding, degeneracy, topology requirements, resource budgets, and attribute consistency before export; release geometry-kernel allocations reliably.
+- [ ] Start with GLBs for render assets plus versioned JSON manifests for the world, collision, events, and package dependencies. Include source maps, asset hashes, supported engine/schema versions, and required local base-asset references. Defer custom binary packing until profiling justifies it; glTF is not the gameplay or collision contract.
+- [ ] Implement the C++ bridge: parse/validate the package, decode required assets, stage entities/components, build collision structures, resolve references, initialize event tasks, and atomically publish a valid field. Unsupported materials/extensions, missing resources, and corrupt data must fail explicitly without leaving a partially loaded scene.
+- [ ] Load the same package without GPU allocation in logical headless mode and with native GPU meshes/materials when rendering is enabled. Preserve origin-specific decoding but share entity, movement, collision, interaction, and event services with imported original content.
+- [ ] Keep the original imported store immutable. Build separate mod layers with explicit dependencies and overrides; resolve original assets locally by verified IDs/hashes instead of embedding extracted game assets in distributable source or packages.
+- [ ] Make builds reproducible from source, lockfiles, explicit seeds, generator/compiler versions, imported-asset hashes, and relevant settings. Record output content hashes and test the exact immutable artifact; a seed alone is not a cross-platform determinism guarantee.
+- [ ] Cache generated meshes by complete dependency/parameter identity, preserve instancing, and rebuild only affected components. Generate static geometry during builds, not rendered frames; opening a door changes native state/transforms rather than rerunning a boolean operation. Runtime procedural generation requires a separately specified generator and persistence contract, not just a seed in a manifest.
+
+### Actual geometry, environments, and custom objects
+
+- [ ] Implement an initial geometry vocabulary of box/cylinder primitives, union/difference/intersection, extrusion, revolution, arbitrary meshes, and imported models. Prove actual vertex/triangle generation; placing prepared prefabs alone does not satisfy the feature.
+- [ ] Separate manifold-solid operations from open-surface/custom-mesh and imported-model paths. Validate boolean operands, retain useful failure details, and do not silently force arbitrary external meshes through a solid-modeling kernel.
+- [ ] Add parameterized rooms, corridors, houses, stairs, bridges, doors, machinery, and user-authored custom components built from those operations. Expose lower-level algorithms and mesh arrays so the component catalog does not limit what an agent can invent.
+- [ ] Expand surface generators incrementally with path sweeps, terrain/heightfields, and specialized surfaces as demonstrated use cases require. Do not present unimplemented lofting, deformation, rigging, or modeling operations as available capabilities.
+- [ ] Establish one authoring coordinate/unit convention and documented conversions to imported assets, geometry backends, renderer coordinates, and recovered collision arithmetic. Make conversions explicit and test scale, handedness, normals, winding, and precision at boundaries.
+- [ ] Specify materials, texture density/projection, UV generation, hard/smooth edges, vertex colors, and semantic surface regions. Preserve intended materials on boolean cut faces and through parameter changes; define the renderer-supported material subset and report unsupported features rather than assuming export implies shader support.
+- [ ] Provide explicit collision modes: supported static surface/triangle data, composed primitives, separate simplified geometry, or none. Compile into this runtime's actual movement representation and preserve openings; neither one bounding box nor a convex hull around an arch is an acceptable doorway collider.
+- [ ] Support named anchors, doorway connections, placement/facing constraints, collision-aware clearance, room adjacency, and repeatable prop distribution. Persist solved transforms and geometry; do not require the runtime to reinterpret a prompt or silently teleport the player to satisfy traversal tests.
+- [ ] Preserve component/instance/operation IDs and source spans in generated geometry and diagnostics. Report invalid dimensions, failing boolean operands, blocked interactions, and connectivity failures against editable source parameters; stable semantic region IDs must not depend only on triangle numbers.
+- [ ] Distinguish build validity, native traversal/collision validity, and presentation quality. Use actual-runtime movement tests plus optional native captures/overlays; a successful GLB export or external preview is not proof of a playable level.
+
+### Declarative behavior and custom Lua
+
+- [ ] Make TypeScript behavior helpers return serializable event/condition definitions, such as interact → set door state → play sound, rather than retaining JavaScript closures. Validate instruction signatures, targets, state ownership, and supported runtime capabilities during compilation.
+- [ ] Implement a small native event vocabulary first: triggers, doors, dialogue, pickups, conditions, ordered tasks, and simulation-tick waits. Expand into quests, cutscenes, encounters, battles, and minigames as those systems are recovered; unavailable operations must be discoverably unsupported.
+- [ ] Store explicit event-graph progress, wait conditions, targets, timeouts, cancellation state, and mod-defined persistent data in authoritative native state. Provide source-correlated inspection, stepping, breakpoints, and snapshot/replay support; do not hide quest progress in build-time JavaScript or unserializable closures.
+- [ ] Reference packaged Lua modules for behavior beyond the declarative vocabulary, using the Phase 7 deterministic API and permission model. Ordinary content authoring must not require C++ rebuilds; a genuinely new engine capability remains an explicit engineering task, not an invented SDK call.
+- [ ] Provide reliable movement, one-time reward, interaction, and quest-transition primitives with defined failure/re-entry behavior. Keep actor-arrival waits and logical timers on the simulation scheduler, independent from GUI animation or wall clocks.
+
+### Agent discovery, edits, and build services
+
+- [ ] Publish SDK types, schemas, examples, capability/version discovery, and compact agent-facing guidance with runnable original examples. Index assets and content by exact IDs, tags, dimensions, anchors, animations, compatibility, references, and provenance; provide previews when useful.
+- [ ] Mark recovered original content as verified, partially understood, opaque/preserved-only, or unsupported. Preserve unknown original script blocks losslessly and keep factual game/lore records distinct from generated creative suggestions. Asset existence must not imply safe editability.
+- [ ] Expose a CLI and versioned JSON-RPC service over local stdio/IPC for discovery, source/parameter edits, validation, build, runtime scenario launch, inspection, traces, captures, tests, diffs, and packaging. Add MCP only as an optional adapter; do not require an embedded chatbot, network service, GUI, or particular agent vendor.
+- [ ] Use semantic, batched, atomic edit transactions with expected source revisions, idempotent retries, dry runs, diffs, and undo. Validate cross-file changes as a unit, reject stale writes, and share command contracts with graphical clients. Direct file edits must use the same build/validation pipeline.
+- [ ] Keep source revision, package hash, runtime session ID, and snapshot ID distinct. Support cancellation and bounded/paginated queries; pin active test sessions to immutable package revisions so subsequent edits cannot silently change what is being verified.
+- [ ] Return machine-readable diagnostic codes, severity, source spans, object/operation IDs, observed/expected values, and exact reproduction scenarios. Include execution traces, native state, and optional object-ID/collision/path/camera overlays so an agent can map a visible problem back to an editable component.
+- [ ] Treat source generators and dependency installation as executable build code. Isolate them with OS/process-level filesystem/network/credential restrictions, controlled dependencies, separate output/temp directories, memory/work limits, and a watchdog. Node `vm` or TypeScript typing is not the isolation boundary; never expose runtime debug privileges to untrusted generators or Lua.
+- [ ] Implement build watching with atomic publication of successful outputs and retention of the previous working package on failure. Initially restart the preview scenario after rebuilding; add compatible incremental reload and state migration only at validated safe boundaries with explicit snapshot invalidation.
+
+Proposed command surfaces, to be implemented and documented rather than assumed to exist:
+
+```sh
+xem-content build mods/mine/MineEntrance.ts --out build/mine --diagnostics json
+xem-tool scenario run --package build/mine --scenario mine:open-gate-and-enter --headless --unthrottled --report build/mine-test.json
+```
+
+The build command type-checks/transpiles and executes source; the native scenario command consumes its output. Node packages, geometry kernels, and authoring callbacks do not execute inside ordinary gameplay.
+
+### Early bridge gate and prompt-to-playable verification
+
+- [ ] First demonstrate one generated wall, a usable doorway/door interaction, and a collectible through the complete SDK → mesh/package → native loader → gameplay path. Use ordinary TypeScript before adding TSX or a broad editor shell.
+- [ ] Extend the bridge to two traversable rooms with an arched passage, stairs or another elevation change, a custom procedurally modeled object, an NPC/dialogue interaction, and a one-time reward. Build the environment/object geometry from source without external geometry; verify an additional variant mixing in an original or redistributable external model.
+- [ ] Have an agent discover the supported SDK, write the source, build it, and complete the scenario through legal native commands. Test collision/clearance, interactions, transitions, reward-once semantics, save/restore, and leave/re-enter behavior under stepped and unthrottled execution with optional native images.
+- [ ] Supply a known failing revision, require source-aware diagnosis and repair, and rerun the protected tests. Then request a targeted change such as widening the arch while preserving unrelated content and IDs. Deliver the source diff, immutable package, captures where enabled, and exact test/replay artifacts.
+- [ ] Separate privileged fixture setup from subsequent gameplay. Test helpers must move through actual collision and eligibility rules, not teleport or set completion flags. Protect acceptance criteria and harness configuration from authoring edits; report passed, failed, timed out, and unsupported distinctly.
+- [ ] Expand to a prompt-authored small town/dungeon with a branching quest, optional encounter, failure/retry paths, and custom Lua behavior through Phase 7. Validate references, declarative reachability where analyzable, script/runtime behavior, save/rewind, duplicate rewards, and presentation separately. Do not claim static graph checks prove arbitrary scripts correct.
+- [ ] Record engine/compiler/package versions, seeds, initial state, actions, coverage, result assertions, failures, and optional images/audio for every verification run. Use multiple seeds/player policies for balance checks and distinguish simulation time from estimated human reading/decision time.
+
+**Early exit criterion, required by Phase 3:** The two-room authored bridge builds, loads, plays, saves/restores, and survives a diagnosed source revision in the actual native runtime without engine C++ changes or GUI automation. Generated and imported geometry paths are demonstrated separately; headless execution requires no authoring runtime or GPU. The broader Phase 2A checklist remains open until demonstrated through the Phase 7/creator-toolkit milestones.
+
 ## Phase 3 — Deliver an independently implemented, agent-playable native slice
 
 **Goal:** Prove the full pipeline from original-game evidence to native gameplay, including foundational agent play rather than only human-visible output.
@@ -168,8 +290,9 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Have an agent cold-start the slice through typed scenario setup, inspect complete state, traverse/jump/interact, make dialogue and menu choices, complete the encounter through legal gameplay commands, and save/restore without OS input injection or screenshot interpretation. Record setup/debug operations separately from subsequent normal play.
 - [ ] Demonstrate exact stepping, semantic readiness, a conditional breakpoint/watchpoint, a failed assertion with replay artifacts, and an unthrottled run of the same scenario. Verify outcome equivalence with real-time execution rather than accepting a faster but simplified simulation.
 - [ ] Attach a human spectator to the headless agent session, stream images, change capture cadence, and disconnect while the agent continues. Confirm unchanged state hashes and no pacing dependency on the viewer.
+- [ ] Demonstrate the Phase 2A early authored-content bridge alongside, not instead of, the recovered original-game slice. Both paths must use the same native loaders/services, movement and interaction rules, authoritative state, agent API, and optional renderer; record separate original-fidelity and authoring acceptance evidence.
 
-**Exit criterion:** Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention.
+**Exit criterion:** Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention. The Phase 2A source-to-playable early gate also passes before broad expansion.
 
 ## Phase 4 — Complete both discs and all original gameplay systems
 
@@ -214,6 +337,7 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Add independent world-texture and UI filtering settings, with a separate sprite-filter setting where useful. Support clear nearest/smoothed choices without forcing UI blur when filtering the world.
 - [ ] Validate depth ordering, alpha edges, texture seams, palette effects, and shader behavior on Vulkan, Direct3D 12, and Metal in Modern, PS1-style, and Custom configurations, including live profile switching.
 - [ ] Make the same renderer available to offscreen screenshots, agent observation, and optional spectator streams. Allow render skipping without skipping simulation; verify identical authoritative state in interactive, headless/no-image, and headless/streamed modes.
+- [ ] Validate procedural and imported mod meshes through the same native rendering path, supported material subset, visual profiles, and optional captures. Keep generator source/object attribution available for selection and debugging without making a browser or external preview authoritative.
 
 **Exit criterion:** Recorded gameplay reaches equivalent authoritative state across resolutions, aspect ratios, framerates, backends, visual profiles, and render-disabled execution. Modern is the default; supported PS1 quirks are selectable and validated, including in agent spectator images.
 
@@ -243,17 +367,17 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Implement real hit-testing, hover feedback, selection, clicking, disabled states, and tooltips instead of translating clicks into repeated directional inputs.
 - [ ] Make every scrollable menu respond to the scroll wheel, including nested lists and high-resolution wheel/trackpad events.
 - [ ] Keep keyboard/controller selection and mouse focus coordinated without a stationary cursor stealing focus.
-- [ ] Make Tab toggle the game menu where gameplay permits it. Make Esc toggle the app menu, including during cutscenes; Esc is not ordinary game-menu Cancel.
 - [ ] Specify pause behavior and input routing so overlays cannot leak actions to gameplay beneath them. Resolve text-entry/editor focus explicitly.
+- [ ] Let Tab toggle the game menu where gameplay permits it. Keep the app menu on Esc independent from skipping; Esc is not ordinary game-menu Cancel.
 - [ ] Handle mouse capture, cursor visibility, focus loss, controller disconnection, and device switching cleanly.
 - [ ] Map these physical-input clients to the existing native command handlers. Keep agent commands independent of physical key bindings, focus, and virtual devices; expose semantic equivalents for menu toggles, scrolling, selection, and all new actions with the same validation rules.
 - [ ] Test explicit human/agent input ownership and handoff. Spectator input must not alter the agent's session unless control is deliberately granted.
 
 **Exit criterion:** The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel. Agents can invoke the equivalent validated engine actions directly without any synthesized OS/SDL input.
 
-## Phase 7 — Lua scripting and the native mod framework
+## Phase 7 — Lua scripting, agentic content authoring, and the native mod framework
 
-**Goal:** Build the extension system used by player mods, agents, and the graphical editors without weakening deterministic state or debug visibility.
+**Goal:** Build the extension system used by player mods, agents, and the graphical editors without weakening deterministic state or debug visibility. Expand the Phase 2A source-to-playable bridge into a usable prompt-driven mod SDK.
 
 - [ ] Define native mod packages with stable IDs, versions, dependencies, compatibility requirements, load order, conflicts, and configurable settings.
 - [ ] Implement asset overrides and structured data patches for maps, models, textures, sprites, portraits, UI, dialogue, audio, FMVs, encounters, and gameplay tables.
@@ -269,8 +393,13 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Ship original example mods changing a level event, cutscene, battle behavior, and minigame through Lua without recompiling the engine.
 - [ ] Require mod-defined gameplay state, actions, tasks, errors, and setup hooks to participate in agent introspection, direct commands, scenario launch, breakpoints, snapshots, and unlocked-speed tests. Publish capability/schema extensions instead of hiding mod behavior behind rendered UI.
 - [ ] Keep trusted native debug access separate from untrusted in-game Lua privileges. Test all example mods through the same image-free and streamed agent sessions used for the base game.
+- [ ] Complete the Phase 2A SDK/build/service checklist for the supported content types, including schema/catalog discovery, reusable procedural components, scoped edits, source-aware diagnostics, immutable builds, and a prompt-authored town/dungeon with branching progression and custom Lua behavior.
+- [ ] Extend typed authoring definitions to items, characters, Gears, enemy behaviors, encounters, rewards, dialogue, cutscenes, and minigame configuration. Use shared native/event/Lua contracts rather than a second simulation or generated C++ for routine content.
+- [ ] Standardize source mod projects with a manifest, intent/acceptance specification, TypeScript components, parameter data, optional assets, Lua behavior, and scenario tests. Separate creative proposals from verified game facts and explicit engine capability limits.
+- [ ] Demonstrate prompt → retrieval → small specification → blockout → native test → diagnosis/repair → presentation refinement → package. Include a follow-up prompt that edits only the requested content and preserves human changes, stable identities, and protected tests; do not regenerate the whole project by default.
+- [ ] Treat optional editor extensions and external asset-generation integrations as separate trusted tooling capabilities. A gameplay mod must run without executing its editor plugin or generator; generated artwork remains a candidate until import validation and native review pass.
 
-**Exit criterion:** All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed.
+**Exit criterion:** All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed. The expanded Phase 2A workflow produces and revises a source-authored town/dungeon mod, including real generated geometry and tested gameplay, without engine C++ changes or GUI automation.
 
 ## Phase 8 — Native save states, rewind, and fast forward
 
@@ -289,6 +418,7 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Support map changes, battles, cutscenes, and disc-content transitions across rewind. Track and resolve unsupported boundaries before feature completion.
 - [ ] Expose save/load, rewind, branching replay, and snapshot inspection through the agent API with explicit ticks, compatibility errors, and isolated save directories. An image-free run must restore the same simulation state and rebuild presentation on demand.
 - [ ] Test replay/state equivalence across supported platforms and representative mod combinations, in real-time, stepped, accelerated, and unthrottled modes with images off/on. Declare incompatible snapshots rather than silently accepting divergent state.
+- [ ] Include compiled event-task progress and exact authored-package identities in snapshot compatibility. Test save/re-entry/rewind during generated doors, quests, battles, and Lua tasks; package reload must explicitly preserve, migrate, restart, or reject state rather than silently changing definitions beneath it.
 
 **Exit criterion:** Save → restore and record → rewind → replay produce equivalent authoritative state throughout the game and with supported Lua mods. Agent-controlled execution remains independent of real-time pacing and rendering; audiovisual state resumes without stale processing history.
 
@@ -323,7 +453,7 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Compare watched and skipped outcomes for every supported scene path, including scenes entered after load or rewind.
 - [ ] Expose options, dialogue choices, and explicit skip commands to agents. Test both natural completion under unthrottled logical time and semantic skipping; headless mode must not silently skip scenes, auto-select choices, or substitute debug writes for consequential actions.
 
-**Exit criterion:** Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod or real-time-only test path.
+**Exit criterion:** Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod or real-time pacing.
 
 ## Phase 10 — First-person mode, clearer FMVs, and Wide headphone surround
 
@@ -351,7 +481,7 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 **Required signal path:** Original-game Wide output (two channels) → verified Wide-specific decoding/spatial reconstruction → intended virtual sound field → HRTF binaural rendering → headphone left/right output (exactly two channels).
 
 - [ ] Complete original Wide analysis and native-signal validation before finalizing the decoder. Document the intended spatial reference, signal relationships, routing, and unresolved ambiguity; the Wide name alone does not establish Dolby/Pro Logic encoding or a discrete 5.1/7.1 mix.
-- [ ] Independently implement the decoder/spatial reconstruction appropriate to the recovered signal. Use matrix decoding only where supported; represent verified phase-based expansion through an appropriate virtual playback model rather than forcing anti-phase content into invented rear channels.
+- [ ] Independently implement the decoder/spatial reconstruction appropriate to the recovered signal. Use matrix decoding only where supported; represent verified phase-based expansion through intrinsic playback channels rather than forcing anti-phase content into invented rear channels.
 - [ ] Recover only spatial components justified by the signal and original sound behavior. Preserve left/right placement, centered material, ambience, and any verified surround cues without inventing independent rear, height, LFE, or arbitrary object positions.
 - [ ] Render the reconstructed field with head-related transfer functions (HRTFs) to ordinary two-channel headphones, not a simple stereo downmix. Select general-purpose binaural infrastructure and appropriately licensed HRTF data independently of the game-specific decoder; offer a reference profile and optional calibrated HRTF choices.
 - [ ] Expose Headphones — Wide surround as an optional output mode that processes native Wide exactly once. Retain original Mono, Stereo, and undecoded Wide choices, and restore the prior original mode when headphone surround is disabled.
@@ -370,7 +500,7 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 
 ## Phase 11 — Graphical level and cutscene editors
 
-**Goal:** Author and inspect content using the same independently built runtime and foundational agent/debug services as the game.
+**Goal:** Author and inspect content using the same independently built runtime and foundational agent/debug services as the game. Build graphical clients over the Phase 2A/7 authoring pipeline rather than introducing a competing project format or editor-only operations.
 
 - [ ] Create a shared editor shell with project management, asset browser, inspectors, console, undo/redo, autosave, and validation.
 - [ ] Reuse this project's renderer, importers, simulation, state system, and Lua APIs for exact in-engine previews.
@@ -384,8 +514,13 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Add graphical authoring and validation of skip segments, completion handlers, mandatory choices, and return-to-gameplay behavior.
 - [ ] Store projects in version-control-friendly formats and export native mod packages without modifying the original imported asset store.
 - [ ] Build the editors' play/debug/inspect/go-anywhere controls on the existing native agent services rather than a second debug implementation. Let agents launch and validate edited levels/cutscenes headlessly, while humans optionally inspect the live image stream and state.
+- [ ] Open TypeScript/TSX components and their parameter schemas directly, display generated geometry/instances with source mapping, and route edits through the same revisioned command/build services used by agents. Keep source documents and history outside disposable UI components.
+- [ ] Define editable source boundaries: expose declared parameters and supported declarative graphs; propose reviewable source patches for code-driven content. Preserve handwritten algorithms, expressions, Lua nodes, and opaque original-script blocks instead of reverse-generating arbitrary source from a flattened scene.
+- [ ] Add selection-aware agent context containing entity/component IDs, source revision, selected properties, graph nodes, diagnostics, and optional viewport captures. Support targeted prompt edits with diffs and undo; do not regenerate unrelated rooms or overwrite intervening human changes.
+- [ ] Expose procedural geometry/material/collision parameters, connection anchors, and source-correlated errors in inspectors. Rebuild affected content through the compiler and preview it in the native renderer; external previews may supplement but never replace native traversal and event tests.
+- [ ] Allow specialized inspector/generator/visualization extensions through documented services with matching headless operations where they change content. Treat extensions as separately enabled trusted tools, not code automatically executed when loading a gameplay mod. Choosing QML or another UI toolkit must not change the TypeScript source or native-runtime contracts.
 
-**Exit criterion:** A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build. The same content can be launched, inspected, and tested headlessly through the native agent interface.
+**Exit criterion:** A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build. The same content can be launched, inspected, and tested headlessly through the native agent interface. Agent-created TypeScript worlds remain editable through supported source/parameter operations, graphical changes preserve custom code, and human/agent revisions share validation and undo semantics.
 
 ## Phase 12 — Graphical battle-system and minigame modding
 
@@ -401,14 +536,15 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Validate references, resources, script failures, dependencies, persistence, and compatibility before export.
 - [ ] Publish original example projects demonstrating a substantially changed battle ruleset and a materially redesigned minigame using only the tools and Lua.
 - [ ] Use native go-anywhere entry, direct gameplay commands, full mod-state introspection, and unthrottled headless runs for battle/minigame testing. Expose all creator-defined rules and state through the versioned debug schema and allow optional human spectator images during agent play.
+- [ ] Demonstrate an agent creating a new enemy/encounter or minigame with procedural arena geometry, TypeScript definitions, custom Lua mechanics, exposed editor parameters, and native tests. Evaluate balance over multiple seeds/policies and preserve legal-action, persistence, and source-revision evidence.
 
-**Exit criterion:** A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++. Agents can play, inspect, debug, and rapidly test the modified battles/minigames through the same native interface.
+**Exit criterion:** A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++. Agents can play, inspect, debug, and rapidly test the modified battles/minigames through the same native interface. Prompt-driven creation and targeted revision use the shared TypeScript/Lua pipeline rather than an editor-specific implementation.
 
 ## Phase 13 — Platform hardening, packaging, and release
 
 **Goal:** Validate and ship the complete feature set, including the first-class agent interface, led by Arch Linux.
 
-- [ ] Validate Arch Linux + Vulkan first: Wayland/Hyprland, X11, fractional scaling, mixed-DPI displays, ultrawide framing, fullscreen changes, focus loss, and controller reconnects.
+- [ ] Validate Arch Linux + Vulkan first: Wayland/Hyprland, X11, fractional scaling, mixed-DPI displays, ultrawide framing, fullscreen changes, focus loss, controller reconnects.
 - [ ] Validate Windows + Direct3D 12, including both the SDL3 input system and XInput controller behavior.
 - [ ] Validate macOS + Metal on explicitly declared processor/OS targets, with correct application lifecycle, input, and display behavior.
 - [ ] Test shader compilation, rendering correctness, resource lifetime, frame pacing, and authoritative state equivalence across the backends/platforms.
@@ -426,20 +562,24 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 - [ ] Verify the base game builds and runs with no other Xenogears project, preexisting mod, or third-party game-specific code installed.
 - [ ] Review distributed artifacts to exclude original source images, executable dumps, extracted game assets, private saves, and unintended development files.
 - [ ] Publish developer setup, independent research/decompilation notes, player documentation, the Lua API, editor tutorials, content-pack guidance, and compatibility/versioning policies. Include the agent protocol/schema, direct-input examples, full debug/go-anywhere guide, spectator setup, speed-control semantics, reproducible scenarios, PS1 visual options, and Wide/HRTF evidence and provenance.
-- [ ] Close the requirement-to-test matrix. Story completion alone is not completion of the requested port, agent-native runtime, and creator toolkit.
+- [ ] Package/document the TypeScript SDK, pinned Node/build dependencies, geometry generators, schema/catalog tools, and headless content CLI separately from runtime requirements. Verify prebuilt mods play on supported platforms without Node.js, Qt/QML, a browser, or external modeling applications installed.
+- [ ] Run source-to-native build, collision/material, schema-parity, protected scenario, malformed-package, generator isolation, reload/migration, and content-conflict tests in CI using original redistributable fixtures. Record package hashes and supported-toolchain reproducibility results; locally sourced game data remains outside public artifacts.
+- [ ] Publish original prompt-to-playable examples covering generated-only geometry, mixed imported assets, declarative events, custom Lua, targeted revisions, source-aware repair, and graphical parameter edits. Include build/runtime architecture diagrams, exact CLI/RPC contracts, extension trust rules, and a capability/unsupported-feature catalog.
+- [ ] Close the requirement-to-test matrix. Story completion alone is not completion of the requested port, agent-native runtime, source-authoring pipeline, and creator toolkit.
 
-**Exit criterion:** The complete requirements matrix passes on the declared platforms. Human and agent play, image-free and optional streamed execution, complete debugging/go-anywhere access, and unlocked-speed testing are shipped and documented alongside all audiovisual and editing features.
+**Exit criterion:** The complete requirements matrix passes on the declared platforms. Human and agent play, image-free and optional streamed execution, complete debugging/go-anywhere access, and unlocked-speed testing are shipped and documented alongside all audiovisual and editing features. The agentic TypeScript build–play–repair workflow, source-preserving editors, and prebuilt native mod execution are also packaged and verified.
 
 ## Release checkpoints
 
 | Checkpoint | Required result |
 |---|---|
 | Research/tooling baseline | Phases 0–2 provide independently imported original content and a serializable native runtime with direct agent commands, full introspection, debug/scenario control, exact stepping/unlocked execution, and optional spectator images for implemented systems. |
-| Engineering preview | Phase 3: the same field/event/battle/save-load slice runs under human control and a direct headless agent on Arch, with debug demonstrations, no-image operation, optional live images, and no required real-time pacing. |
+| Engineering preview | Phase 3: the same field/event/battle/save-load slice runs under human control and a direct headless agent on Arch, with debug demonstrations, no-image operation, optional live images, and no required real-time pacing. The Phase 2A early source-to-playable bridge passes separately alongside it. |
+| Agent-authoring preview | Phases 2A–3: TypeScript generates actual two-room geometry and interactive content, exports a versioned package, and an agent plays, diagnoses, repairs, and revises it through the native runtime without engine edits or GUI automation. Not a substitute for original-game fidelity. |
 | Playable PC alpha | Phase 4 completes both discs and full agent/debug/go-anywhere coverage; Phases 5–6 provide modern-default rendering, optional PS1 quirks, and complete physical PC controls alongside the direct agent API. |
-| Feature-complete runtime beta | Phases 7–10 provide agent-compatible Lua mods, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround. |
-| Creator-toolkit beta | Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared runtime/Lua and the existing agent/debug services, with unlocked headless testing and optional human observation. |
-| 1.0 | Phase 13 validates and packages all features, including the native agent interface, across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal. Arch leads development and release testing; pure headless simulation does not require a rendering backend. |
+| Feature-complete runtime beta | Phases 7–10 provide agent-compatible Lua mods, the expanded Phase 2A prompt-authored town/dungeon workflow, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround. |
+| Creator-toolkit beta | Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared TypeScript content pipeline, native runtime/Lua, and existing agent/debug services, with source-preserving revisions, unlocked headless testing, and optional human observation. |
+| 1.0 | Phase 13 validates and packages all features, including the native agent interface and agent-authoring SDK/build services, across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal. Arch leads development and release testing; pure headless simulation needs no rendering backend, and prebuilt content needs no authoring runtime. |
 
 ## Required feature coverage
 
@@ -456,6 +596,13 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 | Agent-unlocked simulation speed, exact ticks, bounded run-until, and no required real-time pacing | 2–4, 8–10, 12–13 |
 | Optional live image stream and on-demand images for human spectators, independent from simulation pacing | 2–3, 5, 10–13 |
 | Same authoritative game and command semantics for humans, agents, tests, and editors | 2–13 |
+| Foundational prompt-to-playable agent authoring with build–play–diagnose–repair–package verification | 0, 2A–3, 7, 11–13 |
+| TypeScript/optional TSX source defining actual environments, geometry, reusable components, and custom objects | 2A–3, 7, 11 |
+| Manifold solid geometry plus surface/arbitrary-mesh generators and optional external models | 2A, 5, 11, 13 |
+| Explicit source → Node build → intermediate representation → GLB/world/collision/events → C++ native-loader bridge | 2–3, 2A, 7, 13 |
+| Prebuilt mod execution without Node.js, QML, browser, or a second game engine; native events and Lua own behavior | 2A, 7–8, 13 |
+| Discoverable SDK/catalog, revisioned transactions, isolated builds, immutable test artifacts, and actionable source diagnostics | 0, 2A, 7, 11–13 |
+| Shared source-preserving human/agent editing, targeted prompt revisions, and protected legal-action playtests | 2A–3, 7, 11–13 |
 | Vulkan / Direct3D 12 / Metal on Linux / Windows / macOS when rendering is enabled | 2, 5, 13 |
 | Arbitrary resolution, aspect ratio, and presentation framerate | 2, 5 |
 | Culling off by default | 5, 13 |
