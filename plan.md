@@ -367,8 +367,8 @@ The build command type-checks/transpiles and executes source; the native scenari
 - [ ] Implement real hit-testing, hover feedback, selection, clicking, disabled states, and tooltips instead of translating clicks into repeated directional inputs.
 - [ ] Make every scrollable menu respond to the scroll wheel, including nested lists and high-resolution wheel/trackpad events.
 - [ ] Keep keyboard/controller selection and mouse focus coordinated without a stationary cursor stealing focus.
+- [ ] Make Tab toggle the game menu where gameplay permits it. Keep the app menu on Esc independent from skipping; Esc is not ordinary game-menu Cancel.
 - [ ] Specify pause behavior and input routing so overlays cannot leak actions to gameplay beneath them. Resolve text-entry/editor focus explicitly.
-- [ ] Let Tab toggle the game menu where gameplay permits it. Keep the app menu on Esc independent from skipping; Esc is not ordinary game-menu Cancel.
 - [ ] Handle mouse capture, cursor visibility, focus loss, controller disconnection, and device switching cleanly.
 - [ ] Map these physical-input clients to the existing native command handlers. Keep agent commands independent of physical key bindings, focus, and virtual devices; expose semantic equivalents for menu toggles, scrolling, selection, and all new actions with the same validation rules.
 - [ ] Test explicit human/agent input ownership and handoff. Spectator input must not alter the agent's session unless control is deliberately granted.
@@ -411,7 +411,7 @@ The build command type-checks/transpiles and executes source; the native scenari
 - [ ] Support snapshots during field events, battles, minigames, and cutscenes, not just at ordinary save-safe locations.
 - [ ] Implement configurable player fast-forward speeds with hold/toggle controls on the core scheduler. Keep the agent's fully unthrottled mode, exact stepping, and bounded run-until APIs independently available; higher presentation framerate is neither fast forward nor unthrottled simulation.
 - [ ] Add audio policies such as time stretching or muting above a selected speed, with correct return to normal playback.
-- [ ] Build rewind from periodic snapshots and recorded input/events with deterministic replay. Expose a duration or memory budget and a timeline indicator.
+- [ ] Build rewind from periodic snapshots and recorded input/events with deterministic replay. Expose a duration or memory budget, snapshots, and a timeline indicator.
 - [ ] Discard the abandoned future when play resumes after rewind. Prevent duplicated rewards, persistent writes, or other external side effects during replay.
 - [ ] Restore audio and FMVs from logical playback positions; rebuild platform-specific decoder, audio-device, and GPU state.
 - [ ] Preserve or deterministically reconstruct Wide-decoder history, HRTF convolution tails, and resampler delay through portable presentation-state caches or bounded audio pre-roll. Validate phase-preserving linked-channel processing or muting during acceleration; prevent stale cues/clicks after load, rewind, skip, or device changes.
@@ -453,7 +453,7 @@ The build command type-checks/transpiles and executes source; the native scenari
 - [ ] Compare watched and skipped outcomes for every supported scene path, including scenes entered after load or rewind.
 - [ ] Expose options, dialogue choices, and explicit skip commands to agents. Test both natural completion under unthrottled logical time and semantic skipping; headless mode must not silently skip scenes, auto-select choices, or substitute debug writes for consequential actions.
 
-**Exit criterion:** Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod or real-time pacing.
+**Exit criterion:** Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod or real-time-only test path.
 
 ## Phase 10 — First-person mode, clearer FMVs, and Wide headphone surround
 
@@ -481,7 +481,7 @@ The build command type-checks/transpiles and executes source; the native scenari
 **Required signal path:** Original-game Wide output (two channels) → verified Wide-specific decoding/spatial reconstruction → intended virtual sound field → HRTF binaural rendering → headphone left/right output (exactly two channels).
 
 - [ ] Complete original Wide analysis and native-signal validation before finalizing the decoder. Document the intended spatial reference, signal relationships, routing, and unresolved ambiguity; the Wide name alone does not establish Dolby/Pro Logic encoding or a discrete 5.1/7.1 mix.
-- [ ] Independently implement the decoder/spatial reconstruction appropriate to the recovered signal. Use matrix decoding only where supported; represent verified phase-based expansion through intrinsic playback channels rather than forcing anti-phase content into invented rear channels.
+- [ ] Independently implement the decoder/spatial reconstruction appropriate to the recovered signal. Use matrix decoding only where supported; represent verified phase-based expansion through an appropriate virtual playback model rather than forcing anti-phase content into invented rear channels.
 - [ ] Recover only spatial components justified by the signal and original sound behavior. Preserve left/right placement, centered material, ambience, and any verified surround cues without inventing independent rear, height, LFE, or arbitrary object positions.
 - [ ] Render the reconstructed field with head-related transfer functions (HRTFs) to ordinary two-channel headphones, not a simple stereo downmix. Select general-purpose binaural infrastructure and appropriately licensed HRTF data independently of the game-specific decoder; offer a reference profile and optional calibrated HRTF choices.
 - [ ] Expose Headphones — Wide surround as an optional output mode that processes native Wide exactly once. Retain original Mono, Stereo, and undecoded Wide choices, and restore the prior original mode when headphone surround is disabled.
@@ -544,7 +544,7 @@ The build command type-checks/transpiles and executes source; the native scenari
 
 **Goal:** Validate and ship the complete feature set, including the first-class agent interface, led by Arch Linux.
 
-- [ ] Validate Arch Linux + Vulkan first: Wayland/Hyprland, X11, fractional scaling, mixed-DPI displays, ultrawide framing, fullscreen changes, focus loss, controller reconnects.
+- [ ] Validate Arch Linux + Vulkan first: Wayland/Hyprland, X11, fractional scaling, mixed-DPI displays, ultrawide framing, fullscreen changes, focus loss, and controller reconnects.
 - [ ] Validate Windows + Direct3D 12, including both the SDL3 input system and XInput controller behavior.
 - [ ] Validate macOS + Metal on explicitly declared processor/OS targets, with correct application lifecycle, input, and display behavior.
 - [ ] Test shader compilation, rendering correctness, resource lifetime, frame pacing, and authoritative state equivalence across the backends/platforms.
