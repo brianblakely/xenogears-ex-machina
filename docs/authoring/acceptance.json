@@ -1,0 +1,524 @@
+{
+  "schema_version": 1,
+  "contract_version": "0.1.0",
+  "status": "defined_not_executed",
+  "evidence_policy": {
+    "phase0_specification_tests_are_runtime_evidence": false,
+    "original_behavior_requires_original_evidence": true,
+    "immutable_package_and_protected_harness_hashes_required": true,
+    "unrecorded_corrective_debug_is_pass": false,
+    "results_require_individual_target_evidence": true,
+    "early_targets": [
+      "arch-vulkan",
+      "arch-headless"
+    ],
+    "release_targets": [
+      "arch-vulkan",
+      "arch-headless",
+      "windows-d3d12",
+      "windows-headless",
+      "macos-metal",
+      "macos-headless"
+    ]
+  },
+  "gates": [
+    {
+      "id": "AUTHOR-BUILD",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T01",
+        "P02A-T03",
+        "P02A-T04",
+        "P02A-T10",
+        "P02A-T27"
+      ],
+      "preconditions": [
+        "Pinned function-based SDK/compiler and complete reviewed dependency closure",
+        "Source and parameters fixed by revision; explicit seeds and declared input assets"
+      ],
+      "stimulus": [
+        "Type-check, transpile, execute, normalize, validate and export separately",
+        "Build twice with identical locked inputs; change each dependency class and check cache invalidation",
+        "Submit bad types, JS closures, nonfinite data, missing references and unsupported instructions",
+        "Run the same valid/invalid parameter corpus through Zod, exported JSON Schema and the actual native validator: unknown fields, coercion, nulls, nonfinite values, safe-integer boundaries, tagged unions, local references, nesting and size limits"
+      ],
+      "acceptance": [
+        "Valid source produces real project-owned meshes and a complete package with source maps",
+        "Every bad input fails at the owning stage with stable source-aware diagnostics and no published partial output",
+        "Equal bytes are demonstrated only within the recorded build compatibility class; other targets retain exact hashes and explicit differences",
+        "Static geometry is generated once during build; no per-frame generator runs",
+        "All three parameter validators agree on every corpus case without silent coercion, key removal, widening or unsupported schema keywords; unrepresentable schemas reject during export"
+      ],
+      "artifacts": [
+        "input graph",
+        "toolchain lock hash",
+        "stage reports",
+        "source maps",
+        "package hashes",
+        "cache invalidation report",
+        "shared parameter/schema parity corpus and per-validator outcomes"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-ISOLATION",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T33",
+        "P02A-T39"
+      ],
+      "preconditions": [
+        "Host-specific OS sandbox or disposable VM and independent supervisor implemented",
+        "Harness, SDK and toolchain are outside writable worker mounts; offline dependency closure ready"
+      ],
+      "stimulus": [
+        "Attempt host files/credentials, inherited descriptors, sockets, loopback/internet, subprocess escape and protected harness writes from source and package hooks",
+        "Attempt path traversal, symlink/hardlink escape, output swap, cache poisoning, fork/memory/disk/log exhaustion",
+        "Cancel or watchdog a stuck worker and retry; start on a host without isolation"
+      ],
+      "acceptance": [
+        "No denied host data or control authority is read, modified or exfiltrated; no descendant survives termination",
+        "All declared CPU/memory/process/file/output/log/wall limits are enforced, including native binaries and WASM",
+        "Denied operations and exhaustion produce bounded structured terminal reports; previous working package remains exact",
+        "Missing isolation rejects untrusted builds with isolation_unavailable; no plain-Node fallback",
+        "Dependency acquisition and reviewed recipe execution are separate from offline builds"
+      ],
+      "artifacts": [
+        "sandbox configuration hash",
+        "host isolation capabilities",
+        "attack corpus revision",
+        "per-attack outcome",
+        "process and resource accounting",
+        "supervisor terminal records"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-PACKAGE",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T02",
+        "P02A-T06",
+        "P02A-T07",
+        "P02A-T08",
+        "P02A-T09",
+        "P02A-T11"
+      ],
+      "preconditions": [
+        "Actual native staged loader and compiled package format implemented",
+        "Previously valid session/package kept for rollback comparison"
+      ],
+      "stimulus": [
+        "Load generated GLBs plus world/collision/event manifests without Node, browser, editor or GPU in logical mode",
+        "Repeat with native renderer enabled",
+        "Corrupt hashes, bounds, paths, buffer strides/indices, resource references, spawns, schema versions, material/extension IDs and local original-asset identities"
+      ],
+      "acceptance": [
+        "Both modes initialize the same entities, collision and serializable event state through actual runtime services",
+        "Every corrupt or unsupported package rejects atomically without damaging the previous session or local original store",
+        "Rendering assets do not define collision/gameplay through arbitrary glTF extras",
+        "Native loader does bounded decoding and validation; parse success alone does not admit a package"
+      ],
+      "artifacts": [
+        "package file manifest and hashes",
+        "native loader diagnostics",
+        "headless dependency inventory",
+        "before/after state hashes",
+        "corruption corpus outcomes"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-GEOMETRY",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T05",
+        "P02A-T12",
+        "P02A-T13",
+        "P02A-T16",
+        "P02A-T17",
+        "P02A-T18",
+        "P02A-T19",
+        "P02A-T20",
+        "P02A-T21"
+      ],
+      "preconditions": [
+        "Project-owned solid/surface/arbitrary/imported adapters and documented coordinate/collision conversions",
+        "Geometry cases define expected topology, material regions and traversal boundaries"
+      ],
+      "stimulus": [
+        "Generate primitives, boolean opening, extrusion/revolution and an open indexed surface; inspect normalized vertices/triangles",
+        "Apply transforms including nonuniform and negative scale and test the documented reject/correction policy",
+        "Inject bad indices, NaN, degenerate/open boolean operands, over-budget topology and invalid dimensions",
+        "Traverse door/arch clearances from both sides and attempt collision through adjacent walls"
+      ],
+      "acceptance": [
+        "Real geometry carries consistent positions/indices/normals/UVs/materials/bounds and source attribution",
+        "Scale, handedness, winding, normals and native collision-unit precision pass explicit boundary fixtures",
+        "Open/custom/imported meshes avoid inappropriate solid-kernel coercion; errors identify operands/source",
+        "Doorway collider preserves the opening and surrounding wall collision; a sealing box/hull fails",
+        "Build validity, actual traversal and native presentation results are reported separately; unused/unimplemented operations remain unsupported"
+      ],
+      "artifacts": [
+        "geometry statistics and semantic regions",
+        "coordinate conversion fixtures",
+        "kernel allocation accounting",
+        "collision traces",
+        "optional native material/collision overlays"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-MINIMAL",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T35"
+      ],
+      "preconditions": [
+        "Function-based TypeScript SDK with box/door and pickup operations; no imported geometry",
+        "Canonical authored test entry uses normal native loaders"
+      ],
+      "stimulus": [
+        "Agent authors one generated wall with a doorway, interactive door and collectible",
+        "Build and load the exact output, approach the closed door, open it through ordinary interaction, cross and collect"
+      ],
+      "acceptance": [
+        "The SDK-to-native path works without engine C++ edits or GUI automation",
+        "Closed door blocks movement, open door permits traversal, and pickup is awarded by normal eligibility exactly once",
+        "Package runs with the authoring environment absent"
+      ],
+      "artifacts": [
+        "source revision",
+        "immutable package",
+        "native ordered actions and state hashes",
+        "interaction/reward assertions"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-TWO-ROOM",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T14",
+        "P02A-T36"
+      ],
+      "preconditions": [
+        "Minimal native bridge passed; original authored fixtures licensed for distribution",
+        "Protected reachability and reward assertions fixed before generation"
+      ],
+      "stimulus": [
+        "Author two rooms, arched passage, stairs or an elevation change, a novel procedural object, NPC/dialogue and one-time reward using only source geometry",
+        "Run legal traversal, interaction and transition paths, including blocked approaches and repeated dialogue"
+      ],
+      "acceptance": [
+        "Every required environment/object mesh is generated from source, not copied from a prefab/model",
+        "The actual native player crosses the arch/elevation and reaches both rooms without teleport or corrective state writes",
+        "NPC dialogue and one-time reward use native state and preserve stable content IDs"
+      ],
+      "artifacts": [
+        "source-only input manifest",
+        "generated vertex/triangle counts",
+        "scenario/replay",
+        "reachability/interaction assertions",
+        "optional native captures"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-MIXED-ASSETS",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T09",
+        "P02A-T12",
+        "P02A-T36"
+      ],
+      "preconditions": [
+        "Two-room source-only variant retained independently",
+        "Redistributable external model and license/hash are recorded; original references require qualified local IDs"
+      ],
+      "stimulus": [
+        "Create a second variant mixing generated geometry with an imported model",
+        "Resolve a local original reference when qualified; remove/mismatch the required local asset",
+        "Inspect packaged files for extracted original content and unexpected dependencies"
+      ],
+      "acceptance": [
+        "Source-only and mixed paths both pass independently with explicit origin-specific decoding",
+        "Imported model preserves reviewed units, transforms and supported materials; it does not define arbitrary gameplay capabilities",
+        "Original references fail with actionable identity errors when unavailable and never embed private original bytes",
+        "Distributed package contains only permitted content and required notices"
+      ],
+      "artifacts": [
+        "separate variant hashes",
+        "asset provenance/licenses",
+        "local-reference failure report",
+        "distribution file audit",
+        "native run results"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-PLAY",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T27",
+        "P02A-T29",
+        "P02A-T37",
+        "P02A-T39"
+      ],
+      "preconditions": [
+        "An ordinary agent can discover documented capabilities, exact IDs, schemas and runnable examples",
+        "Protected scenario initialized with explicit recorded setup; controller has ordinary gameplay authority after setup"
+      ],
+      "stimulus": [
+        "Discover, author, build and complete the exact two-room package with direct native gameplay actions",
+        "Replay the same actions in stepped and unthrottled image-free modes; attach/drop a spectator",
+        "Repeat interactions, leave and re-enter, and use ordinary save/load"
+      ],
+      "acceptance": [
+        "Collision/clearance, interaction, transition and reward-once assertions pass without corrective debug",
+        "Equal authoritative state/event outcomes across time modes and spectator changes; no GUI/OS/SDL injection",
+        "Unimplemented/opaque resources and actions return explicit unsupported states",
+        "A protected assertion failure cannot be converted to pass by modifying harness/tests or applying setup after play begins"
+      ],
+      "artifacts": [
+        "discovery/capability transcript",
+        "protected harness hash",
+        "setup audit",
+        "legal action trace",
+        "per-mode hashes",
+        "save/load and re-entry results"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-REPAIR",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T20",
+        "P02A-T32",
+        "P02A-T38",
+        "P02A-T39"
+      ],
+      "preconditions": [
+        "Known failing blocked-arch source revision and unchanged protected traversal test",
+        "Failed runtime observations are source-correlated"
+      ],
+      "stimulus": [
+        "Run failing immutable package and report the actual blocked movement",
+        "Agent diagnoses the responsible component/parameter, makes a focused source repair, rebuilds and reruns identical tests",
+        "Request a further arch-widening revision, rebuild it and rerun the unchanged protected suite on the final immutable package"
+      ],
+      "acceptance": [
+        "Original failure is preserved with package/harness identity and terminal failed result",
+        "Repair changes authored source and resolves real native collision; no teleport, test weakening or engine C++ workaround",
+        "Widening preserves unrelated handwritten source, content and stable entity/anchor IDs",
+        "Final generated geometry and actual native collision clearance increase by the requested dimension, and protected gameplay tests pass on that final package",
+        "Diagnostics and targeted diff connect observed failure to the actual editable source span/operation"
+      ],
+      "artifacts": [
+        "failing, fixed and final widened package hashes",
+        "source-aware diagnostics",
+        "repair/widening diffs",
+        "unmodified test hash",
+        "before/after/final native run results",
+        "measured requested arch geometry and native clearance"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-REVISION",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T03",
+        "P02A-T30",
+        "P02A-T31",
+        "P02A-T34",
+        "P02A-T38"
+      ],
+      "preconditions": [
+        "Shared CLI/editor transaction service with expected revision and idempotency IDs",
+        "Active test pinned to an immutable package and protected harness"
+      ],
+      "stimulus": [
+        "Race stale edits, retry transaction IDs, dry-run cross-file changes, undo and introduce a failing watched build",
+        "Change source while a test runs; restart preview after a successful publication",
+        "Attempt to replace hand-authored code from a generated manifest"
+      ],
+      "acceptance": [
+        "Edits commit all or none; stale requests reject, retries do not duplicate edits, dry-run is nonmutating and undo is revision-aware",
+        "The running test continues using its original package; failed builds preserve the prior published package",
+        "Source, package, session and snapshot identities stay distinct; preview restart invalidates affected snapshots explicitly",
+        "Arbitrary code is preserved; unsupported round-trip and unsafe incremental state migration are rejected"
+      ],
+      "artifacts": [
+        "transaction audit and diffs",
+        "source/package/session identities",
+        "stale/retry outcomes",
+        "watch failure result",
+        "snapshot invalidation report"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-EVENT-STATE",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T22",
+        "P02A-T23",
+        "P02A-T24",
+        "P02A-T26",
+        "P02A-T37"
+      ],
+      "preconditions": [
+        "Small closed native vocabulary for triggers, doors, dialogue, pickups, conditions and tick waits",
+        "Explicit serializable event progress and source mappings"
+      ],
+      "stimulus": [
+        "Save/restore and exact-snapshot/branch before, during and after interaction/reward tasks",
+        "Step/break at a source-correlated event and resume; cancel/re-enter waits",
+        "Repeat reward paths and restore at the grant boundary"
+      ],
+      "acceptance": [
+        "Native introspection exposes instruction/targets/waits/timeouts/cancellation/reward ownership",
+        "Continuation executes each eligible transition exactly once; reload/re-entry and duplicate input cannot duplicate rewards",
+        "Replay hashes/event history agree in stepped and unthrottled modes; no JavaScript closure or wall-time state is required",
+        "Ordinary save/load and privileged exact snapshots are reported distinctly"
+      ],
+      "artifacts": [
+        "event state queries",
+        "source-correlated break/step trace",
+        "save and snapshot compatibility",
+        "reward count assertions",
+        "replay hashes"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-DELIVERY",
+      "milestone": "early",
+      "tasks": [
+        "P02A-T06",
+        "P02A-T10",
+        "P02A-T38",
+        "P02A-T41"
+      ],
+      "preconditions": [
+        "Successful protected run of immutable package and reviewed redistribution inputs",
+        "Source and focused patch preserved separately from compiled outputs"
+      ],
+      "stimulus": [
+        "Install the prebuilt package in a clean native environment without authoring tools",
+        "Reproduce from source and locks in the qualified build environment",
+        "Inspect every package/source file and rerun delivered replay with exact identities"
+      ],
+      "acceptance": [
+        "Deliver source, focused diff, installable package and exact build/test/replay artifacts",
+        "No Node/browser/Qt/geometry kernel is needed during play; no private original assets or undeclared executable code is bundled",
+        "Run evidence records engine/compiler/package/harness versions, seeds, initial state, applied actions/ticks, coverage, assertions and terminal result",
+        "Optional native captures/audio record identities and remain separate from mandatory logical success; simulation time is not estimated human time"
+      ],
+      "artifacts": [
+        "delivery manifest",
+        "source and package hashes",
+        "installed dependency/file inventory",
+        "licenses/provenance",
+        "reproduction and replay results"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-TOWN",
+      "milestone": "expanded",
+      "tasks": [
+        "P02A-T15",
+        "P02A-T25",
+        "P02A-T28",
+        "P02A-T40",
+        "P02A-T41",
+        "P07-T01",
+        "P07-T15",
+        "P07-T16",
+        "P07-T17",
+        "P07-T18",
+        "P07-T19"
+      ],
+      "preconditions": [
+        "Early bridge gates passed and Phase 7 deterministic Lua extension API implemented",
+        "Supported battle/quest capabilities declared without invented original semantics"
+      ],
+      "stimulus": [
+        "Agent authors/revises a small town or dungeon with branching quest, optional encounter, custom Lua and failure/retry paths",
+        "Test reference validity, analyzable graph reachability, gameplay, saves/rewind, rewards and presentation separately",
+        "Run multiple seeds/player policies for declared balance observations"
+      ],
+      "acceptance": [
+        "Legal native completion and failure/retry paths pass with source and stable IDs preserved",
+        "Lua tasks/errors/state participate in native introspection, permissions, snapshots and scheduler",
+        "No duplicated reward or lost quest progress after save/rewind/re-entry",
+        "Graph checks do not claim proof of arbitrary scripts or balance; seed/policy and human-time assumptions are reported"
+      ],
+      "artifacts": [
+        "town/dungeon source",
+        "quest/Lua inspection traces",
+        "per-policy run manifests",
+        "save/rewind/retry results",
+        "presentation review"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHOR-EDITORS",
+      "milestone": "expanded",
+      "tasks": [
+        "P02A-T27",
+        "P02A-T29",
+        "P02A-T30",
+        "P11-T01",
+        "P12-T01",
+        "P11-T13",
+        "P11-T14",
+        "P11-T15",
+        "P11-T16",
+        "P11-T17",
+        "P12-T11"
+      ],
+      "preconditions": [
+        "Shared source/compiler/validation services and graphical editor clients implemented",
+        "Handwritten components and parameterized source with unrelated human edits"
+      ],
+      "stimulus": [
+        "Perform equivalent agent and graphical edits, build and test the resulting content",
+        "Exercise undo, revision conflicts and targeted edits to levels/cutscenes/battles/minigames",
+        "Round-trip supported parameter edits while retaining custom code"
+      ],
+      "acceptance": [
+        "Every content operation has the same headless semantic service and validation behavior",
+        "Graphical panels do not own private game/compiler contracts or silently flatten source into generated data",
+        "Unrelated custom code and stable IDs survive supported edits; arbitrary TypeScript round-trip remains explicitly unsupported",
+        "Each implemented content family remains natively playable, inspectable and testable without engine C++ rebuilds"
+      ],
+      "artifacts": [
+        "equivalent client transactions",
+        "source-preservation diff",
+        "undo/conflict results",
+        "shared build hashes",
+        "native family scenario results"
+      ],
+      "status": "defined",
+      "evidence": []
+    }
+  ]
+}

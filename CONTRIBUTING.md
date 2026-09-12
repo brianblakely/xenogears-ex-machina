@@ -35,11 +35,18 @@ Keep new game-specific source in its owning repository area and avoid global
 compiler flags or dependencies leaking across subsystem interfaces.
 
 Every new dependency requires a record in `docs/dependencies.json` with pinned
-source/version, SPDX license, purpose, scope (build/analysis/runtime), alternatives,
+source/version, SPDX license, purpose, scope (build/analysis/authoring-build/runtime), alternatives,
 decision, redistribution obligations, transitive/native-code implications, and
 review. Nix lock pinning does not itself satisfy license or supply-chain review.
 Optional and proposed libraries are not approved runtime dependencies. No network
 dependency resolution occurs during CMake configure or ordinary tests.
+
+Authoring packages have a separate exact manifest/lock and complete transitive
+review in `docs/authoring/dependencies.json`. A build-only dependency does not
+authorize shipping it with the game or a packaged developer SDK. Review native/WASM
+payloads, embedded component notices, install hooks and any applicable source or
+relinking obligations before redistribution. Follow `docs/authoring/README.md` for
+the untrusted-build boundary; a trusted qualification fixture is not sandbox proof.
 
 Run `python3 tools/repository/check.py` inside the Nix shell before review. Public
 CI requires no disc/BIOS/save data, no accounts and no third-party mods. Original

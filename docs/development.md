@@ -93,3 +93,44 @@ Windows/macOS source portability is designed into CMake, but native compile chec
 begin in Phase 2 and runtime/backend qualification occurs later. The Nix shell's
 Darwin entries are prospective tooling configurations, not tested platform support.
 No SDL, renderer, emulator or event runtime is linked into `xem-baseline`.
+
+## Separate authoring dependency qualification
+
+The [authoring contract](authoring/README.md) is a Phase 0 specification. Its
+dependency fixture qualifies the selected libraries without implementing the SDK
+or native bridge. The separate `nix/authoring/` flake copies the reviewed nixpkgs
+pin without modifying the observation/default flake or its historical evidence
+hashes. It supplies Node 24.19.0 and npm 11.17.0; entering the default Nix shell does
+not add Node to the native build.
+
+Dependency acquisition is explicit and runs no npm lifecycle scripts:
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/authoring
+npm ci --prefix tools/authoring --ignore-scripts --no-audit --no-fund --cache .local/authoring/npm-cache
+python3 tools/authoring/qualify.py
+```
+
+The first `npm ci` requires registry access; after the reviewed tarballs are cached,
+add `--offline` to the same command to verify a network-free installation. Never
+run `npm install` to repair a qualification failure: it would resolve a new closure.
+Review package/lock changes explicitly. The fixture verifies actual installed
+manifests against the complete lock before running `tsc --noEmit`, esbuild and
+repository-owned geometry/schema/GLB checks. The declared `ES2025.Float16` type
+library is required by glTF Transform's declarations; no Float16 runtime material
+or accessor support is inferred from the type check.
+
+Every run writes a fresh immutable report beneath `.local/authoring/`; optionally
+choose a new path with `--output .local/authoring/review-name/report.json`.
+Reusing a report path fails. Reports include source/toolchain hashes, installed
+package identities and command outcomes. Dependency-review evidence points to one
+specific report; rerunning the fixture does not change that reviewed record.
+`node_modules/`, caches, generated JS/WASM/GLBs and qualification reports stay out
+of source archives. Public CMake/tests validate the text contracts and locks
+without installing npm packages or requiring Node.
+
+This command accepts only the repository-owned fixture. It does not implement OS
+isolation and must not be extended to execute arbitrary mods before the required
+untrusted-build gate passes. Windows/macOS authoring, native package loading,
+legal gameplay, cross-platform output identity and SDK redistribution remain
+separate acceptance obligations.

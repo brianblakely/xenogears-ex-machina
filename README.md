@@ -24,6 +24,12 @@ gameplay; `xem-baseline` does not yet implement this interface. The versioned
 [emulator parity inventory](docs/agent/emulator-parity.json) records verified
 reference paths, unsupported adapters and required native extensions separately.
 
+The [agent authoring contract](docs/authoring/README.md) specifies source-oriented
+TypeScript geometry, isolated build workers, native content loading and protected
+build/play/repair gates. Its [separate dependency review](docs/authoring/dependencies.json)
+pins the build-only toolchain. The dependency qualification fixture works; the
+authoring SDK, untrusted-build isolation and playable native bridge remain unimplemented.
+
 [Reference profiles](analysis/reference-profiles.json) identify the exact measured
 original inputs. [Coverage](analysis/coverage/README.md) grounds all ten content
 categories on both discs in original evidence and preserves unresolved content,

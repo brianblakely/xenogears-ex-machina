@@ -81,7 +81,10 @@ def validate_structure(matrix: dict) -> None:
                     item["kind"] == "outside_slice"
                     and item["status"] == "unresolved"
                     and bool(item["later_facets"])
-                    and all(key in rows and rows[key]["phase"] > 1 for key in item["later_facets"]),
+                    and all(
+                        key in rows and rows[key]["phase"] not in (0, 1)
+                        for key in item["later_facets"]
+                    ),
                     "deferred work must remain unresolved and linked to later facets",
                 )
     require(assigned == proofs.keys(), "required proof omitted from facet mapping")

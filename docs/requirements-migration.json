@@ -697,5 +697,970 @@
     "P13-T08",
     "P13-T09",
     "P13-T10"
-  ]
+  ],
+  "authoring_expansion": {
+    "baseline_matrix_sha256": "daecfa12894a48e7bc57ecf4f82f92c269e8e2450c828fd38526df0c3f5c01a0",
+    "source_plan_sha256": "d13f67b0fe6a6c0dd41653fb1dbaf96c160a36f01d356b47e3f2f2838c5cd944",
+    "scope": "Independent review of 60 added tasks, the distinct Phase 2A authoring phase, and three changed existing tasks. Numeric phase values remain unchanged; lettered Phase 2A uses P02A IDs and phase value 2A. Earlier migration entries retain their historical ID namespace; this mapping translates their current baseline to the expanded plan.",
+    "task_mapping": {
+      "P00-T01": "P00-T01",
+      "P00-T02": "P00-T02",
+      "P00-T03": "P00-T03",
+      "P00-T04": "P00-T04",
+      "P00-T05": "P00-T05",
+      "P00-T06": "P00-T06",
+      "P00-T07": "P00-T07",
+      "P00-T08": "P00-T08",
+      "P00-T09": "P00-T09",
+      "P00-T10": "P00-T10",
+      "P00-T11": "P00-T11",
+      "P00-T12": "P00-T12",
+      "P00-T13": "P00-T13",
+      "P01-T01": "P01-T01",
+      "P01-T02": "P01-T02",
+      "P01-T03": "P01-T03",
+      "P01-T04": "P01-T04",
+      "P01-T05": "P01-T05",
+      "P01-T06": "P01-T06",
+      "P01-T07": "P01-T07",
+      "P01-T08": "P01-T08",
+      "P01-T09": "P01-T09",
+      "P01-T10": "P01-T10",
+      "P01-T11": "P01-T11",
+      "P01-T12": "P01-T12",
+      "P01-T13": "P01-T13",
+      "P01-T14": "P01-T14",
+      "P01-T15": "P01-T15",
+      "P02-T01": "P02-T01",
+      "P02-T02": "P02-T02",
+      "P02-T03": "P02-T03",
+      "P02-T04": "P02-T04",
+      "P02-T05": "P02-T05",
+      "P02-T06": "P02-T06",
+      "P02-T07": "P02-T07",
+      "P02-T08": "P02-T08",
+      "P02-T09": "P02-T09",
+      "P02-T10": "P02-T10",
+      "P02-T11": "P02-T11",
+      "P02-T12": "P02-T12",
+      "P02-T13": "P02-T13",
+      "P02-T14": "P02-T15",
+      "P02-T15": "P02-T16",
+      "P02-T16": "P02-T17",
+      "P02-T17": "P02-T18",
+      "P02-T18": "P02-T19",
+      "P02-T19": "P02-T20",
+      "P02-T20": "P02-T21",
+      "P02-T21": "P02-T22",
+      "P02-T22": "P02-T23",
+      "P02-T23": "P02-T24",
+      "P02-T24": "P02-T25",
+      "P02-T25": "P02-T26",
+      "P02-T26": "P02-T27",
+      "P02-T27": "P02-T28",
+      "P02-T28": "P02-T29",
+      "P02-T29": "P02-T30",
+      "P02-T30": "P02-T31",
+      "P02-T31": "P02-T32",
+      "P02-T32": "P02-T33",
+      "P02-T33": "P02-T34",
+      "P02-T34": "P02-T35",
+      "P02-T35": "P02-T36",
+      "P02-T36": "P02-T37",
+      "P02-T37": "P02-T38",
+      "P02-T38": "P02-T39",
+      "P02-T39": "P02-T40",
+      "P02-T40": "P02-T41",
+      "P02-T41": "P02-T42",
+      "P02-T42": "P02-T43",
+      "P02-T43": "P02-T44",
+      "P02-T44": "P02-T45",
+      "P02-T45": "P02-T46",
+      "P02-T46": "P02-T47",
+      "P03-T01": "P03-T01",
+      "P03-T02": "P03-T02",
+      "P03-T03": "P03-T03",
+      "P03-T04": "P03-T04",
+      "P03-T05": "P03-T05",
+      "P03-T06": "P03-T06",
+      "P03-T07": "P03-T07",
+      "P03-T08": "P03-T08",
+      "P03-T09": "P03-T09",
+      "P03-T10": "P03-T10",
+      "P03-T11": "P03-T11",
+      "P04-T01": "P04-T01",
+      "P04-T02": "P04-T02",
+      "P04-T03": "P04-T03",
+      "P04-T04": "P04-T04",
+      "P04-T05": "P04-T05",
+      "P04-T06": "P04-T06",
+      "P04-T07": "P04-T07",
+      "P04-T08": "P04-T08",
+      "P04-T09": "P04-T09",
+      "P04-T10": "P04-T10",
+      "P04-T11": "P04-T11",
+      "P04-T12": "P04-T12",
+      "P04-T13": "P04-T13",
+      "P04-T14": "P04-T14",
+      "P05-T01": "P05-T01",
+      "P05-T02": "P05-T02",
+      "P05-T03": "P05-T03",
+      "P05-T04": "P05-T04",
+      "P05-T05": "P05-T05",
+      "P05-T06": "P05-T06",
+      "P05-T07": "P05-T07",
+      "P05-T08": "P05-T08",
+      "P05-T09": "P05-T09",
+      "P05-T10": "P05-T10",
+      "P05-T11": "P05-T11",
+      "P05-T12": "P05-T12",
+      "P05-T13": "P05-T13",
+      "P05-T14": "P05-T14",
+      "P05-T15": "P05-T15",
+      "P05-T16": "P05-T16",
+      "P06-T01": "P06-T01",
+      "P06-T02": "P06-T02",
+      "P06-T03": "P06-T03",
+      "P06-T04": "P06-T04",
+      "P06-T05": "P06-T05",
+      "P06-T06": "P06-T06",
+      "P06-T07": "P06-T07",
+      "P06-T08": "P06-T08",
+      "P06-T09": "P06-T09",
+      "P06-T10": "P06-T10",
+      "P06-T11": "P06-T11",
+      "P06-T12": "P06-T12",
+      "P06-T13": "P06-T13",
+      "P06-T14": "P06-T14",
+      "P07-T01": "P07-T01",
+      "P07-T02": "P07-T02",
+      "P07-T03": "P07-T03",
+      "P07-T04": "P07-T04",
+      "P07-T05": "P07-T05",
+      "P07-T06": "P07-T06",
+      "P07-T07": "P07-T07",
+      "P07-T08": "P07-T08",
+      "P07-T09": "P07-T09",
+      "P07-T10": "P07-T10",
+      "P07-T11": "P07-T11",
+      "P07-T12": "P07-T12",
+      "P07-T13": "P07-T13",
+      "P07-T14": "P07-T14",
+      "P08-T01": "P08-T01",
+      "P08-T02": "P08-T02",
+      "P08-T03": "P08-T03",
+      "P08-T04": "P08-T04",
+      "P08-T05": "P08-T05",
+      "P08-T06": "P08-T06",
+      "P08-T07": "P08-T07",
+      "P08-T08": "P08-T08",
+      "P08-T09": "P08-T09",
+      "P08-T10": "P08-T10",
+      "P08-T11": "P08-T11",
+      "P08-T12": "P08-T12",
+      "P08-T13": "P08-T13",
+      "P09-T01": "P09-T01",
+      "P09-T02": "P09-T02",
+      "P09-T03": "P09-T03",
+      "P09-T04": "P09-T04",
+      "P09-T05": "P09-T05",
+      "P09-T06": "P09-T06",
+      "P09-T07": "P09-T07",
+      "P09-T08": "P09-T08",
+      "P09-T09": "P09-T09",
+      "P09-T10": "P09-T10",
+      "P09-T11": "P09-T11",
+      "P09-T12": "P09-T12",
+      "P09-T13": "P09-T13",
+      "P09-T14": "P09-T14",
+      "P09-T15": "P09-T15",
+      "P09-T16": "P09-T16",
+      "P09-T17": "P09-T17",
+      "P09-T18": "P09-T18",
+      "P10-T01": "P10-T01",
+      "P10-T02": "P10-T02",
+      "P10-T03": "P10-T03",
+      "P10-T04": "P10-T04",
+      "P10-T05": "P10-T05",
+      "P10-T06": "P10-T06",
+      "P10-T07": "P10-T07",
+      "P10-T08": "P10-T08",
+      "P10-T09": "P10-T09",
+      "P10-T10": "P10-T10",
+      "P10-T11": "P10-T11",
+      "P10-T12": "P10-T12",
+      "P10-T13": "P10-T13",
+      "P10-T14": "P10-T14",
+      "P10-T15": "P10-T15",
+      "P10-T16": "P10-T16",
+      "P10-T17": "P10-T17",
+      "P10-T18": "P10-T18",
+      "P10-T19": "P10-T19",
+      "P10-T20": "P10-T20",
+      "P10-T21": "P10-T21",
+      "P10-T22": "P10-T22",
+      "P10-T23": "P10-T23",
+      "P11-T01": "P11-T01",
+      "P11-T02": "P11-T02",
+      "P11-T03": "P11-T03",
+      "P11-T04": "P11-T04",
+      "P11-T05": "P11-T05",
+      "P11-T06": "P11-T06",
+      "P11-T07": "P11-T07",
+      "P11-T08": "P11-T08",
+      "P11-T09": "P11-T09",
+      "P11-T10": "P11-T10",
+      "P11-T11": "P11-T11",
+      "P11-T12": "P11-T12",
+      "P12-T01": "P12-T01",
+      "P12-T02": "P12-T02",
+      "P12-T03": "P12-T03",
+      "P12-T04": "P12-T04",
+      "P12-T05": "P12-T05",
+      "P12-T06": "P12-T06",
+      "P12-T07": "P12-T07",
+      "P12-T08": "P12-T08",
+      "P12-T09": "P12-T09",
+      "P12-T10": "P12-T10",
+      "P13-T01": "P13-T01",
+      "P13-T02": "P13-T02",
+      "P13-T03": "P13-T03",
+      "P13-T04": "P13-T04",
+      "P13-T05": "P13-T05",
+      "P13-T06": "P13-T06",
+      "P13-T07": "P13-T07",
+      "P13-T08": "P13-T08",
+      "P13-T09": "P13-T09",
+      "P13-T10": "P13-T10",
+      "P13-T11": "P13-T11",
+      "P13-T12": "P13-T12",
+      "P13-T13": "P13-T13",
+      "P13-T14": "P13-T14",
+      "P13-T15": "P13-T15",
+      "P13-T16": "P13-T16",
+      "P13-T17": "P13-T17",
+      "P13-T18": "P13-T18",
+      "P13-T19": "P13-T22"
+    },
+    "changed_tasks": {
+      "P06-T10": {
+        "previous_source_id": "P06-T10",
+        "previous_source": "Make Tab toggle the game menu where gameplay permits it. Make Esc toggle the app menu, including during cutscenes; Esc is not ordinary game-menu Cancel.",
+        "current_source": "Make Tab toggle the game menu where gameplay permits it. Keep the app menu on Esc independent from skipping; Esc is not ordinary game-menu Cancel.",
+        "evidence_policy": "Existing facets were unexecuted; changed and expanded authoring/runtime obligations remain defined."
+      },
+      "P08-T07": {
+        "previous_source_id": "P08-T07",
+        "previous_source": "Build rewind from periodic snapshots and recorded input/events with deterministic replay. Expose a duration or memory budget and a timeline indicator.",
+        "current_source": "Build rewind from periodic snapshots and recorded input/events with deterministic replay. Expose a duration or memory budget, snapshots, and a timeline indicator.",
+        "evidence_policy": "Existing facets were unexecuted; changed and expanded authoring/runtime obligations remain defined."
+      },
+      "P13-T22": {
+        "previous_source_id": "P13-T19",
+        "previous_source": "Close the requirement-to-test matrix. Story completion alone is not completion of the requested port, agent-native runtime, and creator toolkit.",
+        "current_source": "Close the requirement-to-test matrix. Story completion alone is not completion of the requested port, agent-native runtime, source-authoring pipeline, and creator toolkit.",
+        "evidence_policy": "Existing facets were unexecuted; changed and expanded authoring/runtime obligations remain defined."
+      }
+    },
+    "new_tasks": [
+      "P00-T14",
+      "P02-T14",
+      "P02A-T01",
+      "P02A-T02",
+      "P02A-T03",
+      "P02A-T04",
+      "P02A-T05",
+      "P02A-T06",
+      "P02A-T07",
+      "P02A-T08",
+      "P02A-T09",
+      "P02A-T10",
+      "P02A-T11",
+      "P02A-T12",
+      "P02A-T13",
+      "P02A-T14",
+      "P02A-T15",
+      "P02A-T16",
+      "P02A-T17",
+      "P02A-T18",
+      "P02A-T19",
+      "P02A-T20",
+      "P02A-T21",
+      "P02A-T22",
+      "P02A-T23",
+      "P02A-T24",
+      "P02A-T25",
+      "P02A-T26",
+      "P02A-T27",
+      "P02A-T28",
+      "P02A-T29",
+      "P02A-T30",
+      "P02A-T31",
+      "P02A-T32",
+      "P02A-T33",
+      "P02A-T34",
+      "P02A-T35",
+      "P02A-T36",
+      "P02A-T37",
+      "P02A-T38",
+      "P02A-T39",
+      "P02A-T40",
+      "P02A-T41",
+      "P03-T12",
+      "P05-T17",
+      "P07-T15",
+      "P07-T16",
+      "P07-T17",
+      "P07-T18",
+      "P07-T19",
+      "P08-T14",
+      "P11-T13",
+      "P11-T14",
+      "P11-T15",
+      "P11-T16",
+      "P11-T17",
+      "P12-T11",
+      "P13-T19",
+      "P13-T20",
+      "P13-T21"
+    ],
+    "preserved_results": {
+      "P00-T01-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T01-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T01-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T01-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T02-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T03-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F09": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T03-F10": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-INVENTORY"
+        ]
+      },
+      "P00-T04-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T04-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T05-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T06-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T07-F09": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T08-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T08-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T08-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T09-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T09-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T09-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T09-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T09-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION"
+        ]
+      },
+      "P00-T10-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F09": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F10": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F11": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T10-F12": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-SCENARIOS"
+        ]
+      },
+      "P00-T11-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F09": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T11-F10": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T12-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F01": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F02": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F03": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F04": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F05": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F06": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F07": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F08": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      },
+      "P00-T13-F09": {
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      }
+    },
+    "superseded_phase_exits": [
+      {
+        "id": "P00-EXIT",
+        "source": "A reproducible empty-project build, original-game coverage inventory, evidence workflow, updated requirements matrix, original-game testing system, and foundational native-agent contract exist.",
+        "phase": 0,
+        "requires_all_phase_facets": true,
+        "status": "passed",
+        "evidence": [
+          "VERIFY-PHASE0-FOUNDATION",
+          "VERIFY-PHASE0-INVENTORY",
+          "VERIFY-PHASE0-SCENARIOS",
+          "VERIFY-PHASE0-AGENT-FOUNDATION"
+        ]
+      }
+    ],
+    "phase_exit_policy": "The previous Phase 0 pass applies only to its retained source and evidence. Its expanded exit is reset to defined pending a new authoring-foundation audit; P00-T14 is not passed by this migration. The Phase 2A early bridge and all new runtime/editor/release facets remain defined.",
+    "reference_migrations": [
+      "docs/traceability.json",
+      "docs/agent/acceptance.json",
+      "docs/agent/methods.json",
+      "docs/defaults.json"
+    ],
+    "reviewed_crosscutting": [
+      "foundational_authoring_requirement",
+      "authoring_contract",
+      "authoring_stack",
+      "boundaries",
+      "feature_summary",
+      "keyboard_defaults",
+      "execution_rules",
+      "early_exits",
+      "phase_exits",
+      "release_checkpoints",
+      "prescribed_defaults"
+    ],
+    "authorship": "Original requirement analysis and implementation by OpenAI Codex with AI assistance; sources are this repository's plan, previous matrix and contributor/evidence contracts. No external game-specific implementation or reverse-engineering results consulted."
+  }
 }

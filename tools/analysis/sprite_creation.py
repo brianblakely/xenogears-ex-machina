@@ -155,6 +155,7 @@ def construct_sprite(
     trig,
     allocate: Callable[[int, int], OriginalAllocation],
     *,
+    replay=None,
     on_stage: Callable[[ConstructionStage], None] | None = None,
 ):
     """8002435c with original allocator input bytes and four binding halfwords.
@@ -215,13 +216,17 @@ def construct_sprite(
     put(out, 0x60, directory + 2 * (count + 1))
     emit("animation-before")
     out = bytearray(
-        select_animation(out, address, 0, active.rate_control, active.platform_mode, read, trig)
+        select_animation(
+            out, address, 0, active.rate_control, active.platform_mode, read, trig, replay=replay
+        )
     )
     emit("constructor-after")
     return SpriteConstruction(OriginalAllocation(address, bytes(out)), parts, active)
 
 
-def create_sprite(resource, parameters, environment, read, trig, allocate, *, on_stage=None):
+def create_sprite(
+    resource, parameters, environment, read, trig, allocate, *, replay=None, on_stage=None
+):
     """80024524's 356-byte allocation and constructor forwarding.
 
     Five original short parameters follow the resource. The last is written to
@@ -241,5 +246,6 @@ def create_sprite(resource, parameters, environment, read, trig, allocate, *, on
         read,
         trig,
         allocate,
+        replay=replay,
         on_stage=on_stage,
     )

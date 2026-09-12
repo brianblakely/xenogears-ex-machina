@@ -62,7 +62,7 @@
       "source": "**One runtime for humans and agents:** Interactive play, headless agent play, automated tests, and editor previews must use the same simulation, state, rules, loaders, and command handlers. The human UI and agent API are clients of that runtime; headless execution must not substitute a simplified game model or require simulated OS input.",
       "tasks": [
         "P02-T01",
-        "P02-T16",
+        "P02-T17",
         "P04-T13"
       ],
       "status": "defined",
@@ -73,8 +73,8 @@
       "source": "**Presentation-independent execution:** Logical simulation must run without a window, display server, GPU, physical input device, or audio output device. Optional offscreen rendering and spectator streaming may use a renderer, but neither rendering nor a spectator may govern the simulation clock or be required for agent control.",
       "tasks": [
         "P02-T04",
-        "P02-T27",
         "P02-T28",
+        "P02-T29",
         "P13-T06"
       ],
       "status": "defined",
@@ -111,6 +111,48 @@
         "P10-T12",
         "P10-T15",
         "P13-T10"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-11",
+      "source": "**Authoring is not runtime execution:** TypeScript runs in a supervised build-time Node.js process to manufacture meshes, world definitions, and event instructions. It is not translated into engine C++, evaluated every rendered frame, or automatically shipped as executable gameplay JavaScript. Native C++ systems and explicit event graphs execute ordinary behavior; Lua remains the custom gameplay extension language. Playing a prebuilt package must not require Node.js, a browser, Qt/QML, or an authoring tool.",
+      "tasks": [
+        "P00-T14",
+        "P02A-T04",
+        "P02A-T08",
+        "P02A-T22",
+        "P02A-T25",
+        "P13-T19"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-12",
+      "source": "**One source-oriented authoring pipeline:** TypeScript source, explicit parameter data, Lua modules, and referenced assets are authoritative. The intermediate representation, generated GLBs, and compiled packages are derived outputs, not competing editable sources. Preserve reusable components, stable IDs, and handwritten code through graphical and agent edits; do not promise arbitrary source-code round-tripping.",
+      "tasks": [
+        "P02A-T02",
+        "P02A-T03",
+        "P02A-T30",
+        "P11-T13",
+        "P11-T14",
+        "P11-T15"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "BOUNDARY-13",
+      "source": "**Geometry tools are not a replacement game engine:** Use general-purpose geometry/import/export libraries without adopting another game's implementation or making Three.js, Blender, Qt Quick 3D, or Godot the authoritative runtime. Blender or other external tools may supply optional assets. QML is not the selected world/geometry language; any later editor UI toolkit remains a client of the shared services.",
+      "tasks": [
+        "P00-T14",
+        "P02A-T05",
+        "P02A-T07",
+        "P02A-T12",
+        "P02A-T13",
+        "P11-T17"
       ],
       "status": "defined",
       "evidence": []
@@ -155,7 +197,7 @@
       ],
       "tasks": [
         "P00-T12",
-        "P02-T14",
+        "P02-T15",
         "P03-T09",
         "P04-T13"
       ],
@@ -170,7 +212,7 @@
       ],
       "tasks": [
         "P02-T04",
-        "P02-T41",
+        "P02-T42",
         "P13-T06"
       ],
       "status": "defined",
@@ -183,8 +225,8 @@
         "2–4, 6–7, 13"
       ],
       "tasks": [
-        "P02-T15",
         "P02-T16",
+        "P02-T17",
         "P06-T13"
       ],
       "status": "defined",
@@ -198,8 +240,8 @@
       ],
       "tasks": [
         "P00-T12",
-        "P02-T19",
-        "P02-T21",
+        "P02-T20",
+        "P02-T22",
         "P07-T13"
       ],
       "status": "defined",
@@ -212,10 +254,10 @@
         "2–4, 7–8, 11–13"
       ],
       "tasks": [
-        "P02-T29",
         "P02-T30",
         "P02-T31",
-        "P02-T32"
+        "P02-T32",
+        "P02-T33"
       ],
       "status": "defined",
       "evidence": []
@@ -228,8 +270,8 @@
       ],
       "tasks": [
         "P00-T13",
-        "P02-T33",
-        "P02-T35",
+        "P02-T34",
+        "P02-T36",
         "P04-T13"
       ],
       "status": "defined",
@@ -242,10 +284,10 @@
         "2–4, 8–10, 12–13"
       ],
       "tasks": [
-        "P02-T25",
         "P02-T26",
         "P02-T27",
-        "P02-T28"
+        "P02-T28",
+        "P02-T29"
       ],
       "status": "defined",
       "evidence": []
@@ -257,10 +299,10 @@
         "2–3, 5, 10–13"
       ],
       "tasks": [
-        "P02-T41",
         "P02-T42",
         "P02-T43",
-        "P02-T44"
+        "P02-T44",
+        "P02-T45"
       ],
       "status": "defined",
       "evidence": []
@@ -273,8 +315,142 @@
       ],
       "tasks": [
         "P02-T01",
-        "P02-T16",
+        "P02-T17",
         "P11-T12"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-01",
+      "source_row": [
+        "Foundational prompt-to-playable agent authoring with build–play–diagnose–repair–package verification",
+        "0, 2A–3, 7, 11–13"
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T29",
+        "P02A-T35",
+        "P02A-T37",
+        "P02A-T38",
+        "P02A-T39",
+        "P07-T18",
+        "P13-T21"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-02",
+      "source_row": [
+        "TypeScript/optional TSX source defining actual environments, geometry, reusable components, and custom objects",
+        "2A–3, 7, 11"
+      ],
+      "tasks": [
+        "P02A-T01",
+        "P02A-T12",
+        "P02A-T14",
+        "P02A-T36",
+        "P03-T12",
+        "P07-T15",
+        "P11-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-03",
+      "source_row": [
+        "Manifold solid geometry plus surface/arbitrary-mesh generators and optional external models",
+        "2A, 5, 11, 13"
+      ],
+      "tasks": [
+        "P02A-T05",
+        "P02A-T12",
+        "P02A-T13",
+        "P02A-T15",
+        "P05-T17",
+        "P11-T16",
+        "P13-T20"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-04",
+      "source_row": [
+        "Explicit source → Node build → intermediate representation → GLB/world/collision/events → C++ native-loader bridge",
+        "2–3, 2A, 7, 13"
+      ],
+      "tasks": [
+        "P02-T14",
+        "P02A-T04",
+        "P02A-T05",
+        "P02A-T06",
+        "P02A-T07",
+        "P02A-T08",
+        "P03-T12",
+        "P13-T20"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-05",
+      "source_row": [
+        "Prebuilt mod execution without Node.js, QML, browser, or a second game engine; native events and Lua own behavior",
+        "2A, 7–8, 13"
+      ],
+      "tasks": [
+        "P02A-T08",
+        "P02A-T22",
+        "P02A-T25",
+        "P07-T19",
+        "P08-T14",
+        "P13-T19"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-06",
+      "source_row": [
+        "Discoverable SDK/catalog, revisioned transactions, isolated builds, immutable test artifacts, and actionable source diagnostics",
+        "0, 2A, 7, 11–13"
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T27",
+        "P02A-T28",
+        "P02A-T29",
+        "P02A-T30",
+        "P02A-T31",
+        "P02A-T32",
+        "P02A-T33",
+        "P07-T15",
+        "P11-T15",
+        "P13-T20"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "FEATURE-AUTHORING-07",
+      "source_row": [
+        "Shared source-preserving human/agent editing, targeted prompt revisions, and protected legal-action playtests",
+        "2A–3, 7, 11–13"
+      ],
+      "tasks": [
+        "P02A-T03",
+        "P02A-T30",
+        "P02A-T38",
+        "P02A-T39",
+        "P03-T12",
+        "P07-T18",
+        "P11-T14",
+        "P11-T15",
+        "P12-T11",
+        "P13-T21"
       ],
       "status": "defined",
       "evidence": []
@@ -404,7 +580,7 @@
         "2–3, 7–8"
       ],
       "tasks": [
-        "P02-T29",
+        "P02-T30",
         "P08-T01",
         "P08-T05",
         "P08-T07",
@@ -737,15 +913,12 @@
   "phase_exits": [
     {
       "id": "P00-EXIT",
-      "source": "A reproducible empty-project build, original-game coverage inventory, evidence workflow, updated requirements matrix, original-game testing system, and foundational native-agent contract exist.",
+      "source": "A reproducible empty-project build, original-game coverage inventory, evidence workflow, updated requirements matrix, original-game testing system, and foundational native-agent and agent-authoring contracts exist.",
       "phase": 0,
       "requires_all_phase_facets": true,
       "status": "passed",
       "evidence": [
-        "VERIFY-PHASE0-FOUNDATION",
-        "VERIFY-PHASE0-INVENTORY",
-        "VERIFY-PHASE0-SCENARIOS",
-        "VERIFY-PHASE0-AGENT-FOUNDATION"
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
       ]
     },
     {
@@ -781,13 +954,30 @@
     },
     {
       "id": "P03-EXIT",
-      "source": "Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention.",
+      "source": "Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention. The Phase 2A source-to-playable early gate also passes before broad expansion.",
       "phase": 3,
       "requires_all_phase_facets": true,
       "status": "defined",
       "evidence": [],
       "requires_agent_gates": [
         "GATE-FIRST-SLICE"
+      ],
+      "requires_early_exits": [
+        "P02A-EARLY-EXIT"
+      ],
+      "requires_authoring_gates": [
+        "AUTHOR-BUILD",
+        "AUTHOR-ISOLATION",
+        "AUTHOR-PACKAGE",
+        "AUTHOR-GEOMETRY",
+        "AUTHOR-MINIMAL",
+        "AUTHOR-TWO-ROOM",
+        "AUTHOR-MIXED-ASSETS",
+        "AUTHOR-PLAY",
+        "AUTHOR-REPAIR",
+        "AUTHOR-REVISION",
+        "AUTHOR-EVENT-STATE",
+        "AUTHOR-DELIVERY"
       ]
     },
     {
@@ -816,11 +1006,69 @@
     },
     {
       "id": "P07-EXIT",
-      "source": "All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed.",
+      "source": "All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed. The expanded Phase 2A workflow produces and revises a source-authored town/dungeon mod, including real generated geometry and tested gameplay, without engine C++ changes or GUI automation.",
       "phase": 7,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_task_facets": [
+        "P02A-T01",
+        "P02A-T02",
+        "P02A-T03",
+        "P02A-T04",
+        "P02A-T05",
+        "P02A-T06",
+        "P02A-T07",
+        "P02A-T08",
+        "P02A-T09",
+        "P02A-T10",
+        "P02A-T11",
+        "P02A-T12",
+        "P02A-T13",
+        "P02A-T14",
+        "P02A-T15",
+        "P02A-T16",
+        "P02A-T17",
+        "P02A-T18",
+        "P02A-T19",
+        "P02A-T20",
+        "P02A-T21",
+        "P02A-T22",
+        "P02A-T23",
+        "P02A-T24",
+        "P02A-T25",
+        "P02A-T26",
+        "P02A-T27",
+        "P02A-T28",
+        "P02A-T29",
+        "P02A-T30",
+        "P02A-T31",
+        "P02A-T32",
+        "P02A-T33",
+        "P02A-T34",
+        "P02A-T35",
+        "P02A-T36",
+        "P02A-T37",
+        "P02A-T38",
+        "P02A-T39",
+        "P02A-T40",
+        "P02A-T41"
+      ],
+      "requires_authoring_gates": [
+        "AUTHOR-BUILD",
+        "AUTHOR-ISOLATION",
+        "AUTHOR-PACKAGE",
+        "AUTHOR-GEOMETRY",
+        "AUTHOR-MINIMAL",
+        "AUTHOR-TWO-ROOM",
+        "AUTHOR-MIXED-ASSETS",
+        "AUTHOR-PLAY",
+        "AUTHOR-REPAIR",
+        "AUTHOR-REVISION",
+        "AUTHOR-EVENT-STATE",
+        "AUTHOR-DELIVERY",
+        "AUTHOR-TOWN"
+      ]
     },
     {
       "id": "P08-EXIT",
@@ -848,27 +1096,49 @@
     },
     {
       "id": "P11-EXIT",
-      "source": "A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build. The same content can be launched, inspected, and tested headlessly through the native agent interface.",
+      "source": "A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build. The same content can be launched, inspected, and tested headlessly through the native agent interface. Agent-created TypeScript worlds remain editable through supported source/parameter operations, graphical changes preserve custom code, and human/agent revisions share validation and undo semantics.",
       "phase": 11,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_authoring_gates": [
+        "AUTHOR-EDITORS"
+      ]
     },
     {
       "id": "P12-EXIT",
-      "source": "A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++. Agents can play, inspect, debug, and rapidly test the modified battles/minigames through the same native interface.",
+      "source": "A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++. Agents can play, inspect, debug, and rapidly test the modified battles/minigames through the same native interface. Prompt-driven creation and targeted revision use the shared TypeScript/Lua pipeline rather than an editor-specific implementation.",
       "phase": 12,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_authoring_gates": [
+        "AUTHOR-EDITORS"
+      ]
     },
     {
       "id": "P13-EXIT",
-      "source": "The complete requirements matrix passes on the declared platforms. Human and agent play, image-free and optional streamed execution, complete debugging/go-anywhere access, and unlocked-speed testing are shipped and documented alongside all audiovisual and editing features.",
+      "source": "The complete requirements matrix passes on the declared platforms. Human and agent play, image-free and optional streamed execution, complete debugging/go-anywhere access, and unlocked-speed testing are shipped and documented alongside all audiovisual and editing features. The agentic TypeScript build–play–repair workflow, source-preserving editors, and prebuilt native mod execution are also packaged and verified.",
       "phase": 13,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_authoring_gates": [
+        "AUTHOR-BUILD",
+        "AUTHOR-ISOLATION",
+        "AUTHOR-PACKAGE",
+        "AUTHOR-GEOMETRY",
+        "AUTHOR-MINIMAL",
+        "AUTHOR-TWO-ROOM",
+        "AUTHOR-MIXED-ASSETS",
+        "AUTHOR-PLAY",
+        "AUTHOR-REPAIR",
+        "AUTHOR-REVISION",
+        "AUTHOR-EVENT-STATE",
+        "AUTHOR-DELIVERY",
+        "AUTHOR-TOWN",
+        "AUTHOR-EDITORS"
+      ]
     }
   ],
   "release_checkpoints": [
@@ -891,14 +1161,33 @@
       "id": "RELEASE-02",
       "source_row": [
         "Engineering preview",
-        "Phase 3: the same field/event/battle/save-load slice runs under human control and a direct headless agent on Arch, with debug demonstrations, no-image operation, optional live images, and no required real-time pacing."
+        "Phase 3: the same field/event/battle/save-load slice runs under human control and a direct headless agent on Arch, with debug demonstrations, no-image operation, optional live images, and no required real-time pacing. The Phase 2A early source-to-playable bridge passes separately alongside it."
       ],
       "required_phases": [
         3
       ],
       "requires_phase_exit_evidence": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "required_early_exits": [
+        "P02A-EARLY-EXIT"
+      ]
+    },
+    {
+      "id": "RELEASE-AUTHORING-PREVIEW",
+      "source_row": [
+        "Agent-authoring preview",
+        "Phases 2A–3: TypeScript generates actual two-room geometry and interactive content, exports a versioned package, and an agent plays, diagnoses, repairs, and revises it through the native runtime without engine edits or GUI automation. Not a substitute for original-game fidelity."
+      ],
+      "required_phases": [
+        3
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": [],
+      "required_early_exits": [
+        "P02A-EARLY-EXIT"
+      ]
     },
     {
       "id": "RELEASE-03",
@@ -919,7 +1208,7 @@
       "id": "RELEASE-04",
       "source_row": [
         "Feature-complete runtime beta",
-        "Phases 7–10 provide agent-compatible Lua mods, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround."
+        "Phases 7–10 provide agent-compatible Lua mods, the expanded Phase 2A prompt-authored town/dungeon workflow, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround."
       ],
       "required_phases": [
         7,
@@ -935,7 +1224,7 @@
       "id": "RELEASE-05",
       "source_row": [
         "Creator-toolkit beta",
-        "Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared runtime/Lua and the existing agent/debug services, with unlocked headless testing and optional human observation."
+        "Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared TypeScript content pipeline, native runtime/Lua, and existing agent/debug services, with source-preserving revisions, unlocked headless testing, and optional human observation."
       ],
       "required_phases": [
         11,
@@ -949,7 +1238,7 @@
       "id": "RELEASE-06",
       "source_row": [
         "1.0",
-        "Phase 13 validates and packages all features, including the native agent interface, across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal. Arch leads development and release testing; pure headless simulation does not require a rendering backend."
+        "Phase 13 validates and packages all features, including the native agent interface and agent-authoring SDK/build services, across Linux/Vulkan, Windows/Direct3D 12, and macOS/Metal. Arch leads development and release testing; pure headless simulation needs no rendering backend, and prebuilt content needs no authoring runtime."
       ],
       "required_phases": [
         0,
@@ -969,7 +1258,10 @@
       ],
       "requires_phase_exit_evidence": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "required_early_exits": [
+        "P02A-EARLY-EXIT"
+      ]
     }
   ],
   "execution_rules": [
@@ -979,6 +1271,24 @@
       "status": "defined",
       "evidence": [],
       "procedure": "Audit phase handoffs: agent services and their first-slice demonstration precede broad game expansion; later parallel subsystem development cannot bypass complete-game or headless gates."
+    },
+    {
+      "id": "EXECUTION-AUTHORING",
+      "source": "**Ordering:** Start alongside Phase 2 as understood native services become available. The early bridge gate below is required for Phase 3; the broader authoring SDK, geometry vocabulary, and agent workflow continue through Phase 7, with graphical clients in Phases 11–12. Do not wait for both discs or the complete editor suite to prove source-to-playable content. Authored test scenes do not replace original-game behavioral evidence.",
+      "tasks": [
+        "P02-T14",
+        "P02A-T35",
+        "P02A-T36",
+        "P02A-T37",
+        "P02A-T38",
+        "P02A-T39",
+        "P03-T12",
+        "P07-T15",
+        "P11-T13"
+      ],
+      "procedure": "Audit separate original-fidelity and source-to-playable evidence; the Arch early bridge precedes broad expansion while full SDK and graphical work retain their later gates. Authored tests cannot pass original-game fidelity requirements.",
+      "status": "defined",
+      "evidence": []
     },
     {
       "id": "EXECUTION-02",
@@ -1008,7 +1318,7 @@
         "Agents can play every implemented field, battle, menu, cutscene interaction, world-map activity, and minigame through the actual native runtime. No separate mock simulation or screenshot-driven UI automation is required."
       ],
       "tasks": [
-        "P02-T16",
+        "P02-T17",
         "P04-T13",
         "P04-T14"
       ],
@@ -1022,8 +1332,8 @@
         "Accept typed gameplay actions and commands at the engine boundary, including analog/directional state, held/released actions, menu selections, dialogue choices, and battle commands. Do not inject keyboard/mouse/controller events into the OS, synthesize SDL events, or require virtual devices."
       ],
       "tasks": [
-        "P02-T15",
-        "P02-T17",
+        "P02-T16",
+        "P02-T18",
         "P06-T13"
       ],
       "status": "defined",
@@ -1036,9 +1346,9 @@
         "Expose structured, consistent game-state snapshots, targeted queries, deltas, events, and diagnostics, including non-visible state. Do not limit agents to screenshots, textual summaries, or public-facing player information."
       ],
       "tasks": [
-        "P02-T19",
         "P02-T20",
-        "P02-T21"
+        "P02-T21",
+        "P02-T22"
       ],
       "status": "defined",
       "evidence": []
@@ -1050,10 +1360,10 @@
         "Provide pause/step, breakpoints, watchpoints, traces, state inspection/editing, snapshots, deterministic replay, arbitrary valid scenario setup, and native parity with every supported emulator-test capability. Extend typed setup to the complete native game rather than inheriting current emulator-adapter limitations."
       ],
       "tasks": [
-        "P02-T29",
         "P02-T30",
         "P02-T31",
-        "P02-T35"
+        "P02-T32",
+        "P02-T36"
       ],
       "status": "defined",
       "evidence": []
@@ -1065,10 +1375,10 @@
         "Support exact stepping, bounded run-until conditions, real-time play, fixed acceleration, and fully unthrottled execution as fast as the simulation can run. Removing pacing must not change tick semantics or skip required gameplay work."
       ],
       "tasks": [
-        "P02-T25",
         "P02-T26",
         "P02-T27",
-        "P02-T28"
+        "P02-T28",
+        "P02-T29"
       ],
       "status": "defined",
       "evidence": []
@@ -1080,11 +1390,11 @@
         "Offer on-demand images and an attachable live image stream from the native renderer. Viewing is optional and read-only by default; attaching, disconnecting, slowing, or dropping a spectator must not change game state or force real-time execution."
       ],
       "tasks": [
-        "P02-T41",
         "P02-T42",
         "P02-T43",
         "P02-T44",
-        "P02-T45"
+        "P02-T45",
+        "P02-T46"
       ],
       "status": "defined",
       "evidence": []
@@ -1096,10 +1406,10 @@
         "Provide a documented, versioned, discoverable machine-readable API with explicit capabilities, IDs, tick semantics, errors, cancellation, and reproducible run artifacts. It must be usable without a GUI or a specific agent vendor."
       ],
       "tasks": [
-        "P02-T14",
-        "P02-T22",
-        "P02-T24",
-        "P02-T39"
+        "P02-T15",
+        "P02-T23",
+        "P02-T25",
+        "P02-T40"
       ],
       "status": "defined",
       "evidence": []
@@ -1117,6 +1427,360 @@
         "P03-T11",
         "P04-T13"
       ],
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "foundational_authoring_requirement": {
+    "id": "FOUNDATIONAL-AUTHORING",
+    "source": "**Foundational authoring requirement:** Agents must also be able to create and revise playable mods from prompts through a discover → specify → author → build → play → diagnose → repair → package loop. TypeScript is the primary source language for authored worlds, procedural geometry, reusable components, and declarative event definitions, with optional TSX composition. Authors must be able to construct actual towns, dungeons, environments, and custom objects without importing any geometry, while optionally mixing in external models and locally imported original assets. Graphical editors and agents use the same source contracts, compiler, native loaders, and verification services. A prompt box or GUI automation alone does not satisfy this requirement.",
+    "tasks": [
+      "P00-T14",
+      "P02A-T01",
+      "P02A-T12",
+      "P02A-T29",
+      "P02A-T35",
+      "P02A-T36",
+      "P02A-T37",
+      "P02A-T38",
+      "P02A-T39",
+      "P07-T15",
+      "P07-T18",
+      "P11-T13",
+      "P13-T19"
+    ],
+    "status": "defined",
+    "evidence": []
+  },
+  "authoring_contract": [
+    {
+      "id": "AUTHORING-01",
+      "source_row": [
+        "Actual geometry creation",
+        "Author shapes, surfaces, topology, and complete playable environments from code, not merely place external models or select prepared prefabs. Support reusable parameterized components and an arbitrary-mesh escape hatch alongside imported models."
+      ],
+      "tasks": [
+        "P02A-T01",
+        "P02A-T12",
+        "P02A-T13",
+        "P02A-T14",
+        "P02A-T15",
+        "P02A-T36"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-02",
+      "source_row": [
+        "Discoverable content SDK",
+        "Supply types, schemas, exact asset/entity IDs, searchable examples, supported operations, and explicit unsupported/opaque states. An agent must not invent a game capability because it found a resource name."
+      ],
+      "tasks": [
+        "P02A-T01",
+        "P02A-T27",
+        "P02A-T28",
+        "P07-T16"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-03",
+      "source_row": [
+        "Native build bridge",
+        "Type-check/transpile/execute authoring source, normalize geometry and world definitions, validate, export, and load the resulting package into the actual C++ runtime. Geometry libraries and glTF export do not supply this game-specific bridge automatically."
+      ],
+      "tasks": [
+        "P02-T14",
+        "P02A-T04",
+        "P02A-T05",
+        "P02A-T06",
+        "P02A-T07",
+        "P02A-T08"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-04",
+      "source_row": [
+        "Shared authoring access",
+        "Expose semantic, revision-aware, transactional edits and headless build/test commands. Graphical panels are clients; no content operation may be available only through a GUI callback."
+      ],
+      "tasks": [
+        "P02A-T29",
+        "P02A-T30",
+        "P02A-T31",
+        "P11-T13",
+        "P11-T17"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-05",
+      "source_row": [
+        "Inspectable behavior",
+        "Compile declarative events to native instructions with explicit serializable progress. Custom Lua state, tasks, actions, and errors participate in the same introspection, snapshots, and scheduler as the base game."
+      ],
+      "tasks": [
+        "P02A-T22",
+        "P02A-T23",
+        "P02A-T24",
+        "P02A-T25",
+        "P07-T13",
+        "P08-T14"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-06",
+      "source_row": [
+        "Verifiable iteration",
+        "Test immutable built content through legal runtime actions, repair failures using source-aware diagnostics, and repeat. Debug setup cannot stand in for gameplay, and changing protected acceptance criteria cannot turn a failed run into a pass."
+      ],
+      "tasks": [
+        "P02A-T10",
+        "P02A-T21",
+        "P02A-T32",
+        "P02A-T37",
+        "P02A-T38",
+        "P02A-T39"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-07",
+      "source_row": [
+        "Human-editable delivery",
+        "Produce source, targeted diffs, an installable package, exact build/test provenance, and optional native captures. Follow-up prompts patch the existing project without discarding unrelated human work."
+      ],
+      "tasks": [
+        "P02A-T03",
+        "P02A-T30",
+        "P02A-T38",
+        "P02A-T41",
+        "P07-T17",
+        "P07-T18",
+        "P11-T15",
+        "P13-T21"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-08",
+      "source_row": [
+        "Early architecture gate",
+        "Prove a small source-to-playable authoring bridge during Phases 2A–3, before broad content expansion or the full graphical editor suite. Expand the same foundation through Phases 7 and 11–13."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T35",
+        "P02A-T36",
+        "P02A-T37",
+        "P02A-T38",
+        "P02A-T39",
+        "P03-T12",
+        "P07-T15",
+        "P11-T13",
+        "P13-T19"
+      ],
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "authoring_stack": [
+    {
+      "id": "AUTHORING-STACK-01",
+      "source_row": [
+        "Authored source",
+        "TypeScript; optional TSX after the function-based SDK works",
+        "Reusable world components, geometry recipes, parameters, procedural algorithms, and declarative event graphs. A custom JSX factory returns definitions, not React UI elements."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T01",
+        "P02A-T03",
+        "P02A-T22"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-02",
+      "source_row": [
+        "Type checking and transpilation",
+        "`tsc --noEmit` and esbuild",
+        "Check types separately from transpiling/bundling. Neither step alone generates playable assets."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T04"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-03",
+      "source_row": [
+        "Build execution",
+        "A pinned supported Node.js toolchain in isolated worker processes",
+        "Execute the compiled authoring program with explicit inputs, seeds, budgets, and output paths; never require it during ordinary play of a prebuilt package."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T04",
+        "P02A-T10",
+        "P02A-T33",
+        "P13-T19"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-04",
+      "source_row": [
+        "Solid geometry",
+        "`manifold-3d` WebAssembly bindings",
+        "Primitive solids, union/difference/intersection, profile extrusion, and revolution; normalize results into project-owned mesh data."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T05",
+        "P02A-T12",
+        "P02A-T13"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-05",
+      "source_row": [
+        "Surface and unrestricted geometry",
+        "`three` geometry utilities plus project-authored generators",
+        "Extrusion/path utilities, terrain/surface generation, and arbitrary vertex/index buffers. Do not use a Three.js scene or renderer as the authoritative world/runtime."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T05",
+        "P02A-T12",
+        "P02A-T13",
+        "P02A-T15"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-06",
+      "source_row": [
+        "Render-asset packaging",
+        "`@gltf-transform/core`, with additional modules only as required",
+        "Import/process/export glTF/GLB render assets through an explicit supported-material/extension subset."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T06",
+        "P02A-T17"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-07",
+      "source_row": [
+        "Parameters and schemas",
+        "Zod and exported JSON Schema",
+        "Validate inputs and expose machine-readable parameters; define a serializable schema subset and test native-validator parity."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T27",
+        "P13-T20"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-08",
+      "source_row": [
+        "Native asset import",
+        "`cgltf` behind project-owned C++ adapters",
+        "Parse supported glTF/GLB and resolve assets; the project still implements decoding, GPU upload, materials, entities, collision, and gameplay."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T07",
+        "P02A-T08"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-09",
+      "source_row": [
+        "Native execution",
+        "Existing C++/CMake runtime, native renderer, event interpreter, and Lua",
+        "Load and run compiled content with the same headless/interactive semantics as the base game."
+      ],
+      "tasks": [
+        "P02-T14",
+        "P02A-T07",
+        "P02A-T08",
+        "P02A-T22",
+        "P02A-T25",
+        "P13-T19"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "AUTHORING-STACK-10",
+      "source_row": [
+        "Search and optimization",
+        "SQLite/FTS5 catalog; `meshoptimizer` when justified",
+        "Rebuildable content/metadata lookup and measured post-generation mesh optimization, not prerequisites for the first bridge."
+      ],
+      "tasks": [
+        "P00-T14",
+        "P02A-T05",
+        "P02A-T27"
+      ],
+      "status": "defined",
+      "evidence": []
+    }
+  ],
+  "early_exits": [
+    {
+      "id": "P02A-EARLY-EXIT",
+      "source": "**Early exit criterion, required by Phase 3:** The two-room authored bridge builds, loads, plays, saves/restores, and survives a diagnosed source revision in the actual native runtime without engine C++ changes or GUI automation. Generated and imported geometry paths are demonstrated separately; headless execution requires no authoring runtime or GPU. The broader Phase 2A checklist remains open until demonstrated through the Phase 7/creator-toolkit milestones.",
+      "tasks": [
+        "P02A-T35",
+        "P02A-T36",
+        "P02A-T37",
+        "P02A-T38",
+        "P02A-T39"
+      ],
+      "phase": "2A",
+      "requires_all_phase_facets": false,
+      "requires_authoring_gates": [
+        "AUTHOR-BUILD",
+        "AUTHOR-ISOLATION",
+        "AUTHOR-PACKAGE",
+        "AUTHOR-GEOMETRY",
+        "AUTHOR-MINIMAL",
+        "AUTHOR-TWO-ROOM",
+        "AUTHOR-MIXED-ASSETS",
+        "AUTHOR-PLAY",
+        "AUTHOR-REPAIR",
+        "AUTHOR-REVISION",
+        "AUTHOR-EVENT-STATE",
+        "AUTHOR-DELIVERY"
+      ],
+      "scope": "Arch native early bridge alongside Phase 3; this does not close the broader Phase 2A SDK, supported-platform or creator-toolkit obligations. Phase 7 requires the complete Phase 2A checklist, with platform packaging and source-preserving graphical delivery verified by Phases 11–13.",
       "status": "defined",
       "evidence": []
     }

@@ -600,6 +600,60 @@
       "evidence": [
         "VERIFY-PHASE0-AGENT-FOUNDATION"
       ]
+    },
+    "P00-T14-F01": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F02": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F03": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F04": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F05": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F06": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F07": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F08": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
+    },
+    "P00-T14-F09": {
+      "status": "passed",
+      "evidence": [
+        "VERIFY-PHASE0-AUTHORING-FOUNDATION"
+      ]
     }
   }
 }

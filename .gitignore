@@ -15,6 +15,7 @@ discs/
 __pycache__/
 *.py[cod]
 .ruff_cache/
+node_modules/
 # Original media and private state must never be distributed. Public tests generate
 # synthetic data in temporary directories instead of checking in these formats.
 *.chd

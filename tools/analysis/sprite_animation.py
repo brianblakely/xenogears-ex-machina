@@ -118,7 +118,7 @@ def select_orientation(sprite, angle, read, replay=None):
     return bytes(out)
 
 
-def select_animation(sprite, address, animation, rate, platform_mode, read, table):
+def select_animation(sprite, address, animation, rate, platform_mode, read, table, *, replay=None):
     out = bytearray(sprite)
     animation = signed32(animation)
     resource = u32(out, 0x48)
@@ -146,7 +146,7 @@ def select_animation(sprite, address, animation, rate, platform_mode, read, tabl
     put(out, 0x58, header)
     words = struct.unpack("<3H", read_exact(read, header, 6))
     out = apply_header(out, address, header, words, rate, platform_mode, table)
-    return select_orientation(out, signed16(u16(out, 0x80)), read)
+    return select_orientation(out, signed16(u16(out, 0x80)), read, replay)
 
 
 def field_animation(

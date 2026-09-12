@@ -9,7 +9,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.repository.matrix import build_matrix, facet_specs
+from tools.repository.matrix import build_matrix, facet_specs, markdown, plan_sources, target_scope
 from tools.repository.source_archive import archive_bytes, validate_path
 from tools.repository.validate import (
     CATEGORIES,
@@ -25,6 +25,111 @@ from tools.repository.validate import (
 
 
 class EvidenceWorkflowTests(unittest.TestCase):
+    def test_lettered_phase_and_duplicate_contract_tables_remain_distinct(self) -> None:
+        plan = (
+            "## Foundational native-agent contract\n"
+            "| Capability | Required behavior |\n|---|---|\n| Play | Native play |\n"
+            "## Foundational agent-authoring contract\n"
+            "| Capability | Required behavior |\n|---|---|\n| Build | Source build |\n"
+            "## Phase 2 — Runtime\n- [ ] Runtime task.\n"
+            "**Exit criterion:** Runtime ready.\n"
+            "## Phase 2A — Authoring\n- [x] Authored task.\n"
+            "**Early exit criterion, required by Phase 3:** Small bridge ready.\n"
+            "## Phase 3 — Native slice\n- [ ] Slice task.\n"
+        )
+        source = plan_sources(plan)
+        self.assertEqual(source["phases"], ["P02", "P02A", "P03"])
+        self.assertEqual(list(source["tasks"]), ["P02-T01", "P02A-T01", "P03-T01"])
+        self.assertEqual(source["tables"]["agent_contract"], [["Play", "Native play"]])
+        self.assertEqual(source["tables"]["authoring_contract"], [["Build", "Source build"]])
+        self.assertEqual(source["exits"], {"P02": "Runtime ready."})
+        self.assertIn("P02A", source["early_exits"])
+        rows = [{"source_id": "P02A-T01", "status": "defined"}]
+        with self.assertRaisesRegex(ValueError, "P02A-T01"):
+            validate_plan_completion(plan, rows)
+        rows[0]["status"] = "passed"
+        validate_plan_completion(plan, rows)
+
+    def test_authoring_matrix_keeps_arch_preview_and_complete_sdk_distinct(self) -> None:
+        matrix = build_matrix()
+        authoring = [row for row in matrix["requirements"] if row["phase"] == "2A"]
+        self.assertEqual(len({row["source_id"] for row in authoring}), 41)
+        self.assertTrue(
+            all(row["status"] == "defined" and not row["evidence"] for row in authoring)
+        )
+        self.assertEqual(target_scope("P02A-T35"), ["arch-vulkan", "arch-headless"])
+        self.assertIn("windows-headless", target_scope("P02A-T07"))
+        self.assertIn("macos-metal", target_scope("P13-T19"))
+        rendered = markdown(matrix)
+        self.assertIn("## Phase 2A\n", rendered)
+        self.assertLess(rendered.index("## Phase 2\n"), rendered.index("## Phase 2A\n"))
+        self.assertLess(rendered.index("## Phase 2A\n"), rendered.index("## Phase 3\n"))
+
+    def test_authoring_source_tables_prose_and_early_gate_cannot_drift(self) -> None:
+        for table in ("authoring_contract", "authoring_stack"):
+            matrix = build_matrix()
+            matrix["crosscutting"][table].pop()
+            with self.subTest(table=table), self.assertRaisesRegex(ValueError, table):
+                validate_traceability(matrix)
+        matrix = build_matrix()
+        matrix["crosscutting"]["foundational_authoring_requirement"]["source"] = "lost"
+        with self.assertRaisesRegex(ValueError, "foundational authoring requirement"):
+            validate_traceability(matrix)
+        matrix = build_matrix()
+        matrix["crosscutting"]["early_exits"][0]["source"] = "lost"
+        with self.assertRaisesRegex(ValueError, "early exit criterion"):
+            validate_traceability(matrix)
+
+    def test_early_bridge_pass_cannot_close_broader_authoring_checklist(self) -> None:
+        matrix = build_matrix()
+        early = matrix["crosscutting"]["early_exits"][0]
+        early.update(status="passed", evidence=["synthetic-gate-test-only"])
+        with self.assertRaisesRegex(ValueError, "Early exit cannot bypass incomplete facets"):
+            validate_traceability(matrix)
+        for row in matrix["requirements"]:
+            if row["source_id"] in early["tasks"]:
+                row["status"] = "passed"
+        validate_traceability(matrix)
+        phase7 = next(gate for gate in matrix["crosscutting"]["phase_exits"] if gate["phase"] == 7)
+        phase7.update(status="passed", evidence=["synthetic-gate-test-only"])
+        for row in matrix["requirements"]:
+            if row["phase"] == 7:
+                row["status"] = "passed"
+        with self.assertRaisesRegex(ValueError, "incomplete authoring checklist"):
+            validate_traceability(matrix)
+
+    def test_phase3_cannot_pass_without_authored_bridge(self) -> None:
+        matrix = build_matrix()
+        phase3 = next(gate for gate in matrix["crosscutting"]["phase_exits"] if gate["phase"] == 3)
+        phase3.update(status="passed", evidence=["synthetic-gate-test-only"])
+        for row in matrix["requirements"]:
+            if row["phase"] == 3:
+                row["status"] = "passed"
+        with self.assertRaisesRegex(ValueError, "incomplete early bridge"):
+            validate_traceability(matrix)
+        phase3["requires_early_exits"] = []
+        with self.assertRaisesRegex(ValueError, "must require the authored early bridge"):
+            validate_traceability(matrix)
+
+    def test_release_and_early_gate_cannot_omit_required_scope(self) -> None:
+        matrix = build_matrix()
+        matrix["crosscutting"]["early_exits"][0]["tasks"].pop()
+        with self.assertRaisesRegex(ValueError, "protected bridge acceptance"):
+            validate_traceability(matrix)
+        matrix = build_matrix()
+        preview = next(
+            gate
+            for gate in matrix["crosscutting"]["release_checkpoints"]
+            if gate["source_row"][0] == "Agent-authoring preview"
+        )
+        preview["required_early_exits"] = []
+        with self.assertRaisesRegex(ValueError, "cannot omit the authored early bridge"):
+            validate_traceability(matrix)
+        matrix = build_matrix()
+        matrix["crosscutting"]["release_checkpoints"][0]["required_phases"] = [99]
+        with self.assertRaisesRegex(ValueError, "unknown phases"):
+            validate_traceability(matrix)
+
     def test_checked_todo_requires_every_facet_to_have_passed(self) -> None:
         plan = "## Phase 0 — Example\n- [x] A compound requirement.\n"
         rows = [
@@ -137,6 +242,18 @@ class EvidenceWorkflowTests(unittest.TestCase):
                 validate_result(
                     row, {"E": {"covers": ["R"], "targets": ["arch-vulkan"], "evidence_kind": kind}}
                 )
+        row["phase"] = "2A"
+        with self.assertRaisesRegex(ValueError, "cannot pass gameplay"):
+            validate_result(
+                row,
+                {
+                    "E": {
+                        "covers": ["R"],
+                        "targets": ["arch-vulkan"],
+                        "evidence_kind": "infrastructure_only",
+                    }
+                },
+            )
 
     def test_unknown_subsystem_cannot_skip_evidence_or_become_changed(self) -> None:
         original = {

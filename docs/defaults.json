@@ -169,7 +169,7 @@
     {
       "setting": "headless image stream",
       "value": "off",
-      "source": "P02-T41",
+      "source": "P02-T42",
       "facets": [
         "F01"
       ]
@@ -177,7 +177,7 @@
     {
       "setting": "agent control access",
       "value": "local; spectators read-only; trusted debug explicitly enabled",
-      "source": "P02-T24",
+      "source": "P02-T25",
       "facets": [
         "F01",
         "F02",
@@ -190,6 +190,51 @@
       "source": "P13-T15",
       "facets": [
         "F13"
+      ]
+    },
+    {
+      "setting": "authoring language and composition",
+      "value": "TypeScript functions first; optional custom TSX only after equivalent function-based builds pass",
+      "source": "P02A-T01",
+      "facets": [
+        "F01",
+        "F06",
+        "F07",
+        "F08"
+      ]
+    },
+    {
+      "setting": "authoring transport",
+      "value": "local CLI and versioned JSON-RPC over stdio/IPC; MCP adapter optional",
+      "source": "P02A-T29",
+      "facets": [
+        "F01",
+        "F02",
+        "F09",
+        "F10"
+      ]
+    },
+    {
+      "setting": "authoring preview after rebuild",
+      "value": "restart the scenario initially; incremental reload only at validated safe boundaries",
+      "source": "P02A-T34",
+      "facets": [
+        "F04",
+        "F05",
+        "F06",
+        "F07"
+      ]
+    },
+    {
+      "setting": "prebuilt authored content requirements",
+      "value": "native gameplay requires no Node.js, Qt/QML, browser or external modeling application",
+      "source": "P13-T19",
+      "facets": [
+        "F06",
+        "F07",
+        "F08",
+        "F09",
+        "F10"
       ]
     }
   ],
@@ -205,7 +250,10 @@
     "cutscene hold-to-skip duration",
     "optional convenience/balance/localization defaults beyond explicit requirements",
     "initial original Mono/Stereo/Wide preference",
-    "HRTF dataset and decoder pending original Wide evidence"
+    "HRTF dataset and decoder pending original Wide evidence",
+    "original collision coordinate conversion pending original evidence",
+    "optional editor UI toolkit",
+    "SQLite catalog and meshoptimizer adoption timing"
   ],
   "policy": "Specify and review unspecified choices in their owning phase; do not invent user-requested defaults. Verify prescribed settings from a clean profile and every configuration migration."
 }

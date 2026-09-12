@@ -40,6 +40,14 @@ class AgentSpecificationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "exit omits its native architecture gates"):
             validate(ROOT, matrix)
 
+    def test_first_slice_cannot_drop_authored_content_prerequisite(self):
+        matrix = build_matrix()
+        next(gate for gate in matrix["crosscutting"]["phase_exits"] if gate["phase"] == 3)[
+            "requires_authoring_gates"
+        ] = []
+        with self.assertRaisesRegex(ValueError, "authored-content prerequisite"):
+            validate(ROOT, matrix)
+
     def test_protocol_is_not_a_generic_json_object(self):
         for change in (
             {"version": "99.0"},

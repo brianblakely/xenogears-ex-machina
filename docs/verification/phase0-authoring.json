@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "id": "VERIFY-PHASE0-AUTHORING-FOUNDATION",
+  "date": "2026-09-12",
+  "evidence_kind": "infrastructure_only",
+  "targets": [
+    "repository"
+  ],
+  "covers": [
+    "P00-T14-F01",
+    "P00-T14-F02",
+    "P00-T14-F03",
+    "P00-T14-F04",
+    "P00-T14-F05",
+    "P00-T14-F06",
+    "P00-T14-F07",
+    "P00-T14-F08",
+    "P00-T14-F09",
+    "P00-EXIT"
+  ],
+  "status": "passed",
+  "scope": "Phase 0 authoring specification/dependency qualification and native build baseline; no authoring SDK, untrusted worker, native content bridge or gameplay implementation claim.",
+  "author": "Codex Astra Max phase executor with a bounded matrix subagent; independent root and contract-review agent verification. General-purpose official upstream sources only; no other Xenogears implementation/RE consulted.",
+  "host": {
+    "os": "Omarchy 4.0.3",
+    "id_like": "arch",
+    "architecture": "x86_64-linux",
+    "native_nix_lock_sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+    "authoring_nix_lock_sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3"
+  },
+  "task": "P00-T14",
+  "facet_audit": [
+    {
+      "facet": "P00-T14-F01",
+      "requirement": "foundational agent-authoring contract coverage",
+      "sources": [
+        "docs/requirement-facets.txt",
+        "docs/traceability.json",
+        "tools/repository/matrix.py"
+      ],
+      "verification": "298 literal plan tasks and 2,194 explicit facets, including 41 separate Phase 2A tasks/378 facets, both foundational tables, selected stack, boundaries, defaults and release/early-exit conditions. Parser/drift/adversarial checks and independent root matrix audit pass."
+    },
+    {
+      "facet": "P00-T14-F02",
+      "requirement": "selected TypeScript and optional TSX stack",
+      "sources": [
+        "docs/authoring/README.md",
+        "docs/authoring/contract.json",
+        "tools/authoring/package.json",
+        "nix/authoring/flake.lock"
+      ],
+      "verification": "Function-based TypeScript is selected; TSX/custom JSX is explicitly deferred until function parity. Exact supported-LTS Node 24.19.0, TypeScript 7.0.2, esbuild 0.28.2, Manifold 3.5.3, Three/types 0.186.0, glTF Transform core 4.5.0 and Zod 4.6.2 are pinned."
+    },
+    {
+      "facet": "P00-T14-F03",
+      "requirement": "separate type-check and transpile stages",
+      "sources": [
+        "tools/authoring/qualification.ts",
+        "tools/authoring/qualify.py",
+        "tools/authoring/tsconfig.json"
+      ],
+      "verification": "Executed tsc --noEmit with strict declaration checks, then esbuild ESM transpilation, then the trusted fixture. Explicit Float16 type-library requirement fixed without claiming Float16 native asset support. Stage boundaries and negative policy tests pass."
+    },
+    {
+      "facet": "P00-T14-F04",
+      "requirement": "geometry and asset adapter responsibility review",
+      "sources": [
+        "docs/authoring/README.md",
+        "docs/authoring/contract.json",
+        "docs/dependencies.json"
+      ],
+      "verification": "Solid versus open/custom/imported geometry paths, normalized project-owned data, coordinate/normal/winding/material/attribution validation and native collision responsibilities are specified. cgltf v1.15 is pinned by exact source commit/header hash as a proposed, unlinked runtime importer. No library scene/physics engine is adopted as authority."
+    },
+    {
+      "facet": "P00-T14-F05",
+      "requirement": "source build and native runtime boundaries",
+      "sources": [
+        "docs/authoring/contract.json",
+        "docs/authoring/README.md",
+        "tools/repository/authoring_contract.py"
+      ],
+      "verification": "Authoritative source and derived outputs, stable IDs, distinct revisions, explicit native event/Lua progress, immutable packages, atomic native loading and renderer-independent runtime requirements are specified. Source-only native builds/tests/installations work with no npm closure or authoring-runtime requirement."
+    },
+    {
+      "facet": "P00-T14-F06",
+      "requirement": "untrusted generator and installation policy",
+      "sources": [
+        "docs/authoring/contract.json",
+        "docs/authoring/acceptance.json",
+        "tests/test_authoring_contract.py"
+      ],
+      "verification": "Required OS/VM isolation, refusal when unavailable, protected filesystem/credentials/harness, denied networking/debug authority, complete process/resource limits and output revalidation are specified and protected against unsafe policy edits. All npm lifecycle scripts were disabled. Actual sandbox enforcement/attack-corpus execution remains unimplemented and unpassed."
+    },
+    {
+      "facet": "P00-T14-F07",
+      "requirement": "early source-to-playable and expanded acceptance gates",
+      "sources": [
+        "docs/authoring/acceptance.json",
+        "docs/traceability.json",
+        "docs/agent/acceptance.json",
+        "tools/repository/authoring_contract.py"
+      ],
+      "verification": "Fourteen future gates define minimal wall/door/pickup, source-only two-room arch/elevation/custom-object/NPC/reward, separate mixed-asset variant, actual legal traversal, save/restore/re-entry, stepped/unthrottled equality, protected diagnosis/repair and measured/retested final widening. Shared schema-native-validator parity, town/Lua/editor expansion and delivery are explicit. Premature early/Phase3/preview completion and missing/unknown prerequisites reject."
+    },
+    {
+      "facet": "P00-T14-F08",
+      "requirement": "separately pinned and reviewed authoring dependencies",
+      "sources": [
+        "docs/authoring/dependencies.json",
+        "tools/authoring/package-lock.json",
+        "nix/authoring/flake.nix",
+        "docs/dependencies.json"
+      ],
+      "verification": "All 120 locked package records matched exact official registry integrity/metadata. Fifty installed package manifests and 48 available notice files were independently reviewed; native/WASM payloads, esbuild install hook, missing notices, libvips LGPL/MPL/BSD/etc. bundles and separate SDK redistribution obligations are explicit. Fresh offline script-disabled npm ci and a second immutable qualification pass. Source-only native distribution remains separate."
+    },
+    {
+      "facet": "P00-T14-F09",
+      "requirement": "preserved historical evidence without inherited authoring passes",
+      "sources": [
+        "docs/requirements-migration.json",
+        "tests/validation-results.json",
+        "docs/verification/phase0-agent.json"
+      ],
+      "verification": "All 100 prior Phase 0 facet results remain unchanged and migration-bound. Old audit and original-reference evidence retain their historical scope. Only these nine new repository-specification facets are promoted; all later-phase facets, 15 native gates and 14 authoring gates remain defined, with no runtime implementation claim."
+    }
+  ],
+  "commands": [
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/matrix.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/validate.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "/nix/store/b5bpi6zfajzzrwwpgba2q6li3nnya4bs-python3-3.14.7/bin/python3",
+        "tools/repository/format.py",
+        "--check"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "debug"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "sanitize"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "cmake",
+        "--build",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    },
+    {
+      "command": [
+        "ctest",
+        "--preset",
+        "release"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "public_test_count": 417,
+  "ctest_suites_per_preset": 5,
+  "presets": [
+    "debug",
+    "sanitize",
+    "release"
+  ],
+  "qualification": {
+    "command": "nix develop path:./nix/authoring -c python3 tools/authoring/qualify.py",
+    "result_path": ".local/authoring/phase0-qualified-20260912/report.json",
+    "result_sha256": "dfa613a0f7f42ca7a0baad8f1eac8135e58e07cb987e87c39d467f971d73fe2e",
+    "status": "passed",
+    "targets": [
+      "x86_64-linux"
+    ],
+    "scope": "strict TS types, solid boolean generated vertices, open surface, Zod schema rejection, repeated-byte GLB and buffer roundtrip only",
+    "native_bridge_tested": false,
+    "isolation_tested": false,
+    "input_hashes": {
+      "nix/authoring/flake.nix": "b9dd53c3d6de7c726a5e69f575c6bb486cda8d983de4b3438eb8a9d783ab58c2",
+      "nix/authoring/flake.lock": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+      "tools/authoring/package.json": "3352637c68c8728659d2fd7d474bc9b314286afcb2751a48c46013ca99a58ca4",
+      "tools/authoring/package-lock.json": "bb62673321b36dcd3b5c24761945c5513da60b57182afee56874ae523867c980",
+      "tools/authoring/tsconfig.json": "86be654128c315faab284d4ec969792b2772026985371714b469ef8ce8420589",
+      "tools/authoring/qualification.ts": "8099c92f333d6f3ef6dfd0122cdc2b85c757da6f00f365904db8c175c1f0ec32",
+      "tools/authoring/qualify.py": "902a710a4982dc323eb21236e61604283990a5becbe364e6f81a406d0a66d8ca"
+    },
+    "installed_package_count": 50
+  },
+  "qualification_observations": {
+    "solid_volume": 5,
+    "generated_solid_vertices": 16,
+    "generated_solid_triangles": 32,
+    "open_surface_vertices": 3,
+    "glb_bytes": 1356,
+    "repeated_glb_bytes_equal": true,
+    "buffers_roundtrip_equal": true,
+    "unknown_and_coerced_parameters_rejected": true,
+    "unrepresentable_schema_rejected": true,
+    "installed_package_manifests_matched": 50,
+    "overwrite_existing_report": "expected rejection exit 2; reviewed report hash unchanged",
+    "offline_script_disabled_install": "50 packages installed; subsequent fresh qualification passed"
+  },
+  "frozen_sources": {
+    "tools/repository/matrix.py": "293580ed570f9aa2a2ef76032c237fdae89ca4381f1c527d9b562d93e031918b",
+    "tools/repository/validate.py": "4efebac7d1074620a9a67a2eb571e027f4830dacec5267cb1f9d808d1a418fc9",
+    "tools/repository/agent_contract.py": "8fd061329ce110e5da13571cf8d225621479d25922a7c800fb8ea8ffc256d209",
+    "tools/repository/authoring_contract.py": "89cf4269d47d808903e3648f4ac84777611f216c72fa7646d3ad4ac30ed2fab2",
+    "tools/repository/phase1_slice.py": "d90f5e0a89b757c991f2e2c633beaed9c255a71e3559a2edbb302ba2f64bfaf9",
+    "tools/repository/source_archive.py": "60b74ae7d4ea245127baab9034b66c1ef500fe2de21eabf5919a01a67d916f14",
+    "tests/test_authoring_contract.py": "30be11f3f7a583ef2822555969ffe7bd9088d6a13c47f7d7c15a9c03afe7edd8",
+    "tests/test_workflow.py": "1392c3c354323a7f51716b22d90ce7e50d81c8a782d0294d4c506555ef6cab17",
+    "tests/test_agent_contract.py": "396bf872602ded2ea2a920ff962af9cd140f70573edd8b54a013f67181894fcd",
+    "tools/authoring/qualify.py": "902a710a4982dc323eb21236e61604283990a5becbe364e6f81a406d0a66d8ca",
+    "tools/authoring/qualification.ts": "8099c92f333d6f3ef6dfd0122cdc2b85c757da6f00f365904db8c175c1f0ec32",
+    "tools/authoring/tsconfig.json": "86be654128c315faab284d4ec969792b2772026985371714b469ef8ce8420589",
+    "nix/authoring/flake.nix": "b9dd53c3d6de7c726a5e69f575c6bb486cda8d983de4b3438eb8a9d783ab58c2",
+    "nix/authoring/flake.lock": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+    "docs/authoring/contract.json": "355b0b0ed3ea21abdd4db8e988e7498962eaa185aa9388281611c3e2593d6443",
+    "docs/authoring/acceptance.json": "f4df240bb5ece15537b0b3df0caef073deee6e87c73fba95668154207bbe428e",
+    "docs/authoring/dependencies.json": "b43e480bf8b791626e33d5ecd464ac72a6a756de7889d10d303ad9c0aea748e6"
+  },
+  "artifacts": [
+    {
+      "path": ".local/verification/phase0-authoring-public-final-code.log",
+      "sha256": "9c2b9846093728afc2de69238b2c3ebc62ff3840cc3f0e6d26d62953c8757679",
+      "scope": "Frozen-code complete public gate: matrix, repository/format and Debug/sanitize/Release, each with five CTest suites and 417 Python tests.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/authoring/phase0-qualified-20260912/report.json",
+      "sha256": "dfa613a0f7f42ca7a0baad8f1eac8135e58e07cb987e87c39d467f971d73fe2e",
+      "scope": "Immutable trusted-fixture qualification after installed-manifest/lock verification; strict types, actual solid/open geometry, Zod rejection and GLB roundtrip. No native bridge or sandbox proof.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/authoring/phase0-offline-qualified-20260912/report.json",
+      "sha256": "dfa613a0f7f42ca7a0baad8f1eac8135e58e07cb987e87c39d467f971d73fe2e",
+      "scope": "Independent fresh qualification after offline script-disabled clean installation of the same lock.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase0-authoring-frozen-sources.json",
+      "sha256": "c57565fd2d902f8eb0e0b03d1efe49f2e4dc1b3cfbe4553ea02cf7166141f080",
+      "scope": "Seventeen code/schema identities frozen before completion metadata and independent source-only reproduction.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase-sequence-20260912-resumed/matrix-review.json",
+      "sha256": "9b0c3aac1228653d60192f20a11c1e2342f37253e00b160d0cbaf8347e27eb25",
+      "scope": "Root independent literal-plan/task/facet and 100-result preservation audit before completion metadata.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase-sequence-20260912-resumed/dependency-review.json",
+      "sha256": "5ec1a872ee332398e516d7f91c372709707d677eb4d1df9130438197e18e22e2",
+      "scope": "Root independent pinned registry/installed-manifest/notice/source-identity review; original observation flake unchanged.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase-sequence-20260912-resumed/phase0-authoring-contract-review.md",
+      "sha256": "a4cad780b7154142c38f1efd81e2fb24bb158f8817e6ae6847bdbabbcf53c972",
+      "scope": "Independent reviewer findings and closure: native schema parity, final-widening verification and executed-prerequisite enforcement.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/phase-sequence-20260912-resumed/draft-source-inclusion-review.json",
+      "sha256": "f3fcf4a3dd82c61451e806b1a0513d0ae9ceb38e868d26d6dbb982becc35daae",
+      "scope": "Root bounded provenance/distribution review of three existing unfinished analysis/test sources; no behavioral validation or adoption.",
+      "distribution": "private_local_only"
+    },
+    {
+      "path": ".local/verification/proof-qf0of6tr/reproducibility.json",
+      "sha256": "d8872094c9a007a0678c701cde94adf1f4c35b5c1b2daca94ef6bc81fdd81067",
+      "scope": "Root independent two-copy source-only Release build/test/install and byte-identical baseline proof.",
+      "distribution": "private_local_only"
+    }
+  ],
+  "reproducibility_proof": {
+    "schema_version": 1,
+    "source_archive": ".local/verification/proof-qf0of6tr/source.tar.gz",
+    "source_archive_sha256": "aa167cc3572d911413d8cab277eeefca3cf78dc174594e6413ee1921774cb858",
+    "source_archive_reproducible": true,
+    "release_binary_reproducible": true,
+    "builds": [
+      {
+        "build": "a",
+        "binary_sha256": "05cbc9df59936b7abce3f7e571975a1cadcef447d3a3dc87c450538083239059",
+        "installed_files": [
+          "bin/xem-baseline",
+          "share/licenses/xenogears-ex-machina/LICENSE"
+        ],
+        "log": ".local/verification/proof-qf0of6tr/source-only-a.log",
+        "log_sha256": "5528172e6c84c064120d37aa7619329ed7a0008e712bb39e33d1bc3426cbf334",
+        "original_data_present": false
+      },
+      {
+        "build": "b",
+        "binary_sha256": "05cbc9df59936b7abce3f7e571975a1cadcef447d3a3dc87c450538083239059",
+        "installed_files": [
+          "bin/xem-baseline",
+          "share/licenses/xenogears-ex-machina/LICENSE"
+        ],
+        "log": ".local/verification/proof-qf0of6tr/source-only-b.log",
+        "log_sha256": "7ff52beba0904c24f3e1f1ecee362f22f27a407ae8de560060844547adcbb863",
+        "original_data_present": false
+      }
+    ],
+    "scope": "Same pinned x86_64 Linux Nix environment, two isolated source-only directories; not cross-platform binary identity or gameplay validation."
+  },
+  "phase_exit": {
+    "id": "P00-EXIT",
+    "status": "passed",
+    "verified_todos": 14,
+    "verified_facets": 109,
+    "historical_passed_facets_preserved": 100,
+    "new_specification_facets_passed": 9,
+    "source_tasks": 298,
+    "test_facets": 2194,
+    "phase2a_tasks": 41,
+    "phase2a_facets": 378,
+    "full_phase_exits": 14,
+    "separate_early_phase_exits": 1,
+    "release_checkpoints": 7,
+    "native_gates_passed": 0,
+    "authoring_gates_passed": 0,
+    "baseline_inventory_ready": true,
+    "catalog_complete": false
+  },
+  "metadata_finalization": "The independent source-only archive and complete build/test run contain the frozen code/schema and reviewed dependency fixture before this receipt, the final Phase 0 checkbox, nine result records, current-exit evidence link and corresponding generated matrix statuses. These are completion metadata only; frozen code/schema hashes are checked before closure. Final metadata receives the repository/matrix/source and contract-test gate separately to avoid recursive receipt hashing.",
+  "limitations": [
+    "All 14 authoring gates and 15 native-agent/runtime gates remain defined. No actual playable package, SDK, isolated build service, native cgltf bridge, GUI editor or source-repair gameplay loop is implemented by Phase 0.",
+    "Dependency execution qualifies only the recorded trusted repository fixture on x86_64 Linux. Windows/macOS binaries, untrusted isolation and cross-platform build identity require separate execution evidence.",
+    "Exact registry integrity and available license notices are reviewed, not a malicious-tamper defense, verified registry attestation, vulnerability-free guarantee or approval to redistribute the compiler/WASM/native SDK closure. LGPL and other embedded-component obligations remain explicit future packaging gates.",
+    "Previous original-image/inventory/scenario evidence is retained and its repository links/metadata revalidated; this authoring task does not repeat every historical original-game capture or promote unfinished Phase 1 analysis.",
+    "Recovered original collision coordinate conversion remains evidence-qualified future work; the metre/Y-up authoring convention does not assert a PS1 unit ratio.",
+    "Source archive includes parent-reviewed unfinished battle continuation and sprite-creation analysis scripts as independently authored text only; known empty captures/replay failures and native adoption remain open."
+  ]
+}

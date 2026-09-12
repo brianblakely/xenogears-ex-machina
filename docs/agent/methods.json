@@ -12,7 +12,7 @@
       "request_schema": "protocol.schema.json#/$defs/protocol_helloParams",
       "result_schema": "protocol.schema.json#/$defs/protocol_helloResult",
       "tasks": [
-        "P02-T14"
+        "P02-T15"
       ]
     },
     {
@@ -24,9 +24,9 @@
       "request_schema": "protocol.schema.json#/$defs/protocol_discoverParams",
       "result_schema": "protocol.schema.json#/$defs/protocol_discoverResult",
       "tasks": [
-        "P02-T14",
-        "P02-T20",
-        "P02-T38"
+        "P02-T15",
+        "P02-T21",
+        "P02-T39"
       ]
     },
     {
@@ -38,8 +38,8 @@
       "request_schema": "protocol.schema.json#/$defs/schema_readParams",
       "result_schema": "protocol.schema.json#/$defs/schema_readResult",
       "tasks": [
-        "P02-T14",
-        "P02-T20"
+        "P02-T15",
+        "P02-T21"
       ]
     },
     {
@@ -51,9 +51,9 @@
       "request_schema": "protocol.schema.json#/$defs/session_createParams",
       "result_schema": "protocol.schema.json#/$defs/session_createResult",
       "tasks": [
-        "P02-T33",
-        "P02-T35",
-        "P02-T36"
+        "P02-T34",
+        "P02-T36",
+        "P02-T37"
       ]
     },
     {
@@ -65,7 +65,7 @@
       "request_schema": "protocol.schema.json#/$defs/session_closeParams",
       "result_schema": "protocol.schema.json#/$defs/session_closeResult",
       "tasks": [
-        "P02-T22"
+        "P02-T23"
       ]
     },
     {
@@ -89,7 +89,7 @@
       "request_schema": "protocol.schema.json#/$defs/control_handoffParams",
       "result_schema": "protocol.schema.json#/$defs/control_handoffResult",
       "tasks": [
-        "P02-T22",
+        "P02-T23",
         "P06-T14"
       ]
     },
@@ -102,9 +102,9 @@
       "request_schema": "protocol.schema.json#/$defs/command_submitParams",
       "result_schema": "protocol.schema.json#/$defs/command_submitResult",
       "tasks": [
-        "P02-T15",
         "P02-T16",
-        "P02-T17"
+        "P02-T17",
+        "P02-T18"
       ]
     },
     {
@@ -116,7 +116,7 @@
       "request_schema": "protocol.schema.json#/$defs/control_cycleParams",
       "result_schema": "protocol.schema.json#/$defs/control_cycleResult",
       "tasks": [
-        "P02-T22"
+        "P02-T23"
       ]
     },
     {
@@ -128,7 +128,7 @@
       "request_schema": "protocol.schema.json#/$defs/simulation_modeParams",
       "result_schema": "protocol.schema.json#/$defs/simulation_modeResult",
       "tasks": [
-        "P02-T25"
+        "P02-T26"
       ]
     },
     {
@@ -140,10 +140,10 @@
       "request_schema": "protocol.schema.json#/$defs/simulation_advanceParams",
       "result_schema": "protocol.schema.json#/$defs/simulation_advanceResult",
       "tasks": [
-        "P02-T26",
         "P02-T27",
         "P02-T28",
-        "P02-T40"
+        "P02-T29",
+        "P02-T41"
       ]
     },
     {
@@ -155,8 +155,8 @@
       "request_schema": "protocol.schema.json#/$defs/state_queryParams",
       "result_schema": "protocol.schema.json#/$defs/state_queryResult",
       "tasks": [
-        "P02-T19",
-        "P02-T21"
+        "P02-T20",
+        "P02-T22"
       ]
     },
     {
@@ -168,7 +168,7 @@
       "request_schema": "protocol.schema.json#/$defs/state_diffParams",
       "result_schema": "protocol.schema.json#/$defs/state_diffResult",
       "tasks": [
-        "P02-T21"
+        "P02-T22"
       ]
     },
     {
@@ -180,7 +180,7 @@
       "request_schema": "protocol.schema.json#/$defs/state_subscribeParams",
       "result_schema": "protocol.schema.json#/$defs/state_subscribeResult",
       "tasks": [
-        "P02-T21"
+        "P02-T22"
       ]
     },
     {
@@ -192,7 +192,7 @@
       "request_schema": "protocol.schema.json#/$defs/state_unsubscribeParams",
       "result_schema": "protocol.schema.json#/$defs/state_unsubscribeResult",
       "tasks": [
-        "P02-T21"
+        "P02-T22"
       ]
     },
     {
@@ -204,7 +204,7 @@
       "request_schema": "protocol.schema.json#/$defs/state_releaseParams",
       "result_schema": "protocol.schema.json#/$defs/state_releaseResult",
       "tasks": [
-        "P02-T21"
+        "P02-T22"
       ]
     },
     {
@@ -216,8 +216,8 @@
       "request_schema": "protocol.schema.json#/$defs/artifact_readParams",
       "result_schema": "protocol.schema.json#/$defs/artifact_readResult",
       "tasks": [
-        "P02-T39",
-        "P02-T43"
+        "P02-T40",
+        "P02-T44"
       ]
     },
     {
@@ -229,8 +229,8 @@
       "request_schema": "protocol.schema.json#/$defs/events_readParams",
       "result_schema": "protocol.schema.json#/$defs/events_readResult",
       "tasks": [
-        "P02-T21",
-        "P02-T32"
+        "P02-T22",
+        "P02-T33"
       ]
     },
     {
@@ -242,7 +242,7 @@
       "request_schema": "protocol.schema.json#/$defs/operation_statusParams",
       "result_schema": "protocol.schema.json#/$defs/operation_statusResult",
       "tasks": [
-        "P02-T22"
+        "P02-T23"
       ]
     },
     {
@@ -254,8 +254,8 @@
       "request_schema": "protocol.schema.json#/$defs/operation_cancelParams",
       "result_schema": "protocol.schema.json#/$defs/operation_cancelResult",
       "tasks": [
-        "P02-T22",
-        "P02-T26"
+        "P02-T23",
+        "P02-T27"
       ]
     },
     {
@@ -267,7 +267,7 @@
       "request_schema": "protocol.schema.json#/$defs/snapshot_captureParams",
       "result_schema": "protocol.schema.json#/$defs/snapshot_captureResult",
       "tasks": [
-        "P02-T29"
+        "P02-T30"
       ]
     },
     {
@@ -279,7 +279,7 @@
       "request_schema": "protocol.schema.json#/$defs/snapshot_restoreParams",
       "result_schema": "protocol.schema.json#/$defs/snapshot_restoreResult",
       "tasks": [
-        "P02-T29",
+        "P02-T30",
         "P08-T12"
       ]
     },
@@ -292,8 +292,8 @@
       "request_schema": "protocol.schema.json#/$defs/session_resetParams",
       "result_schema": "protocol.schema.json#/$defs/session_resetResult",
       "tasks": [
-        "P02-T29",
-        "P02-T35"
+        "P02-T30",
+        "P02-T36"
       ]
     },
     {
@@ -305,7 +305,7 @@
       "request_schema": "protocol.schema.json#/$defs/session_branchParams",
       "result_schema": "protocol.schema.json#/$defs/session_branchResult",
       "tasks": [
-        "P02-T29",
+        "P02-T30",
         "P08-T12"
       ]
     },
@@ -318,8 +318,8 @@
       "request_schema": "protocol.schema.json#/$defs/debug_mutateParams",
       "result_schema": "protocol.schema.json#/$defs/debug_mutateResult",
       "tasks": [
-        "P02-T23",
-        "P02-T31"
+        "P02-T24",
+        "P02-T32"
       ]
     },
     {
@@ -331,7 +331,7 @@
       "request_schema": "protocol.schema.json#/$defs/debug_breakpointParams",
       "result_schema": "protocol.schema.json#/$defs/debug_breakpointResult",
       "tasks": [
-        "P02-T30"
+        "P02-T31"
       ]
     },
     {
@@ -343,7 +343,7 @@
       "request_schema": "protocol.schema.json#/$defs/debug_watchpointParams",
       "result_schema": "protocol.schema.json#/$defs/debug_watchpointResult",
       "tasks": [
-        "P02-T30"
+        "P02-T31"
       ]
     },
     {
@@ -355,7 +355,7 @@
       "request_schema": "protocol.schema.json#/$defs/debug_stepParams",
       "result_schema": "protocol.schema.json#/$defs/debug_stepResult",
       "tasks": [
-        "P02-T30"
+        "P02-T31"
       ]
     },
     {
@@ -367,8 +367,8 @@
       "request_schema": "protocol.schema.json#/$defs/debug_traceParams",
       "result_schema": "protocol.schema.json#/$defs/debug_traceResult",
       "tasks": [
-        "P02-T30",
-        "P02-T32"
+        "P02-T31",
+        "P02-T33"
       ]
     },
     {
@@ -380,8 +380,8 @@
       "request_schema": "protocol.schema.json#/$defs/diagnostics_queryParams",
       "result_schema": "protocol.schema.json#/$defs/diagnostics_queryResult",
       "tasks": [
-        "P02-T20",
-        "P02-T32"
+        "P02-T21",
+        "P02-T33"
       ]
     },
     {
@@ -393,8 +393,8 @@
       "request_schema": "protocol.schema.json#/$defs/diagnostics_nativeParams",
       "result_schema": "protocol.schema.json#/$defs/diagnostics_nativeResult",
       "tasks": [
-        "P02-T30",
-        "P02-T31"
+        "P02-T31",
+        "P02-T32"
       ]
     },
     {
@@ -406,8 +406,8 @@
       "request_schema": "protocol.schema.json#/$defs/image_captureParams",
       "result_schema": "protocol.schema.json#/$defs/image_captureResult",
       "tasks": [
-        "P02-T41",
-        "P02-T43"
+        "P02-T42",
+        "P02-T44"
       ]
     },
     {
@@ -419,9 +419,9 @@
       "request_schema": "protocol.schema.json#/$defs/image_streamParams",
       "result_schema": "protocol.schema.json#/$defs/image_streamResult",
       "tasks": [
-        "P02-T42",
-        "P02-T44",
-        "P02-T45"
+        "P02-T43",
+        "P02-T45",
+        "P02-T46"
       ]
     }
   ],

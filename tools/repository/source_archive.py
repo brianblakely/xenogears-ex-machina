@@ -20,6 +20,7 @@ FORBIDDEN_PARTS = {
     "captures",
     "imported",
     "cache",
+    "node_modules",
 }
 ALLOWED_SUFFIXES = {
     ".md",
@@ -37,6 +38,7 @@ ALLOWED_SUFFIXES = {
     ".in",
     ".yml",
     ".yaml",
+    ".ts",
 }
 ALLOWED_BASENAMES = {"LICENSE", ".gitignore", ".clang-format", ".editorconfig"}
 MAX_TEXT_SIZE = 4 * 1024 * 1024

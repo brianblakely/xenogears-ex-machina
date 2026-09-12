@@ -1,4 +1,3 @@
-
 .clang-format
 .editorconfig
 .gitignore
@@ -85,6 +84,10 @@ docs/agent/protocol.schema.json
 docs/agent/scenario.schema.json
 docs/agent/state-domains.json
 docs/agent/state.schema.json
+docs/authoring/README.md
+docs/authoring/acceptance.json
+docs/authoring/contract.json
+docs/authoring/dependencies.json
 docs/defaults.json
 docs/dependencies.json
 docs/development.md
@@ -102,6 +105,7 @@ docs/requirements.md
 docs/reverse-engineering.md
 docs/traceability.json
 docs/verification/phase0-agent.json
+docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json
 docs/verification/phase0-inventory.json
 docs/verification/phase0-scenarios.json
@@ -110,6 +114,8 @@ editors/README.md
 include/xem/build_info.hpp.in
 include/xem/reconstruction/field_events.hpp
 include/xem/reconstruction/field_return.hpp
+nix/authoring/flake.lock
+nix/authoring/flake.nix
 nix/flake.lock
 nix/flake.nix
 nix/ghidra/flake.lock
@@ -140,7 +146,9 @@ tests/test_active_motion_trace.py
 tests/test_actor_defaults.py
 tests/test_agent_contract.py
 tests/test_animation_trace.py
+tests/test_authoring_contract.py
 tests/test_baseline.py
+tests/test_battle_continuation.py
 tests/test_battle_request.py
 tests/test_collision_math.py
 tests/test_collision_query.py
@@ -187,6 +195,7 @@ tools/analysis/active_motion_trace.py
 tools/analysis/actor_defaults.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
+tools/analysis/battle_continuation.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py
@@ -212,6 +221,7 @@ tools/analysis/position_trace.py
 tools/analysis/query_trace.py
 tools/analysis/replay_trace.py
 tools/analysis/sprite_animation.py
+tools/analysis/sprite_creation.py
 tools/analysis/sprite_matrix.py
 tools/analysis/sprite_replay.py
 tools/analysis/sprite_return.py
@@ -233,6 +243,11 @@ tools/analysis/verify_media_ready.py
 tools/analysis/verify_movement_sweep.py
 tools/analysis/verify_planar_motion.py
 tools/analysis/verify_sprite_animation.py
+tools/authoring/package-lock.json
+tools/authoring/package.json
+tools/authoring/qualification.ts
+tools/authoring/qualify.py
+tools/authoring/tsconfig.json
 tools/extraction/README.md
 tools/reference/README.md
 tools/reference/capture.py
@@ -247,6 +262,7 @@ tools/reference/scenario.py
 tools/reference/scenario_program.py
 tools/reference/sector_survey.py
 tools/repository/agent_contract.py
+tools/repository/authoring_contract.py
 tools/repository/check.py
 tools/repository/format.py
 tools/repository/matrix.py

@@ -370,6 +370,14 @@ def validate(root: Path, matrix: dict) -> dict:
             acceptance[key] and set(acceptance[key]) <= gates.keys(), "missing architecture gate"
         )
     require(acceptance["phase3_required"] == ["GATE-FIRST-SLICE"], "first-slice gate omitted")
+    first_slice = gates["GATE-FIRST-SLICE"]
+    phase3_exit = next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == 3)
+    require(
+        "P03-T12" in first_slice["tasks"]
+        and bool(first_slice.get("requires_authoring_gates"))
+        and first_slice["requires_authoring_gates"] == phase3_exit.get("requires_authoring_gates"),
+        "first-slice gate omits its separately evidenced authored-content prerequisite",
+    )
     for phase, group in ((2, "phase2_required"), (3, "phase3_required")):
         exit_gate = next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == phase)
         require(
@@ -396,6 +404,8 @@ def validate(root: Path, matrix: dict) -> dict:
     current = read(root, "tests/validation-results.json")["results"]
     for key, result in history["preserved_results"].items():
         require(current.get(key) == result, f"historical result reassigned or lost: {key}")
+    for key, result in history["authoring_expansion"]["preserved_results"].items():
+        require(current.get(key) == result, f"pre-authoring result reassigned or lost: {key}")
     return {
         "specified_methods": len(methods),
         "native_acceptance_gates_defined": len(gates),

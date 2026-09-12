@@ -9,36 +9,73 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+PHASE_HEADING = re.compile(r"## Phase (\d+[A-Z]?) —")
+
+
+def phase_id(value: int | str) -> str:
+    """Retain numeric phase IDs and distinguish lettered phases such as 2A."""
+    match = re.fullmatch(r"(\d+)([A-Z]?)", str(value))
+    if not match:
+        raise ValueError(f"Invalid phase: {value}")
+    return f"P{int(match[1]):02}{match[2]}"
+
+
+def phase_value(source_id: str) -> int | str:
+    value = source_id.split("-", 1)[0].removeprefix("P")
+    match = re.fullmatch(r"(\d+)([A-Z]?)", value)
+    if not match:
+        raise ValueError(f"Invalid phase source: {source_id}")
+    return f"{int(match[1])}{match[2]}" if match[2] else int(match[1])
 
 
 def plan_sources(text: str) -> dict:
     sources = {
         "tasks": {},
         "exits": {},
+        "early_exits": {},
+        "phases": [],
         "boundaries": [],
         "tables": {},
         "execution_rules": [],
         "foundational_requirement": "",
+        "foundational_authoring_requirement": "",
     }
-    phase, task, table = -1, 0, None
+    phase, task, table, section = None, 0, None, None
     for line in text.splitlines():
-        if match := re.match(r"## Phase (\d+) —", line):
-            phase, task, table = int(match[1]), 0, None
+        if line.startswith("## "):
+            section = line[3:]
+        if match := PHASE_HEADING.match(line):
+            phase, task, table = phase_id(match[1]), 0, None
+            if phase in sources["phases"]:
+                raise ValueError(f"Duplicate plan phase: {phase}")
+            sources["phases"].append(phase)
         if match := re.match(r"- \[[ x]\] (.+)", line):
+            if phase is None:
+                raise ValueError("Plan task precedes its phase")
             task += 1
-            sources["tasks"][f"P{phase:02}-T{task:02}"] = match[1]
+            sources["tasks"][f"{phase}-T{task:02}"] = match[1]
         if line.startswith("**Exit criterion:** "):
-            sources["exits"][f"P{phase:02}"] = line.removeprefix("**Exit criterion:** ")
-        if phase < 0 and line.startswith("- **"):
+            sources["exits"][phase] = line.removeprefix("**Exit criterion:** ")
+        if line.startswith("**Early exit criterion,"):
+            sources["early_exits"][phase] = line
+        if phase is None and line.startswith("- **"):
             sources["boundaries"].append(line[2:])
         if line.startswith("**Foundational requirement:**"):
             sources["foundational_requirement"] = line
-        if line.startswith(("**Execution rule:**", "**Parallelization:**")):
+        if line.startswith("**Foundational authoring requirement:**"):
+            sources["foundational_authoring_requirement"] = line
+        if line.startswith(("**Execution rule:**", "**Parallelization:**", "**Ordering:**")):
             sources["execution_rules"].append(line)
         if line.startswith("| Action |"):
             table = "keyboard_defaults"
         elif line.startswith("| Capability |"):
-            table = "agent_contract"
+            table = (
+                "authoring_contract"
+                if section == "Foundational agent-authoring contract"
+                else "agent_contract"
+            )
+        elif line.startswith("| Layer |"):
+            table = "authoring_stack"
         elif line.startswith("| Checkpoint |"):
             table = "release_checkpoints"
         elif line.startswith("| Requirement |"):
@@ -58,7 +95,7 @@ def facet_specs(text: str) -> dict:
         if not line.strip() or line.startswith("#"):
             continue
         parts = [part.strip() for part in line.split("|")]
-        if len(parts) != 3 or not re.fullmatch(r"P\d{2}-T\d{2}", parts[0]):
+        if len(parts) != 3 or not re.fullmatch(r"P\d{2}[A-Z]?-T\d{2}", parts[0]):
             raise ValueError(f"Malformed facet specification at line {number}")
         key, facets, procedure = parts
         names = [name.strip() for name in facets.split(";")]
@@ -90,7 +127,7 @@ def build_matrix(root: Path = ROOT) -> dict:
     results = json.loads((root / "tests/validation-results.json").read_text())
     rows = []
     for source_id, spec in specs.items():
-        phase = int(source_id[1:3])
+        phase = phase_value(source_id)
         for index, facet in enumerate(spec["facets"], 1):
             facet_id = f"{source_id}-F{index:02}"
             result = results["results"].get(facet_id, {})
@@ -130,8 +167,10 @@ def build_matrix(root: Path = ROOT) -> dict:
 def target_scope(source_id: str) -> list[str]:
     if source_id.startswith("P01-"):
         return ["original-reference-analysis"]
-    if source_id in {"P02-T04", "P03-T01", "P03-T09", "P03-T10", "P03-T11", "P13-T01"}:
-        if source_id in {"P03-T09", "P03-T10", "P03-T11"}:
+    if source_id.startswith("P02A-") and 35 <= int(source_id.split("-T")[1]) <= 39:
+        return ["arch-vulkan", "arch-headless"]
+    if source_id in {"P02-T04", "P03-T01", "P03-T09", "P03-T10", "P03-T11", "P03-T12", "P13-T01"}:
+        if source_id in {"P03-T09", "P03-T10", "P03-T11", "P03-T12"}:
             return ["arch-vulkan", "arch-headless"]
         return ["arch-vulkan"]
     if source_id in {"P06-T03", "P13-T02"}:
@@ -141,7 +180,15 @@ def target_scope(source_id: str) -> list[str]:
     targets = ["arch-vulkan", "windows-d3d12", "macos-metal"]
     if (
         source_id.startswith("P02-")
-        and 14 <= int(source_id[5:]) <= 40
+        and 14 <= int(source_id[5:]) <= 41
+        or source_id.startswith("P02A-")
+        or source_id.startswith("P07-")
+        and int(source_id[5:]) >= 15
+        or source_id.startswith("P11-")
+        and int(source_id[5:]) >= 13
+        or source_id == "P12-T11"
+        or source_id.startswith("P13-")
+        and int(source_id[5:]) >= 19
         or source_id
         in {
             "P02-T01",
@@ -151,9 +198,9 @@ def target_scope(source_id: str) -> list[str]:
             "P02-T11",
             "P02-T12",
             "P02-T13",
-            "P02-T41",
-            "P02-T45",
+            "P02-T42",
             "P02-T46",
+            "P02-T47",
             "P04-T13",
             "P04-T14",
             "P06-T13",
@@ -162,6 +209,7 @@ def target_scope(source_id: str) -> list[str]:
             "P07-T14",
             "P08-T12",
             "P08-T13",
+            "P08-T14",
             "P09-T18",
             "P10-T23",
             "P11-T12",
@@ -170,7 +218,6 @@ def target_scope(source_id: str) -> list[str]:
             "P13-T07",
             "P13-T08",
             "P13-T09",
-            "P13-T19",
         }
     ):
         targets += ["arch-headless", "windows-headless", "macos-headless"]
@@ -193,10 +240,10 @@ def markdown(data: dict) -> str:
         f"{len(data['source_snapshot']['tasks'])} source tasks; {len(rows)} explicit test facets.",
         "",
     ]
-    for phase in range(14):
-        lines += [f"## Phase {phase}", ""]
+    for phase in data["source_snapshot"]["phases"]:
+        lines += [f"## Phase {phase_value(phase)}", ""]
         for task_id, source in data["source_snapshot"]["tasks"].items():
-            if not task_id.startswith(f"P{phase:02}-"):
+            if not task_id.startswith(f"{phase}-"):
                 continue
             subset = [row for row in rows if row["source_id"] == task_id]
             lines += [f"### {task_id}", "", source, "", subset[0]["procedure_and_acceptance"], ""]
@@ -209,11 +256,15 @@ def markdown(data: dict) -> str:
                     f"{', '.join(row['targets'])} | {status} |"
                 )
             lines.append("")
-        lines += ["Exit gate: " + data["source_snapshot"]["exits"][f"P{phase:02}"], ""]
+        if phase in data["source_snapshot"]["exits"]:
+            lines += ["Exit gate: " + data["source_snapshot"]["exits"][phase], ""]
+        if phase in data["source_snapshot"]["early_exits"]:
+            lines += [data["source_snapshot"]["early_exits"][phase], ""]
     lines += [
         "## Crosscutting sources and default policy",
         "",
-        "`docs/traceability.json` maps every project boundary, foundational agent-contract row,",
+        "`docs/traceability.json` maps every project boundary, foundational native-agent and",
+        "agent-authoring contract row, selected authoring-stack responsibility, early gate,",
         "required-feature row, keyboard default, execution rule and release checkpoint to tests.",
         "`docs/requirement-review.json` binds reviewed source text to facet specifications;",
         "`docs/requirements-migration.json` preserves the earlier evidence and task mapping.",
