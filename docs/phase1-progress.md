@@ -18,8 +18,30 @@ connected scheduler tests retain a separate source/synthetic scope. Preserved
 Python position models match all 4,385 complete captured calls, without replacing
 the established motion, collision or sprite references. EVID-REF-027 records this
 milestone. Its remaining blockers are initialization services and additional event
-handlers, contact/encounters and snapshot ownership, battle auxiliary code and
+handlers, contact/encounters and complete return ownership, battle auxiliary code and
 rules, menus/card persistence, required media, timing and semantic readiness.
+
+The field return C++ module now captures, parses and restores the original data
+snapshot. [EVID-REF-028](../analysis/findings/EVID-REF-028.json) records exact
+comparison of all 25 actors, the full 14,340-byte supplied storage, five global
+regions and all event variables, with independent source and replay review.
+Sprite recreation, complete ownership and control readiness remain separate
+requirements. This is an original-format correlation module;
+raw actor/global pointers are not a native state API or persistence format.
+
+The later [sprite checkpoint stage](../analysis/formats/sprite-return.md) now
+matches all 25 actor decisions and 19 sprite restorations on that route.
+[EVID-REF-029](../analysis/findings/EVID-REF-029.json) composes animation selection,
+six ordinary timed commands, frame-list updates and compact metadata. Original
+return-time decoding qualifies both current party resources, including changed
+adjacent-input suffixes. This leaves sprite creation/rebinding, remaining VM
+commands, return variants and readiness open.
+
+The [recovery inventory checks](recovery-inventory.md) now validate incomplete
+entries, original dispatch fingerprints, status labels and evidence/source links.
+Explicit dependency queries report the affected coverage as blocked, including
+unlisted symbols, formats and instructions. Synthetic fault tests exercise these
+diagnostics. Complete discovery, runtime behavior and P01-T15 remain open.
 
 The table below preserves each earlier finding's original scope and limitations.
 
@@ -40,6 +62,8 @@ The table below preserves each earlier finding's original scope and limitations.
 | Movement sweeps and triangle traversal | [EVID-REF-024](../analysis/findings/EVID-REF-024.json): 729 sweeps, 3,230 queries, 10,538 signed areas, 5,594 heights and exact nested edge/slope arithmetic across two original routes | Later position/layer integration, animation, source-only branches, scratchpad copy lineage and hardware timing remain open |
 | Sprite animation, facing replay and matrices | [EVID-REF-025](../analysis/findings/EVID-REF-025.json): 69 complete observed animation changes, 1,479 facing updates including 65 replays, 198 frame scheduling calls and 2,889 matrices | Ordinary animation VM, other resources/frame formats/rendering, full motion composition and hardware cadence remain open |
 | Complete party motion updates | [EVID-REF-026](../analysis/findings/EVID-REF-026.json): 2,836 calls from entry through return, including 729 source-computed sweeps, 40 animation changes and 5,868 idle predicates across two original routes | 1,549 NPC movement calls are explicitly excluded; enabled bounds, later position/layer integration, followers/contact/camera and timing remain open |
+| Field return data | [EVID-REF-028](../analysis/findings/EVID-REF-028.json): original snapshot writer, sprite serializer and data restore; all 25 actors, 14,340 storage bytes, globals, variables, cursors and modes compare exactly | Optional actor extensions have source/synthetic coverage only; sprite recreation/replay, complete ownership and control readiness remain open |
+| Later sprite checkpoints | [EVID-REF-029](../analysis/findings/EVID-REF-029.json): 25 actor decisions, 19 complete sprite restores, six timed VM iterations, four compact metadata calls, 32 metadata positions and both complete return-time party decodes | Compact auxiliary writes and unobserved timer/command variants are source/synthetic only; creation/rebinding, remaining VM, return readiness and timing remain open |
 | Reference instrumentation | Read-only region hashes, source boundaries and guarded instruction observations | Pure analysis infrastructure; native runtime remains unimplemented |
 
 The decoder experiment identified a real boundary issue: field 23's last
@@ -131,8 +155,40 @@ All 119 distinct control artifacts match; three contiguous ramp recordings are
 one route, not independent scenarios. The 1,549 other actor movement calls remain
 explicitly unreconstructed. Optional enabled bounds have source-boundary tests
 but no original-run claim; later position/layer integration remains required.
-They remain **supported**, with independent review outstanding. Neither a passing
-tool test nor an observed subset closes a broad Phase 1 requirement.
+The new return-data captures retain all 124 control artifacts per run, including
+every image, RAM sample, final external state and audio. Nine altered lineage or
+oracle cases reject; public tests cover sparse padding, signed sprite bytes,
+descriptor count versus event count, allocation ordering and malformed inputs.
+Independent review qualified all ten new source bodies and 3,004 instructions,
+then reviewed the three implemented functions and rebuilt the original replay
+input before passing the C++ comparison under sanitizers. Byte qualification of
+the remaining seven functions does not establish their behavior in that finding.
+The later EVID-REF-029 comparison now reconstructs the 19 sprite restore calls,
+including every captured full sprite state and nested stack/return boundary.
+Three fresh recordings retain all 124 controls each; they repeat one route. The
+compact calls make no auxiliary writes, and those write branches remain
+source/synthetic coverage. Thirty-five new corruption cases reject; all 49 sprite
+tests and the earlier animation replay with its 67 corruption cases pass.
+
+Independent review also found and corrected a position-model bounds error: a
+triangle index could read other tables inside the same component. Every starting
+and visited triangle and its vertices now stay within their declared layer.
+Eleven malformed cases reject in three new regression groups; all 23 position
+tests and all 4,385 original call comparisons pass. The `-1` sentinel and valid
+original arithmetic are preserved.
+
+The earlier findings retain their historical confidence and scope. Fresh
+independent audits reproduce the decoder subset, core C++ event transitions,
+position comparisons and complete-party-motion composition. The last audit
+reviews the main/bounds/idle functions; it does not supply a complete independent
+review of every callee in findings 022–025. These bounded reviews are recorded in
+the recovery inventory. Subsequent bounded reviews cover the observed sprite,
+jump/planar and sweep branches while preserving their excluded paths. A second
+malformed-layer guard corrects collision queries: invalid triangle/vertex indices
+reject, the original `-1` attribute read is retained, and all original sweep
+comparisons and 157 corruption cases remain exact. Phase 1 independently reviewed
+that guard and reran the 16 collision-query tests. Neither a passing tool test nor
+an observed subset closes a broad Phase 1 requirement.
 
 Continue from the [recovery inventory](../analysis/recovery.json). Required work
 includes the remaining script handlers and scheduler stages, field movement/geometry/

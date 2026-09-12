@@ -1,0 +1,2384 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-028",
+  "kind": "field_return_snapshot_serialization_and_data_restore",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 214108
+      },
+      "address": "0x800a3f4c",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Field code loaded from source slot 36; no ISO file-name assumption.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800a3f4c",
+          "end": "field_38a1ce829a6f094c::800a4747"
+        }
+      ],
+      "source_body_sha256": "d339e0b3ae0f46fb8240096806fa518d6c6cc21f997dfd9ce67a6a0b628778c3",
+      "decompiler_c_sha256": "2cf7db8ef7cde462c477f138f2ecc1ae6bd84d256bd530cf753324316ae13ae1"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 211332
+      },
+      "address": "0x800a3474",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Field code loaded from source slot 36; no ISO file-name assumption.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800a3474",
+          "end": "field_38a1ce829a6f094c::800a3c8b"
+        }
+      ],
+      "source_body_sha256": "5eb304e95525897d41e1897f26ed4b3c10c6b4a32e696d97937ea31f9a40abb4",
+      "decompiler_c_sha256": "316f11d9181a56717930dd235bc530656b7365c04a5718940df64cdc88071e3d"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 75452,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021ebc",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable source; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "80021ebc",
+          "end": "80021fb7"
+        }
+      ],
+      "source_body_sha256": "8554d5b8436fb9ea03aa392897a498a46aeab6e0c7fbb39336af2ed249af3bee",
+      "decompiler_c_sha256": "86184c946a5454305ce74de2071ab08b12352cb4039b5992cf1213edadd72380"
+    }
+  ],
+  "observation": "Two fresh original encounter-route captures contain 105 save and 73 restore records. The authored C++ matches all 25 sprite serializations and 25 actor data restores, the entire 14,340-byte supplied snapshot storage (13,744 used), five global regions totaling 2,392 bytes, all 1,024 event variables, descriptor count, end cursors and three saved party modes. The image is unchanged across battle. Each capture matches all 124 uninstrumented control artifacts exactly.",
+  "interpretation": "The original in-memory field return format preserves sparse padding and separately restores newly initialized actor ownership. Descriptor count is a saved byte, while event actor count comes from the reloaded resource. Sprite checkpoints remain pending after data restore; serialized state is not a native persistence schema or a readiness predicate. The writer/serializer/data-restore subset is reproduced and independently reviewed; complete field return is not established.",
+  "confidence": "confirmed",
+  "author": "Codex /root/phase_1 (Astra Max), independently authored original-source reconstruction, 2026-09-09",
+  "reviewers": [
+    {
+      "name": "Codex /root orchestration agent, independent of this implementation",
+      "date": "2026-09-09",
+      "scope": "Reviewed the three listed original functions and public C++; independently qualified source bytes, rebuilt original inputs/oracles, compared controls and reran the C++ adapter under ASan/UBSan.",
+      "report": ".local/verification/phase-sequence-20260909/return-review-v1/return-data-review.json",
+      "limitations": "Separate AI review, not human approval. Ten byte-qualified functions are not ten complete behavioral reviews. No broad todo or slice proof promotion."
+    }
+  ],
+  "validation": {
+    "preconditions": [
+      "Use the exact supplied Disc 1 profile, original EVID-REF-020 scenario/input program and uninstrumented control. Fresh CHD integrity and raw-track SHA-256 verification are recorded.",
+      "Use pinned Nix shells, qualified Ghidra 12.1.2/PSX-loader projects and the retained export/trace/adapter scripts. No other Xenogears implementation or reverse-engineering source was consulted.",
+      "Keep historical files unchanged. Scripts create results exclusively; copy them into a fresh experiment and change only output roots when reproducing. Original trace/capture inputs and source hashes remain fixed."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra --command ghidra-analyzeHeadless /tmp/xem-ghidra-20260909/field original -process resident.exe -noanalysis -scriptPath .local/analysis/phase1-field-lifecycle-20260909/scripts -postScript ExportFieldLifecycle.java .local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis --command chdman verify -i 'discs/Xenogears disc 1.chd'",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. python .local/analysis/phase1-field-lifecycle-20260909/prepare-traces.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace --command python tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --trace-instructions .local/analysis/phase1-field-lifecycle-20260909/save-trace-spec-v1.json --output .local/scenarios/phase1-lifecycle-save-20260909-v1",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace --command python tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --trace-instructions .local/analysis/phase1-field-lifecycle-20260909/restore-trace-spec-v1.json --output .local/scenarios/phase1-lifecycle-restore-20260909-v1",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. python .local/analysis/phase1-field-lifecycle-20260909/prepare-replay.py",
+      "Inside the pinned default shell: clang++ -std=c++20 -Wall -Wextra -Wpedantic -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -g -Iinclude src/reconstruction/field_events.cpp src/reconstruction/field_return.cpp .local/analysis/phase1-field-lifecycle-20260909/replay-return.cpp -o .local/analysis/phase1-field-lifecycle-20260909/replay-return-sanitize",
+      ".local/analysis/phase1-field-lifecycle-20260909/replay-return-sanitize .local/analysis/phase1-field-lifecycle-20260909/original-return-v1.bin",
+      "Inside the pinned default shell: env PYTHONPATH=. python .local/analysis/phase1-field-lifecycle-20260909/negative-replay.py",
+      "Inside the pinned default shell: compile tests/test_field_return.cpp with the same flags and sources; run all three connected synthetic groups."
+    ],
+    "expected": "All independently captured bytes and stores equal, including old padding and retained allocations; original code/trace/source/control lineage qualifies; malformed inputs reject. Unobserved optional branches are source/synthetic evidence only.",
+    "actual": "Passed: ten exported source bodies and 3,004 instructions qualified; 16 trace guards, 178 original records, 248 exact control comparisons (124 per capture), all captured C++ save/restore bytes and nine rejected corruptions. Independent review rebuilt the exact original-input SHA-256 and passed ASan/UBSan. Three connected public synthetic test groups pass.",
+    "result": "passed",
+    "tolerance": "Exact source, integer, pointer-correlation, byte and hash equality. No padding masks, output-derived oracles, native tick-rate assumption or unobserved runtime result.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/CMakeLists.txt",
+        "sha256": "57e78f5693cbdafa52963f68ec44856d92427c13ebf4313d3b2fed1b83d2ea5f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/analysis/formats/field-lifecycle.md",
+        "sha256": "1de02cf1254930bc4a4aa0d11ae57afe7ec242417d195cc8d27370219e7498c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/analysis/formats/field-return.md",
+        "sha256": "7b4470999c1e6af9120c7bc2beccc5d527093b58165ae6d83ae2f72a4f5629b8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/include/xem/reconstruction/field_events.hpp",
+        "sha256": "6659a50a638237b21b40c1a11bb303310d591680af6d98771937ef97f0a02439",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/include/xem/reconstruction/field_return.hpp",
+        "sha256": "1da622f33ebfc59f7b2a443751678e9a2188528b8d5dc7b244c592011dbd62e1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/src/reconstruction/field_events.cpp",
+        "sha256": "8c8167b26a31536d037ca4928ff50a66eb44ebfa9ddd30878fc5ec367603baf6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/src/reconstruction/field_return.cpp",
+        "sha256": "82b875f63faadf13bb1b41f7cd0ad0019aede8adaf3e14e18d4ec1d286112e61",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1/tests/test_field_return.cpp",
+        "sha256": "8ff2c3e95f557a1547fbdcb8766cc37c75d256605fa74b4abd02c16e39c72562",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/chd-verify.log",
+        "sha256": "cdf3e3ea0a9ffc66ffdb74fdb4c94935e066856995df45677d98fbe0f2390645",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/8001b044.c",
+        "sha256": "7b3be783346e4add04e72cd8fe2d49bd802d3cfd7dcc2cb674829012e24975f7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/8001b158.c",
+        "sha256": "8b9229168ec8fa39793a4771883ac804ca1daa40a0a16adf76cf376b323ef3b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/80021d50.c",
+        "sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/80021ebc.c",
+        "sha256": "86184c946a5454305ce74de2071ab08b12352cb4039b5992cf1213edadd72380",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/800700b0.c",
+        "sha256": "0ed014fc2c13c2affa392568f6a59b88bca971ed29e02dd19c3c6662d33382ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/80077e88.c",
+        "sha256": "8df374950071d6a30738d3e771ac8104e9eeec1c6c283434f185b0597d8feeda",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/800a28d4.c",
+        "sha256": "4ef7f9a2b418cd1d838366bd43f0e2fac110c46e5d46f2aa129a77b65052d2e0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/800a3474.c",
+        "sha256": "316f11d9181a56717930dd235bc530656b7365c04a5718940df64cdc88071e3d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/800a3c8c.c",
+        "sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/c/800a3f4c.c",
+        "sha256": "2cf7db8ef7cde462c477f138f2ecc1ae6bd84d256bd530cf753324316ae13ae1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/index.json",
+        "sha256": "1c3d5709069bdd799fc93d0c033826a7f5f88e6c54b5f72f75247fc67ca867b5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2-project-manifest.json",
+        "sha256": "3fce2107183d06ce3ad597373159c3cc8ea9096bb7e8fc5082d1a52052a87e38",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/negative-replay-v1.json",
+        "sha256": "2c0f498c74dfcdcb35ea00b8cbace039128e7928921a094cdea7e5c41bdc9886",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/negative-replay.py",
+        "sha256": "0a161948df0239a20ea9bda1f0d50227f2d51c54f5320befc1cd40560db87fc3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/original-return-v1.bin",
+        "sha256": "90fca77694148ecace3a3221cb8ec9eaab21e3f266eb7cbdf132ab8f61046b13",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/prepare-replay.py",
+        "sha256": "4aeb891da6d4039e61af0a74321f3f413731b7bfc0a13a5b0963226b59975f88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/prepare-traces.py",
+        "sha256": "0a6eca57701c561f24707d9d80aed169478db1366e82cd5fd339bd53f548596d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/record-milestone.py",
+        "sha256": "7b83faa89ae54348fafaa347637b91dab99772366f92890829dc68543a69cae8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/replay-input-v1.json",
+        "sha256": "26070c6b5d02c34c9d03d81b6ccd5e86bce5794980a823917fc413a66257a2b6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/replay-result-v1.json",
+        "sha256": "9fb669ab2bd391000080ecdf7a416f6ba2a3298673e50797e153eb15f878dfd7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/replay-return.cpp",
+        "sha256": "621fa80eaa6f55fb4edc781a488dd61f6875b8b849fb1c912885ae02a4c30518",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/restore-capture-v1.log",
+        "sha256": "150267a0110653d8a07f2c038ed591e1e6ffcee86ca25ea553119a53bfc48525",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/restore-trace-spec-v1.json",
+        "sha256": "7e5d43469a08f800a252d38346bec9e8fe94ac9b7c178d3d8a7a488e85e11c2c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/save-capture-v1.log",
+        "sha256": "0eddaaffe233d5ec5bbde0a2585997330fa62e69891f78c415e7571843983e8c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/save-trace-spec-v1.json",
+        "sha256": "60dd70db1317ecdcecf945e4ce0ed44d30a2adb88bf6ec17ffdeb846d2e41c7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/scripts/ExportFieldLifecycle.java",
+        "sha256": "1eff814d2fa858d47b1730404f13c7063709347dc1487d3cbe1dbf615f9af56c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-lifecycle-20260909/source-qualification-v1.json",
+        "sha256": "6e6adccc9dca52c459ea541147f99cf8bd2763999eccfbcdd78ad35c54b8f5a5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/observation.json",
+        "sha256": "494a78d0bbc7d3bb83effc77487d7bb39776bad397bd8e2ea74a08b3549b5784",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/instruction-trace.jsonl",
+        "sha256": "b70404f6621eb22066b7c96e6f92860c509ddd758e579155bbd98c395bb881e6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/observation.json",
+        "sha256": "9e23d5a763adaa15803dc67404e7404861c7f871017524a30d0e2b2650a24626",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-restore-20260909-v1/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/instruction-trace.jsonl",
+        "sha256": "12e5f8792384833c03a1e89117c92a832e7b4d390a2f2916c8e1686f20e9e688",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/observation.json",
+        "sha256": "1af693db16ee8f74161a90075a8cb59edb8aa8ad72efe1e6d5b9eed29ca2bc8d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-lifecycle-save-20260909-v1/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/return-review-v1/prepare-replay-independent.py",
+        "sha256": "49bc0ef2cee4106a5b8b51d88f6cb1465a7a4797bd01a38194020e3dec421bae",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/return-review-v1/replay-input-v1.json",
+        "sha256": "2f11ab07510ee27ddef6427fd0a8fdbb15f1bd20ddae1f008e1bff727254b1b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/return-review-v1/replay.json",
+        "sha256": "9fb669ab2bd391000080ecdf7a416f6ba2a3298673e50797e153eb15f878dfd7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/return-review-v1/return-data-review.json",
+        "sha256": "843534a7a06a0a5b9c50ac65b1f4f32c30e4f6cb84c124cd782c54b6dc59a77f",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/field_return.hpp",
+      "src/reconstruction/field_return.cpp",
+      "tests/test_field_return.cpp"
+    ],
+    "format_notes": "analysis/formats/field-return.md",
+    "source_snapshot": ".local/analysis/phase1-field-lifecycle-20260909/authored-sources-v1",
+    "original_replay": {
+      "result": "passed",
+      "saved_actors": 25,
+      "restored_actors": 25,
+      "snapshot_bytes_used": 13744,
+      "full_storage_bytes_compared": 14340,
+      "global_bytes_each_direction": 2392,
+      "variable_bytes_each_direction": 2048,
+      "pending_sprite_checkpoints": 25
+    },
+    "original_input_sha256": "90fca77694148ecace3a3221cb8ec9eaab21e3f266eb7cbdf132ab8f61046b13",
+    "qualified_export_count": 10,
+    "behaviorally_reviewed_function_count": 3,
+    "ghidra_index": ".local/analysis/phase1-field-lifecycle-20260909/ghidra/lifecycle-v2/index.json",
+    "source_functions": [
+      {
+        "entry": "field_38a1ce829a6f094c::80077e88",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::80077e88",
+            "end": "field_38a1ce829a6f094c::80078b5b"
+          }
+        ],
+        "body_sha256": "b062b874b0d777cb6c4dda40c5b6fb7188c39453863e7a39c38690fe69296bfb",
+        "complete": true,
+        "c_sha256": "8df374950071d6a30738d3e771ac8104e9eeec1c6c283434f185b0597d8feeda"
+      },
+      {
+        "entry": "field_38a1ce829a6f094c::800700b0",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::800700b0",
+            "end": "field_38a1ce829a6f094c::8007033f"
+          }
+        ],
+        "body_sha256": "a6eecec37b6065261526459d4a97744397a10e53b58d5b18249ea3679a582e30",
+        "complete": true,
+        "c_sha256": "0ed014fc2c13c2affa392568f6a59b88bca971ed29e02dd19c3c6662d33382ad"
+      },
+      {
+        "entry": "field_38a1ce829a6f094c::800a3f4c",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::800a3f4c",
+            "end": "field_38a1ce829a6f094c::800a4747"
+          }
+        ],
+        "body_sha256": "d339e0b3ae0f46fb8240096806fa518d6c6cc21f997dfd9ce67a6a0b628778c3",
+        "complete": true,
+        "c_sha256": "2cf7db8ef7cde462c477f138f2ecc1ae6bd84d256bd530cf753324316ae13ae1"
+      },
+      {
+        "entry": "field_38a1ce829a6f094c::800a3474",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::800a3474",
+            "end": "field_38a1ce829a6f094c::800a3c8b"
+          }
+        ],
+        "body_sha256": "5eb304e95525897d41e1897f26ed4b3c10c6b4a32e696d97937ea31f9a40abb4",
+        "complete": true,
+        "c_sha256": "316f11d9181a56717930dd235bc530656b7365c04a5718940df64cdc88071e3d"
+      },
+      {
+        "entry": "field_38a1ce829a6f094c::800a3c8c",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::800a3c8c",
+            "end": "field_38a1ce829a6f094c::800a3f4b"
+          }
+        ],
+        "body_sha256": "38a9a8bf3712ba1d15e8164d53fbeea9c8c90b8c8c74ed7860220ac71d68b450",
+        "complete": true,
+        "c_sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3"
+      },
+      {
+        "entry": "field_38a1ce829a6f094c::800a28d4",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::800a28d4",
+            "end": "field_38a1ce829a6f094c::800a2fbf"
+          }
+        ],
+        "body_sha256": "864a1a533b4b59c6bb8ebc700ac475ccd18d2ac1352e389ce6584aa50f3dc04b",
+        "complete": true,
+        "c_sha256": "4ef7f9a2b418cd1d838366bd43f0e2fac110c46e5d46f2aa129a77b65052d2e0"
+      },
+      {
+        "entry": "80021ebc",
+        "body": [
+          {
+            "begin": "80021ebc",
+            "end": "80021fb7"
+          }
+        ],
+        "body_sha256": "8554d5b8436fb9ea03aa392897a498a46aeab6e0c7fbb39336af2ed249af3bee",
+        "complete": true,
+        "c_sha256": "86184c946a5454305ce74de2071ab08b12352cb4039b5992cf1213edadd72380"
+      },
+      {
+        "entry": "80021d50",
+        "body": [
+          {
+            "begin": "80021d50",
+            "end": "80021ebb"
+          }
+        ],
+        "body_sha256": "bb94bfdd989bd09720f7be46406f4855b62e957deb9eca24ea1c7f0af6e889b3",
+        "complete": true,
+        "c_sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7"
+      },
+      {
+        "entry": "8001b044",
+        "body": [
+          {
+            "begin": "8001b044",
+            "end": "8001b157"
+          }
+        ],
+        "body_sha256": "384f39ecd7410d4052c5bb6b2d276424ea67ef455e7791adccb54b66a0d49178",
+        "complete": true,
+        "c_sha256": "7b3be783346e4add04e72cd8fe2d49bd802d3cfd7dcc2cb674829012e24975f7"
+      },
+      {
+        "entry": "8001b158",
+        "body": [
+          {
+            "begin": "8001b158",
+            "end": "8001b3a7"
+          }
+        ],
+        "body_sha256": "6e5bc5601eb84c3372bdc851d0a7527ac490f1d043ac4aefb2fc3bb01bfeab7e",
+        "complete": true,
+        "c_sha256": "8b9229168ec8fa39793a4771883ac804ca1daa40a0a16adf76cf376b323ef3b3"
+      }
+    ]
+  },
+  "source_dependencies": [
+    "EVID-REF-014",
+    "EVID-REF-020",
+    "EVID-REF-025",
+    "EVID-REF-027"
+  ],
+  "related_requirements": [
+    "P01-T02",
+    "P01-T03",
+    "P01-T04",
+    "P01-T08",
+    "P01-T09",
+    "P01-T11",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "Original execution covers Disc 1 field 23, one ordinary encounter-victory-return route. The two traces repeat that route and are not independent scenarios.",
+    "No optional +110/+114 actor extension is exercised. Their flag, size, pointer and allocation ordering rules have source review and synthetic tests only.",
+    "The actor-before hook at 800a3940 follows descriptor auxiliary/low-flag stores. Restored descriptor equality is valid at that boundary; distinct high-flag retention is also reviewed and synthetically tested.",
+    "Full global meaning, raw pointer repair and native ownership are open. Allocator callback failure is not transactional native rollback. The original writer can request diagnostic printing, outside this pure data module.",
+    "The 19 later sprite-replay entries are observations only. Sprite allocation/rebinding, checkpoint policy, ordinary animation VM, complete return variants and control readiness remain open.",
+    "Entry, teardown, sprite replay and party-resource exports outside the three listed implementation functions remain dependencies or provisional analysis. Source-byte qualification alone does not recover them.",
+    "Memory-card persistence, combat/results, complete loaders, media, timing, all 15 broad Phase 1 todos and all nine slice proof domains remain open."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original disc/executable/overlay bytes and fresh original execution; retained independently authored repository models and Ghidra projects. No other Xenogears implementation or reverse-engineering results consulted.",
+    "authorship": "New C++, tests and explanatory metadata are authored with AI assistance for this repository under its MIT policy. Original payloads, automatic C and trace data stay private and are excluded from distribution.",
+    "historical_preservation": "Source snapshots, raw exports and a closed project manifest preserve this milestone independently of subsequent source edits. Earlier EVID-REF-027 projects/captures are unchanged."
+  }
+}

@@ -81,14 +81,19 @@ class SpriteReplayTests(unittest.TestCase):
         self.assertEqual(u16(out, 0x14E), 0)
         self.assertEqual(out[0x152:0x156], b"\xaa" * 4)
 
-    def test_previous_frame_range_gate_and_unreconstructed_formats_or_allocation(self):
+    def test_previous_frame_compact_layout_range_gate_and_unreconstructed_allocation(self):
         sprite, resource, _ = invented_sprite()
         put(resource, 0x20, 0x8003, 2)
         self.assertEqual(
             previous_frame(sprite, ADDRESS, 4, ADDRESS + 0x110, reader(RESOURCE, resource)), sprite
         )
-        with self.assertRaisesRegex(ValueError, "frame format"):
-            previous_frame(sprite, ADDRESS, 1, ADDRESS + 0x110, reader(RESOURCE, resource))
+        resource[0x30] = 1
+        resource[0x36:0x3D] = bytes((0xF2, 253, 255, 16, 0, 1, 2))
+        out = previous_frame(sprite, ADDRESS, 1, ADDRESS + 0x110, reader(RESOURCE, resource))
+        self.assertEqual(out[0x150:0x152], b"\xfd\xff")
+        self.assertEqual(u16(out, 0x156), 256)
+        with self.assertRaisesRegex(ValueError, "index is negative"):
+            previous_frame(sprite, ADDRESS, -1, ADDRESS + 0x110, reader(RESOURCE, resource))
         put(resource, 0x20, 3, 2)
         resource[0x30], resource[0x3A] = 1, 0xC0
         put(sprite, 0xE8, 0)

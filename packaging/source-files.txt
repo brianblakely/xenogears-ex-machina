@@ -45,18 +45,22 @@ analysis/findings/EVID-REF-024.json
 analysis/findings/EVID-REF-025.json
 analysis/findings/EVID-REF-026.json
 analysis/findings/EVID-REF-027.json
+analysis/findings/EVID-REF-028.json
+analysis/findings/EVID-REF-029.json
 analysis/formats/active-motion.md
 analysis/formats/collision-arithmetic.md
 analysis/formats/event-control.md
 analysis/formats/field-control.md
 analysis/formats/field-encounter-observations.md
 analysis/formats/field-lifecycle.md
+analysis/formats/field-return.md
 analysis/formats/jump-physics.md
 analysis/formats/movement-sweep.md
 analysis/formats/music-loading.md
 analysis/formats/packed-field.md
 analysis/formats/planar-motion.md
 analysis/formats/sprite-animation.md
+analysis/formats/sprite-return.md
 analysis/recovery.json
 analysis/reference-profiles.json
 analysis/scenarios/README.md
@@ -85,6 +89,7 @@ docs/phase1-handoff.md
 docs/phase1-progress.md
 docs/phase1-slice-contract.md
 docs/platforms.json
+docs/recovery-inventory.md
 docs/requirement-facets.txt
 docs/requirement-review.json
 docs/requirements-migration.json
@@ -100,6 +105,7 @@ docs/verification/phase0.json
 editors/README.md
 include/xem/build_info.hpp.in
 include/xem/reconstruction/field_events.hpp
+include/xem/reconstruction/field_return.hpp
 nix/flake.lock
 nix/flake.nix
 nix/ghidra/flake.lock
@@ -112,6 +118,7 @@ plan.md
 prompt.md
 pyproject.toml
 src/reconstruction/field_events.cpp
+src/reconstruction/field_return.cpp
 src/runtime/main.cpp
 tests/fixtures/README.md
 tests/reference-inputs/battle-gate-probe-route.json
@@ -129,6 +136,7 @@ tests/test_active_motion_trace.py
 tests/test_agent_contract.py
 tests/test_animation_trace.py
 tests/test_baseline.py
+tests/test_battle_request.py
 tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_event_analysis.py
@@ -138,6 +146,7 @@ tests/test_event_state.py
 tests/test_field_analysis.py
 tests/test_field_control.py
 tests/test_field_events.cpp
+tests/test_field_return.cpp
 tests/test_fingerprint_survey.py
 tests/test_index_survey.py
 tests/test_instruction_trace.py
@@ -152,6 +161,7 @@ tests/test_phase1_slice.py
 tests/test_planar_motion.py
 tests/test_position.py
 tests/test_projection_records.py
+tests/test_recovery.py
 tests/test_reference.py
 tests/test_reference_iso.py
 tests/test_scenario.py
@@ -160,6 +170,8 @@ tests/test_sector_survey.py
 tests/test_sprite_animation.py
 tests/test_sprite_matrix.py
 tests/test_sprite_replay.py
+tests/test_sprite_return.py
+tests/test_sprite_vm.py
 tests/test_sweep_math.py
 tests/test_sweep_trace.py
 tests/test_workflow.py
@@ -169,6 +181,7 @@ tools/analysis/active_motion_spec.py
 tools/analysis/active_motion_trace.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
+tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py
 tools/analysis/event_media.py
@@ -195,7 +208,9 @@ tools/analysis/replay_trace.py
 tools/analysis/sprite_animation.py
 tools/analysis/sprite_matrix.py
 tools/analysis/sprite_replay.py
+tools/analysis/sprite_return.py
 tools/analysis/sprite_state.py
+tools/analysis/sprite_vm.py
 tools/analysis/sweep_math.py
 tools/analysis/sweep_math_trace.py
 tools/analysis/sweep_trace.py
@@ -231,6 +246,7 @@ tools/repository/format.py
 tools/repository/matrix.py
 tools/repository/phase1_slice.py
 tools/repository/projections.py
+tools/repository/recovery.py
 tools/repository/reproduce.py
 tools/repository/source_archive.py
 tools/repository/validate.py

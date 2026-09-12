@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from .arithmetic import signed16, signed32
 from .collision_math import Vector, height_and_normal
-from .field import region
+from .field import collision_package, region
 
 QueryVector = tuple[int, int | None, int]
 Edge = tuple[Vector, Vector]
@@ -118,7 +118,7 @@ def collision_query(
         return struct.unpack("<I", region(component, offset, 4, "collision query word"))[0]
 
     layer = signed16(actor.layer)
-    if not 0 <= layer < word(0):
+    if not 0 <= layer < word(0) or layer >= 4:
         raise ValueError("unresolved original collision query layer access")
     triangle_base = word(0x18 + 8 * layer)
     vertex_base = word(0x1C + 8 * layer)
@@ -128,7 +128,12 @@ def collision_query(
     counter, mask, attribute_mask, initial_special = None, None, None, None
     steps, areas, heights, attribute_reads = [], [], [], []
 
+    def check_triangle(index: int) -> None:
+        if not 0 <= index < len(mesh.triangles):
+            raise ValueError(f"layer {layer} triangle {index}: index outside its triangle table")
+
     def triangle_bytes(index: int) -> bytes:
+        check_triangle(index)
         return region(component, triangle_base + index * 14, 14, "collision query triangle")
 
     def vertices(index: int) -> tuple[Vector, Vector, Vector]:
@@ -142,6 +147,9 @@ def collision_query(
 
     def terrain(index: int) -> int:
         # Both routines read this byte before testing a newly selected -1 index.
+        # Only that sentinel may read before the validated triangle table.
+        if index != -1:
+            check_triangle(index)
         offset = triangle_base + index * 14 + 12
         identifier = region(component, offset, 1, "collision query attribute index")[0]
         source_word = word(attribute_base + identifier * 4)
@@ -182,6 +190,10 @@ def collision_query(
 
     if triangle == -1:
         return result(-1, "initial-triangle-missing")
+    # Reconstruction safety checks, not checks performed by the original routine.
+    # Whole-component bounds can admit triangle/vertex indices into adjacent tables.
+    mesh = collision_package(component).layers[layer]
+    check_triangle(triangle)
     x = signed32(actor.position[0] + candidate[0]) >> 16
     z = signed32(actor.position[2] + candidate[2]) >> 16
     point = (signed16(x), 0, signed16(z))

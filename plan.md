@@ -98,7 +98,7 @@ Use Ghidra as the main reverse-engineering environment, supplemented by lab313ru
 - [ ] Maintain explicit unresolved-symbol, unknown-format, and unimplemented-instruction inventories. Never silently treat unknown behavior as a no-op.
 
 Verification in progress: [Phase 1 evidence and remaining proof](docs/phase1-progress.md).
-The verified decoder, event-control, music-loading, collision-arithmetic, field-control, sprite/jump, planar-motion, movement-sweep, animation/replay, composed party-motion and position subsets, the reusable C++ event library, and the observed encounter-victory-return route do not yet complete a broad todo or the slice exit. Related Ghidra surveys and shared-type corrections support the [source/state handoff](analysis/formats/field-lifecycle.md); provisional decompilation does not close the remaining requirements.
+The verified decoder, event-control, music-loading, collision-arithmetic, field-control, sprite/jump, planar-motion, movement-sweep, animation/replay, composed party-motion, position, encounter-return data and sprite checkpoint subsets, the reusable C++ event library, and the observed encounter-victory-return route do not yet complete a broad todo or the slice exit. Related Ghidra surveys and shared-type corrections support the [source/state handoff](analysis/formats/field-lifecycle.md); provisional decompilation does not close the remaining requirements.
 
 **Exit criterion:** The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, including its agent-visible state and scenario-entry semantics, with a tracked backlog for the rest of the game.
 

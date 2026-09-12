@@ -79,21 +79,64 @@ class CollisionQueryTests(unittest.TestCase):
         self.assertEqual(self.actor.triangle, 0)
 
     def test_missing_initial_triangle_does_not_write_any_output(self):
-        result = self.query(fixture(), actor=replace(self.actor, triangle=-1))
-        self.assertEqual(result.value, -1)
-        self.assertEqual((result.point, result.edge, result.attribute), (None, None, None))
-        self.assertEqual((result.areas, result.attribute_reads), ((), ()))
+        for ordinary in (True, False):
+            for component in (fixture(), fixture()[:0x20]):
+                with self.subTest(ordinary=ordinary, bytes=len(component)):
+                    result = self.query(
+                        component, actor=replace(self.actor, triangle=-1), ordinary=ordinary
+                    )
+                    self.assertEqual(result.value, -1)
+                    self.assertEqual((result.point, result.edge, result.attribute), (None,) * 3)
+                    self.assertEqual((result.areas, result.attribute_reads), ((), ()))
 
     def test_missing_neighbor_reads_actual_preceding_attribute_byte(self):
         data = bytearray(fixture(attributes=(0, 0x20)))
         data[0x2E] = 1  # triangle(-1)+12, within the authored preceding header.
-        result = self.query(bytes(data), target=(-2, 4))
-        self.assertEqual(
-            (result.value, result.reason, result.attribute), (-1, "missing-neighbor", 0x20)
-        )
-        self.assertEqual(result.attribute_reads[-1].triangle, -1)
-        self.assertEqual(result.attribute_reads[-1].index, 1)
-        self.assertEqual(result.edge, ((0, 7, 0), (0, 7, 16)))
+        for ordinary in (True, False):
+            with self.subTest(ordinary=ordinary):
+                result = self.query(bytes(data), target=(-2, 4), ordinary=ordinary)
+                self.assertEqual((result.value, result.reason), (-1, "missing-neighbor"))
+                self.assertEqual(result.attribute, 0x20 if ordinary else None)
+                self.assertEqual(result.attribute_reads[-1].triangle, -1)
+                self.assertEqual(result.attribute_reads[-1].index, 1)
+                self.assertEqual(result.edge, ((0, 7, 0), (0, 7, 16)))
+
+    def test_initial_triangle_cannot_read_vertex_or_attribute_bytes_as_records(self):
+        # The long attribute table keeps the invalid accesses within the component.
+        component = fixture(attributes=(0,) * 17)
+        for ordinary in (True, False):
+            for triangle in (-2, 1, 3, 32767):
+                with self.subTest(ordinary=ordinary, triangle=triangle):
+                    with self.assertRaisesRegex(ValueError, "outside its triangle table"):
+                        self.query(
+                            component,
+                            actor=replace(self.actor, triangle=triangle),
+                            ordinary=ordinary,
+                        )
+
+    def test_neighbor_triangle_cannot_read_vertex_or_attribute_bytes_as_records(self):
+        for ordinary in (True, False):
+            for neighbor in (-2, 1, 3, 32767):
+                with self.subTest(ordinary=ordinary, neighbor=neighbor):
+                    component = bytearray(fixture(attributes=(0,) * 17))
+                    struct.pack_into("<h", component, 0x36, neighbor)
+                    with self.assertRaisesRegex(ValueError, "outside its triangle table"):
+                        self.query(bytes(component), target=(-2, 4), ordinary=ordinary)
+
+    def test_vertex_indices_cannot_read_adjacent_tables(self):
+        for ordinary in (True, False):
+            for vertex in (-1, 3, 7, 32767):
+                with self.subTest(ordinary=ordinary, vertex=vertex):
+                    component = bytearray(fixture(attributes=(0,) * 17))
+                    struct.pack_into("<h", component, 0x30, vertex)
+                    with self.assertRaisesRegex(ValueError, "invalid vertex index"):
+                        self.query(bytes(component), ordinary=ordinary)
+
+    def test_missing_neighbor_height_access_remains_unqualified(self):
+        component = bytearray(fixture(attributes=(0, 0x400000)))
+        component[0x2E] = 1
+        with self.assertRaisesRegex(ValueError, "outside its triangle table"):
+            self.query(bytes(component), target=(-2, 4))
 
     def test_double_edge_decisions_use_original_position(self):
         cases = [

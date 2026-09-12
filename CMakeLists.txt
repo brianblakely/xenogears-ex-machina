@@ -11,7 +11,9 @@ target_link_libraries(xem-baseline PRIVATE xem_project_options)
 
 # Reviewed Phase 1 logic for reuse by the native runtime. The baseline does not
 # yet launch the original game or supply the unresolved subsystem services.
-add_library(xem-field-reconstruction STATIC src/reconstruction/field_events.cpp)
+add_library(xem-field-reconstruction STATIC
+  src/reconstruction/field_events.cpp
+  src/reconstruction/field_return.cpp)
 target_include_directories(xem-field-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-field-reconstruction PUBLIC xem_project_options)
 
@@ -29,6 +31,9 @@ if(BUILD_TESTING)
   add_executable(test-field-events tests/test_field_events.cpp)
   target_link_libraries(test-field-events PRIVATE xem-field-reconstruction)
   add_test(NAME field-event-reconstruction COMMAND test-field-events)
+  add_executable(test-field-return tests/test_field_return.cpp)
+  target_link_libraries(test-field-return PRIVATE xem-field-reconstruction)
+  add_test(NAME field-return-reconstruction COMMAND test-field-return)
   add_test(NAME baseline-cli
     COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_baseline.py"
       "$<TARGET_FILE:xem-baseline>")

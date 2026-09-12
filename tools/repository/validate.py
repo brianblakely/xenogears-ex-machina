@@ -14,6 +14,7 @@ if __package__:
     from .phase1_slice import validate_evidence as validate_slice_evidence
     from .phase1_slice import validate_structure as validate_slice_structure
     from .projections import validate_projections
+    from .recovery import validate as validate_recovery
     from .source_archive import source_files
 else:
     from agent_contract import validate as validate_agent_contract
@@ -21,6 +22,7 @@ else:
     from phase1_slice import validate_evidence as validate_slice_evidence
     from phase1_slice import validate_structure as validate_slice_structure
     from projections import validate_projections
+    from recovery import validate as validate_recovery
     from source_archive import source_files
 
 STAGES = ["identified", "analyzed", "decompiled", "natively_implemented", "behaviorally_validated"]
@@ -811,6 +813,9 @@ def validate(root: Path = ROOT) -> dict:
     agent_contract = validate_agent_contract(root, matrix)
     files = source_files(root)
     names = {path.relative_to(root).as_posix() for path in files}
+    validate_recovery(
+        load(root, "analysis/recovery.json"), known_evidence=set(findings), allowed_sources=names
+    )
     validate_slice_evidence(root, matrix, findings, registry, set(profiles), names)
     if (root / ".git").exists():
         output = subprocess.check_output(

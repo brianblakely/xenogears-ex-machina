@@ -32,6 +32,7 @@ implementation are authored source.
 | [field.py](../../tools/analysis/field.py), [packed.py](../../tools/analysis/packed.py) | Existing component, event-package and collision parsing; packed decoding | Extraction/reference tools; actual source-memory context is required for decoder overreads |
 | [position.py](../../tools/analysis/position.py), [position_query.py](../../tools/analysis/position_query.py) | Position integration, layer-floor selection, height bounds and party history | Reuses collision and vertical arithmetic; diagnostic services and unobserved branches remain explicit |
 | Existing [party motion](active-motion.md), [sweeps](movement-sweep.md) and [sprite models](sprite-animation.md) | Verified party movement and selected animation behavior | NPC active motion, ordinary sprite commands, rendering and contact remain incomplete |
+| [field_return.cpp](../../src/reconstruction/field_return.cpp), [return contract](field-return.md), [later sprite checkpoints](sprite-return.md) | Original snapshot format, data restore, later actor checkpoint choices and 19 source-computed sprite restores | Original correlation modules; sprite creation/rebinding, complete return ownership/readiness and native owned snapshots remain required |
 
 `xem-field-reconstruction` is a C++20 library. Its structures hold semantic
 values, not packed PS1 RAM. `EventProgram` borrows bytecode and entry rows;
@@ -161,8 +162,16 @@ globals, collision attributes and descriptors/actors, preserves or rebuilds
 selected allocation pointers, and restores the 2,048-byte variable bank. Sprite
 selectors then choose party resources or field members for `80076ac0` rebinding.
 This is a field return snapshot, not the ordinary memory-card file format.
-Producer symmetry, complete buffer extents, ownership and return variants remain
-blockers.
+EVID-REF-028 now identifies producer `800a3f4c` and qualifies its symmetry with
+the data restore: the observed 25-actor image uses 13,744 bytes including its
+header, preserves sparse sprite padding, and remains unchanged across battle.
+The authored C++ compares all captured stores and returns sprite checkpoints as
+pending work for its caller. EVID-REF-029 separately reconstructs all 25 later
+checkpoint decisions and 19 observed sprite restores with six ordinary timed
+commands. Optional actor allocations have source/tests coverage only; sprite
+creation/rebinding, remaining VM commands, global resource repair, return
+variants and control readiness remain blockers. See [the data contract](field-return.md)
+and [later checkpoint scope](sprite-return.md).
 
 Battle overlay
 `1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291`

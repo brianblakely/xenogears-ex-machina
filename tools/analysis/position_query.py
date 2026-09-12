@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from tools.analysis.arithmetic import signed16, signed32
 from tools.analysis.collision_math import height_and_normal
 from tools.analysis.collision_query import packed_area, packed_xz
-from tools.analysis.field import region
+from tools.analysis.field import collision_package, region
 from tools.analysis.sprite_state import put, u16, u32
 
 
@@ -43,7 +43,10 @@ def layer_floor(component, reciprocal, actor, layer, attribute_control):
     triangle = signed16(u16(actor, 8 + 2 * layer))
     if triangle == -1:
         return LayerFloor(-1, None, None, None, None, (), (), None, "missing-initial-triangle")
-    triangle_base, vertex_base = word(0x18 + 8 * layer), word(0x1C + 8 * layer)
+    # Reconstruction safety checks, not checks performed by the original routine.
+    # A component-wide range alone admits indices into vertices or another layer.
+    mesh = collision_package(component).layers[layer]
+    triangle_base = word(0x18 + 8 * layer)
     x = signed32(u32(actor, 0x20) + u32(actor, 0x30)) >> 16
     z = signed32(u32(actor, 0x28) + u32(actor, 0x38)) >> 16
     candidate = packed_xz(x, z)
@@ -56,11 +59,10 @@ def layer_floor(component, reciprocal, actor, layer, attribute_control):
     counter, steps, areas = 0, [], []
 
     def vertices(index):
+        if not 0 <= index < len(mesh.triangles):
+            raise ValueError(f"layer {layer} triangle {index}: index outside its triangle table")
         raw = region(component, triangle_base + 14 * index, 14, "layer query triangle")
-        points = tuple(
-            struct.unpack("<3h", region(component, vertex_base + 8 * i, 6, "layer query vertex"))
-            for i in struct.unpack_from("<3h", raw)
-        )
+        points = tuple(mesh.vertices[i][:3] for i in mesh.triangles[index].vertices)
         return raw, points
 
     def area(a, b, c):

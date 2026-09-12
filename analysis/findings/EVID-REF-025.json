@@ -1757,7 +1757,7 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tests/test_sprite_replay.py",
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-original-sources/tests/test_sprite_replay.py",
         "sha256": "42de43b6c4997137cecb8f25abbbfb0f28faad99c3a54407ca1615599bbe37ba",
         "distribution": "public_authored_metadata"
       },
@@ -1797,7 +1797,7 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tools/analysis/sprite_replay.py",
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-original-sources/tools/analysis/sprite_replay.py",
         "sha256": "a918e6c5c90336c7f47e73b2f9e56b0d2e14c13093b54e583443c347007a87a4",
         "distribution": "public_authored_metadata"
       },

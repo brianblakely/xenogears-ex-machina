@@ -1,0 +1,3936 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-029",
+  "kind": "field_return_sprite_checkpoint_and_ordinary_timer_subset",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 213404
+      },
+      "address": "0x800a3c8c",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Source slot 36 field overlay; no ISO-name assumption.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800a3c8c",
+          "end": "field_38a1ce829a6f094c::800a3f4b"
+        }
+      ],
+      "source_body_sha256": "38a9a8bf3712ba1d15e8164d53fbeea9c8c90b8c8c74ed7860220ac71d68b450",
+      "decompiler_c_sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3",
+      "scope": "Only the reconstruction and observed branches described by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 75088,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021d50",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "80021d50",
+          "end": "80021ebb"
+        }
+      ],
+      "source_body_sha256": "bb94bfdd989bd09720f7be46406f4855b62e957deb9eca24ea1c7f0af6e889b3",
+      "decompiler_c_sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7",
+      "scope": "Only the reconstruction and observed branches described by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 80400,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80023210",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "80023210",
+          "end": "8002328f"
+        }
+      ],
+      "source_body_sha256": "8b24d91f6ad5afa40f1a281500d9a9843da84aa6b114ae7515ba4d236903e24a",
+      "decompiler_c_sha256": "cc9329f60650a5711c974b920cbe541e64e8d8010d446df2b284131e4f4702da",
+      "scope": "Only the reconstruction and observed branches described by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 86228,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800248d4",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "800248d4",
+          "end": "80024f1f"
+        }
+      ],
+      "source_body_sha256": "d31f1225faaee122bff63210e57ed4ce029156bb784d4221389c6695b753ca1c",
+      "decompiler_c_sha256": "ace88552285faf33e5d98ed7145eca720c7537e4bc67e02882078b46b11c0f99",
+      "scope": "Only the reconstruction and observed branches described by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 66532,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001fbe4",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "8001fbe4",
+          "end": "80021ad7"
+        }
+      ],
+      "source_body_sha256": "7431f354f172d1b450e6c231528af93546595e8aa6d750d10ca489d75e88442c",
+      "decompiler_c_sha256": "03ff87426148e2596650b5fc9d151c0b6ad1707c914774857ee29c8a72e87f48",
+      "scope": "B3 index-store case and dispatch/common return only; other generic effects remain open."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 65360,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001f750",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "8001f750",
+          "end": "8001f8e7"
+        }
+      ],
+      "source_body_sha256": "e4e6a5af2b2b14921eb82c552106a22e05b544a2ab9ef484bf1c3ab2537ca048",
+      "decompiler_c_sha256": "c11c054d27cb1d31fc1429f4dd2a95130a8ac88b89578057c42f1250af4ab6ae",
+      "scope": "Only the reconstruction and observed branches described by this finding."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 65768,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001f8e8",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident executable; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "8001f8e8",
+          "end": "8001fab3"
+        }
+      ],
+      "source_body_sha256": "921cede6a3a79fcabbc265e400aa249e4cbae4483f2776570fdd7a3ae1064e7a",
+      "decompiler_c_sha256": "d885320bc6f7dcf4da7fb6937e3f0759cd0fe30b55e241f6d9039d39143ac114",
+      "scope": "Only the reconstruction and observed branches described by this finding."
+    }
+  ],
+  "observation": "Three original recordings repeat the encounter route and retain 124 exact control artifacts each. The complete later policy interval matches all 25 actor decisions and 19 full sprite restorations, six ordinary 13 command iterations and 18 frame-list steps. A second recording independently matches six complete timer calls and four compact metadata calls/32 command positions; all 137 shared records agree. Original return-time loading reproduces both complete party resources, 163,483 bytes, including the actual adjacent-input suffixes.",
+  "interpretation": "Later checkpoint restoration is a distinct stage after actor/sprite recreation. The recovered policy and checkpoint helper compose source-calculated animation, timer and frame behavior; original after-state is an oracle, never a substitute for required command effects. Only timed 13 executes in this stage. Other supported timed families, B3 and E1 have source and synthetic coverage. The four compact calls only skip ordinary parts; their auxiliary-write paths remain source/synthetic. Creation, ownership, remaining VM and readiness remain open.",
+  "confidence": "confirmed",
+  "author": "Codex /root/phase_1 (Astra Max), independently authored original-source reconstruction, 2026-09-09",
+  "reviewers": [
+    {
+      "name": "Codex /root orchestration agent, independent of this implementation",
+      "date": "2026-09-09",
+      "scope": "Independently reviewed the listed policy/checkpoint/timer/command/compact source subsets and shared callees, qualified all 22 export bodies and 3,794 words, replayed both comparisons, verified controls/loader lineage, reran 35 corruptions and checked historical EVID025 preservation and regression outcomes.",
+      "report": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/sprite-return-source-review.json",
+      "validation_report": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/sprite-return-validation-review.json",
+      "limitations": "Separate AI review, not human approval. Full generic-effect source qualification is not full semantic review; only B3 is newly composed. No arbitrary alias, allocation, native readiness, hardware cadence or broad completion claim."
+    }
+  ],
+  "validation": {
+    "preconditions": [
+      "Exact supplied Disc 1/profile, EVID-REF-020 ordinary encounter input route and independently built uninstrumented control; CHD and raw-track integrity qualified.",
+      "Pinned Nix shells, original-source Ghidra project, immutable trace/source identities and actual return-time party decoder input suffixes. No other Xenogears implementation or reverse-engineering results consulted.",
+      "Scripts create results exclusively. Reproduce in fresh output paths; retain original inputs, sources, tool fingerprints and old findings unchanged."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra --command ghidra-analyzeHeadless /tmp/xem-ghidra-20260909/field original -process resident.exe -noanalysis -scriptPath .local/analysis/phase1-sprite-return-20260909/scripts -postScript ExportSpriteReturn.java .local/analysis/phase1-sprite-return-20260909/ghidra-v3",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis --command chdman verify -i 'discs/Xenogears disc 1.chd'",
+      "Inside the pinned default shell: env PYTHONPATH=. python .local/analysis/phase1-sprite-return-20260909/prepare-trace.py; prepare-loader-trace.py; prepare-detail-trace.py (each separately, using fresh output versions).",
+      "Inside the pinned observation-trace shell: python tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --trace-instructions <main, loader or detail spec> --output <fresh private capture root>; repeat separately for each specification.",
+      "Inside the pinned default shell: env PYTHONPATH=. python .local/analysis/phase1-sprite-return-20260909/compare-return.py",
+      "Inside the pinned default shell: env PYTHONPATH=. python .local/analysis/phase1-sprite-return-20260909/compare-detail.py",
+      "Inside the pinned default shell: env PYTHONPATH=. python .local/analysis/phase1-sprite-return-20260909/negative-return.py",
+      "Inside the pinned default shell: env PYTHONPATH=. python .local/analysis/phase1-sprite-return-20260909/evid025-regression-v1/negative-animation.py",
+      "Inside the pinned default shell: python -m unittest tests.test_sprite_vm tests.test_sprite_return tests.test_sprite_replay tests.test_sprite_animation tests.test_sprite_matrix tests.test_animation_trace",
+      "Inside the pinned default shell: python tools/repository/check.py"
+    ],
+    "expected": "Exact source, pointer, stack/return, command, full sprite, checkpoint, frame-list/rate, loader and control agreement for every in-scope operation. Unknown behavior fails explicitly; unobserved branches stay source/synthetic.",
+    "actual": "Passed: 22 bodies/3,794 instruction words; 25 decisions/19 restores; six ordinary timers; four compact calls/32 no-write metadata positions; two complete return-time resources/163,483 bytes; 137 shared records; 372 control comparisons; 35 corruptions rejected; 49 public sprite tests; all prior EVID025 outcomes and 67 corruptions unchanged. Independent source and validation reviews pass.",
+    "result": "passed",
+    "tolerance": "Exact bytes, integers, source hashes and call boundaries. No output masks, invented decoder suffix, original-state effect substitution or native timing assumption.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/analysis/formats/field-lifecycle.md",
+        "sha256": "31165a0bc08d17dc6d1a1608cb5f9bdf9ac12082d2249ad4202b7fbe3a1817ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/analysis/formats/field-return.md",
+        "sha256": "89374288cc839e5614b76bd496a92695332c8caa034c9c654c8deaecf5e94012",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/analysis/formats/sprite-return.md",
+        "sha256": "18f28915a4a7c492c58206509e4fd23897711bf37f3e9e023d5923e9f11973cf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/docs/phase1-progress.md",
+        "sha256": "95b3d68551b7d07a552ee71b3530e799180e4bd7c5d6c6fe9791fb506c1fb203",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/nix/flake.lock",
+        "sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/nix/flake.nix",
+        "sha256": "4e43776c5efa15824cdc698a88c0219e78d8360e07dbac167a67baa7180a42d5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/nix/ghidra/flake.lock",
+        "sha256": "438272c6750d3aafed5cf1cd8a61ca9f7e41f1e846cc8de697f23392be40ff60",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/nix/ghidra/flake.nix",
+        "sha256": "4009603e0d590a71c09b6c2a9d63d49e777f1c0e0d30888c5f6589f148ea08d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/nix/reference-trace-patch.py",
+        "sha256": "8720566b1631a17634db4dcf6fcea75259a882c3ced9ef85c60a7faf7d8caf10",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/nix/reference-trace.h",
+        "sha256": "7170b2b14dea27023c5cf636d9d200bb5a084ec9ddaad4328bffb609d39e62e0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tests/reference-inputs/field23-encounter-observation.json",
+        "sha256": "5a92857bd32598dc522cdc4da83dfb7a7ff59d70ab44f72e85ff29a63cc24683",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tests/sprite_fixtures.py",
+        "sha256": "91cb8f683a3324bce377b4696fcab439946364f22de8f45a77dc498006bde83b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tests/test_sprite_replay.py",
+        "sha256": "d8b35e7ca4ab946c7fa700d9bdf9164ac6d4511e41e812f3c6638469b13f6c42",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tests/test_sprite_return.py",
+        "sha256": "1cd8b3a8076b093e5e8cf214efd6aabc0183b3f37fe8b0e7340b3020791fd3f4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tests/test_sprite_vm.py",
+        "sha256": "6ec35c4b682153903f26b392c52f9abded734bfc5dfcda793bd53573f8401966",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/animation_trace.py",
+        "sha256": "c36ad1a47a69ff2aa0db7734a56a290a17c75833004dbf4aeb687b46f6ae7281",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/arithmetic.py",
+        "sha256": "aaa6791c3e34e65b1ed7155ef22d7d83ba09ff85413ae5936e15456fa76e5bc9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/field.py",
+        "sha256": "271f61145ed0aed1fe205937ad6a1a26fa0a95ee16ae279fd67f0246af7158e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/jump_physics.py",
+        "sha256": "3b0d28544f5f084b6998ab8c0723d1d5b46bd802c574a1341191d56b620842ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/original_trace.py",
+        "sha256": "b02284e7430dcaa34eb6b6682bf321c7e8bfcba2ec02611d4f06a963f4ba140e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/packed.py",
+        "sha256": "0d23d3680f3e4c15f114e70c36e9234a6db29ea701f834bc935f531045a09036",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/party_sprites.py",
+        "sha256": "1d116de4c34996b5e1eec4cf78be71a2c6ac37b3a09c489df9e41a5b7c6a7b27",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/planar_motion.py",
+        "sha256": "405eb6610ccdba27853955e347f64e3551f5739b4896747d66832be0604fb1ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/replay_trace.py",
+        "sha256": "3c5a7be5f93950ee1f13fb783c0d9bd03c3271820e25d32e2ea8aea157ed4949",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sprite_animation.py",
+        "sha256": "c12e3e3e53d4a0f90713623dd50a6b514d2c71edef28b3647d1cc5b8837894d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sprite_matrix.py",
+        "sha256": "05ef14b005cf6934e0fb3cfcde43c88051d6853fd86b72b3f133191dd5f404dc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sprite_replay.py",
+        "sha256": "61769e383f055fccc0ae6aa48c9bf16f459532d51afc1e8b13d35501c408bd1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sprite_return.py",
+        "sha256": "95f77a476bf87fa5213228780a002d1ef175ecdd5744fa4bd0766d3a592bdc72",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sprite_state.py",
+        "sha256": "fcb1d6df75d0e44139a64d0ab0cd06b82b7fae09ac4007691430ec4bf27c3c64",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sprite_vm.py",
+        "sha256": "5b91ef2bfe2aef10d5fe5131cd4f2470a8f61e1f67ed8376c0d3ee4a3fd877a3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/sweep_trace.py",
+        "sha256": "79cc7bd62e60a5a3402896aafa5938f14092ff3f475821cbd363f5d280589dd6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/verify_collision_math.py",
+        "sha256": "5f10537b5bb788878b2c67086a5d37667a0f89be4142022b211e1d83cc331f80",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/verify_field.py",
+        "sha256": "640d9ebcee87de5e7f496adbdc873b5ae995026d996f3aa785c9a2e4beef4b7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/analysis/verify_sprite_animation.py",
+        "sha256": "054a0a497037b24533d40cbfd25bcd8abefaf5c31f4986d6e9f1d84f9276ce0a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/reference/instruction_trace.py",
+        "sha256": "51fd6d90f5637191210e9de4bdfadda30b63a902390481a65d690b1879dddbc5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/reference/memory_sampler.py",
+        "sha256": "d1c0a9e692ac3bc196b06c94ad658a7cb33069be948ed42ded1484e13506426f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/reference/observe.py",
+        "sha256": "61e867e5fd167b3cb3f2839a606b8d841f365f03def148477b935d22e40501aa",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/reference/scenario.py",
+        "sha256": "165312f7f0ed9b37bcd7d5edc4571b7f79f0a6fbc67ee1d9ba526c0f4cade20d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1/tools/reference/scenario_program.py",
+        "sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/capture-v1.log",
+        "sha256": "adab4cc5eea6da136f2bac8c3ab8945e6e681c2d621884b0c7d83e3eea942bc4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/chd-verify-v1.log",
+        "sha256": "cdf3e3ea0a9ffc66ffdb74fdb4c94935e066856995df45677d98fbe0f2390645",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/compare-detail.py",
+        "sha256": "a11e6f13f0f373807872f2bb5708f504388cdbda00875a2d2ee14c9676c791ee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/compare-return-v1.py",
+        "sha256": "886cdb456a016ef3a322324f9ac8a9e7d49e73fd0510e48e63c305625fb7ce07",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/compare-return.py",
+        "sha256": "4862a674196249dbfb28c6f75f950a5d42d972d9b82ae9ae0911518431f837c8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/comparison-v1.json",
+        "sha256": "1ce21b7c0977d6deffac0bb0ca1e52472fc5b07320c1aa99b2e82ae58d22472b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/comparison-v2.json",
+        "sha256": "ce3252eddab4b2ffe175a5984c410291aed2a8e2b69fb184e0316db02ba270a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/detail-capture-v1.log",
+        "sha256": "82feac5ad67ed19437ec91102da0283f67939bda0193fb7ebcd229d73628e574",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/detail-comparison-v1.json",
+        "sha256": "a2ceab1c63afbad356cc0ab3d6715876763192274cb6a900f81ccbeb2c40df93",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/detail-trace-spec-v1.json",
+        "sha256": "067aed22b00c85d9e3aeb5cfc4641b7093386c8f43142c2b6464596187834d6f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-original-sources/tests/test_sprite_replay.py",
+        "sha256": "42de43b6c4997137cecb8f25abbbfb0f28faad99c3a54407ca1615599bbe37ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-original-sources/tools/analysis/sprite_replay.py",
+        "sha256": "a918e6c5c90336c7f47e73b2f9e56b0d2e14c13093b54e583443c347007a87a4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-regression-v1/animation-negative-v2.json",
+        "sha256": "db47fd849f2b356e7cbb031655ea9486453562caf2bef222272c870293d62de3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-regression-v1/animation-public-comparison-v3.json",
+        "sha256": "48a9eba412043c7a38528ba3522c8b3f5aa0fd17743e03d377e1ed12c8bced11",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-regression-v1/negative-animation.py",
+        "sha256": "821c697062824d470eb442abedca0bec1e5232bfcfc736f0782d41c8e5248c60",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/evid025-regression-v1/replay.log",
+        "sha256": "f48d2e6daa3b662f5e6a9ea76f5de18cd85b50236ec3426be4bb811e10a07020",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-boundary-inspection-v1.log",
+        "sha256": "4776923d9af6cbffe5ac9c81011df9228b4b5f15d803c7aa17e018763e2657c0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/8001d2b0.c",
+        "sha256": "b4dc1cb414e67b63f789ba66cfa0e4c388ab82110da3b7769d9ed1b32667ffaf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/8001fba4.c",
+        "sha256": "3f813845975fdad1c0a3b6d6332245edc4ee1d7e31f504ee14ea78e45ffa9006",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/8001fbe4.c",
+        "sha256": "0659b34e63aa41027be0d09e0e9b1abd368ef6606fc4d5bef0128f8ca4f599f4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80021c20.c",
+        "sha256": "ab3c23b16c7167eb459f7e2c7eb9263e9f0e015759efc621494f5c29486f324c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80021c6c.c",
+        "sha256": "2494ef84d66267fef87842ace6a3c1996a8c93467e002dae1645bc2bcb18c5d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80021ca0.c",
+        "sha256": "b5ac4e1e082f49c8b3e47962a9a723937e2c60c2fe477303adb5c67ea7fcc367",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80021cf8.c",
+        "sha256": "46f3f8d22ad91c01808fdd04f71bb00176a99769186841ca2af80853b98ad79f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80021d50.c",
+        "sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80022090.c",
+        "sha256": "45cef1a513fe917525f26c3ac9818371de6a372bdda919f5fd90bb616a1d38ac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80022224.c",
+        "sha256": "1b4b6f806ccb748ec6ea04af5233cc573dd9eab3f864f161bc2a8b40ad0de1af",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/800222bc.c",
+        "sha256": "8b72952acae4d34d6894d6dd006275924121f8dfd2747363af7006d9a2806a1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/800223b0.c",
+        "sha256": "441d2cfb74ee208c37f05bd549e707fb6524d80b40a70a15ff7a5c60481c2403",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80022974.c",
+        "sha256": "5f066f190242501602c3e5ffc2988e2fc0acb3170bac57084e5ed77b0668cb3f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80022d44.c",
+        "sha256": "43d4f06e49d2484a833c5f798e6f6a5eadbae7011041ae88668ba5f4bcacaa6a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80023210.c",
+        "sha256": "cc9329f60650a5711c974b920cbe541e64e8d8010d446df2b284131e4f4702da",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/800234ac.c",
+        "sha256": "1f9c1244fc268e7c01a691630d454943c05298d43e153ad000dc50d094c24555",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/80023538.c",
+        "sha256": "91cf255a5d6e92753487eb628c644384dc51b54094cd94dd920426c19f9e3f1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/800245d8.c",
+        "sha256": "4ba48de5b07102000c8b621970bb5a4f876ffd4b14d89e14fffd787962da4cc6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/800248d4.c",
+        "sha256": "ace88552285faf33e5d98ed7145eca720c7537e4bc67e02882078b46b11c0f99",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/c/800a3c8c.c",
+        "sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1/index.json",
+        "sha256": "13ff29d20571d1443bf93e5ad73ce0d82aba4c155628aa27d8628095a2c68b89",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1-console.log",
+        "sha256": "a354faac2e6ba3b67ca08b4117d3d47bd86bbdf6802e5235af8f22cadb54981c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v1.log",
+        "sha256": "a1d6adf8ac50ef3c1502a0362ef2e51387b363d65855417314f62f2f75ff9e2b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/8001d2b0.c",
+        "sha256": "b4dc1cb414e67b63f789ba66cfa0e4c388ab82110da3b7769d9ed1b32667ffaf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/8001fba4.c",
+        "sha256": "3f813845975fdad1c0a3b6d6332245edc4ee1d7e31f504ee14ea78e45ffa9006",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/8001fbe4.c",
+        "sha256": "03ff87426148e2596650b5fc9d151c0b6ad1707c914774857ee29c8a72e87f48",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80021c20.c",
+        "sha256": "ab3c23b16c7167eb459f7e2c7eb9263e9f0e015759efc621494f5c29486f324c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80021c6c.c",
+        "sha256": "2494ef84d66267fef87842ace6a3c1996a8c93467e002dae1645bc2bcb18c5d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80021ca0.c",
+        "sha256": "b5ac4e1e082f49c8b3e47962a9a723937e2c60c2fe477303adb5c67ea7fcc367",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80021cf8.c",
+        "sha256": "46f3f8d22ad91c01808fdd04f71bb00176a99769186841ca2af80853b98ad79f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80021d50.c",
+        "sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80022090.c",
+        "sha256": "45cef1a513fe917525f26c3ac9818371de6a372bdda919f5fd90bb616a1d38ac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80022224.c",
+        "sha256": "1b4b6f806ccb748ec6ea04af5233cc573dd9eab3f864f161bc2a8b40ad0de1af",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/800222bc.c",
+        "sha256": "8b72952acae4d34d6894d6dd006275924121f8dfd2747363af7006d9a2806a1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/800223b0.c",
+        "sha256": "441d2cfb74ee208c37f05bd549e707fb6524d80b40a70a15ff7a5c60481c2403",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80022974.c",
+        "sha256": "5f066f190242501602c3e5ffc2988e2fc0acb3170bac57084e5ed77b0668cb3f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80022d44.c",
+        "sha256": "43d4f06e49d2484a833c5f798e6f6a5eadbae7011041ae88668ba5f4bcacaa6a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80023210.c",
+        "sha256": "cc9329f60650a5711c974b920cbe541e64e8d8010d446df2b284131e4f4702da",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/800234ac.c",
+        "sha256": "1f9c1244fc268e7c01a691630d454943c05298d43e153ad000dc50d094c24555",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/80023538.c",
+        "sha256": "91cf255a5d6e92753487eb628c644384dc51b54094cd94dd920426c19f9e3f1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/800245d8.c",
+        "sha256": "4ba48de5b07102000c8b621970bb5a4f876ffd4b14d89e14fffd787962da4cc6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/800248d4.c",
+        "sha256": "ace88552285faf33e5d98ed7145eca720c7537e4bc67e02882078b46b11c0f99",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/c/800a3c8c.c",
+        "sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2/index.json",
+        "sha256": "f758edae8b6bdad658693c451a58478187e9c6e398b4afbc567e47a603a165c1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2-console.log",
+        "sha256": "2535d25b202e85827456a08f16d907dbd378e0d916d632384288cb0b387a02de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v2.log",
+        "sha256": "c9f5fea1253e01a944a447c37d44a0a80905311b0988a18df2b9f121cb50a59b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/8001d2b0.c",
+        "sha256": "91602bc327a412493adb39583e16c1ebe616ce6478e36a359013dc8ad05969b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/8001f750.c",
+        "sha256": "c11c054d27cb1d31fc1429f4dd2a95130a8ac88b89578057c42f1250af4ab6ae",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/8001f8e8.c",
+        "sha256": "d885320bc6f7dcf4da7fb6937e3f0759cd0fe30b55e241f6d9039d39143ac114",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/8001fba4.c",
+        "sha256": "3f813845975fdad1c0a3b6d6332245edc4ee1d7e31f504ee14ea78e45ffa9006",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/8001fbe4.c",
+        "sha256": "03ff87426148e2596650b5fc9d151c0b6ad1707c914774857ee29c8a72e87f48",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80021c20.c",
+        "sha256": "ab3c23b16c7167eb459f7e2c7eb9263e9f0e015759efc621494f5c29486f324c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80021c6c.c",
+        "sha256": "2494ef84d66267fef87842ace6a3c1996a8c93467e002dae1645bc2bcb18c5d9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80021ca0.c",
+        "sha256": "b5ac4e1e082f49c8b3e47962a9a723937e2c60c2fe477303adb5c67ea7fcc367",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80021cf8.c",
+        "sha256": "46f3f8d22ad91c01808fdd04f71bb00176a99769186841ca2af80853b98ad79f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80021d50.c",
+        "sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80022090.c",
+        "sha256": "45cef1a513fe917525f26c3ac9818371de6a372bdda919f5fd90bb616a1d38ac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80022224.c",
+        "sha256": "1b4b6f806ccb748ec6ea04af5233cc573dd9eab3f864f161bc2a8b40ad0de1af",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/800222bc.c",
+        "sha256": "8b72952acae4d34d6894d6dd006275924121f8dfd2747363af7006d9a2806a1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/800223b0.c",
+        "sha256": "441d2cfb74ee208c37f05bd549e707fb6524d80b40a70a15ff7a5c60481c2403",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80022974.c",
+        "sha256": "5f066f190242501602c3e5ffc2988e2fc0acb3170bac57084e5ed77b0668cb3f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80022d44.c",
+        "sha256": "43d4f06e49d2484a833c5f798e6f6a5eadbae7011041ae88668ba5f4bcacaa6a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80023210.c",
+        "sha256": "cc9329f60650a5711c974b920cbe541e64e8d8010d446df2b284131e4f4702da",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/800234ac.c",
+        "sha256": "1f9c1244fc268e7c01a691630d454943c05298d43e153ad000dc50d094c24555",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/80023538.c",
+        "sha256": "91cf255a5d6e92753487eb628c644384dc51b54094cd94dd920426c19f9e3f1e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/800245d8.c",
+        "sha256": "4ba48de5b07102000c8b621970bb5a4f876ffd4b14d89e14fffd787962da4cc6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/800248d4.c",
+        "sha256": "ace88552285faf33e5d98ed7145eca720c7537e4bc67e02882078b46b11c0f99",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/c/800a3c8c.c",
+        "sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/index.json",
+        "sha256": "1c1af7949dde8f828a65909ec571f0b14c673416aa70228daf59e17a96385237",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3-console.log",
+        "sha256": "be641f13c1995654ad644bfcc08c3739c8b65b5dd773723606f3c0704cf13391",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3-project-manifest.json",
+        "sha256": "8800f3b350c15c7384804f3f479ae176275f57852f60e6dbd770e01b33f25054",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3.log",
+        "sha256": "be0d63b52555474517ffdd396905f91992a5e8eeba037405ffbe4299648b2342",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/inspection-v1.json",
+        "sha256": "5078a770d454baed6ea46755b9dd9afe03695aff1d199c0aeeaa8333d4983b89",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/loader-capture-v1.log",
+        "sha256": "eb7b970baa83b0634c211b05312f28f44dcf9bbf505e599e33934df8c83cf088",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/loader-trace-spec-v1.json",
+        "sha256": "55c44a25e2fd5e24de0b93c09d2318ac4d6a5b4278412963d8c3ce503d39bf31",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/negative-return-v1.json",
+        "sha256": "32a8631496d763b031560083230f863cbbab06ceddfc15b030cfc114416734f5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/negative-return.py",
+        "sha256": "3e746d5f95df78d5fa8dad27968381a5285e2ef7f01cbf2c2ec1f7f3db044b20",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/prepare-detail-trace.py",
+        "sha256": "646d43e411e986961886ce083bfde935aaad39d4f5385f1a1fd8b7991c500f97",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/prepare-loader-trace.py",
+        "sha256": "40b5716641fef42cd3fba477357074cc5fdf6f4878e63210e2f67fb60d2df509",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/prepare-trace.py",
+        "sha256": "697ba21ede93c7eb4676ae9ee6662cb7c205a27746faae517c294e22d3c13b2a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/record-milestone.py",
+        "sha256": "f6ef2b655ff94c1d5574ad010da02bc1a93f61c0fafcadad3d569294c64eba9b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/scripts/ExportSpriteReturn-v1.java.txt",
+        "sha256": "8a96aadc807110d9049f75ecdb0f97d3ff36832cd88ee5f1f0471e2801259f9f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/scripts/ExportSpriteReturn-v2.java.txt",
+        "sha256": "153795b6b569778d0bc80982c13d53843f65ce641e74b09126d8d0f19b6e9051",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/scripts/ExportSpriteReturn.java",
+        "sha256": "689a9f656bb1d926acc7ba74a864d0746ea16d6a467ac2e50bbf82439363d527",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/scripts/InspectSpriteVmBoundaries.java",
+        "sha256": "4710cfa9bdd0708231fce82b1a740c7275fbb54faaf0c26170215044a53b57a5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/source-qualification-v1.json",
+        "sha256": "43476a06cb30371549070afc4894cd96824a42e3b705cb8b63e1f3586e18c518",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/source-qualification-v2.json",
+        "sha256": "e3e095fddca0e85c4007b755070ce5821fb63b422ffde3d1ce24e122a9406b73",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-sprite-return-20260909/trace-spec-v1.json",
+        "sha256": "e0659924b1781a64ed095ebfbfa0eb03abdaf92761789960177b15842582f436",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/observation.json",
+        "sha256": "494a78d0bbc7d3bb83effc77487d7bb39776bad397bd8e2ea74a08b3549b5784",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/instruction-trace.jsonl",
+        "sha256": "221a6441d14210199f99d290e209bcb1e4bd1186956f37850330d2216675b1b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/observation.json",
+        "sha256": "71b3db53e6093bed030f3bcc06698041cd196e560b55c5f15e480bf262d1639e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/instruction-trace.jsonl",
+        "sha256": "35d1ecdb2b2f8e73bb16239f19f02bfb099ed1cfe9d1e0b1251c00a4277f14ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/observation.json",
+        "sha256": "1d43858a6697850c6bc96f631b1b132b5c4f3615214052b73649e3e231832d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-detail-20260909-v1/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/instruction-trace.jsonl",
+        "sha256": "d764b7114a5046a56db4e63fc25f6220028c086b0f63d4566dd7696eace0d6ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/observation.json",
+        "sha256": "42e39c2b7e7edab6cdce7e47f35fb6ca23e46640e11a0f365c096e245e19effd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-sprite-return-loader-20260909-v1/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/control-comparisons.json",
+        "sha256": "ed469cd9c19cd1363daa5ca192b398af5392162afe28644a9639bdbf5c18fef1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/detail-comparison.json",
+        "sha256": "da73482fc71df73d9c6aae8060be395442f021318f7bc1b0522314ec934d0ca3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/loader-comparison.json",
+        "sha256": "784d7e0719297c5a7091781b293fa2cb554b4b801babe0a1cfa6d64a721c382e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/negative-return-independent.json",
+        "sha256": "32a8631496d763b031560083230f863cbbab06ceddfc15b030cfc114416734f5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/negative-return-independent.log",
+        "sha256": "126e946d0ca5b1d03ee8e3aa00bb886b2056c095da3627e6b81b5f8e50677453",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/negative-return-independent.py",
+        "sha256": "f7ea74d891675bb2e751f9dc1ffa3b66289c808d46c1d2f987d73077590a55cb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/return-comparison.json",
+        "sha256": "61dc89c9a630ac3338ddb3543845203d80318002723833fdc33410a2240a306b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/sprite-return-source-review.json",
+        "sha256": "17fce0eb0c49a1af53af302858af238b433b4e4196b7ef8008c1f4f2eabca51a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/sprite-return-validation-review.json",
+        "sha256": "87913c1cfc1b82eeea64ecb65d87f4d8fe977bf49b6199cb64ad9af54f2f551a",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "tools/analysis/sprite_return.py",
+      "tools/analysis/sprite_vm.py",
+      "tools/analysis/sprite_replay.py",
+      "tests/test_sprite_return.py",
+      "tests/test_sprite_vm.py",
+      "tests/test_sprite_replay.py"
+    ],
+    "format_notes": "analysis/formats/sprite-return.md",
+    "source_snapshot": ".local/analysis/phase1-sprite-return-20260909/authored-sources-v1",
+    "original_replay": {
+      "schema_version": 1,
+      "result": "passed",
+      "actor_decisions": 25,
+      "outcomes": {
+        "restore": 19,
+        "actor-layer-flag": 6
+      },
+      "restored_sprites": 19,
+      "ordinary_commands": 6,
+      "compared_operations": {
+        "restore-after-select": 19,
+        "restore-step": 6,
+        "vm-before": 6,
+        "vm-step": 6,
+        "frame-before": 6,
+        "frame-after": 6,
+        "vm-after": 6,
+        "frame-list-step": 18
+      },
+      "stage_records": 163,
+      "excluded_before": 423,
+      "excluded_after": 0,
+      "final_cursor": "0x8005d294",
+      "frame_list_reads": 28,
+      "source_reads": 138,
+      "distinct_source_reads": 32,
+      "source_profile": "na-slus-00664-39c547a9afc6",
+      "raw_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+      "trace_sha256": "221a6441d14210199f99d290e209bcb1e4bd1186956f37850330d2216675b1b4",
+      "ghidra_index_sha256": "1c1af7949dde8f828a65909ec571f0b14c673416aa70228daf59e17a96385237",
+      "scope": "Complete 25 actor checkpoint decisions and 19 sprite replay calls from qualified original entry state. Earlier transition VM records and any calls crossing the trace start are explicitly excluded. Sprite creation/rebinding and broad ordinary VM coverage remain open."
+    },
+    "detail_replay": {
+      "result": "passed",
+      "records": 248,
+      "stage_records": 124,
+      "excluded_before": 124,
+      "excluded_after": 0,
+      "complete_calls": {
+        "policy": 1,
+        "restore": 19,
+        "timer": 6,
+        "vm": 6,
+        "frame": 6,
+        "previous": 4,
+        "compact": 4
+      },
+      "compact_commands": {
+        "0x00": 32
+      },
+      "compact_changed_bytes": 0,
+      "shared_records": 137,
+      "control_artifacts": 124,
+      "trace_sha256": "35d1ecdb2b2f8e73bb16239f19f02bfb099ed1cfe9d1e0b1251c00a4277f14ba",
+      "source_qualification_sha256": "e3e095fddca0e85c4007b755070ce5821fb63b422ffde3d1ce24e122a9406b73"
+    },
+    "return_loader": {
+      "result": "passed",
+      "records": 70,
+      "counts": {
+        "directory-before": 30,
+        "directory-after": 30,
+        "file-size-row": 6,
+        "party-before": 2,
+        "party-after": 2
+      },
+      "resources": [
+        {
+          "character_id": 0,
+          "party_index": 0,
+          "source": {
+            "slot": 427,
+            "source_lba": 119504,
+            "source_sector_count": 28,
+            "projected_bytes": 56632,
+            "projection_unit": 2048,
+            "projection_sha256": "657d25413a07c2323c0856a8a9c3aefa9ae1e952cf4fb111eef97cced44450b3",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "input_pointer": "0x801d02b8",
+          "output_pointer": "0x800cb210",
+          "frontend_entry": 10174,
+          "frontend_return": 10177,
+          "decoded_bytes": 81576,
+          "decoded_sha256": "6d594dadce557f96fe240a709754eefc3ad51a5b3bd63c9b28c60a4ca9cbbee9",
+          "token_bytes": 56634,
+          "source_bytes_read": 56635,
+          "token_bytes_beyond_catalog": 2,
+          "reads_beyond_catalog": 3,
+          "adjacent_input_hex": "b4341f"
+        },
+        {
+          "character_id": 2,
+          "party_index": 1,
+          "source": {
+            "slot": 429,
+            "source_lba": 119559,
+            "source_sector_count": 27,
+            "projected_bytes": 55060,
+            "projection_unit": 2048,
+            "projection_sha256": "f551818a2e4b9c892674f746ed838e45b15cadd1388cb6f204c4787b848a7188",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "input_pointer": "0x801c2b9c",
+          "output_pointer": "0x800df218",
+          "frontend_entry": 10177,
+          "frontend_return": 10179,
+          "decoded_bytes": 81907,
+          "decoded_sha256": "e6279fecbba5b634552839805289f27b57915f1f0a3baf49018bf51739571ba7",
+          "token_bytes": 55063,
+          "source_bytes_read": 55064,
+          "token_bytes_beyond_catalog": 3,
+          "reads_beyond_catalog": 4,
+          "adjacent_input_hex": "f8df1d80"
+        }
+      ],
+      "source_ram_anchor": {
+        "path": ".local/scenarios/phase1-sprite-return-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "frontend_run": 10762
+      },
+      "trace_sha256": "d764b7114a5046a56db4e63fc25f6220028c086b0f63d4566dd7696eace0d6ec",
+      "control_comparisons": 124
+    },
+    "qualified_export_count": 22,
+    "qualified_instruction_words": 3794,
+    "semantic_review": {
+      "new_boundaries": [
+        "800a3c8c",
+        "80021d50",
+        "80023210",
+        "800248d4",
+        "8001f750"
+      ],
+      "shared_boundaries": [
+        "800245d8",
+        "800222bc",
+        "80023538",
+        "800223b0",
+        "8001d2b0",
+        "80022d44",
+        "8001f8e8"
+      ],
+      "generic_effect_subset": "8001fbe4 B3 index-store case plus dispatch/common return only",
+      "notes": [
+        "Policy updates the saved signed animation before deciding to skip. Saved full words compare to current unsigned bytes; actor layer and party-mode gates preserve order. Current actor extension flags determine the 0x174 base stride plus 12/16 bytes.",
+        "Restoration temporarily sets the rate to zero, writes renderer components with pointer reloads, selects using the post-renderer signed animation byte, then advances ordinary timers until the saved six-bit counter. Each iteration integrates old X/Z/Y velocities before vertical acceleration, then the final checkpoint restores XYZ and sequencer words.",
+        "Timer zero does not dispatch, signed rate -1 skips, and all other rates compare with the reloaded global after each iteration. Halfword decrement wrap and expiry on the original value one agree.",
+        "Ordinary frame commands use source frame lookup/list effects, signed wrapped scale products and add-before-SRA truncation, unlike facing-only replay's duration arithmetic. The six-bit step counter saturates at 63. High timed commands require incoming S3, B3 masks the source index and uses the source width, and E1 is a signed displacement relative to current PC.",
+        "Compact and standard metadata differ in their initial part-table stride and prefix. Their later command stream advances 3/5 bytes for ordinary parts and preserves the high-bit skip/auxiliary formats. Allocation remains an explicit error.",
+        "Return-time party decoder outputs, including five adjacent RAM tail bytes, qualify supplied source resources; the later menu's final RAM is not used as the source oracle. Captured complete live hashes bind each resource to the post-return RAM anchor, and actual reads additionally match decoded disc-derived bytes.",
+        "Main replay matches all nested full sprite payloads, rate/head state, stable globals, exact operation order and saved SP/RA context. Supplemental shared records have identical registers, timing and payloads and provide complete timer/compact call boundaries."
+      ]
+    },
+    "ghidra_index": ".local/analysis/phase1-sprite-return-20260909/ghidra-v3/index.json",
+    "source_functions": [
+      {
+        "entry": "field_38a1ce829a6f094c::800a3c8c",
+        "body": [
+          {
+            "begin": "field_38a1ce829a6f094c::800a3c8c",
+            "end": "field_38a1ce829a6f094c::800a3f4b"
+          }
+        ],
+        "body_sha256": "38a9a8bf3712ba1d15e8164d53fbeea9c8c90b8c8c74ed7860220ac71d68b450",
+        "c_sha256": "256245c06fa41cfa88598d026049fa2b6c23d24b9fdfe315d5181501a06293b3"
+      },
+      {
+        "entry": "80021d50",
+        "body": [
+          {
+            "begin": "80021d50",
+            "end": "80021ebb"
+          }
+        ],
+        "body_sha256": "bb94bfdd989bd09720f7be46406f4855b62e957deb9eca24ea1c7f0af6e889b3",
+        "c_sha256": "097d9771e670175c8504a8ef7fbd33f4984f4043cf88dd5e77822874e927d6f7"
+      },
+      {
+        "entry": "80023210",
+        "body": [
+          {
+            "begin": "80023210",
+            "end": "8002328f"
+          }
+        ],
+        "body_sha256": "8b24d91f6ad5afa40f1a281500d9a9843da84aa6b114ae7515ba4d236903e24a",
+        "c_sha256": "cc9329f60650a5711c974b920cbe541e64e8d8010d446df2b284131e4f4702da"
+      },
+      {
+        "entry": "800248d4",
+        "body": [
+          {
+            "begin": "800248d4",
+            "end": "80024f1f"
+          }
+        ],
+        "body_sha256": "d31f1225faaee122bff63210e57ed4ce029156bb784d4221389c6695b753ca1c",
+        "c_sha256": "ace88552285faf33e5d98ed7145eca720c7537e4bc67e02882078b46b11c0f99"
+      },
+      {
+        "entry": "8001fbe4",
+        "body": [
+          {
+            "begin": "8001fbe4",
+            "end": "80021ad7"
+          }
+        ],
+        "body_sha256": "7431f354f172d1b450e6c231528af93546595e8aa6d750d10ca489d75e88442c",
+        "c_sha256": "03ff87426148e2596650b5fc9d151c0b6ad1707c914774857ee29c8a72e87f48"
+      },
+      {
+        "entry": "8001fba4",
+        "body": [
+          {
+            "begin": "8001fba4",
+            "end": "8001fbe3"
+          }
+        ],
+        "body_sha256": "0dd76ad93a5ccc0795578b35f4ac3d70c48f39765823740874f7cc66c55c04c1",
+        "c_sha256": "3f813845975fdad1c0a3b6d6332245edc4ee1d7e31f504ee14ea78e45ffa9006"
+      },
+      {
+        "entry": "80021c20",
+        "body": [
+          {
+            "begin": "80021c20",
+            "end": "80021c3b"
+          }
+        ],
+        "body_sha256": "b85870e4f0dcd63266077544d27131726560dbb9e3b588bd9b1d63e90bd61813",
+        "c_sha256": "ab3c23b16c7167eb459f7e2c7eb9263e9f0e015759efc621494f5c29486f324c"
+      },
+      {
+        "entry": "80021c6c",
+        "body": [
+          {
+            "begin": "80021c6c",
+            "end": "80021c9f"
+          }
+        ],
+        "body_sha256": "4c7fd51d6b1c2336593e8a0f57321327d9133adfcd58a33c2311287c46939f55",
+        "c_sha256": "2494ef84d66267fef87842ace6a3c1996a8c93467e002dae1645bc2bcb18c5d9"
+      },
+      {
+        "entry": "80021ca0",
+        "body": [
+          {
+            "begin": "80021ca0",
+            "end": "80021cc3"
+          }
+        ],
+        "body_sha256": "ec0747f40b2ddd31c8017757871fa791d8ce10f75e40dad63f0345955c3373b0",
+        "c_sha256": "b5ac4e1e082f49c8b3e47962a9a723937e2c60c2fe477303adb5c67ea7fcc367"
+      },
+      {
+        "entry": "80021cf8",
+        "body": [
+          {
+            "begin": "80021cf8",
+            "end": "80021d3b"
+          }
+        ],
+        "body_sha256": "3812f85b2f4c361eb6f6137948c8c133a4818dd1037ce5c7f7ffdeb6a74b29cb",
+        "c_sha256": "46f3f8d22ad91c01808fdd04f71bb00176a99769186841ca2af80853b98ad79f"
+      },
+      {
+        "entry": "800245d8",
+        "body": [
+          {
+            "begin": "800245d8",
+            "end": "8002472f"
+          }
+        ],
+        "body_sha256": "b3b0dd7d470fd3611f31358bd584ce15b7ad6ca80f6707dc84e1b05a6b26cac0",
+        "c_sha256": "4ba48de5b07102000c8b621970bb5a4f876ffd4b14d89e14fffd787962da4cc6"
+      },
+      {
+        "entry": "800222bc",
+        "body": [
+          {
+            "begin": "800222bc",
+            "end": "800223af"
+          }
+        ],
+        "body_sha256": "8d164586d142fd897e3d73687b01ae72c13ac8746d3042948a18f944aebc9e86",
+        "c_sha256": "8b72952acae4d34d6894d6dd006275924121f8dfd2747363af7006d9a2806a1a"
+      },
+      {
+        "entry": "80022224",
+        "body": [
+          {
+            "begin": "80022224",
+            "end": "800222bb"
+          }
+        ],
+        "body_sha256": "8aae6b3ae2770208ac1def4251a6326db7132c34f954f20cbab4a695b8842d15",
+        "c_sha256": "1b4b6f806ccb748ec6ea04af5233cc573dd9eab3f864f161bc2a8b40ad0de1af"
+      },
+      {
+        "entry": "80023538",
+        "body": [
+          {
+            "begin": "80023538",
+            "end": "80023803"
+          }
+        ],
+        "body_sha256": "580e480f78964895cbce1b6340f8fd8f9961eaae017cb5a1e1f38fd090e5f655",
+        "c_sha256": "91cf255a5d6e92753487eb628c644384dc51b54094cd94dd920426c19f9e3f1e"
+      },
+      {
+        "entry": "800223b0",
+        "body": [
+          {
+            "begin": "800223b0",
+            "end": "8002265f"
+          }
+        ],
+        "body_sha256": "d9cae33db2e4c82775f30fe204d4d6db27e286805bd57d28889ec3a0e963d0ea",
+        "c_sha256": "441d2cfb74ee208c37f05bd549e707fb6524d80b40a70a15ff7a5c60481c2403"
+      },
+      {
+        "entry": "8001d2b0",
+        "body": [
+          {
+            "begin": "8001d2b0",
+            "end": "8001d3f3"
+          }
+        ],
+        "body_sha256": "f874aa3192e347c3ce5ccbf8e437cde4c350fc54d434279f31b3a9984aab8b0f",
+        "c_sha256": "91602bc327a412493adb39583e16c1ebe616ce6478e36a359013dc8ad05969b4"
+      },
+      {
+        "entry": "80022d44",
+        "body": [
+          {
+            "begin": "80022d44",
+            "end": "80022df3"
+          }
+        ],
+        "body_sha256": "b35be3f1ea3b5fa68fc0c1d385aa66dd394675bacc125af23f727a1094a09663",
+        "c_sha256": "43d4f06e49d2484a833c5f798e6f6a5eadbae7011041ae88668ba5f4bcacaa6a"
+      },
+      {
+        "entry": "800234ac",
+        "body": [
+          {
+            "begin": "800234ac",
+            "end": "80023537"
+          }
+        ],
+        "body_sha256": "c79d80ef6925f43d3816d4ec53bfede8aede02f82d648939d64c94a5869ce07e",
+        "c_sha256": "1f9c1244fc268e7c01a691630d454943c05298d43e153ad000dc50d094c24555"
+      },
+      {
+        "entry": "80022090",
+        "body": [
+          {
+            "begin": "80022090",
+            "end": "80022223"
+          }
+        ],
+        "body_sha256": "c365f9be431948726db088901edac3015b996aafc4054649a0e4e237bc710b10",
+        "c_sha256": "45cef1a513fe917525f26c3ac9818371de6a372bdda919f5fd90bb616a1d38ac"
+      },
+      {
+        "entry": "80022974",
+        "body": [
+          {
+            "begin": "80022974",
+            "end": "800229ff"
+          }
+        ],
+        "body_sha256": "d455d43fbd61b5080bbb67d0308a518ad0fdc974bccd76a720854439212c7fed",
+        "c_sha256": "5f066f190242501602c3e5ffc2988e2fc0acb3170bac57084e5ed77b0668cb3f"
+      },
+      {
+        "entry": "8001f750",
+        "body": [
+          {
+            "begin": "8001f750",
+            "end": "8001f8e7"
+          }
+        ],
+        "body_sha256": "e4e6a5af2b2b14921eb82c552106a22e05b544a2ab9ef484bf1c3ab2537ca048",
+        "c_sha256": "c11c054d27cb1d31fc1429f4dd2a95130a8ac88b89578057c42f1250af4ab6ae"
+      },
+      {
+        "entry": "8001f8e8",
+        "body": [
+          {
+            "begin": "8001f8e8",
+            "end": "8001fab3"
+          }
+        ],
+        "body_sha256": "921cede6a3a79fcabbc265e400aa249e4cbae4483f2776570fdd7a3ae1064e7a",
+        "c_sha256": "d885320bc6f7dcf4da7fb6937e3f0759cd0fe30b55e241f6d9039d39143ac114"
+      }
+    ]
+  },
+  "source_dependencies": [
+    "EVID-REF-014",
+    "EVID-REF-020",
+    "EVID-REF-022",
+    "EVID-REF-023",
+    "EVID-REF-025",
+    "EVID-REF-028"
+  ],
+  "related_requirements": [
+    "P01-T02",
+    "P01-T03",
+    "P01-T04",
+    "P01-T08",
+    "P01-T09",
+    "P01-T11",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "One Disc 1 field 23 ordinary encounter-victory-return route, repeated by three recordings. Main/detail exclude 423/124 earlier battle/transition records, including calls crossing the trace start. Those commands remain unreconstructed here.",
+    "Only six timed 13 commands execute during checkpoint replay. Other timed families, incoming-S3 behavior, rates, B3 and E1 have original-source/synthetic evidence only. Other high commands and alternate platform execution fail explicitly.",
+    "All four compact metadata calls consist of ordinary part skips; auxiliary writes are source/synthetic, and missing auxiliary allocation fails. No arbitrary pointer-alias or uncaptured write coverage.",
+    "Field policy source checks descriptor/transform/cursor ordering; the reusable policy function consumes one current recreated actor and checkpoint. It does not construct original actor allocations or a native field.",
+    "Party-resource identity is lifetime-specific. Actual adjacent input accounts for all ending-byte differences; later menu RAM reuse cannot replace the qualified post-return anchor. The 68 earlier field-resource changes remain outside the exact used-read claim.",
+    "Optional actor extensions, changed party modes and full return variants lack new original occurrences. Semantic state ownership, sprite creation/rebinding, rollback, native readiness, hardware cadence, full battle/menu/persistence/media and all Phase 1 slice proof domains remain open.",
+    "The generic-effect body was repaired through its original common epilogue and byte qualified. That body and other exported dependencies are not fully semantically reconstructed by this finding."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game bytes and fresh execution, retained independently authored source models and qualified Ghidra projects; no external Xenogears implementation or reverse-engineering results.",
+    "authorship": "New Python, authored synthetic fixtures and explanatory metadata use the repository MIT policy with disclosed AI assistance. Original payloads, automatic C and complete captures stay private and excluded from public distribution.",
+    "historical_preservation": "Exact EVID025 source hashes retained in private historical snapshots; only their artifact paths changed. Earlier original comparisons remain unchanged. New source snapshots and closed Ghidra project manifest preserve this milestone."
+  }
+}

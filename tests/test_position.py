@@ -259,6 +259,31 @@ class PositionTests(unittest.TestCase):
 class LayerAndHistoryTests(unittest.TestCase):
     setUp = PositionTests.setUp
 
+    def test_layer_query_rejects_triangle_indices_outside_its_table(self):
+        # These offsets can still lie inside the component's vertex/other-layer data.
+        for index in (-2, 1, 3, 32767):
+            with self.subTest(index=index):
+                put(self.actor, 8, index, 2)
+                with self.assertRaisesRegex(ValueError, "layer 0 triangle.*outside"):
+                    layer.layer_floor(self.component, (4096,) * 192, self.actor, 0, 0)
+
+    def test_layer_query_rejects_out_of_table_neighbors_after_crossing(self):
+        put(self.actor, 0x20, -2 << 16)
+        for index in (-2, 1, 3, 32767):
+            with self.subTest(index=index):
+                component = bytearray(self.component)
+                put(component, u32(component, 0x18) + 6, index, 2)
+                with self.assertRaisesRegex(ValueError, "layer 0 triangle.*outside"):
+                    layer.layer_floor(component, (4096,) * 192, self.actor, 0, 0)
+
+    def test_layer_query_rejects_vertices_outside_the_layer_vertex_table(self):
+        for index in (-1, 3, 32767):
+            with self.subTest(index=index):
+                component = bytearray(self.component)
+                put(component, u32(component, 0x18), index, 2)
+                with self.assertRaisesRegex(ValueError, "layer 0 triangle 0: invalid vertex index"):
+                    layer.layer_floor(component, (4096,) * 192, self.actor, 0, 0)
+
     def test_layer_query_follows_signed_neighbor_and_writes_terminal_index(self):
         put(self.actor, 0x20, 12 << 16)
         put(self.actor, 0x28, 12 << 16)

@@ -3231,14 +3231,21 @@
       "id": "field-loader-lifetimes",
       "addresses": [
         "0x80070cc8",
-        "0x8007008c"
+        "0x8007008c",
+        "0x80077e88",
+        "0x800700b0",
+        "0x800a3f4c",
+        "0x800a3474",
+        "0x800a3c8c"
       ],
       "overlay": "field_overlay",
       "evidence": [
         "EVID-REF-014",
-        "EVID-REF-027"
+        "EVID-REF-027",
+        "EVID-REF-028",
+        "EVID-REF-029"
       ],
-      "next_experiment": "Use the reviewed nine-component load/consume/free order. Recover actor-default and sprite-creation service contracts, remaining component consumers and snapshot producer/restore ownership."
+      "next_experiment": "Reuse the reviewed return data and later checkpoint stage. Recover current actor defaults and sprite creation/rebinding from 80080a74/80080f44/80076ac0/800a28d4, remaining ordinary VM effects, resource mutations and owned initialization/return lifetimes. Compare connected original behavior before defining readiness."
     },
     {
       "id": "field-event-scheduler",
@@ -3320,9 +3327,28 @@
       "evidence": [
         "EVID-REF-022",
         "EVID-REF-023",
-        "EVID-REF-025"
+        "EVID-REF-025",
+        "EVID-REF-029"
       ],
-      "next_experiment": "Observed animation headers, facing replay,frame queue/metadata and matrices now compare. Recover rebinding/lifetime, ordinary VM effects/waits, complete frame geometry, alternate platform/frame/allocation/GTE paths and the 68 field-resource runtime byte changes."
+      "next_experiment": "Reuse the reviewed return data and later checkpoint stage. Recover current actor defaults and sprite creation/rebinding from 80080a74/80080f44/80076ac0/800a28d4, remaining ordinary VM effects, resource mutations and owned initialization/return lifetimes. Compare connected original behavior before defining readiness."
+    },
+    {
+      "id": "field-return-sprite-ownership",
+      "scope": "Complete field-return resource ownership, sprite checkpoint selection/replay and control readiness; optional actor extensions remain unobserved.",
+      "addresses": [
+        "0x800a28d4",
+        "0x800a3c8c",
+        "0x80021d50",
+        "0x80023210"
+      ],
+      "overlay": "field overlay for 800a addresses; resident executable for 8002 addresses",
+      "evidence": [
+        "EVID-REF-020",
+        "EVID-REF-025",
+        "EVID-REF-028",
+        "EVID-REF-029"
+      ],
+      "next_experiment": "Reuse the reviewed return data and later checkpoint stage. Recover current actor defaults and sprite creation/rebinding from 80080a74/80080f44/80076ac0/800a28d4, remaining ordinary VM effects, resource mutations and owned initialization/return lifetimes. Compare connected original behavior before defining readiness."
     }
   ],
   "unknown_formats": [
@@ -3334,11 +3360,12 @@
     {
       "id": "sprites-animation",
       "status": "unresolved",
-      "next_experiment": "Observed animation headers, facing replay,frame queue/metadata and matrices now compare. Recover rebinding/lifetime, ordinary VM effects/waits, complete frame geometry, alternate platform/frame/allocation/GTE paths and the 68 field-resource runtime byte changes.",
+      "next_experiment": "Reuse the captured checkpoint timer/compact-parser subset and exact return-time party decoding. Recover sprite creation/rebinding, remaining ordinary VM and complete frame geometry, auxiliary allocation, alternate paths and the 68 field-resource changes.",
       "evidence": [
         "EVID-REF-022",
         "EVID-REF-023",
-        "EVID-REF-025"
+        "EVID-REF-025",
+        "EVID-REF-029"
       ]
     },
     {
@@ -3509,7 +3536,7 @@
       "EVID-REF-022",
       "EVID-REF-023"
     ],
-    "scope": "Original generic sprite dispatcher indexes opcode minus 8a for 115 entries. A0 speed and A1 impulse have observed reconstructions. The separate outer VM and other handler effects remain incomplete; observed width-based stores are inventoried separately.",
+    "scope": "Original generic dispatcher indexes opcode minus 8a for 115 entries. A0/A1 have observed reconstructions; B3 is source/synthetic only. The separate ordinary VM has a bounded timed-command reconstruction; all remaining generic and outer effects stay incomplete.",
     "rows": [
       {
         "opcode": "0x8a",
@@ -3772,8 +3799,14 @@
       {
         "opcode": "0xb3",
         "handler": "0x800214ac",
-        "analysis_status": "unresolved",
-        "native_status": "unimplemented"
+        "analysis_status": "source_reconstructed_unobserved",
+        "native_status": "unimplemented",
+        "name": "frame_lookup_index",
+        "operand_bytes_read": 1,
+        "reconstruction": "tools/analysis/sprite_vm.py",
+        "evidence": [
+          "EVID-REF-029"
+        ]
       },
       {
         "opcode": "0xb4",
@@ -4309,7 +4342,12 @@
     ],
     "analysis_status": "observed_subset",
     "native_status": "unimplemented",
-    "scope": "729 sweeps and every nested source-derived query, slope and edge calculation compare; later position integration remains separate."
+    "scope": "729 sweeps and every nested source-derived query, slope and edge calculation compare; later position integration remains separate.",
+    "host_validation": {
+      "scope": "Root-authored per-layer triangle/vertex validation; original initial -1 and terrain(-1) behavior retained. Phase_1 independently reviewed the guard and reran all 16 collision-query tests.",
+      "report": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/collision-bounds-independent-review.json",
+      "report_sha256": "68daebb6352f823533016525713c778c04cc9f9ac94ed2c2ba6d4b90edf2e8b3"
+    }
   },
   "sprite_animation_reconstruction": {
     "source_profile": "na-slus-00664-39c547a9afc6",
@@ -4440,7 +4478,48 @@
       "evidence": [
         "EVID-REF-027"
       ],
-      "scope": "All 4,385 captured position calls, 626 active commits, 1,252 layer queries and 626 history writes. Unobserved rollback/contact/follower/NPC motion remain explicit."
+      "scope": "All 4,385 captured position calls, 626 active commits, 1,252 layer queries and 626 history writes. Unobserved rollback/contact/follower/NPC motion remain explicit.",
+      "host_validation": {
+        "date": "2026-09-09",
+        "scope": "Reject malformed initial/visited triangle and vertex indices within each declared layer; preserve -1 sentinel and valid original arithmetic.",
+        "tests": "23 public tests, including 11 malformed cases in three new regression groups; all 4,385 original calls and 1,252 layer queries revalidated.",
+        "independent_review": "Root authored the bounded guard; phase_1 inspected it and reran all 23 position tests. Original replay audit is separate from complete finding review.",
+        "report": ".local/verification/phase-sequence-20260909/position-bounds-review.json",
+        "report_sha256": "d800376f17d2081ef3a250b99ee68e277d587567dc0384adb20bde9b0326020d"
+      }
+    },
+    {
+      "id": "field_return_cpp",
+      "files": [
+        "include/xem/reconstruction/field_return.hpp",
+        "src/reconstruction/field_return.cpp",
+        "tests/test_field_return.cpp"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-028"
+      ],
+      "scope": "Snapshot capture/parse and data restore: all 25 original actor records, full 14,340-byte storage, globals, variables, cursors and modes. Optional extensions are source/synthetic only. All sprite checkpoints remain pending; raw correlations are not a native state API."
+    },
+    {
+      "id": "field_sprite_return",
+      "files": [
+        "tools/analysis/sprite_return.py",
+        "tools/analysis/sprite_vm.py",
+        "tools/analysis/sprite_replay.py",
+        "tests/test_sprite_return.py",
+        "tests/test_sprite_vm.py",
+        "tests/test_sprite_replay.py"
+      ],
+      "analysis_status": "source_reviewed",
+      "execution_status": "observed_subset",
+      "native_status": "unimplemented",
+      "evidence": [
+        "EVID-REF-029"
+      ],
+      "scope": "Later actor checkpoint policy and connected sprite restore: 25 decisions/19 complete restores, six ordinary timed iterations and four compact parsers. Python analysis source; creation/rebinding, remaining commands, native ownership/readiness and unobserved variants remain open."
     }
   ],
   "subsystem_dependency_map": [
@@ -4482,7 +4561,7 @@
     },
     {
       "id": "encounter_return",
-      "status": "observed_route_partial_source",
+      "status": "reviewed_data_and_sprite_checkpoint_subsets",
       "depends_on": [
         "field_snapshot",
         "battle_setup",
@@ -4490,7 +4569,7 @@
         "battle_results",
         "sprite_rebinding"
       ],
-      "next_blocker": "Qualify auxiliary code loads; compare snapshot producer with 800a3474 restore and resource rebinding."
+      "next_blocker": "Compose EVID028 data restore and EVID029 later sprite checkpoints with source-recovered creation/rebinding, owned resources, remaining ordinary VM and full control readiness. Battle setup/rules/results and return variants remain open."
     },
     {
       "id": "menus_persistence",
@@ -4528,5 +4607,183 @@
       ],
       "next_blocker": "Complete the nine-domain slice source/state contract and independent review. Provisional surveys do not close Phase 1."
     }
-  ]
+  ],
+  "independent_subset_reviews": [
+    {
+      "finding": "EVID-REF-027",
+      "reviewer": "Codex root orchestration agent; phase_1 additionally reviews the root-authored position guard",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/event-baseline-review.json",
+      "sha256": "2ce80fd7b73241ba4b9c8106cb3dad55890abb52e3dbfa83c59e9cfb935104ad",
+      "result": "passed",
+      "scope": "Core C++ handlers, scheduler source and 81,527 original transitions. Connected scheduler remains source/synthetic scope; other finding portions not promoted.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-014",
+      "reviewer": "Codex root orchestration agent; phase_1 additionally reviews the root-authored position guard",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/decoder-baseline-review.json",
+      "sha256": "87cddc2e8759676fcd53dae749aad08d2ca98564c81e8a1be2c5c9b6d37756f4",
+      "result": "passed",
+      "scope": "Resident decoder/source structural subset: all 27 original calls and 374,216 bytes across three fields, with exact control artifacts. Complete resource lifetime and arbitrary fields remain open.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-027",
+      "reviewer": "Codex root orchestration agent; phase_1 additionally reviews the root-authored position guard",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/position-bounds-review.json",
+      "sha256": "d800376f17d2081ef3a250b99ee68e277d587567dc0384adb20bde9b0326020d",
+      "result": "passed",
+      "scope": "Root-authored malformed-layer guard independently inspected and 23 tests rerun by phase_1; all 4,385 historical original calls and 1,252 layer queries revalidated by root. No original validation of malformed states implied.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-026",
+      "reviewer": "Codex root orchestration agent; phase_1 additionally reviews the root-authored position guard",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/active-motion-review-v1/active-motion-composition-review.json",
+      "sha256": "1f6a53c874746610c0c81f609f7c2ad56d96b479522945f38ce25f7ec8d93077",
+      "result": "passed",
+      "scope": "Complete party-motion composition and main/bounds/idle functions: 2,836 calls, 729 sweeps, 40 animation changes, 5,868 predicate calls, 73 rejected corruptions. Complete callee reviews 022\u2013025 and 1,549 excluded NPC calls remain open.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-028",
+      "reviewer": "Codex root orchestration agent; phase_1 additionally reviews the root-authored position guard",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/return-review-v1/return-data-review.json",
+      "sha256": "843534a7a06a0a5b9c50ac65b1f4f32c30e4f6cb84c124cd782c54b6dc59a77f",
+      "result": "passed",
+      "scope": "Three reviewed snapshot/serializer/data-restore functions and full 25-actor original replay. Seven other exports are byte-qualified dependencies, optional actor branches are source/synthetic only, and sprite replay/readiness remain open.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-025",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/sprite-animation-review-v1/sprite-animation-review.json",
+      "sha256": "93d9e1e656ffe5e94d5712f8233c24ae3e8ea7c3a078d8accf468eb7ed3b03ca",
+      "result": "passed",
+      "scope": "Historical implemented sprite/matrix/facing subset; all original outcomes and 67 corruptions reproduced. Ordinary VM, unobserved allocation/platform paths and arbitrary aliases remain outside that review.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-024",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/movement-sweep-review.json",
+      "sha256": "f135bf91bf842d922749fea7102e7a51ac6a21d3e4efae1920aa8f066a7be7c2",
+      "result": "passed",
+      "scope": "Observed sweep/query/edge/slope composition replays exactly after the bounded malformed-layer correction: 729 sweeps, 3230 queries and all nested math; 157 corruption cases and 119 controls unchanged.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-024",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/movement-source-review.json",
+      "sha256": "143dcd91c2e647b8203e1d038571f31d4163714521fcb098a56ef41205ce3a2c",
+      "result": "passed",
+      "scope": "Supplemental Ghidra qualification of 1583 source words, nine C outputs and two dispatch tables. Query/ratan2 recorded-body limitations remain explicit; windows include omitted tails.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-024",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/collision-bounds-independent-review.json",
+      "sha256": "68daebb6352f823533016525713c778c04cc9f9ac94ed2c2ba6d4b90edf2e8b3",
+      "result": "passed",
+      "scope": "Independent phase_1 source review and 16 focused tests for the root-authored layer-table guard; original sentinel attribute read preserved. Malformed states have synthetic validation only.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-022",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/jump-planar-review-v1/jump-planar-original-review.json",
+      "sha256": "85377d1008f39ae30098d5bfc1c8e159a1e4f69695d2666785887b8a482a1e30",
+      "result": "passed",
+      "scope": "Bounded jump/loader re-review: two complete resource decodes, 61 gravity prefixes, six impulses and 126 vertical stages; 53 corruptions and original controls unchanged. Other physics/resource lifetime paths remain open.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-023",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/jump-planar-review-v1/jump-planar-original-review.json",
+      "sha256": "85377d1008f39ae30098d5bfc1c8e159a1e4f69695d2666785887b8a482a1e30",
+      "result": "passed",
+      "scope": "Bounded planar re-review: 470 prefixes/inhibited returns, 19 speed commands, 567 sprite and 548 field vectors, 4890 trig lookups and 10921 PC stores; 82 corruptions unchanged. Other handlers and field mutations remain open.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-023",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/jump-planar-review-v1/jump-planar-source-review.json",
+      "sha256": "a78490ebb2d5b139a7531731d6ccc3f1d72f86cb73dcd0e190548fe0a2c801cd",
+      "result": "passed",
+      "scope": "Shared jump/planar Ghidra review qualifies 732 words, ten C outputs and six explicitly intra-function blocks. Opaque handlers, 68 differing field bytes and alternate paths remain excluded.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-028",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/return-review-v1/return-finding-review.json",
+      "sha256": "1d5346a3fb8192020e3f8bc5f75608150b29ec7d760c4e152a1bac855873996a",
+      "result": "passed",
+      "scope": "Final return-data finding review verifies artifact history and independently rejects all nine original input/oracle corruptions under sanitizers; no broader return ownership claim.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-029",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/sprite-return-source-review.json",
+      "sha256": "17fce0eb0c49a1af53af302858af238b433b4e4196b7ef8008c1f4f2eabca51a",
+      "result": "passed",
+      "scope": "Independent source review and original replay of the later policy/checkpoint/timer/compact subset; 22 byte-qualified functions are not 22 complete behavioral reviews. Source/synthetic branches, creation and readiness remain explicit.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-029",
+      "reviewer": "Codex root orchestration agent; phase_1 independently reviewed root-authored collision guards",
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/sprite-return-review-v1/sprite-return-validation-review.json",
+      "sha256": "87913c1cfc1b82eeea64ecb65d87f4d8fe977bf49b6199cb64ad9af54f2f551a",
+      "result": "passed",
+      "scope": "Independent rerun of 35 new corruption cases, preservation of all EVID025 artifacts and identical earlier animation/67-corruption outcomes. No broad completion.",
+      "broad_completion": false
+    }
+  ],
+  "ordinary_sprite_vm_reconstruction": {
+    "source_profile": "na-slus-00664-39c547a9afc6",
+    "functions": {
+      "timer": "0x80023210",
+      "ordinary_vm": "0x800248d4",
+      "generic_effect": "0x8001fbe4"
+    },
+    "source_families": [
+      "0x00..0x7f timed frame families",
+      "0xb3 generic index store",
+      "0xe1 signed relative branch"
+    ],
+    "observed_commands": [
+      {
+        "opcode": "0x13",
+        "count": 6
+      }
+    ],
+    "model": "tools/analysis/sprite_vm.py",
+    "evidence": [
+      "EVID-REF-029"
+    ],
+    "analysis_status": "observed_subset",
+    "native_status": "unimplemented",
+    "scope": "Ordinary VM branch families, distinct from the existing indexed generic dispatch inventory. Only 13 executes in this checkpoint stage; all other source families are synthetic/source-only. Unlisted required commands remain blocked."
+  }
 }

@@ -1,6 +1,6 @@
 """Original-source reconstruction of facing replay and frame scheduling.
 
-Allocation and alternate frame formats remain explicit failures. Resource bytes,
+Allocation and unqualified frame data remain explicit failures. Resource bytes,
 runtime list memory, and any required incoming duration register are supplied.
 """
 
@@ -22,14 +22,17 @@ def previous_frame(sprite, address, frame, binding, read, on_part=None):
     directory = u32(out, binding_offset)
     word = int.from_bytes(read_exact(read, directory, 2), "little")
     frame = signed32(frame)
+    if frame < 0:
+        raise ValueError("Original previous-frame index is negative")
     if frame >= (word & 0x1FF) + 1:
         return bytes(out)
-    if word & 0x8000:
-        raise ValueError("Alternate original sprite frame format remains unreconstructed")
     record = directory + int.from_bytes(read_exact(read, directory + frame * 2, 2), "little")
     flags = read_exact(read, record, 1)[0]
     count = flags & 63
-    pointer = record + count * 4 + 6
+    # Resident 8001f750 uses compact two-byte part entries and a four-byte
+    # prefix; 8001f8e8 uses four-byte entries and a six-byte prefix. Their later
+    # metadata command streams have the same observed source operations.
+    pointer = record + (count * 2 + 4 if word & 0x8000 else count * 4 + 6)
     part = 0
     for _ in range(4096):
         if part == count:
@@ -100,7 +103,9 @@ def frame_change(
     return bytes(out), address
 
 
-def lookup_frame(sprite, address, list_head, read, read_memory, on_frame=None):
+def lookup_frame(
+    sprite, address, list_head, read, read_memory, on_frame=None, on_list=None, on_previous=None
+):
     out = bytearray(sprite)
     pointer = u32(out, 0x54) + ((u32(out, 0xA8) >> 11) & 63) * 2
     value = int.from_bytes(read_exact(read, pointer, 2), "little")
@@ -109,7 +114,9 @@ def lookup_frame(sprite, address, list_head, read, read_memory, on_frame=None):
     put(out, 0x3C, (u32(out, 0x3C) & ~8) | ((((flags >> 3) ^ (flags >> 2)) & 1) << 3))
     if on_frame:
         on_frame(bytes(out), value & 0x1FF)
-    return frame_change(out, address, value & 0x1FF, list_head, read, read_memory)
+    return frame_change(
+        out, address, value & 0x1FF, list_head, read, read_memory, on_list, on_previous
+    )
 
 
 def command_replay(

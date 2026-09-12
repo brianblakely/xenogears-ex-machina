@@ -2936,9 +2936,9 @@
         "distribution": "private_local_only"
       },
       {
-        "path": "analysis/formats/movement-sweep.md",
+        "path": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/before-fix/analysis/formats/movement-sweep.md",
         "sha256": "db74ae387a505820bd5831999e30df2ecba6106229dba333ee8db5ef7755dd88",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only"
       },
       {
         "path": "tests/reference-inputs/field23-control-observation.json",
@@ -2951,9 +2951,9 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tests/test_collision_query.py",
+        "path": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/before-fix/tests/test_collision_query.py",
         "sha256": "ea6fb89e5e07a0740c6f03ad21ebb7e3a2704e08228b6a1873e7432b7e0614b5",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only"
       },
       {
         "path": "tests/test_movement_sweep.py",
@@ -2971,9 +2971,9 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tools/analysis/collision_query.py",
+        "path": ".local/verification/phase-sequence-20260909/movement-sweep-review-v1/before-fix/tools/analysis/collision_query.py",
         "sha256": "f19fbe21ac36c6f3e5d7a1b0a6ade41e53907a5a99d425a530a7208dab7db03a",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only"
       },
       {
         "path": "tools/analysis/movement_sweep.py",

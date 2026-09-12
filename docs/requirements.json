@@ -27142,6 +27142,14 @@
           {
             "finding": "EVID-REF-027",
             "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-028",
+            "scope": "Independently reviewed original field snapshot serialization/data restore: 25 actors, full 14,340-byte storage, five globals, all variables and exact controls. Optional branches are source/synthetic only. Sprite rebuild/replay, native ownership, control readiness and complete slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-029",
+            "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
           }
         ]
       },
@@ -27188,6 +27196,14 @@
           {
             "finding": "EVID-REF-027",
             "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-028",
+            "scope": "Independently reviewed original field snapshot serialization/data restore: 25 actors, full 14,340-byte storage, five globals, all variables and exact controls. Optional branches are source/synthetic only. Sprite rebuild/replay, native ownership, control readiness and complete slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-029",
+            "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
           }
         ]
       },
@@ -27230,6 +27246,14 @@
           {
             "finding": "EVID-REF-027",
             "scope": "Reviewed core C++ event execution and connected loader/state documentation; qualified battle/menu C surveys and corrected shared calling context. Complete handler, return, combat, menu and persistence behavior remains open."
+          },
+          {
+            "finding": "EVID-REF-028",
+            "scope": "Independently reviewed original field snapshot serialization/data restore: 25 actors, full 14,340-byte storage, five globals, all variables and exact controls. Optional branches are source/synthetic only. Sprite rebuild/replay, native ownership, control readiness and complete slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-029",
+            "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
           }
         ]
       },
@@ -27302,6 +27326,14 @@
           {
             "finding": "EVID-REF-027",
             "scope": "Reviewed core C++ event execution and connected loader/state documentation; qualified battle/menu C surveys and corrected shared calling context. Complete handler, return, combat, menu and persistence behavior remains open."
+          },
+          {
+            "finding": "EVID-REF-028",
+            "scope": "Independently reviewed original field snapshot serialization/data restore: 25 actors, full 14,340-byte storage, five globals, all variables and exact controls. Optional branches are source/synthetic only. Sprite rebuild/replay, native ownership, control readiness and complete slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-029",
+            "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
           }
         ]
       },
@@ -27458,6 +27490,10 @@
           {
             "finding": "EVID-REF-027",
             "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-028",
+            "scope": "Preserved Ghidra project/exports, authored source snapshots, source-guarded original captures and independently regenerated C++ replay inputs. All 25 save/restores and control artifacts match; nine material corruptions reject. Optional branches and all complete slice proof domains remain open."
           }
         ]
       }

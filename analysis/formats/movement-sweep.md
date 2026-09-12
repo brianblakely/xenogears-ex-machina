@@ -102,6 +102,15 @@ selected neighbor's attribute before testing whether that neighbor is -1.
 The model therefore reads the corresponding preceding source bytes for that
 case; it does not supply an invented zero attribute or clamp the index.
 
+The reconstruction also validates each layer's triangle and vertex tables.
+Component-wide bounds previously allowed malformed indices to read another
+table and produce a successful query. Those indices now fail explicitly. The
+initial -1 triangle still returns before mesh parsing, and a selected -1
+neighbor retains the preceding attribute-byte read. If that attribute requests
+height calculation through triangle -1, the geometry access remains unqualified
+and fails; it is not converted to a normal missing-neighbor result. These are
+reconstruction input checks, not checks claimed for the original program.
+
 Actor layer-disable bits or the byte at `800b21cc` mask attributes to zero.
 Actor flags can reject attribute flag combinations. Attribute bit `00800000`
 rejects layer zero. The ordinary routine also rejects entry into terrain
@@ -155,12 +164,18 @@ Scratchpad vertex triples match source geometry; their copying lineage remains
 unreconstructed. GTE register side effects and hardware timing are not inferred
 from GPR and memory captures.
 
-Thirty-six authored tests cover integer and branch boundaries, adjacency,
+Forty authored tests cover integer and branch boundaries, adjacency,
 terrain rules, output preservation and pointer provenance. The private suite
 rejects 157 semantic, omission, metadata, source and control-artifact corruptions.
 Semantic trials bypass whole-file digest checks. Selected query-boundary trials
 also update their cross-recording binding, so the rejection reaches the source
 comparison rather than merely detecting a changed recording.
+
+The four additional malformed-mesh regressions were verified against the old
+implementation before the correction. The corrected model reproduces every
+recorded result on both original routes, all 119 control artifacts and all 157
+corruption rejections. Historical finding artifacts retain their original
+source snapshots; this correction adds no newly observed original branch.
 
 Use the pinned Nix environment. The verifier's `prepare` mode accepts `--route
 control|traversal`, `--kind sweep|area|math`, the source profile/raw track and a
