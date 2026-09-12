@@ -795,8 +795,16 @@
         {
           "opcode": "0x71",
           "handler": "0x80093568",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "unimplemented",
+          "name": "request_battle",
+          "encoding_bytes": 3,
+          "evidence": [
+            "EVID-REF-020",
+            "EVID-REF-031"
+          ],
+          "python_reconstruction": "tools/analysis/battle_request.py",
+          "scope": "Six observed calls: five music retries and one immediate-zero request; other gates and variable operands have source/synthetic coverage. Native execution remains unimplemented."
         },
         {
           "opcode": "0x72",
@@ -3213,7 +3221,7 @@
       ]
     }
   ],
-  "unknown_instruction_policy": "The C++ event library implements primary 00,01,02,04,26,35,36,37,38,39 and raises UnsupportedInstruction with PC/opcode for others. Existing Python additionally models 0c,a7 and fe/a2 within their stated limits. Unresolved services and non-code extended-table values stay explicit; aliases never establish no-ops. A source library is not a complete native VM.",
+  "unknown_instruction_policy": "The C++ event library implements primary 00,01,02,04,26,35,36,37,38,39 and raises UnsupportedInstruction with PC/opcode for others. Existing Python additionally models 0c,71,a7 and fe/a2 within their stated limits. Unresolved services and non-code extended-table values stay explicit; aliases never establish no-ops. A source library is not a complete native VM.",
   "unresolved_symbols": [
     {
       "id": "resident-function-boundaries",
@@ -3328,9 +3336,10 @@
         "EVID-REF-022",
         "EVID-REF-023",
         "EVID-REF-025",
-        "EVID-REF-029"
+        "EVID-REF-029",
+        "EVID-REF-030"
       ],
-      "next_experiment": "Reuse the reviewed return data and later checkpoint stage. Recover current actor defaults and sprite creation/rebinding from 80080a74/80080f44/80076ac0/800a28d4, remaining ordinary VM effects, resource mutations and owned initialization/return lifetimes. Compare connected original behavior before defining readiness."
+      "next_experiment": "Reuse EVID030 actor defaults, EVID028 return data and EVID029 later checkpoints. Recover sprite construction/rebinding 8002435c/800222bc, field orchestration 80076ac0/800a28d4, remaining ordinary VM effects, destruction and owned resource lifetimes. Complete readiness remains blocked."
     },
     {
       "id": "field-return-sprite-ownership",
@@ -3346,9 +3355,10 @@
         "EVID-REF-020",
         "EVID-REF-025",
         "EVID-REF-028",
-        "EVID-REF-029"
+        "EVID-REF-029",
+        "EVID-REF-030"
       ],
-      "next_experiment": "Reuse the reviewed return data and later checkpoint stage. Recover current actor defaults and sprite creation/rebinding from 80080a74/80080f44/80076ac0/800a28d4, remaining ordinary VM effects, resource mutations and owned initialization/return lifetimes. Compare connected original behavior before defining readiness."
+      "next_experiment": "Reuse EVID030 actor defaults, EVID028 return data and EVID029 later checkpoints. Recover sprite construction/rebinding 8002435c/800222bc, field orchestration 80076ac0/800a28d4, remaining ordinary VM effects, destruction and owned resource lifetimes. Complete readiness remains blocked."
     }
   ],
   "unknown_formats": [
@@ -3437,7 +3447,7 @@
     {
       "id": "movement-jump-rng",
       "status": "unresolved",
-      "next_experiment": "Reuse verified motion and position models. Resolve contact/followers/NPC motion, unobserved rollback/layer branches, RNG ownership, timing and readiness.",
+      "next_experiment": "Reuse reviewed motion, position and actor-default/RNG-step models. Recover RNG seeding/lifetimes and other consumers, contact/followers/NPC motion, unobserved floor branches, timing and readiness.",
       "evidence": [
         "EVID-REF-019",
         "EVID-REF-020",
@@ -3447,7 +3457,8 @@
         "EVID-REF-024",
         "EVID-REF-025",
         "EVID-REF-026",
-        "EVID-REF-027"
+        "EVID-REF-027",
+        "EVID-REF-030"
       ]
     },
     {
@@ -3523,6 +3534,22 @@
         "EVID-REF-027"
       ],
       "next_experiment": "The later position subset is now reviewed and all captured calls compare. NPC active motion, enabled bounds, other resource/animation modes, contact/followers and unobserved position branches remain open."
+    },
+    {
+      "id": "actor-defaults-unobserved-entry-branches",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-030"
+      ],
+      "next_experiment": "Observe fresh-entry Y replacement, no-match and zero-query scratch behavior, alternate counts and optional factory extensions through valid original scenarios. All current default calls have two matched queries, preserved descriptor Y and no extension; full allocator/shadow ownership remains open."
+    },
+    {
+      "id": "battle-request-other-gates-and-selectors",
+      "status": "unresolved",
+      "evidence": [
+        "EVID-REF-031"
+      ],
+      "next_experiment": "Capture another primary71 blocking gate and signed/unsigned variable selectors on source-qualified ordinary routes, including full variable/type banks. Verify formation validity, subsequent field/battle scheduling and semantic readiness separately."
     }
   ],
   "sprite_command_dispatch": {
@@ -4520,6 +4547,35 @@
         "EVID-REF-029"
       ],
       "scope": "Later actor checkpoint policy and connected sprite restore: 25 decisions/19 complete restores, six ordinary timed iterations and four compact parsers. Python analysis source; creation/rebinding, remaining commands, native ownership/readiness and unobserved variants remain open."
+    },
+    {
+      "id": "field_actor_defaults",
+      "files": [
+        "tools/analysis/actor_defaults.py",
+        "tests/test_actor_defaults.py"
+      ],
+      "analysis_status": "source_reviewed",
+      "execution_status": "observed_subset",
+      "native_status": "unimplemented",
+      "evidence": [
+        "EVID-REF-030"
+      ],
+      "scope": "All 25 observed return-time actor defaults, RNG steps and 50 initial floor queries; complete captured actor/descriptor/local scratch and stable globals agree. Allocation/shadow addresses remain opaque inputs; fresh entry and ownership/readiness are incomplete."
+    },
+    {
+      "id": "field_battle_request",
+      "files": [
+        "tools/analysis/battle_request.py",
+        "tools/analysis/events.py",
+        "tests/test_battle_request.py"
+      ],
+      "analysis_status": "source_reviewed",
+      "execution_status": "observed_subset",
+      "native_status": "unimplemented",
+      "evidence": [
+        "EVID-REF-031"
+      ],
+      "scope": "Primary71 ordered gates, tagged selector, mode latch and request stores; all six original calls/thirteen boundaries match. Decoder follows retry/continuation; other gate/variable paths are source/synthetic. Combat, full scheduling and readiness remain open."
     }
   ],
   "subsystem_dependency_map": [
@@ -4533,7 +4589,7 @@
         "sprite_creation",
         "event_execution"
       ],
-      "next_blocker": "Resolve actor defaults, sprite creation and initialization dispatch from 80080a74/80080f44/80076ac0/800a28d4 together."
+      "next_blocker": "Actor defaults now compare all 25 observed return-time calls. Complete sprite construction/rebinding, allocator/shadow ownership and required initialization dispatch from 80076ac0/800a28d4, then establish semantic readiness."
     },
     {
       "id": "event_execution",
@@ -4758,6 +4814,26 @@
       "result": "passed",
       "scope": "Independent rerun of 35 new corruption cases, preservation of all EVID025 artifacts and identical earlier animation/67-corruption outcomes. No broad completion.",
       "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-030",
+      "reviewer": "Codex root agent, independent of phase_1 authored model; creation_evidence independently reviews source/control and replay adapter",
+      "date": "2026-09-12",
+      "report": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/review-complete.json",
+      "sha256": "b46d5aba1d35679f009f949ddb5ef7aaaf42d832ecbd2c5c534681ff8ce3ec2e",
+      "result": "passed",
+      "scope": "Default/RNG/terrain source reviewed, five bodies/633words qualified, all 25 original calls and124 controls revalidated,14tests and76 corruptions pass. Separate adapter review rejects19 faulty outputs; no allocation/readiness or unobserved branch promotion.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-031",
+      "reviewer": "Codex /root/battle_request_review; independent of root-authored model and replay",
+      "date": "2026-09-12",
+      "report": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/final-summary.json",
+      "sha256": "a62f4fb95ef243cbc504a8d8898774dd61d6b5f471db29f6556055beabf40fb0",
+      "result": "passed",
+      "scope": "127 original source words (113 handler/dependencies plus14 adjacent context), six original calls/thirteen complete boundaries, independent absolute-address projection,27new corruption cases and124controls; source-formula checks remain synthetic. Final model promotion is docstrings only.",
+      "broad_completion": false
     }
   ],
   "ordinary_sprite_vm_reconstruction": {
@@ -4785,5 +4861,29 @@
     "analysis_status": "observed_subset",
     "native_status": "unimplemented",
     "scope": "Ordinary VM branch families, distinct from the existing indexed generic dispatch inventory. Only 13 executes in this checkpoint stage; all other source families are synthetic/source-only. Unlisted required commands remain blocked."
-  }
+  },
+  "supplemental_author_reviews": [
+    {
+      "finding": "EVID-REF-021",
+      "reviewer": "root source re-review of an earlier authored implementation",
+      "independent_authorship": false,
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/field-control-review-v1/control-original-review.json",
+      "sha256": "dd9cc0ad7bfbaf5b35b0a7e4e59fb2950b8a6d1164ce66c588d32cb51848d57e",
+      "result": "passed",
+      "scope": "Preserved root re-review of the earlier root-authored bounded control model; observed calls/corruptions/control artifacts and four qualified source windows retain their recorded scope. Active encounter body and unobserved paths remain open. The old decoder is archived with its original hash.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-021",
+      "reviewer": "root source re-review of earlier authored control reconstruction",
+      "independent_authorship": false,
+      "date": "2026-09-09",
+      "report": ".local/verification/phase-sequence-20260909/field-control-review-v1/control-source-review.json",
+      "sha256": "0c965366763815b8eef9edd354167b609041cab806cc7c56513f3c6dc4f69335",
+      "result": "passed",
+      "scope": "Preserved root re-review of the earlier root-authored bounded control model; observed calls/corruptions/control artifacts and four qualified source windows retain their recorded scope. Active encounter body and unobserved paths remain open. The old decoder is archived with its original hash.",
+      "broad_completion": false
+    }
+  ]
 }

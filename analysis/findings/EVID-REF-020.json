@@ -811,9 +811,10 @@
         "distribution": "private_local_only"
       },
       {
-        "path": "analysis/formats/field-encounter-observations.md",
+        "path": ".local/analysis/phase1-battle-request-20260912/previous-sources/analysis/formats/field-encounter-observations.md",
         "sha256": "4789d40fafc1c2ab0966f40b24acdbb8dd6999b24edeac2285fba0abf4602089",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only",
+        "original_public_path": "analysis/formats/field-encounter-observations.md"
       },
       {
         "path": "tests/reference-inputs/field23-encounter-observation.json",

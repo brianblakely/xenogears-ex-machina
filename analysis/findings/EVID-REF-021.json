@@ -925,9 +925,10 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tools/analysis/events.py",
+        "path": ".local/analysis/phase1-battle-request-20260912/previous-sources/tools/analysis/events.py",
         "sha256": "781a33b7da51ea1648ff13c9cadc5dc8cded2b5ef2aaf0a162b81d6cf9cda013",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only",
+        "original_public_path": "tools/analysis/events.py"
       },
       {
         "path": "tools/analysis/field_control.py",

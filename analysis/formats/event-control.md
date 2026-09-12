@@ -23,6 +23,7 @@ subset and rejects instructions outside it. Integer operands are little-endian.
 | `37` | `0x8009d91c` | Opcode, u16 destination | Store zero; advance three bytes | 1,875 original calls |
 | `38` | `0x8009d890` | Same six-byte encoding as `35` | Add source to destination modulo 65,536 | 21 original calls, selector `00` |
 | `39` | `0x8009d804` | Same six-byte encoding as `35` | Subtract source from destination modulo 65,536 | 1,427 original calls, selector `40` |
+| `71` | `0x80093568` | Opcode, u16 tagged selector/reference | Retry while gated; otherwise latch mode, publish request and advance three bytes; request break | [Six original calls](battle-request.md): five music retries and one immediate-zero acceptance |
 | `fe/a2` | Prefix `0x800869b8`, extended handler `0x8008825c` | Two bytes | Retry the prefix while music load result is exactly `ffffffff`; otherwise advance two bytes; request break | 993 pending calls; ready branch has source/synthetic evidence only |
 
 The disassembler follows both known branch successors, terminates cycles and

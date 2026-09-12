@@ -1,0 +1,2095 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-030",
+  "kind": "field_actor_defaults_rng_and_initial_floor_queries",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 69508
+      },
+      "address": "0x80080a74",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Original field source slot, no ISO filename assumed.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::80080a74",
+          "end": "field_38a1ce829a6f094c::80080f43"
+        }
+      ],
+      "source_body_sha256": "95e5ba96527499b50e0c119e261cb986abed6a04a831cddf40d1c49974dfe4e1",
+      "decompiler_c_sha256": "56b50bc1eede805fb6d6332467cb55cfc73b11aa377d89c3e6d3c1719414560a"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 197176,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8003fa38",
+      "address_space": "PS1 KSEG0; qualified resident executable",
+      "not_applicable": "Resident source; overlay does not apply.",
+      "source_body_ranges": [
+        {
+          "begin": "8003fa38",
+          "end": "8003fa67"
+        }
+      ],
+      "source_body_sha256": "8efec2e9f765b1fe90da7f814c3864d0a4c87d4df7e4bc67af491d5a30c21e81",
+      "decompiler_c_sha256": "94e3b18120361f15b7dab1dc5c31058fede192e7cc2cf7a56d6aa777935c05b3"
+    }
+  ],
+  "observation": "The preserved original encounter-return capture contains 446 qualified records: 300 within 25 complete defaults calls, 142 factory context records and 4 unpaired later terrain entries. All 25 defaults and RNG calls, 50 matched floor queries, complete captured actors/descriptors/local scratch/stable globals and final returned state agree. All 25 calls preserve descriptor Y and have no optional actor extension. All 124 uninstrumented control artifacts remain byte-identical.",
+  "interpretation": "Actor defaults consume exactly one recovered resident RNG step, initialize original event/motion fields, query signed-layer-count minus one layers and preserve unowned bytes. Original no-match result zero must remain distinct in diagnostics from valid triangle zero. Original allocations/scratch are inputs; the model does not supply native ownership, ready control or valid scenario setup.",
+  "confidence": "confirmed",
+  "author": "Codex /root/phase_1 (Astra Max), independently authored original-source reconstruction, 2026-09-12",
+  "reviewers": [
+    {
+      "name": "Codex /root, independent of the authored model",
+      "date": "2026-09-12",
+      "scope": "Manual default/RNG/terrain source review, 633words across 5 qualified bodies, independent original replay/124 controls, 14 tests and 76 corruptions; final API-state binding reviewed.",
+      "report": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/review-complete.json",
+      "limitations": "Independent AI review, not human approval; full factory/resource ownership and unobserved original branches remain open."
+    },
+    {
+      "name": "Codex /root/phase_1/creation_evidence (Astra Max)",
+      "date": "2026-09-12",
+      "scope": "Independent CHD/raw/30-export/446-record/124-control qualification; replay review identified and verified repairs to mesh-pointer lineage and final API result checks; 19 independent faulty outputs reject.",
+      "report": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3.json",
+      "limitations": "Source/control byte qualification of 30 exports is not 30 complete behavioral reconstructions."
+    }
+  ],
+  "validation": {
+    "preconditions": [
+      "Use the exact supplied Disc 1 source profile and EVID020 ordinary encounter route. CHD integrity, raw/EXE/overlay and original collector/core provenance were independently rechecked.",
+      "Use pinned Nix tools and original Ghidra 12.1.2/PSX-loader exports. No other Xenogears implementation or reverse-engineering source was consulted.",
+      "Preserve immutable captures/reports. Adapters write exclusive result filenames; import load()/compare() for a fresh replay or change only output paths in a preserved copy."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace --command python tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --trace-instructions .local/analysis/phase1-field-creation-20260909/actor-trace-spec-v1.json --output .local/scenarios/phase1-field-actor-defaults-20260909-v1",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. python .local/analysis/phase1-field-creation-20260912/compare-defaults.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. python .local/analysis/phase1-field-creation-20260912/negative-defaults.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python -m unittest tests.test_actor_defaults",
+      "Independent review invocations and environment fingerprints: .local/analysis/phase1-field-creation-20260912/evidence-review/REVIEW-20260912.md and root review-complete.json."
+    ],
+    "expected": "Exact independently captured actor, descriptor, scratch, global, RNG and nested query state; all supported source bytes and124 original controls qualify. Material corrupted inputs, outputs, source and lineage reject.",
+    "actual": "Passed 25 complete defaults, 25 RNG calls, 50 queries and 686, 400 captured payload bytes. All 124 controls match;14 authored tests, 76 trace/source/API corruptions and 19 independent wrong-model outputs pass. Source/synthetic unobserved branches stay explicit.",
+    "result": "passed",
+    "tolerance": "Exact integer, width, source, pointer, byte and hash equality; no masks, fabricated oracle, assumed hardware cadence or readiness.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/actor-trace-spec-v1.json",
+        "sha256": "56b3085825a8e2224a769e5995c83cc65a2ed4e4df52eb91b8ab04588884f216",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8001c964.c",
+        "sha256": "4228aee2aa4727ed3f58cb6e6a9aabb9495970f396a43c6a80dd93761401e71b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8001d3f4.c",
+        "sha256": "92b3a1dcd3f35e6cb4dfdf12576c075625a5e9fad24de31c717964464eb82dc4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8001ee74.c",
+        "sha256": "30653013c911a2ff707cfb837e5368cdf7e12106f1304504fec74bb4dfb1e83d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8001f5bc.c",
+        "sha256": "c0aa533e369e8c90a8976e14100c94e6aa5af0ecd84a970238d526f2a35be9e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80021bf8.c",
+        "sha256": "aac6ffacd17e5b8f75e8dbee7d7bfe9a0567f472a09a86e066ee59d78f142a3f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80021c00.c",
+        "sha256": "6d451ae08a0555748141bf5d91c6d7bac043d2a77d546e834402d9335bc5c246",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80021fe0.c",
+        "sha256": "71dc9e6dd4641cd7439d1a07fcba9f8ee1a75b7667ddd60120447e1c2609b300",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80022000.c",
+        "sha256": "37845a09de8857a61db3047a313945fb15a8245e8bcc9b70855045ad95a29193",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80022224.c",
+        "sha256": "1b4b6f806ccb748ec6ea04af5233cc573dd9eab3f864f161bc2a8b40ad0de1af",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/800222bc.c",
+        "sha256": "8b72952acae4d34d6894d6dd006275924121f8dfd2747363af7006d9a2806a1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80022974.c",
+        "sha256": "c611ad0e3310b0b6376b6818030b58c30fe59f51a710c82f017f7cddce94bc8b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8002303c.c",
+        "sha256": "8c31c90fbd41f4c586ddad4abe14a5406eb47963b2ada5bbc2aac41c2486e0be",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/800230a8.c",
+        "sha256": "c404fa79910214d96f9c330065d897366a76c9742b1153bee7f4f8425fa54d74",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80023340.c",
+        "sha256": "2d15cfa7a606cd884979293997e03e7dd1b7f22702ea7450023c6af593d13eb0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80023804.c",
+        "sha256": "3b6159a777545c913b2c343401377ead2f37f1f19670d6acbae303dd96f1cf92",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8002393c.c",
+        "sha256": "0fbf8aac611ef691085dc6e34806c17c9cd629a3ddd3f580bc0025dd403d704b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/800239a0.c",
+        "sha256": "f2e66c13ff8e8ef3d0629c84dfd4cac4953db456a9c56afd1df08dfee1d95aca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80024294.c",
+        "sha256": "8707db7f9309c35ccd92047daa459c26725f07a4e4811b0aa2d6189e1cb9d1f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8002435c.c",
+        "sha256": "80520775000aed8c54b843c4fbd4d59e993a91c96b2eeb6209230292836e834f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80024524.c",
+        "sha256": "2ec4b667e2ca3ca30693ff0a5a16bfcb4ffa8ee3b05c7b3965a6500602691e70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80031bdc.c",
+        "sha256": "d955d2aed42d56bcfd6c01c56d3aff81ee7ddab80decf3afb71bf50dd9c6ef8b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80032498.c",
+        "sha256": "ed5effd55b49f763eab7d1003daa589db64e0d66bc99766c468bb1b71c69a77e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8003fa38.c",
+        "sha256": "94e3b18120361f15b7dab1dc5c31058fede192e7cc2cf7a56d6aa777935c05b3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80076ac0.c",
+        "sha256": "d304c14c9428d5a18d64b1da12318ae06b6f220a9b943731a1b36fed1ac3af85",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8007aa44.c",
+        "sha256": "6a404cb8a29da575468ccf6e1f2ccbc41bd57537f30a898317a7c34f952135f2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/8007b1c4.c",
+        "sha256": "bba26e207d0a43928144a18865fcd72869ba78bd59beb36cdc3d843b6c761346",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80080968.c",
+        "sha256": "f866ec43ae078b5cea172fd44bb6164eeed5ec2c43d2d903984f1a0523a2d989",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80080a74.c",
+        "sha256": "56b50bc1eede805fb6d6332467cb55cfc73b11aa377d89c3e6d3c1719414560a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/80080f44.c",
+        "sha256": "980366c38fc6cc5433b32c0dc0435234719c28bae76c455d10321dfa2473e2d4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/c/800a28d4.c",
+        "sha256": "69f2a9e373e603eefdb4a1e98f7bf1936f82a4ec23a83b6c9bcf433799966331",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/index.json",
+        "sha256": "8e44ea563f203a308762fa05b47659e383450f952b08b008201e2d3f4b0c19e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/ghidra-v2-project-manifest.json",
+        "sha256": "2d609edde268a0431200f221d60ae5d981236611223ddd4a37f42154853759d8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/prepare-actor-trace.py",
+        "sha256": "f6244517b4650dcb6cd33200c1d0cb9c079bb952b4891f7140b130fbb28e576c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/scripts/ExportFieldCreation.java",
+        "sha256": "678946b3a88294fe89cb93980bde6e5e1194bc677eda05357fd7a7c516be6031",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/source-qualification-v1.json",
+        "sha256": "da2e0f6ef31f7b674bbdba27640df3f8d27a24f444eb2ddf678de495aa63a307",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260909/wrap-artifact-anchors.json",
+        "sha256": "e3b904960cced88a649cc41455c6e626dbf948f99e4ee8a71867132ed91ce8d8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/analysis/formats/actor-defaults.md",
+        "sha256": "9be7ddc3e8532e73fd0ccee33b9301baa036a447da2bdd6481ef66443e681b6b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/analysis/formats/field-lifecycle.md",
+        "sha256": "fb06d499b78a74c8b43071b473b31b2b1ec3c6d94aa310b0334d86d581aa562d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/analysis/formats/sprite-return.md",
+        "sha256": "db2185f4b5103e68984abfaa119e1bab6ce708fe14ba3a9ced4d03d9fe7c7adf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/analysis/recovery.json",
+        "sha256": "ee3729e85fbe92eea4a95ffc9f76796d8eb25c2a70e92d9a100116d5e274cccc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/docs/phase1-progress.md",
+        "sha256": "631100782347e4fdab33b8fad7dee44803ecc789aab00fd7bf1339e8f866983b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/packaging/source-files.txt",
+        "sha256": "c42a31cb07f5346a819d028ee50c428187511440b673cd48d79344ca2808c19a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/tests/test_actor_defaults.py",
+        "sha256": "f0f7f3d990e79b1f76a56b703d48524669abba511879c619fb2f8922475d1cfc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1/tools/analysis/actor_defaults.py",
+        "sha256": "3d425ae2d46478f6bcc01b35e06de5171ef06fc5e9ac723abcd57bdab34d71c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/compare-defaults-v1.py",
+        "sha256": "bae258b93ec535e2be77ec10e2d2576d9dc5dbf7ee0df0388b81367ee430eba8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/compare-defaults-v2.py",
+        "sha256": "2f61fdae65e2bf717050bbbeb0e0785627d96d7e65c2029fd4e72f17a06c9cb5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/compare-defaults.py",
+        "sha256": "86619c51da41a90a829ee29b28daff248e4eb6e1190ffd1eb5915f0be13c0e98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/comparison-v1.json",
+        "sha256": "da8a6427196f564d7cdd44a015e0b0a59023244ea9f864e69d2916105881339b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/comparison-v2.json",
+        "sha256": "da8a6427196f564d7cdd44a015e0b0a59023244ea9f864e69d2916105881339b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/comparison-v3.json",
+        "sha256": "da8a6427196f564d7cdd44a015e0b0a59023244ea9f864e69d2916105881339b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/REVIEW-20260912.md",
+        "sha256": "715bf102c2dc36b23fac3794d451cf0667b7ee438e620bf61be7a590c1b6636a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/audit_creation_v1.py",
+        "sha256": "2e9fb8f183468597db51a9da2f043341d312b0cb315f9994a2cd52b5b0171fab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/CONTRIBUTING.md",
+        "sha256": "9aa89f06ec20167ffce788f89b726b0b399837937b6b4cdff931078198c021f9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/analysis/coverage/source-fingerprints.json",
+        "sha256": "77d9abd9c8927dc792953368c592edec44774a0791851c16320488deeda62c26",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/analysis/reference-profiles.json",
+        "sha256": "2e4743f72a0720f93bb9e7dea582de9806178655951a6e4b37ca126c5a3a55a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/docs/evidence-workflow.md",
+        "sha256": "42bfd057629af0f15e35c7ab24cece77364d7ce4d0cc963d32cd848508b81668",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/docs/reverse-engineering.md",
+        "sha256": "359b2122fcf4b7f58f79495351537658aabdaff76296c5dc302b2c577e4c815b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/nix/flake.lock",
+        "sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/nix/flake.nix",
+        "sha256": "4e43776c5efa15824cdc698a88c0219e78d8360e07dbac167a67baa7180a42d5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/nix/ghidra/flake.lock",
+        "sha256": "438272c6750d3aafed5cf1cd8a61ca9f7e41f1e846cc8de697f23392be40ff60",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/nix/ghidra/flake.nix",
+        "sha256": "4009603e0d590a71c09b6c2a9d63d49e777f1c0e0d30888c5f6589f148ea08d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/nix/reference-trace-patch.py",
+        "sha256": "8720566b1631a17634db4dcf6fcea75259a882c3ced9ef85c60a7faf7d8caf10",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/nix/reference-trace.h",
+        "sha256": "7170b2b14dea27023c5cf636d9d200bb5a084ec9ddaad4328bffb609d39e62e0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tests/reference-inputs/field23-encounter-observation.json",
+        "sha256": "5a92857bd32598dc522cdc4da83dfb7a7ff59d70ab44f72e85ff29a63cc24683",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/arithmetic.py",
+        "sha256": "aaa6791c3e34e65b1ed7155ef22d7d83ba09ff85413ae5936e15456fa76e5bc9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/collision_math.py",
+        "sha256": "a30d1a4c601a406b29a4fc17f229af71716dae754975eafba955ae3c735b43b7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/field.py",
+        "sha256": "271f61145ed0aed1fe205937ad6a1a26fa0a95ee16ae279fd67f0246af7158e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/original_trace.py",
+        "sha256": "b02284e7430dcaa34eb6b6682bf321c7e8bfcba2ec02611d4f06a963f4ba140e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/packed.py",
+        "sha256": "0d23d3680f3e4c15f114e70c36e9234a6db29ea701f834bc935f531045a09036",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/verify_collision_math.py",
+        "sha256": "5f10537b5bb788878b2c67086a5d37667a0f89be4142022b211e1d83cc331f80",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/analysis/verify_field.py",
+        "sha256": "640d9ebcee87de5e7f496adbdc873b5ae995026d996f3aa785c9a2e4beef4b7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/reference/inspect_disc.py",
+        "sha256": "3de03d9ee88205e0c0107565378e5f8d33c30e977b2c9450ca03d0eac2e0e28a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/reference/instruction_trace.py",
+        "sha256": "51fd6d90f5637191210e9de4bdfadda30b63a902390481a65d690b1879dddbc5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/reference/memory_sampler.py",
+        "sha256": "d1c0a9e692ac3bc196b06c94ad658a7cb33069be948ed42ded1484e13506426f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/reference/observe.py",
+        "sha256": "61e867e5fd167b3cb3f2839a606b8d841f365f03def148477b935d22e40501aa",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/reference/scenario.py",
+        "sha256": "165312f7f0ed9b37bcd7d5edc4571b7f79f0a6fbc67ee1d9ba526c0f4cade20d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/authored-inputs-v1/tools/reference/scenario_program.py",
+        "sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/chd-verify-v1.log",
+        "sha256": "b8ff488ecd224615f8e4e59e0f769b1b8d62a8813c2df96c02a048960637b3b7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/.local/analysis/phase1-field-creation-20260912/compare-defaults-v2.py",
+        "sha256": "2f61fdae65e2bf717050bbbeb0e0785627d96d7e65c2029fd4e72f17a06c9cb5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/nix/flake.lock",
+        "sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/nix/flake.nix",
+        "sha256": "4e43776c5efa15824cdc698a88c0219e78d8360e07dbac167a67baa7180a42d5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tests/test_actor_defaults.py",
+        "sha256": "f0f7f3d990e79b1f76a56b703d48524669abba511879c619fb2f8922475d1cfc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/actor_defaults.py",
+        "sha256": "3d425ae2d46478f6bcc01b35e06de5171ef06fc5e9ac723abcd57bdab34d71c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/arithmetic.py",
+        "sha256": "aaa6791c3e34e65b1ed7155ef22d7d83ba09ff85413ae5936e15456fa76e5bc9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/collision_math.py",
+        "sha256": "a30d1a4c601a406b29a4fc17f229af71716dae754975eafba955ae3c735b43b7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/field.py",
+        "sha256": "271f61145ed0aed1fe205937ad6a1a26fa0a95ee16ae279fd67f0246af7158e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/jump_physics.py",
+        "sha256": "3b0d28544f5f084b6998ab8c0723d1d5b46bd802c574a1341191d56b620842ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/original_trace.py",
+        "sha256": "b02284e7430dcaa34eb6b6682bf321c7e8bfcba2ec02611d4f06a963f4ba140e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/packed.py",
+        "sha256": "0d23d3680f3e4c15f114e70c36e9234a6db29ea701f834bc935f531045a09036",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/sprite_state.py",
+        "sha256": "fcb1d6df75d0e44139a64d0ab0cd06b82b7fae09ac4007691430ec4bf27c3c64",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/verify_collision_math.py",
+        "sha256": "5f10537b5bb788878b2c67086a5d37667a0f89be4142022b211e1d83cc331f80",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-inputs/tools/analysis/verify_field.py",
+        "sha256": "640d9ebcee87de5e7f496adbdc873b5ae995026d996f3aa785c9a2e4beef4b7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2-tests.log",
+        "sha256": "ff3b1438544d9aa2c552401f0123d54eac06b91b0295f3773671c14161e22544",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-return-gap-v2.json",
+        "sha256": "27114d4b7f7b5cc6a769f9ee1ddb0c4c86d931d4e2a532581c54e9bef877af6c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/.local/analysis/phase1-field-creation-20260912/compare-defaults.py",
+        "sha256": "86619c51da41a90a829ee29b28daff248e4eb6e1190ffd1eb5915f0be13c0e98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/nix/flake.lock",
+        "sha256": "25dc07dea0f33888dffa85777ed1f4cb63b4bb0da712d35abed88127d172c4e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/nix/flake.nix",
+        "sha256": "4e43776c5efa15824cdc698a88c0219e78d8360e07dbac167a67baa7180a42d5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tests/test_actor_defaults.py",
+        "sha256": "f0f7f3d990e79b1f76a56b703d48524669abba511879c619fb2f8922475d1cfc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/actor_defaults.py",
+        "sha256": "3d425ae2d46478f6bcc01b35e06de5171ef06fc5e9ac723abcd57bdab34d71c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/arithmetic.py",
+        "sha256": "aaa6791c3e34e65b1ed7155ef22d7d83ba09ff85413ae5936e15456fa76e5bc9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/collision_math.py",
+        "sha256": "a30d1a4c601a406b29a4fc17f229af71716dae754975eafba955ae3c735b43b7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/field.py",
+        "sha256": "271f61145ed0aed1fe205937ad6a1a26fa0a95ee16ae279fd67f0246af7158e3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/jump_physics.py",
+        "sha256": "3b0d28544f5f084b6998ab8c0723d1d5b46bd802c574a1341191d56b620842ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/original_trace.py",
+        "sha256": "b02284e7430dcaa34eb6b6682bf321c7e8bfcba2ec02611d4f06a963f4ba140e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/packed.py",
+        "sha256": "0d23d3680f3e4c15f114e70c36e9234a6db29ea701f834bc935f531045a09036",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/sprite_state.py",
+        "sha256": "fcb1d6df75d0e44139a64d0ab0cd06b82b7fae09ac4007691430ec4bf27c3c64",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/verify_collision_math.py",
+        "sha256": "5f10537b5bb788878b2c67086a5d37667a0f89be4142022b211e1d83cc331f80",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-inputs/tools/analysis/verify_field.py",
+        "sha256": "640d9ebcee87de5e7f496adbdc873b5ae995026d996f3aa785c9a2e4beef4b7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3-tests.log",
+        "sha256": "ff3b1438544d9aa2c552401f0123d54eac06b91b0295f3773671c14161e22544",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/comparator-review-v3.json",
+        "sha256": "f10b280ccb4cf5b7b002a0f9702d582c7ca39f902b3196802ac73ea2aa173aa8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/review_comparator_v1.py",
+        "sha256": "9397a6a564b5fc19d813b4ed23233beb45e6cf90e5b390c11a6c1d2118bdf931",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/evidence-review/source-control-review-v1.json",
+        "sha256": "45543c2b9ad53b99fdf57d87d6a3b465ce2834730e8d800c79f6ab027e200ddb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/negative-defaults-v1.json",
+        "sha256": "e2df318e2722b99d2fbe69b071448f79d1746cea1ee1f72614a72681fb120086",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/negative-defaults-v1.py",
+        "sha256": "420b267aabe291f9cba27eec187802f40c5e0974b29309f825db5cd00b05cac9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/negative-defaults-v2.json",
+        "sha256": "d13b8d94bbc31132da8116b6cd8d715ae6df347f8fceec2359c4ab5c9c288f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/negative-defaults-v2.py",
+        "sha256": "b4805a3b353ca67dd2c392b35f870e378bdc89f0b5b9779c25ea5e7b366b98a6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/negative-defaults-v3.json",
+        "sha256": "4266dba3d16d7920e8dcddd057d8a52db882082eb50c92b74776f33039708a2e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/negative-defaults.py",
+        "sha256": "13cefba37b40f6e6d082ad40d76d57cc9c5335554c077472a99321d836a5c71f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-creation-20260912/record-defaults.py",
+        "sha256": "d41fd11b3e0567fc7bf477585412bfe639cb2b5fe38d4754e66db1a22c6b14fd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/instruction-trace-spec.json",
+        "sha256": "56b3085825a8e2224a769e5995c83cc65a2ed4e4df52eb91b8ab04588884f216",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/instruction-trace.jsonl",
+        "sha256": "e7289283ff27e36c095457b8cdf753724a2603ff595056ec4f488fb5ba3344cb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/observation.json",
+        "sha256": "43381528cc486b19a4fb50416f6ebc5678fa43a8a90bce2454865956734ce66d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/saves/pcsx-card2.mcd",
+        "sha256": "78b6d4ac9ab4d23caf7e5f04f83539bf5d994cccfb0a709d14ac53d05c8e21ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field-actor-defaults-20260909-v1/capture/started.json",
+        "sha256": "c6beffb23454847522d662c32c44577602987955efdbd0a2bad1090baae8b48d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/audio.wav",
+        "sha256": "63a570032f63ea468e0d4bdd91986c24b07880fa7a49f465f86b41e22dc73a5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.ram",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/final.state",
+        "sha256": "478c29d716acc32cd44831e53144eeae8eb49398cef91879d4fe12a8c50fe2a8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-000600.png",
+        "sha256": "43437f70a7ef7578d0b3e94eafa25057d1c1ff91354c53722680b6f189b92233",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001200.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001237.png",
+        "sha256": "d7e43563523813921953cb1836cf7653e50ff9ede1a9b2e7470242982a4d5212",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001545.png",
+        "sha256": "a16a892ed515d02d363b4bbba1ff30edf6a7b3e1a2afe7f69398e5b3ab1c2fb2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001800.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-001853.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002161.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002400.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002469.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-002777.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003000.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003085.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003393.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003600.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-003701.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004009.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004200.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004317.png",
+        "sha256": "d496e5d02cbc84d173ff9a178acefb08eb2ed59fd03f79417c56bc557446e57b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004737.png",
+        "sha256": "dd81917ad901be282581184c5163889656e9023547732d8f3fa2dffe897b9452",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004800.png",
+        "sha256": "f734c291d2ebde7cf97504373b9c65598461494196c4f00b393b2b79649d323f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004857.png",
+        "sha256": "17527e42754fa744f4748436924e41c7eba3f605990aef96baff1f97d3a2b825",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-004977.png",
+        "sha256": "53b387fd95e7b07c9f81ce1b3dc322dc4d21721169b0eace6bd4586a4c2c51e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005097.png",
+        "sha256": "44c75a37aad88f776cce78775f142311c3ac2bbf86748e31036f9aa2e26aadd8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005217.png",
+        "sha256": "9fe0358bf4fe0c6333b95f6050d0ffed5bf631ef9582092dc5ca8691cf5200d3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005277.png",
+        "sha256": "aa3116b5db9e45343ee377a57940105f9eb4b298158b3aa08891735557371bfd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005357.png",
+        "sha256": "0e0c534de107afaa72c3e25119e8ac47020dee99f855308a08d86fc8408b5b33",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005400.png",
+        "sha256": "383b4bb1550f4841e950d002ef96f6110e9cc0ab05d111d7dc92966023edc2c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005577.png",
+        "sha256": "ae8b0a33b617bd6d062a1753709a919140143680c0b4d318edcd91c9cccd252b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005697.png",
+        "sha256": "946cec5260d953f5b3729afc929ef4196104be6ba5b34c1b533ae09b85e807d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005722.png",
+        "sha256": "9ab528e99ef2214dd2a435bdf944737d59bacdc98983fa90a28c9218a09be834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005823.png",
+        "sha256": "cadf6a1ccfd0e94200ed665297c9df91fc7a9d983cb7987d1ab3888ac2eda336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005830.png",
+        "sha256": "cd4a0d2ac593f3bb88fc548988d5614b1bce5bd051f1e399366ed3fa80dc0673",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005875.png",
+        "sha256": "843cf5f01c7a57e2cb11da651f973c155198db6f2d2ef4f8ccd4a041fe1bf7e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005888.png",
+        "sha256": "e1a9e0359ab80521399adedfd0eab920b2ccfe63138270142dbe80bb831433a0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005897.png",
+        "sha256": "02ae5f9fbcc699fed62513f6f620e7c5484be82c39b5a37eb31a4438aea721bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-005902.png",
+        "sha256": "5d107a453d7d62a0fbc8f08c209611233d79e71bce4029926593658dcc6161df",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006000.png",
+        "sha256": "b2ef4912b9130465ba643b13c78886801024b928593f41d3393135ebc2157315",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006582.png",
+        "sha256": "2024258a1205dbdfc297633ae46dba16fdc29c671b657d339ab663abc0491376",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006600.png",
+        "sha256": "35e6d73c99c401e0d86f69434ff5cc611399a9ceadf8e663bc756d715df1db1a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006710.png",
+        "sha256": "25a211208aee252b183878add805545629ab00cc942c57c6973086c24d3dc111",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006838.png",
+        "sha256": "a3b89d532e6431f276b4f02c1a80f2f354cb490df1246aa43b52274226e44e49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-006966.png",
+        "sha256": "c2944b4633d2b5ce3f37ddbaf844638789d99aa9dc294d3f1be668206ed96478",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007094.png",
+        "sha256": "5dc4778742235a249d442b9c7148084c8d734526910d78263e75d72bd0b9e178",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007200.png",
+        "sha256": "791ea78334ae9386bf7afdb4709af4ec678ab078edbd749b9cc9301ef6a35275",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007222.png",
+        "sha256": "f8b5c9d1d44e4c1798f05c88b93beb869c1a27211d0e848ef5d7ff35d96c909e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007350.png",
+        "sha256": "11db66a12de4a640e0870d98495a5c6c86f973948e9725f7c5a0ddc1f6518d91",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007478.png",
+        "sha256": "64329d20efc6e43e37e0a88dbeee11ab88a3c97789ba96356b599dbafa2b6037",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007606.png",
+        "sha256": "98bf6ccb07cb9f7ecedc6493e9e367480e928f43139897346525c30782fcc759",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007734.png",
+        "sha256": "4d6232ef7cafcc6a29b5373581540d602d4f85cb26d7da08a635f5fa8ebafec4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007800.png",
+        "sha256": "5f7dce860bad5864f3484c8e15a8981539a18df5a73b6606a08a1e7b8b41d5d2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007862.png",
+        "sha256": "2896731628380c86b23c01db28833bdc432788cb0eca6eb7f709ecf823af2aab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-007990.png",
+        "sha256": "ea04c09789422bd67c5aec14062f5400d57e4fdfe0ee63bad4210049aeba30e5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008118.png",
+        "sha256": "86cb5492bf741d2bca335c35cc0a868e714c16212785ac2976c3703b7c870785",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008246.png",
+        "sha256": "6257cdbc48112cdc5bacd83345e261e30db45760f9fbac17db22043d23b4cc94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008374.png",
+        "sha256": "bd8b24852324002ae52f8da66f64b61aff92f7049503a9b124c3ffb5016db21c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008400.png",
+        "sha256": "c433cbe9cdd3738f7219e15ec367f2fb14ac9842954ff3ca4764fd73be653ccf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008502.png",
+        "sha256": "5ccfdef72f04065d902c268505d0aaee91b29e6ae7e264a6ce32cfde0f1b7425",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-008630.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009000.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009230.png",
+        "sha256": "c021164cbd7ceb069cd4f5baa2909227b1c0d01d80f183edc988bd64714bff5b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009538.png",
+        "sha256": "cdd1dcadb22df4c91c03510393089c7f00f507f1b341010fb15f11cb4fd906f3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009600.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-009846.png",
+        "sha256": "f1d232835452258b7a1de2d3029e92bd5ea6fdb6f05b76d745653b92d981fdf5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010154.png",
+        "sha256": "5e09744fa2fc876bf76c0199139738914778c33000f95c3399c70360948de754",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010200.png",
+        "sha256": "e4325e035dbefd6553e75008aafcde0455c6bc7e4d2d3c89f4b13aec2043a459",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010762.png",
+        "sha256": "0b55b25468f68eb46b3ef9ad375221d01bd9382aa9155c2af98bc09cfb3e2520",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010794.png",
+        "sha256": "09d4d1226747433e0ea705ba7c0a2a3eead346ed8a5e3835ae68babc693f5602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-010800.png",
+        "sha256": "ded623e6b8d1a412ebb7d25adddd1f2b027271876d692305a2d7cfb941395aec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-011400.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/frame-011402.png",
+        "sha256": "50462df3bef00062c1872b893f88f0760c02bba230e0239643cd30c2203c7dce",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/observation.json",
+        "sha256": "494a78d0bbc7d3bb83effc77487d7bb39776bad397bd8e2ea74a08b3549b5784",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001237.bin",
+        "sha256": "d5ea96d9bae2f02bb0c054b0adcf8c0aba34e40aa48d93feb34c6b4a0b5ab598",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001545.bin",
+        "sha256": "3a2543fbc7c1616c934882adc03f6eaa0a42d8bb72b37a4e0b56f363c0b2aa9a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-001853.bin",
+        "sha256": "8e68bb286af1aff35bfb19fe651057ebe4ff462aa4437c1198a9825b0e475117",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002161.bin",
+        "sha256": "e81492b264f729e1917a3dfde4b749d3b47705a38e7cfb7f5ec94b4d1216f038",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002469.bin",
+        "sha256": "7139e360de593a0c1f9878afd17d4b52a1f7c91910f5254ab4860543a9b75889",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-002777.bin",
+        "sha256": "8e347aa5d0d5074c71414a00e65be449385d1b6fb3946a133a6e8955d174b407",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003085.bin",
+        "sha256": "aa910e227e7e41058ec4653a7b123716229962ca20b9d0ec5e685cb5e8be3374",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003393.bin",
+        "sha256": "fadabe91e0faf674ca087b265d8ac00e22c0c6b9bc18e288a18ed66d0338fcad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-003701.bin",
+        "sha256": "1f147ad82e89052b947242d30d61076cd30e93233a90086200384b6e611a5f70",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004009.bin",
+        "sha256": "d2b4292907dd4e91e906d875ec7cdd156d525fbe57d67b41d1efae06a808d665",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004317.bin",
+        "sha256": "5c52af9072320f679e4321218bae4e91f2669b31483ec21989e17269597e72b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004737.bin",
+        "sha256": "c0929550cdd4bf990d14f14d580e5b894ee72a9cf83195457c49e5e186e807ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004857.bin",
+        "sha256": "26ea1a6c1cbc5a17eee03109538a6a766df39d8a84a81f18c662878f5830fc98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-004977.bin",
+        "sha256": "a315ad9dc576100578fc41b130e20d19165d37ed14f3d85742da83de1a121c05",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005097.bin",
+        "sha256": "e4ce60ddd119a9ec408febfba65dfe8a69419731fef4cb0af2c038e5d7f9f92f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005217.bin",
+        "sha256": "98c600b6718cf6f119bf63ca39d0515b7498c4aa736e1c84713f3fce5abc44a7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005277.bin",
+        "sha256": "f2fd0fcafa0abce419bdada6cf4e3d2f9eb878503c27378f67d348fd32c742d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005357.bin",
+        "sha256": "3ea1aebb5076fab5515eedd18d2d99b830bb5cae9e2141a5c1e7d52bc0bea09b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005577.bin",
+        "sha256": "ee7f3a0103fd049c6f7df98178c34e051fe43e0d91d25622153d5eb3833a46ca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005697.bin",
+        "sha256": "bf52ebe8a6af1321fd7adb15a2f9e235da514180fc2a1a5f18cd52f56250be8e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005722.bin",
+        "sha256": "d250910992a1b079b239902f7d4b6cbf4334d3465946ea98d1987f9ef9bc094a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005823.bin",
+        "sha256": "a7ba0b92b878585dd172a283227855aadeae1f438ad572eaa675bdb92c925b28",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005830.bin",
+        "sha256": "663c3c85feabe4617fc9e3eaca27f6a07fbba036637f27fe22c13991c9d2d4a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005875.bin",
+        "sha256": "5f572b2824a901a66316fec8f42bd6721b478290f9a3e02923b27d2b453a7065",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005888.bin",
+        "sha256": "b992c791e8d37b97e69c81c4e3c1c9c72cff8384118005ee7fd0e4bb3432f667",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005897.bin",
+        "sha256": "a95d45631c6656d9ed8cb4de0af7bc5e9b199e4cc51901a6a06fe00cfede16ad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-005902.bin",
+        "sha256": "3d3aeb5ae5f77e0670fe613ecd2367f7dc18bebc9ac572fb51b69f6c2dcf9fca",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006582.bin",
+        "sha256": "34ce73aae6547f6e7502c82ca8c72d723f94bfc6f9ef8c25fccaf4801536f43b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006710.bin",
+        "sha256": "7b1b4ffce16b0b348da67898fa817a04ebb059353a45cde51105fbb000802602",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006838.bin",
+        "sha256": "a50bd285ab4cace67008d80d330c4d7850256b5893b8d7797bf297b336328f30",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-006966.bin",
+        "sha256": "63db69177cdf8280de2993f0fdc8d5e9339cb470bb85c924d5748574df5e415d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007094.bin",
+        "sha256": "342f38cb05d1d8b03b5ac79738a134c62ae15db2d8a735301b45ab775426f72a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007222.bin",
+        "sha256": "c73a3fefc75400f80e83735c5c366b25af27cdffac06d06f10c0b8a24592dc43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007350.bin",
+        "sha256": "1ef94e3c301a81ec839391b777d42f9bca4900307913f1a81c6615d7004b0b88",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007478.bin",
+        "sha256": "0e3a9097fbf15bfe8b6f3888707b8f66e88691ac6515204eef6fe62e22af3396",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007606.bin",
+        "sha256": "00a41ad1be7b5c39dd6bca0726caad3815e4c44aa2b6259c46413baa3e02c6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007734.bin",
+        "sha256": "4a7230980bb29834c5267e6d2bf93df2259527066be63a38fda676edd6681729",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007862.bin",
+        "sha256": "5e7988e0394d9fc9a91ab1f2c26bafaeaaf658ee3c981dbf3d3799fc9a3304de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-007990.bin",
+        "sha256": "7e628a4514e247f49a229a3dc8788bc97d59e4ff98fdcb87d0eab7f36fe868ab",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008118.bin",
+        "sha256": "1148b17878ecfce97d2e666e95ab68a767c5ffd0e48679f268d7613f0ad63479",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008246.bin",
+        "sha256": "32982c245f5525939909a3481fff62ea7fac4328bac8bc8b01301b891a4ef262",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008374.bin",
+        "sha256": "5ebf39c80480e201af835a5e32be86334eabceeeda9b3a10c6f6b9edc5edd319",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008502.bin",
+        "sha256": "8c8c5163bccd5dfc11e3514d8c743eb0476b02226abb05dad61aba6834ce4715",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-008630.bin",
+        "sha256": "15e455d804db3ac50b256e06e3a2c72331122d5b574a3e07234734b8e8c35a49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009230.bin",
+        "sha256": "6a9bb292ecd48eb66faa3cae1b9c838b1caa6410343dd1136777f641faffc350",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009538.bin",
+        "sha256": "7155b910df159fecb6f4ac4c75371f0f6f045186e2e4b78519531e7c0d501a5d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-009846.bin",
+        "sha256": "47dba8adb6f963ca8cd49b996ff36e3751ad81db57ba27d2d3488564d7d5a4d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010154.bin",
+        "sha256": "e15bc71e428402d34311c00790568735a39b52049f8068ce9488288e8df24cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010762.bin",
+        "sha256": "70f18fd40b84fcf0c510d691f1786d9348218d233e44371a9eebf5079aeaf623",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-010794.bin",
+        "sha256": "89d5ec15c399a62353e1ddffab921247e3076487423ee9d24e6554742bc8df9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/ram-011402.bin",
+        "sha256": "ca4da544af5ed4e91d515969aac2e182d07cc73a93b8d8fcf86f6948f2e60bed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/saves/pcsx-card2.mcd",
+        "sha256": "78b6d4ac9ab4d23caf7e5f04f83539bf5d994cccfb0a709d14ac53d05c8e21ef",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/started.json",
+        "sha256": "809de2787b7af41e94dd5b463d3898b780fd5396e977b406e29fa0de459cab76",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/negative-review-v3.json",
+        "sha256": "4266dba3d16d7920e8dcddd057d8a52db882082eb50c92b74776f33039708a2e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/negative-review-v3.py",
+        "sha256": "efaa0cacd596dad17ed44255a14185e14740ae2d197185ed9c5176b3f7b0283f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/review-complete.json",
+        "sha256": "b46d5aba1d35679f009f949ddb5ef7aaaf42d832ecbd2c5c534681ff8ce3ec2e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/review-v2.py",
+        "sha256": "5391958fc79cc5f73e79fc0d7bdc81de8851af97bca0b591a2eb01bc4d243288",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/review-v3.py",
+        "sha256": "5d69ace1a92e696e58ee2716276d467d5387ba57d91ef8bbfaee34607e66756c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/review.py",
+        "sha256": "0d1554a1a3dbe14628235831e9e506f551cfa7c8759f633ab5a0fb7d7bd43291",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/source-original-review-v3.json",
+        "sha256": "a5a2acfb44623eed2b268890a02fe9c052bbbea45f3f77b36311eb5a1d599e5f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/source-original-review-v3.tests.log",
+        "sha256": "06099a841ae91ab516427494254e3c590310c030768f67c16c6e064c8911ce63",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/source-original-review.json",
+        "sha256": "30d9ce4079106b2339b8483e9bb664cb82c6ef9486d91761bf42b0bea6fae0cf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/actor-defaults-review-v1/source-original-review.tests.log",
+        "sha256": "06099a841ae91ab516427494254e3c590310c030768f67c16c6e064c8911ce63",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "tools/analysis/actor_defaults.py",
+      "tests/test_actor_defaults.py"
+    ],
+    "format_notes": "analysis/formats/actor-defaults.md",
+    "source_snapshot": ".local/analysis/phase1-field-creation-20260912/authored-defaults-v1",
+    "ghidra_index": ".local/analysis/phase1-field-creation-20260909/ghidra-v2/index.json",
+    "qualified_export_count": 30,
+    "newly_reconstructed_function_count": 2,
+    "original_replay": {
+      "result": "passed",
+      "complete_defaults": 25,
+      "default_stage_records": 300,
+      "random_calls": 25,
+      "point_queries": 50,
+      "factory_early_returns": 46,
+      "factory_context_records": 142,
+      "excluded_external_terrain_entries": 4,
+      "query_outcomes": {
+        "matched": 50
+      },
+      "preserved_descriptor_y": {
+        "True": 25
+      },
+      "observed_factory_extensions": {
+        "without_extension": 25
+      },
+      "exact_compared_payload_bytes": 686400,
+      "scope": "All 25 actor defaults and RNG calls, 50 original location queries, complete captured actor/descriptor/scratch and stable globals. Factory allocation addresses and shadow packets remain opaque correlation inputs. Four external terrain entries have no captured returns and are excluded."
+    },
+    "original_sprite_allocation_fact": "80024524 allocates 0x164 = 356 bytes and stores 0x164 at sprite+86; prior 512-byte captures are observation windows including 156 neighboring bytes, not proof of object ownership."
+  },
+  "source_dependencies": [
+    "EVID-REF-014",
+    "EVID-REF-019",
+    "EVID-REF-020",
+    "EVID-REF-022",
+    "EVID-REF-027",
+    "EVID-REF-028",
+    "EVID-REF-029"
+  ],
+  "related_requirements": [
+    "P01-T02",
+    "P01-T03",
+    "P01-T04",
+    "P01-T08",
+    "P01-T09",
+    "P01-T11",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "One Disc 1 field 23 encounter-return route; no fresh-entry scenario readiness or expanded content coverage.",
+    "All 50 observed point queries match; no-match, zero-query scratch, Y replacement and alternate counts remain source/synthetic coverage.",
+    "All 25 actors lack optional factory extensions. Allocator addresses and shadow packets are opaque inputs, not predictions of an implemented allocator or owned native initialization.",
+    "Four later terrain entries lack matching returns and remain excluded. 142 factory context records establish observed boundary correlation, not complete factory/geometry/shadow semantics.",
+    "Collision component/table bytes qualify at the later post-return RAM anchor and live pointer/count tables agree; no per-call whole-mesh digest is claimed.",
+    "Thirty byte-qualified Ghidra exports are not 30 semantic models. The 356-byte sprite allocation is source-qualified; construction/rebinding/destruction and remaining VM effects remain open.",
+    "RNG step does not recover seeding, full lifetime or all consumers. Media, timing, combat, menus/persistence, semantic setup/readiness and all broad Phase 1 todos and slice domains remain incomplete."
+  ],
+  "provenance": {
+    "consulted_sources": "Original supplied binaries/disc data and execution; independently authored repository models; retained Ghidra projects. No external game-specific implementation or format knowledge.",
+    "authorship": "New Python, tests and prose independently authored with AI assistance under repository MIT policy. Original code, C exports, media and traces remain private.",
+    "historical_preservation": "V1/V2 adapters, reports and independently reproduced comparator flaws are preserved. V3 fixes are tested without changing the original capture or public model."
+  }
+}

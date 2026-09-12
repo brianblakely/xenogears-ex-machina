@@ -95,10 +95,15 @@ uninstrumented control artifacts match per capture: 372 comparisons, representin
 one route rather than three independent scenarios. The main recording has 586
 records, of which the complete later policy accounts for 163. All 25 actor
 decisions agree: 19 restorations and six flag skips. Every intermediate and final
-512-byte sprite state, checkpoint, frame head, temporary/restored rate, cursor,
+512-byte sprite observation window, checkpoint, frame head, temporary/restored rate, cursor,
 saved return address and observed nested stack boundary agrees. The 423 earlier
 battle/transition records, including calls already open when tracing starts,
 remain explicitly outside this complete-policy comparison.
+
+Creation-source review in [EVID-REF-030](../findings/EVID-REF-030.json) establishes
+that resident `80024524` requests 356 bytes for this sprite allocation. The
+512-byte windows also observe 156 neighboring bytes; their equality does not
+establish ownership of those bytes.
 
 The detailed recording has 248 records, with 124 in the same complete policy.
 It independently compares six complete timers and four compact metadata calls

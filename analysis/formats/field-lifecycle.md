@@ -32,6 +32,8 @@ implementation are authored source.
 | [field.py](../../tools/analysis/field.py), [packed.py](../../tools/analysis/packed.py) | Existing component, event-package and collision parsing; packed decoding | Extraction/reference tools; actual source-memory context is required for decoder overreads |
 | [position.py](../../tools/analysis/position.py), [position_query.py](../../tools/analysis/position_query.py) | Position integration, layer-floor selection, height bounds and party history | Reuses collision and vertical arithmetic; diagnostic services and unobserved branches remain explicit |
 | Existing [party motion](active-motion.md), [sweeps](movement-sweep.md) and [sprite models](sprite-animation.md) | Verified party movement and selected animation behavior | NPC active motion, ordinary sprite commands, rendering and contact remain incomplete |
+| [actor_defaults.py](../../tools/analysis/actor_defaults.py), [default-state contract](actor-defaults.md) | Ordered defaults, one RNG step, initial floor queries and terrain/position effects; all 25 observed return-time calls compare exactly | Original allocations and scratch are inputs; fresh setup, factory ownership and control readiness remain required |
+| [battle_request.py](../../tools/analysis/battle_request.py), [request contract](battle-request.md) | Primary 71 gates, mode latch, tagged selector and request stores; all six observed calls compare exactly | Python source reconstruction; other gates/selectors remain source/synthetic, and battle execution and readiness remain open |
 | [field_return.cpp](../../src/reconstruction/field_return.cpp), [return contract](field-return.md), [later sprite checkpoints](sprite-return.md) | Original snapshot format, data restore, later actor checkpoint choices and 19 source-computed sprite restores | Original correlation modules; sprite creation/rebinding, complete return ownership/readiness and native owned snapshots remain required |
 
 `xem-field-reconstruction` is a C++20 library. Its structures hold semantic
@@ -41,7 +43,7 @@ references to serializable identities at its runtime boundary. Original offsets
 are provenance, not the intended agent API. The baseline does not launch a game.
 
 The library requires real dispatch. `execute_core_event` supports primary
-`00,01,02,04,26,35,36,37,38,39`. Existing Python knowledge of `0c`, `a7` and
+`00,01,02,04,26,35,36,37,38,39`. Existing Python knowledge of `0c`, `71`, `a7` and
 `fe/a2` remains available but is not silently substituted into the C++ VM.
 Malformed storage raises an explicit error; this bounded host interface does not
 emulate arbitrary invalid PS1 memory accesses.
@@ -78,8 +80,10 @@ zero extended; subsequent fixed-point conversion must retain its own width.
 
 Field `80080f44` allocates a 312-byte actor for indices below the event actor
 count, clears it, binds descriptor `+4c`, calls defaults `80080a74`, then creates
-additional descriptor storage. Defaults also query collision layers, set floor
-and position state and consume RNG. This dependency tree is not yet reusable C++.
+additional descriptor storage. EVID-REF-030 reconstructs defaults and its RNG,
+layer-query, terrain and position effects in Python, with all 25 return-time calls
+compared. Allocations and shadow packets remain observed inputs; this dependency
+tree is not yet an owned native initialization service.
 
 After descriptor/resource preparation, the loader releases the source bundle.
 Persistent consumers must retain decoded storage or their own copies. It sets

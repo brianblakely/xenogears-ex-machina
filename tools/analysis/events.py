@@ -52,6 +52,7 @@ OPCODE_SPECS = {
     0x37: ("set_variable_zero", 3),
     0x38: ("add_variable", 6),
     0x39: ("subtract_variable", 6),
+    0x71: ("request_battle", 3),
     0xA7: ("request_player_control", 1),
     0xFE: ("extended_dispatch", 2),
 }
@@ -115,7 +116,7 @@ def decode_instruction(bytecode: bytes, pc: int) -> Instruction:
     else:
         operands = () if size == 1 else (word(1), word(3), source[5]) if size == 6 else (word(1),)
         next_pc = (pc + size) & 0xFFFF
-        successors = (pc, next_pc) if opcode == 0x26 else (next_pc,)
+        successors = (pc, next_pc) if opcode in (0x26, 0x71) else (next_pc,)
         result = Instruction(pc, opcode, name, size, successors, operands)
     for target in result.successors:
         if target >= len(bytecode):

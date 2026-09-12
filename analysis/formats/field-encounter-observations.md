@@ -25,8 +25,9 @@ run 5915 the result is zero: the original resolves the tagged immediate selector
 to zero, updates its request fields, requests an interpreter break and advances
 the PC to `0x8ae`. All sampled actor and control bytes, including preserved bytes,
 match the independently expressed private comparison. Other gates and selector
-modes remain unobserved. The public event disassembler still rejects opcode `71`
-until its complete reconstruction and public fixtures are ready.
+modes remain unobserved. [EVID-REF-031](../findings/EVID-REF-031.json) subsequently
+reviews the [request reconstruction](battle-request.md) and adds opcode `71`
+to the public event disassembler. Its original coverage remains these six calls.
 
 | Capture frame | Visible original state |
 | --- | --- |

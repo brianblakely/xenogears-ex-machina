@@ -1,0 +1,475 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-031",
+  "kind": "original_field_battle_request_handler_and_tagged_operand_reconstruction",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 146040
+      },
+      "address": "0x80093568",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Physical source slot, not an ISO-named file; offset belongs to decoded overlay.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::80093568",
+          "end_exclusive": "field_38a1ce829a6f094c::80093664"
+        }
+      ],
+      "source_body_sha256": "0a861eb6b3d40d6f4718901325007984b10dff5ce01ac555a620e5aa4ce564ca",
+      "words": 63,
+      "scope": "Source-reviewed handler or tagged operand dependency."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 250568
+      },
+      "address": "0x800acdb8",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Physical source slot, not an ISO-named file; offset belongs to decoded overlay.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800acdb8",
+          "end_exclusive": "field_38a1ce829a6f094c::800acdec"
+        }
+      ],
+      "source_body_sha256": "f8e7a00d35483b653b52c8cc4ebd6c9d4e1d24d9fefb51e913d7a9fbe04f965f",
+      "words": 13,
+      "scope": "Source-reviewed handler or tagged operand dependency."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 250620
+      },
+      "address": "0x800acdec",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Physical source slot, not an ISO-named file; offset belongs to decoded overlay.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800acdec",
+          "end_exclusive": "field_38a1ce829a6f094c::800ace24"
+        }
+      ],
+      "source_body_sha256": "f5b5a8b33e1afb320ce0b4ea5fcb04beef67c777305e65380fa203bf5af1c0b6",
+      "words": 14,
+      "scope": "Source-reviewed handler or tagged operand dependency."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 210160
+      },
+      "address": "0x800a2fe0",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Physical source slot, not an ISO-named file; offset belongs to decoded overlay.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800a2fe0",
+          "end_exclusive": "field_38a1ce829a6f094c::800a3018"
+        }
+      ],
+      "source_body_sha256": "5e9ff4e747f34339a40451df29ed16aecaec4712878d8e198f38483ade135258",
+      "words": 14,
+      "scope": "Adjacent unsigned-mask helper context only; not a primary-71 callee."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "packed_source_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0",
+        "decoded_offset": 210216
+      },
+      "address": "0x800a3018",
+      "address_space": "PS1 KSEG0; qualified field overlay",
+      "not_applicable": "Physical source slot, not an ISO-named file; offset belongs to decoded overlay.",
+      "source_body_ranges": [
+        {
+          "begin": "field_38a1ce829a6f094c::800a3018",
+          "end_exclusive": "field_38a1ce829a6f094c::800a3074"
+        }
+      ],
+      "source_body_sha256": "59c9db72027e48728047cee4275710c2473151e4b181d4d7a753c45177507958",
+      "words": 23,
+      "scope": "Source-reviewed handler or tagged operand dependency."
+    }
+  ],
+  "observation": "Six actor-14 primary-71 calls on the preserved ordinary field 23 encounter route compare exactly: five retries at PC 8ab while music result is ffffffff, then an accepted immediate-zero request that latches mode 5 and advances PC to 8ae. All thirteen captured boundaries preserve thirteen complete regions each (4516 range bytes;4512 distinct RAM bytes), selected SP/RA boundaries and the selector register. All 124 whole-run control artifacts still match.",
+  "interpretation": "The authored request model recovers six ordered gate tests, lazy tagged selector resolution, mode-before-selector publication, request stores and final u16 PC arithmetic. The shared disassembler recognizes primary 71 and its retry/continuation successors. This is a request handler reconstruction, not battle execution or a player-readiness predicate.",
+  "confidence": "confirmed",
+  "validation": {
+    "preconditions": [
+      "Use exact selected Disc 1 CHD and decoded raw track; keep original captures local.",
+      "Use the pinned Nix analysis/disassembly environments and preserved Ghidra export.",
+      "Reuse the source-qualified EVID-REF-020 ordinary encounter route and its control run. The field-entry adapter has guarded setup; the encounter follows ordinary inputs.",
+      "Choose fresh private outputs for replay/review; never overwrite original evidence."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis -c chdman verify -i 'discs/Xenogears disc 1.chd'",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#disassembly -c python3 .local/verification/phase-sequence-20260912/battle-request-source-review-v1/review.py --output <new-private-source-review-directory>",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c env PYTHONPATH=. python3 .local/analysis/phase1-battle-request-20260912/replay.py --output <new-private-replay.json>",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c env PYTHONPATH=. python3 .local/verification/phase-sequence-20260912/battle-request-source-review-v1/review_replay.py --output <new-private-projection-review-directory>",
+      "Reproduce the fifteen historical corruption cases using previous-negatives.py with a fresh output path.",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c python3 -m unittest tests.test_battle_request tests.test_event_analysis tests.test_event_state tests.test_event_media tests.test_field_control -v"
+    ],
+    "expected": "Original captured pre/resolved/after state is the oracle. Require complete sampled-region equality, exact pointer/source bindings and preserved control artifacts. Source-only branches must not acquire original execution claims.",
+    "actual": "127 original words and 18 delay slots independently qualified/reviewed (113 handler/dependency words plus 14 adjacent helper words). Six original calls/thirteen boundaries match;124 controls and146 historical artifact hashes reproduce.27 new and15 historical corruptions reject.12 public request tests and49 related tests pass.45,437 independent source-formula comparisons and 13 projection field checks pass with synthetic scope. Final model promotion changes only docstrings; independent AST review confirms executable source unchanged.",
+    "result": "passed",
+    "tolerance": "Exact bytes/integers for the stated observations; no masks.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-battle-request-20260909/ghidra-export-v1/c/80093568.c",
+        "sha256": "b90f0f18033e26610ee4d90c1ebffd79eb7dca071d0e3ccde8030d769aa7d27f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260909/ghidra-export-v1/c/800a2fe0.c",
+        "sha256": "0ee0d6de3ce493b61c17d570dec4b042b7bf4667dfce366829b336cd2d94cb48",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260909/ghidra-export-v1/c/800a3018.c",
+        "sha256": "44dd3aaed5ef66845f051a469e48f70ac4dfa4de948d91a6d08b2b1d641ac36e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260909/ghidra-export-v1/c/800acdb8.c",
+        "sha256": "fc8f72e6c04a4a870aafdca07e80af05927a0fdaaa5b337c8cf74beceb108cda",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260909/ghidra-export-v1/c/800acdec.c",
+        "sha256": "86d48d9f4ef84aecec11e9951dc6b59e9ec9e9959b011c73074a3b8559d30408",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260909/ghidra-export-v1/index.json",
+        "sha256": "280f0fce6dd2cb7379633c1fe3ef5a0167a01e859f86917dd1955d84e2f3ecdd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260912/comparison-v2.json",
+        "sha256": "eced8294fb1671e541099b77b7019a77ebccca7be3390c56a04ee93878170fa8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260912/previous-negatives.json",
+        "sha256": "02d1aeb1bc466a8b6ceab1b91d558c560da193ab8a402115a19507b4cfb00e52",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260912/previous-negatives.py",
+        "sha256": "cbe6dad745ad7e6059f9f5df7243487eaf16c34d057327b157f17d23dffb146a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260912/previous-sources.json",
+        "sha256": "e40445247365a399534299afb5af77714c3906f70f5a391481893363c27fb838",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260912/record-finding.py",
+        "sha256": "8560cc3866b3d56bf327ca08facc9ed38d7d74bb6b9d616ae97b5b08fb6f7ed8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-request-20260912/replay.py",
+        "sha256": "57b95902dfa13244ae16e593112aafb2b6c9714ce84e0a6e2c9d3dfa837893f2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/capture/observation.json",
+        "sha256": "494a78d0bbc7d3bb83effc77487d7bb39776bad397bd8e2ea74a08b3549b5784",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/instruction-trace.jsonl",
+        "sha256": "d7f4fb8a60572695c607a885bbc2671640a988c3e6e48503dabf37a262c4b902",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-field23-battle-20260908-v6-request/capture/observation.json",
+        "sha256": "efbc95c4ca2b9573b28bb8e780dffeeb0c4b832dc8240209e60fcb61f3be38c6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/container-verification.json",
+        "sha256": "c86657093e44649e3ed6b90e335cb1bc82b890c7bbcde671b031dbcb05e4cef9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/container-verify.log",
+        "sha256": "7801209627008d4bb97ce7b5660fe11297d7a2728b5594fc41bbd6d0f2425a8a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/docstring-promotion.json",
+        "sha256": "c2e268b3311b931d023aeaba9b7b9343e6ddc26c8db5cb3d21d8e8da3c956c7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/final-report.md",
+        "sha256": "a8d467dda2c2d95b3a75588f879cc0c78925b34c4e0d728e8c33cf49d96aed7f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/final-summary.json",
+        "sha256": "a62f4fb95ef243cbc504a8d8898774dd61d6b5f471db29f6556055beabf40fb0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/review.json",
+        "sha256": "64065a7643a776d26db8fdaf6cc527f6b0eb9e1067f00a371a9f93762547bea0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/reviewed-sources/audit-route-v1.py",
+        "sha256": "e557d50c95431869472bc3d118ae901c70222d25ece84678495a2d0f22fda997",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/reviewed-sources/battle-request-spec-v1.json",
+        "sha256": "4c95b71fd22f4c3f0a68eba7d5e722308dc23c51d796e0d06262023a4f0e190e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/reviewed-sources/battle_request.py",
+        "sha256": "d04b23365a19f69326a1ac2a06c73125cd482840cc0cfc10b9faa5f1dd15b7e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/reviewed-sources/events.py",
+        "sha256": "fe780d0a9b2676a25c910864aeef4b1781cd553dc79d8e12fd1c38b8886ef6c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/reviewed-sources/replay.py",
+        "sha256": "57b95902dfa13244ae16e593112aafb2b6c9714ce84e0a6e2c9d3dfa837893f2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-audit-1/reviewed-sources/test_battle_request.py",
+        "sha256": "aadd45084b77029ec2425a1ffbb556b9ea4bbdbee0bdf74e0b297be119c178ff",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/replay-rerun.json",
+        "sha256": "eced8294fb1671e541099b77b7019a77ebccca7be3390c56a04ee93878170fa8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/report.md",
+        "sha256": "30e3e3e5eaeb72bfabba508c20c0d2ab33dcc03f4a9509dac5c70630f7cca551",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/review-run-1.py",
+        "sha256": "f5183ecb183f0b9a0a8cfb19bb6747625f7f32424142852c096018fc9453395e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/review-summary.json",
+        "sha256": "92563dbb8b79cdd45a096cf44d3dbf884e90d5bb009ac62cdcdc67c4928b2c7b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/review.py",
+        "sha256": "c5273fb9d3e32e1626ee5008fe19b36c593cd55a777295189c488e3018df63d8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/review_replay.py",
+        "sha256": "286735e49013d3c7a40200d6ff5d79746d218f779189f69e35b10a9fd00b84e6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/run-1/model-comparison.json",
+        "sha256": "7af6cc8a8dac865bdbe12c6d731f8b0fb543e48b7bcc9bae1a6c617694442467",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/run-1/qualification.json",
+        "sha256": "b988b3efb88f398b2feba4714799d570638a7a2f03030b565c8bc5f9f11d9842",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/run-1/unittest.log",
+        "sha256": "775ea06424e4537d6dbc3b6490bdb0624c144357ebfe57a752b98ace80f0875f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/run-2/model-comparison.json",
+        "sha256": "7af6cc8a8dac865bdbe12c6d731f8b0fb543e48b7bcc9bae1a6c617694442467",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/run-2/qualification.json",
+        "sha256": "7cade3f975a3a1d9afb7b21426e330731078d615f2f5bd9a181db6c272cc6e8c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase-sequence-20260912/battle-request-source-review-v1/run-2/unittest.log",
+        "sha256": "775ea06424e4537d6dbc3b6490bdb0624c144357ebfe57a752b98ace80f0875f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": "analysis/formats/battle-request.md",
+        "sha256": "9fef18475a9ab901e1c12afc79b46b7b806096d12c154e4b52ba75f2a8286d9c",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/reference-inputs/field23-encounter-observation.json",
+        "sha256": "5a92857bd32598dc522cdc4da83dfb7a7ff59d70ab44f72e85ff29a63cc24683",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tests/test_battle_request.py",
+        "sha256": "aadd45084b77029ec2425a1ffbb556b9ea4bbdbee0bdf74e0b297be119c178ff",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/battle_request.py",
+        "sha256": "07a6dd541605782d341cdc81502d9f28c8b6e1d9c107f49a5821caef38f26677",
+        "distribution": "public_authored_metadata"
+      },
+      {
+        "path": "tools/analysis/events.py",
+        "sha256": "fe780d0a9b2676a25c910864aeef4b1781cd553dc79d8e12fd1c38b8886ef6c4",
+        "distribution": "public_authored_metadata"
+      }
+    ]
+  },
+  "observed_requests": [
+    {
+      "frontend_run": 5905,
+      "pc_before": 2219,
+      "pc_after": 2219,
+      "accepted": false,
+      "retry_reason": "music_pending",
+      "selector_value": null,
+      "captured_bytes_at_entry": 4516,
+      "result": "exact"
+    },
+    {
+      "frontend_run": 5907,
+      "pc_before": 2219,
+      "pc_after": 2219,
+      "accepted": false,
+      "retry_reason": "music_pending",
+      "selector_value": null,
+      "captured_bytes_at_entry": 4516,
+      "result": "exact"
+    },
+    {
+      "frontend_run": 5909,
+      "pc_before": 2219,
+      "pc_after": 2219,
+      "accepted": false,
+      "retry_reason": "music_pending",
+      "selector_value": null,
+      "captured_bytes_at_entry": 4516,
+      "result": "exact"
+    },
+    {
+      "frontend_run": 5911,
+      "pc_before": 2219,
+      "pc_after": 2219,
+      "accepted": false,
+      "retry_reason": "music_pending",
+      "selector_value": null,
+      "captured_bytes_at_entry": 4516,
+      "result": "exact"
+    },
+    {
+      "frontend_run": 5913,
+      "pc_before": 2219,
+      "pc_after": 2219,
+      "accepted": false,
+      "retry_reason": "music_pending",
+      "selector_value": null,
+      "captured_bytes_at_entry": 4516,
+      "result": "exact"
+    },
+    {
+      "frontend_run": 5915,
+      "pc_before": 2219,
+      "pc_after": 2222,
+      "accepted": true,
+      "retry_reason": null,
+      "selector_value": 0,
+      "captured_bytes_at_entry": 4516,
+      "result": "exact"
+    }
+  ],
+  "limitations": [
+    "One existing ordinary encounter route, not six independent scenarios. Only music retries and immediate selector zero have original execution coverage.",
+    "Other gate paths, signed/unsigned variable selectors, nonzero immediates, missing data and PC boundary cases have source/synthetic coverage only.",
+    "The bounded host model rejects unavailable operand bytes and out-of-bank references. It does not emulate invalid PS1 memory, interrupt races or transactional failure semantics.",
+    "Original stack RAM and full GPR equivalence are not compared by these captures.",
+    "The C++ event library still rejects primary 71. Full scheduling, combat/AI/rewards, return ownership, media, hardware cadence, agent readiness and the Phase 1 exit remain open.",
+    "The candidate route remains unfrozen; no broad todo or slice proof is promoted."
+  ],
+  "author": "Codex /root; authored original-source reconstruction and replay",
+  "reviewers": [
+    "Codex /root/battle_request_review; independent original-instruction, source-formula and address-based replay review"
+  ],
+  "provenance": {
+    "game_specific_sources": "Only supplied original disc/overlay/field bytes and original execution, plus this repository's prior independent findings. No other Xenogears implementation or reverse-engineering results.",
+    "authorship": "AI-assisted authored source, tests, adapters and explanatory prose. Original payload and automatic Ghidra C remain private.",
+    "historical_sources": "The exact earlier model and decoder are preserved in review snapshots. EVID021's old decoder was copied and its original digest retained before adding primary71."
+  },
+  "broad_completion": false
+}

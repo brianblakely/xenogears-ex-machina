@@ -47,7 +47,11 @@ analysis/findings/EVID-REF-026.json
 analysis/findings/EVID-REF-027.json
 analysis/findings/EVID-REF-028.json
 analysis/findings/EVID-REF-029.json
+analysis/findings/EVID-REF-030.json
+analysis/findings/EVID-REF-031.json
 analysis/formats/active-motion.md
+analysis/formats/actor-defaults.md
+analysis/formats/battle-request.md
 analysis/formats/collision-arithmetic.md
 analysis/formats/event-control.md
 analysis/formats/field-control.md
@@ -133,6 +137,7 @@ tests/reference-inputs/title-new-game.json
 tests/sprite_fixtures.py
 tests/test_active_motion.py
 tests/test_active_motion_trace.py
+tests/test_actor_defaults.py
 tests/test_agent_contract.py
 tests/test_animation_trace.py
 tests/test_baseline.py
@@ -179,6 +184,7 @@ tests/validation-results.json
 tools/analysis/active_motion.py
 tools/analysis/active_motion_spec.py
 tools/analysis/active_motion_trace.py
+tools/analysis/actor_defaults.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
 tools/analysis/battle_request.py

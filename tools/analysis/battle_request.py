@@ -1,10 +1,11 @@
-"""Draft primary 71 field battle-request model, based on original 80093568.
+"""Recovered primary 71 field battle-request model, based on original 80093568.
 
 The handler retries without reading its operand until six gates allow a request.
 It then latches a mode, resolves the tagged selector and publishes request state.
 This source model does not enter battle, resolve combat or establish readiness.
 Unknown gate roles retain their source suffixes rather than invented semantics.
-Original replay, instruction qualification and independent review are pending.
+EVID-REF-031 records source review and six exact original calls. Other gate and
+variable paths have source/synthetic coverage, not original-execution coverage.
 """
 
 from __future__ import annotations
@@ -77,7 +78,7 @@ def request_battle(
     mode: int,
     variables: Variables | None = None,
 ) -> BattleRequestEffect:
-    """Model primary 71 with explicit original inputs; verification is pending.
+    """Model primary 71 with explicit original inputs and bounded source semantics.
 
     Tagged immediates use 15 bits; variable reads retain the original signedness
     and odd-reference alias before the selector store truncates to one byte.

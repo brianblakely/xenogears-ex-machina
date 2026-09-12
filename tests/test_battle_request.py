@@ -4,7 +4,13 @@ import unittest
 from dataclasses import replace
 
 from tools.analysis.battle_request import BattleRequestGates, BattleRequestState, request_battle
-from tools.analysis.events import EventError, Variables
+from tools.analysis.events import (
+    EventError,
+    UnknownInstruction,
+    Variables,
+    decode_instruction,
+    disassemble_reachable,
+)
 
 
 def state(**changes):
@@ -20,6 +26,28 @@ def command(operand):
 
 
 class BattleRequestTests(unittest.TestCase):
+    def test_decoder_preserves_tagged_operand_and_both_retry_and_accepted_paths(self):
+        for operand in (0, 2047, 0x8000, 0xFFFF):
+            code = command(operand) + b"\x00"
+            decoded = decode_instruction(code, 0)
+            self.assertEqual((decoded.name, decoded.size), ("request_battle", 3))
+            self.assertEqual((decoded.operands, decoded.successors), ((operand,), (0, 3)))
+            self.assertEqual([row.pc for row in disassemble_reachable(code, 0)], [0, 3])
+
+    def test_decoder_retains_operand_and_successor_bounds(self):
+        for code in (b"\x71", b"\x71\x00", command(0x8000)):
+            with self.subTest(code=code), self.assertRaises(ValueError):
+                decode_instruction(code, 0)
+        code = bytes(65533) + command(0x8000)
+        self.assertEqual(decode_instruction(code, 65533).successors, (65533, 0))
+        with self.assertRaises(ValueError):
+            decode_instruction(b"\x00\x80" + bytes(65533) + b"\x71", 65535)
+
+    def test_decoder_still_rejects_unrecovered_post_request_behavior(self):
+        with self.assertRaises(UnknownInstruction) as caught:
+            disassemble_reachable(command(0x8000) + b"\x70", 0)
+        self.assertEqual((caught.exception.pc, caught.exception.opcode), (3, 0x70))
+
     def test_music_retry_preserves_request_and_pc_then_accepts_when_ready(self):
         before = state()
         blocked = gates(music_result=0xFFFFFFFF)

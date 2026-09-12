@@ -37,6 +37,22 @@ return-time decoding qualifies both current party resources, including changed
 adjacent-input suffixes. This leaves sprite creation/rebinding, remaining VM
 commands, return variants and readiness open.
 
+The [actor-default state](../analysis/formats/actor-defaults.md) now matches all
+25 return-time initializations, 25 RNG steps and 50 floor queries, including all
+captured actor, descriptor and local scratch bytes. EVID-REF-030 preserves the
+source-only status of no-match, zero-query and Y-replacement branches. Seventy-six
+corrupted observations/results and 19 independent wrong-model probes reject.
+Sprite creation/rebinding, allocator ownership and complete entry readiness remain
+the next connected dependencies; no complete slice domain is promoted.
+
+The [battle-request reconstruction](../analysis/formats/battle-request.md) now
+matches all six original primary-71 calls, including the intermediate mode latch
+and every captured actor, bytecode and control byte. EVID-REF-031 independently
+reviews the source, original replay and address-based projection. The public
+disassembler now follows both retry and continuation paths. Other gate and
+variable-selector cases remain source/synthetic; combat and complete scheduler
+and return readiness are still required.
+
 The [recovery inventory checks](recovery-inventory.md) now validate incomplete
 entries, original dispatch fingerprints, status labels and evidence/source links.
 Explicit dependency queries report the affected coverage as blocked, including
@@ -64,6 +80,8 @@ The table below preserves each earlier finding's original scope and limitations.
 | Complete party motion updates | [EVID-REF-026](../analysis/findings/EVID-REF-026.json): 2,836 calls from entry through return, including 729 source-computed sweeps, 40 animation changes and 5,868 idle predicates across two original routes | 1,549 NPC movement calls are explicitly excluded; enabled bounds, later position/layer integration, followers/contact/camera and timing remain open |
 | Field return data | [EVID-REF-028](../analysis/findings/EVID-REF-028.json): original snapshot writer, sprite serializer and data restore; all 25 actors, 14,340 storage bytes, globals, variables, cursors and modes compare exactly | Optional actor extensions have source/synthetic coverage only; sprite recreation/replay, complete ownership and control readiness remain open |
 | Later sprite checkpoints | [EVID-REF-029](../analysis/findings/EVID-REF-029.json): 25 actor decisions, 19 complete sprite restores, six timed VM iterations, four compact metadata calls, 32 metadata positions and both complete return-time party decodes | Compact auxiliary writes and unobserved timer/command variants are source/synthetic only; creation/rebinding, remaining VM, return readiness and timing remain open |
+| Actor defaults and RNG | [EVID-REF-030](../analysis/findings/EVID-REF-030.json): all 25 return-time default calls, 25 random steps, 50 initial floor queries and 686,400 captured payload bytes compare exactly | Every observed query matches and preserves descriptor Y; allocation/shadow addresses are opaque inputs, and complete entry/return ownership remains open |
+| Battle request | [EVID-REF-031](../analysis/findings/EVID-REF-031.json): all six calls and thirteen complete boundaries; ordered gates, tagged operands, mode latch, request stores and decoder successors | Five music retries and one immediate-zero acceptance only; other gates/selectors are source/synthetic, and native dispatch, combat and readiness remain open |
 | Reference instrumentation | Read-only region hashes, source boundaries and guarded instruction observations | Pure analysis infrastructure; native runtime remains unimplemented |
 
 The decoder experiment identified a real boundary issue: field 23's last
