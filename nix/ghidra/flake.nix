@@ -76,6 +76,51 @@
           platforms = [ system ];
         };
       };
+      rabbitizer = pkgs.python3Packages.buildPythonPackage {
+        pname = "rabbitizer";
+        version = "1.16.2";
+        src = pkgs.fetchPypi {
+          pname = "rabbitizer";
+          version = "1.16.2";
+          hash = "sha256-KbYkVzu1fzKH60qI8Y5dr1YW8isZIw9sdaeuMoPN0Eg=";
+        };
+        pyproject = true;
+        build-system = with pkgs.python3Packages; [
+          setuptools
+          wheel
+        ];
+        pythonImportsCheck = [ "rabbitizer" ];
+        meta = {
+          description = "MIPS instruction decoder used by the optional disassembler";
+          homepage = "https://github.com/Decompollaborate/rabbitizer";
+          license = pkgs.lib.licenses.mit;
+          platforms = [ system ];
+        };
+      };
+      spimdisasm = pkgs.python3Packages.buildPythonApplication {
+        pname = "spimdisasm";
+        version = "1.42.4";
+        src = pkgs.fetchPypi {
+          pname = "spimdisasm";
+          version = "1.42.4";
+          hash = "sha256-CiyNtUYVImKIt/bIbtzIRKZU35YyFXL6i441Zn4bkD8=";
+        };
+        pyproject = true;
+        build-system = with pkgs.python3Packages; [
+          setuptools
+          wheel
+          twine
+        ];
+        dependencies = [ rabbitizer ];
+        pythonImportsCheck = [ "spimdisasm" ];
+        meta = {
+          description = "Optional original MIPS assembly preparation for m2c";
+          homepage = "https://github.com/Decompollaborate/spimdisasm";
+          license = pkgs.lib.licenses.mit;
+          mainProgram = "spimdisasm";
+          platforms = [ system ];
+        };
+      };
       base = pkgs.mkShell {
         packages = [
           ghidra
@@ -93,13 +138,16 @@
     {
       packages.${system} = {
         default = ghidra;
-        inherit ghidra m2c;
+        inherit ghidra m2c spimdisasm;
         psx-loader = psxLoader;
       };
       devShells.${system} = {
         default = base;
         matching = base.overrideAttrs (previous: {
-          nativeBuildInputs = previous.nativeBuildInputs ++ [ m2c ];
+          nativeBuildInputs = previous.nativeBuildInputs ++ [
+            m2c
+            spimdisasm
+          ];
         });
       };
     };

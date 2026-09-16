@@ -93,6 +93,26 @@ void conditional_branch(EventContext &context) {
 
 std::uint32_t EventSlot::priority() const noexcept { return (control_bits >> 18U) & 15U; }
 
+EventActor original::read_event_actor(std::span<const std::uint8_t, 0x138> bytes) {
+    const auto read = [&](std::size_t offset, std::size_t width) {
+        std::uint32_t value = 0;
+        for (std::size_t i = 0; i < width; ++i)
+            value |= static_cast<std::uint32_t>(bytes[offset + i]) << (8U * i);
+        return value;
+    };
+    EventActor result;
+    result.flags = read(0, 4);
+    result.layer_flags = read(4, 4);
+    for (std::size_t i = 0; i < result.slots.size(); ++i) {
+        const auto offset = 0x8c + 8 * i;
+        result.slots[i] = {static_cast<std::uint16_t>(read(offset, 2)), bytes[offset + 2],
+                           bytes[offset + 3], read(offset + 4, 4)};
+    }
+    result.pc = static_cast<std::uint16_t>(read(0xcc, 2));
+    result.selected_slot = bytes[0xce];
+    return result;
+}
+
 std::uint8_t EventProgram::byte(std::uint32_t offset) const {
     if (bytecode.size() > 65536 || offset >= bytecode.size()) {
         throw EventError("Event byte read outside the supplied bytecode");
@@ -137,6 +157,33 @@ UnsupportedInstruction::UnsupportedInstruction(std::uint16_t at, std::uint8_t va
     : EventError("Unreconstructed primary opcode " + std::to_string(value) + " at PC " +
                  std::to_string(at)),
       pc(at), opcode(value) {}
+
+UnsupportedExtendedInstruction::UnsupportedExtendedInstruction(std::uint16_t at, std::uint8_t value)
+    : EventError("Unreconstructed extended opcode " + std::to_string(value) + " at PC " +
+                 std::to_string(at)),
+      pc(at), opcode(value) {}
+
+// EVID-REF-018: original field 800869b8..80086a1c and 8008825c..800882b8.
+void run_extended_event(EventContext &context, const EventDispatch &dispatch) {
+    if (context.current_actor == nullptr)
+        throw EventError("Extended event requires the current actor");
+    auto &current = *context.current_actor;
+    if (context.program.byte(current.pc) != 0xfe)
+        throw EventError("Extended dispatch requires primary prefix FE at the working PC");
+    current.pc = static_cast<std::uint16_t>(current.pc + 1U);
+    if (!dispatch)
+        throw EventError("Extended dispatch requires a handler implementation");
+    dispatch(context, context.program.byte(current.pc));
+}
+
+void wait_music_load_extended(EventContext &context, std::uint32_t music_result) {
+    if (context.current_actor == nullptr)
+        throw EventError("Music wait requires the current event actor");
+    auto &current = *context.current_actor;
+    current.pc =
+        static_cast<std::uint16_t>(current.pc + (music_result == 0xffffffffU ? 0xffffU : 1U));
+    context.control.break_requested = 1;
+}
 
 // Original handlers: A1B70, A1E74, A1BD0, A1A8C, 9DD34, 9D804..9DA1C.
 void execute_core_event(EventContext &context, std::uint8_t opcode) {

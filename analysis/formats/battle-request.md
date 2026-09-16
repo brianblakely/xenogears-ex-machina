@@ -55,8 +55,12 @@ Original addresses remain correlation metadata, not the future native API.
 The public [disassembler](../../tools/analysis/events.py) recognizes the
 three-byte encoding, preserves the raw tagged operand, and follows both retry
 and continuation successors. Unknown following instructions still fail with
-their opcode and PC. The C++ core event library does not yet implement this
-handler; this Python reconstruction is not a complete native interpreter.
+their opcode and PC. The C++ [battle-request module](../../src/reconstruction/field_battle.cpp)
+now implements the handler with the existing `EventContext` and variable bank.
+Its connected harness dispatches `71` alongside the core handlers, retries during
+music loading, accepts the request and resumes real variable/end instructions.
+The core-only dispatcher still rejects instructions assigned to other modules.
+This is a reusable request boundary, not a complete battle implementation.
 
 ## Evidence and limits
 

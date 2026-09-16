@@ -2,7 +2,21 @@
 
 Phase 1 is **in progress**. No broad todo or slice proof is complete yet. The
 [slice contract](phase1-slice-contract.md) and all nine required proof domains
-remain the completion criteria; the field 23 route is still a candidate.
+remain the completion criteria. The exact field 23 encounter/victory/return/menu
+base route is now fixed in the existing manifest against its original input
+schedule and captures. Required map transitions, save/load, media and alternative
+or failure cases remain explicit unresolved extensions; the complete slice is
+still a candidate.
+
+The existing C++ library now also contains the packed decoder and bounded event/
+collision parsers, actor defaults with RNG and initial floor queries, and primary
+`71` battle requests. The parsers feed the same event program and collision types
+used by the recovered handlers and actor initialization. The original actor-to-
+event projection is shared by initialization and field snapshot restore. Original
+comparisons cover all 27 recorded decoder calls (374,216 bytes), all 25 actor
+initializations and 50 floor queries, and all six battle requests with thirteen
+boundaries. These close reusable source boundaries, not complete loading,
+physics, combat or readiness. Python references and historical findings remain.
 
 The current [source and state handoff](../analysis/formats/field-lifecycle.md)
 organizes the field loader, event initialization, scheduling, motion/position,

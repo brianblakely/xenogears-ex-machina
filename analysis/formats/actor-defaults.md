@@ -21,6 +21,14 @@ Slot priority becomes 15, with resume PC and the low control halfword `ffff`.
 The complete 312-byte actor is compared, including untouched allocation pointers.
 The model accepts the existing actor allocation as input.
 
+The reusable [C++ implementation](../../src/reconstruction/field_actor.cpp) now
+composes these defaults with the parsed collision package and recovered floor
+arithmetic. It preserves the full correlation records and exposes the same
+semantic event state used by snapshot restore. A read-only observer makes the
+original boundaries comparable without supplying game behavior. The compiled
+implementation matches all 25 captured calls and 50 floor queries; synthetic
+boundaries include the GTE's signed-halfword reload before the cross product.
+
 Each call advances resident seed `8005a1fc` once:
 `seed = (seed * 41c64e6d + 3039) mod 2^32` (hexadecimal constants). The returned
 value is `(seed >> 16) & 7fff`; the last mask occurs in the return delay slot.

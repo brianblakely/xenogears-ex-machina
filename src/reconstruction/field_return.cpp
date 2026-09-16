@@ -136,19 +136,7 @@ FieldCaptureResult capture_field_return(const FieldCaptureInput &input,
     return result;
 }
 
-EventActor ActorReturnRecord::event_state() const {
-    EventActor result;
-    result.flags = word(actor, 0);
-    result.layer_flags = word(actor, 4);
-    for (std::size_t i = 0; i < result.slots.size(); ++i) {
-        const auto offset = 0x8c + 8 * i;
-        result.slots[i] = {static_cast<std::uint16_t>(word(actor, offset, 2)), actor[offset + 2],
-                           actor[offset + 3], word(actor, offset + 4)};
-    }
-    result.pc = static_cast<std::uint16_t>(word(actor, 0xcc, 2));
-    result.selected_slot = actor[0xce];
-    return result;
-}
+EventActor ActorReturnRecord::event_state() const { return read_event_actor(actor); }
 
 ParsedFieldReturn parse_field_return(std::span<const std::uint8_t> storage,
                                      std::size_t event_actor_count) {

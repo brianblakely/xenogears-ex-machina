@@ -37800,13 +37800,536 @@
       "source_slot": 652,
       "track_lba": 124528,
       "entry": "Original entry dialogue and forest traversal",
-      "encounter": "Actor 14 event 2 queues selector zero and an ordinary four-enemy encounter-victory-return route is observed in EVID-REF-020. Complete semantics and the reviewed frozen route remain required.",
-      "frozen_route": null
+      "encounter": "Actor 14 event 2 requests formation selector zero. The exact ordinary encounter-victory-return-menu base schedule and captured checkpoints are fixed below; required extensions, alternatives and full exit review remain unresolved.",
+      "frozen_route": {
+        "path": "tests/reference-inputs/field23-encounter-observation.json",
+        "sha256": "5a92857bd32598dc522cdc4da83dfb7a7ff59d70ab44f72e85ff29a63cc24683",
+        "source_profile": "na-slus-00664-39c547a9afc6",
+        "original_evidence": [
+          "EVID-REF-007",
+          "EVID-REF-020"
+        ],
+        "scope": "Fixed original field23 encounter-victory-return-menu base sequence. Required extensions and alternatives remain unresolved; not the final complete exit route.",
+        "starting_conditions": {
+          "cold_boot": true,
+          "imported_checkpoint": false,
+          "state_basis": "Original reset defaults plus the original guarded field loader adapter.",
+          "setup_evidence": "EVID-REF-007",
+          "adapter_program": {
+            "path": ".local/scenarios/phase1-field23-battle-20260908-v6-control/program.json",
+            "sha256": "949166a31c09c5bcefe94456f8afa639b497425f27fa4ef003557309c8bb4033"
+          },
+          "guarded_setup_events": [
+            {
+              "step": "guard-reset-dispatch",
+              "started_frame": 0,
+              "completed_frame": 0,
+              "writes": [
+                {
+                  "offset": 104752,
+                  "expected": "06000434",
+                  "value": "00000434",
+                  "reason": "Choose the original Kernel MENU after normal reset initialization."
+                }
+              ]
+            },
+            {
+              "step": "kernel-ready",
+              "started_frame": 317,
+              "completed_frame": 318,
+              "writes": []
+            },
+            {
+              "step": "request-field",
+              "started_frame": 318,
+              "completed_frame": 318,
+              "writes": [
+                {
+                  "offset": 457038,
+                  "expected": "ea01",
+                  "value": "1700",
+                  "reason": "Set the persistent selector consumed by original field entry."
+                },
+                {
+                  "offset": 98440,
+                  "expected": "00000000",
+                  "value": "01000000",
+                  "reason": "Select original mode 1, labeled Field by the Kernel MENU."
+                },
+                {
+                  "offset": 365264,
+                  "expected": "01000000",
+                  "value": "00000000",
+                  "reason": "Finish Kernel MENU and invoke its normal dispatcher."
+                }
+              ]
+            },
+            {
+              "step": "map-initialized",
+              "started_frame": 637,
+              "completed_frame": 1237,
+              "writes": []
+            }
+          ],
+          "post_entry_setup_writes": 0,
+          "readiness_scope": "Map-loop initialization only; dialogue/player/control readiness distinct.",
+          "execution_scope": "Qualified HLE/interpreter original observation; frontend retro_run counts are not recovered simulation ticks.",
+          "map_initialized_conditions": [
+            {
+              "address": "0x8004f34c",
+              "width": 4,
+              "value": 23
+            },
+            {
+              "address": "0x8004f2f8",
+              "width": 4,
+              "value": 1
+            },
+            {
+              "address": "0x800adb04",
+              "width": 1,
+              "value": 1
+            }
+          ],
+          "stable_frontend_runs": 2,
+          "settle_frontend_runs": 600
+        },
+        "actions": {
+          "authoritative_sequence": "tests/reference-inputs/field23-encounter-observation.json",
+          "indexing": "zero_based",
+          "ranges": [
+            {
+              "steps": [
+                0,
+                9
+              ],
+              "purpose": "Entry dialogue Cross presses."
+            },
+            {
+              "steps": [
+                10,
+                18
+              ],
+              "purpose": "Directional traversal across eastern ramps."
+            },
+            {
+              "steps": [
+                19,
+                25
+              ],
+              "purpose": "Direction+Circle approach; final Right+Circle+Cross."
+            },
+            {
+              "steps": [
+                26,
+                45
+              ],
+              "purpose": "Twenty fresh Cross pulses; two held/two released runs."
+            },
+            {
+              "steps": [
+                46,
+                46
+              ],
+              "purpose": "600-run battle-entry wait."
+            },
+            {
+              "steps": [
+                47,
+                62
+              ],
+              "purpose": "Sixteen Cross inputs, eight held/120 released runs."
+            },
+            {
+              "steps": [
+                63,
+                67
+              ],
+              "purpose": "Victory wait and reward/return acknowledgments."
+            },
+            {
+              "steps": [
+                68,
+                68
+              ],
+              "purpose": "Post-return Right movement."
+            },
+            {
+              "steps": [
+                69,
+                69
+              ],
+              "purpose": "Square opens party menu."
+            }
+          ]
+        },
+        "resources": {
+          "field_source": {
+            "slot": 652,
+            "source_lba": 124528,
+            "source_sector_count": 54,
+            "projected_bytes": 110052,
+            "projection_unit": 2048,
+            "projection_sha256": "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "field_pair": {
+            "candidate_map_index": 23,
+            "source_slots": [
+              652,
+              653
+            ],
+            "source_lbas": [
+              124528,
+              124582
+            ],
+            "projected_bytes": [
+              110052,
+              256000
+            ],
+            "projection_sha256": [
+              "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add",
+              "739b9fe57fc30c361d3bef8c05db9a9d822b961ba7f8b735574c9e74dd43e36b"
+            ],
+            "exact_cdmake_dummy": [
+              false,
+              false
+            ],
+            "availability": "non_dummy_source_pair"
+          },
+          "field_overlay": {
+            "slot": 36,
+            "source_lba": 108933,
+            "source_sector_count": 62,
+            "projected_bytes": 125304,
+            "projection_unit": 2048,
+            "projection_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_field_overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+          "boot_executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+          "formation": {
+            "component": 6,
+            "source_offset": 106868,
+            "logical_bytes": 528,
+            "selector": 0,
+            "logical_sha256": "e00958def675c486310c0e65cdf93ed9ec27022c3fcdcd2ade72e66d75a74dc1"
+          },
+          "additional_identified_sources": [
+            {
+              "source_slot": 427,
+              "track_lba": 119504,
+              "role": "party character 0 sprite",
+              "evidence": "EVID-REF-022"
+            },
+            {
+              "source_slot": 429,
+              "track_lba": 119559,
+              "role": "party character 2 sprite",
+              "evidence": "EVID-REF-022"
+            },
+            {
+              "source_slot": 38,
+              "track_lba": 109041,
+              "role": "battle overlay",
+              "evidence": "EVID-REF-027"
+            },
+            {
+              "source_slot": 39,
+              "track_lba": 109123,
+              "role": "menu overlay",
+              "evidence": "EVID-REF-027"
+            }
+          ],
+          "complete_inventory": false,
+          "open_work": "Complete battle/menu/media subresources and loading/initialization/return lifetimes remain required."
+        },
+        "source_coordinates": {
+          "contact_function": "field 0x8008399c",
+          "slot_insertion": "field 0x80083fe4",
+          "battle_request_handler": "field 0x80093568",
+          "event_actor_count": 25,
+          "event_entries_per_actor": 32,
+          "event_bytecode_bytes": 3604,
+          "captured_event_bytecode_base": "0x80122d20"
+        },
+        "checkpoints": [
+          {
+            "id": "entry",
+            "frontend_run": 1237,
+            "observation": "Map initialization and 600-run settle complete; entry dialogue may still be active."
+          },
+          {
+            "id": "traversal-start",
+            "frontend_run": 4317,
+            "step": 9,
+            "observation": "Ten scheduled Cross presses complete before directional route."
+          },
+          {
+            "id": "contact",
+            "frontend_run": 5903,
+            "actor": 14,
+            "event": 2,
+            "slot": 1,
+            "priority": 3,
+            "entry_pc": "0x8a8"
+          },
+          {
+            "id": "music-retries",
+            "frontend_runs": [
+              5905,
+              5907,
+              5909,
+              5911,
+              5913
+            ],
+            "opcode": "0x71",
+            "pc_before": "0x8ab",
+            "pc_after": "0x8ab",
+            "music_result": -1
+          },
+          {
+            "id": "battle-request",
+            "frontend_run": 5915,
+            "opcode": "0x71",
+            "selector": 0,
+            "pc_before": "0x8ab",
+            "pc_after": "0x8ae",
+            "music_result": 0
+          },
+          {
+            "id": "battle",
+            "frontend_run": 6582,
+            "step": 46,
+            "party": [
+              "Fei",
+              "Citan"
+            ],
+            "enemy_count": 4,
+            "enemy_numeric_identities": null
+          },
+          {
+            "id": "attack-choices",
+            "frontend_run": 6710,
+            "step": 47,
+            "observation": "Original attack input displays one-, two- and three-point choices."
+          },
+          {
+            "id": "victory",
+            "frontend_run": 9230,
+            "step": 63,
+            "observation": "Victory experience screen."
+          },
+          {
+            "id": "experience",
+            "frontend_run": 9538,
+            "step": 64,
+            "fei": {
+              "level": 2,
+              "total_experience": 26
+            },
+            "citan": {
+              "level": 3,
+              "total_experience": 73
+            }
+          },
+          {
+            "id": "level-up",
+            "frontend_run": 9846,
+            "step": 65,
+            "observation": "Fei level-up statistics."
+          },
+          {
+            "id": "reward",
+            "frontend_run": 10154,
+            "step": 66,
+            "items": [
+              {
+                "display_name": "Hob-Jerky",
+                "count": 2
+              }
+            ],
+            "gold_gained": 0,
+            "gold_total": 100
+          },
+          {
+            "id": "field-return",
+            "frontend_run": 10762,
+            "step": 67,
+            "field": 23,
+            "position_signed_16_16": [
+              6298887,
+              -18874368,
+              -17383881
+            ]
+          },
+          {
+            "id": "movement-return",
+            "frontend_run": 10794,
+            "step": 68,
+            "position_signed_16_16": [
+              8264487,
+              -18874368,
+              -17383881
+            ]
+          },
+          {
+            "id": "party-menu",
+            "frontend_run": 11402,
+            "step": 69,
+            "fei": {
+              "level": 2,
+              "hp": [
+                50,
+                56
+              ],
+              "ep": [
+                10,
+                11
+              ]
+            },
+            "citan": {
+              "level": 3,
+              "hp": [
+                200,
+                200
+              ],
+              "ep": [
+                40,
+                40
+              ]
+            },
+            "gold": 100
+          }
+        ],
+        "observed_terminal_condition": {
+          "checkpoint": "party-menu",
+          "frontend_run": 11402,
+          "is_full_slice_terminal_condition": false,
+          "full_slice_terminal_condition": "Required ordinary save/load, transitions, media, alternatives and boundary observations plus all nine reviewed source proofs remain necessary."
+        },
+        "required_extensions_and_cases": [
+          {
+            "id": "ordinary-map-transition",
+            "domains": [
+              "field-behavior",
+              "script-execution",
+              "source-loading"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Establish the ordinary exit, destination, required progression, resource lifetime and return/control conditions; separately cold-booted field25 is not a transition.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "movement-alternatives-boundaries",
+            "domains": [
+              "field-behavior",
+              "field-representation",
+              "script-execution"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Retain walking/running/jumping/collision/camera rotation and normal/boundary inputs; reuse the separate control/ramp captures and recover remaining action eligibility.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "combat-alternatives-failure",
+            "domains": [
+              "encounter-return",
+              "script-execution"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Recover command and target selection, representative attacks/damage, enemy turns, victory and failure, controlled RNG/state, rewards and return. This base demonstrates one victory, not the required failure branches.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "inventory-equipment",
+            "domains": [
+              "menu-persistence",
+              "script-execution"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Perform and compare actual inventory/equipment actions with original execution in the valid slice context; viewing menu screens alone is insufficient.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "ordinary-save-load",
+            "domains": [
+              "menu-persistence",
+              "source-loading",
+              "time-services"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Establish ordinary valid save context, actual card save/load round trip, state layout/checksums and failure handling. In-memory field-return snapshots and File Copy/Delete UI are not ordinary saves.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "fmv-gameplay-transition",
+            "domains": [
+              "required-media",
+              "script-execution",
+              "time-services"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Establish source movie identity, ordinary trigger/sequence, framing/timing, completion and return to camera/control. Opening captures are a lead without recovered movie/script attribution.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "audio-modes-routing",
+            "domains": [
+              "required-media",
+              "time-services"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Recover required music/sample/effect lifetimes and original Mono/Stereo/Wide paths, matched unprocessed stereo signals, panning/polarity/reverb/master/streamed-FMV routing and actual Wide behavior.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "visual-reference",
+            "domains": [
+              "field-representation"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Keep source-qualified original visual references and recover geometry/material/texture/palette/sprite/camera/rendering behaviors used by all required route paths.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "ownership-readiness-setup",
+            "domains": [
+              "field-behavior",
+              "time-services",
+              "source-loading"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Separate map initialization, event completion, player control and media/menu/battle readiness; recover state ownership, semantic actions and reviewed setup validity.",
+            "expected_original_outcome": null
+          },
+          {
+            "id": "required-source-and-validation",
+            "domains": [
+              "source-loading",
+              "script-execution",
+              "reproducibility-remainder"
+            ],
+            "status": "required_unresolved",
+            "requirement": "Recover all reachable required source and resources into reviewed compilable modules; preserve strict malformed/unknown-operation boundaries, independent original comparisons, replay, provenance/distribution review and unresolved inventories.",
+            "expected_original_outcome": null
+          }
+        ]
+      }
     },
     "review": {
       "contract": "Parent approved the nine-domain, Phase1-only exit correction in this session; final frozen manifest and completed evidence still require independent review.",
       "exit_reviewers": [],
-      "expanded_contract_review": "Phase 0 adds slice visual/signal references and semantic agent setup/query readiness to unresolved proof domains; no Phase 1 exit or native pass."
+      "expanded_contract_review": "Phase 0 adds slice visual/signal references and semantic agent setup/query readiness to unresolved proof domains; no Phase 1 exit or native pass.",
+      "base_route_review": {
+        "reviewer": "Codex /root/route_evidence; root integration review",
+        "date": "2026-09-15",
+        "report": ".local/verification/phase1-source-20260915/route-review.json",
+        "sha256": "4c8afcc264945ed9ca924eb52dbb9ed359048c6b8b5f54f632b469e43f704697",
+        "scope": "Exact base inputs, source identity, original checkpoint facts and 124 control artifact pairs. No complete-route, slice-domain or exit promotion."
+      }
     },
     "proofs": [
       {
@@ -37845,6 +38368,10 @@
           {
             "finding": "EVID-REF-029",
             "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
+          },
+          {
+            "finding": "EVID-REF-032",
+            "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
           }
         ]
       },
@@ -37899,6 +38426,10 @@
           {
             "finding": "EVID-REF-029",
             "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
+          },
+          {
+            "finding": "EVID-REF-032",
+            "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
           }
         ]
       },
@@ -37949,6 +38480,10 @@
           {
             "finding": "EVID-REF-029",
             "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
+          },
+          {
+            "finding": "EVID-REF-032",
+            "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
           }
         ]
       },
@@ -37999,6 +38534,10 @@
           {
             "finding": "EVID-REF-027",
             "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+          },
+          {
+            "finding": "EVID-REF-032",
+            "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
           }
         ]
       },
@@ -38029,6 +38568,10 @@
           {
             "finding": "EVID-REF-029",
             "scope": "Reviewed later checkpoint policy and all 19 observed sprite restores, including six timed commands, compact parsing and two complete return-time party decodes. Creation/rebinding, full VM, ownership/readiness and complete domain proof remain open."
+          },
+          {
+            "finding": "EVID-REF-032",
+            "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
           }
         ]
       },
@@ -38189,6 +38732,10 @@
           {
             "finding": "EVID-REF-028",
             "scope": "Preserved Ghidra project/exports, authored source snapshots, source-guarded original captures and independently regenerated C++ replay inputs. All 25 save/restores and control artifacts match; nine material corruptions reject. Optional branches and all complete slice proof domains remain open."
+          },
+          {
+            "finding": "EVID-REF-032",
+            "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
           }
         ]
       }

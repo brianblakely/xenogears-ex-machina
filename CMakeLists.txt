@@ -13,7 +13,11 @@ target_link_libraries(xem-baseline PRIVATE xem_project_options)
 # yet launch the original game or supply the unresolved subsystem services.
 add_library(xem-field-reconstruction STATIC
   src/reconstruction/field_events.cpp
-  src/reconstruction/field_return.cpp)
+  src/reconstruction/field_return.cpp
+  src/reconstruction/packed_field.cpp
+  src/reconstruction/field_actor.cpp
+  src/reconstruction/field_battle.cpp
+  src/reconstruction/field_control.cpp)
 target_include_directories(xem-field-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-field-reconstruction PUBLIC xem_project_options)
 
@@ -34,6 +38,20 @@ if(BUILD_TESTING)
   add_executable(test-field-return tests/test_field_return.cpp)
   target_link_libraries(test-field-return PRIVATE xem-field-reconstruction)
   add_test(NAME field-return-reconstruction COMMAND test-field-return)
+  add_executable(test-field-actor tests/test_field_actor.cpp)
+  target_link_libraries(test-field-actor PRIVATE xem-field-reconstruction)
+  add_test(NAME field-actor-reconstruction COMMAND test-field-actor)
+  add_executable(test-field-battle tests/test_field_battle.cpp)
+  target_link_libraries(test-field-battle PRIVATE xem-field-reconstruction)
+  add_test(NAME field-battle-reconstruction COMMAND test-field-battle)
+  add_executable(test-field-control tests/test_field_control.cpp)
+  target_link_libraries(test-field-control PRIVATE xem-field-reconstruction)
+  add_test(NAME field-control-reconstruction COMMAND test-field-control)
+  add_executable(test-packed-field tests/test_packed_field.cpp)
+  target_link_libraries(test-packed-field PRIVATE xem-field-reconstruction)
+  add_test(NAME packed-field-reconstruction COMMAND test-packed-field)
+  add_executable(packed-field-probe tests/packed_field_probe.cpp)
+  target_link_libraries(packed-field-probe PRIVATE xem-field-reconstruction)
   add_test(NAME baseline-cli
     COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_baseline.py"
       "$<TARGET_FILE:xem-baseline>")

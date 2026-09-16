@@ -796,15 +796,17 @@
           "opcode": "0x71",
           "handler": "0x80093568",
           "analysis_status": "observed_subset",
-          "native_status": "unimplemented",
+          "native_status": "authored_cpp_library",
           "name": "request_battle",
           "encoding_bytes": 3,
           "evidence": [
             "EVID-REF-020",
-            "EVID-REF-031"
+            "EVID-REF-031",
+            "EVID-REF-032"
           ],
           "python_reconstruction": "tools/analysis/battle_request.py",
-          "scope": "Six observed calls: five music retries and one immediate-zero request; other gates and variable operands have source/synthetic coverage. Native execution remains unimplemented."
+          "scope": "Six observed calls: five music retries and one immediate-zero request; other gates and variable operands are source/synthetic. The C++ handler shares event state and supports composed dispatch; battle setup/combat/return remain required.",
+          "cpp_reconstruction": "src/reconstruction/field_battle.cpp"
         },
         {
           "opcode": "0x72",
@@ -4552,30 +4554,55 @@
       "id": "field_actor_defaults",
       "files": [
         "tools/analysis/actor_defaults.py",
-        "tests/test_actor_defaults.py"
+        "tests/test_actor_defaults.py",
+        "include/xem/reconstruction/field_actor.hpp",
+        "src/reconstruction/field_actor.cpp",
+        "tests/test_field_actor.cpp"
       ],
       "analysis_status": "source_reviewed",
       "execution_status": "observed_subset",
-      "native_status": "unimplemented",
+      "native_status": "authored_cpp_library",
       "evidence": [
-        "EVID-REF-030"
+        "EVID-REF-030",
+        "EVID-REF-032"
       ],
-      "scope": "All 25 observed return-time actor defaults, RNG steps and 50 initial floor queries; complete captured actor/descriptor/local scratch and stable globals agree. Allocation/shadow addresses remain opaque inputs; fresh entry and ownership/readiness are incomplete."
+      "scope": "All 25 observed return-time actor defaults, RNG steps and 50 initial floor queries; complete captured actor/descriptor/local scratch and stable globals agree. Allocation/shadow addresses remain opaque inputs; fresh entry and ownership/readiness are incomplete. Reusable C++ composes the initial floor queries with parsed geometry and shares semantic event projection with snapshot restore."
     },
     {
       "id": "field_battle_request",
       "files": [
         "tools/analysis/battle_request.py",
         "tools/analysis/events.py",
-        "tests/test_battle_request.py"
+        "tests/test_battle_request.py",
+        "include/xem/reconstruction/field_battle.hpp",
+        "src/reconstruction/field_battle.cpp",
+        "tests/test_field_battle.cpp"
       ],
       "analysis_status": "source_reviewed",
       "execution_status": "observed_subset",
-      "native_status": "unimplemented",
+      "native_status": "authored_cpp_library",
       "evidence": [
-        "EVID-REF-031"
+        "EVID-REF-031",
+        "EVID-REF-032"
       ],
-      "scope": "Primary71 ordered gates, tagged selector, mode latch and request stores; all six original calls/thirteen boundaries match. Decoder follows retry/continuation; other gate/variable paths are source/synthetic. Combat, full scheduling and readiness remain open."
+      "scope": "Primary71 ordered gates, tagged selector, mode latch and request stores; all six original calls/thirteen boundaries match. Decoder follows retry/continuation; other gate/variable paths are source/synthetic. Combat, full scheduling and readiness remain open. Reusable C++ handler shares EventContext state and supports composed retry/accept/resume dispatch."
+    },
+    {
+      "id": "packed_field_cpp",
+      "files": [
+        "include/xem/reconstruction/packed_field.hpp",
+        "src/reconstruction/packed_field.cpp",
+        "tests/test_packed_field.cpp",
+        "tests/packed_field_probe.cpp"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-014",
+        "EVID-REF-032"
+      ],
+      "scope": "27 original decoder calls/374216 exact bytes and bounded event/collision packages on three fields; actual shared EventProgram feeds the existing core. Full loader, resource consumers and lifetime remain open."
     }
   ],
   "subsystem_dependency_map": [
@@ -4834,6 +4861,36 @@
       "result": "passed",
       "scope": "127 original source words (113 handler/dependencies plus14 adjacent context), six original calls/thirteen complete boundaries, independent absolute-address projection,27new corruption cases and124controls; source-formula checks remain synthetic. Final model promotion is docstrings only.",
       "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-032",
+      "reviewer": "Codex /root independent of packed author",
+      "date": "2026-09-15",
+      "report": ".local/verification/phase1-source-20260915/packed-independent-review.json",
+      "sha256": "0c4ffeef93184c6c1a60ae1dfe88913fcdb0a1a0eaa5f7d6166a699215456c79",
+      "result": "passed",
+      "scope": "Packed decoder and three event/collision packages, real C++ original comparisons; not complete loader.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-032",
+      "reviewer": "Codex /root/route_evidence independent of actor author",
+      "date": "2026-09-15",
+      "report": ".local/verification/phase1-source-20260915/actor-independent-review-v2.json",
+      "sha256": "58e6c4cbedf736ec0d8161972e386741f8b9b39a15801960cad01fe94bc93b44",
+      "result": "passed",
+      "scope": "Original actor defaults/RNG/floor queries plus source-reviewed GTE narrowing; factory and readiness excluded.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-032",
+      "reviewer": "Codex /root/source_loading independent of battle author",
+      "date": "2026-09-15",
+      "report": ".local/verification/phase1-battle-cpp-independent-20260915/review-v2.json",
+      "sha256": "d605b7bf6d01ca90f3a1d7d5e794f9a888f396ca5da14d15edbac0d2e0de0b19",
+      "result": "passed",
+      "scope": "Primary71 C++ source and corrected v2 original projection; original five retries/one acceptance only.",
+      "broad_completion": false
     }
   ],
   "ordinary_sprite_vm_reconstruction": {
@@ -4884,6 +4941,26 @@
       "result": "passed",
       "scope": "Preserved root re-review of the earlier root-authored bounded control model; observed calls/corruptions/control artifacts and four qualified source windows retain their recorded scope. Active encounter body and unobserved paths remain open. The old decoder is archived with its original hash.",
       "broad_completion": false
+    }
+  ],
+  "source_work_queue": [
+    {
+      "capability": "Field entry/return sprite ownership",
+      "source_boundary": "Resident 80024524/8002435c and required binding, animation, orientation, command-replay callees; field 80076ac0/800a28d4 integration",
+      "status": "in_progress",
+      "completion": "Real C++ constructors/rebinding use owned resources, match preserved original construction/return captures and leave no required game callees as captured outputs or callbacks."
+    },
+    {
+      "capability": "Field input and motion",
+      "source_boundary": "Field 8009f5a8/8009f5f4/80081f5c; recovered motion, sweeps, position and contact groups",
+      "status": "in_progress",
+      "completion": "Shared C++ event/control/actor state executes ordinary movement/jump/contact boundaries with exact existing original comparisons; active required encounter selection is recovered or remains explicitly blocked."
+    },
+    {
+      "capability": "Required route extensions and remaining domains",
+      "source_boundary": "Original ordinary transition, battle command/results, menu/card and source-qualified FMV/music paths named in frozen_route.required_extensions_and_cases",
+      "status": "required_unresolved",
+      "completion": "Freeze demonstrated extension inputs/checkpoints and recover their connected source without shrinking the nine-domain contract."
     }
   ]
 }

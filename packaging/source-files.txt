@@ -48,6 +48,7 @@ analysis/findings/EVID-REF-028.json
 analysis/findings/EVID-REF-029.json
 analysis/findings/EVID-REF-030.json
 analysis/findings/EVID-REF-031.json
+analysis/findings/EVID-REF-032.json
 analysis/formats/active-motion.md
 analysis/formats/actor-defaults.md
 analysis/formats/battle-request.md
@@ -112,8 +113,11 @@ docs/verification/phase0-scenarios.json
 docs/verification/phase0.json
 editors/README.md
 include/xem/build_info.hpp.in
+include/xem/reconstruction/field_actor.hpp
+include/xem/reconstruction/field_battle.hpp
 include/xem/reconstruction/field_events.hpp
 include/xem/reconstruction/field_return.hpp
+include/xem/reconstruction/packed_field.hpp
 nix/authoring/flake.lock
 nix/authoring/flake.nix
 nix/flake.lock
@@ -127,10 +131,14 @@ packaging/source-files.txt
 plan.md
 prompt.md
 pyproject.toml
+src/reconstruction/field_actor.cpp
+src/reconstruction/field_battle.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_return.cpp
+src/reconstruction/packed_field.cpp
 src/runtime/main.cpp
 tests/fixtures/README.md
+tests/packed_field_probe.cpp
 tests/reference-inputs/battle-gate-probe-route.json
 tests/reference-inputs/field23-control-observation.json
 tests/reference-inputs/field23-encounter-observation.json
@@ -156,7 +164,9 @@ tests/test_event_analysis.py
 tests/test_event_media.py
 tests/test_event_schedule.py
 tests/test_event_state.py
+tests/test_field_actor.cpp
 tests/test_field_analysis.py
+tests/test_field_battle.cpp
 tests/test_field_control.py
 tests/test_field_events.cpp
 tests/test_field_return.cpp
@@ -170,6 +180,7 @@ tests/test_memory_sampler.py
 tests/test_movement_sweep.py
 tests/test_music_loading.py
 tests/test_observe.py
+tests/test_packed_field.cpp
 tests/test_phase1_slice.py
 tests/test_planar_motion.py
 tests/test_position.py

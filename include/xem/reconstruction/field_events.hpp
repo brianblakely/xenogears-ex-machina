@@ -29,6 +29,12 @@ struct EventActor {
     std::uint8_t selected_slot{};
 };
 
+namespace original {
+// Shared correlation of an original actor record with semantic event storage.
+// Original addresses remain byte values; this never interprets them as host pointers.
+[[nodiscard]] EventActor read_event_actor(std::span<const std::uint8_t, 0x138> bytes);
+} // namespace original
+
 struct EventDescriptor {
     std::uint32_t flags{};
     EventActor *actor{};
@@ -82,9 +88,28 @@ class UnsupportedInstruction : public EventError {
     std::uint8_t opcode;
 };
 
+class UnsupportedExtendedInstruction : public EventError {
+  public:
+    UnsupportedExtendedInstruction(std::uint16_t at, std::uint8_t value);
+    std::uint16_t pc;
+    std::uint8_t opcode;
+};
+
 // A real handler implementation is required. Unknown instructions never succeed.
 using EventDispatch = std::function<void(EventContext &, std::uint8_t)>;
 void execute_core_event(EventContext &context, std::uint8_t opcode);
+
+// Primary FE at 800869b8 increments the u16 PC before looking up and invoking
+// its extended instruction. A dispatcher must execute recovered handlers and
+// explicitly reject unknown ones, for example with UnsupportedExtendedInstruction.
+// The increment survives a bounded lookup/dispatch error, as already-issued state.
+void run_extended_event(EventContext &context, const EventDispatch &dispatch);
+
+// Extended A2 at 8008825c, called at its extended PC after the FE increment.
+// Only ffffffff is pending: it backs up to FE; all other values advance one.
+// This always requests a break but preserves budget mode. The caller owns the
+// authoritative music result; sequencing, transfer and readiness are separate.
+void wait_music_load_extended(EventContext &context, std::uint32_t music_result);
 void select_event_slot(EventActor &actor, std::uint16_t idle_entry);
 
 enum class BatchExit { nonpositive_limit, control_gate, handler_break, limit, safeguard };
