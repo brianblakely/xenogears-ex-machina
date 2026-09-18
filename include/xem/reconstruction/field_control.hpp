@@ -73,7 +73,6 @@ struct ControlState {
     std::uint16_t stationary_counter{};   // 800adb02; compared as signed after increment
     std::uint16_t repeat_remaining{};     // 800b2342
     std::uint32_t latched_jump_setting{}; // 800adb28
-    std::uint32_t updated{};              // 800adb68
     bool operator==(const ControlState &) const = default;
 };
 

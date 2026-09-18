@@ -17,7 +17,13 @@ add_library(xem-field-reconstruction STATIC
   src/reconstruction/packed_field.cpp
   src/reconstruction/field_actor.cpp
   src/reconstruction/field_battle.cpp
-  src/reconstruction/field_control.cpp)
+  src/reconstruction/field_control.cpp
+  src/reconstruction/field_sprite.cpp
+  src/reconstruction/field_sprite_factory.cpp
+  src/reconstruction/field_motion.cpp
+  src/reconstruction/field_collision.cpp
+  src/reconstruction/field_media.cpp
+  src/reconstruction/disc_stream.cpp)
 target_include_directories(xem-field-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-field-reconstruction PUBLIC xem_project_options)
 
@@ -47,6 +53,24 @@ if(BUILD_TESTING)
   add_executable(test-field-control tests/test_field_control.cpp)
   target_link_libraries(test-field-control PRIVATE xem-field-reconstruction)
   add_test(NAME field-control-reconstruction COMMAND test-field-control)
+  add_executable(test-field-sprite tests/test_field_sprite.cpp)
+  target_link_libraries(test-field-sprite PRIVATE xem-field-reconstruction)
+  add_test(NAME field-sprite-reconstruction COMMAND test-field-sprite)
+  add_executable(test-field-sprite-factory tests/test_field_sprite_factory.cpp)
+  target_link_libraries(test-field-sprite-factory PRIVATE xem-field-reconstruction)
+  add_test(NAME field-sprite-factory-reconstruction COMMAND test-field-sprite-factory)
+  add_executable(test-field-motion tests/test_field_motion.cpp)
+  target_link_libraries(test-field-motion PRIVATE xem-field-reconstruction)
+  add_test(NAME field-motion-reconstruction COMMAND test-field-motion)
+  add_executable(test-field-collision tests/test_field_collision.cpp)
+  target_link_libraries(test-field-collision PRIVATE xem-field-reconstruction)
+  add_test(NAME field-collision-reconstruction COMMAND test-field-collision)
+  add_executable(test-field-media tests/test_field_media.cpp)
+  target_link_libraries(test-field-media PRIVATE xem-field-reconstruction)
+  add_test(NAME field-media-reconstruction COMMAND test-field-media)
+  add_executable(test-disc-stream tests/test_disc_stream.cpp)
+  target_link_libraries(test-disc-stream PRIVATE xem-field-reconstruction)
+  add_test(NAME disc-stream-reconstruction COMMAND test-disc-stream)
   add_executable(test-packed-field tests/test_packed_field.cpp)
   target_link_libraries(test-packed-field PRIVATE xem-field-reconstruction)
   add_test(NAME packed-field-reconstruction COMMAND test-packed-field)

@@ -1,3 +1,4 @@
+#include "xem/reconstruction/field_control.hpp"
 #include "xem/reconstruction/field_motion.hpp"
 
 #include <array>
@@ -19,6 +20,8 @@ template <typename Operation> void rejects(Operation operation, const char *mess
     } catch (const field::SpriteError &) {
         failed = true;
     } catch (const field::EventError &) {
+        failed = true;
+    } catch (const field::ActorInitializationError &) {
         failed = true;
     }
     check(failed, message);
@@ -55,32 +58,34 @@ struct Fixture {
 // Invented signed/width/branch boundaries. No original table or capture bytes
 // are embedded; independent original replay is performed separately.
 void mode_prefix() {
-    field::MotionControl control{99, 0x40, 1};
-    auto result = field::begin_field_motion(0x01005800, 2, -7, control);
+    field::MotionControl control{99, 0x40};
+    field::FieldPassState pass{1, 91};
+    auto result = field::begin_field_motion(0x01005800, 2, -7, control, pass);
     check(!result.active_body_mode && control.current_actor_index == -7 &&
-              control.held_buttons == 0x40 && control.input_updated == 1,
+              control.held_buttons == 0x40 && pass == field::FieldPassState{1, 91},
           "Inhibition must follow the sole actor-index store");
-    check(field::begin_field_motion(0x4000, 0, 4, control).active_body_mode == 2,
+    check(field::begin_field_motion(0x4000, 0, 4, control, pass).active_body_mode == 2,
           "Owner, Circle and exact input-updated one select run");
     for (auto updated : {0U, 2U, 0xffffffffU}) {
-        control.input_updated = updated;
-        check(field::begin_field_motion(0x4000, 2, 0, control).active_body_mode == 1,
+        pass.input_updated = updated;
+        check(field::begin_field_motion(0x4000, 2, 0, control, pass).active_body_mode == 1,
               "Other input-update words select walk");
     }
-    control.input_updated = 1;
+    pass.input_updated = 1;
     control.held_buttons = 0;
-    check(field::begin_field_motion(0x4000, 2, 0, control).active_body_mode == 1,
+    check(field::begin_field_motion(0x4000, 2, 0, control, pass).active_body_mode == 1,
           "Circle must be held");
     control.held_buttons = 0x40;
-    check(field::begin_field_motion(0, 2, 0, control).active_body_mode == 1,
+    check(field::begin_field_motion(0, 2, 0, control, pass).active_body_mode == 1,
           "Ownership is required");
     for (auto flags : {0x800U, 0x1000U, 0x1800U}) {
         for (std::int16_t old : std::array<std::int16_t, 2>{1, 2})
-            check(field::begin_field_motion(flags | 0x4000U, old, 0, control).active_body_mode ==
-                      old,
+            check(field::begin_field_motion(flags | 0x4000U, old, 0, control, pass)
+                          .active_body_mode == old,
                   "Air flags preserve only old modes one and two");
         for (std::int16_t old : std::array<std::int16_t, 3>{-1, 0, 3})
-            check(field::begin_field_motion(flags | 0x4000U, old, 0, control).active_body_mode == 2,
+            check(field::begin_field_motion(flags | 0x4000U, old, 0, control, pass)
+                          .active_body_mode == 2,
                   "Other signed old modes do not override selection");
     }
 }
@@ -287,6 +292,177 @@ void event_divisor_and_continuation() {
     rejects([&] { field::execute_motion_divisor(context, divisor, f.sprite()); },
             "Unrecognized field opcode must fail explicitly");
 }
+
+void impulse_boundaries() {
+    Fixture f;
+    put(f.bytes, 0xa8, 0);
+    put(f.bytes, 0x82, 4097, 2);
+    auto expected = f.bytes;
+    put(expected, 0x10, static_cast<std::uint32_t>(-4096));
+    check(field::apply_animation_impulse(f.sprite(), 255, 0) ==
+                  field::SpriteImpulse{-4096, -1048576, false} &&
+              f.bytes == expected,
+          "Impulse sign extension, truncation and sole velocity store");
+    std::array<std::uint8_t, 4> reference{};
+    put(reference, 0, static_cast<std::uint32_t>(-5));
+    put(f.bytes, 0xa8, 1);
+    put(f.bytes, 0x7c, 0x80130000);
+    put(f.bytes, 0xac, 7U << 7U);
+    check(field::apply_animation_impulse(f.sprite(), 91, 987,
+                                         field::SpriteResource{0x80130000, reference}) ==
+              field::SpriteImpulse{-182, -1280, true},
+          "Nonzero reference bypasses only operand scaling");
+    expected = f.bytes;
+    rejects([&] { static_cast<void>(field::apply_animation_impulse(f.sprite(), 1, 0)); },
+            "Flagged reference must be supplied");
+    rejects(
+        [&] {
+            static_cast<void>(field::apply_animation_impulse(
+                f.sprite(), 1, 0, field::SpriteResource{0x80130004, reference}));
+        },
+        "Reference address must equal original pointer");
+    check(f.bytes == expected, "Missing reference must not issue a velocity store");
+    put(reference, 0, 0);
+    put(f.bytes, 0xac, 256U << 7U);
+    check(field::apply_animation_impulse(f.sprite(), 255, 0,
+                                         field::SpriteResource{0x80130000, reference}) ==
+              field::SpriteImpulse{-4096, -1048576, false},
+          "Explicit zero reference falls through to operand scaling");
+    put(f.bytes, 0xac, 0xf800007fU);
+    rejects(
+        [&] {
+            static_cast<void>(field::apply_animation_impulse(
+                f.sprite(), 255, 0, field::SpriteResource{0x80130000, reference}));
+        },
+        "Impulse zero divisor must fail");
+    check(get(f.bytes, 0x10) == static_cast<std::uint32_t>(-4096),
+          "Zero divisor preserves the scaled value stored before original division");
+    put(f.bytes, 0xa8, 0);
+    put(f.bytes, 0xac, 128);
+    check(field::apply_animation_impulse(f.sprite(), 127, 2147483647).velocity == 0,
+          "Rate increment and low-word impulse products wrap");
+}
+
+void vertical_boundaries() {
+    using S = field::VerticalState;
+    using B = field::VerticalBranch;
+    auto result = field::field_vertical_step({655359, 0, 0, 0}, 1, 10, 0, 0, 0);
+    check(result.state == S{655359, 1, 0x1000, 1} && result.branch == B::airborne,
+          "Signed high halfword floor comparison preserves fractional Y");
+    check(field::field_vertical_step({-65536, 0, 0x04000000, 91}, 7, 0, 2, 2, 0).state ==
+                  S{0, 0, 0, 0} &&
+              field::field_vertical_step({-65536, 0, 0x04000000, 91}, 7, 0, 2, 1, 0).state ==
+                  S{-65536, 7, 0x1000, 7},
+          "Layer change clears forced floor before comparison");
+    for (auto terrain : {0U, 0x00400000U, 0x00020000U, 0x1000U}) {
+        const auto marker = (terrain & 0x00420000U) != 0 ? 123 : 0;
+        check(
+            field::field_vertical_step({100000, -1, 0xffffffff, 123}, 99, 0, 0, 0, terrain).state ==
+                S{0, -1, 0xfbbfefffU, marker},
+            "Floor preserves upward velocity and terrain-selected marker");
+    }
+    result = field::field_vertical_step({0x7fff0000, 0x20000, 0, 0}, 0x7fffffff, 0, 0, 0, 0);
+    check(result.state == S{-2147418112, -2147352577, 0x1000, -2147352577},
+          "Position and gravity additions wrap before decisions");
+}
+
+void connected_jump() {
+    Fixture f;
+    std::array<std::uint8_t, 6> header{4, 0, 4, 0, 0, 0};
+    const std::array<field::SpriteResource, 1> resources{{{0x800c0000, header}}};
+    field::SpriteSources sources{resources, {}, {}, {}, std::nullopt};
+    field::SpriteEnvironment environment{};
+    field::install_sprite_gravity(f.sprite(), 0x800c0000, environment, sources);
+    put(f.bytes, 0xa8, get(f.bytes, 0xa8) & ~1U);
+    check(get(f.bytes, 0x1c) == 1024 &&
+              field::apply_animation_impulse(f.sprite(), 255, 0).velocity == -4096,
+          "Real animation header gravity composes with impulse handler");
+    put(f.bytes, 0x84, 7, 2);
+    std::array<std::uint8_t, 0x138> actor;
+    actor.fill(0xa5);
+    put(actor, 0, 0x400800);
+    put(actor, 4, 0);
+    put(actor, 8, 0, 2);
+    put(actor, 0x10, 0, 2);
+    put(actor, 0x24, 7U << 16U);
+    put(actor, 0xf0, 99);
+    field::CollisionPackage mesh;
+    mesh.layers.resize(1);
+    mesh.layers[0].triangles.resize(1);
+    mesh.layers[0].triangles[0].attribute_raw = 0xab01;
+    mesh.attributes_raw.resize(8);
+    const auto untouched = actor;
+    const auto sprite_untouched = f.bytes;
+    const std::array<std::int32_t, 9> displacement{-4096, -7168, -9216, -10240, -10240,
+                                                   -9216, -7168, -4096, 0};
+    for (std::size_t i = 0; i < displacement.size(); ++i) {
+        const auto result = field::apply_field_vertical(actor, f.sprite(), 0, mesh);
+        check(result.state.y == (7 << 16) + displacement[i] &&
+                  result.branch ==
+                      (i == 8 ? field::VerticalBranch::floor : field::VerticalBranch::airborne),
+              "Connected gravity/impulse/terrain/integration lands at original selected floor");
+    }
+    auto expected_actor = untouched;
+    put(expected_actor, 0, 0x800);
+    put(expected_actor, 0xf0, 0);
+    auto expected_sprite = sprite_untouched;
+    put(expected_sprite, 0x10, 0);
+    check(actor == expected_actor && f.bytes == expected_sprite,
+          "Connected jump retains every unrelated actor and sprite byte");
+    put(f.bytes, 0x10, 9);
+    put(actor, 8, 0xffff, 2);
+    const auto old_y = get(actor, 0x24);
+    rejects([&] { static_cast<void>(field::apply_field_vertical(actor, f.sprite(), 0, mesh)); },
+            "Missing current terrain triangle must fail explicitly");
+    check(get(actor, 0x24) == old_y + 9,
+          "Terrain failure follows original Y integration delay-slot store");
+    put(actor, 4, 8);
+    static_cast<void>(field::apply_field_vertical(actor, f.sprite(), 0, mesh));
+    check(get(actor, 0x24) == (7U << 16U),
+          "Disabled terrain layer short-circuits invalid triangle and still lands");
+}
+
+void shared_scheduler_control_motion_pass() {
+    const std::array<std::uint8_t, 1> code{0x0c};
+    field::EventActor actor;
+    actor.flags = 0x4000;
+    for (auto &slot : actor.slots)
+        slot.control_bits = 15U << 18U;
+    actor.slots[0].control_bits = 2U << 18U;
+    std::array<field::EventDescriptor, 1> descriptors{{{0x200, &actor}}};
+    field::SchedulerState scheduler;
+    scheduler.descriptors = descriptors;
+    scheduler.event_actor_count = 1;
+    field::EventContext context;
+    context.program = {code, {}};
+    context.control.gate_values = {1, 1, 1};
+    context.pass = {7, 9};
+    field::ControlActor controlled;
+    field::ControlState control_state;
+    field::ControlInputs inputs;
+    inputs.held_buttons = 0x40;
+    inputs.dialogue_status.fill(-1);
+    field::BattleRequestState battle;
+    const auto result = field::schedule_actor_events(
+        context, scheduler, [&](field::EventContext &current, std::uint8_t opcode) {
+            check(current.pass == field::FieldPassState{},
+                  "Scheduler clears the shared pass state before control dispatch");
+            static_cast<void>(field::execute_control_event(current, opcode, controlled,
+                                                           control_state, inputs, battle));
+        });
+    field::MotionControl motion{99, inputs.held_buttons};
+    check(result.dispatched_actors == 1 && context.pass.input_updated == 1 &&
+              field::begin_field_motion(actor.flags, 0, 0, motion, context.pass).active_body_mode ==
+                  2 &&
+              context.pass == field::FieldPassState{1, 0},
+          "Motion consumes the actual control write in the same pass without copying state");
+    descriptors[0].flags = 0;
+    const auto skipped = field::schedule_actor_events(context, scheduler, {});
+    check(skipped.dispatched_actors == 0 && context.pass == field::FieldPassState{} &&
+              field::begin_field_motion(actor.flags, 0, 0, motion, context.pass).active_body_mode ==
+                  1,
+          "Following pass resets input-updated even when no actor control is dispatched");
+}
 } // namespace
 
 int main() {
@@ -298,7 +474,11 @@ int main() {
         field_velocity_boundaries();
         committed_command_pc();
         event_divisor_and_continuation();
-        std::cout << "Field motion: seven source-boundary groups passed\n";
+        impulse_boundaries();
+        vertical_boundaries();
+        connected_jump();
+        shared_scheduler_control_motion_pass();
+        std::cout << "Field motion: eleven source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

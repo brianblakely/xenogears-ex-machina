@@ -25,14 +25,19 @@ void store(std::span<std::uint8_t> bytes, std::size_t at, std::uint32_t value,
     for (std::size_t i = 0; i < width; ++i)
         bytes[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
 }
-std::array<std::int32_t, 2> packed_coordinate(std::int32_t x, std::int32_t z) {
+std::uint32_t packed_coordinate(std::int32_t x, std::int32_t z) {
     // ADDU, not bitwise concatenation: negative Z borrows from the high half.
-    const auto packed = (static_cast<std::uint32_t>(x) << 16U) + static_cast<std::uint32_t>(z);
-    return {s16(packed), s16(packed >> 16U)};
+    return (static_cast<std::uint32_t>(x) << 16U) + static_cast<std::uint32_t>(z);
 }
-std::pair<std::int32_t, FieldVector> height_and_normal(const std::array<FieldVector, 3> &v,
-                                                       std::int32_t x, std::int32_t z,
-                                                       std::span<const std::int16_t> reciprocal) {
+} // namespace
+
+std::pair<std::int32_t, FieldVector>
+field_height_and_normal(const std::array<FieldVector, 3> &source, std::int32_t x, std::int32_t z,
+                        std::span<const std::int16_t> reciprocal) {
+    auto v = source;
+    for (auto &vertex : v)
+        for (auto &component : vertex)
+            component = s16(static_cast<std::uint32_t>(component));
     FieldVector ab{}, ac{}, normal{};
     for (std::size_t i = 0; i < 3; ++i) {
         ab[i] = v[1][i] - v[0][i];
@@ -62,7 +67,6 @@ std::pair<std::int32_t, FieldVector> height_and_normal(const std::array<FieldVec
     const auto quotient = static_cast<std::int64_t>(numerator) / normal[1];
     return {s16(static_cast<std::uint32_t>(static_cast<std::int64_t>(v[0][1]) + quotient)), normal};
 }
-} // namespace
 
 FieldVector normalize_field_vector(const FieldVector &vector,
                                    std::span<const std::int16_t> reciprocal) {
@@ -94,11 +98,15 @@ FieldVector normalize_field_vector(const FieldVector &vector,
 
 std::int32_t field_edge_area(const FieldVector &a, const FieldVector &b, std::int32_t x,
                              std::int32_t z) {
-    const auto av = packed_coordinate(a[0], a[2]);
-    const auto bv = packed_coordinate(b[0], b[2]);
-    const auto p = packed_coordinate(x, z);
-    const auto area = static_cast<std::int64_t>(bv[0] - av[0]) * (p[1] - av[1]) -
-                      static_cast<std::int64_t>(bv[1] - av[1]) * (p[0] - av[0]);
+    return field_packed_area(
+        {packed_coordinate(a[0], a[2]), packed_coordinate(b[0], b[2]), packed_coordinate(x, z)});
+}
+
+std::int32_t field_packed_area(std::array<std::uint32_t, 3> points) noexcept {
+    std::int64_t area = 0;
+    for (std::size_t i = 0; i < 3; ++i)
+        area += static_cast<std::int64_t>(s16(points[i])) *
+                (s16(points[(i + 1) % 3] >> 16U) - s16(points[(i + 2) % 3] >> 16U));
     return s32(static_cast<std::uint32_t>(area));
 }
 
@@ -122,7 +130,7 @@ FloorLocation locate_initial_floor(const CollisionLayer &layer, std::int32_t act
         }
         if (field_edge_area(v[0], v[1], x, z) >= 0 && field_edge_area(v[1], v[2], x, z) >= 0 &&
             field_edge_area(v[2], v[0], x, z) >= 0) {
-            const auto [height, normal] = height_and_normal(v, x, z, reciprocal);
+            const auto [height, normal] = field_height_and_normal(v, x, z, reciprocal);
             return {
                 static_cast<std::uint32_t>(i),
                 {s16(static_cast<std::uint32_t>(x)), height, s16(static_cast<std::uint32_t>(z))},

@@ -8,6 +8,7 @@
 #include <functional>
 #include <span>
 #include <stdexcept>
+#include <utility>
 
 namespace xem::reconstruction::field {
 
@@ -24,6 +25,13 @@ using FieldVector = std::array<std::int32_t, 3>;
                                                  std::span<const std::int16_t> reciprocal);
 [[nodiscard]] std::int32_t field_edge_area(const FieldVector &a, const FieldVector &b,
                                            std::int32_t x, std::int32_t z);
+// Resident 8004a70c: NCLIP on already packed signed X/Z halfwords.
+[[nodiscard]] std::int32_t field_packed_area(std::array<std::uint32_t, 3> points) noexcept;
+// Field 8007b1c4. Source vertex components and point coordinates are signed
+// halfwords. The returned normal retains the original full low words.
+[[nodiscard]] std::pair<std::int32_t, FieldVector>
+field_height_and_normal(const std::array<FieldVector, 3> &vertices, std::int32_t x, std::int32_t z,
+                        std::span<const std::int16_t> reciprocal);
 struct FloorLocation {
     std::uint32_t triangle{};
     FieldVector point{};

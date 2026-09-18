@@ -15,7 +15,8 @@
       "source_profile": "na-slus-00664-39c547a9afc6",
       "original_evidence": [
         "EVID-REF-007",
-        "EVID-REF-020"
+        "EVID-REF-020",
+        "EVID-REF-033"
       ],
       "scope": "Fixed original field23 encounter-victory-return-menu base sequence. Required extensions and alternatives remain unresolved; not the final complete exit route.",
       "starting_conditions": {
@@ -363,6 +364,27 @@
           "gold_total": 100
         },
         {
+          "id": "return-pending-wait",
+          "frontend_run": 10304,
+          "actor": 14,
+          "opcode": "FE/7F",
+          "pc_before": "0x8ae",
+          "pc_after": "0x8b0",
+          "pending": 0,
+          "evidence": "EVID-REF-033"
+        },
+        {
+          "id": "return-variable-branch",
+          "frontend_run": 10306,
+          "actor": 14,
+          "opcode": "0x86",
+          "pc_before": "0x8b0",
+          "pc_after": "0x8bb",
+          "variable_zero": 27,
+          "comparison_value": 32,
+          "evidence": "EVID-REF-033"
+        },
+        {
           "id": "field-return",
           "frontend_run": 10762,
           "step": 67,
@@ -580,6 +602,14 @@
         {
           "finding": "EVID-REF-032",
           "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-036",
+          "scope": "Reviewed reusable factory source compares all 19 supported actor factories, bounds and empty task passes. Six required NPC factories and nonempty tasks remain explicit frontiers; full construction/lifetime/readiness is incomplete."
+        },
+        {
+          "finding": "EVID-REF-038",
+          "scope": "Reusable retail CD ring methods connect to field music source. One allocation, 96 queries and 83 releases compare exactly. Heap internals, CD producers, resident audio and complete media alternatives remain required."
         }
       ]
     },
@@ -638,6 +668,10 @@
         {
           "finding": "EVID-REF-032",
           "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-036",
+          "scope": "Reviewed reusable factory source compares all 19 supported actor factories, bounds and empty task passes. Six required NPC factories and nonempty tasks remain explicit frontiers; full construction/lifetime/readiness is incomplete."
         }
       ]
     },
@@ -692,6 +726,10 @@
         {
           "finding": "EVID-REF-032",
           "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-033",
+          "scope": "Only ready 7F and unequal 86 are original-execution-validated. Pending waits, equality, variable operands and malformed/wrap cases are source/synthetic. Complete encounter/return/readiness remains required."
         }
       ]
     },
@@ -780,6 +818,14 @@
         {
           "finding": "EVID-REF-032",
           "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-033",
+          "scope": "Only ready 7F and unequal 86 are original-execution-validated. Pending waits, equality, variable operands and malformed/wrap cases are source/synthetic. Complete encounter/return/readiness remains required."
+        },
+        {
+          "finding": "EVID-REF-036",
+          "scope": "Reviewed reusable factory source compares all 19 supported actor factories, bounds and empty task passes. Six required NPC factories and nonempty tasks remain explicit frontiers; full construction/lifetime/readiness is incomplete."
         }
       ]
     },
@@ -820,6 +866,14 @@
         {
           "finding": "EVID-REF-018",
           "scope": "35 exact music polls/commits and six correlated sequence service calls. Full sequence/sample decoding, playback, Mono/Stereo/Wide and FMV remain open."
+        },
+        {
+          "finding": "EVID-REF-035",
+          "scope": "This proves callback and caller policy, not resident CD ring, heap, WDS transfer, sequence/audio-service internals or their timing. Mono/Stereo/Wide, playback intent, required FMV, resource lifetime and semantic readiness remain required. No full proof domain or broad todo closes."
+        },
+        {
+          "finding": "EVID-REF-038",
+          "scope": "Reusable retail CD ring methods connect to field music source. One allocation, 96 queries and 83 releases compare exactly. Heap internals, CD producers, resident audio and complete media alternatives remain required."
         }
       ]
     },

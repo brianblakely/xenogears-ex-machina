@@ -1,5 +1,6 @@
 #pragma once
 
+#include "xem/reconstruction/field_actor.hpp"
 #include "xem/reconstruction/field_events.hpp"
 #include "xem/reconstruction/field_sprite.hpp"
 
@@ -12,7 +13,6 @@ namespace xem::reconstruction::field {
 struct MotionControl {
     std::int32_t current_actor_index{}; // 80065b08
     std::uint16_t held_buttons{};       // 800afe9c
-    std::uint32_t input_updated{};      // 800adb68
 };
 struct MotionPrefixResult {
     // No value means the original returns with the whole body inhibited.
@@ -22,10 +22,10 @@ struct MotionPrefixResult {
 };
 // Field 80082bb8..80082c8c, EVID-REF-023. Always stores the actor index;
 // does not change the actor's animation, countdown, position or velocity.
-[[nodiscard]] MotionPrefixResult begin_field_motion(std::uint32_t actor_flags,
-                                                    std::int16_t previous_mode,
-                                                    std::int32_t actor_index,
-                                                    MotionControl &control);
+// pass is the EventContext::pass shared by the actual scheduler/control calls.
+[[nodiscard]] MotionPrefixResult
+begin_field_motion(std::uint32_t actor_flags, std::int16_t previous_mode, std::int32_t actor_index,
+                   MotionControl &control, const FieldPassState &pass);
 
 struct PlanarTrigonometry {
     std::int16_t sine;
@@ -84,5 +84,48 @@ struct FieldPlanarVector {
 // This changes no vector and advances the current event PC by three.
 void execute_motion_divisor(EventContext &context, std::uint16_t &actor_divisor,
                             SpriteWindow sprite);
+
+struct SpriteImpulse {
+    std::int32_t velocity;
+    std::int32_t division_numerator;
+    bool used_reference;
+    bool operator==(const SpriteImpulse &) const = default;
+};
+// Resident sprite command A1, 800219ac..80021a44 (EVID-REF-022).
+// When +a8 bit zero is set, reference must start at the original +7c pointer
+// and contain its word, even if that word is zero. A nonzero word bypasses
+// operand scaling, but not the final shift/division. An unsupported zero divisor
+// retains the scaled value stored before the division. No PC advance.
+[[nodiscard]] SpriteImpulse
+apply_animation_impulse(SpriteWindow sprite, std::uint8_t operand, std::int32_t rate_control,
+                        std::optional<SpriteResource> reference = std::nullopt);
+
+struct VerticalState {
+    std::int32_t y;
+    std::int32_t velocity;
+    std::uint32_t flags;
+    std::int32_t marker; // Actor +f0; wider ownership remains separate.
+    bool operator==(const VerticalState &) const = default;
+};
+enum class VerticalBranch { airborne, floor };
+struct VerticalEffect {
+    VerticalState state;
+    std::int32_t integrated_y;
+    VerticalBranch branch;
+    bool operator==(const VerticalEffect &) const = default;
+};
+// Field 8008505c..8008515c, inside 80084a40. Integrates old velocity,
+// then applies gravity or the previously selected signed floor. The caller
+// still owns floor selection and the following ceiling/layer/rollback stages.
+[[nodiscard]] VerticalEffect field_vertical_step(VerticalState state, std::int32_t gravity,
+                                                 std::int16_t floor, std::int16_t layer,
+                                                 std::int16_t previous_layer,
+                                                 std::uint32_t terrain);
+// Connected byte-window form: stores integrated Y before calling the recovered
+// terrain reader. Actor and sprite storage must belong to the same descriptor.
+// Unknown bytes survive; invalid terrain retains the already-issued Y store.
+[[nodiscard]] VerticalEffect apply_field_vertical(std::span<std::uint8_t> actor,
+                                                  SpriteWindow sprite, std::int16_t previous_layer,
+                                                  const CollisionPackage &mesh);
 
 } // namespace xem::reconstruction::field

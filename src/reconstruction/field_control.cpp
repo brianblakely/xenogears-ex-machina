@@ -75,7 +75,7 @@ ControlEffect request_field_control(EventContext &context, ControlActor &actor, 
             if (effect.encounter_exit == EncounterExit::none)
                 throw UnrecoveredEncounter("Active direction-triggered encounter selection");
         }
-        state.updated = 1;
+        context.pass.input_updated = 1;
         if ((actor.terrain_flags & 0x00400000U) == 0) {
             state.stationary_counter = 0;
         } else if (actor.integer_position == actor.cached_position) {

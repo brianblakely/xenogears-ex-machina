@@ -240,6 +240,128 @@ void connected_request_and_continuation() {
     check(unsupported && initializing.context.control.batch_limit == 65535,
           "Mode-zero continuation must still reject an unreconstructed next instruction");
 }
+
+void continuation_wait_and_branch_boundaries() {
+    for (const auto pending : {0U, 1U, 2U, 0x80000000U, 0xffffffffU}) {
+        Scenario s;
+        s.code.assign(65536, 0);
+        s.code[65535] = 0xfe;
+        s.code[0] = 0x7f;
+        s.actor.pc = 65535;
+        s.context.program = {s.code, {}};
+        s.request.pending = pending;
+        const auto before = s.request;
+        field::run_extended_event(s.context, [&](auto &context, auto opcode) {
+            check(opcode == 0x7f && context.current_actor->pc == 0,
+                  "Extended dispatch wraps its own PC store before the wait");
+            field::wait_battle_request_extended(context, s.request);
+        });
+        check(s.actor.pc == (pending == 0 ? 1 : 65535) && s.context.control.break_requested == 1 &&
+                  s.context.control.budget_mode == 1 && s.request == before,
+              "All nonzero pending words retry; the wait never clears shared state");
+    }
+    for (const bool zero_unsigned : {false, true}) {
+        for (const bool operand_unsigned : {false, true}) {
+            Scenario s;
+            s.code = {0x86, 0xff, 7, 0xff, 0xff}; // Odd reference aliases final variable.
+            s.context.program = {s.code, {}};
+            s.context.variables = &s.variables;
+            s.variables.words[0] = s.variables.words[1023] = 0x8000;
+            s.variables.unsigned_bitmap[0] = zero_unsigned ? 1 : 0;
+            s.variables.unsigned_bitmap[127] = operand_unsigned ? 0x80 : 0;
+            field::branch_battle_continuation(s.context);
+            check(s.actor.pc == (zero_unsigned == operand_unsigned ? 5 : 65535) &&
+                      s.context.control.break_requested == 7 && s.variables.words[0] == 0x8000 &&
+                      s.variables.words[1023] == 0x8000,
+                  "Both variables retain independent signedness without a write or break");
+        }
+    }
+    Scenario s;
+    s.code = {0x86, 0xff, 0xff};
+    s.context.program = {s.code, {}};
+    s.context.variables = &s.variables;
+    s.variables.words[0] = 32767;
+    field::branch_battle_continuation(s.context);
+    check(s.actor.pc == 5, "Tagged immediate is unsigned 15-bit; equal branch never reads target");
+    s.actor.pc = 0;
+    s.variables.words[0] = 0xffff;
+    rejects([&] { field::branch_battle_continuation(s.context); },
+            "Unequal branch must reject its unavailable target");
+    check(s.actor.pc == 0 && s.context.control.break_requested == 7,
+          "Missing branch target must not publish a new PC or break");
+    s.code.assign(65536, 0);
+    s.code[65533] = 0x86;
+    s.code[65534] = 0xff;
+    s.code[65535] = 0xff;
+    s.actor.pc = 65533;
+    s.variables.words[0] = 32767;
+    s.context.program = {s.code, {}};
+    field::branch_battle_continuation(s.context);
+    check(s.actor.pc == 2, "Equality wraps final PC independently of operand addresses");
+    s.code[65535] = 0x86;
+    s.actor.pc = 65535;
+    rejects([&] { field::branch_battle_continuation(s.context); },
+            "Operand pointers do not wrap with the event PC");
+    s.code = {0x86, 0, 8, 0, 0};
+    s.context.program = {s.code, {}};
+    s.actor.pc = 0;
+    rejects([&] { field::branch_battle_continuation(s.context); },
+            "Out-of-bank operand reference must fail");
+    s.context.variables = nullptr;
+    rejects([&] { field::branch_battle_continuation(s.context); },
+            "Branch always needs typed variable zero");
+    s.context.current_actor = nullptr;
+    rejects([&] { field::wait_battle_request_extended(s.context, s.request); },
+            "Wait needs a current actor");
+}
+
+void connected_pending_wait_and_result_branch() {
+    Scenario s;
+    s.actor.selected_slot = 0;
+    // Invented composition of real request/wait/branch/assignment/end handlers.
+    s.code = {0x71, 0, 0x80, 0xfe, 0x7f, 0x86, 0x20, 0x80, 16, 0, 0x35, 2, 0, 9, 0, 0x40, 0};
+    s.context.program = {s.code, {}};
+    s.context.variables = &s.variables;
+    const auto dispatch = [&](field::EventContext &context, std::uint8_t opcode) {
+        if (opcode == 0x71)
+            static_cast<void>(field::execute_battle_request(context, s.request, s.music, s.mode));
+        else if (opcode == 0xfe)
+            field::run_extended_event(context, [&](auto &extended, auto operation) {
+                if (operation != 0x7f)
+                    throw field::UnsupportedExtendedInstruction(extended.current_actor->pc,
+                                                                operation);
+                field::wait_battle_request_extended(extended, s.request);
+            });
+        else if (opcode == 0x86)
+            field::branch_battle_continuation(context);
+        else
+            field::execute_core_event(context, opcode);
+    };
+    check(field::run_event_batch(s.context, 8, dispatch).reason == field::BatchExit::control_gate &&
+              s.actor.pc == 3 && s.request.pending == 1,
+          "Accepted request stops the real batch before the continuation");
+    // Explicit caller inputs exercise the continuation; these are not recovered
+    // combat results, return ownership, or producers of the restored gates.
+    s.context.control.gate_values[0] = 1;
+    const auto waiting = field::run_event_batch(s.context, 8, dispatch);
+    check(waiting.dispatched == 1 && waiting.reason == field::BatchExit::handler_break &&
+              s.actor.pc == 3 && s.request.pending == 1,
+          "Pending request retries through the real FE dispatcher");
+    s.request.pending = 0;
+    const auto ready = field::run_event_batch(s.context, 8, dispatch);
+    check(ready.dispatched == 1 && s.actor.pc == 5 && s.variables.read(2) == 0,
+          "Cleared pending still yields before the branch");
+    s.variables.words[0] = 32;
+    const auto equal = field::run_event_batch(s.context, 8, dispatch);
+    check(equal.dispatched == 3 && s.variables.read(2) == 9 && s.actor.pc == 16,
+          "Equal variable-zero comparison executes the real continuation effects");
+    s.actor.pc = 5;
+    s.variables.words[0] = 27;
+    s.variables.words[1] = 0;
+    const auto unequal = field::run_event_batch(s.context, 8, dispatch);
+    check(unequal.dispatched == 2 && s.variables.read(2) == 0 && s.actor.pc == 16,
+          "Unequal variable-zero comparison jumps past the assignment");
+}
 } // namespace
 
 int main() {
@@ -248,7 +370,9 @@ int main() {
         publication_order_and_widths();
         pc_and_unavailable_inputs();
         connected_request_and_continuation();
-        std::cout << "Field battle request: four source-boundary groups passed\n";
+        continuation_wait_and_branch_boundaries();
+        connected_pending_wait_and_result_branch();
+        std::cout << "Field battle request/continuation: six source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

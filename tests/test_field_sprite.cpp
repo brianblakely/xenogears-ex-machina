@@ -280,6 +280,199 @@ void frame_metadata_and_list_boundaries() {
           "Stale queued flag reinserts the sprite when the source list does not contain it");
 }
 
+void ordinary_timer_and_checkpoint() {
+    Fixture fixture;
+    auto result = fixture.construct();
+    auto &bytes = result.sprite.bytes;
+    field::SpriteWindow sprite{result.sprite.address, bytes};
+    put(bytes, 0x40, 0x80000);
+    put(bytes, 0xac, 0x10000); // 2x ordinary command duration; replay is unscaled.
+    put(bytes, 0x9e, 1, 2);
+    result.environment.rate_control = 0;
+    fixture.data[0xc0] = 0xb3;
+    fixture.data[0xc1] = 62;
+    fixture.widths[0xb3] = 2;
+    fixture.data[0xc2] = 0xe1;
+    put(fixture.data, 0xc3, 4, 2);
+    fixture.data[0xc6] = 0x13;
+    put(fixture.data, 0xa0 + 63 * 2, 22, 2);
+    check(field::advance_sprite_timer(sprite, result.environment, fixture.sources()) == 3 &&
+              get(bytes, 0x9e, 2) == 8 && get(bytes, 0x34, 2) == 22 &&
+              get(bytes, 0x64) == Fixture::resource + 0xc7,
+          "Ordinary timer dispatches B3/E1/timed lookup with scaled duration");
+    auto before = bytes;
+    result.environment.rate_control = -1;
+    check(field::advance_sprite_timer(sprite, result.environment, {}) == 0 && bytes == before,
+          "Disabled timer requires no resources");
+    result.environment.rate_control = 0;
+    put(bytes, 0x9e, 0, 2);
+    before = bytes;
+    check(field::advance_sprite_timer(sprite, result.environment, {}) == 0 && bytes == before,
+          "Zero timer does not dispatch commands");
+    put(bytes, 0x9e, 0xffff, 2);
+    check(field::advance_sprite_timer(sprite, result.environment, {}) == 0 &&
+              get(bytes, 0x9e, 2) == 0xfffe,
+          "Negative signed timer decrements its original halfword");
+    put(bytes, 0x9e, 1, 2);
+    put(bytes, 0x64, Fixture::resource + 0xc0);
+    fixture.data[0xc0] = 0xa2;
+    rejects([&] {
+        static_cast<void>(
+            field::advance_sprite_timer(sprite, result.environment, fixture.sources()));
+    });
+    fixture.data[0xc0] = 0xe1;
+    put(fixture.data, 0xc1, 0, 2);
+    rejects([&] {
+        static_cast<void>(
+            field::execute_sprite_commands(sprite, result.environment, fixture.sources()));
+    });
+
+    fixture.data[0xc0] = 0x40;
+    rejects([&] {
+        static_cast<void>(
+            field::execute_sprite_commands(sprite, result.environment, fixture.sources()));
+    });
+    put(bytes, 0x64, Fixture::resource + 0xc0);
+    put(bytes, 0xa8, 63U << 22);
+    auto context = fixture.sources();
+    context.incoming_replay_duration = -2;
+    check(field::execute_sprite_commands(sprite, result.environment, context) == 1 &&
+              get(bytes, 0x9e, 2) == 0xfffc && ((get(bytes, 0xa8) >> 22) & 63) == 63,
+          "Ordinary incoming duration multiplies signed values and saturates the six-bit step");
+    put(bytes, 0x64, Fixture::resource + 0xc0);
+    put(bytes, 0x9e, 0, 2);
+    context.incoming_replay_duration = 0;
+    check(field::execute_sprite_commands(sprite, result.environment, context) == 1 &&
+              get(bytes, 0x9e, 2) == 1,
+          "Zero ordinary scaled delay becomes one");
+
+    result = fixture.construct();
+    std::array<std::uint8_t, 48> checkpoint{};
+    for (const auto offset : {0x24U, 0x26U, 0x28U, 0x2aU, 0x2cU})
+        put(checkpoint, offset, 4096, 2);
+    put(checkpoint, 0x18, 1, 2);
+    put(checkpoint, 0, 0xffffff00);
+    put(checkpoint, 4, 0x12345678);
+    put(checkpoint, 8, 0xdeadbeef);
+    put(checkpoint, 0x1c, 0x77889900);
+    put(checkpoint, 0x20, 0x01020304);
+    fixture.data[0xc0] = 0x33;
+    result.environment.rate_control = 5;
+    check(
+        field::restore_sprite_checkpoint({result.sprite.address, result.sprite.bytes}, checkpoint,
+                                         result.environment, fixture.sources()) == 1 &&
+            result.environment.rate_control == 5 && get(result.sprite.bytes, 0x9e, 2) == 4 &&
+            std::equal(checkpoint.begin(), checkpoint.begin() + 12, result.sprite.bytes.begin()) &&
+            get(result.sprite.bytes, 0xf4) == 0x77889900 &&
+            get(result.sprite.bytes, 0xf8) == 0x01020304,
+        "Checkpoint uses temporary zero rate, ordinary VM and saved position/sequencer words");
+    put(checkpoint, 0x18, 0, 2);
+    fixture.data[0xc0] = 0x80;
+    check(field::restore_sprite_checkpoint({result.sprite.address, result.sprite.bytes}, checkpoint,
+                                           result.environment, fixture.sources()) == 0,
+          "Zero checkpoint step never executes unsupported terminator");
+    put(checkpoint, 0x18, 64, 2);
+    rejects([&] {
+        static_cast<void>(
+            field::restore_sprite_checkpoint({result.sprite.address, result.sprite.bytes},
+                                             checkpoint, result.environment, fixture.sources()));
+    });
+}
+
+void ordinary_motion_commands() {
+    Fixture fixture;
+    auto result = fixture.construct();
+    auto &bytes = result.sprite.bytes;
+    field::SpriteWindow sprite{result.sprite.address, bytes};
+    fixture.data[0xc0] = 0xa0;
+    fixture.data[0xc1] = 2;
+    fixture.data[0xc2] = 0xa1;
+    fixture.data[0xc3] = 0xfd;
+    fixture.data[0xc4] = 0x33;
+    fixture.widths[0xa0] = 2;
+    fixture.widths[0xa1] = 2;
+    put(bytes, 0x9e, 1, 2);
+    result.environment.rate_control = 0;
+    check(field::advance_sprite_timer(sprite, result.environment, fixture.sources()) == 3 &&
+              get(bytes, 0x18) == 8192 && get(bytes, 0xc) == 8192 && get(bytes, 0x14) == 0 &&
+              get(bytes, 0x10) == static_cast<std::uint32_t>(-12288) &&
+              get(bytes, 0x64) == Fixture::resource + 0xc5 && get(bytes, 0x9e, 2) == 4,
+          "Ordinary A0/A1 share motion effects and commit command PCs before the timed frame");
+    put(bytes, 0x7c, Fixture::resource + 0x1e0);
+    put(fixture.data, 0x1e0, static_cast<std::uint32_t>(-7680));
+    put(bytes, 0x64, Fixture::resource + 0xc2);
+    put(bytes, 0x9e, 0, 2);
+    check(field::execute_sprite_commands(sprite, result.environment, fixture.sources()) == 2 &&
+              get(bytes, 0x10) == static_cast<std::uint32_t>(-7680),
+          "A1 consumes an address-qualified external reference word");
+    put(bytes, 0x7c, sprite.address + 0x10);
+    put(bytes, 0x10, 123);
+    put(bytes, 0x64, Fixture::resource + 0xc2);
+    put(bytes, 0x9e, 0, 2);
+    const std::span<const std::uint8_t> data = fixture.data;
+    const std::array<field::SpriteResource, 2> without_operand{
+        {{Fixture::resource, data.first(0xc3)}, {Fixture::resource + 0xc4, data.subspan(0xc4)}}};
+    auto sources = fixture.sources();
+    sources.resources = without_operand;
+    check(field::execute_sprite_commands(sprite, result.environment, sources) == 2 &&
+              get(bytes, 0x10) == 123,
+          "A1 reads an aliased active-sprite reference and bypasses the absent operand");
+}
+
+void negative_animation_and_checkpoint_policy() {
+    Fixture fixture;
+    auto result = fixture.construct();
+    auto alternate = fixture.data;
+    constexpr std::uint32_t alternate_address = Fixture::resource + 0x1000;
+    // The complemented index 1 selects directory+24 = header+44.
+    put(alternate, 0x20, 2, 2);
+    put(alternate, 0x24, 0x24, 2);
+    put(alternate, 0x44, 2, 2);
+    put(alternate, 0x46, 0x78, 2);
+    for (std::size_t i = 0; i < 5; ++i)
+        put(alternate, 0x48 + i * 2, static_cast<std::uint32_t>(0xa0 - (0x48 + i * 2)), 2);
+    std::array<field::SpriteResource, 2> resources{
+        {{Fixture::resource, fixture.data}, {alternate_address, alternate}}};
+    auto sources = fixture.sources();
+    sources.resources = resources;
+    put(result.sprite.bytes, 0x4c, 0);
+    field::select_sprite_animation({result.sprite.address, result.sprite.bytes}, -1,
+                                   result.environment, sources);
+    check(get(result.sprite.bytes, 0x44) == Fixture::resource &&
+              get(result.sprite.bytes, 0x58) == Fixture::resource + 0x40 &&
+              get(result.sprite.bytes, 0xaf, 1) == 255,
+          "Null alternate resource preserves the existing original binding");
+    put(result.sprite.bytes, 0x4c, alternate_address);
+    field::select_sprite_animation({result.sprite.address, result.sprite.bytes}, -2,
+                                   result.environment, sources);
+    check(get(result.sprite.bytes, 0x44) == alternate_address &&
+              get(result.sprite.bytes, 0x58) == alternate_address + 0x44 &&
+              get(result.sprite.bytes, 0xaf, 1) == 254,
+          "Negative animation binds pointer+4c and complements the full index");
+
+    std::array<std::uint8_t, 312> actor{};
+    std::array<std::uint8_t, 48> checkpoint{};
+    put(actor, 4, 0x1000000);
+    put(actor, 0xea, 0xfffe, 2);
+    put(actor, 0x134, 0x80);
+    put(actor, 0x12c, 0x1000);
+    auto decision = field::select_sprite_checkpoint(actor, checkpoint, {0, 1, 2}, {0, 1, 2}, 0);
+    check(decision.decision == field::SpriteRestoreDecision::actor_layer_flag &&
+              get(decision.checkpoint, 0x14, 2) == 65534 && decision.record_bytes == 400,
+          "Skipped actor still updates signed animation and consumes both extensions");
+    put(actor, 4, 0);
+    put(actor, 0, 0x600);
+    decision = field::select_sprite_checkpoint(actor, checkpoint, {256, 1, 2}, {0, 1, 2}, 1);
+    check(decision.decision == field::SpriteRestoreDecision::party_mode_change,
+          "Policy compares saved mode words with current mode bytes");
+    put(actor, 0x124, 65535, 2);
+    put(checkpoint, 0x14, 9, 2);
+    decision = field::select_sprite_checkpoint(actor, checkpoint, {0, 1, 2}, {0, 1, 2}, 1);
+    check(decision.decision == field::SpriteRestoreDecision::restore &&
+              get(decision.checkpoint, 0x14, 2) == 9,
+          "Actor sentinel preserves saved animation");
+}
+
 // Binary transport for independent original-capture comparisons. It only moves
 // supplied bytes; all candidate effects execute in the production C++ module.
 struct Transport {
@@ -394,6 +587,8 @@ void original_transport(const char *input_path, const char *output_path) {
             observations.block(*item.allocation);
     };
     field::SpriteWindow window{sprite.address, sprite.bytes};
+    std::uint32_t commands = 0;
+    field::SpriteRestoreDecision decision = field::SpriteRestoreDecision::restore;
     if (operation == 0 || operation == 2) {
         auto result = operation == 0
                           ? field::construct_sprite(
@@ -418,6 +613,21 @@ void original_transport(const char *input_path, const char *output_path) {
                                        sources);
     } else if (operation == 7) {
         field::schedule_sprite_frame(window, argument, environment, sources);
+    } else if (operation == 8) {
+        commands = field::execute_sprite_commands(window, environment, sources);
+    } else if (operation == 9) {
+        commands = field::advance_sprite_timer(window, environment, sources);
+    } else if (operation == 10) {
+        commands = field::restore_sprite_checkpoint(window, parts.bytes, environment, sources);
+    } else if (operation == 11) {
+        check(resources.size() == 1 && resources[0].bytes.size() == 15, "Invalid policy modes");
+        const auto modes = resources[0].bytes;
+        const auto selected = field::select_sprite_checkpoint(
+            sprite.bytes, parts.bytes, {get(modes, 0), get(modes, 4), get(modes, 8)},
+            {modes[12], modes[13], modes[14]}, argument);
+        parts.bytes.assign(selected.checkpoint.begin(), selected.checkpoint.end());
+        commands = selected.record_bytes;
+        decision = selected.decision;
     } else {
         throw std::runtime_error("Unknown original sprite operation");
     }
@@ -429,6 +639,10 @@ void original_transport(const char *input_path, const char *output_path) {
         output.word(size);
     output.word(stage_count);
     output.data.insert(output.data.end(), observations.data.begin(), observations.data.end());
+    if (operation >= 8)
+        output.word(commands);
+    if (operation == 11)
+        output.word(static_cast<std::uint32_t>(decision));
     std::ofstream stream(output_path, std::ios::binary);
     stream.write(reinterpret_cast<const char *>(output.data.data()),
                  static_cast<std::streamsize>(output.data.size()));
@@ -446,6 +660,9 @@ int main(int argc, char **argv) {
         real_replay_and_list_effects();
         matrix_storage_and_explicit_failures();
         frame_metadata_and_list_boundaries();
+        ordinary_timer_and_checkpoint();
+        ordinary_motion_commands();
+        negative_animation_and_checkpoint_policy();
         std::cout << "Field sprite reconstruction passed\n";
         return 0;
     } catch (const std::exception &error) {

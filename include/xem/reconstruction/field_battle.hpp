@@ -54,4 +54,15 @@ struct BattleRequestResult {
                                                          std::uint32_t music_result,
                                                          std::uint8_t mode_source);
 
+// Extended 7F at 8008a244, entered after the ordinary FE dispatcher advances
+// PC. Every nonzero pending word retries FE. Zero advances past 7F. Both paths
+// request a break without changing the shared pending word or budget mode.
+void wait_battle_request_extended(EventContext &context, const BattleRequestState &state);
+
+// Primary 86 at 80096724 compares typed variable reference zero with a tagged
+// immediate/variable operand. Equality advances five; inequality reads the raw
+// branch PC. This does not assign a gameplay meaning to variable zero or supply
+// the battle results producer. No scheduler break is requested here.
+void branch_battle_continuation(EventContext &context);
+
 } // namespace xem::reconstruction::field

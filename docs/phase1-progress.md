@@ -18,6 +18,35 @@ initializations and 50 floor queries, and all six battle requests with thirteen
 boundaries. These close reusable source boundaries, not complete loading,
 physics, combat or readiness. Python references and historical findings remain.
 
+The library also contains reviewed [sprite construction and checkpoint source](../analysis/formats/sprite-construction.md),
+[motion stages](../analysis/formats/field-motion-source.md), and field-control
+handlers. [EVID-REF-034](../analysis/findings/EVID-REF-034.json) records their
+original comparisons and independent integration review. The scheduler, control
+handler and motion prefix share one input-update word; ordinary sprite A0/A1
+commands execute the same recovered speed and impulse functions. Constructors,
+binding, facing, timers and later checkpoints now run in C++.
+[EVID-REF-036](../analysis/findings/EVID-REF-036.json) adds factory publication,
+bounds and part allocation for all 19 supported actor factories. Six required
+NPC factories still stop explicitly at unrecovered commands or task callbacks.
+Remaining used sprite instructions, cleanup and readiness remain
+required, along with reusable full movement, sweep and position source.
+
+The [music callers and wave callback](../analysis/formats/field-media-source.md)
+now connect to the recovered [resident CD ring](../analysis/formats/disc-stream-source.md).
+Original comparisons cover every observed wave callback, chunk query and release,
+including complete staging buffers and ring metadata. Allocation mode is forwarded
+to the game heap unchanged. EVID-REF-035 and EVID-REF-038 preserve the boundary:
+CD producers, heap internals, resident audio, complete media ownership, sound modes
+and FMV remain required source.
+
+The [battle continuation](../analysis/formats/battle-continuation.md) now uses
+real extended-7F and primary-86 handlers in the shared event context.
+[EVID-REF-033](../analysis/findings/EVID-REF-033.json) compares the original
+ready wait and unequal variable-zero branch after return, including complete
+captured storage and all 124 uninstrumented control artifacts. Battle result
+and pending-word producers remain unresolved; synthetic pending/equal paths do
+not establish additional observed outcomes.
+
 The current [source and state handoff](../analysis/formats/field-lifecycle.md)
 organizes the field loader, event initialization, scheduling, motion/position,
 encounter return and menu dependencies around related Ghidra C exports. Shared
@@ -28,7 +57,10 @@ not reviewed-source completion.
 
 The reusable C++ event library implements ten primary handlers plus actor
 scheduling and batching. It matches 81,527 existing original transitions; the
-connected scheduler tests retain a separate source/synthetic scope. Preserved
+connected scheduler tests retain a separate source/synthetic scope. Separate
+`05/06/0D` call/return handlers share the same actor stack and interpreter controls;
+their nested-call and failure-boundary tests pass. EVID-REF-037 records source
+review only: the frozen original route did not invoke those handlers. Preserved
 Python position models match all 4,385 complete captured calls, without replacing
 the established motion, collision or sprite references. EVID-REF-027 records this
 milestone. Its remaining blockers are initialization services and additional event

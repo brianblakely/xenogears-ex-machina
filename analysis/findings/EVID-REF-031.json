@@ -386,9 +386,9 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tools/analysis/events.py",
+        "path": ".local/verification/phase1-source-20260918/previous-sources/tools/analysis/events.py",
         "sha256": "fe780d0a9b2676a25c910864aeef4b1781cd553dc79d8e12fd1c38b8886ef6c4",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only"
       }
     ]
   },
@@ -471,5 +471,13 @@
     "authorship": "AI-assisted authored source, tests, adapters and explanatory prose. Original payload and automatic Ghidra C remain private.",
     "historical_sources": "The exact earlier model and decoder are preserved in review snapshots. EVID021's old decoder was copied and its original digest retained before adding primary71."
   },
-  "broad_completion": false
+  "broad_completion": false,
+  "historical_source_preservation": [
+    {
+      "date": "2026-09-18",
+      "original_path": "tools/analysis/events.py",
+      "preserved_path": ".local/verification/phase1-source-20260918/previous-sources/tools/analysis/events.py",
+      "reason": "Current decoder/fixtures gained source-reviewed 21,86,FE/7F paths. The earlier validated bytes and digest are retained unchanged."
+    }
+  ]
 }

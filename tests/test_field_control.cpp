@@ -24,7 +24,7 @@ void rejects(Operation operation, const char *message) {
 struct Scenario {
     field::EventActor event_actor;
     field::ControlActor actor{0, {12, -5, 31}, {12, -5, 31}, 0x8123, 7};
-    field::ControlState state{0, 0, 987, 0};
+    field::ControlState state{0, 0, 987};
     field::ControlInputs inputs;
     field::BattleRequestState battle{1, 0, 0, 0, 0, 0, 0};
     field::EventContext context;
@@ -35,6 +35,7 @@ struct Scenario {
         context.current_actor = &event_actor;
         context.control.gate_values = {1, 1, 1};
         context.control.break_requested = 9;
+        context.pass = {91, 92};
         inputs.dialogue_status = {-1, -1, -1, -1};
         inputs.jump_contact = 255;
         inputs.repeat_delay = 8;
@@ -65,7 +66,8 @@ void ownership_and_gates() {
         check(s.event_actor.flags == (preserve == 0 ? 0xa1040080U : 0xa0040080U) &&
                   s.event_actor.pc == 0 && s.actor == before && s.state == state &&
                   effect.eligibility == field::ControlEligibility::not_control_owner &&
-                  effect.call_count == 0 && s.context.control.break_requested == 9,
+                  effect.call_count == 0 && s.context.control.break_requested == 9 &&
+                  s.context.pass == field::FieldPassState{91, 92},
               "Non-owner path preserves control data and wraps PC after optional motion flag");
     }
     for (std::size_t blocked = 0; blocked < 4; ++blocked) {
@@ -76,14 +78,15 @@ void ownership_and_gates() {
         const auto before = s.state;
         const auto effect = s.run();
         check(effect.eligibility == field::ControlEligibility::dialogue && effect.call_count == 0 &&
-                  s.actor.direction == 0x8000 && s.state == before && s.event_actor.pc == 124,
+                  s.actor.direction == 0x8000 && s.state == before && s.event_actor.pc == 124 &&
+                  s.context.pass == field::FieldPassState{91, 92},
               "Each of four zero dialogue statuses blocks before nested calls");
     }
     for (const auto inhibition : std::array<std::int16_t, 4>{-32768, -1, 1, 32767}) {
         Scenario s;
         s.inputs.encounter.inhibition = inhibition;
         check(s.run().eligibility == field::ControlEligibility::inhibited &&
-                  s.actor.direction == 0x8000,
+                  s.actor.direction == 0x8000 && s.context.pass == field::FieldPassState{91, 92},
               "Any nonzero control inhibition blocks ownership");
     }
     for (unsigned first = 0; first < 8; ++first) {
@@ -126,7 +129,8 @@ void ownership_and_gates() {
     rejects<field::UnrecoveredEncounter>([&] { (void)active.run(); },
                                          "Active encounter selection must fail explicitly");
     check(active.actor == before && active.state == state && active.event_actor.pc == 123 &&
-              active.context.control.break_requested == 9,
+              active.context.control.break_requested == 9 &&
+              active.context.pass == field::FieldPassState{91, 92},
           "Unrecovered encounter must not publish downstream control changes");
     active.inputs.held_buttons = 0;
     check(active.run().call_count == 0, "No direction request means no encounter poll");
@@ -138,7 +142,7 @@ void normal_jump_and_terrain() {
     s.inputs.held_buttons = 0x1000;
     const auto effect = s.run();
     check(s.event_actor.flags == 0x4800 && s.state.latched_jump_setting == 42 &&
-              s.state.updated == 1 && effect.jump == field::JumpRequest::pressed &&
+              s.context.pass.input_updated == 1 && effect.jump == field::JumpRequest::pressed &&
               effect.call_count == 2 && effect.calls[0] == field::ControlCall::encounter &&
               effect.calls[1] == field::ControlCall::terrain &&
               effect.terrain_call == field::TerrainCall::normal,
@@ -228,7 +232,7 @@ void counter_and_alternate_jump() {
         Scenario retry;
         retry.actor.terrain_flags = terrain;
         retry.event_actor.flags = 0x4200;
-        retry.state = {32, 7, 987, 0};
+        retry.state = {32, 7, 987};
         retry.inputs.jump_mode = 1;
         retry.inputs.held_buttons = 0x80;
         effect = retry.run();
@@ -271,7 +275,7 @@ void directions_and_connected_events() {
     };
     const auto batch = field::run_event_batch(s.context, 8, dispatch);
     check(batch.dispatched == 3 && batch.reason == field::BatchExit::handler_break &&
-              variables.read(0) == 9 && s.event_actor.pc == 7 && s.state.updated == 1,
+              variables.read(0) == 9 && s.event_actor.pc == 7 && s.context.pass.input_updated == 1,
           "A7 must compose with assignment/end in the real shared event batch");
     std::vector<std::uint8_t> wrapper_code(65536);
     wrapper_code[65535] = 0x0c;

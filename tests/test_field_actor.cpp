@@ -94,7 +94,10 @@ void connected_initialization_and_events() {
     const std::array<std::uint8_t, 4> code{0x01, 3, 0, 0x00};
     const std::array<std::array<std::uint16_t, 32>, 1> entries{};
     field::EventVariables vars;
-    field::EventContext context{{code, entries}, &vars, {}, &event};
+    field::EventContext context;
+    context.program = {code, entries};
+    context.variables = &vars;
+    context.current_actor = &event;
     context.control.budget_mode = 1;
     const auto batch = field::run_event_batch(context, 1, field::execute_core_event);
     check(batch.dispatched == 1 && event.pc == 3,

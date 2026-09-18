@@ -27,6 +27,8 @@ struct EventActor {
     std::array<EventSlot, 8> slots{};
     std::uint16_t pc{};
     std::uint8_t selected_slot{};
+    std::array<std::uint16_t, 4> return_pcs{}; // Actor +78; original four-entry call stack
+    std::uint32_t model_and_bounds_flags{};    // Actor +12c; stack depth is bits 6..8
 };
 
 namespace original {
@@ -67,10 +69,19 @@ struct EventControl {
     [[nodiscard]] bool blocked() const noexcept;
 };
 
+// Shared globals reset once per scheduler pass, then written/read by handlers
+// and the following field motion stage. They have one owner across those calls.
+struct FieldPassState {
+    std::uint32_t input_updated{}; // 800adb68
+    std::uint32_t unknown_c4268{}; // 800c4268; downstream meaning unrecovered
+    bool operator==(const FieldPassState &) const = default;
+};
+
 struct EventContext {
     EventProgram program;
     EventVariables *variables{};
     EventControl control;
+    FieldPassState pass;
     EventActor *current_actor{};
     EventDescriptor *current_descriptor{};
     std::int32_t current_actor_index{};
@@ -98,6 +109,12 @@ class UnsupportedExtendedInstruction : public EventError {
 // A real handler implementation is required. Unknown instructions never succeed.
 using EventDispatch = std::function<void(EventContext &, std::uint8_t)>;
 void execute_core_event(EventContext &context, std::uint8_t opcode);
+
+// Primary 05/06/0d at 800a17f4/800a1730/800a18b8. The two calls save
+// PC+3/PC+5 before reading their raw u16 target. Returns whether the original
+// diagnostic service was requested; printing itself is a separate service.
+// Encoded depths beyond the four owned entries are explicitly unsupported.
+[[nodiscard]] bool execute_event_call(EventContext &context, std::uint8_t opcode);
 
 // Primary FE at 800869b8 increments the u16 PC before looking up and invoking
 // its extended instruction. A dispatcher must execute recovered handlers and
@@ -128,9 +145,6 @@ struct SchedulerState {
     std::int32_t single_actor_mode{};
     std::uint8_t party_processing_mode{};
     std::array<std::int32_t, 3> party_indices{255, 255, 255};
-    // The original clears these at pass entry; their downstream meanings remain open.
-    std::uint32_t unknown_pass_state_a{};
-    std::uint32_t unknown_pass_state_b{};
 };
 struct ScheduleResult {
     std::uint32_t visited{};

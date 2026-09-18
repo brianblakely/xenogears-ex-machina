@@ -110,6 +110,9 @@ EventActor original::read_event_actor(std::span<const std::uint8_t, 0x138> bytes
     }
     result.pc = static_cast<std::uint16_t>(read(0xcc, 2));
     result.selected_slot = bytes[0xce];
+    for (std::size_t i = 0; i < result.return_pcs.size(); ++i)
+        result.return_pcs[i] = static_cast<std::uint16_t>(read(0x78 + 2 * i, 2));
+    result.model_and_bounds_flags = read(0x12c, 4);
     return result;
 }
 
@@ -183,6 +186,48 @@ void wait_music_load_extended(EventContext &context, std::uint32_t music_result)
     current.pc =
         static_cast<std::uint16_t>(current.pc + (music_result == 0xffffffffU ? 0xffffU : 1U));
     context.control.break_requested = 1;
+}
+
+bool execute_event_call(EventContext &context, std::uint8_t opcode) {
+    if (context.current_actor == nullptr)
+        throw EventError("Call/return requires the current event actor");
+    auto &current = *context.current_actor;
+    const auto pc = static_cast<std::uint32_t>(current.pc);
+    if (context.program.byte(pc) != opcode)
+        throw EventError("Dispatched call/return opcode disagrees with the working PC");
+    const auto depth = (current.model_and_bounds_flags >> 6U) & 7U;
+    if (opcode == 5 || opcode == 6) {
+        if (depth == 4) {
+            context.control.break_requested = 1;
+            return context.control.diagnostic_suppression == 0;
+        }
+        if (depth >= current.return_pcs.size())
+            throw EventError("Original call stack access exceeds the recovered four entries");
+        current.return_pcs[depth] = static_cast<std::uint16_t>(pc + (opcode == 5 ? 3U : 5U));
+        current.pc = context.program.word(pc + 1U);
+        current.model_and_bounds_flags =
+            (current.model_and_bounds_flags & 0xfffffe3fU) | (((depth + 1U) & 7U) << 6U);
+        return false;
+    }
+    if (opcode != 0x0d)
+        throw UnsupportedInstruction(current.pc, opcode);
+    if (depth == 0) {
+        if (current.selected_slot >= current.slots.size())
+            throw EventError("Original return underflow selects an invalid event slot");
+        auto &slot = current.slots[current.selected_slot];
+        slot.control_bits |= 0x003c0000U;
+        slot.event_tag = 255;
+        context.control.budget_mode = 1;
+        context.control.break_requested = 1;
+        return context.control.diagnostic_suppression == 0;
+    }
+    const auto next_depth = (depth - 1U) & 7U;
+    current.model_and_bounds_flags =
+        (current.model_and_bounds_flags & 0xfffffe3fU) | (next_depth << 6U);
+    if (next_depth >= current.return_pcs.size())
+        throw EventError("Original return stack access exceeds the recovered four entries");
+    current.pc = current.return_pcs[next_depth];
+    return false;
 }
 
 // Original handlers: A1B70, A1E74, A1BD0, A1A8C, 9DD34, 9D804..9DA1C.
@@ -305,8 +350,8 @@ BatchResult run_event_batch(EventContext &context, std::int32_t requested_limit,
 ScheduleResult schedule_actor_events(EventContext &context, SchedulerState &state,
                                      const EventDispatch &dispatch) {
     const auto count = state.single_actor_mode == 1 ? 1 : state.event_actor_count;
-    state.unknown_pass_state_a = 0;
-    state.unknown_pass_state_b = 0;
+    context.pass.input_updated = 0;
+    context.pass.unknown_c4268 = 0;
     ScheduleResult result;
     for (std::int32_t index = 0; index < count; ++index) {
         if (static_cast<std::size_t>(index) >= state.descriptors.size()) {

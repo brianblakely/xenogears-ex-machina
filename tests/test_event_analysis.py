@@ -86,6 +86,31 @@ class EventAnalysisTests(unittest.TestCase):
         with self.assertRaisesRegex(EventError, "overlapping"):
             disassemble_reachable(b"\x01\x01\0\0", 0)
 
+    def test_connected_request_continuation_cfg(self):
+        # Invented route: request -> pending wait -> variable-zero branch, with
+        # a motion divisor on one path and real end slots on both paths.
+        code = bytes((0x71, 0, 0x80, 0xFE, 0x7F, 0x86, 0x20, 0x80, 14, 0, 0x21, 0, 0x81, 0, 0))
+        decoded = disassemble_reachable(code, 0)
+        self.assertEqual([i.pc for i in decoded], [0, 3, 5, 10, 13, 14])
+        self.assertEqual(decoded[0].successors, (0, 3))
+        self.assertEqual((decoded[1].name, decoded[1].successors), ("wait_battle_request", (3, 5)))
+        self.assertEqual((decoded[2].operands, decoded[2].successors), ((0x8020, 14), (10, 14)))
+        self.assertEqual((decoded[3].name, decoded[3].operands), ("set_motion_divisor", (0x8100,)))
+        with self.assertRaisesRegex(EventError, "overlapping"):
+            disassemble_reachable(bytes((0x86, 0, 0x80, 1, 0, 0)), 0)
+        with self.assertRaisesRegex(EventError, "outside bytecode"):
+            decode_instruction(bytes((0x86, 0x20, 0x80, 0xFF, 0xFF, 0)), 0)
+        with self.assertRaises(FieldError):
+            decode_instruction(bytes((0x86, 0x20, 0x80)), 0)
+
+    def test_battle_wait_prefix_wrap_and_unknown_successor(self):
+        code = bytes((0x7F, 0)) + bytes(65533) + bytes((0xFE,))
+        wait = decode_instruction(code, 65535)
+        self.assertEqual((wait.operands, wait.successors), ((0x7F,), (65535, 1)))
+        with self.assertRaises(UnknownInstruction) as error:
+            disassemble_reachable(bytes((0xFE, 0x7F, 0xFF)), 0)
+        self.assertEqual((error.exception.pc, error.exception.opcode), (2, 0xFF))
+
     def test_truncation_bad_targets_and_unknown_modes_are_explicit(self):
         for data in (b"", b"\x01", b"\x01\0", b"\x02" + bytes(6)):
             with self.subTest(data=data), self.assertRaises(FieldError):

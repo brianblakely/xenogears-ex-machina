@@ -46,6 +46,7 @@ OPCODE_SPECS = {
     0x02: ("branch_if_false", 8),
     0x04: ("reset_idle_and_end", 1),
     0x0C: ("loop_player_control", 1),
+    0x21: ("set_motion_divisor", 3),
     0x26: ("wait_countdown", 3),
     0x35: ("set_variable", 6),
     0x36: ("set_variable_one", 3),
@@ -53,6 +54,7 @@ OPCODE_SPECS = {
     0x38: ("add_variable", 6),
     0x39: ("subtract_variable", 6),
     0x71: ("request_battle", 3),
+    0x86: ("branch_variable_zero_unequal", 5),
     0xA7: ("request_player_control", 1),
     0xFE: ("extended_dispatch", 2),
 }
@@ -82,12 +84,13 @@ def decode_instruction(bytecode: bytes, pc: int) -> Instruction:
         # reading the extended opcode. This particular prefix can wrap at ffff.
         extended_pc = (pc + 1) & 0xFFFF
         extended = region(bytecode, extended_pc, 1, "extended opcode")[0]
-        if extended != 0xA2:
+        extended_names = {0x7F: "wait_battle_request", 0xA2: "wait_music_load"}
+        if extended not in extended_names:
             raise UnknownInstruction(extended_pc, extended, namespace="extended")
         following = (pc + 2) & 0xFFFF
         if following >= len(bytecode):
             raise EventError(f"extended instruction at +0x{pc:04x} advances outside bytecode")
-        return Instruction(pc, opcode, "wait_music_load", 2, (pc, following), (extended,))
+        return Instruction(pc, opcode, extended_names[extended], 2, (pc, following), (extended,))
     source = region(bytecode, pc, size, f"opcode 0x{opcode:02x} operands")
 
     def word(offset: int) -> int:
@@ -112,6 +115,12 @@ def decode_instruction(bytecode: bytes, pc: int) -> Instruction:
             size,
             ((pc + 8) & 0xFFFF, word(6)),
             (word(1), word(3), mode, comparison),
+        )
+    elif opcode == 0x86:
+        # Static disassembly retains both paths, so it needs the destination
+        # even though the runtime equality path does not read those bytes.
+        result = Instruction(
+            pc, opcode, name, size, ((pc + 5) & 0xFFFF, word(3)), (word(1), word(3))
         )
     else:
         operands = () if size == 1 else (word(1), word(3), source[5]) if size == 6 else (word(1),)

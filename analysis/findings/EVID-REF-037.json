@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-037",
+  "kind": "cpp_event_call_return_source_unobserved",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a17f4",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a1730",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a18b8",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    }
+  ],
+  "observation": "Corrected shared actor types expose four halfword return PCs and a three-bit depth. Reviewed C++ implements primary 05/06 calls and 0D return. The frozen original base route invoked none of these handlers; there is no original-execution equivalence claim.",
+  "interpretation": "Calls and returns share EventContext actor state, operand helpers and batch control. Source boundaries preserve wrapped continuation PCs, depth-four overflow, lazy operand/slot access, return underflow priority and diagnostic requests, and issued stores before malformed accesses. Unowned adjacent stack entries fail explicitly.",
+  "confidence": "supported",
+  "author": "Codex /root from qualified original source",
+  "reviewers": [
+    "Codex /root/sprite_integration independent source/instruction/test review"
+  ],
+  "validation": {
+    "preconditions": [
+      "Qualified original field overlay and corrected project copy; immutable source project preserved.",
+      "Source/synthetic scope only."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command ctest --preset sanitize -R '^field-event-reconstruction$'"
+    ],
+    "expected": "Connected nested calls and returns plus source-order, overflow, underflow, wrap and unsupported-storage boundaries pass under sanitizers.",
+    "actual": "All eight event source-boundary groups pass in the integrated sanitizer build; independent source/instruction review found no substantive issue. Original capture records zero callbacks.",
+    "result": "passed",
+    "tolerance": "Exact synthetic state and source order; no observed original calls.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/independent-review-v1.json",
+        "sha256": "7c15a026efec490389c4c84b3d6ccb7af5effcceb2030a93d885dd9f737d13a6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/ghidra-v1/export/index.json",
+        "sha256": "5f131708fec083ddac5c9d826b27f4c56a61d3fcd81da9877619847680cca11b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/export_source.py",
+        "sha256": "16b573f96ca2dbd9fcf37110592d13eb2916e81aa3cf6337a0731a19adad85c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/trace-spec-v1.json",
+        "sha256": "2ad1ab61ca88d3503d9b29e74a10ab9f86062c87d518d8b867bfc2791f2aff7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-event-stack-20260918-v1/capture/observation.json",
+        "sha256": "790ab91de91a474041464492f8d4a94215693ced3ebef5dbc757487933979083",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/source-v1/include/xem/reconstruction/field_events.hpp",
+        "sha256": "e3b06696774deeb36b0ffcdd36783f15df3312bae6277f3685b41f79871fc6db",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/source-v1/src/reconstruction/field_events.cpp",
+        "sha256": "e209c094ddd890b7a476fdbe1ad3f17e8e654e44f3624b0f724e1d9d1fed4077",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-event-stack-20260918/source-v1/tests/test_field_events.cpp",
+        "sha256": "80e5d8f786e7fa662ef2a029577e778cb489efe2d7ba6b4ec1fb90d46fe4d563",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/field_events.hpp",
+      "src/reconstruction/field_events.cpp",
+      "tests/test_field_events.cpp"
+    ],
+    "source_snapshot": ".local/analysis/phase1-event-stack-20260918/source-v1",
+    "library": "xem-field-reconstruction"
+  },
+  "source_dependencies": [
+    "EVID-REF-027",
+    "EVID-REF-034"
+  ],
+  "related_requirements": [
+    "P01-T03",
+    "P01-T08",
+    "P01-T09",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "Required-route advancement is not claimed by unobserved handlers. Other script operations and initialization remain unresolved."
+  ],
+  "provenance": {
+    "consulted_sources": "Only supplied original binaries/execution, project-authored references and qualified Ghidra. No other Xenogears source or reverse-engineering results.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are distributable. Original images/bytes/traces/exports/saves remain private."
+  }
+}

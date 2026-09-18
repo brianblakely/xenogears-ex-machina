@@ -98,14 +98,28 @@
         {
           "opcode": "0x05",
           "handler": "0x800a17f4",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "call_three",
+          "encoding_bytes": 3,
+          "evidence": [
+            "EVID-REF-037"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp",
+          "scope": "Source and synthetic only; no invocation on the frozen base route. Diagnostic output remains a separate non-game service."
         },
         {
           "opcode": "0x06",
           "handler": "0x800a1730",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "call_five",
+          "encoding_bytes": 5,
+          "evidence": [
+            "EVID-REF-037"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp",
+          "scope": "Source and synthetic only; no invocation on the frozen base route. Diagnostic output remains a separate non-game service."
         },
         {
           "opcode": "0x07",
@@ -141,20 +155,29 @@
           "opcode": "0x0c",
           "handler": "0x8009f5a8",
           "analysis_status": "source_reconstructed_unobserved",
-          "native_status": "unimplemented",
+          "native_status": "authored_cpp_library",
           "name": "loop_player_control",
           "encoding_bytes": 1,
           "evidence": [
-            "EVID-REF-021"
+            "EVID-REF-021",
+            "EVID-REF-034"
           ],
           "reconstruction": "tools/analysis/field_control.py",
-          "scope": "Original source and synthetic only; original execution remains required."
+          "scope": "Original source and synthetic only; original execution remains required.",
+          "cpp_reconstruction": "src/reconstruction/field_control.cpp"
         },
         {
           "opcode": "0x0d",
           "handler": "0x800a18b8",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "return_from_call",
+          "encoding_bytes": 1,
+          "evidence": [
+            "EVID-REF-037"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp",
+          "scope": "Source and synthetic only; no invocation on the frozen base route. Diagnostic output remains a separate non-game service."
         },
         {
           "opcode": "0x0e",
@@ -273,8 +296,15 @@
         {
           "opcode": "0x21",
           "handler": "0x8009e094",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_motion_divisor",
+          "encoding_bytes": 3,
+          "scope": "Reviewed operand/store/PC source and synthetic boundaries; original event-21 execution remains unobserved.",
+          "cpp_reconstruction": "src/reconstruction/field_motion.cpp",
+          "evidence": [
+            "EVID-REF-034"
+          ]
         },
         {
           "opcode": "0x22",
@@ -931,8 +961,14 @@
         {
           "opcode": "0x86",
           "handler": "0x80096724",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "evidence": [
+            "EVID-REF-033"
+          ],
+          "reconstruction": "tools/analysis/battle_continuation.py",
+          "cpp_reconstruction": "src/reconstruction/field_battle.cpp",
+          "scope": "Ready pending-word wait and unequal typed variable-zero comparison after return; alternative paths source/synthetic. Result/gate producers unresolved."
         },
         {
           "opcode": "0x87",
@@ -1130,14 +1166,16 @@
           "opcode": "0xa7",
           "handler": "0x8009f5f4",
           "analysis_status": "observed_subset",
-          "native_status": "unimplemented",
+          "native_status": "authored_cpp_library",
           "name": "request_player_control",
           "encoding_bytes": 1,
           "evidence": [
-            "EVID-REF-021"
+            "EVID-REF-021",
+            "EVID-REF-034"
           ],
           "reconstruction": "tools/analysis/field_control.py",
-          "scope": "4669 exact original calls; active encounter selection and unobserved control branches remain open."
+          "scope": "4669 exact original calls; active encounter selection and unobserved control branches remain open.",
+          "cpp_reconstruction": "src/reconstruction/field_control.cpp"
         },
         {
           "opcode": "0xa8",
@@ -1659,12 +1697,14 @@
           "opcode": "0xfe",
           "handler": "0x800869b8",
           "analysis_status": "observed_subset",
-          "native_status": "unimplemented",
+          "native_status": "authored_cpp_library",
           "evidence": [
-            "EVID-REF-018"
+            "EVID-REF-018",
+            "EVID-REF-035"
           ],
           "name": "extended_dispatch",
-          "scope": "2921 prefix PC increments; extended handler effects remain unvalidated except pending a2."
+          "scope": "2921 prefix PC increments; extended handler effects remain unvalidated except pending a2.",
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
         },
         {
           "opcode": "0xff",
@@ -2444,8 +2484,14 @@
         {
           "opcode": "0x7f",
           "handler": "0x8008a244",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "evidence": [
+            "EVID-REF-033"
+          ],
+          "reconstruction": "tools/analysis/battle_continuation.py",
+          "cpp_reconstruction": "src/reconstruction/field_battle.cpp",
+          "scope": "Ready pending-word wait and unequal typed variable-zero comparison after return; alternative paths source/synthetic. Result/gate producers unresolved."
         },
         {
           "opcode": "0x80",
@@ -2655,12 +2701,14 @@
           "opcode": "0xa2",
           "handler": "0x8008825c",
           "analysis_status": "observed_subset",
-          "native_status": "unimplemented",
+          "native_status": "authored_cpp_library",
           "evidence": [
-            "EVID-REF-018"
+            "EVID-REF-018",
+            "EVID-REF-035"
           ],
           "name": "wait_music_load",
-          "scope": "993 pending initialization waits; ready/wrap/normal-mode paths remain source/synthetic only."
+          "scope": "993 pending initialization waits; ready/wrap/normal-mode paths remain source/synthetic only.",
+          "cpp_reconstruction": "src/reconstruction/field_events.cpp"
         },
         {
           "opcode": "0xa3",
@@ -3223,7 +3271,7 @@
       ]
     }
   ],
-  "unknown_instruction_policy": "The C++ event library implements primary 00,01,02,04,26,35,36,37,38,39 and raises UnsupportedInstruction with PC/opcode for others. Existing Python additionally models 0c,71,a7 and fe/a2 within their stated limits. Unresolved services and non-code extended-table values stay explicit; aliases never establish no-ops. A source library is not a complete native VM.",
+  "unknown_instruction_policy": "The C++ core implements primary00,01,02,04,26,35,36,37,38,39; explicit module dispatch additionally covers control0c/a7, divisor21, request71, branch86 and FE with7f/a2. Unknown primary/extended operations fail explicitly. The bounded sprite VM covers timed00..7f and A0/A1/B3/C6/E1; its other instructions remain explicit blockers. Source libraries and test doubles do not establish a complete native runtime.",
   "unresolved_symbols": [
     {
       "id": "resident-function-boundaries",
@@ -4490,9 +4538,11 @@
       "native_status": "authored_cpp_library",
       "execution_status": "observed_subset",
       "evidence": [
-        "EVID-REF-027"
+        "EVID-REF-027",
+        "EVID-REF-034",
+        "EVID-REF-037"
       ],
-      "scope": "Ten primary handlers, slot selection and batch/actor-pass source. 81,527 original state/branch transitions; actor eligibility and connected dispatch remain source/synthetic scope."
+      "scope": "Ten primary handlers, slot selection and batch/actor-pass source. 81,527 original state/branch transitions; actor eligibility and connected dispatch remain source/synthetic scope. One EventContext::pass owns input_updated and unknown_c4268 across scheduler/control/motion; original transition replay remains exact. Separate 05/06/0D call/return handlers have reviewed source and synthetic coverage only; four return PCs share EventActor state."
     },
     {
       "id": "field_position",
@@ -4540,15 +4590,19 @@
         "tools/analysis/sprite_replay.py",
         "tests/test_sprite_return.py",
         "tests/test_sprite_vm.py",
-        "tests/test_sprite_replay.py"
+        "tests/test_sprite_replay.py",
+        "include/xem/reconstruction/field_sprite.hpp",
+        "src/reconstruction/field_sprite.cpp",
+        "tests/test_field_sprite.cpp"
       ],
       "analysis_status": "source_reviewed",
       "execution_status": "observed_subset",
-      "native_status": "unimplemented",
+      "native_status": "authored_cpp_library",
       "evidence": [
-        "EVID-REF-029"
+        "EVID-REF-029",
+        "EVID-REF-034"
       ],
-      "scope": "Later actor checkpoint policy and connected sprite restore: 25 decisions/19 complete restores, six ordinary timed iterations and four compact parsers. Python analysis source; creation/rebinding, remaining commands, native ownership/readiness and unobserved variants remain open."
+      "scope": "C++ constructor/binding/animation/facing/matrix/frame operations and bounded ordinary timer/checkpoint source. Complete captured constructors, facing and later return checkpoints compare exactly. Remaining used VM instructions, factory/rebinding lifecycle, cleanup and readiness remain open."
     },
     {
       "id": "field_actor_defaults",
@@ -4583,9 +4637,10 @@
       "native_status": "authored_cpp_library",
       "evidence": [
         "EVID-REF-031",
-        "EVID-REF-032"
+        "EVID-REF-032",
+        "EVID-REF-033"
       ],
-      "scope": "Primary71 ordered gates, tagged selector, mode latch and request stores; all six original calls/thirteen boundaries match. Decoder follows retry/continuation; other gate/variable paths are source/synthetic. Combat, full scheduling and readiness remain open. Reusable C++ handler shares EventContext state and supports composed retry/accept/resume dispatch."
+      "scope": "Primary71 ordered gates, tagged selector, mode latch and request stores; all six original calls/thirteen boundaries match. Decoder follows retry/continuation; other gate/variable paths are source/synthetic. Combat, full scheduling and readiness remain open. Reusable C++ handler shares EventContext state and supports composed retry/accept/resume dispatch. Extended7F and primary86 now execute in the same C++ context and match the observed ready/unequal return-time boundaries."
     },
     {
       "id": "packed_field_cpp",
@@ -4603,6 +4658,87 @@
         "EVID-REF-032"
       ],
       "scope": "27 original decoder calls/374216 exact bytes and bounded event/collision packages on three fields; actual shared EventProgram feeds the existing core. Full loader, resource consumers and lifetime remain open."
+    },
+    {
+      "id": "field_control_cpp",
+      "files": [
+        "include/xem/reconstruction/field_control.hpp",
+        "src/reconstruction/field_control.cpp",
+        "tests/test_field_control.cpp"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-021",
+        "EVID-REF-034"
+      ],
+      "scope": "Shared event control0c/a7 direction/jump requests and encounter early exits; active encounter selection fails explicitly. 4,669 calls compare exactly; connected scheduler/control/motion test has synthetic scope."
+    },
+    {
+      "id": "field_motion_cpp",
+      "files": [
+        "include/xem/reconstruction/field_motion.hpp",
+        "src/reconstruction/field_motion.cpp",
+        "tests/test_field_motion.cpp"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-022",
+        "EVID-REF-023",
+        "EVID-REF-034"
+      ],
+      "scope": "Planar prefix/trig/speed/vector/PC, event21, A1 impulse and vertical stage connected to shared sprite gravity and actor terrain. 43,414 planar and7,720 jump records compare; full movement/collision/position remains required."
+    },
+    {
+      "id": "field_media_cpp",
+      "files": [
+        "include/xem/reconstruction/field_media.hpp",
+        "src/reconstruction/field_media.cpp",
+        "tests/test_field_media.cpp",
+        "analysis/formats/field-media-source.md"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-018",
+        "EVID-REF-035"
+      ],
+      "scope": "Compiled music caller policy matches35 original polls/commits,2921 FE prefix boundaries and993 pending A2 waits. New original capture matches all83 wave callbacks and full8192-byte staging states; all169984 input bytes equal168000-byte WDS resource plus1984 actual sector-tail bytes.83 releases,one start,79 waits and79 continuations retain exact order/arguments/state/digests. Named unresolved resident game callees remain required; native playback and full media completion are not claimed."
+    },
+    {
+      "id": "field_sprite_factory_cpp",
+      "files": [
+        "include/xem/reconstruction/field_sprite_factory.hpp",
+        "src/reconstruction/field_sprite_factory.cpp",
+        "tests/test_field_sprite_factory.cpp"
+      ],
+      "analysis_status": "source_reviewed",
+      "execution_status": "observed_subset",
+      "native_status": "authored_cpp_library",
+      "evidence": [
+        "EVID-REF-036"
+      ],
+      "scope": "Real C++ compares19 complete field sprite factory calls for actors0\u201318,25 initial bounds calls andfour empty task passes. All24724 owned bytes plus mapped factory state and allocation/free requests agree. Six required NPC factories explicitly stop at96/FC, andsix nonempty task passes stop at callback80022df4. Full required factory capability remains incomplete."
+    },
+    {
+      "id": "disc_stream_cpp",
+      "files": [
+        "include/xem/reconstruction/disc_stream.hpp",
+        "src/reconstruction/disc_stream.cpp",
+        "tests/test_disc_stream.cpp",
+        "analysis/formats/disc-stream-source.md"
+      ],
+      "analysis_status": "source_reviewed",
+      "execution_status": "observed_subset",
+      "native_status": "authored_cpp_library",
+      "evidence": [
+        "EVID-REF-038"
+      ],
+      "scope": "C++ reproduces one eight-block allocation (16,484 bytes, mode 1), all 96 chunk queries (83 ready, 13 empty), and all 83 releases. Returns, allocation arguments, four globals and all 100 ring metadata bytes agree; all 21 original control artifacts remain exact. Concrete recovered ring methods now feed the field stream and wave callback source. The shared ring owner keeps expected sequence, selected allocation, separate active count and debugger selector explicit. Heap allocation, CD producers and audio internals remain named unresolved game dependencies."
     }
   ],
   "subsystem_dependency_map": [
@@ -4890,6 +5026,60 @@
       "sha256": "d605b7bf6d01ca90f3a1d7d5e794f9a888f396ca5da14d15edbac0d2e0de0b19",
       "result": "passed",
       "scope": "Primary71 C++ source and corrected v2 original projection; original five retries/one acceptance only.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-033",
+      "reviewer": "Codex /root/motion_integration, independent of root author",
+      "report": ".local/analysis/phase1-battle-continuation-20260918/independent-review.json",
+      "sha256": "512609451b6101ddaf7f2c19d0d22b38d56f0bc7cd6606ab4ef933c05dd02431",
+      "result": "passed",
+      "scope": "Original evidence establishes only one ready 7F, one unequal 86 and its enclosing FE. Synthetic tests establish pending/equal/width boundaries; result producers and battle-return lifetime are not supplied by these handlers.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-034",
+      "reviewer": "Codex /root, independent of sprite and motion implementation agents",
+      "report": ".local/verification/phase1-source-20260918/independent-integration-review-v1.json",
+      "sha256": "9861205ca88430eefcf2b1d031ae145e78dc1e3901f250c0e6ee31969bc8752e",
+      "result": "passed",
+      "scope": "Frozen sprite v2 and shared-pass source; exact rerun and source/adapter review, with all recorded exclusions retained.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-035",
+      "reviewer": "Codex /root independent of media implementation agent",
+      "report": ".local/verification/phase1-media-independent-20260918-v2/independent-review.json",
+      "sha256": "25e53e3a70c5efd6ae692cc1a10248badcbc185ad574999e385187aac5dcbfe5",
+      "result": "passed",
+      "scope": "Wave callback and already reviewed loading/stream caller policy only; resident CD ring and WDS/SPU game callees remain unresolved inputs, not platform-completion proof.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-036",
+      "reviewer": "Codex /root independent of sprite author",
+      "report": ".local/verification/phase1-source-20260918/factory-independent-review-v1.json",
+      "sha256": "ba5440626303bf12a74cab48140eb3dee078c478a42d5d6bb4d481b9be99eba9",
+      "result": "passed",
+      "scope": "Only19 supported factories, bounds andempty task passes; source/capture review with documented separately owned audio counters and required unknown commands/tasks.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-037",
+      "reviewer": "Codex /root/sprite_integration",
+      "report": ".local/analysis/phase1-event-stack-20260918/independent-review-v1.json",
+      "sha256": "7c15a026efec490389c4c84b3d6ccb7af5effcceb2030a93d885dd9f737d13a6",
+      "result": "passed",
+      "scope": "Call/return source, instructions and synthetic tests only; zero original route invocations.",
+      "broad_completion": false
+    },
+    {
+      "finding": "EVID-REF-038",
+      "reviewer": "Codex /root",
+      "report": ".local/verification/phase1-disc-stream-independent-20260918/independent-review-v1.json",
+      "sha256": "c5e459969f2eb55dfb5bb4bb99f9f324e382e2d6164b012a5a93c839495757e1",
+      "result": "passed",
+      "scope": "Source and rebuilt original ring replay; heap, producer and audio internals remain open.",
       "broad_completion": false
     }
   ],

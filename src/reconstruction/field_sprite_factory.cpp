@@ -1,0 +1,244 @@
+#include "xem/reconstruction/field_sprite_factory.hpp"
+#include "xem/reconstruction/field_motion.hpp"
+
+#include <bit>
+#include <unordered_set>
+
+namespace xem::reconstruction::field {
+namespace {
+constexpr std::size_t inspection_limit = 4096;
+void require(bool condition, const char *message) {
+    if (!condition)
+        throw SpriteError(message);
+}
+bool valid_extent(std::uint32_t address, std::size_t size) {
+    return size <= (std::uint64_t{1} << 32) - address;
+}
+void check_window(SpriteWindow sprite) {
+    require(sprite.address != 0 && sprite.bytes.size() >= 0xb4 &&
+                valid_extent(sprite.address, sprite.bytes.size()),
+            "Incomplete original sprite window");
+}
+std::uint32_t get(std::span<const std::uint8_t> bytes, std::size_t at, std::size_t width = 4) {
+    require(at <= bytes.size() && width <= bytes.size() - at, "Sprite read exceeds supplied bytes");
+    std::uint32_t value = 0;
+    for (std::size_t i = 0; i < width; ++i)
+        value |= static_cast<std::uint32_t>(bytes[at + i]) << (8 * i);
+    return value;
+}
+void put(std::span<std::uint8_t> bytes, std::size_t at, std::uint32_t value,
+         std::size_t width = 4) {
+    require(at <= bytes.size() && width <= bytes.size() - at,
+            "Sprite write exceeds supplied bytes");
+    for (std::size_t i = 0; i < width; ++i)
+        bytes[at + i] = static_cast<std::uint8_t>(value >> (8 * i));
+}
+std::int32_t signed_word(std::uint32_t value) { return std::bit_cast<std::int32_t>(value); }
+std::int32_t signed_half(std::uint32_t value) {
+    return std::bit_cast<std::int16_t>(static_cast<std::uint16_t>(value));
+}
+std::int32_t product(std::int32_t a, std::int32_t b) {
+    return signed_word(static_cast<std::uint32_t>(a) * static_cast<std::uint32_t>(b));
+}
+std::int32_t truncate_shift(std::int32_t value, unsigned bits) {
+    if (value < 0)
+        value = signed_word(static_cast<std::uint32_t>(value) + ((1U << bits) - 1));
+    return value >> bits;
+}
+std::size_t inside(SpriteWindow sprite, std::uint32_t pointer, std::size_t size) {
+    require(pointer >= sprite.address, "Sprite pointer precedes supplied window");
+    const auto at = static_cast<std::size_t>(pointer - sprite.address);
+    require(at <= sprite.bytes.size() && size <= sprite.bytes.size() - at,
+            "Sprite pointer exceeds supplied window");
+    return at;
+}
+std::uint32_t read(std::span<const SpriteResource> sources, std::uint32_t pointer,
+                   std::size_t size) {
+    require(valid_extent(pointer, size), "Sprite source read wraps address space");
+    std::optional<std::uint32_t> value;
+    for (const auto &source : sources) {
+        require(valid_extent(source.address, source.bytes.size()),
+                "Sprite source extent wraps address space");
+        if (pointer < source.address)
+            continue;
+        const auto at = static_cast<std::size_t>(pointer - source.address);
+        if (at <= source.bytes.size() && size <= source.bytes.size() - at) {
+            const auto next = get(source.bytes, at, size);
+            require(!value || *value == next, "Overlapping sprite sources disagree");
+            value = next;
+        }
+    }
+    require(value.has_value(), "Sprite read requires missing address-qualified source bytes");
+    return *value;
+}
+std::uint32_t resource(const SpriteSources &sources, std::uint32_t pointer, std::size_t size) {
+    return read(sources.resources, pointer, size);
+}
+SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size) {
+    require(static_cast<bool>(allocate), "Original sprite allocation boundary is absent");
+    auto result = allocate(size, 0);
+    require(result.bytes.size() == size && valid_extent(result.address, size) &&
+                (size == 0 || result.address != 0),
+            "Incomplete original sprite allocation or incoming bytes");
+    return result;
+}
+} // namespace
+
+std::array<std::int32_t, 3> initial_sprite_bounds(SpriteWindow sprite,
+                                                  const SpriteSources &sources) {
+    check_window(sprite);
+    const auto binding = inside(sprite, get(sprite.bytes, 0x24), 20);
+    const auto directory = get(sprite.bytes, binding + 16);
+    const auto header = directory + resource(sources, directory + 2, 2);
+    const auto first_frame = header + resource(sources, header + 4, 2) + 4;
+    auto index = resource(sources, first_frame, 1);
+    if (index != 0)
+        --index;
+    const auto frames = get(sprite.bytes, binding);
+    if (resource(sources, frames + index * 2, 2) < index)
+        index = 0;
+    const auto record = frames + resource(sources, frames + index * 2 + 2, 2);
+    const auto height =
+        truncate_shift(product(static_cast<std::int32_t>(resource(sources, record + 3, 1)),
+                               signed_half(get(sprite.bytes, 0x2c, 2))),
+                       12);
+    const auto third =
+        truncate_shift(product(static_cast<std::int32_t>(resource(sources, record + 1, 1)),
+                               signed_half(get(sprite.bytes, 0x2c, 2))),
+                       12);
+    const auto first =
+        truncate_shift(product(static_cast<std::int32_t>(resource(sources, record + 2, 1)),
+                               signed_half(get(sprite.bytes, 0x2c, 2))),
+                       12);
+    return {first, height, third};
+}
+
+void advance_sprite_tasks(SpriteTaskState &state, const SpriteSources &sources) {
+    if (state.wait_count != 0) {
+        if (--state.wait_count == 0)
+            state.wait_flag = 0;
+        return;
+    }
+    state.next = state.head;
+    std::unordered_set<std::uint32_t> seen;
+    while (state.next != 0) {
+        const auto current = state.next;
+        require(seen.insert(current).second && seen.size() <= inspection_limit,
+                "Original sprite task list is cyclic or exceeds inspection bound");
+        const auto next = resource(sources, current + 24, 4);
+        const auto callback = resource(sources, current + 8, 4);
+        state.current = current;
+        state.next = next;
+        require(callback == 0, "Original sprite task callback is unreconstructed");
+    }
+}
+
+SpriteConstruction
+create_field_sprite(std::span<std::uint8_t> actor, std::span<std::uint8_t> descriptor,
+                    const FieldSpriteArguments &arguments, FieldSpriteEnvironment &environment,
+                    const SpriteSources &sources, const SpriteAllocator &allocate,
+                    const SpriteReleaser &release, const SpriteConstructionObserver &observe) {
+    require(actor.size() == 0x138 && descriptor.size() == 0x5c,
+            "Field sprite creation requires a complete actor and descriptor");
+    require(!(get(descriptor, 0x58) & 0x10000),
+            "Field sprite creation requires unreconstructed existing-sprite destruction");
+    require(arguments.mode != 0 || arguments.part_variant == 0,
+            "Alternate field sprite part constructor 80024294 is unreconstructed");
+    const auto select_allocation_class = [&] {
+        environment.allocation_class = 8;
+        environment.class_eight_context = 0;
+        environment.allocation_cursor = 0;
+    };
+    select_allocation_class();
+    put(actor, 0x127, arguments.resource_slot, 1);
+    put(actor, 0x126, arguments.tag, 1);
+    put(actor, 0x134, (get(actor, 0x134) & 0xfffffff0) | (arguments.part_variant & 15));
+    put(actor, 0x130, (get(actor, 0x130) & 0xcfffffff) | ((arguments.mode & 3) << 28));
+    put(actor, 0x134, (get(actor, 0x134) & ~16U) | ((arguments.defer_initial_step & 1) << 4));
+    std::array<std::int16_t, 5> parameters;
+    parameters[0] = 0x100;
+    if (arguments.mode == 0) {
+        const auto coordinates = 0x800b1f78U + arguments.resource_slot * 8;
+        const auto second = resource(sources, coordinates + 2, 2);
+        const auto first = resource(sources, coordinates, 2);
+        parameters[1] = static_cast<std::int16_t>(signed_half(arguments.resource_slot + 0x1e0));
+        parameters[2] = static_cast<std::int16_t>(signed_half(first));
+        parameters[3] = static_cast<std::int16_t>(signed_half(second));
+        parameters[4] = 0x40;
+    } else {
+        parameters[1] = static_cast<std::int16_t>(
+            signed_half(arguments.resource_slot + (arguments.mode == 1 ? 0xe0U : 0xe3U)));
+        parameters[2] = arguments.mode == 1 ? 0x280 : 0x2a0;
+        parameters[3] =
+            static_cast<std::int16_t>(signed_half(arguments.resource_slot * 64 + 0x100));
+        parameters[4] = 8;
+    }
+    auto result = create_sprite(arguments.resource, parameters, environment.sprite, sources,
+                                allocate, observe);
+    environment.sprite = result.environment;
+    SpriteWindow sprite{result.sprite.address, result.sprite.bytes};
+    put(descriptor, 4, sprite.address);
+    if (arguments.mode != 0) {
+        require(static_cast<bool>(release), "Original sprite part-release boundary is absent");
+        const auto renderer = inside(sprite, get(sprite.bytes, 0x20), 52);
+        require(get(sprite.bytes, renderer + 44) == result.parts.address,
+                "Original owned sprite part address differs");
+        release(result.parts.address);
+        result.parts = allocation(allocate, 32 * 24);
+        require(static_cast<std::uint64_t>(result.parts.address) + result.parts.bytes.size() <=
+                        sprite.address ||
+                    static_cast<std::uint64_t>(sprite.address) + sprite.bytes.size() <=
+                        result.parts.address,
+                "Original replacement parts overlap sprite allocation");
+        put(sprite.bytes, renderer + 48, result.parts.address);
+        put(sprite.bytes, renderer + 44, result.parts.address);
+    }
+    put(descriptor, 0x5a, get(descriptor, 0x5a, 2) | 1, 2);
+    const auto bounds = initial_sprite_bounds(sprite, sources);
+    put(sprite.bytes, 0x40, (get(sprite.bytes, 0x40) & 0xffffe0ff) | 0x300);
+    put(sprite.bytes, 0x2c, 0xc00, 2);
+    put(sprite.bytes, 0x82, 0x2000, 2);
+    if (environment.return_mode == 0) {
+        for (const auto at : {0U, 4U, 8U})
+            put(sprite.bytes, at, get(actor, 0x20 + at));
+        for (const auto at : {0x10U, 0x0cU, 0x10U, 0x14U})
+            put(sprite.bytes, at, 0);
+        put(sprite.bytes, 0x1c, 0x10000);
+        put(sprite.bytes, 0x84, get(descriptor, 0x24), 2);
+        put(actor, 0x1a, arguments.mode == 0 ? static_cast<std::uint32_t>(bounds[1]) << 1 : 0x40,
+            2);
+    }
+    if (environment.field_gate != 0)
+        put(sprite.bytes, 0x40, get(sprite.bytes, 0x40) | 0x40000);
+    select_sprite_animation(sprite, 0, environment.sprite, sources);
+    put(sprite.bytes, 0x32, 0, 2);
+    static_cast<void>(rebuild_sprite_velocity(sprite, sources.trigonometry));
+    select_allocation_class();
+    const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 22);
+    put(sprite.bytes, sequencer + 20, arguments.actor_index, 2);
+    put(sprite.bytes, 0x68, 0x80076a74);
+    if (arguments.defer_initial_step == 0) {
+        static_cast<void>(advance_sprite_timer(sprite, environment.sprite, sources));
+        advance_sprite_tasks(environment.tasks, sources);
+        const auto active_sequencer = inside(sprite, get(sprite.bytes, 0x7c), 14);
+        if (get(sprite.bytes, active_sequencer + 12, 2) == 255) {
+            put(actor, 0xea, 255, 2);
+            put(actor, 4, get(actor, 4) | 0x1000000);
+            for (const auto at : {0U, 4U, 8U})
+                put(sprite.bytes, at, get(actor, 0x20 + at));
+        }
+    }
+    for (const auto at : {0U, 4U, 8U}) {
+        const auto position = static_cast<std::uint32_t>(signed_half(get(actor, 0x22 + at, 2)));
+        put(descriptor, 0x20 + at, position);
+        put(descriptor, 0x40 + at, position);
+    }
+    put(sprite.bytes, 0x84, get(descriptor, 0x24), 2);
+    put(sprite.bytes, 0, get(actor, 0x20));
+    put(sprite.bytes, 4, get(actor, 0x24));
+    ++environment.initialized_count;
+    put(sprite.bytes, 8, get(actor, 0x28));
+    result.environment = environment.sprite;
+    return result;
+}
+} // namespace xem::reconstruction::field

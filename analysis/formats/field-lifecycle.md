@@ -30,7 +30,11 @@ implementation are authored source.
 | --- | --- | --- |
 | [packed_field.cpp](../../src/reconstruction/packed_field.cpp) | Original packed decoder, nine field components, event entry/bitmap/bytecode package, collision layers | Supplied original bytes include actual adjacent input; decoded padding remains separate. Event packages expose the existing `EventProgram`; no resource lifetime or geometry renderer is implied. |
 | [field_actor.cpp](../../src/reconstruction/field_actor.cpp) | Actor defaults, resident RNG step, initial floor/terrain queries and original integer normalization | Owns resulting correlation bytes; uses parsed collision layers and caller-supplied original reciprocal data. Allocation, shadows, sprite construction and readiness remain required. |
-| [field_battle.cpp](../../src/reconstruction/field_battle.cpp) | Primary `71` ordered request gates, selector, mode and publication | Shares working PC, variables and interpreter controls with `EventContext`; accepts music-result and mode inputs. The actual battle setup/rules/results remain required source. |
+| [field_battle.cpp](../../src/reconstruction/field_battle.cpp) | Primary `71` ordered request gates, selector, mode and publication; extended `7f` wait and primary `86` continuation | Shares working PC, variables and interpreter controls with `EventContext`; ready/unequal return paths match original execution. Battle setup/rules/results and gate producers remain required source. |
+| [field_control.cpp](../../src/reconstruction/field_control.cpp), [field_motion.cpp](../../src/reconstruction/field_motion.cpp) | Direction/jump requests, mode prefix, planar arithmetic, divisor, impulse and vertical stage | Share `EventContext::pass` and actor terrain; active encounter selection and full movement/sweeps/position remain open. |
+| [field_sprite.cpp](../../src/reconstruction/field_sprite.cpp), [source contract](sprite-construction.md) | Constructor/binding/animation, matrix/facing/frame operations, bounded ordinary VM and later checkpoints | Shared A0/A1 motion arithmetic; actual incoming allocation bytes. Factory publication, remaining required commands, cleanup and readiness remain open. |
+| [field_sprite_factory.cpp](../../src/reconstruction/field_sprite_factory.cpp) | Actor factory, bounds, allocator class, part resizing and empty task passes | All 19 supported original factories compare; six required NPC factories and nonempty task callbacks remain explicit errors. |
+| [field_media.cpp](../../src/reconstruction/field_media.cpp), [disc_stream.cpp](../../src/reconstruction/disc_stream.cpp) | Music caller state machine, wave staging, retail ring allocation wrapper, selection and release | One shared field activity gate and one resident ring owner. Heap, CD producers and resident audio remain explicit unrecovered game calls. |
 | [field_events.cpp](../../src/reconstruction/field_events.cpp), [public types](../../include/xem/reconstruction/field_events.hpp) | Actor pass, slot selection, bounded dispatch, branches, waits, end/reset/jump and five variable stores | Ten primary handlers; others raise `UnsupportedInstruction` with PC and opcode |
 | [field.py](../../tools/analysis/field.py), [packed.py](../../tools/analysis/packed.py) | Existing component, event-package and collision parsing; packed decoding | Extraction/reference tools; actual source-memory context is required for decoder overreads |
 | [position.py](../../tools/analysis/position.py), [position_query.py](../../tools/analysis/position_query.py) | Position integration, layer-floor selection, height bounds and party history | Reuses collision and vertical arithmetic; diagnostic services and unobserved branches remain explicit |
@@ -46,8 +50,14 @@ references to serializable identities at its runtime boundary. Original offsets
 are provenance, not the intended agent API. The baseline does not launch a game.
 
 The library requires real dispatch. `execute_core_event` supports primary
-`00,01,02,04,26,35,36,37,38,39`. Existing Python knowledge of `0c`, `71`, `a7` and
-`fe/a2` remains available but is not silently substituted into the C++ VM.
+`00,01,02,04,26,35,36,37,38,39`. Other recovered C++ modules expose control
+`0c/a7`, divisor `21`, request `71`, continuation `86`, and extended `7f/a2`
+through the same event context. The caller composes this explicit dispatch;
+Python references remain separate analysis tools.
+`execute_event_call` adds `05/06/0d` using the four return PCs and depth bits
+owned by `EventActor`. Its boolean result requests diagnostic output; a caller
+supplies that non-game service. These handlers are source-reviewed and tested
+with authored inputs; the frozen original route did not invoke them.
 Malformed storage raises an explicit error; this bounded host interface does not
 emulate arbitrary invalid PS1 memory accesses.
 
@@ -133,7 +143,9 @@ zero, it calls `80076ac0` using the first field sprite resource and sets layer
 flag `800`. Sprite creation and marker producers remain required dependencies.
 
 The ordinary pass (`800a2030..800a22a8`, exclusive end) first clears `800adb68`
-and `800c4268`, whose meanings remain unknown. Single-actor mode equals one
+and `800c4268` in `EventContext::pass`. The control handler writes `800adb68`
+as `input_updated`, and motion reads it to choose walking/running; the second
+word's downstream meaning remains unknown. Single-actor mode equals one
 selects one actor; otherwise it uses the event actor count.
 
 1. Eligibility requires descriptor `(flags & f00) != 0` and clear actor layer

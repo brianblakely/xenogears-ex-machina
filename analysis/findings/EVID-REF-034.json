@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-034",
+  "kind": "connected_cpp_control_motion_sprite_boundaries",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8009f5a8",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8009f5f4",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a2030",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80082bb8",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8008505c",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a3c8c",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80024524",
+      "address_space": "PS1 KSEG0 in the qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8002435c",
+      "address_space": "PS1 KSEG0 in the qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80023538",
+      "address_space": "PS1 KSEG0 in the qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800219ac",
+      "address_space": "PS1 KSEG0 in the qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80021d50",
+      "address_space": "PS1 KSEG0 in the qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80023210",
+      "address_space": "PS1 KSEG0 in the qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    }
+  ],
+  "observation": "Compiled source reproduces the preserved control, planar/jump, constructor/binding, facing and return-checkpoint boundaries. Scheduler, control and motion now use one input-update word; the ordinary sprite VM calls the same recovered speed/impulse functions.",
+  "interpretation": "These are reusable C++ implementations and connected synthetic compositions of reviewed source. Original complete boundary windows remain the execution oracle. Factory publication, remaining used commands, full active motion/collision and semantic readiness remain required.",
+  "confidence": "confirmed",
+  "author": "Codex sprite_integration and motion_integration agents; prior control/source work retained and reviewed",
+  "reviewers": [
+    "Codex /root independently reviewed qualified source, C++ state/ordering and adapters, rebuilt frozen source with ASan/UBSan and reran original sprite captures"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix development environment and preserved qualified original source/captures.",
+      "Review snapshot fixes sprite v2 and shared-pass implementation; later factory additions require separate validation."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 python3 .local/verification/phase1-source-20260918/review_integrated.py",
+      "Reproduction commands for current control/event/planar/jump original comparisons are preserved in .local/verification/phase1-field-pass-cpp-20260918/REPORT.md."
+    ],
+    "expected": "Exact original arithmetic, complete captured byte windows, resource/owner identity and call order; synthetic boundary inputs remain separate.",
+    "actual": "4,669 control calls, 81,527 event transitions, 43,414 planar records and 7,720 jump records pass. Independent sanitized rebuild passes 25 constructors/225 stages/94 bindings, 65 facing replays/65 orientations/198 frame calls, and 25 actor checkpoint decisions/19 complete restores/six timers/six VM calls. The original battle continuation fixture also passes with the current EventContext layout.",
+    "result": "passed",
+    "tolerance": "Exact bytes and integer effects; no new masks, pointer exclusions or changed expected results.",
+    "artifacts": [
+      {
+        "path": ".local/verification/phase1-source-20260918/independent-integration-review-v1.json",
+        "sha256": "9861205ca88430eefcf2b1d031ae145e78dc1e3901f250c0e6ee31969bc8752e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-field-pass-cpp-20260918/final-artifacts.json",
+        "sha256": "baf85c46c6c136a356df7183b3458a39479bb21a277c9b45e8aee7bc411381a3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-field-pass-cpp-20260918/control-comparison-v2.json",
+        "sha256": "923ec81bff5ae9fdbd44c6db0ed957c80268f1c68f9064a4da845a9a06eb04c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-field-pass-cpp-20260918/event-comparison-v1.json",
+        "sha256": "608707b059297f6b316c5bcaddb26a16b5197cdb7a40d78e387d4230f1f1a0fe",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-field-pass-cpp-20260918/planar-comparison-v1.json",
+        "sha256": "e7f792f8fef6ced0e05e418189e9e36a30f51862af71ec7a75da578053ca30dd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-field-pass-cpp-20260918/jump-comparison-v1.json",
+        "sha256": "92a70951257d03e7fed3c4c8b206f09eb7e3e5526da786cba24493acd098b31f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/sprite-independent-constructor-v1.json",
+        "sha256": "d005c99b1bc0a8d9a4970d71ac0928a160090f4e84060dabf68c045511b233ba",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/sprite-independent-facing-v1.json",
+        "sha256": "259234dd79286f3c06c52cbf38088ca91f0d0a925c26779ee0ba37906969db89",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/sprite-independent-return-v1.json",
+        "sha256": "5f174b3efd7038e7c856349255ccfe58e2703d42ed7406e248c95bc986f93573",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-motion-cpp-20260918/source-qualification.json",
+        "sha256": "fa15999d445ac442c2625d6aea98aa06e26d81762bde5f123de98ba20bd8bd8f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260915/sprite-review-20260918-v2.json",
+        "sha256": "8a5013534fa1ab6a002e4d8dd3cd3452f5218d21140bac9abc756a0a8979094f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/include/xem/reconstruction/field_control.hpp",
+        "sha256": "324da78f375ca121bda636cda363db8e5232b9d9225fd675c5828f70ea6cff53",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/src/reconstruction/field_control.cpp",
+        "sha256": "c7cfd58828e45ef7e704225e066d20fbc6526dd65812460721ad7db4119e506d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/include/xem/reconstruction/field_motion.hpp",
+        "sha256": "e3fa021f6ff44615234d0588fd6b78c0da139d7ccf0967debd68dabac2542c86",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/src/reconstruction/field_motion.cpp",
+        "sha256": "0bc641211393b218f871f3fb66257aea7347d66754bc8184f41a03553ce674a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/include/xem/reconstruction/field_sprite.hpp",
+        "sha256": "b6bab858cf5e121b4c8801da1eb90cdcc0a543caf67d959cf66a0175f5b66bd0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/src/reconstruction/field_sprite.cpp",
+        "sha256": "64c1ca2e1d864b7845836b14ef66f7ebd546adf2c7d60c84c827ca65382e6aed",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/tests/test_field_control.cpp",
+        "sha256": "8151b55a30dc6a5a31e855fdde35c38c67df606c01ad22c431c33a44364f9bfe",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/tests/test_field_motion.cpp",
+        "sha256": "a6d616d9b78fb7b120a731ff55ae166ba4a3d95768c436f540a17441951ef137",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/tests/test_field_sprite.cpp",
+        "sha256": "faaf8a8f0c3a79caff63354148f8b223eaa78485b3fb10ff5d3b15447248fafd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/include/xem/reconstruction/field_events.hpp",
+        "sha256": "6b997d4fd61957eb9f49c1e09711201a01e19d3262b7ce33d4a8ea780a382dfa",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/src/reconstruction/field_events.cpp",
+        "sha256": "0f179af4aada7e74b5bf2cb63bb200a253765a8cadf74abf96c1bb918e316ed2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/reviewed-source-v1/tests/test_field_events.cpp",
+        "sha256": "74ccaa505e6f8737fbc27c7197bd9b5c9d145bbfe52b070a751a3d4d36df7e02",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/field_control.hpp",
+      "src/reconstruction/field_control.cpp",
+      "include/xem/reconstruction/field_motion.hpp",
+      "src/reconstruction/field_motion.cpp",
+      "include/xem/reconstruction/field_sprite.hpp",
+      "src/reconstruction/field_sprite.cpp",
+      "tests/test_field_control.cpp",
+      "tests/test_field_motion.cpp",
+      "tests/test_field_sprite.cpp",
+      "include/xem/reconstruction/field_events.hpp",
+      "src/reconstruction/field_events.cpp",
+      "tests/test_field_events.cpp",
+      "analysis/formats/sprite-construction.md",
+      "analysis/formats/field-motion-source.md"
+    ],
+    "source_snapshot": ".local/verification/phase1-source-20260918/reviewed-source-v1",
+    "library": "xem-field-reconstruction"
+  },
+  "source_dependencies": [
+    "EVID-REF-021",
+    "EVID-REF-022",
+    "EVID-REF-023",
+    "EVID-REF-025",
+    "EVID-REF-027",
+    "EVID-REF-029",
+    "EVID-REF-030"
+  ],
+  "related_requirements": [
+    "P01-T03",
+    "P01-T04",
+    "P01-T08",
+    "P01-T09",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "Connected scheduler/control/motion and A0/A1 VM fixtures are source/synthetic; they are not additional original observed routes.",
+    "Allocation inputs remain actual caller-owned bytes; original allocator internals, actor factory publication, cleanup and full ownership are unresolved.",
+    "Complete movement sweeps/active motion/position still require reusable source; contact, followers, camera and active encounter selection remain open.",
+    "Unobserved source branches and explicit unsupported operations retain each module note's scope. No complete proof domain or broad todo closes."
+  ],
+  "provenance": {
+    "consulted_sources": "Only supplied original binaries/execution, project-authored references and qualified Ghidra. No other Xenogears source or reverse-engineering results.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are distributable. Original images/bytes/traces/exports/saves remain private."
+  }
+}

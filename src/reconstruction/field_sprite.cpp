@@ -1,8 +1,10 @@
 #include "xem/reconstruction/field_sprite.hpp"
+#include "xem/reconstruction/field_motion.hpp"
 
 #include <algorithm>
 #include <bit>
 #include <limits>
+#include <string>
 #include <unordered_set>
 
 namespace xem::reconstruction::field {
@@ -192,25 +194,8 @@ void renderer_scale(SpriteWindow sprite, std::uint16_t scale) {
 }
 void apply_header(SpriteWindow sprite, std::uint32_t header, const SpriteEnvironment &environment,
                   const SpriteSources &sources) {
-    require(environment.platform_mode == 0,
-            "Alternate sprite platform header installation is unreconstructed");
+    install_sprite_gravity(sprite, header, environment, sources);
     const auto word = resource(sources, header, 2);
-    put(sprite.bytes, 0x58, header);
-    put(sprite.bytes, 0x64, header + resource(sources, header + 2, 2) + 2);
-    put(sprite.bytes, 0xa8, (get(sprite.bytes, 0xa8) & 0xffcfffff) | ((word & 3) << 20));
-    put(sprite.bytes, 0x54, header + resource(sources, header + 4, 2) + 4);
-    auto coefficient = static_cast<std::int32_t>((word >> 2) & 63);
-    if (coefficient & 32)
-        coefficient -= 64;
-    const auto rate = signed_word(static_cast<std::uint32_t>(environment.rate_control) + 1);
-    const auto factor =
-        truncate_shift(product(product(rate, rate), signed_half(get(sprite.bytes, 0x82, 2))), 12);
-    const auto scaled = product(coefficient * 1024, factor);
-    const auto divisor = (get(sprite.bytes, 0xac) >> 7) & 0xfff;
-    require(divisor != 0, "Unresolved original sprite gravity zero-divisor path");
-    auto ratio = static_cast<std::int32_t>(65536 / divisor);
-    ratio = truncate_shift(product(ratio, ratio), 8);
-    put(sprite.bytes, 0x1c, static_cast<std::uint32_t>(truncate_shift(product(scaled, ratio), 8)));
     if (!(word & 0x800))
         for (auto at : {0x14U, 0x10U, 0x0cU, 0x18U})
             put(sprite.bytes, at, 0);
@@ -242,6 +227,34 @@ void apply_header(SpriteWindow sprite, std::uint32_t header, const SpriteEnviron
     }
 }
 } // namespace
+
+void install_sprite_gravity(SpriteWindow sprite, std::uint32_t header,
+                            const SpriteEnvironment &environment, const SpriteSources &sources) {
+    check_window(sprite);
+    require(environment.platform_mode == 0,
+            "Alternate sprite platform header installation is unreconstructed");
+    put(sprite.bytes, 0x58, header);
+    put(sprite.bytes, 0x64, header + resource(sources, header + 2, 2) + 2);
+    const auto word = resource(sources, header, 2);
+    put(sprite.bytes, 0xa8, (get(sprite.bytes, 0xa8) & 0xffcfffff) | ((word & 3) << 20));
+    put(sprite.bytes, 0x54, header + resource(sources, header + 4, 2) + 4);
+    auto coefficient = static_cast<std::int32_t>((word >> 2) & 63);
+    if (coefficient & 32)
+        coefficient -= 64;
+    const auto rate = signed_word(static_cast<std::uint32_t>(environment.rate_control) + 1);
+    const auto factor =
+        truncate_shift(product(product(rate, rate), signed_half(get(sprite.bytes, 0x82, 2))), 12);
+    put(sprite.bytes, 0x1c, static_cast<std::uint32_t>(coefficient * 1024));
+    const auto divisor = (get(sprite.bytes, 0xac) >> 7) & 0xfff;
+    require(divisor != 0, "Unresolved original sprite gravity zero-divisor path");
+    auto ratio = static_cast<std::int32_t>(65536 / divisor);
+    const auto scaled = product(coefficient * 1024, factor);
+    put(sprite.bytes, 0x1c, static_cast<std::uint32_t>(scaled));
+    ratio = truncate_shift(product(ratio, ratio), 8);
+    const auto gravity = product(scaled, ratio);
+    put(sprite.bytes, 0x1c, static_cast<std::uint32_t>(gravity));
+    put(sprite.bytes, 0x1c, static_cast<std::uint32_t>(truncate_shift(gravity, 8)));
+}
 
 void bind_sprite_resource(SpriteWindow sprite, std::uint32_t pointer,
                           SpriteEnvironment &environment, const SpriteSources &sources) {
@@ -471,24 +484,208 @@ void select_sprite_animation(SpriteWindow sprite, std::int32_t animation,
         put(sprite.bytes, 0x64, 0);
         return;
     }
-    require(animation >= 0, "Alternate negative sprite animation resource is unreconstructed");
     put(sprite.bytes, 0xb0,
         get(sprite.bytes, 0x44) == pointer ? get(sprite.bytes, 0xb0) & ~0x400U
                                            : get(sprite.bytes, 0xb0) | 0x400);
-    bind_sprite_resource(sprite, pointer, environment, sources);
+    require(environment.platform_mode == 0,
+            "Alternate sprite platform animation selection is unreconstructed");
+    const auto selected_resource = animation < 0 ? get(sprite.bytes, 0x4c) : pointer;
+    bind_sprite_resource(sprite, selected_resource, environment, sources);
     put(sprite.bytes, 0xaf, static_cast<std::uint32_t>(animation), 1);
     const auto binding = inside(sprite, get(sprite.bytes, 0x24), 20);
     const auto directory = get(sprite.bytes, binding + 16);
-    require(directory == pointer + resource(sources, pointer + 4, 4),
-            "Animation directory differs from original resource header");
-    const auto header =
-        directory + resource(sources, directory + 2 + 2 * static_cast<std::uint32_t>(animation), 2);
+    const auto index = animation < 0 ? ~static_cast<std::uint32_t>(animation)
+                                     : static_cast<std::uint32_t>(animation);
+    const auto header = directory + resource(sources, directory + 2 + 2 * index, 2);
     put(sprite.bytes, 0x40, get(sprite.bytes, 0x40) | 0x100000);
     put(sprite.bytes, 0x58, header);
     apply_header(sprite, header, environment, sources);
     select_sprite_orientation(sprite,
                               static_cast<std::int16_t>(signed_half(get(sprite.bytes, 0x80, 2))),
                               environment, sources);
+}
+
+std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &environment,
+                                      const SpriteSources &sources) {
+    check_window(sprite);
+    require(environment.platform_mode == 0,
+            "Alternate original sprite VM 800c11cc is unreconstructed");
+    auto duration = sources.incoming_replay_duration;
+    std::uint32_t commands = 0;
+    while (get(sprite.bytes, 0x9e, 2) == 0) {
+        require(commands < inspection_limit,
+                "Original sprite command execution exceeded inspection bound");
+        const auto pointer = get(sprite.bytes, 0x64);
+        const auto opcode = resource(sources, pointer, 1);
+        ++commands;
+        if (opcode < 0x80) {
+            put(sprite.bytes, 0x64, pointer + 1);
+            if (opcode < 0x10) {
+                schedule_sprite_frame(sprite, get(sprite.bytes, 0x34, 2) + 1, environment, sources);
+            } else if (opcode < 0x20) {
+                put(sprite.bytes, 0xa8,
+                    (get(sprite.bytes, 0xa8) & 0xfffe07ff) |
+                        ((((get(sprite.bytes, 0xa8) >> 11) + 1) & 63) << 11));
+                lookup_frame(sprite, environment, sources);
+            } else if (opcode < 0x30) {
+                schedule_sprite_frame(sprite, get(sprite.bytes, 0x34, 2) - 1, environment, sources);
+            }
+            if (opcode < 0x40)
+                duration = static_cast<std::int32_t>((opcode & 15) + 1);
+            require(duration.has_value(),
+                    "Original ordinary frame command requires incoming S3 duration");
+            auto delay = truncate_shift(
+                product(*duration,
+                        static_cast<std::int32_t>((get(sprite.bytes, 0xac) >> 7) & 0xfff)),
+                8);
+            if (delay == 0)
+                delay = 1;
+            const auto flags = get(sprite.bytes, 0xa8);
+            auto ordinal = ((flags >> 22) + 1) & 63;
+            if (ordinal == 0)
+                ordinal = 63;
+            put(sprite.bytes, 0x9e, get(sprite.bytes, 0x9e, 2) + static_cast<std::uint32_t>(delay),
+                2);
+            put(sprite.bytes, 0xa8, (flags & 0xf03fffff) | (ordinal << 22));
+            return commands;
+        }
+        if (opcode == 0xa0 || opcode == 0xa1) {
+            if (opcode == 0xa0) {
+                const auto operand = static_cast<std::uint8_t>(resource(sources, pointer + 1, 1));
+                static_cast<void>(apply_animation_speed(sprite, operand, environment.rate_control,
+                                                        sources.trigonometry));
+            } else {
+                std::optional<SpriteResource> reference;
+                std::array<std::uint8_t, 4> external{};
+                if (get(sprite.bytes, 0xa8) & 1) {
+                    const auto address = get(sprite.bytes, 0x7c);
+                    if (address >= sprite.address &&
+                        static_cast<std::uint64_t>(address) + 4 <=
+                            static_cast<std::uint64_t>(sprite.address) + sprite.bytes.size()) {
+                        reference = SpriteResource{
+                            address, sprite.bytes.subspan(address - sprite.address, 4)};
+                    } else {
+                        put(external, 0, resource(sources, address, 4));
+                        reference = SpriteResource{address, external};
+                    }
+                }
+                const auto operand =
+                    reference && get(reference->bytes, 0) != 0
+                        ? std::uint8_t{0}
+                        : static_cast<std::uint8_t>(resource(sources, pointer + 1, 1));
+                static_cast<void>(
+                    apply_animation_impulse(sprite, operand, environment.rate_control, reference));
+            }
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xb3) {
+            put(sprite.bytes, 0xa8,
+                (get(sprite.bytes, 0xa8) & 0xfffe07ff) |
+                    ((resource(sources, pointer + 1, 1) & 63) << 11));
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xc6) {
+            if (get(sprite.bytes, 0xa8) & 1) {
+                const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 14);
+                put(sprite.bytes, sequencer + 12, resource(sources, pointer + 1, 1), 2);
+            }
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xe1) {
+            const auto delta = signed_half(resource(sources, pointer + 1, 2));
+            put(sprite.bytes, 0x64, get(sprite.bytes, 0x64) + static_cast<std::uint32_t>(delta));
+        } else {
+            throw SpriteError("Unreconstructed ordinary sprite command at " +
+                              std::to_string(pointer) + ": " + std::to_string(opcode));
+        }
+    }
+    return commands;
+}
+
+std::uint32_t advance_sprite_timer(SpriteWindow sprite, SpriteEnvironment &environment,
+                                   const SpriteSources &sources) {
+    check_window(sprite);
+    if (environment.rate_control == -1)
+        return 0;
+    std::uint32_t commands = 0;
+    for (std::uint32_t iteration = 1; iteration <= inspection_limit; ++iteration) {
+        const auto timer = get(sprite.bytes, 0x9e, 2);
+        if (timer != 0) {
+            put(sprite.bytes, 0x9e, timer - 1, 2);
+            if (timer == 1)
+                commands += execute_sprite_commands(sprite, environment, sources);
+        }
+        if (iteration == static_cast<std::uint32_t>(environment.rate_control) + 1)
+            return commands;
+    }
+    throw SpriteError("Original sprite timer exceeded inspection bound");
+}
+
+std::uint32_t restore_sprite_checkpoint(SpriteWindow sprite,
+                                        std::span<const std::uint8_t> checkpoint,
+                                        SpriteEnvironment &environment,
+                                        const SpriteSources &sources) {
+    check_window(sprite);
+    require(checkpoint.size() == 48, "Incomplete original sprite checkpoint");
+    const auto target = signed_half(get(checkpoint, 0x18, 2));
+    require(target >= 0 && target <= 63, "Original sprite checkpoint has unreachable six-bit step");
+    const auto saved_rate = environment.rate_control;
+    environment.rate_control = 0;
+    put(sprite.bytes, 0x80, get(checkpoint, 0x10, 2), 2);
+    put(sprite.bytes, 0xaf, get(checkpoint, 0x14, 1), 1);
+    put(sprite.bytes, 0xb0, get(checkpoint, 0x16, 1), 1);
+    for (std::size_t i = 0; i < 3; ++i) {
+        const auto renderer = inside(sprite, get(sprite.bytes, 0x20), 12);
+        put(sprite.bytes, renderer + 6 + i * 2, get(checkpoint, 0x24 + i * 2, 2), 2);
+    }
+    const auto animation = std::bit_cast<std::int8_t>(sprite.bytes[0xaf]);
+    put(sprite.bytes, 0x82, get(checkpoint, 0x2c, 2), 2);
+    put(sprite.bytes, 0x2c, get(checkpoint, 0x2a, 2), 2);
+    select_sprite_animation(sprite, animation, environment, sources);
+    std::uint32_t commands = 0;
+    std::size_t iterations = 0;
+    while (((get(sprite.bytes, 0xa8) >> 22) & 63) != static_cast<std::uint32_t>(target)) {
+        require(iterations++ < inspection_limit,
+                "Original sprite checkpoint replay exceeded inspection bound");
+        commands += advance_sprite_timer(sprite, environment, sources);
+        for (const auto position : {0U, 8U, 4U})
+            put(sprite.bytes, position,
+                get(sprite.bytes, position) + get(sprite.bytes, position + 12));
+        put(sprite.bytes, 0x10, get(sprite.bytes, 0x10) + get(sprite.bytes, 0x1c));
+    }
+    for (const auto position : {0U, 4U, 8U})
+        put(sprite.bytes, position, get(checkpoint, position));
+    auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 8);
+    put(sprite.bytes, sequencer, get(checkpoint, 0x1c));
+    environment.rate_control = saved_rate;
+    sequencer = inside(sprite, get(sprite.bytes, 0x7c), 8);
+    put(sprite.bytes, sequencer + 4, get(checkpoint, 0x20));
+    return commands;
+}
+
+SpriteCheckpointDecision select_sprite_checkpoint(std::span<const std::uint8_t> actor,
+                                                  std::span<const std::uint8_t> checkpoint,
+                                                  const std::array<std::uint32_t, 3> &saved_modes,
+                                                  const std::array<std::uint8_t, 3> &current_modes,
+                                                  std::uint32_t return_gate) {
+    require(actor.size() == 0x138 && checkpoint.size() == 48,
+            "Incomplete original actor or sprite checkpoint");
+    SpriteCheckpointDecision result;
+    std::copy(checkpoint.begin(), checkpoint.end(), result.checkpoint.begin());
+    const auto animation = signed_half(get(actor, 0xea, 2));
+    if (signed_half(get(actor, 0x124, 2)) != -1 && animation != 255)
+        put(result.checkpoint, 0x14, static_cast<std::uint32_t>(animation), 2);
+    bool changed = false;
+    for (std::size_t i = 0; i < saved_modes.size(); ++i)
+        changed = changed || saved_modes[i] != current_modes[i];
+    result.decision = SpriteRestoreDecision::restore;
+    if (get(actor, 4) & 0x1000000)
+        result.decision = SpriteRestoreDecision::actor_layer_flag;
+    else if (return_gate && (get(actor, 0) & 0x600) && changed)
+        result.decision = SpriteRestoreDecision::party_mode_change;
+    result.record_bytes =
+        0x174 + ((get(actor, 0x134) & 0x80) ? 12U : 0U) + ((get(actor, 0x12c) & 0x1000) ? 16U : 0U);
+    return result;
 }
 
 SpriteConstruction construct_sprite(SpriteAllocation incoming, std::uint32_t pointer,
@@ -562,4 +759,5 @@ SpriteConstruction create_sprite(std::uint32_t pointer,
                             {parameters[0], parameters[1], parameters[2], parameters[3]},
                             environment, sources, allocate, observe);
 }
+
 } // namespace xem::reconstruction::field

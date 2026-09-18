@@ -4,6 +4,7 @@
 #include <array>
 #include <iostream>
 #include <string>
+#include <vector>
 
 namespace field = xem::reconstruction::field;
 namespace {
@@ -68,13 +69,13 @@ void scheduling_boundaries() {
     s.actors[0].slots[6].control_bits = 4U << 18U;
     s.actors[0].slots[6].resume_pc = 7;
     s.actors[0].flags = 0x1000001;
-    s.scheduler.unknown_pass_state_a = 7;
-    s.scheduler.unknown_pass_state_b = 9;
+    s.context.pass.input_updated = 7;
+    s.context.pass.unknown_c4268 = 9;
     auto result = field::schedule_actor_events(s.context, s.scheduler, field::execute_core_event);
     check(result.dispatched_actors == 0 && s.actors[0].selected_slot == 6 && s.actors[0].pc == 7,
           "Ties choose the last slot even when actor bit zero suppresses dispatch");
-    check(s.actors[0].flags == 1 && s.scheduler.unknown_pass_state_a == 0 &&
-              s.scheduler.unknown_pass_state_b == 0,
+    check(s.actors[0].flags == 1 && s.context.pass.input_updated == 0 &&
+              s.context.pass.unknown_c4268 == 0,
           "Pass and per-actor clear order must be retained");
     s.scheduler.party_processing_mode = 1;
     s.scheduler.party_indices[0] = 0;
@@ -172,6 +173,98 @@ void idle_fallback_and_malformed_inputs() {
     }
     check(failed, "Variable bank overflow must be rejected");
 }
+
+void connected_event_calls() {
+    Scenario s;
+    s.code[0] = 5;
+    s.code[1] = 8;
+    s.code[8] = 6;
+    s.code[9] = 16;
+    s.code[11] = 0xfe;
+    s.code[12] = 0xff; // Skipped bytes of the five-byte call are never operands.
+    s.code[13] = 0x0d;
+    s.code[16] = 0x0d;
+    auto &actor = s.actors[0];
+    actor.model_and_bounds_flags = 0xa5a50023;
+    actor.return_pcs = {51, 52, 53, 54};
+    actor.slots[0].event_tag = 9;
+    s.context.control.budget_mode = 1;
+    const auto result = field::run_event_batch(s.context, 8, [](auto &context, auto opcode) {
+        if (opcode == 5 || opcode == 6 || opcode == 0x0d) {
+            check(!field::execute_event_call(context, opcode), "Valid calls need no diagnostic");
+        } else {
+            field::execute_core_event(context, opcode);
+        }
+    });
+    check(result.reason == field::BatchExit::handler_break && result.dispatched == 5 &&
+              actor.pc == 3 && actor.return_pcs == std::array<std::uint16_t, 4>{3, 13, 53, 54} &&
+              actor.model_and_bounds_flags == 0xa5a50023,
+          "Nested three/five-byte calls return through real handlers and the batch scheduler");
+}
+
+void call_stack_error_policy() {
+    Scenario s;
+    auto &actor = s.actors[0];
+    actor.model_and_bounds_flags = 0x80000107;
+    actor.return_pcs = {1, 2, 3, 4};
+    actor.selected_slot = 255; // The full-stack branch never reads a slot.
+    s.code[0] = 5;
+    s.context.program.bytecode = std::span(s.code).first(1);
+    s.context.control.budget_mode = 7;
+    check(field::execute_event_call(s.context, 5) && s.context.control.break_requested == 1 &&
+              s.context.control.budget_mode == 7 && actor.pc == 0 &&
+              actor.model_and_bounds_flags == 0x80000107 &&
+              actor.return_pcs == std::array<std::uint16_t, 4>{1, 2, 3, 4},
+          "Full stack diagnoses and breaks without reading the absent target or changing depth");
+    s.context.control.diagnostic_suppression = -1;
+    check(!field::execute_event_call(s.context, 5), "Any nonzero suppression hides diagnostic");
+    s.code[0] = 0x0d;
+    actor.model_and_bounds_flags = 0x80000007;
+    actor.selected_slot = 3;
+    actor.slots[3] = {1234, 81, 19, 0x80400055};
+    check(!field::execute_event_call(s.context, 0x0d) && actor.pc == 0 &&
+              actor.model_and_bounds_flags == 0x80000007 && actor.slots[3].resume_pc == 1234 &&
+              actor.slots[3].countdown == 81 && actor.slots[3].event_tag == 255 &&
+              actor.slots[3].control_bits == 0x807c0055 && s.context.control.budget_mode == 1 &&
+              s.context.control.break_requested == 1,
+          "Empty return releases selected slot priority/tag and changes budget without a PC write");
+}
+
+void call_widths_and_partial_failure() {
+    Scenario s;
+    auto &actor = s.actors[0];
+    std::vector<std::uint8_t> code(65536);
+    s.context.program.bytecode = code;
+    actor.pc = 65533;
+    code[65533] = 5;
+    code[65534] = 1;
+    check(!field::execute_event_call(s.context, 5) && actor.pc == 1 && actor.return_pcs[0] == 0 &&
+              actor.model_and_bounds_flags == 0x40,
+          "Saved continuation wraps independently from the bytewise raw target read");
+    actor.pc = 65534;
+    actor.model_and_bounds_flags = 0;
+    code[65534] = 6;
+    bool failed = false;
+    try {
+        static_cast<void>(field::execute_event_call(s.context, 6));
+    } catch (const field::EventError &) {
+        failed = true;
+    }
+    check(failed && actor.return_pcs[0] == 3 && actor.pc == 65534 &&
+              actor.model_and_bounds_flags == 0,
+          "Return-address store precedes a malformed target read; PC/depth stores follow it");
+    actor.pc = 0;
+    code[0] = 0x0d;
+    actor.model_and_bounds_flags = 6U << 6U;
+    failed = false;
+    try {
+        static_cast<void>(field::execute_event_call(s.context, 0x0d));
+    } catch (const field::EventError &) {
+        failed = true;
+    }
+    check(failed && actor.pc == 0 && actor.model_and_bounds_flags == (5U << 6U),
+          "Unrecovered adjacent stack storage rejects after the original decrement store");
+}
 } // namespace
 
 int main() {
@@ -181,7 +274,10 @@ int main() {
         batch_limits_and_unknowns();
         branch_and_variable_widths();
         idle_fallback_and_malformed_inputs();
-        std::cout << "Field event reconstruction: five connected source-boundary groups passed\n";
+        connected_event_calls();
+        call_stack_error_policy();
+        call_widths_and_partial_failure();
+        std::cout << "Field event reconstruction: eight connected source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

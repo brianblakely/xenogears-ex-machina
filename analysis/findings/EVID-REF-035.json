@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-035",
+  "kind": "connected_cpp_music_load_wave_callback",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80085c90",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80078b6c",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80085560",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800854d0",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80085c3c",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800859dc",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80085fb8",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80085f30",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8008825c",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    }
+  ],
+  "observation": "Compiled music caller policy matches35 original polls/commits,2921 FE prefix boundaries and993 pending A2 waits. New original capture matches all83 wave callbacks and full8192-byte staging states; all169984 input bytes equal168000-byte WDS resource plus1984 actual sector-tail bytes.83 releases,one start,79 waits and79 continuations retain exact order/arguments/state/digests.",
+  "interpretation": "Reusable C++ now exposes connected load/stream/callback ownership and shared event/battle gates. A0 callback forwarding and stream allocation-mode A1 forwarding through8002a260 are corrected in private qualified Ghidra copies. The original chunk return and named resident game callees are explicit inputs at this reviewed caller boundary; those callees are not claimed as platform services or completed media logic.",
+  "confidence": "confirmed",
+  "author": "Codex /root/event_media, independently authored from qualified original source and execution",
+  "reviewers": [
+    "Codex /root independently reviewed corrected Ghidra and C++, rebuilt sanitizer candidate, reran original callback/corruptions and qualified distinct control-core lineage"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix development/observation-trace environment, exact source profile and preserved original route.",
+      "Immutable Ghidra project retained; caller/callee signature correction exported from private working copy."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 python3 .local/verification/phase1-source-20260918/review_media_v2.py",
+      "Existing event/poll comparisons and strict sanitizer commands are preserved in .local/verification/phase1-music-source-cpp-20260918/implementation-review-v2.json."
+    ],
+    "expected": "Exact complete staging/scalar outputs and direct call ordering, arguments and state against independent original bytes; no synthetic bytecode/resource oracle.",
+    "actual": "All83 callbacks pass independently rebuilt ASan/UBSan candidate and seven corruptions reject. Complete trace collector/source qualification, cross-hook staging owner, distinct uninstrumented core metadata and all21 RAM/state/audio/PNG artifacts pass. Preserved event/poll C++ comparisons pass at their prior scope.",
+    "result": "passed",
+    "tolerance": "Exact integer/byte/call comparisons; source-sector tail retained and no padding mask.",
+    "artifacts": [
+      {
+        "path": ".local/verification/phase1-media-independent-20260918-v2/independent-review.json",
+        "sha256": "25e53e3a70c5efd6ae692cc1a10248badcbc185ad574999e385187aac5dcbfe5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-media-independent-20260918-v2/original-wave-comparison-v2.json",
+        "sha256": "66c3728569e4d1821e7622a043a2f1014dca9a14595acff1f4f3f49adb58a6f8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/implementation-review-v2.json",
+        "sha256": "f2ef2057c145476505a5545005ac5baf00c24e796bd5d3d54845849a66fc0357",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/original-poll-comparison-v5.json",
+        "sha256": "ecfcc7d01c7235b2415b5d6bcb44eafe0fd8de58fec2796efdf958998730d580",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/original-event-comparison-v2.json",
+        "sha256": "dcedb9d8698de20c07867aeb9dfc755d2a8e26b3075d45344185244e2f975bb1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/original-wave-comparison-v2.json",
+        "sha256": "66bd6b55d3741dd8d07990ad72e976c2bc7a25fd7f0f0179970e23ac26a897a6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/wave-source-qualification.json",
+        "sha256": "4f91b2f004ad1ec258220d80dd2c4f86e87388a517e8be20fd21b730453c2d35",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/wave-capture-spec-v2.json",
+        "sha256": "96cab2524b2cc9b8a0991fcfea195c5c21ec5167f993f5b9f16684438aeb1e73",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/implementation-review-v1.json",
+        "sha256": "6ffc6dea61dbe8465d21c0e40452cedcdb6c6092028bbbd58bbbf1af3cef0c80",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-music-source-cpp-20260918/ring-source-v2/export/index.json",
+        "sha256": "b639964f3fa99ff1fbbb050fba45a392378de22581b6f824125091645097f77d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-media-independent-20260918-v2/authored-source-v1/include/xem/reconstruction/field_media.hpp",
+        "sha256": "f7f54c02af89c849f4516cabd1ea34fd7c38aac8375d396b46342700d3285b4d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-media-independent-20260918-v2/authored-source-v1/src/reconstruction/field_media.cpp",
+        "sha256": "7b5786d9a5a8b9cfc8f1c8615ff0add6b59424e72923c253039b3268e28a9a8f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-media-independent-20260918-v2/authored-source-v1/tests/test_field_media.cpp",
+        "sha256": "54bc180d4be173c13cf6d43b9a225b2ca7efb1c37b235e153b6512c916dd1b36",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-media-independent-20260918-v2/authored-source-v1/analysis/formats/field-media-source.md",
+        "sha256": "b20a3215fc92587060bfd2e8e55ce6fab73c62ff35f7ec5b75e1e9a97cba832f",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/field_media.hpp",
+      "src/reconstruction/field_media.cpp",
+      "tests/test_field_media.cpp",
+      "analysis/formats/field-media-source.md"
+    ],
+    "source_snapshot": ".local/verification/phase1-media-independent-20260918-v2/authored-source-v1",
+    "library": "xem-field-reconstruction"
+  },
+  "source_dependencies": [
+    "EVID-REF-018",
+    "EVID-REF-031",
+    "EVID-REF-034"
+  ],
+  "related_requirements": [
+    "P01-T04",
+    "P01-T10",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "This proves callback and caller policy, not resident CD ring, heap, WDS transfer, sequence/audio-service internals or their timing.",
+    "Shared-wave/reuse/alternate-start branches and ready A2 path retain source/synthetic scope.",
+    "Mono/Stereo/Wide, playback intent, required FMV, resource lifetime and semantic readiness remain required. No full proof domain or broad todo closes."
+  ],
+  "provenance": {
+    "consulted_sources": "Only supplied original binaries/execution, project-authored references and qualified Ghidra. No other Xenogears source or reverse-engineering results.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are distributable. Original images/bytes/traces/exports/saves remain private."
+  },
+  "historical_artifacts": "The agent-local derived wave v1 report was accidentally overwritten before promotion; its former hash/link is invalidated explicitly in implementation-review-v2. The prior independent wave report and all original captures remain intact. This finding uses versioned v2 evidence and frozen source only."
+}

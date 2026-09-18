@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-033",
+  "kind": "connected_cpp_battle_request_continuation",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8008a244",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80096724",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800869b8",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    }
+  ],
+  "observation": "Actor 14 resumes extended 7F with pending zero at frontend run 10304 (PC 08af to 08b0; enclosing FE starts at 08ae). At run 10306 primary 86 compares typed variable zero 27 with immediate 32 and branches to 08bb. All three complete 6496-byte boundary payloads match C++; 124 full-route artifacts match a separately built uninstrumented core.",
+  "interpretation": "The existing battle request module now contains real continuation handlers composed with the shared event dispatcher and batch scheduler. The wait consumes the same pending word and leaves its producer separate. Variable zero is not assigned a guessed combat meaning. Decoder paths retain both continuation and retry/branch alternatives.",
+  "confidence": "confirmed",
+  "author": "Codex /root; independently authored from supplied original source, qualified Ghidra and preserved project evidence",
+  "reviewers": [
+    "Codex /root/motion_integration independently reviewed C++/original source, adapter, complete replay and eleven corruptions"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned nix development/observation/observation-trace environments; exact Disc 1 source profile.",
+      "Preserve existing Ghidra projects, discovery captures and original input route.",
+      "Private qualified sources/captures are required only for original comparisons. Public tests use authored inputs."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace --command env PYTHONPATH=. python3 .local/analysis/phase1-battle-continuation-20260918/capture.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation --command python3 tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --output <fresh-private-control>",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. python3 .local/analysis/phase1-battle-continuation-20260918/compare.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 .local/analysis/phase1-battle-continuation-20260918/independent-review.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 -m unittest tests.test_event_analysis tests.test_battle_continuation tests.test_event_media tests.test_event_state tests.test_field_control"
+    ],
+    "expected": "Exact original captured state and complete control output; unknowns remain explicit; source boundary fixtures test unobserved alternatives.",
+    "actual": "Three paired boundaries pass with ASan/UBSan; 21 trace records source-qualified. Independent rebuilt adapter passes and rejects eleven corrupted complete payloads. All 124 control artifacts match. 52 related Python tests pass; C++ synthetic composition is recorded in the integration build.",
+    "result": "passed",
+    "tolerance": "Exact bytes, integer values and branch PCs; no masks or tolerances.",
+    "artifacts": [
+      {
+        "path": ".local/analysis/phase1-battle-continuation-20260918/comparison.json",
+        "sha256": "a89e1d12199af6ab4c8329590da3fe292de4aceccfd12f08466f65506a2fe5e4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-continuation-20260918/independent-review.json",
+        "sha256": "512609451b6101ddaf7f2c19d0d22b38d56f0bc7cd6606ab4ef933c05dd02431",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-continuation-20260918/compare.py",
+        "sha256": "eb69a6578874b8f8213b44ef437594650c5497d1126aed1c6bd4d4fb9d679058",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-continuation-20260918/replay.cpp",
+        "sha256": "1cd1f52bf5db0e1cb8359e4f98614db1f75bd639e72a5e743bf568bf19bb7743",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-continuation-20260918/capture-invocation.json",
+        "sha256": "0fe17f2669786f0c937e4b05cd23b61a8d91fc986b76add12a28396d53bed9ae",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-battle-continuation-20260918/trace-spec.json",
+        "sha256": "0824eb9380c8fef0e446b19c5c04663e17b29d4abe75ab9a83f318783949cd9b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-battle-continuation-20260918-complete/capture/observation.json",
+        "sha256": "21a493a3caf2ea107730e6e80abd375744edeab0ef968cafb2306aff3f702e63",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-battle-continuation-20260918-control/capture/observation.json",
+        "sha256": "44606962310d6abd807923ba865e664f3720f89092ccc91feca73dd20306d674",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/scenarios/phase1-battle-continuation-20260918-complete/capture/instruction-trace.jsonl",
+        "sha256": "2e7387ed40e38338d1ea540b7f78711da4ef43808da47ff7dd02dacf3db929b0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/continuation-source-v1/include/xem/reconstruction/field_battle.hpp",
+        "sha256": "c37195249e79ef3eb5ea90c11eff9bdc098a7813ed04842079718eba70502f08",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/continuation-source-v1/src/reconstruction/field_battle.cpp",
+        "sha256": "08f530531fe6f1a8de364318e95c0c3567bced50bf438db52a66ddc65ec6efad",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/continuation-source-v1/tests/test_field_battle.cpp",
+        "sha256": "9d3c6ba15f5e0a9d832b1d6b871aeb3d79eae5a614b6ed8aa7877ad5fb426013",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/continuation-source-v1/tools/analysis/events.py",
+        "sha256": "16da9a65ea6fcb3fb62d7af26127a6f37e05d0c74c87768e4693187b339f7b04",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/continuation-source-v1/tests/test_event_analysis.py",
+        "sha256": "eb9462f8d11d51c92dd2f4a5dc59536888c88571578c766a6b0a6527cc7400d4",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/field_battle.hpp",
+      "src/reconstruction/field_battle.cpp",
+      "tests/test_field_battle.cpp",
+      "tools/analysis/events.py",
+      "tests/test_event_analysis.py",
+      "analysis/formats/battle-continuation.md"
+    ],
+    "source_snapshot": ".local/verification/phase1-source-20260918/continuation-source-v1",
+    "library": "xem-field-reconstruction"
+  },
+  "source_dependencies": [
+    "EVID-REF-020",
+    "EVID-REF-027",
+    "EVID-REF-031"
+  ],
+  "related_requirements": [
+    "P01-T04",
+    "P01-T08",
+    "P01-T09",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "Only ready 7F and unequal 86 are original-execution-validated. Pending waits, equality, variable operands and malformed/wrap cases are source/synthetic.",
+    "Captured frontend runs are not recovered simulation ticks.",
+    "Battle result producers, attacks, failure, rewards, complete gate/return ownership and semantic readiness remain required.",
+    "No complete slice domain or broad Phase 1 todo is closed."
+  ],
+  "provenance": {
+    "consulted_sources": "Only supplied original binaries/execution, project-authored references and qualified Ghidra. No other Xenogears source or reverse-engineering results.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are distributable. Original images/bytes/traces/exports/saves remain private."
+  }
+}

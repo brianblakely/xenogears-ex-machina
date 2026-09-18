@@ -75,12 +75,46 @@ void select_sprite_orientation(SpriteWindow sprite, std::int16_t angle,
                                SpriteEnvironment &environment, const SpriteSources &sources);
 void select_sprite_animation(SpriteWindow sprite, std::int32_t animation,
                              SpriteEnvironment &environment, const SpriteSources &sources);
+// Resident 80023538 through 80023658: header pointers and scaled gravity.
+void install_sprite_gravity(SpriteWindow sprite, std::uint32_t header,
+                            const SpriteEnvironment &environment, const SpriteSources &sources);
 // Resident 80022660: the source-defined facing replay, including its own skip
 // behavior, is distinct from ordinary execution of animation commands.
 void replay_sprite_commands(SpriteWindow sprite, std::uint32_t target, std::uint32_t target_step,
                             SpriteEnvironment &environment, const SpriteSources &sources);
 void schedule_sprite_frame(SpriteWindow sprite, std::uint32_t frame, SpriteEnvironment &environment,
                            const SpriteSources &sources);
+
+// Resident 800248d4 / 80023210. Ordinary execution is distinct from facing
+// replay: timed commands 00..7f, speed/impulse A0/A1, index B3 and relative jump
+// E1 and sequencer byte C6 are recovered. A0/A1 call shared field-motion code.
+// Returns the number of commands executed; unknown commands fail explicitly.
+[[nodiscard]] std::uint32_t execute_sprite_commands(SpriteWindow sprite,
+                                                    SpriteEnvironment &environment,
+                                                    const SpriteSources &sources);
+[[nodiscard]] std::uint32_t advance_sprite_timer(SpriteWindow sprite,
+                                                 SpriteEnvironment &environment,
+                                                 const SpriteSources &sources);
+// Resident 80021d50. The 48-byte checkpoint is the existing field-return format.
+// Replays through the ordinary timer, restores position/sequencer state and
+// reinstates the incoming rate. It does not publish an actor as field-ready.
+[[nodiscard]] std::uint32_t restore_sprite_checkpoint(SpriteWindow sprite,
+                                                      std::span<const std::uint8_t> checkpoint,
+                                                      SpriteEnvironment &environment,
+                                                      const SpriteSources &sources);
+
+enum class SpriteRestoreDecision { restore, actor_layer_flag, party_mode_change };
+struct SpriteCheckpointDecision {
+    std::array<std::uint8_t, 48> checkpoint;
+    SpriteRestoreDecision decision;
+    std::uint32_t record_bytes;
+};
+// Field overlay 800a3c8c's decision for one recreated 312-byte actor. A skipped
+// actor still updates its saved animation and consumes its extension stride.
+[[nodiscard]] SpriteCheckpointDecision select_sprite_checkpoint(
+    std::span<const std::uint8_t> actor, std::span<const std::uint8_t> checkpoint,
+    const std::array<std::uint32_t, 3> &saved_modes,
+    const std::array<std::uint8_t, 3> &current_modes, std::uint32_t return_gate);
 
 // Resident 8002435c and 80024524. Allocation supplies exact incoming bytes;
 // unknown heap contents are never synthesized. The wrapper's fifth short is
@@ -95,4 +129,5 @@ void schedule_sprite_frame(SpriteWindow sprite, std::uint32_t frame, SpriteEnvir
 create_sprite(std::uint32_t resource, const std::array<std::int16_t, 5> &parameters,
               SpriteEnvironment environment, const SpriteSources &sources,
               const SpriteAllocator &allocate, const SpriteConstructionObserver &observe = {});
+
 } // namespace xem::reconstruction::field

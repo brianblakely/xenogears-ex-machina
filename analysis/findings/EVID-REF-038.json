@@ -1,0 +1,188 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-038",
+  "kind": "connected_cpp_retail_disc_stream_ring",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028a94",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028aac",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80028b14",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8002945c",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8002a260",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    }
+  ],
+  "observation": "C++ reproduces one eight-block allocation (16,484 bytes, mode 1), all 96 chunk queries (83 ready, 13 empty), and all 83 releases. Returns, allocation arguments, four globals and all 100 ring metadata bytes agree; all 21 original control artifacts remain exact.",
+  "interpretation": "Concrete recovered ring methods now feed the field stream and wave callback source. The shared ring owner keeps expected sequence, selected allocation, separate active count and debugger selector explicit. Heap allocation, CD producers and audio internals remain named unresolved game dependencies.",
+  "confidence": "confirmed",
+  "author": "Codex /root/event_media from qualified original source",
+  "reviewers": [
+    "Codex /root independent source/probe/comparison review and sanitized rebuild"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned development environment and qualified original resident profile.",
+      "Unchanged original route with a separately built uninstrumented control."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command ctest --preset sanitize -R '^disc-stream-reconstruction$'",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. python3 .local/verification/phase1-disc-stream-independent-20260918/verify.py"
+    ],
+    "expected": "Exact owned ring state, original return values, allocation mode and byte count; corrupted input/output rejects.",
+    "actual": "Independent sanitized rebuild passes all 180 observed recovered calls and seven corruption cases. Connected synthetic tests execute real ring-to-stream-to-wave source.",
+    "result": "passed",
+    "tolerance": "Exact metadata, returns and call arguments. Unused payload bytes are synthetic storage only; these functions do not read them. Heap result and initial allocation bytes remain actual callee inputs, not reconstructed heap behavior.",
+    "artifacts": [
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/independent-review-v1.json",
+        "sha256": "c5e459969f2eb55dfb5bb4bb99f9f324e382e2d6164b012a5a93c839495757e1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/original-comparison-v1.json",
+        "sha256": "d4f2de7a3011cbb14e9bd488cb757ea258156f6c2e2e9c05eb584ca52a572521",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-cpp-20260918/implementation-review-v1.json",
+        "sha256": "4165af4d526ec85d622ef8c08870c49213472cb114fac2e87a7c4cec4a1eccf1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-cpp-20260918/source-qualification-v1.json",
+        "sha256": "494f8fb133c9569c1998e52c66f5f9e3e874681ed394b9914135bad9e80aa6ee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-cpp-20260918/original-comparison-v1.json",
+        "sha256": "c72936fdd5a7750bbd09c9555bc0f453cf82b7f5222c4c957ccc3f7f7ae08c3c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/verify.py",
+        "sha256": "43444d2d2eff61cf46510749335d24e3a15b6f30a1203b26451019cbe7871de0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/probe.cpp",
+        "sha256": "54f59af84e4c08efd0660f931a189558e40511e413b302b10c17511c8969b811",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/probe-v1",
+        "sha256": "18f5be2c88af7e6478159f42e04d181b6ce6df50f5ab23d448d47e8b825f17f5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/source/include/xem/reconstruction/disc_stream.hpp",
+        "sha256": "afa125cfef675d15204a7e178f9598e4d121751ead066cc5185cce8e39463bd7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/source/src/reconstruction/disc_stream.cpp",
+        "sha256": "6cbdfcf068f5900a4ce98a81b16462e37540e3deba2c7106b42464a6146464a3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/source/tests/test_disc_stream.cpp",
+        "sha256": "44a1cc961d02bc405dd464a0166cdc9c2d53b07928bb79acfa4d8c3ced87878a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-disc-stream-independent-20260918/source/analysis/formats/disc-stream-source.md",
+        "sha256": "b1fec903a02cbd87637fe4002f6a1be1825a767b22ad09f012ed4017e8d20bb3",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/disc_stream.hpp",
+      "src/reconstruction/disc_stream.cpp",
+      "tests/test_disc_stream.cpp",
+      "analysis/formats/disc-stream-source.md"
+    ],
+    "source_snapshot": ".local/verification/phase1-disc-stream-independent-20260918/source",
+    "library": "xem-field-reconstruction"
+  },
+  "source_dependencies": [
+    "EVID-REF-035"
+  ],
+  "related_requirements": [
+    "P01-T03",
+    "P01-T10",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "Unrecovered nonzero host-file-table branch, which includes game-specific diagnostic failure behavior and PC-file operations",
+    "Game heap 80031bdc and free 800320e8 internals",
+    "CD read setup, ring producer interrupts, directory/file and busy wrappers",
+    "Music request 80085b20 and small cleanup wrappers have corrected private source but are not yet public C++",
+    "Resident WDS/SPU/sequence internals, media lifetime beyond these callers, Mono/Stereo/Wide, FMV and timing"
+  ],
+  "provenance": {
+    "consulted_sources": "Only supplied original binaries/execution, project-authored references and qualified Ghidra. No other Xenogears source or reverse-engineering results.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are distributable. Original images/bytes/traces/exports/saves remain private."
+  }
+}

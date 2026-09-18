@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-036",
+  "kind": "connected_cpp_field_sprite_factory_subset",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x80076ac0",
+      "address_space": "PS1 KSEG0 in the qualified field overlay",
+      "not_applicable": "LBA names the packed overlay; it is not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001f5bc",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80023340",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80032498",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001c964",
+      "address_space": "PS1 KSEG0 in qualified resident executable",
+      "not_applicable": "LBA names the executable, not a direct instruction offset."
+    }
+  ],
+  "observation": "Real C++ compares19 complete field sprite factory calls for actors0\u201318,25 initial bounds calls andfour empty task passes. All24724 owned bytes plus mapped factory state and allocation/free requests agree. Six required NPC factories explicitly stop at96/FC, andsix nonempty task passes stop at callback80022df4.",
+  "interpretation": "The field factory calls recovered construction, binding, animation, timer and motion source and owns returned sprite/part allocations. It preserves allocator class, mode-specific parts resizing, actor/descriptor publication and first-step policy. Remaining NPC commands/tasks are required dependencies, not substituted callbacks.",
+  "confidence": "confirmed",
+  "author": "Codex /root/sprite_integration from original supplied source; /root/motion_integration captured and independently qualified original factory inputs",
+  "reviewers": [
+    "Codex /root independent of sprite author"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix sanitizer build and exact original profile.",
+      "Existing unchanged cold-boot encounter route; original25 allocation inputs reused only after complete overlapping-call qualification.",
+      "Factory v1 authored snapshot fixes the reviewed boundary; further required command recovery is separate."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env PYTHONPATH=. ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 python3 .local/analysis/phase1-field-factory-20260918/compare-factory-cpp.py --binary build/sanitize/test-field-sprite-factory --output NEW_PRIVATE_REPORT.json"
+    ],
+    "expected": "Complete actor/descriptor/sprite/owned part bytes, factory control state, exact allocations/releases and bounds; required unsupported calls reject explicitly.",
+    "actual": "Independent rebuilt sanitized C++ replay passes19 factories,25 bounds andfour task passes; six required factory paths andsix task callbacks remain explicit errors.455 original records qualify; all124 uninstrumented controls and preserved constructor overlaps agree.",
+    "result": "passed",
+    "tolerance": "Exact owned state, arithmetic and call sequence. The separately reported two audio-event words are outside factory ownership; registration/writer source is qualified but callback execution during each call is inferred, not captured. No full global-state equivalence is claimed.",
+    "artifacts": [
+      {
+        "path": ".local/verification/phase1-source-20260918/factory-independent-comparison-v1.json",
+        "sha256": "2a28b1d188c895fcee75cec144d8adf3a0a7f90c08c5d9527b2289b37471717f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-source-20260918/factory-independent-review-v1.json",
+        "sha256": "ba5440626303bf12a74cab48140eb3dee078c478a42d5d6bb4d481b9be99eba9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/factory-source-review-v1.json",
+        "sha256": "d0b0e82a73e3e4df1f867cad8dc83481380c244eb65c714f5641c6a87763639a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/factory-qualification-v2.json",
+        "sha256": "2cb7ed7809ee36413eac45e794a86f6880f138fb78330a92abb293bb56901ed8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/constructor-overlap-v2.json",
+        "sha256": "0bf1dbf18ffe39fba64f554e6b7c4e0022790a865eca7e64d00b01e29c770415",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/factory-cpp-original-sanitize-v2.json",
+        "sha256": "2a28b1d188c895fcee75cec144d8adf3a0a7f90c08c5d9527b2289b37471717f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/include/xem/reconstruction/field_sprite_factory.hpp",
+        "sha256": "da7a2ee229da2e765b2454a073ffd585ccc25d57b7575f9f554af764de402f2c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/src/reconstruction/field_sprite_factory.cpp",
+        "sha256": "d57df23c6190d63d3ed81c4b3edad3b757bce25809d740854eb41ab4f82aa0a4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/tests/test_field_sprite_factory.cpp",
+        "sha256": "0c9e53e16163ab8b7cd61a1efe24debaad390a077ac60d9e7f89bd2480f02f51",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/include/xem/reconstruction/field_sprite.hpp",
+        "sha256": "858f7f01086f397b74519adc79e7d4c7b4800bd479f876c8119479786ee1dcf0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/src/reconstruction/field_sprite.cpp",
+        "sha256": "d4bee85073b0d45ebf5e84191acb3b231f479dc5414634cdcbf86419d91b23af",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/tests/test_field_sprite.cpp",
+        "sha256": "faaf8a8f0c3a79caff63354148f8b223eaa78485b3fb10ff5d3b15447248fafd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/include/xem/reconstruction/field_motion.hpp",
+        "sha256": "e3fa021f6ff44615234d0588fd6b78c0da139d7ccf0967debd68dabac2542c86",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/src/reconstruction/field_motion.cpp",
+        "sha256": "0bc641211393b218f871f3fb66257aea7347d66754bc8184f41a03553ce674a9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1/analysis/formats/sprite-construction.md",
+        "sha256": "70ce859c4deb9c27d4697aa8782b8b0a117b215e7d4e76f5665926b0fe20f2c6",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "reconstruction": {
+    "files": [
+      "include/xem/reconstruction/field_sprite_factory.hpp",
+      "src/reconstruction/field_sprite_factory.cpp",
+      "tests/test_field_sprite_factory.cpp",
+      "analysis/formats/sprite-construction.md"
+    ],
+    "source_snapshot": ".local/analysis/phase1-field-factory-20260918/authored-factory-v1",
+    "library": "xem-field-reconstruction"
+  },
+  "source_dependencies": [
+    "EVID-REF-025",
+    "EVID-REF-029",
+    "EVID-REF-030",
+    "EVID-REF-034"
+  ],
+  "related_requirements": [
+    "P01-T03",
+    "P01-T08",
+    "P01-T09",
+    "P01-T13",
+    "P01-T14",
+    "P01-T15"
+  ],
+  "limitations": [
+    "Six required factories remain blocked at 96/FC/E0 and task callbacks; no full factory/lifecycle claim.",
+    "Captured words80059504/80059540 have an independent writer in registered callback8003c020 and are reported separately, not claimed as factory outputs. Callback execution during these calls is inferred, not captured; no exact global-state equivalence is claimed.",
+    "Part input bytes are checked unchanged only for factories whose recovered source never writes them.",
+    "Constructor allocations reused only after independent exact overlapping-call qualification.",
+    "No public original bytes are produced.",
+    "C6, fresh-entry and other unobserved alternatives have source/synthetic scope. Full factory/lifecycle/readiness and all nine domain proofs remain open."
+  ],
+  "provenance": {
+    "consulted_sources": "Only supplied original binaries/execution, project-authored references and qualified Ghidra. No other Xenogears source or reverse-engineering results.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are distributable. Original images/bytes/traces/exports/saves remain private."
+  }
+}

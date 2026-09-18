@@ -52,4 +52,30 @@ BattleRequestResult execute_battle_request(EventContext &context, BattleRequestS
     return {BattleRequestRetry::none, resolution};
 }
 
+void wait_battle_request_extended(EventContext &context, const BattleRequestState &state) {
+    if (context.current_actor == nullptr)
+        throw EventError("Battle continuation wait requires the current event actor");
+    auto &actor = *context.current_actor;
+    if (context.program.byte(actor.pc) != 0x7f)
+        throw EventError("Battle continuation wait requires extended opcode 0x7f");
+    actor.pc = static_cast<std::uint16_t>(actor.pc + (state.pending == 0 ? 1 : -1));
+    context.control.break_requested = 1;
+}
+
+void branch_battle_continuation(EventContext &context) {
+    if (context.current_actor == nullptr)
+        throw EventError("Battle continuation branch requires the current event actor");
+    auto &actor = *context.current_actor;
+    const auto pc = static_cast<std::uint32_t>(actor.pc);
+    if (context.program.byte(pc) != 0x86)
+        throw EventError("Battle continuation branch requires primary opcode 0x86");
+    const auto operand = context.program.word(pc + 1U);
+    if (context.variables == nullptr)
+        throw EventError("Battle continuation branch requires the field variable bank");
+    const auto value = (operand & 0x8000U) != 0 ? static_cast<std::int32_t>(operand & 0x7fffU)
+                                                : context.variables->read(operand);
+    actor.pc = context.variables->read(0) == value ? static_cast<std::uint16_t>(pc + 5U)
+                                                   : context.program.word(pc + 3U);
+}
+
 } // namespace xem::reconstruction::field

@@ -479,9 +479,9 @@
         "distribution": "public_authored_metadata"
       },
       {
-        "path": "tests/test_event_analysis.py",
+        "path": ".local/verification/phase1-source-20260918/previous-sources/tests/test_event_analysis.py",
         "sha256": "39d6f81781d46c2fd55a7199442cd0789d7c10323b8c3519cbb1eadecf2cc2d8",
-        "distribution": "public_authored_metadata"
+        "distribution": "private_local_only"
       },
       {
         "path": "analysis/formats/music-loading.md",
@@ -568,5 +568,13 @@
     "infrastructure": "Existing pinned external observation core and Nix tools; no new dependency."
   },
   "author": "Codex /root, original source and execution analysis on 2026-09-08",
-  "reviewers": []
+  "reviewers": [],
+  "historical_source_preservation": [
+    {
+      "date": "2026-09-18",
+      "original_path": "tests/test_event_analysis.py",
+      "preserved_path": ".local/verification/phase1-source-20260918/previous-sources/tests/test_event_analysis.py",
+      "reason": "Current decoder/fixtures gained source-reviewed 21,86,FE/7F paths. The earlier validated bytes and digest are retained unchanged."
+    }
+  ]
 }
