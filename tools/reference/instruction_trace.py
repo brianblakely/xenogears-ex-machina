@@ -30,12 +30,6 @@ else:
     )
     from scenario_program import MEMORY_LIMIT, hex_bytes, integer, keys
 
-Callback = ct.CFUNCTYPE(
-    None,
-    *([ct.c_uint32] * 6),
-    ct.POINTER(ct.c_uint32),
-    ct.POINTER(ct.c_uint8),
-)
 ScratchpadCallback = ct.CFUNCTYPE(
     None,
     *([ct.c_uint32] * 6),
@@ -296,14 +290,13 @@ class InstructionTrace:
                 raise ValueError("Instruction tracing requires the pinned observation-trace shell")
             function.restype, function.argtypes = restype, argtypes
         self.api_version = core.retro_xem_trace_version()
-        if self.api_version not in (1, 2):
-            raise ValueError("Unsupported external instruction-trace API")
-        callback_type = Callback if self.api_version == 1 else ScratchpadCallback
+        if self.api_version != 2:
+            raise ValueError("Instruction tracing requires external instruction-trace API 2")
         configure = getattr(core, "retro_xem_trace_configure", None)
         if configure is None:
             raise ValueError("External core is missing trace configuration")
         configure.restype = ct.c_int
-        configure.argtypes = [ct.POINTER(ct.c_uint32), ct.c_uint32, ct.c_uint32, callback_type]
+        configure.argtypes = [ct.POINTER(ct.c_uint32), ct.c_uint32, ct.c_uint32, ScratchpadCallback]
         self.frame = 0
         self.records = 0
         self.guard_mismatches = {hook["name"]: 0 for hook in spec["hooks"]}
@@ -312,7 +305,7 @@ class InstructionTrace:
         self.digest_bytes = 0
         self.digest = hashlib.sha256()
         self.failed = False
-        self.callback = callback_type(self.accept)
+        self.callback = ScratchpadCallback(self.accept)
         addresses = (ct.c_uint32 * len(spec["hooks"]))(*(hook["pc"] for hook in spec["hooks"]))
         if (
             core.retro_xem_trace_configure(
@@ -329,7 +322,7 @@ class InstructionTrace:
             not self.failed and self.spec["start_frame"] <= frame < self.spec["end_frame"]
         )
 
-    def accept(self, index, pc, code, cycle, subcycle, path, registers, ram, scratchpad=None):
+    def accept(self, index, pc, code, cycle, subcycle, path, registers, ram, scratchpad):
         try:
             if not ram or not registers or not 0 <= index < len(self.spec["hooks"]):
                 raise ValueError("External core supplied invalid trace arguments")
@@ -340,15 +333,13 @@ class InstructionTrace:
             )
             gpr = [registers[index] for index in range(34)]
             hook = self.spec["hooks"][index]
-            scratch = None
-            if self.api_version == 2:
-                if not scratchpad:
-                    raise ValueError("External core supplied a null scratchpad")
-                scratch = (
-                    memoryview(ct.cast(scratchpad, ct.POINTER(ct.c_uint8 * 1024)).contents)
-                    .cast("B")
-                    .toreadonly()
-                )
+            if not scratchpad:
+                raise ValueError("External core supplied a null scratchpad")
+            scratch = (
+                memoryview(ct.cast(scratchpad, ct.POINTER(ct.c_uint8 * 1024)).contents)
+                .cast("B")
+                .toreadonly()
+            )
             record = guarded_record(hook, pc, code, gpr, memory, scratch)
             if record is None:
                 self.guard_mismatches[hook["name"]] += 1

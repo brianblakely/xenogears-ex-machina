@@ -74,7 +74,12 @@ aliases are bounded independently from RAM. Such records include
 `resolved_space: "scratchpad"` and an offset within that 1 KiB. Adjacent hardware
 registers and ranges crossing the boundary are unavailable; no emulated bus
 read occurs. Direct ranges, pointer-offset ranges and digests remain RAM-only.
-The collector also accepts historical API 1 cores without scratchpad support.
+The collector requires extension API 2. API 1 and unknown versions are rejected
+before trace configuration; the trace specification remains at schema version 1.
+
+Historical captures and their recorded hashes remain immutable. Reproduce them
+with their recorded collector/core revision. After changing the collector, make
+new captures for current-source hash checks rather than rewriting old provenance.
 
 The private `instruction-trace.jsonl` records matched addresses immediately
 before instruction dispatch, with zero-based `frontend_run`, the core's raw

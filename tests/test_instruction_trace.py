@@ -1,10 +1,22 @@
 """Invented registers/code/RAM exercise guarded, bounded instruction observations."""
 
 import copy
+import ctypes as ct
 import hashlib
+import json
+import tempfile
 import unittest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
-from tools.reference.instruction_trace import guarded_record, validate_instruction_trace
+from tools.reference.instruction_trace import (
+    InstructionTrace,
+    ScratchpadCallback,
+    guarded_record,
+    validate_instruction_trace,
+)
+from tools.reference.scenario_program import MEMORY_LIMIT
 
 
 class InstructionTraceTests(unittest.TestCase):
@@ -35,6 +47,88 @@ class InstructionTraceTests(unittest.TestCase):
             "max_callbacks": 100,
             "hooks": [self.hook],
         }
+
+    def trace_core(self, version=2):
+        return SimpleNamespace(
+            retro_xem_trace_version=Mock(return_value=version),
+            retro_xem_trace_enable=Mock(),
+            retro_xem_trace_count=Mock(return_value=1),
+            retro_xem_trace_configure=Mock(return_value=1),
+        )
+
+    def test_obsolete_and_unknown_apis_reject_before_configuration_or_output(self):
+        for version in (0, 1, 3, 0xFFFFFFFF):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as directory:
+                core = self.trace_core(version)
+                output = Path(directory) / "trace.jsonl"
+                with self.assertRaises(ValueError):
+                    trace = InstructionTrace(core, self.spec, output, [])
+                    trace.finish()
+                core.retro_xem_trace_configure.assert_not_called()
+                core.retro_xem_trace_enable.assert_not_called()
+                self.assertFalse(output.exists())
+
+    def test_api2_callback_records_ram_and_scratchpad_without_mutation(self):
+        core = self.trace_core()
+        ram = (ct.c_uint8 * MEMORY_LIMIT)()
+        ram[: len(self.memory)] = self.memory
+        scratchpad = (ct.c_uint8 * 1024)()
+        scratchpad[130:134] = bytes.fromhex("deadbeef")
+        registers = (ct.c_uint32 * 34)(*self.gpr)
+        registers[2] = 0x1F800080
+        before = bytes(ram), bytes(scratchpad), list(registers)
+        errors = []
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "trace.jsonl"
+            trace = InstructionTrace(core, self.spec, output, errors)
+            try:
+                self.assertEqual(trace.api_version, 2)
+                self.assertEqual(trace.spec["schema_version"], 1)
+                configure = core.retro_xem_trace_configure
+                self.assertIs(configure.argtypes[-1], ScratchpadCallback)
+                addresses, count, budget, callback = configure.call_args.args
+                self.assertEqual(list(addresses), [self.hook["pc"]])
+                self.assertEqual((count, budget), (1, self.spec["max_callbacks"]))
+                self.assertIsInstance(callback, ScratchpadCallback)
+                trace.start_run(2)
+                core.retro_xem_trace_enable.assert_called_with(True)
+                callback(0, self.hook["pc"], 0x90420000, 123, 4, 0, registers, ram, scratchpad)
+            finally:
+                status = trace.finish()
+            record = json.loads(output.read_text())
+            self.assertEqual(record["frontend_run"], 2)
+            self.assertEqual(record["gpr_u32"], list(registers))
+            self.assertEqual(
+                [item["hex"] for item in record["ranges"]],
+                ["01020304", "01020304", "deadbeef"],
+            )
+            self.assertEqual(record["ranges"][2]["resolved_space"], "scratchpad")
+            self.assertEqual(
+                status["trace_sha256"], hashlib.sha256(output.read_bytes()).hexdigest()
+            )
+        self.assertEqual((bytes(ram), bytes(scratchpad), list(registers)), before)
+        self.assertEqual(status["records"], 1)
+        self.assertEqual(status["unavailable_ranges"], 0)
+        self.assertFalse(status["failed"])
+        self.assertEqual(errors, [])
+
+    def test_api2_null_scratchpad_stops_even_a_ram_only_capture(self):
+        core = self.trace_core()
+        ram = (ct.c_uint8 * MEMORY_LIMIT)()
+        registers = (ct.c_uint32 * 34)(*self.gpr)
+        errors = []
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "trace.jsonl"
+            trace = InstructionTrace(core, self.spec, output, errors)
+            try:
+                trace.callback(0, self.hook["pc"], 0x90420000, 0, 0, 0, registers, ram, None)
+                core.retro_xem_trace_enable.assert_called_with(0)
+            finally:
+                status = trace.finish()
+            self.assertEqual(output.read_bytes(), b"")
+        self.assertTrue(status["failed"])
+        self.assertEqual(status["records"], 0)
+        self.assertEqual(errors, ["Instruction trace: External core supplied a null scratchpad"])
 
     def test_guarded_register_and_pointer_reads_are_observation_only(self):
         validate_instruction_trace(self.spec)
