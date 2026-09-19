@@ -16,8 +16,6 @@ static xem_trace_callback xem_trace_sink;
 
 #define XEM_TRACE_EXPORT __attribute__((visibility("default")))
 
-XEM_TRACE_EXPORT uint32_t retro_xem_trace_version(void) { return 2; }
-
 XEM_TRACE_EXPORT int retro_xem_trace_configure(const uint32_t *pcs, uint32_t count, uint32_t budget,
                                                xem_trace_callback callback) {
     uint32_t i, j;

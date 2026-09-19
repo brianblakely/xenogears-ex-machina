@@ -454,7 +454,6 @@ def compare(sources: dict, capture: Path, spec: dict) -> dict:
         and observation["content_sha256"]
         == sources["profile"]["measurement"]["source"]["chd"]["sha256"]
         and observation["scenario"]["complete"]
-        and metadata["core_extension_api_version"] == 2
         and metadata["spec"] == spec
         and not metadata["failed"]
         and not metadata["budget_reached"]

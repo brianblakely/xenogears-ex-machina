@@ -280,7 +280,6 @@ class InstructionTrace:
         self.spec = validate_instruction_trace(spec)
         self.core, self.errors = core, errors
         prototypes = {
-            "retro_xem_trace_version": (ct.c_uint32, []),
             "retro_xem_trace_enable": (None, [ct.c_uint32]),
             "retro_xem_trace_count": (ct.c_uint32, []),
         }
@@ -289,9 +288,6 @@ class InstructionTrace:
             if function is None:
                 raise ValueError("Instruction tracing requires the pinned observation-trace shell")
             function.restype, function.argtypes = restype, argtypes
-        self.api_version = core.retro_xem_trace_version()
-        if self.api_version != 2:
-            raise ValueError("Instruction tracing requires external instruction-trace API 2")
         configure = getattr(core, "retro_xem_trace_configure", None)
         if configure is None:
             raise ValueError("External core is missing trace configuration")

@@ -48,27 +48,32 @@ class InstructionTraceTests(unittest.TestCase):
             "hooks": [self.hook],
         }
 
-    def trace_core(self, version=2):
+    def trace_core(self):
         return SimpleNamespace(
-            retro_xem_trace_version=Mock(return_value=version),
             retro_xem_trace_enable=Mock(),
             retro_xem_trace_count=Mock(return_value=1),
             retro_xem_trace_configure=Mock(return_value=1),
         )
 
-    def test_obsolete_and_unknown_apis_reject_before_configuration_or_output(self):
-        for version in (0, 1, 3, 0xFFFFFFFF):
-            with self.subTest(version=version), tempfile.TemporaryDirectory() as directory:
-                core = self.trace_core(version)
+    def test_missing_trace_exports_reject_before_configuration_or_output(self):
+        for name in (
+            "retro_xem_trace_enable",
+            "retro_xem_trace_count",
+            "retro_xem_trace_configure",
+        ):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                core = self.trace_core()
+                configure, enable = core.retro_xem_trace_configure, core.retro_xem_trace_enable
+                delattr(core, name)
                 output = Path(directory) / "trace.jsonl"
                 with self.assertRaises(ValueError):
                     trace = InstructionTrace(core, self.spec, output, [])
                     trace.finish()
-                core.retro_xem_trace_configure.assert_not_called()
-                core.retro_xem_trace_enable.assert_not_called()
+                configure.assert_not_called()
+                enable.assert_not_called()
                 self.assertFalse(output.exists())
 
-    def test_api2_callback_records_ram_and_scratchpad_without_mutation(self):
+    def test_versionless_callback_records_ram_and_scratchpad_without_mutation(self):
         core = self.trace_core()
         ram = (ct.c_uint8 * MEMORY_LIMIT)()
         ram[: len(self.memory)] = self.memory
@@ -82,7 +87,6 @@ class InstructionTraceTests(unittest.TestCase):
             output = Path(directory) / "trace.jsonl"
             trace = InstructionTrace(core, self.spec, output, errors)
             try:
-                self.assertEqual(trace.api_version, 2)
                 self.assertEqual(trace.spec["schema_version"], 1)
                 configure = core.retro_xem_trace_configure
                 self.assertIs(configure.argtypes[-1], ScratchpadCallback)
@@ -112,7 +116,7 @@ class InstructionTraceTests(unittest.TestCase):
         self.assertFalse(status["failed"])
         self.assertEqual(errors, [])
 
-    def test_api2_null_scratchpad_stops_even_a_ram_only_capture(self):
+    def test_null_scratchpad_stops_even_a_ram_only_capture(self):
         core = self.trace_core()
         ram = (ct.c_uint8 * MEMORY_LIMIT)()
         registers = (ct.c_uint32 * 34)(*self.gpr)

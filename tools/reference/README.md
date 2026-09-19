@@ -68,14 +68,18 @@ both current RAM and the core's fetched opcode. Address reuse with a different
 overlay produces counted guard rejections. No guessed or unmatched instruction
 is silently interpreted.
 
-Extension API 2 also exposes the first 1 KiB of scratchpad backing memory to
+The extension also exposes the first 1 KiB of scratchpad backing memory to
 register-based ranges. The physical `1f800000` and pinned-core `9f800000`/`bf800000`
 aliases are bounded independently from RAM. Such records include
 `resolved_space: "scratchpad"` and an offset within that 1 KiB. Adjacent hardware
 registers and ranges crossing the boundary are unavailable; no emulated bus
 read occurs. Direct ranges, pointer-offset ranges and digests remain RAM-only.
-The collector requires extension API 2. API 1 and unknown versions are rejected
-before trace configuration; the trace specification remains at schema version 1.
+The collector and extension use one versionless interface:
+`retro_xem_trace_configure`, `retro_xem_trace_enable`, and `retro_xem_trace_count`.
+The callback always supplies both RAM and scratchpad. Build the collector and
+core from the same repository revision; missing trace exports fail before trace
+configuration. The JSON trace specification's schema version is independent of
+this interface.
 
 Historical captures and their recorded hashes remain immutable. Reproduce them
 with their recorded collector/core revision. After changing the collector, make

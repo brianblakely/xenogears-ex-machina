@@ -64,12 +64,13 @@ triangle zero. The analysis interface returns `None` for that case.
 
 ## Observation and remaining work
 
-The original uses a scratchpad stack during traversal. External observation
-API 2 supplies its backing memory read-only; only the first 1 KiB and its
+The original uses a scratchpad stack during traversal. The external trace
+extension supplies its backing memory read-only; only the first 1 KiB and its
 qualified aliases are available to register-based ranges. Hardware registers,
-wrapping ranges and out-of-bounds reads are rejected. The current collector
-requires API 2; historical captures retain their original tool provenance.
-This is general analysis machinery, separate from the shipping native application.
+wrapping ranges and out-of-bounds reads are rejected. The collector and core
+use one versionless trace interface; historical captures retain their original
+tool provenance. This is general analysis machinery, separate from the shipping
+native application.
 
 The ordinary ramp inputs are an observation route, not the frozen slice or an
 encounter-completion proof. Movement resolution, collision adjacency/attributes,

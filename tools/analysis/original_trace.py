@@ -108,7 +108,6 @@ def capture_records(capture: Path, sources: dict, spec: dict, windows: tuple) ->
         and observation["content_sha256"]
         == sources["profile"]["measurement"]["source"]["chd"]["sha256"]
         and observation["scenario"]["complete"]
-        and metadata["core_extension_api_version"] == 2
         and metadata["spec"] == spec
         and not metadata["failed"]
         and not metadata["budget_reached"]
