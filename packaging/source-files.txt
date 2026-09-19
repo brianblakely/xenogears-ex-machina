@@ -101,6 +101,7 @@ docs/authoring/README.md
 docs/authoring/acceptance.json
 docs/authoring/contract.json
 docs/authoring/dependencies.json
+docs/connected-decomp.md
 docs/defaults.json
 docs/dependencies.json
 docs/development.md
@@ -125,6 +126,7 @@ docs/verification/phase0-scenarios.json
 docs/verification/phase0.json
 editors/README.md
 include/xem/build_info.hpp.in
+include/xem/reconstruction/connected_field.hpp
 include/xem/reconstruction/disc_stream.hpp
 include/xem/reconstruction/field_actor.hpp
 include/xem/reconstruction/field_battle.hpp
@@ -149,6 +151,8 @@ packaging/source-files.txt
 plan.md
 prompt.md
 pyproject.toml
+src/analysis/reconstruct.cpp
+src/reconstruction/connected_field.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
@@ -184,6 +188,8 @@ tests/test_battle_continuation.py
 tests/test_battle_request.py
 tests/test_collision_math.py
 tests/test_collision_query.py
+tests/test_connected.py
+tests/test_connected_field.cpp
 tests/test_disc_stream.cpp
 tests/test_event_analysis.py
 tests/test_event_media.py
@@ -240,6 +246,7 @@ tools/analysis/battle_continuation.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
 tools/analysis/collision_query.py
+tools/analysis/connected.py
 tools/analysis/event_media.py
 tools/analysis/event_schedule.py
 tools/analysis/event_state.py
