@@ -24,7 +24,7 @@ add_library(xem-field-reconstruction STATIC
   src/reconstruction/field_collision.cpp
   src/reconstruction/field_media.cpp
   src/reconstruction/disc_stream.cpp
-  src/reconstruction/connected_field.cpp)
+  src/reconstruction/prepared_field_event_pass.cpp)
 target_include_directories(xem-field-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-field-reconstruction PUBLIC xem_project_options)
 
@@ -43,18 +43,19 @@ add_custom_target(check-format
   VERBATIM)
 
 if(BUILD_TESTING)
-  add_executable(test-connected-field tests/test_connected_field.cpp)
-  target_link_libraries(test-connected-field PRIVATE xem-field-reconstruction)
-  add_test(NAME connected-field-ownership COMMAND test-connected-field)
+  add_executable(test-prepared-field-event-pass tests/test_prepared_field_event_pass.cpp)
+  target_link_libraries(test-prepared-field-event-pass PRIVATE xem-field-reconstruction)
+  add_test(NAME prepared-field-event-pass-ownership COMMAND test-prepared-field-event-pass)
   add_test(NAME connected-reconstruction
     COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_connected.py"
       "$<TARGET_FILE:xem-reconstruct>")
-  set_tests_properties(connected-field-ownership connected-reconstruction PROPERTIES LABELS connected)
+  set_tests_properties(prepared-field-event-pass-ownership connected-reconstruction
+    PROPERTIES LABELS connected)
   add_custom_target(check-connected
-    COMMAND "$<TARGET_FILE:test-connected-field>"
+    COMMAND "$<TARGET_FILE:test-prepared-field-event-pass>"
     COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_connected.py"
       "$<TARGET_FILE:xem-reconstruct>"
-    DEPENDS xem-reconstruct test-connected-field
+    DEPENDS xem-reconstruct test-prepared-field-event-pass
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
     USES_TERMINAL
     VERBATIM)

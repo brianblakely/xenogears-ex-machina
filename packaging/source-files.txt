@@ -126,7 +126,6 @@ docs/verification/phase0-scenarios.json
 docs/verification/phase0.json
 editors/README.md
 include/xem/build_info.hpp.in
-include/xem/reconstruction/connected_field.hpp
 include/xem/reconstruction/disc_stream.hpp
 include/xem/reconstruction/field_actor.hpp
 include/xem/reconstruction/field_battle.hpp
@@ -138,6 +137,7 @@ include/xem/reconstruction/field_return.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/packed_field.hpp
+include/xem/reconstruction/prepared_field_event_pass.hpp
 nix/authoring/flake.lock
 nix/authoring/flake.nix
 nix/flake.lock
@@ -152,7 +152,6 @@ plan.md
 prompt.md
 pyproject.toml
 src/analysis/reconstruct.cpp
-src/reconstruction/connected_field.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
@@ -164,6 +163,7 @@ src/reconstruction/field_return.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/packed_field.cpp
+src/reconstruction/prepared_field_event_pass.cpp
 src/runtime/main.cpp
 tests/fixtures/README.md
 tests/packed_field_probe.cpp
@@ -189,7 +189,6 @@ tests/test_battle_request.py
 tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_connected.py
-tests/test_connected_field.cpp
 tests/test_disc_stream.cpp
 tests/test_event_analysis.py
 tests/test_event_media.py
@@ -220,6 +219,7 @@ tests/test_packed_field.cpp
 tests/test_phase1_slice.py
 tests/test_planar_motion.py
 tests/test_position.py
+tests/test_prepared_field_event_pass.cpp
 tests/test_projection_records.py
 tests/test_recovery.py
 tests/test_reference.py

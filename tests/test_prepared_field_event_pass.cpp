@@ -1,4 +1,4 @@
-#include "xem/reconstruction/connected_field.hpp"
+#include "xem/reconstruction/prepared_field_event_pass.hpp"
 
 #include <stdexcept>
 #include <utility>
@@ -9,8 +9,8 @@ void check(bool value) {
     if (!value)
         throw std::runtime_error("Connected ownership regression");
 }
-ConnectedField prepared() {
-    ConnectedField state;
+PreparedFieldEventPass prepared() {
+    PreparedFieldEventPass state;
     state.events.bytecode = {0x36, 0, 0, 0};
     state.events.entries.resize(1);
     state.actors.resize(1);

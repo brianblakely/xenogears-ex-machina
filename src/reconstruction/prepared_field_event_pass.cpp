@@ -1,4 +1,4 @@
-#include "xem/reconstruction/connected_field.hpp"
+#include "xem/reconstruction/prepared_field_event_pass.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -24,7 +24,7 @@ std::string instruction(const char *space, std::uint8_t opcode) {
 }
 } // namespace
 
-ConnectedStop run_connected_events(ConnectedField &state, std::uint32_t instruction_limit) {
+ConnectedStop run_connected_events(PreparedFieldEventPass &state, std::uint32_t instruction_limit) {
     ConnectedStop result;
     result.kind = "error";
     if (state.attempted) {
@@ -42,7 +42,7 @@ ConnectedStop run_connected_events(ConnectedField &state, std::uint32_t instruct
         return result;
     }
     // Construct views after owned storage is final. Moving/copying a prepared
-    // ConnectedField does not retain stale pointers into the previous object.
+    // PreparedFieldEventPass does not retain stale pointers into the previous object.
     std::vector<EventDescriptor> descriptors;
     descriptors.reserve(state.actors.size());
     for (std::size_t i = 0; i < state.actors.size(); ++i)

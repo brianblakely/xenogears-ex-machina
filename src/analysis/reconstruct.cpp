@@ -1,4 +1,4 @@
-#include "xem/reconstruction/connected_field.hpp"
+#include "xem/reconstruction/prepared_field_event_pass.hpp"
 
 #include <charconv>
 #include <iostream>
@@ -61,13 +61,13 @@ template <typename T> void optional(const std::optional<T> &value) {
         std::cout << "null";
 }
 
-ConnectedField read_state() {
+PreparedFieldEventPass read_state() {
     const auto size = number<std::uint32_t>();
     if (size > 0x200000)
         throw EventError("Driver component exceeds the host allocation bound");
     std::vector<std::uint8_t> component(size);
     read_values(component);
-    ConnectedField state;
+    PreparedFieldEventPass state;
     state.events = parse_event_package(component);
     const auto count = number<std::uint32_t>();
     if (count == 0 || count > 4096 || count != state.events.entries.size())
@@ -105,7 +105,7 @@ ConnectedField read_state() {
     return state;
 }
 
-void write_state(const ConnectedField &state) {
+void write_state(const PreparedFieldEventPass &state) {
     std::cout << "{\"actors\":[";
     for (std::size_t i = 0; i < state.actors.size(); ++i) {
         if (i != 0)
