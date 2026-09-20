@@ -3406,9 +3406,11 @@
         "EVID-REF-025",
         "EVID-REF-028",
         "EVID-REF-029",
-        "EVID-REF-030"
+        "EVID-REF-030",
+        "EVID-REF-036",
+        "EVID-REF-039"
       ],
-      "next_experiment": "Reuse EVID030 actor defaults, EVID028 return data and EVID029 later checkpoints. Recover sprite construction/rebinding 8002435c/800222bc, field orchestration 80076ac0/800a28d4, remaining ordinary VM effects, destruction and owned resource lifetimes. Complete readiness remains blocked."
+      "next_experiment": "Run the shared Program field_return case: EVID039 now connects 800a3474 restore to 19 complete 80076ac0 factories, computing caller arguments and shared state. Actor19 stops at sprite command96, PC8012a10a. Recover its 8001ce74 task-list removal with initialization/ownership, then FC resource upload and the remaining required commands. Keep all-factory completion before party reassignment and the separate 800a3c8c checkpoint pass. Auxiliary/party variants, optional extensions, cleanup and readiness remain unresolved. Backward work is 80080f44 allocation/default/shadow initialization, not a batch of defaults that omits 8007aa44."
     }
   ],
   "unknown_formats": [
@@ -3691,7 +3693,11 @@
         "opcode": "0x96",
         "handler": "0x8001feec",
         "analysis_status": "unresolved",
-        "native_status": "unimplemented"
+        "native_status": "unimplemented",
+        "evidence": [
+          "EVID-REF-039"
+        ],
+        "next_experiment": "Connected field_return encounters actor19 command96 at sprite-bytecode PC0x8012a10a after C6 FF. The qualified resident generic-effect source 8001fbe4 calls 8001ce74(sprite+6c); recover task-list initialization/removal and ownership together. Implement in shared field_sprite.cpp, rerun tools.analysis.execution against the independent return_case expectations, then extend to the following FC upload. Table target0x8001feec is machine code, not the sprite PC."
       },
       {
         "opcode": "0x97",
@@ -4528,6 +4534,30 @@
   "reconstruction_status_rule": "automatic_output is a review aid; inferred annotations require source support; source_reviewed means authored semantic review; observed_subset means only the explicitly compared execution. Authored C++ libraries do not imply a complete native runtime or broad subsystem promotion.",
   "source_modules": [
     {
+      "id": "program_cpp",
+      "files": [
+        "include/xem/reconstruction/program.hpp",
+        "src/reconstruction/program.cpp",
+        "src/analysis/main.cpp",
+        "tools/analysis/execution.py",
+        "tools/analysis/return_case.py",
+        "tests/test_program.cpp",
+        "tests/test_execution.py",
+        "tests/test_return_case.py",
+        "docs/executable-reconstruction.md"
+      ],
+      "analysis_status": "source_reviewed",
+      "native_status": "authored_cpp_library",
+      "execution_status": "observed_subset",
+      "evidence": [
+        "EVID-REF-028",
+        "EVID-REF-030",
+        "EVID-REF-036",
+        "EVID-REF-039"
+      ],
+      "scope": "One resident/field owner invokes the same recovered C++ as subsystem tests. Qualified 800a28d4 return input computes 25 restored actors/globals/variables, resource selection and seven factory arguments, then 19 complete factories with shared environment and owned allocations. Twenty checkpoints and actor19's committed partial sprite agree; command96 remains required. Event passes/batches connect core/call/control/motion-divisor/battle/music-wait handlers with synthetic continuity coverage, not a full update or original connected-event proof. Analysis owns prepared cases, explicit heap results, limits and reports; independent expectations never enter C++. No complete boot, heap, mode dispatcher, return readiness or native persistence is claimed."
+    },
+    {
       "id": "field_events_cpp",
       "files": [
         "include/xem/reconstruction/field_events.hpp",
@@ -4752,7 +4782,7 @@
         "sprite_creation",
         "event_execution"
       ],
-      "next_blocker": "Actor defaults now compare all 25 observed return-time calls. Complete sprite construction/rebinding, allocator/shadow ownership and required initialization dispatch from 80076ac0/800a28d4, then establish semantic readiness."
+      "next_blocker": "Run EVID039 connected field_return: restore and 19 factories now execute together. Resolve encountered actor19 sprite command96 and its task-list service, then subsequent required commands and the later checkpoint pass. Expand backward through 80080f44 allocation/default/shadow ownership and loading; actor defaults alone are not full initialization or semantic readiness."
     },
     {
       "id": "event_execution",

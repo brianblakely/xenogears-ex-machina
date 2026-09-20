@@ -10,11 +10,23 @@
 namespace xem::reconstruction::field {
 namespace {
 constexpr std::uint32_t sprite_bytes = 0x164;
-constexpr std::size_t inspection_limit = 4096;
 
 void require(bool condition, const char *message) {
     if (!condition)
         throw SpriteError(message);
+}
+void require_recovered(bool condition, const char *message) {
+    if (!condition)
+        throw UnrecoveredSpriteBehavior(message);
+}
+void require_source(bool condition, const char *message) {
+    if (!condition)
+        throw SpriteInputError(message);
+}
+void observe(const SpriteSources &sources, std::string_view operation,
+             std::uint32_t machine_address, std::optional<std::uint32_t> command_pc = {}) {
+    if (sources.observe_execution)
+        sources.observe_execution({operation, machine_address, command_pc});
 }
 bool valid_extent(std::uint32_t address, std::size_t size) {
     return size <= (std::uint64_t{1} << 32) - address;
@@ -60,21 +72,22 @@ std::size_t inside(SpriteWindow sprite, std::uint32_t pointer, std::size_t size)
 }
 std::uint32_t read(std::span<const SpriteResource> sources, std::uint32_t pointer,
                    std::size_t size) {
-    require(valid_extent(pointer, size), "Sprite source read wraps address space");
+    require_source(valid_extent(pointer, size), "Sprite source read wraps address space");
     std::optional<std::uint32_t> value;
     for (const auto &source : sources) {
-        require(valid_extent(source.address, source.bytes.size()),
-                "Sprite source extent wraps address space");
+        require_source(valid_extent(source.address, source.bytes.size()),
+                       "Sprite source extent wraps address space");
         if (pointer < source.address)
             continue;
         const auto at = static_cast<std::size_t>(pointer - source.address);
         if (at <= source.bytes.size() && size <= source.bytes.size() - at) {
             const auto next = get(source.bytes, at, size);
-            require(!value || *value == next, "Overlapping sprite sources disagree");
+            require_source(!value || *value == next, "Overlapping sprite sources disagree");
             value = next;
         }
     }
-    require(value.has_value(), "Sprite read requires missing address-qualified source bytes");
+    require_source(value.has_value(),
+                   "Sprite read requires missing address-qualified source bytes");
     return *value;
 }
 std::uint32_t resource(const SpriteSources &sources, std::uint32_t pointer, std::size_t size) {
@@ -111,15 +124,16 @@ void previous_frame(SpriteWindow sprite, std::uint32_t frame, std::uint32_t bind
     const auto count = flags & 63;
     auto pointer = record + ((word & 0x8000) ? count * 2 + 4 : count * 4 + 6);
     std::uint32_t part = 0;
-    for (std::size_t step = 0; step < inspection_limit; ++step) {
-        if (part == count)
-            return;
+    while (part != count) {
+        observe(sources, "sprite_previous_frame", (word & 0x8000) ? 0x8001f750 : 0x8001f8e8,
+                pointer);
         const auto command = resource(sources, pointer++, 1);
         if (command & 0x80) {
             if (command & 0x40) {
                 const auto renderer = inside(sprite, get(sprite.bytes, 0x20), 64);
                 const auto target = get(sprite.bytes, renderer + 0x34);
-                require(target != 0, "Original frame auxiliary allocation is unreconstructed");
+                require_recovered(target != 0,
+                                  "Original frame auxiliary allocation is unreconstructed");
                 const auto destination = inside(sprite, target, 64) + (command & 7) * 8;
                 if (command & 0x20) {
                     const auto operands = resource(sources, pointer, 2);
@@ -139,7 +153,6 @@ void previous_frame(SpriteWindow sprite, std::uint32_t frame, std::uint32_t bind
             ++part;
         }
     }
-    throw SpriteError("Original previous-frame parsing exceeded inspection bound");
 }
 void lookup_frame(SpriteWindow sprite, SpriteEnvironment &environment,
                   const SpriteSources &sources) {
@@ -231,8 +244,8 @@ void apply_header(SpriteWindow sprite, std::uint32_t header, const SpriteEnviron
 void install_sprite_gravity(SpriteWindow sprite, std::uint32_t header,
                             const SpriteEnvironment &environment, const SpriteSources &sources) {
     check_window(sprite);
-    require(environment.platform_mode == 0,
-            "Alternate sprite platform header installation is unreconstructed");
+    require_recovered(environment.platform_mode == 0,
+                      "Alternate sprite platform header installation is unreconstructed");
     put(sprite.bytes, 0x58, header);
     put(sprite.bytes, 0x64, header + resource(sources, header + 2, 2) + 2);
     const auto word = resource(sources, header, 2);
@@ -261,8 +274,8 @@ void bind_sprite_resource(SpriteWindow sprite, std::uint32_t pointer,
     check_window(sprite);
     if (pointer == 0)
         return;
-    require(environment.platform_mode == 0,
-            "Alternate sprite platform resource binding is unreconstructed");
+    require_recovered(environment.platform_mode == 0,
+                      "Alternate sprite platform resource binding is unreconstructed");
     if (pointer == get(sprite.bytes, 0x44))
         return;
     const auto at = inside(sprite, get(sprite.bytes, 0x24), 20);
@@ -281,8 +294,8 @@ void bind_sprite_resource(SpriteWindow sprite, std::uint32_t pointer,
 void update_sprite_matrix(SpriteWindow sprite, const SpriteSources &sources) {
     check_window(sprite);
     require(sources.trigonometry.size() == 0x4000, "Original sprite trig table is incomplete");
-    require(!(get(sprite.bytes, 0x40) & 1),
-            "Alternate GTE sprite matrix product is unreconstructed");
+    require_recovered(!(get(sprite.bytes, 0x40) & 1),
+                      "Alternate GTE sprite matrix product is unreconstructed");
     const auto at = inside(sprite, get(sprite.bytes, 0x20), 44);
     std::array<std::int32_t, 3> sine, cosine, scales;
     for (std::size_t i = 0; i < 3; ++i) {
@@ -345,8 +358,7 @@ void schedule_sprite_frame(SpriteWindow sprite, std::uint32_t frame, SpriteEnvir
         auto node = environment.frame_head;
         while (node != 0) {
             require(seen.insert(node).second, "Original sprite frame list is cyclic");
-            require(seen.size() <= inspection_limit,
-                    "Original sprite frame list exceeds inspection bound");
+            observe(sources, "sprite_frame_list", 0x8001d2b0);
             if (node == sprite.address) {
                 const auto binding = get(sprite.bytes, 0x24);
                 if (binding != 0x8005a474 && binding != 0x8006be10 &&
@@ -369,11 +381,12 @@ void replay_sprite_commands(SpriteWindow sprite, std::uint32_t target, std::uint
                             SpriteEnvironment &environment, const SpriteSources &sources) {
     check_window(sprite);
     auto duration = sources.incoming_replay_duration;
-    for (std::size_t step = 0; step < inspection_limit; ++step) {
+    for (;;) {
         const auto pointer = get(sprite.bytes, 0x64);
         auto counter = (get(sprite.bytes, 0xa8) >> 22) & 63;
         if (pointer == target && counter == target_step)
             return;
+        observe(sources, "sprite_facing_replay", 0x80022660, pointer);
         const auto opcode = resource(sources, pointer, 1);
         if (opcode < 0x80) {
             put(sprite.bytes, 0x64, pointer + 1);
@@ -429,7 +442,6 @@ void replay_sprite_commands(SpriteWindow sprite, std::uint32_t target, std::uint
         require(width != 0, "Original facing replay has a zero-width command");
         put(sprite.bytes, 0x64, get(sprite.bytes, 0x64) + width);
     }
-    throw SpriteError("Original facing replay exceeded inspection bound");
 }
 
 void select_sprite_orientation(SpriteWindow sprite, std::int16_t angle,
@@ -487,8 +499,8 @@ void select_sprite_animation(SpriteWindow sprite, std::int32_t animation,
     put(sprite.bytes, 0xb0,
         get(sprite.bytes, 0x44) == pointer ? get(sprite.bytes, 0xb0) & ~0x400U
                                            : get(sprite.bytes, 0xb0) | 0x400);
-    require(environment.platform_mode == 0,
-            "Alternate sprite platform animation selection is unreconstructed");
+    require_recovered(environment.platform_mode == 0,
+                      "Alternate sprite platform animation selection is unreconstructed");
     const auto selected_resource = animation < 0 ? get(sprite.bytes, 0x4c) : pointer;
     bind_sprite_resource(sprite, selected_resource, environment, sources);
     put(sprite.bytes, 0xaf, static_cast<std::uint32_t>(animation), 1);
@@ -508,14 +520,13 @@ void select_sprite_animation(SpriteWindow sprite, std::int32_t animation,
 std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &environment,
                                       const SpriteSources &sources) {
     check_window(sprite);
-    require(environment.platform_mode == 0,
-            "Alternate original sprite VM 800c11cc is unreconstructed");
+    require_recovered(environment.platform_mode == 0,
+                      "Alternate original sprite VM 800c11cc is unreconstructed");
     auto duration = sources.incoming_replay_duration;
     std::uint32_t commands = 0;
     while (get(sprite.bytes, 0x9e, 2) == 0) {
-        require(commands < inspection_limit,
-                "Original sprite command execution exceeded inspection bound");
         const auto pointer = get(sprite.bytes, 0x64);
+        observe(sources, "sprite_command", 0x800248d4, pointer);
         const auto opcode = resource(sources, pointer, 1);
         ++commands;
         if (opcode < 0x80) {
@@ -595,8 +606,7 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
             const auto delta = signed_half(resource(sources, pointer + 1, 2));
             put(sprite.bytes, 0x64, get(sprite.bytes, 0x64) + static_cast<std::uint32_t>(delta));
         } else {
-            throw SpriteError("Unreconstructed ordinary sprite command at " +
-                              std::to_string(pointer) + ": " + std::to_string(opcode));
+            throw UnrecoveredSpriteCommand(pointer, static_cast<std::uint8_t>(opcode));
         }
     }
     return commands;
@@ -608,7 +618,8 @@ std::uint32_t advance_sprite_timer(SpriteWindow sprite, SpriteEnvironment &envir
     if (environment.rate_control == -1)
         return 0;
     std::uint32_t commands = 0;
-    for (std::uint32_t iteration = 1; iteration <= inspection_limit; ++iteration) {
+    for (std::uint32_t iteration = 1;; ++iteration) {
+        observe(sources, "sprite_timer", 0x80023210, get(sprite.bytes, 0x64));
         const auto timer = get(sprite.bytes, 0x9e, 2);
         if (timer != 0) {
             put(sprite.bytes, 0x9e, timer - 1, 2);
@@ -618,7 +629,6 @@ std::uint32_t advance_sprite_timer(SpriteWindow sprite, SpriteEnvironment &envir
         if (iteration == static_cast<std::uint32_t>(environment.rate_control) + 1)
             return commands;
     }
-    throw SpriteError("Original sprite timer exceeded inspection bound");
 }
 
 std::uint32_t restore_sprite_checkpoint(SpriteWindow sprite,
@@ -643,10 +653,8 @@ std::uint32_t restore_sprite_checkpoint(SpriteWindow sprite,
     put(sprite.bytes, 0x2c, get(checkpoint, 0x2a, 2), 2);
     select_sprite_animation(sprite, animation, environment, sources);
     std::uint32_t commands = 0;
-    std::size_t iterations = 0;
     while (((get(sprite.bytes, 0xa8) >> 22) & 63) != static_cast<std::uint32_t>(target)) {
-        require(iterations++ < inspection_limit,
-                "Original sprite checkpoint replay exceeded inspection bound");
+        observe(sources, "sprite_checkpoint", 0x80021d50, get(sprite.bytes, 0x64));
         commands += advance_sprite_timer(sprite, environment, sources);
         for (const auto position : {0U, 8U, 4U})
             put(sprite.bytes, position,
@@ -688,16 +696,27 @@ SpriteCheckpointDecision select_sprite_checkpoint(std::span<const std::uint8_t> 
     return result;
 }
 
-SpriteConstruction construct_sprite(SpriteAllocation incoming, std::uint32_t pointer,
-                                    const std::array<std::int16_t, 4> &coordinates,
-                                    SpriteEnvironment environment, const SpriteSources &sources,
-                                    const SpriteAllocator &allocate,
-                                    const SpriteConstructionObserver &observe) {
-    require(incoming.bytes.size() == sprite_bytes, "Constructor requires exact 356-byte ownership");
-    SpriteWindow sprite{incoming.address, incoming.bytes};
+UnrecoveredSpriteCommand::UnrecoveredSpriteCommand(std::uint32_t at, std::uint8_t value)
+    : SpriteError("Unreconstructed ordinary sprite command at " + std::to_string(at) + ": " +
+                  std::to_string(value)),
+      command_pc(at), opcode(value) {}
+
+void construct_sprite(SpriteConstruction &result, SpriteAllocation incoming, std::uint32_t pointer,
+                      const std::array<std::int16_t, 4> &coordinates,
+                      SpriteEnvironment initial_environment, const SpriteSources &sources,
+                      const SpriteAllocator &allocate, const SpriteConstructionObserver &observe) {
+    require(result.sprite.address == 0 && result.parts.address == 0 &&
+                result.sprite.bytes.empty() && result.parts.bytes.empty(),
+            "Sprite construction requires an unowned output");
+    result.sprite = std::move(incoming);
+    result.environment = initial_environment;
+    auto &environment = result.environment;
+    require(result.sprite.bytes.size() == sprite_bytes,
+            "Constructor requires exact 356-byte ownership");
+    SpriteWindow sprite{result.sprite.address, result.sprite.bytes};
     check_window(sprite);
-    require(environment.platform_mode == 0,
-            "Alternate platform sprite construction is unreconstructed");
+    require_recovered(environment.platform_mode == 0,
+                      "Alternate platform sprite construction is unreconstructed");
     const auto emit = [&](std::string_view name, std::optional<std::uint32_t> count = {},
                           const SpriteAllocation *block = nullptr) {
         if (observe)
@@ -721,7 +740,8 @@ SpriteConstruction construct_sprite(SpriteAllocation incoming, std::uint32_t poi
     const auto directory = pointer + resource(sources, pointer + 8, 4);
     const auto count = ((resource(sources, directory, 2) >> 9) & 63) * 24;
     emit("allocate-parts-before", count);
-    auto parts = allocation(allocate, count);
+    result.parts = allocation(allocate, count);
+    auto &parts = result.parts;
     require(parts.bytes.empty() ||
                 static_cast<std::uint64_t>(parts.address) + parts.bytes.size() <= sprite.address ||
                 static_cast<std::uint64_t>(sprite.address) + sprite.bytes.size() <= parts.address,
@@ -745,19 +765,20 @@ SpriteConstruction construct_sprite(SpriteAllocation incoming, std::uint32_t poi
     emit("animation-before");
     select_sprite_animation(sprite, 0, environment, sources);
     emit("constructor-after");
-    return {std::move(incoming), std::move(parts), environment};
 }
 
-SpriteConstruction create_sprite(std::uint32_t pointer,
-                                 const std::array<std::int16_t, 5> &parameters,
-                                 SpriteEnvironment environment, const SpriteSources &sources,
-                                 const SpriteAllocator &allocate,
-                                 const SpriteConstructionObserver &observe) {
+void create_sprite(SpriteConstruction &result, std::uint32_t pointer,
+                   const std::array<std::int16_t, 5> &parameters, SpriteEnvironment environment,
+                   const SpriteSources &sources, const SpriteAllocator &allocate,
+                   const SpriteConstructionObserver &observe) {
+    require(result.sprite.address == 0 && result.parts.address == 0 &&
+                result.sprite.bytes.empty() && result.parts.bytes.empty(),
+            "Sprite construction requires an unowned output");
     auto incoming = allocation(allocate, sprite_bytes);
     put(incoming.bytes, 0x86, sprite_bytes, 2);
-    return construct_sprite(std::move(incoming), pointer,
-                            {parameters[0], parameters[1], parameters[2], parameters[3]},
-                            environment, sources, allocate, observe);
+    construct_sprite(result, std::move(incoming), pointer,
+                     {parameters[0], parameters[1], parameters[2], parameters[3]}, environment,
+                     sources, allocate, observe);
 }
 
 } // namespace xem::reconstruction::field

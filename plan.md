@@ -105,6 +105,18 @@ The verified decoder, event-control, music-loading, collision-arithmetic, field-
 
 **Execution rule:** Continue this analysis throughout development. Do not wait for a complete decompilation of both discs before implementing an understood subsystem.
 
+**Daily workflow:** Develop a continuously expanding executable reconstruction in
+the shared `xem-reconstruction` C++ library. Analysis execution prepares qualified
+starting boundaries and explicit external inputs; independent comparison owns
+expectations. Run recovered code, correct the earliest meaningful divergence,
+integrate an existing dependency or recover the required caller/callee, compare,
+and execute farther. Broader callers reuse narrow implementations. Expand backward
+through real loading/initialization and forward through services and transitions,
+with resident and mode-local ownership, committed failure state and explicit host
+limits. One owner integrates bounded investigations. Preserve alternative routes
+and all existing phase/slice requirements. See the implemented
+[workflow and supported boundary](docs/executable-reconstruction.md).
+
 ## Phase 2 — Build the agent-ready native runtime, asset pipeline, and state architecture
 
 **Goal:** Build one real game runtime whose headless agent interface, introspection, debugging, clock control, and optional rendering are foundational services.

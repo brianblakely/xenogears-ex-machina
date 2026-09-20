@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-039",
+  "kind": "connected_cpp_program_return_execution",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a28d4",
+      "address_space": "PS1 KSEG0 in qualified field overlay; return branch and its 800a3474/80076ac0 callees",
+      "not_applicable": "LBA names the packed overlay, not a direct instruction offset. No standalone original file is distributed."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800248d4",
+      "address_space": "PS1 KSEG0 resident machine code; distinct from sprite-bytecode PC0x8012a10a",
+      "not_applicable": "LBA names the executable, not a direct instruction offset. The first missing opcode96 table target is8001feec; its call at8001fef0 targets8001ce74."
+    }
+  ],
+  "observation": "One shared C++ Program restores25 actors, descriptors, globals and variable values from the original snapshot, derives resource selection and seven factory arguments, and executes19 consecutive complete field sprite factories. All20 checkpoints and the full356-byte actor19 partial sprite after C6 FF agree with qualified original observations. The next encountered behavior is opcode96 at sprite-bytecode PC0x8012a10a. The broad entry has not returned.",
+  "interpretation": "The source-derived 800a28d4 return branch connects previously independent 800a3474 and80076ac0 implementations without prepared intermediate results. Restored gates and factory arguments are computed; factory environment, allocation ownership and previously constructed sprite links persist across calls. The later800a3c8c checkpoint pass is not interleaved with factories. Program also connects existing event scheduling/handlers using the same resident and field owners, with synthetic rather than connected-original event proof.",
+  "confidence": "confirmed",
+  "author": "Codex /root, integration owner; /root/event_evidence implemented caller-owned partial sprite state and host observation boundaries",
+  "reviewers": [
+    "Codex /root/chain_evidence, original evidence qualification and independent comparison/corruption review, independent of Program/runner implementation"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix C++20 environment; original raw track identity39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda.",
+      "Unchanged EVID-REF-028/030/036 artifacts and their transitive inputs. Six correlated capture sets qualify all124 uninstrumented control artifacts each, exact25 actor/descriptor joins and19 consecutive factory environment joins.",
+      "Qualified Ghidra exports and complete instruction bytes establish original caller order. Caller800a28d4 has443 instructions and body SHA256864a1a533b4b59c6bb8ebc700ac475ccd18d2ac1352e389ce6584aa50f3dc04b.",
+      "Initialized actor/shadow storage, original snapshot, resources and original heap results are explicit inputs. Expected checkpoints, internal call arguments and partial sprite observations are separate comparison data, bound to the canonical starting-case digest."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix",
+      "cmake --preset debug && cmake --build --preset debug",
+      "python3 -m tools.analysis.return_case export --case .local/verification/NEW_CASE.json --expected .local/verification/NEW_EXPECTED.json",
+      "python3 -m tools.analysis.execution run --case .local/verification/phase1-execution-20260919/return-case-agent-v3.json --expected .local/verification/phase1-execution-20260919/return-expected-agent-v3.json --report .local/verification/NEW_REPORT.json",
+      "python3 -m tools.analysis.execution compare --report .local/verification/NEW_REPORT.json --expected .local/verification/phase1-execution-20260919/return-expected-agent-v3.json",
+      "PYTHONPATH=. python3 .local/verification/phase1-execution-20260919/independent-return-review.py",
+      "cmake --preset sanitize && cmake --build --preset sanitize",
+      "ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 python3 -m tools.analysis.execution run --case .local/verification/phase1-execution-20260919/return-case-agent-v3.json --expected .local/verification/phase1-execution-20260919/return-expected-agent-v3.json --runner build/sanitize/xem-analysis-runner --report .local/verification/phase1-execution-20260919/return-sanitize-v1.json",
+      "ctest --preset sanitize -R 'connected-program|analysis-execution|field-sprite|field-event|field-return'",
+      "python3 -m unittest tests.test_return_case"
+    ],
+    "expected": "Exact restore checkpoint,19 factory argument/state/allocation checkpoints and actor19 partial sprite; actual missing opcode96 rather than an invented completion. Normal narrow return, independent expectations, explicit budget/error outcomes and allocation ownership must remain distinguishable.",
+    "actual": "Debug independent review and ASan/UBSan/LeakSanitizer connected run match all20 checkpoints and356 partial bytes with36 observed operations. Direct original-output comparison totals29336 bytes; a further9984 owned part bytes use the reviewed unchanged-write invariant. The independent review rejects11 output/oracle corruptions, mismatched case binding and embedded expectations; all7 execution probes pass. Budget32 stops before actor19 allocation; budget35 stops after C6 commits. Six focused sanitizer CTests pass. Run exits1 for encountered dependency; separate comparison exits0 for agreement, not for complete function execution.",
+    "result": "passed",
+    "tolerance": "Exact on explicitly projected actor/descriptor/sprite/global/variable storage,16 environment values per complete factory, seven computed arguments and allocation/release requests. Parts compare original incoming allocation bytes under qualified source's unchanged-write invariant, not a separate final-parts capture. Source/live resource differences are unavailable input ranges, never substituted bytes or output masks. No whole-RAM, timing or complete-return equivalence is claimed.",
+    "artifacts": [
+      {
+        "path": ".local/verification/phase1-execution-20260919/return-case-agent-v3.json",
+        "sha256": "a026ff3c0398450b66ea42f4182ae680c53feb8425b253de5a1f6da8e637aee7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-execution-20260919/return-expected-agent-v3.json",
+        "sha256": "290d10625bad62d0725a49e9fe67a2ec90a9679bb2c4d5dbda9a503a971c7e58",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-execution-20260919/independent-return-native-v2.json",
+        "sha256": "9f8d2f47cda4702abd3446f1745739c8b59464662f825c26b76d144a4547aac3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-execution-20260919/independent-return-review-v2.json",
+        "sha256": "0c800bbe2b83db3cfed90b439296766853eab297b10747180707b9c8604d4761",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/verification/phase1-execution-20260919/return-sanitize-v1.json",
+        "sha256": "32861009ae7625cbd3ccf71ed06a407069a4eacfdd9d9a57667219d71fa4b98b",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "include/xem/reconstruction/program.hpp",
+    "src/reconstruction/program.cpp",
+    "include/xem/reconstruction/field_sprite.hpp",
+    "src/reconstruction/field_sprite.cpp",
+    "include/xem/reconstruction/field_sprite_factory.hpp",
+    "src/reconstruction/field_sprite_factory.cpp",
+    "src/analysis/main.cpp",
+    "tools/analysis/execution.py",
+    "tools/analysis/return_case.py",
+    "tests/test_program.cpp",
+    "tests/test_execution.py",
+    "tests/test_return_case.py",
+    "tests/test_field_sprite.cpp",
+    "tests/test_field_sprite_factory.cpp"
+  ],
+  "limitations": [
+    "One qualified encounter-return route; six capture sets are correlated observations, not six independent scenarios. Existing private evidence was sufficient; no new emulator capture was collected.",
+    "Backward loading, heap/shadow initialization and optional extension allocation remain external or incomplete. The narrow restore API is transactional on failure; optional extension allocation failure does not represent resumable original stores.",
+    "Actor19 opcode96 task-list removal, followingFC resource upload and other required commands/callbacks remain missing. All-factory completion, auxiliary and party variants, later checkpoint replay, cleanup and readiness remain required.",
+    "Host budgets are analysis limits, not game time. Interrupted stacks have no represented continuation; rerun immutable input. A watchdog-killed process cannot publish its final state.",
+    "Synthetic event scheduler/control/request/continuation tests establish shared ownership and integration, not whole-update original agreement. A battle request is not battle execution or mode dispatch.",
+    "No Phase0 artifact replacement, playable runtime, native persistence, complete game mode or Phase1 slice-exit claim. Full movement/collision integration, combat, menus/save-load, world map, media and alternative/failure paths remain in the existing scope."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original binaries/execution, project-authored models and qualified Ghidra exports only. No external Xenogears implementation or reverse-engineering results.",
+    "distribution": "Only independently authored source, synthetic fixtures and factual metadata are public. Original bytes, snapshots, prepared original cases, expectations and Ghidra exports remain private."
+  }
+}

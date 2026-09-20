@@ -2,6 +2,11 @@
 
 This handoff connects qualified Ghidra C output to authored source. It is a
 partial subsystem reconstruction, not a completed field runtime or Phase 1 exit.
+The current integration entry and daily loop are documented in the
+[executable reconstruction workflow](../../docs/executable-reconstruction.md).
+EVID-REF-039 connects the nonzero return branch of `800a28d4` through data restore
+and 19 factories, retaining actor 19's state at command 96. Earlier findings below
+keep their original narrower scope.
 See [EVID-REF-027](../findings/EVID-REF-027.json) and the
 [recovery inventory](../recovery.json). Earlier findings retain their original
 scope; subsequent work does not retroactively broaden their execution claims.
@@ -43,10 +48,11 @@ implementation are authored source.
 | [battle_request.py](../../tools/analysis/battle_request.py), [request contract](battle-request.md) | Primary 71 gates, mode latch, tagged selector and request stores; all six observed calls compare exactly | Python source reconstruction; other gates/selectors remain source/synthetic, and battle execution and readiness remain open |
 | [field_return.cpp](../../src/reconstruction/field_return.cpp), [return contract](field-return.md), [later sprite checkpoints](sprite-return.md) | Original snapshot format, data restore, later actor checkpoint choices and 19 source-computed sprite restores | Original correlation modules; sprite creation/rebinding, complete return ownership/readiness and native owned snapshots remain required |
 
-`xem-field-reconstruction` is a C++20 library. Its structures hold semantic
+`xem-reconstruction` is the shared C++20 library. Its structures hold semantic
 values, not packed PS1 RAM. `EventProgram` borrows bytecode and entry rows;
-descriptors borrow actors. Phase 2 must supply stable ownership and convert
-references to serializable identities at its runtime boundary. Original offsets
+descriptors borrow actors. `Program` now supplies stable resident/mode-local
+ownership and makes these views for each call. Phase 2 must extend semantic IDs
+and persistence at its runtime boundary. Original offsets
 are provenance, not the intended agent API. The baseline does not launch a game.
 
 The library requires real dispatch. `execute_core_event` supports primary

@@ -21,6 +21,12 @@ imports outside its tooling boundary. Review all lock-file updates.
 
 Individual workflows inside the shell:
 
+For daily Phase 1 work, begin with the focused build/run/compare commands in the
+[executable reconstruction workflow](executable-reconstruction.md). Analysis
+execution, tests and future native integration use `xem-reconstruction`. Run the
+full public gate at integration milestones; original comparisons require their
+separately qualified local evidence.
+
 ```sh
 cmake --preset debug
 cmake --build --preset debug

@@ -6,6 +6,12 @@ its IDs, next experiments, status labels, evidence links, authored source paths,
 opcode order and table fingerprints. A missing row, changed original table value,
 unsupported status or unlisted source fails the public check with its location.
 
+Daily work starts with the [executable reconstruction](executable-reconstruction.md).
+Its report joins an actually encountered dependency to this inventory's original
+handler address, available source, evidence and next investigation. Completed
+entries return normally without manufacturing a missing dependency. The commands
+below audit the inventory or query a declared obligation; they do not execute code.
+
 Run these commands inside the [pinned Nix environment](development.md):
 
 ```sh

@@ -6,10 +6,17 @@
 
 namespace xem::reconstruction::field {
 namespace {
-constexpr std::size_t inspection_limit = 4096;
 void require(bool condition, const char *message) {
     if (!condition)
         throw SpriteError(message);
+}
+void require_recovered(bool condition, const char *message) {
+    if (!condition)
+        throw UnrecoveredSpriteBehavior(message);
+}
+void require_source(bool condition, const char *message) {
+    if (!condition)
+        throw SpriteInputError(message);
 }
 bool valid_extent(std::uint32_t address, std::size_t size) {
     return size <= (std::uint64_t{1} << 32) - address;
@@ -54,21 +61,22 @@ std::size_t inside(SpriteWindow sprite, std::uint32_t pointer, std::size_t size)
 }
 std::uint32_t read(std::span<const SpriteResource> sources, std::uint32_t pointer,
                    std::size_t size) {
-    require(valid_extent(pointer, size), "Sprite source read wraps address space");
+    require_source(valid_extent(pointer, size), "Sprite source read wraps address space");
     std::optional<std::uint32_t> value;
     for (const auto &source : sources) {
-        require(valid_extent(source.address, source.bytes.size()),
-                "Sprite source extent wraps address space");
+        require_source(valid_extent(source.address, source.bytes.size()),
+                       "Sprite source extent wraps address space");
         if (pointer < source.address)
             continue;
         const auto at = static_cast<std::size_t>(pointer - source.address);
         if (at <= source.bytes.size() && size <= source.bytes.size() - at) {
             const auto next = get(source.bytes, at, size);
-            require(!value || *value == next, "Overlapping sprite sources disagree");
+            require_source(!value || *value == next, "Overlapping sprite sources disagree");
             value = next;
         }
     }
-    require(value.has_value(), "Sprite read requires missing address-qualified source bytes");
+    require_source(value.has_value(),
+                   "Sprite read requires missing address-qualified source bytes");
     return *value;
 }
 std::uint32_t resource(const SpriteSources &sources, std::uint32_t pointer, std::size_t size) {
@@ -123,27 +131,31 @@ void advance_sprite_tasks(SpriteTaskState &state, const SpriteSources &sources) 
     std::unordered_set<std::uint32_t> seen;
     while (state.next != 0) {
         const auto current = state.next;
-        require(seen.insert(current).second && seen.size() <= inspection_limit,
-                "Original sprite task list is cyclic or exceeds inspection bound");
+        require(seen.insert(current).second, "Original sprite task list is cyclic");
+        if (sources.observe_execution)
+            sources.observe_execution({"sprite_task", 0x8001c964, {}});
         const auto next = resource(sources, current + 24, 4);
         const auto callback = resource(sources, current + 8, 4);
         state.current = current;
         state.next = next;
-        require(callback == 0, "Original sprite task callback is unreconstructed");
+        require_recovered(callback == 0, "Original sprite task callback is unreconstructed");
     }
 }
 
-SpriteConstruction
-create_field_sprite(std::span<std::uint8_t> actor, std::span<std::uint8_t> descriptor,
-                    const FieldSpriteArguments &arguments, FieldSpriteEnvironment &environment,
-                    const SpriteSources &sources, const SpriteAllocator &allocate,
-                    const SpriteReleaser &release, const SpriteConstructionObserver &observe) {
+void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> actor,
+                         std::span<std::uint8_t> descriptor, const FieldSpriteArguments &arguments,
+                         FieldSpriteEnvironment &environment, const SpriteSources &sources,
+                         const SpriteAllocator &allocate, const SpriteReleaser &release,
+                         const SpriteConstructionObserver &observe) {
+    require(result.sprite.address == 0 && result.parts.address == 0 &&
+                result.sprite.bytes.empty() && result.parts.bytes.empty(),
+            "Field sprite creation requires an unowned output");
     require(actor.size() == 0x138 && descriptor.size() == 0x5c,
             "Field sprite creation requires a complete actor and descriptor");
-    require(!(get(descriptor, 0x58) & 0x10000),
-            "Field sprite creation requires unreconstructed existing-sprite destruction");
-    require(arguments.mode != 0 || arguments.part_variant == 0,
-            "Alternate field sprite part constructor 80024294 is unreconstructed");
+    require_recovered(!(get(descriptor, 0x58) & 0x10000),
+                      "Field sprite creation requires unreconstructed existing-sprite destruction");
+    require_recovered(arguments.mode != 0 || arguments.part_variant == 0,
+                      "Alternate field sprite part constructor 80024294 is unreconstructed");
     const auto select_allocation_class = [&] {
         environment.allocation_class = 8;
         environment.class_eight_context = 0;
@@ -173,9 +185,22 @@ create_field_sprite(std::span<std::uint8_t> actor, std::span<std::uint8_t> descr
             static_cast<std::int16_t>(signed_half(arguments.resource_slot * 64 + 0x100));
         parameters[4] = 8;
     }
-    auto result = create_sprite(arguments.resource, parameters, environment.sprite, sources,
-                                allocate, observe);
+    try {
+        create_sprite(result, arguments.resource, parameters, environment.sprite, sources, allocate,
+                      observe);
+    } catch (...) {
+        if (!result.sprite.bytes.empty())
+            environment.sprite = result.environment;
+        throw;
+    }
     environment.sprite = result.environment;
+    // Both caller state and the owned construction retain the latest shared
+    // environment if an animation or task dependency interrupts this call.
+    struct RetainEnvironment {
+        SpriteConstruction &result;
+        FieldSpriteEnvironment &environment;
+        ~RetainEnvironment() { result.environment = environment.sprite; }
+    } retain{result, environment};
     SpriteWindow sprite{result.sprite.address, result.sprite.bytes};
     put(descriptor, 4, sprite.address);
     if (arguments.mode != 0) {
@@ -184,6 +209,7 @@ create_field_sprite(std::span<std::uint8_t> actor, std::span<std::uint8_t> descr
         require(get(sprite.bytes, renderer + 44) == result.parts.address,
                 "Original owned sprite part address differs");
         release(result.parts.address);
+        result.parts = {};
         result.parts = allocation(allocate, 32 * 24);
         require(static_cast<std::uint64_t>(result.parts.address) + result.parts.bytes.size() <=
                         sprite.address ||
@@ -238,7 +264,5 @@ create_field_sprite(std::span<std::uint8_t> actor, std::span<std::uint8_t> descr
     put(sprite.bytes, 4, get(actor, 0x24));
     ++environment.initialized_count;
     put(sprite.bytes, 8, get(actor, 0x28));
-    result.environment = environment.sprite;
-    return result;
 }
 } // namespace xem::reconstruction::field

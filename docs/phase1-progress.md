@@ -8,6 +8,22 @@ schedule and captures. Required map transitions, save/load, media and alternativ
 or failure cases remain explicit unresolved extensions; the complete slice is
 still a candidate.
 
+The primary integration measure is now the [connected C++ execution loop](executable-reconstruction.md),
+recorded by [EVID-REF-039](../analysis/findings/EVID-REF-039.json). A shared program
+owner invokes the original return caller: snapshot data restore computes all 25
+actors and represented gates, then the same state feeds 19 consecutive sprite
+factories. Factory arguments and intermediate environment state are computed,
+not supplied per call. All 20 checkpoints and actor 19's partial sprite match
+qualified original observations. It executes C6 FF and stops at command 96;
+task-list removal 8001ce74 is the next source unit. Initial actor/shadow storage
+and heap results remain explicit external inputs; complete return/readiness and
+every slice proof remain open. Original snapshot bytes are not native persistence.
+
+`Program` also composes existing event scheduling, core/call/control/divisor
+handlers, battle requests/continuation and music waits using resident variables,
+requests and mode-local controls. These entry/ownership tests are synthetic;
+they do not promote whole-scheduler or field-update original agreement.
+
 The existing C++ library now also contains the packed decoder and bounded event/
 collision parsers, actor defaults with RNG and initial floor queries, and primary
 `71` battle requests. The parsers feed the same event program and collision types

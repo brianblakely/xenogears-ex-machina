@@ -22,6 +22,15 @@ template <typename Function> void rejects(Function &&function) {
     }
     throw std::runtime_error("Unqualified sprite operation must fail explicitly");
 }
+struct HostExecutionLimit {};
+template <typename Function> void exhausts_host_limit(Function &&function) {
+    try {
+        function();
+    } catch (const HostExecutionLimit &) {
+        return;
+    }
+    throw std::runtime_error("Host execution limit was not reached");
+}
 void put(std::span<std::uint8_t> bytes, std::size_t at, std::uint32_t value,
          std::size_t width = 4) {
     check(at <= bytes.size() && width <= bytes.size() - at, "Test write out of bounds");
@@ -65,20 +74,24 @@ struct Fixture {
     }
     field::SpriteSources sources() { return {regions, {}, trig, widths, {}}; }
     field::SpriteConstruction construct() {
-        return field::construct_sprite(
-            incoming, resource, {100, -1, 300, -4}, environment, sources(),
-            [](std::uint32_t size, std::uint32_t mode) {
-                check(size == 48 && mode == 0, "Part allocation boundary");
-                return field::SpriteAllocation{0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
-            });
+        field::SpriteConstruction result;
+        field::construct_sprite(result, incoming, resource, {100, -1, 300, -4}, environment,
+                                sources(), [](std::uint32_t size, std::uint32_t mode) {
+                                    check(size == 48 && mode == 0, "Part allocation boundary");
+                                    return field::SpriteAllocation{
+                                        0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
+                                });
+        return result;
     }
 };
 void connected_creation_and_binding() {
     Fixture fixture;
     std::vector<std::uint32_t> allocations;
     std::vector<std::string> stages;
-    auto result = field::create_sprite(
-        Fixture::resource, {100, -1, 300, -4, 12345}, fixture.environment, fixture.sources(),
+    field::SpriteConstruction result;
+    field::create_sprite(
+        result, Fixture::resource, {100, -1, 300, -4, 12345}, fixture.environment,
+        fixture.sources(),
         [&](std::uint32_t size, std::uint32_t mode) {
             check(mode == 0, "Original allocator mode");
             allocations.push_back(size);
@@ -128,6 +141,31 @@ void connected_creation_and_binding() {
                                 {});
     check(result.sprite.bytes == before, "Null binding requires no resource data");
 }
+
+void interrupted_constructor_retains_ownership() {
+    Fixture fixture;
+    // The animation directory points outside the qualified source after the
+    // sprite and its part block have already been allocated and bound.
+    put(fixture.data, 0x22, 0x1000, 2);
+    field::SpriteConstruction result;
+    rejects([&] {
+        field::create_sprite(result, Fixture::resource, {}, fixture.environment, fixture.sources(),
+                             [&](std::uint32_t size, std::uint32_t mode) {
+                                 check(mode == 0, "Interrupted constructor allocator mode");
+                                 if (size == 356)
+                                     return fixture.incoming;
+                                 check(size == 48, "Interrupted constructor part extent");
+                                 return field::SpriteAllocation{
+                                     0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
+                             });
+    });
+    check(result.sprite.address == Fixture::address && result.sprite.bytes.size() == 356 &&
+              result.parts.address == 0x80002000 && result.parts.bytes.size() == 48 &&
+              get(result.sprite.bytes, 0xe0) == result.parts.address &&
+              get(result.sprite.bytes, 0x86, 2) == 356 && result.environment.binding_control == 0,
+          "Constructor failure retains both owned allocations and committed binding effects");
+}
+
 void real_replay_and_list_effects() {
     Fixture fixture;
     auto result = fixture.construct();
@@ -214,26 +252,29 @@ void matrix_storage_and_explicit_failures() {
     auto short_allocation = fixture.incoming;
     short_allocation.bytes.resize(355);
     rejects([&] {
-        static_cast<void>(field::construct_sprite(short_allocation, Fixture::resource, {},
-                                                  fixture.environment, fixture.sources(), {}));
+        field::SpriteConstruction partial;
+        field::construct_sprite(partial, short_allocation, Fixture::resource, {},
+                                fixture.environment, fixture.sources(), {});
     });
     rejects([&] {
-        static_cast<void>(
-            field::create_sprite(Fixture::resource, {}, fixture.environment, fixture.sources(),
-                                 [](auto, auto) { return field::SpriteAllocation{0, {}}; }));
+        field::SpriteConstruction partial;
+        field::create_sprite(partial, Fixture::resource, {}, fixture.environment, fixture.sources(),
+                             [](auto, auto) { return field::SpriteAllocation{0, {}}; });
     });
     rejects([&] {
-        static_cast<void>(field::construct_sprite(
-            fixture.incoming, Fixture::resource, {}, fixture.environment, fixture.sources(),
-            [&](auto size, auto) {
-                return field::SpriteAllocation{Fixture::address, std::vector<std::uint8_t>(size)};
-            }));
+        field::SpriteConstruction partial;
+        field::construct_sprite(partial, fixture.incoming, Fixture::resource, {},
+                                fixture.environment, fixture.sources(), [&](auto size, auto) {
+                                    return field::SpriteAllocation{Fixture::address,
+                                                                   std::vector<std::uint8_t>(size)};
+                                });
     });
     auto bad = fixture.incoming;
     bad.address = 0xffffff00;
     rejects([&] {
-        static_cast<void>(field::construct_sprite(bad, Fixture::resource, {}, fixture.environment,
-                                                  fixture.sources(), {}));
+        field::SpriteConstruction partial;
+        field::construct_sprite(partial, bad, Fixture::resource, {}, fixture.environment,
+                                fixture.sources(), {});
     });
 }
 
@@ -322,9 +363,15 @@ void ordinary_timer_and_checkpoint() {
     });
     fixture.data[0xc0] = 0xe1;
     put(fixture.data, 0xc1, 0, 2);
-    rejects([&] {
-        static_cast<void>(
-            field::execute_sprite_commands(sprite, result.environment, fixture.sources()));
+    auto bounded = fixture.sources();
+    std::uint32_t remaining = 8;
+    bounded.observe_execution = [&](field::SpriteExecutionPoint) {
+        if (remaining == 0)
+            throw HostExecutionLimit{};
+        --remaining;
+    };
+    exhausts_host_limit([&] {
+        static_cast<void>(field::execute_sprite_commands(sprite, result.environment, bounded));
     });
 
     fixture.data[0xc0] = 0x40;
@@ -377,6 +424,59 @@ void ordinary_timer_and_checkpoint() {
             field::restore_sprite_checkpoint({result.sprite.address, result.sprite.bytes},
                                              checkpoint, result.environment, fixture.sources()));
     });
+}
+
+void host_execution_limits() {
+    Fixture fixture;
+    auto result = fixture.construct();
+    auto &bytes = result.sprite.bytes;
+    field::SpriteWindow sprite{result.sprite.address, bytes};
+    fixture.data[0xc0] = 0xc6;
+    fixture.data[0xc1] = 73;
+    fixture.data[0xc2] = 0xe1;
+    put(fixture.data, 0xc3, 0, 2);
+    fixture.widths[0xc6] = 2;
+    put(bytes, 0x9e, 0, 2);
+    auto sources = fixture.sources();
+    std::uint32_t steps = 0;
+    sources.observe_execution = [&](field::SpriteExecutionPoint point) {
+        check(point.operation == "sprite_command" && point.machine_address == 0x800248d4 &&
+                  point.command_pc == Fixture::resource + (steps == 0 ? 0xc0U : 0xc2U),
+              "Host receives distinct machine and command locations");
+        if (++steps == 4)
+            throw HostExecutionLimit{};
+    };
+    exhausts_host_limit([&] {
+        static_cast<void>(field::execute_sprite_commands(sprite, result.environment, sources));
+    });
+    check(steps == 4 && get(bytes, 0x100, 2) == 73 &&
+              get(bytes, 0x64) == Fixture::resource + 0xc2 && get(bytes, 0x9e, 2) == 0,
+          "Host interruption preserves C6 and PC stores before a nonterminating E1");
+
+    fixture.data[0xc0] = 0xe2;
+    put(fixture.data, 0xc1, 0, 2);
+    put(bytes, 0x64, Fixture::resource + 0xc0);
+    put(bytes, 0x8c, 16, 1);
+    steps = 0;
+    sources.observe_execution = [&](field::SpriteExecutionPoint point) {
+        check(point.operation == "sprite_facing_replay" && point.machine_address == 0x80022660 &&
+                  point.command_pc == Fixture::resource + 0xc0,
+              "Facing replay exposes its own operation and original command pointer");
+        if (++steps == 3)
+            throw HostExecutionLimit{};
+    };
+    exhausts_host_limit([&] {
+        field::replay_sprite_commands(sprite, Fixture::resource + 0xc4, 0, result.environment,
+                                      sources);
+    });
+    check(get(bytes, 0x8c, 1) == 10 && get(bytes, 0x64) == Fixture::resource + 0xc0,
+          "Facing interruption retains both completed return-stack pushes");
+
+    // A supported, finite original loop can exceed any particular host budget.
+    result.environment.rate_control = 4999;
+    put(bytes, 0x9e, 0, 2);
+    check(field::advance_sprite_timer(sprite, result.environment, {}) == 0,
+          "Game timer retains its source loop count without a built-in host ceiling");
 }
 
 void ordinary_motion_commands() {
@@ -590,13 +690,14 @@ void original_transport(const char *input_path, const char *output_path) {
     std::uint32_t commands = 0;
     field::SpriteRestoreDecision decision = field::SpriteRestoreDecision::restore;
     if (operation == 0 || operation == 2) {
-        auto result = operation == 0
-                          ? field::construct_sprite(
-                                std::move(sprite), argument,
-                                {parameters[0], parameters[1], parameters[2], parameters[3]},
-                                environment, sources, allocate, observe)
-                          : field::create_sprite(argument, parameters, environment, sources,
-                                                 allocate, observe);
+        field::SpriteConstruction result;
+        if (operation == 0)
+            field::construct_sprite(result, std::move(sprite), argument,
+                                    {parameters[0], parameters[1], parameters[2], parameters[3]},
+                                    environment, sources, allocate, observe);
+        else
+            field::create_sprite(result, argument, parameters, environment, sources, allocate,
+                                 observe);
         sprite = std::move(result.sprite);
         parts = std::move(result.parts);
         environment = result.environment;
@@ -657,10 +758,12 @@ int main(int argc, char **argv) {
         }
         check(argc == 1, "Usage: test-field-sprite [--original INPUT OUTPUT]");
         connected_creation_and_binding();
+        interrupted_constructor_retains_ownership();
         real_replay_and_list_effects();
         matrix_storage_and_explicit_failures();
         frame_metadata_and_list_boundaries();
         ordinary_timer_and_checkpoint();
+        host_execution_limits();
         ordinary_motion_commands();
         negative_animation_and_checkpoint_policy();
         std::cout << "Field sprite reconstruction passed\n";

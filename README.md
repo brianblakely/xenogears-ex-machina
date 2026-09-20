@@ -44,6 +44,13 @@ including complete observed party motion updates composed from recovered source,
 together with their unresolved scope.
 The native runtime is still a build baseline.
 
+Phase 1 development now starts with the [executable reconstruction workflow](docs/executable-reconstruction.md):
+build the shared C++, run a qualified connected case, compare independent original
+checkpoints, and follow the first encountered dependency. The field-return entry
+restores 25 actors and executes 19 sprite factories with continuous state before
+reaching a precisely reported missing command. Narrow source tests and historical
+Python references remain useful regressions.
+
 The [original-game scenario system](analysis/scenarios/README.md) cold-boots
 selected fields through the original loaders, records guarded setup and ordered
 inputs, and captures reference output locally. Use it for emulator-based research;

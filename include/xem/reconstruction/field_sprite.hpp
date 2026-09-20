@@ -16,24 +16,53 @@ class SpriteError : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
 
+class SpriteInputError : public SpriteError {
+  public:
+    using SpriteError::SpriteError;
+};
+
+class UnrecoveredSpriteBehavior : public SpriteError {
+  public:
+    using SpriteError::SpriteError;
+};
+
+class UnrecoveredSpriteCommand : public SpriteError {
+  public:
+    UnrecoveredSpriteCommand(std::uint32_t command_pc, std::uint8_t opcode);
+    std::uint32_t command_pc;
+    std::uint8_t opcode;
+    // The ordinary command dispatcher is resident code, distinct from command_pc.
+    static constexpr std::uint32_t machine_address = 0x800248d4;
+};
+
 // Addresses identify original resources and storage. They are never host pointers.
 struct SpriteResource {
     std::uint32_t address;
     std::span<const std::uint8_t> bytes;
 };
+struct SpriteExecutionPoint {
+    std::string_view operation;
+    std::uint32_t machine_address;
+    std::optional<std::uint32_t> command_pc;
+};
+// Read-only execution observation. A host may throw to stop its own execution
+// budget; the callback never supplies a game result. Issued stores remain owned
+// by the caller, and an interrupted call has no represented continuation.
+using SpriteExecutionObserver = std::function<void(SpriteExecutionPoint)>;
 struct SpriteSources {
     std::span<const SpriteResource> resources;
     std::span<const SpriteResource> frame_list;
     std::span<const std::uint8_t> trigonometry;
     std::span<const std::uint8_t> replay_widths;
     std::optional<std::int32_t> incoming_replay_duration;
+    SpriteExecutionObserver observe_execution{};
 };
 struct SpriteEnvironment {
-    std::int32_t rate_control;
-    std::uint8_t platform_mode;
-    std::uint32_t variant;
-    std::uint8_t binding_control;
-    std::uint32_t frame_head;
+    std::int32_t rate_control{};
+    std::uint8_t platform_mode{};
+    std::uint32_t variant{};
+    std::uint8_t binding_control{};
+    std::uint32_t frame_head{};
     bool operator==(const SpriteEnvironment &) const = default;
 };
 
@@ -45,7 +74,7 @@ struct SpriteWindow {
     std::span<std::uint8_t> bytes;
 };
 struct SpriteAllocation {
-    std::uint32_t address;
+    std::uint32_t address{};
     std::vector<std::uint8_t> bytes;
     bool operator==(const SpriteAllocation &) const = default;
 };
@@ -119,15 +148,16 @@ struct SpriteCheckpointDecision {
 // Resident 8002435c and 80024524. Allocation supplies exact incoming bytes;
 // unknown heap contents are never synthesized. The wrapper's fifth short is
 // passed in the original seventh stack slot, which 8002435c never consumes.
-[[nodiscard]] SpriteConstruction construct_sprite(SpriteAllocation incoming, std::uint32_t resource,
-                                                  const std::array<std::int16_t, 4> &coordinates,
-                                                  SpriteEnvironment environment,
-                                                  const SpriteSources &sources,
-                                                  const SpriteAllocator &allocate,
-                                                  const SpriteConstructionObserver &observe = {});
-[[nodiscard]] SpriteConstruction
-create_sprite(std::uint32_t resource, const std::array<std::int16_t, 5> &parameters,
-              SpriteEnvironment environment, const SpriteSources &sources,
-              const SpriteAllocator &allocate, const SpriteConstructionObserver &observe = {});
+// Result must initially own no allocations. It owns each allocation and issued
+// store immediately, including when a later source dependency throws. A failed
+// call has no represented continuation; rerun from fresh immutable inputs.
+void construct_sprite(SpriteConstruction &result, SpriteAllocation incoming, std::uint32_t resource,
+                      const std::array<std::int16_t, 4> &coordinates, SpriteEnvironment environment,
+                      const SpriteSources &sources, const SpriteAllocator &allocate,
+                      const SpriteConstructionObserver &observe = {});
+void create_sprite(SpriteConstruction &result, std::uint32_t resource,
+                   const std::array<std::int16_t, 5> &parameters, SpriteEnvironment environment,
+                   const SpriteSources &sources, const SpriteAllocator &allocate,
+                   const SpriteConstructionObserver &observe = {});
 
 } // namespace xem::reconstruction::field

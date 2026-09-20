@@ -88,12 +88,15 @@ require its own elaborate proof pipeline.
 
 ### Repeatable working loop
 
-1. Select the next blocker from the dependency map in
-   [the recovery inventory](../analysis/recovery.json) and the
-   [slice contract](phase1-slice-contract.md). Prioritize connected loaders, state
+1. Run a relevant [connected C++ case](executable-reconstruction.md) and compare
+   its computed state. Correct the earliest divergence before extending that path.
+   Use the encountered dependency, [recovery inventory](../analysis/recovery.json)
+   and [slice contract](phase1-slice-contract.md) to select work. Prioritize connected loaders, state
    initialization, events, field behavior, encounter/return, menus, persistence
    and required media. Allow provisional understanding outside that boundary.
-2. Export the relevant functions with callers, callees, dispatch sites,
+2. Inspect existing source, findings and captures; connect an existing recovered
+   implementation before recovering it again. When source is missing, export the
+   relevant functions with callers, callees, dispatch sites,
    initialization and cleanup. Retain source profile, executable/overlay digest,
    addresses, body ranges, signatures, direct/computed references, warnings and
    annotation provenance. Keep missing functions and failed exports visible.
@@ -109,11 +112,15 @@ require its own elaborate proof pipeline.
    correction resolves the ambiguity or merely hides a warning. Inspect specific
    instructions or P-code where needed, feed the result back into Ghidra, and
    repeat the dependent review.
-6. Produce authored modules and format/state notes as understanding develops.
+6. Implement stable behavior in the shared `xem-reconstruction` C++ library;
+   retain useful Python models as independent references. Broader callers invoke
+   the same implementation as narrow tests. Produce format/state notes as understanding develops.
    Specify inputs, state changes, ownership and unresolved services. Validate the
    connected boundary with existing evidence first, then record the remaining
    blockers. Complete analysis of every adjacent helper is not a prerequisite
-   for a useful, explicitly scoped module.
+   for a useful, explicitly scoped module. Rerun the connected case against
+   separate original expectations, preserve the regression and expand its boundary
+   forward or backward. One integration owner combines bounded investigations.
 
 ### Types, signatures and context
 

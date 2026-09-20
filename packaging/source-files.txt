@@ -56,6 +56,7 @@ analysis/findings/EVID-REF-035.json
 analysis/findings/EVID-REF-036.json
 analysis/findings/EVID-REF-037.json
 analysis/findings/EVID-REF-038.json
+analysis/findings/EVID-REF-039.json
 analysis/formats/active-motion.md
 analysis/formats/actor-defaults.md
 analysis/formats/battle-continuation.md
@@ -63,6 +64,7 @@ analysis/formats/battle-request.md
 analysis/formats/collision-arithmetic.md
 analysis/formats/disc-stream-source.md
 analysis/formats/event-control.md
+analysis/formats/field-collision-source.md
 analysis/formats/field-control.md
 analysis/formats/field-encounter-observations.md
 analysis/formats/field-lifecycle.md
@@ -105,6 +107,7 @@ docs/defaults.json
 docs/dependencies.json
 docs/development.md
 docs/evidence-workflow.md
+docs/executable-reconstruction.md
 docs/phase1-handoff.md
 docs/phase1-progress.md
 docs/phase1-slice-contract.md
@@ -128,6 +131,7 @@ include/xem/build_info.hpp.in
 include/xem/reconstruction/disc_stream.hpp
 include/xem/reconstruction/field_actor.hpp
 include/xem/reconstruction/field_battle.hpp
+include/xem/reconstruction/field_collision.hpp
 include/xem/reconstruction/field_control.hpp
 include/xem/reconstruction/field_events.hpp
 include/xem/reconstruction/field_media.hpp
@@ -136,6 +140,7 @@ include/xem/reconstruction/field_return.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/packed_field.hpp
+include/xem/reconstruction/program.hpp
 nix/authoring/flake.lock
 nix/authoring/flake.nix
 nix/flake.lock
@@ -149,9 +154,11 @@ packaging/source-files.txt
 plan.md
 prompt.md
 pyproject.toml
+src/analysis/main.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
+src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_media.cpp
@@ -160,6 +167,7 @@ src/reconstruction/field_return.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/packed_field.cpp
+src/reconstruction/program.cpp
 src/runtime/main.cpp
 tests/fixtures/README.md
 tests/packed_field_probe.cpp
@@ -189,9 +197,11 @@ tests/test_event_analysis.py
 tests/test_event_media.py
 tests/test_event_schedule.py
 tests/test_event_state.py
+tests/test_execution.py
 tests/test_field_actor.cpp
 tests/test_field_analysis.py
 tests/test_field_battle.cpp
+tests/test_field_collision.cpp
 tests/test_field_control.cpp
 tests/test_field_control.py
 tests/test_field_events.cpp
@@ -214,10 +224,12 @@ tests/test_packed_field.cpp
 tests/test_phase1_slice.py
 tests/test_planar_motion.py
 tests/test_position.py
+tests/test_program.cpp
 tests/test_projection_records.py
 tests/test_recovery.py
 tests/test_reference.py
 tests/test_reference_iso.py
+tests/test_return_case.py
 tests/test_scenario.py
 tests/test_scenario_program.py
 tests/test_sector_survey.py
@@ -244,6 +256,7 @@ tools/analysis/event_media.py
 tools/analysis/event_schedule.py
 tools/analysis/event_state.py
 tools/analysis/events.py
+tools/analysis/execution.py
 tools/analysis/field.py
 tools/analysis/field_control.py
 tools/analysis/ghidra/ExportOriginalAnalysis.java
@@ -261,6 +274,7 @@ tools/analysis/position_query.py
 tools/analysis/position_trace.py
 tools/analysis/query_trace.py
 tools/analysis/replay_trace.py
+tools/analysis/return_case.py
 tools/analysis/sprite_animation.py
 tools/analysis/sprite_creation.py
 tools/analysis/sprite_matrix.py

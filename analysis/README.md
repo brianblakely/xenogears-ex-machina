@@ -1,5 +1,9 @@
 # Independent analysis
 
+Start new recovery work from the [connected executable workflow](../docs/executable-reconstruction.md).
+Run shared C++, locate the earliest divergence or dependency, inspect its existing
+source/evidence, integrate or recover it, compare, and expand the boundary.
+
 - `reference-profiles.json`: exact measured inputs, region/identity evidence,
   explicitly scoped revision support, and unresolved identity questions.
 - `findings/`: original factual research records with source coordinates and
