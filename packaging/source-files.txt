@@ -137,7 +137,7 @@ include/xem/reconstruction/field_return.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/packed_field.hpp
-include/xem/reconstruction/prepared_field_event_pass.hpp
+include/xem/reconstruction/prepared_event_pass.hpp
 nix/authoring/flake.lock
 nix/authoring/flake.nix
 nix/flake.lock
@@ -163,7 +163,7 @@ src/reconstruction/field_return.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/packed_field.cpp
-src/reconstruction/prepared_field_event_pass.cpp
+src/reconstruction/prepared_event_pass.cpp
 src/runtime/main.cpp
 tests/fixtures/README.md
 tests/packed_field_probe.cpp
@@ -219,7 +219,7 @@ tests/test_packed_field.cpp
 tests/test_phase1_slice.py
 tests/test_planar_motion.py
 tests/test_position.py
-tests/test_prepared_field_event_pass.cpp
+tests/test_prepared_event_pass.cpp
 tests/test_projection_records.py
 tests/test_recovery.py
 tests/test_reference.py

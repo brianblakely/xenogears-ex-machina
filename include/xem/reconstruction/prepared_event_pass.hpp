@@ -10,9 +10,9 @@
 namespace xem::reconstruction::field {
 
 // Owned inputs and working state for one prepared field-event scheduler pass.
-// Not fresh field initialization, complete field state, or a native save.
-// All storage is owned. Borrowed EventContext views exist only during execution.
-struct PreparedFieldEventPass {
+// An analysis case, not a complete field runtime, whole-game state or native save.
+// Borrowed EventContext views exist only during execution.
+struct PreparedEventPass {
     EventPackage events;
     std::vector<EventActor> actors;
     std::vector<std::uint32_t> descriptor_flags;
@@ -28,7 +28,7 @@ struct PreparedFieldEventPass {
     bool attempted{};
 };
 
-struct ConnectedStop {
+struct EventPassStop {
     std::string kind; // blocked, budget, or error; never a whole-game success
     std::string dependency;
     std::string detail;
@@ -46,7 +46,7 @@ struct ConnectedStop {
 // Stops after this prepared event pass: the enclosing field-update tail is not
 // connected yet. This is not a simulation tick. A stopped state is diagnostic;
 // rerun from the original prepared input, never restart a partial scheduler pass.
-[[nodiscard]] ConnectedStop run_connected_events(PreparedFieldEventPass &state,
+[[nodiscard]] EventPassStop run_prepared_event_pass(PreparedEventPass &state,
                                                   std::uint32_t instruction_limit);
 
 } // namespace xem::reconstruction::field

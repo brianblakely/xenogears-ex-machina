@@ -10,12 +10,15 @@ strategy, not a smaller slice, a new completion ledger, or a matching-decomp gat
 ## What is implemented now
 
 `xem-field-reconstruction` remains the single C++ implementation of recovered
-behavior. `PreparedFieldEventPass` owns the inputs and working state for one
-prepared field-event scheduler pass: its event package, actors, descriptor flags,
-variable bank, control/pass state and explicitly supplied battle/media boundary
-values. It is not complete field state or a whole-game state object. Borrowed
-views exist only during a call, so moving a prepared state cannot leave pointers
-into its former owner.
+behavior. `PreparedEventPass` owns the inputs and working state for one invocation
+of the field event scheduler: its event package, actors, descriptor flags, variable
+bank, control/pass state and explicitly supplied battle/media boundary values. It
+is a prepared analysis case, not an entire field runtime or whole-game state.
+Borrowed views exist only during a call, so moving a prepared state cannot leave
+pointers into its former owner. The type and `run_prepared_event_pass` are declared
+in `include/xem/reconstruction/prepared_event_pass.hpp`; `EventPassStop` reports
+the outcome. The general runner remains `xem-reconstruct`, separate from the
+specific scheduler state it currently exercises.
 
 `xem-reconstruct` links that library. It composes the existing event-package parser,
 original actor-to-event projection, actor scheduler, slot/batch logic, core handlers,
