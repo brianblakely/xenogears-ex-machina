@@ -108,6 +108,7 @@ docs/dependencies.json
 docs/development.md
 docs/evidence-workflow.md
 docs/executable-reconstruction.md
+docs/jev.md
 docs/phase1-handoff.md
 docs/phase1-progress.md
 docs/phase1-slice-contract.md
@@ -214,6 +215,7 @@ tests/test_fingerprint_survey.py
 tests/test_index_survey.py
 tests/test_instruction_trace.py
 tests/test_inventory_records.py
+tests/test_jev.py
 tests/test_jump_physics.py
 tests/test_media_survey.py
 tests/test_memory_sampler.py
@@ -262,6 +264,7 @@ tools/analysis/field_control.py
 tools/analysis/ghidra/ExportOriginalAnalysis.java
 tools/analysis/ghidra/PrepareOriginalProgram.java
 tools/analysis/ghidra_project.py
+tools/analysis/jev.py
 tools/analysis/jump_physics.py
 tools/analysis/movement_sweep.py
 tools/analysis/music_loading.py
