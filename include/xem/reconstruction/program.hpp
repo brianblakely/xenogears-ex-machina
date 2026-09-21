@@ -4,6 +4,7 @@
 #include "xem/reconstruction/field_control.hpp"
 #include "xem/reconstruction/field_return.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
+#include "xem/reconstruction/field_sprite_model.hpp"
 #include "xem/reconstruction/packed_field.hpp"
 
 #include <memory>
@@ -57,9 +58,9 @@ struct ResidentState {
     field::DiscStreamState disc_stream;
     field::SpriteEnvironment sprite{};
     field::SpriteTaskState sprite_tasks{};
-    std::uint16_t allocation_class{};
-    std::uint32_t class_eight_context{};
-    std::uint32_t allocation_cursor{};
+    field::SpriteUploadState sprite_upload{};
+    field::SpriteHeapControls sprite_heap{};
+    field::SpriteModelState sprite_models{};
     std::uint32_t field_return_mode{};
     // Original snapshot and original resource identities, not native persistence.
     field::original::Bytes field_snapshot;
@@ -115,7 +116,8 @@ class Program {
     // The later 800a3c8c checkpoint pass is NOT part of this original function.
     void restore_field(const field::SpriteAllocator &allocate, const field::SpriteReleaser &release,
                        const field::original::RestoreAllocation &allocate_extension = {},
-                       const ProgramObserver &observe = {});
+                       const ProgramObserver &observe = {},
+                       const field::SpriteImageUploader &upload_image = {});
 
     // Semantic operations used by hosts and future native control. An event pass
     // is not a field update, a frame, or a guarantee of player-control readiness.

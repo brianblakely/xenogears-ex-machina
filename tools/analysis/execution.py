@@ -39,7 +39,33 @@ INPUT_KEYS = {
     "event_control",
     "battle_request",
     "music_gate",
+    "task_pending_head",
+    "task_nodes",
+    "task_serial",
+    "task_primary_count",
+    "task_auxiliary_count",
+    "task_active_flags",
+    "child_creation_flags",
+    "child_allocation_mode",
+    "texture_page",
+    "texture_mode",
+    "heap_class_five_context",
+    "heap_tag",
+    "model_state",
 }
+MODEL_FIELDS = (
+    "material_page",
+    "material_palette",
+    "palette_base",
+    "palette_mode",
+    "primitive_count",
+    "output",
+    "shading",
+    "geometry",
+    "normals",
+    "vertices",
+    "auxiliary",
+)
 
 
 def require(condition: bool, message: str) -> None:
@@ -130,7 +156,34 @@ def encode_case(
             isinstance(item, dict) and set(item) == {"actor", "descriptor"}, "Invalid actor fields"
         )
         result += blob(item["actor"], 312) + blob(item["descriptor"], 92)
-    result += words(environment, 16) + word(state.get("field_sprite_base", 0))
+    result += words(environment, 16)
+    if case["entry"] == "field_return":
+        require(
+            "task_pending_head" in state and "task_nodes" in state,
+            "Field return requires both original task lists and owned nodes",
+        )
+    result += word(state.get("task_pending_head", 0)) + resources(state.get("task_nodes", []))
+    for name in (
+        "task_serial",
+        "task_primary_count",
+        "task_auxiliary_count",
+        "task_active_flags",
+        "child_creation_flags",
+        "child_allocation_mode",
+        "texture_page",
+        "texture_mode",
+        "heap_class_five_context",
+        "heap_tag",
+    ):
+        if case["entry"] == "field_return":
+            require(name in state, "Field return requires original " + name)
+        result += word(state.get(name, 0))
+    model = state.get("model_state", {})
+    require(isinstance(model, dict) and set(model) <= set(MODEL_FIELDS), "Invalid model state")
+    if case["entry"] == "field_return":
+        require(set(model) == set(MODEL_FIELDS), "Field return requires original model state")
+    result += b"".join(word(model.get(name, 0)) for name in MODEL_FIELDS)
+    result += word(state.get("field_sprite_base", 0))
     # B2268 is reconstructed from snapshot globals, never supplied by a case.
     result += word(0)
     party = state.get("party_resources", [])
@@ -228,6 +281,24 @@ def compare(report: dict, expected: dict) -> dict:
         observed = sprites[index] if index < len(sprites) else None
         projected = {k: v for k, v in expected["partial_actor"].items() if k != "index"}
         difference = first_difference(observed, projected, f"partial_state.sprites[{index}]")
+        if difference:
+            return {
+                "status": "behavioral_divergence",
+                "matched_checkpoints": len(checkpoints),
+                "first_difference": difference,
+            }
+    if "uploads" in expected:
+        difference = first_difference(report.get("uploads"), expected["uploads"], "uploads")
+        if difference:
+            return {
+                "status": "behavioral_divergence",
+                "matched_checkpoints": len(checkpoints),
+                "first_difference": difference,
+            }
+    if "partial_state" in expected:
+        difference = first_difference(
+            report.get("partial_state"), expected["partial_state"], "partial_state"
+        )
         if difference:
             return {
                 "status": "behavioral_divergence",

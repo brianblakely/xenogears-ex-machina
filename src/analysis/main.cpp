@@ -108,9 +108,9 @@ std::array<std::uint32_t, 16> environment(const game::Program &program) {
             e.return_mode,
             static_cast<std::uint16_t>(e.field_gate),
             e.initialized_count,
-            e.allocation_class,
-            e.class_eight_context,
-            e.allocation_cursor,
+            e.heap.allocation_class,
+            e.heap.class_eight_context,
+            e.heap.allocation_cursor,
             e.tasks.wait_count,
             e.tasks.wait_flag,
             e.tasks.current,
@@ -164,6 +164,43 @@ void snapshot(std::ostream &out, const game::Program &program) {
     }
     out << "],\"variables\":" << quote(variables(program)) << ",\"environment\":";
     numbers(out, environment(program));
+    out << ",\"task_pending_head\":" << program.resident.sprite_tasks.pending_head;
+    out << ",\"texture_page\":" << program.resident.sprite.texture_page
+        << ",\"texture_mode\":" << program.resident.sprite.texture_mode;
+    out << ",\"heap_class_five_context\":" << program.resident.sprite_heap.class_five_context
+        << ",\"heap_tag\":" << program.resident.sprite_heap.tag;
+    const auto &model = program.resident.sprite_models;
+    out << ",\"model_state\":{\"material_page\":" << model.material_page
+        << ",\"material_palette\":" << model.material_palette
+        << ",\"palette_base\":" << model.palette_base << ",\"palette_mode\":" << model.palette_mode
+        << ",\"primitive_count\":" << model.primitive_count << ",\"output\":" << model.output
+        << ",\"shading\":" << model.shading << ",\"geometry\":" << model.geometry
+        << ",\"normals\":" << model.normals << ",\"vertices\":" << model.vertices
+        << ",\"auxiliary\":" << model.auxiliary << "},\"model_buffers\":[";
+    for (std::size_t i = 0; i < model.buffers.size(); ++i) {
+        if (i != 0)
+            out << ',';
+        allocation(out, model.buffers[i]);
+    }
+    out << "],\"resources\":[";
+    for (std::size_t i = 0; i < state.resources.size(); ++i) {
+        if (i != 0)
+            out << ',';
+        allocation(out, state.resources[i]);
+    }
+    out << ']';
+    const auto &tasks = program.resident.sprite_tasks;
+    out << ",\"task_serial\":" << tasks.serial << ",\"task_primary_count\":" << tasks.primary_count
+        << ",\"task_auxiliary_count\":" << tasks.auxiliary_count
+        << ",\"task_active_flags\":" << tasks.active_flags
+        << ",\"child_creation_flags\":" << +tasks.creation_flags
+        << ",\"child_allocation_mode\":" << +tasks.allocation_mode << ",\"task_nodes\":[";
+    for (std::size_t i = 0; i < tasks.nodes.size(); ++i) {
+        if (i != 0)
+            out << ',';
+        allocation(out, tasks.nodes[i]);
+    }
+    out << ']';
     out << ",\"event_control\":";
     const auto &control = state.event_control;
     numbers(out,
@@ -223,6 +260,7 @@ struct Services {
     std::unordered_map<std::uint32_t, std::size_t> live;
     std::vector<std::uint32_t> requested;
     std::vector<std::uint32_t> released;
+    std::vector<field::SpriteImageUpload> uploads;
 
     field::SpriteAllocation allocate(std::uint32_t size, std::uint32_t mode) {
         if (cursor == incoming.size())
@@ -299,14 +337,39 @@ int main(int argc, char **argv) {
         env.return_mode = in.word();
         env.field_gate = signed_half(in.count(65535));
         env.initialized_count = in.word();
-        env.allocation_class = static_cast<std::uint16_t>(in.count(65535));
-        env.class_eight_context = in.word();
-        env.allocation_cursor = in.word();
+        env.heap.allocation_class = static_cast<std::uint16_t>(in.count(65535));
+        env.heap.class_eight_context = in.word();
+        env.heap.allocation_cursor = in.word();
         env.tasks.wait_count = in.word();
         env.tasks.wait_flag = static_cast<std::uint16_t>(in.count(65535));
         env.tasks.current = in.word();
         env.tasks.head = in.word();
         env.tasks.next = in.word();
+        env.tasks.pending_head = in.word();
+        for (auto n = in.count(4096); n != 0; --n)
+            env.tasks.nodes.push_back(in.resource());
+        env.tasks.serial = in.word();
+        env.tasks.primary_count = in.word();
+        env.tasks.auxiliary_count = in.word();
+        env.tasks.active_flags = in.word();
+        env.tasks.creation_flags = static_cast<std::uint8_t>(in.count(255));
+        env.tasks.allocation_mode = static_cast<std::uint8_t>(in.count(255));
+        env.sprite.texture_page = in.word();
+        env.sprite.texture_mode = in.word();
+        env.heap.class_five_context = in.word();
+        env.heap.tag = static_cast<std::uint16_t>(in.count(65535));
+        auto &model = program.resident.sprite_models;
+        model.material_page = static_cast<std::uint16_t>(in.count(65535));
+        model.material_palette = static_cast<std::uint16_t>(in.count(65535));
+        model.palette_base = in.word();
+        model.palette_mode = in.word();
+        model.primitive_count = in.word();
+        model.output = in.word();
+        model.shading = in.word();
+        model.geometry = in.word();
+        model.normals = in.word();
+        model.vertices = in.word();
+        model.auxiliary = in.word();
         program.set_sprite_environment(env);
         state.sprite_bundle_address = in.word();
         state.party_reassignment = in.word();
@@ -419,7 +482,8 @@ int main(int argc, char **argv) {
             if (selected == 0)
                 program.restore_field(
                     [&](auto size, auto mode) { return services.allocate(size, mode); },
-                    [&](auto address) { services.release(address); }, {}, observer);
+                    [&](auto address) { services.release(address); }, {}, observer,
+                    [&](const auto &request) { services.uploads.push_back(request); });
             else if (selected == 1)
                 program.restore_field_data({}, observer);
             else if (selected == 2) {
@@ -520,6 +584,16 @@ int main(int argc, char **argv) {
         if (i != 0)
             std::cout << ',';
         std::cout << checkpoints[i];
+    }
+    std::cout << "],\"uploads\":[";
+    for (std::size_t i = 0; i < services.uploads.size(); ++i) {
+        if (i != 0)
+            std::cout << ',';
+        const auto &request = services.uploads[i];
+        std::cout << "{\"rectangle\":";
+        numbers(std::cout, request.rectangle);
+        std::cout << ",\"source_address\":" << request.source_address
+                  << ",\"bytes\":" << quote(hex(request.bytes)) << '}';
     }
     std::cout << "],\"partial_state\":";
     snapshot(std::cout, program);

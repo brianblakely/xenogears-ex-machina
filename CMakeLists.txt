@@ -21,6 +21,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_control.cpp
   src/reconstruction/field_sprite.cpp
   src/reconstruction/field_sprite_factory.cpp
+  src/reconstruction/field_sprite_model.cpp
   src/reconstruction/field_motion.cpp
   src/reconstruction/field_collision.cpp
   src/reconstruction/field_media.cpp
@@ -69,6 +70,15 @@ if(BUILD_TESTING)
   add_executable(test-field-sprite-factory tests/test_field_sprite_factory.cpp)
   target_link_libraries(test-field-sprite-factory PRIVATE xem-reconstruction)
   add_test(NAME field-sprite-factory-reconstruction COMMAND test-field-sprite-factory)
+  add_executable(test-sprite-tasks tests/test_sprite_tasks.cpp)
+  target_link_libraries(test-sprite-tasks PRIVATE xem-reconstruction)
+  add_test(NAME sprite-task-reconstruction COMMAND test-sprite-tasks)
+  add_executable(test-sprite-upload tests/test_sprite_upload.cpp)
+  target_link_libraries(test-sprite-upload PRIVATE xem-reconstruction)
+  add_test(NAME sprite-upload-reconstruction COMMAND test-sprite-upload)
+  add_executable(test-sprite-model tests/test_sprite_model.cpp)
+  target_link_libraries(test-sprite-model PRIVATE xem-reconstruction)
+  add_test(NAME sprite-model-reconstruction COMMAND test-sprite-model)
   add_executable(test-field-motion tests/test_field_motion.cpp)
   target_link_libraries(test-field-motion PRIVATE xem-reconstruction)
   add_test(NAME field-motion-reconstruction COMMAND test-field-motion)

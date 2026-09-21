@@ -1,5 +1,7 @@
 #include "xem/reconstruction/field_sprite.hpp"
 #include "xem/reconstruction/field_motion.hpp"
+#include "xem/reconstruction/field_sprite_factory.hpp"
+#include "xem/reconstruction/field_sprite_model.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -93,9 +95,10 @@ std::uint32_t read(std::span<const SpriteResource> sources, std::uint32_t pointe
 std::uint32_t resource(const SpriteSources &sources, std::uint32_t pointer, std::size_t size) {
     return read(sources.resources, pointer, size);
 }
-SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size) {
+SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size,
+                            std::uint32_t mode = 0) {
     require(static_cast<bool>(allocate), "Original sprite allocation boundary is absent");
-    auto result = allocate(size, 0);
+    auto result = allocate(size, mode);
     require(result.bytes.size() == size && valid_extent(result.address, size) &&
                 (size == 0 || result.address != 0),
             "Incomplete original sprite allocation or incoming bytes");
@@ -238,6 +241,158 @@ void apply_header(SpriteWindow sprite, std::uint32_t header, const SpriteEnviron
         put(sprite.bytes, at, 0);
         put(sprite.bytes, at + 12, 0, 2);
     }
+}
+
+std::uint32_t owned_read(SpriteWindow parent, const SpriteSources &sources, std::uint32_t address,
+                         std::size_t width) {
+    if (address >= parent.address &&
+        static_cast<std::uint64_t>(address) + width <=
+            static_cast<std::uint64_t>(parent.address) + parent.bytes.size())
+        return get(parent.bytes, address - parent.address, width);
+    if (sources.tasks)
+        for (const auto &node : sources.tasks->nodes)
+            if (address >= node.address &&
+                static_cast<std::uint64_t>(address) + width <=
+                    static_cast<std::uint64_t>(node.address) + node.bytes.size())
+                return get(node.bytes, address - node.address, width);
+    if (sources.factory_sprite && address >= sources.factory_sprite->address &&
+        static_cast<std::uint64_t>(address) + width <=
+            static_cast<std::uint64_t>(sources.factory_sprite->address) +
+                sources.factory_sprite->bytes.size())
+        return get(sources.factory_sprite->bytes, address - sources.factory_sprite->address, width);
+    return resource(sources, address, width);
+}
+
+// Resident 80023b84/80023a48/800233a4. Main and auxiliary headers precede
+// the child sprite in one allocation. Other renderer kinds remain explicit.
+void create_child_sprite(SpriteWindow parent, std::uint32_t header, SpriteEnvironment &environment,
+                         const SpriteSources &sources) {
+    require_recovered(sources.tasks && sources.services,
+                      "Child sprite task ownership is not connected");
+    auto &tasks = *sources.tasks;
+    const auto saved_creation = tasks.creation_flags;
+    put(parent.bytes, 0xb0, get(parent.bytes, 0xb0) | 0x800);
+    if (get(parent.bytes, 0xb0) & 0x100)
+        tasks.creation_flags = 0;
+    const auto header_word = resource(sources, header, 2);
+    auto type = ((header_word >> 8) & 7) + ((header_word & 0x4000) ? 8 : 0);
+    if (type == 3)
+        type = (get(parent.bytes, 0x40) >> 13) & 15;
+    require_recovered(type == 2 || type == 7 || type == 15,
+                      "Child sprite renderer kind is unreconstructed");
+    const auto owner = get(parent.bytes, 0x6c);
+    observe(sources, "create_child_sprite", 0x80023b84);
+    tasks.nodes.push_back(allocation(sources.services->allocate, 0x140, tasks.allocation_mode));
+    auto &storage = tasks.nodes.back();
+    const auto address = storage.address;
+    auto bytes = std::span(storage.bytes);
+    // 8001cc18 registers the main task before initializing its embedded sprite.
+    put(bytes, 0, owner);
+    const auto owner_serial = owned_read(parent, sources, owner + 0x10, 4);
+    put(bytes, 0x0c, 0x8001cd94);
+    put(bytes, 8, 0);
+    const auto old_head = tasks.head;
+    const auto serial = tasks.serial & 0x1fffffffU;
+    tasks.head = address;
+    put(bytes, 0x14, owner_serial & 0x1fffffffU);
+    ++tasks.serial;
+    put(bytes, 0x10, (get(bytes, 0x10) & 0xe0000000U) | serial);
+    put(bytes, 0x18, old_head);
+    if (tasks.creation_flags != 0) {
+        ++tasks.active_flags;
+        put(bytes, 0x14, get(bytes, 0x14) | 0x80000000U);
+    }
+    ++tasks.primary_count;
+    // 8001ca58 gives the auxiliary header its own generation and list link.
+    put(bytes, 0x1c, address);
+    const auto auxiliary_serial = tasks.serial++ & 0x1fffffffU;
+    put(bytes, 0x34, tasks.pending_head);
+    tasks.pending_head = address + 0x1c;
+    put(bytes, 0x2c, (get(bytes, 0x2c) & 0xe0000000U) | auxiliary_serial);
+    put(bytes, 0x24, 0);
+    put(bytes, 0x28, 0x8001cb48);
+    ++tasks.auxiliary_count;
+    put(bytes, 0x30, get(bytes, 0x10) & 0x1fffffffU);
+
+    SpriteWindow child{address + 0x38, bytes.subspan(0x38)};
+    defaults(child, environment.rate_control);
+    put(bytes, 4, child.address);
+    put(bytes, 0x20, child.address);
+    put(bytes, 8, 0x80022df4);
+    put(bytes, 0x0c, 0x80022eb8);
+    // 80023958 initializes only these fields in the embedded kind-two parts.
+    put(child.bytes, 0x20, child.address + 0xb4);
+    for (auto at : {0xb4U, 0xb6U, 0xb8U})
+        put(child.bytes, at, 0, 2);
+    for (auto at : {0xe0U, 0xe8U, 0xf4U})
+        put(child.bytes, at, 0);
+    put(child.bytes, 0x6c, address);
+    put(child.bytes, 0x86, 0x140, 2);
+    put(child.bytes, 0x24, get(parent.bytes, 0x24));
+    put(bytes, 0x14, get(bytes, 0x14) | 0x20000000U);
+    put(child.bytes, 0x40, (get(child.bytes, 0x40) & 0xfffe1fffU) | (type << 13));
+    put(child.bytes, 0x3c, (get(child.bytes, 0x3c) & ~3U) | 2);
+    put(child.bytes, 0x40,
+        (get(child.bytes, 0x40) & 0xffffe0ffU) | (get(parent.bytes, 0x40) & 0x1f00));
+    put(child.bytes, 0x3c, (get(child.bytes, 0x3c) & ~0x18U) | (get(parent.bytes, 0x3c) & 0x18));
+    put(child.bytes, 0x3d, get(parent.bytes, 0x3d, 1), 1);
+    put(child.bytes, 0x40,
+        (get(child.bytes, 0x40) & ~0x40000U) | (get(parent.bytes, 0x40) & 0x40000));
+    put(child.bytes, 0x3c, (get(child.bytes, 0x3c) & ~4U) | 0x4000000);
+    put(child.bytes, 0x18, get(parent.bytes, 0x18));
+    for (auto at : {0x32U, 0x2cU, 0x34U})
+        put(child.bytes, at, get(parent.bytes, at, 2), 2);
+    put(child.bytes, 0xb0, (get(child.bytes, 0xb0) & ~0x200U) | (get(parent.bytes, 0xb0) & 0x200));
+    if (get(parent.bytes, 0xb0) & 0x200) {
+        put(child.bytes, 0x3a, get(parent.bytes, 0x3a, 2), 2);
+        put(child.bytes, 0x40, (get(child.bytes, 0x40) & 0xffffe0ffU) | 0x300);
+    }
+    put(child.bytes, 0xa8,
+        (get(child.bytes, 0xa8) & 0x3fffffffU) | (get(parent.bytes, 0xa8) & 0xc0000000U));
+    put(child.bytes, 0xac, (get(child.bytes, 0xac) & ~3U) | (get(parent.bytes, 0xac) & 3));
+    put(child.bytes, 0xb0, (get(child.bytes, 0xb0) & ~0x100U) | (get(parent.bytes, 0xb0) & 0x100));
+    put(child.bytes, 0xac, (get(child.bytes, 0xac) & ~0x40U) | (get(parent.bytes, 0xac) & 0x40));
+    put(child.bytes, 0xac,
+        (get(child.bytes, 0xac) & 0xfff8007fU) | (get(parent.bytes, 0xac) & 0x7ff80));
+    put(child.bytes, 0xa8, get(child.bytes, 0xa8) & ~1U);
+    put(child.bytes, 0xac, (get(child.bytes, 0xac) & ~4U) | (get(parent.bytes, 0xac) & 4));
+    put(child.bytes, 0x7c, (get(parent.bytes, 0xa8) & 1) ? 0 : get(parent.bytes, 0x7c));
+    put(child.bytes, 0x70, parent.address);
+    for (auto at : {0x44U, 0x48U, 0x74U})
+        put(child.bytes, at, get(parent.bytes, at));
+    put(child.bytes, 0x82, get(parent.bytes, 0x82, 2), 2);
+    put(child.bytes, 0x50, get(parent.bytes, 0x50));
+    put(child.bytes, 0x8d, get(parent.bytes, 0xaf, 1), 1);
+    put(child.bytes, 0x78, get(parent.bytes, 0x78));
+    for (std::size_t at = 0; at <= 0x14; at += 4)
+        put(child.bytes, at, get(parent.bytes, at));
+    for (std::uint32_t at = 0; at < 12; at += 2)
+        put(child.bytes, 0xb4 + at, owned_read(parent, sources, get(parent.bytes, 0x20) + at, 2),
+            2);
+    apply_header(child, header, environment, sources);
+    // 80024730 changes only the main callback for type7; all three kind-two
+    // types obtain the auxiliary callback from the original resident table.
+    if (type == 7)
+        put(bytes, 8, 0x80022e8c);
+    put(bytes, 0x24, resource(sources, 0x8004fd40 + type * 4, 4));
+    tasks.creation_flags = saved_creation;
+}
+
+void invoke_sprite_callback(SpriteWindow sprite, const SpriteSources &sources) {
+    const auto callback = get(sprite.bytes, 0x68);
+    if (callback == 0)
+        return;
+    require_recovered(callback == 0x80076a74,
+                      "Original sprite completion callback is unreconstructed");
+    observe(sources, "field_sprite_callback", 0x80076a74);
+    const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 22);
+    const auto actor = signed_half(get(sprite.bytes, sequencer + 20, 2));
+    require_source(actor >= 0 && sources.field_actor &&
+                       sources.field_actor->index == static_cast<std::uint32_t>(actor) &&
+                       sources.field_actor->bytes.size() == 0x138,
+                   "Field sprite callback requires its actual selected actor");
+    auto bytes = sources.field_actor->bytes;
+    put(bytes, 4, get(bytes, 4) | 0x10000);
 }
 } // namespace
 
@@ -517,6 +672,45 @@ void select_sprite_animation(SpriteWindow sprite, std::int32_t animation,
                               environment, sources);
 }
 
+std::uint32_t upload_sprite_images(std::uint32_t address, std::int16_t x, std::int16_t y,
+                                   const SpriteSources &sources,
+                                   const SpriteImageUploader &upload) {
+    const auto count = signed_word(resource(sources, address, 4));
+    auto cursor = address + (static_cast<std::uint32_t>(count) + 1U) * 4U;
+    for (std::int32_t index = 0; index < count; ++index) {
+        observe(sources, "sprite_image_record", 0x8002dde4);
+        const auto kind = resource(sources, cursor, 4);
+        if (kind != 0x1100 && kind != 0x1101)
+            return 1;
+        const auto origin_x = kind == 0x1100 ? x : signed_half(resource(sources, cursor + 4, 2));
+        const auto origin_y = kind == 0x1100 ? y : signed_half(resource(sources, cursor + 6, 2));
+        const auto width = signed_half(resource(sources, cursor + 12, 2));
+        const auto height = signed_half(resource(sources, cursor + 14, 2));
+        require_source(width >= 0 && height >= 0,
+                       "Negative original image dimensions require hardware service recovery");
+        SpriteImageUpload request{
+            {static_cast<std::int16_t>(signed_half(static_cast<std::uint32_t>(origin_x) +
+                                                   resource(sources, cursor + 8, 2))),
+             static_cast<std::int16_t>(signed_half(static_cast<std::uint32_t>(origin_y) +
+                                                   resource(sources, cursor + 10, 2))),
+             static_cast<std::int16_t>(width), static_cast<std::int16_t>(height)},
+            cursor + 16,
+            {}};
+        const auto size = static_cast<std::uint32_t>(width * height) * 2U;
+        require_source(size <= 0x200000 && valid_extent(request.source_address, size),
+                       "Original image exceeds address-qualified resource bounds");
+        request.bytes.reserve(size);
+        for (std::uint32_t i = 0; i < size; ++i)
+            request.bytes.push_back(
+                static_cast<std::uint8_t>(resource(sources, request.source_address + i, 1)));
+        require_recovered(static_cast<bool>(upload), "LoadImage service is not connected");
+        observe(sources, "sprite_image_upload", 0x80044894);
+        upload(request);
+        cursor = request.source_address + size;
+    }
+    return 0;
+}
+
 std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &environment,
                                       const SpriteSources &sources) {
     check_window(sprite);
@@ -560,7 +754,39 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
             put(sprite.bytes, 0xa8, (flags & 0xf03fffff) | (ordinal << 22));
             return commands;
         }
-        if (opcode == 0xa0 || opcode == 0xa1) {
+        if (opcode == 0x80 || (opcode == 0x81 && get(sprite.bytes, 0xaf, 1) == 63)) {
+            put(sprite.bytes, 0xa8, get(sprite.bytes, 0xa8) & 0xcfffffffU);
+            if (get(sprite.bytes, 0x68) != 0) {
+                invoke_sprite_callback(sprite, sources);
+                return commands;
+            }
+            const auto animation = std::bit_cast<std::int8_t>(sprite.bytes[0xb0]);
+            if (animation >= 0)
+                select_sprite_animation(sprite, animation, environment, sources);
+            put(sprite.bytes, 0xa8, get(sprite.bytes, 0xa8) & 0xcfffffffU);
+            return commands;
+        } else if (opcode == 0x81) {
+            put(sprite.bytes, 0x9e, 0, 2);
+            invoke_sprite_callback(sprite, sources);
+            put(sprite.bytes, 0xa8, (get(sprite.bytes, 0xa8) & 0xcfffffffU) | 0x10000000);
+            return commands;
+        } else if (opcode == 0x8d) {
+            const auto binding = get(sprite.bytes, 0x24);
+            const auto x = owned_read(sprite, sources, binding + 4, 2);
+            const auto y = owned_read(sprite, sources, binding + 6, 2);
+            observe(sources, "sprite_texture_page", 0x8002cc10);
+            // 80043a1c with format/blend zero, then 8002cc10's low-five-bit
+            // mask: Y bit9's high texture-page bit is deliberately discarded.
+            environment.texture_page = ((x & 0x3ffU) >> 6) | ((y & 0x100U) >> 4);
+            environment.texture_mode = 1;
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0x96) {
+            require_recovered(sources.tasks != nullptr, "Sprite task ownership is not connected");
+            remove_sprite_tasks(*sources.tasks, get(sprite.bytes, 0x6c), sprite, sources);
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xa0 || opcode == 0xa1) {
             if (opcode == 0xa0) {
                 const auto operand = static_cast<std::uint8_t>(resource(sources, pointer + 1, 1));
                 static_cast<void>(apply_animation_speed(sprite, operand, environment.rate_control,
@@ -600,6 +826,48 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
                 const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 14);
                 put(sprite.bytes, sequencer + 12, resource(sources, pointer + 1, 1), 2);
             }
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xf5) {
+            const auto operand = pointer + 1;
+            auto delta = resource(sources, operand, 3);
+            if (delta & 0x800000U)
+                delta |= 0xff000000U;
+            construct_sprite_model(sprite, operand + delta, environment, sources);
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xfc) {
+            require_recovered(sources.services && sources.services->upload_state,
+                              "Sprite upload ownership is not connected");
+            auto &services = *sources.services;
+            auto &state = *services.upload_state;
+            require(state.outer_stack.bytes.empty() && state.inner_stack.bytes.empty(),
+                    "Interrupted sprite upload has no represented continuation");
+            require_recovered(static_cast<bool>(services.release),
+                              "Sprite upload release service is not connected");
+            state.outer_stack = allocation(services.allocate, 8192, 0);
+            const auto operand = pointer + 1;
+            auto delta = resource(sources, operand, 3);
+            if (delta & 0x800000U)
+                delta |= 0xff000000U;
+            const auto binding = inside(sprite, get(sprite.bytes, 0x24), 8);
+            state.resource = operand + delta;
+            state.x = static_cast<std::int16_t>(signed_half(get(sprite.bytes, binding + 4, 2)));
+            state.y = static_cast<std::int16_t>(signed_half(get(sprite.bytes, binding + 6, 2)));
+            state.inner_stack = allocation(services.allocate, 8192, 1);
+            static_cast<void>(upload_sprite_images(state.resource, state.x, state.y, sources,
+                                                   services.upload_image));
+            services.release(state.inner_stack.address);
+            state.inner_stack = {};
+            services.release(state.outer_stack.address);
+            state.outer_stack = {};
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xe0) {
+            const auto operand = pointer + 1;
+            const auto delta = signed_half(resource(sources, operand, 2));
+            create_child_sprite(sprite, operand + static_cast<std::uint32_t>(delta), environment,
+                                sources);
             static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
                                                       sources.replay_widths));
         } else if (opcode == 0xe1) {

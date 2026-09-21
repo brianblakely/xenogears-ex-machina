@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
+import subprocess
 from pathlib import Path
 
 from ..reference.memory_sampler import ram_pointer_offset
@@ -99,7 +102,51 @@ def qualified_ranges(row: dict, hook: dict) -> dict[str, bytes]:
     return payload
 
 
-def capture_records(capture: Path, sources: dict, spec: dict, windows: tuple) -> tuple:
+def collector_fingerprint(path: str, revision: str | None) -> str:
+    """Read reviewed collector sources; historical code is never executed."""
+    if revision is None:
+        return file_sha(ROOT / path)
+    require(re.fullmatch(r"[0-9a-f]{40}", revision) is not None, "Unpinned collector revision")
+    result = subprocess.run(
+        ["git", "--no-replace-objects", "show", revision + ":" + path],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        timeout=10,
+    )
+    return hashlib.sha256(result.stdout).hexdigest()
+
+
+def qualify_collector(metadata: dict, revision: str | None = None) -> None:
+    for key, path in [
+        ("tool_sha256", "tools/reference/instruction_trace.py"),
+        ("memory_helpers_sha256", "tools/reference/memory_sampler.py"),
+        ("validation_helpers_sha256", "tools/reference/scenario_program.py"),
+    ]:
+        require(
+            metadata[key] == collector_fingerprint(path, revision),
+            "original trace collector changed: " + path,
+        )
+    require(
+        set(metadata["core_extension_inputs"])
+        == {"flake.nix", "reference-trace.h", "reference-trace-patch.py"},
+        "original core extension source set changed",
+    )
+    for name, digest in metadata["core_extension_inputs"].items():
+        require(
+            digest == collector_fingerprint("nix/" + name, revision),
+            "original core extension sources changed: " + name,
+        )
+
+
+def capture_records(
+    capture: Path,
+    sources: dict,
+    spec: dict,
+    windows: tuple,
+    *,
+    collector_revision: str | None = None,
+) -> tuple:
     observation_path = capture / "observation.json"
     observation = json.loads(observation_path.read_text())
     metadata = observation["instruction_trace"]
@@ -115,19 +162,7 @@ def capture_records(capture: Path, sources: dict, spec: dict, windows: tuple) ->
         and not any(metadata["guard_mismatches_by_hook"].values()),
         "incomplete or unqualified original capture",
     )
-    for key, path in [
-        ("tool_sha256", "tools/reference/instruction_trace.py"),
-        ("memory_helpers_sha256", "tools/reference/memory_sampler.py"),
-        ("validation_helpers_sha256", "tools/reference/scenario_program.py"),
-    ]:
-        require(metadata[key] == file_sha(ROOT / path), "original trace collector changed")
-    require(
-        all(
-            digest == file_sha(ROOT / "nix" / name)
-            for name, digest in metadata["core_extension_inputs"].items()
-        ),
-        "original core extension sources changed",
-    )
+    qualify_collector(metadata, collector_revision)
     require(
         file_sha(capture / "instruction-trace.jsonl") == metadata["trace_sha256"]
         and file_sha(capture / "instruction-trace-spec.json") == metadata["specification_sha256"]

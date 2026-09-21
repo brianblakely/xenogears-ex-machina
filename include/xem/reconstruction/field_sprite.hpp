@@ -49,6 +49,23 @@ struct SpriteExecutionPoint {
 // budget; the callback never supplies a game result. Issued stores remain owned
 // by the caller, and an interrupted call has no represented continuation.
 using SpriteExecutionObserver = std::function<void(SpriteExecutionPoint)>;
+struct SpriteTaskState;
+struct SpriteServices;
+struct SpriteWindow;
+struct SpriteModelState;
+struct SpriteHeapControls {
+    std::uint16_t allocation_class{};    // 8005931c
+    std::uint32_t class_eight_context{}; // 80059fc4
+    std::uint32_t allocation_cursor{};   // 80059330
+    std::uint32_t class_five_context{};  // 80059fb8
+    std::uint16_t tag{};                 // 80059318
+};
+// The current field factory lends its actual actor for callback 80076a74.
+// A callback selecting another actor requires that actor's owned context.
+struct SpriteFieldActor {
+    std::uint32_t index;
+    std::span<std::uint8_t> bytes;
+};
 struct SpriteSources {
     std::span<const SpriteResource> resources;
     std::span<const SpriteResource> frame_list;
@@ -56,6 +73,15 @@ struct SpriteSources {
     std::span<const std::uint8_t> replay_widths;
     std::optional<std::int32_t> incoming_replay_duration;
     SpriteExecutionObserver observe_execution{};
+    SpriteTaskState *tasks{};
+    SpriteServices *services{};
+    std::optional<SpriteFieldActor> field_actor{};
+    // Borrowed current factory allocation, so child operations resolve their
+    // parent's live descriptor without substituting captured intermediate bytes.
+    std::optional<SpriteResource> factory_sprite{};
+    std::span<SpriteWindow> mutable_resources{};
+    SpriteModelState *models{};
+    SpriteHeapControls *heap{};
 };
 struct SpriteEnvironment {
     std::int32_t rate_control{};
@@ -63,6 +89,8 @@ struct SpriteEnvironment {
     std::uint32_t variant{};
     std::uint8_t binding_control{};
     std::uint32_t frame_head{};
+    std::uint32_t texture_page{}; // 80059310: 8002cc34 writes a full word
+    std::uint32_t texture_mode{}; // 80050108
     bool operator==(const SpriteEnvironment &) const = default;
 };
 
@@ -79,6 +107,31 @@ struct SpriteAllocation {
     bool operator==(const SpriteAllocation &) const = default;
 };
 using SpriteAllocator = std::function<SpriteAllocation(std::uint32_t bytes, std::uint32_t mode)>;
+using SpriteReleaser = std::function<void(std::uint32_t address)>;
+struct SpriteImageUpload {
+    std::array<std::int16_t, 4> rectangle;
+    std::uint32_t source_address;
+    std::vector<std::uint8_t> bytes;
+};
+using SpriteImageUploader = std::function<void(const SpriteImageUpload &)>;
+struct SpriteUploadState {
+    std::uint32_t resource{}; // 800592e4
+    std::int16_t x{}, y{};    // 800592e8 / 800592ea
+    // The original reserves two temporary stacks on its heap. Native calls use
+    // the native stack, retaining the original allocation/release service order.
+    SpriteAllocation outer_stack, inner_stack;
+};
+struct SpriteServices {
+    SpriteAllocator allocate;
+    SpriteReleaser release;
+    SpriteImageUploader upload_image;
+    SpriteUploadState *upload_state{};
+};
+// Resident 8002dde4 as called by FC: sequential raw image blocks, not the
+// separate 80022a70 format. The return value is ignored by its original caller.
+[[nodiscard]] std::uint32_t upload_sprite_images(std::uint32_t resource, std::int16_t x,
+                                                 std::int16_t y, const SpriteSources &sources,
+                                                 const SpriteImageUploader &upload);
 
 struct SpriteConstruction {
     SpriteAllocation sprite;

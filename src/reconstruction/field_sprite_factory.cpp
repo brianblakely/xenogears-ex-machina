@@ -90,6 +90,35 @@ SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size)
             "Incomplete original sprite allocation or incoming bytes");
     return result;
 }
+std::optional<SpriteWindow> owned_window(SpriteTaskState &state, std::uint32_t address,
+                                         std::size_t size) {
+    for (auto &allocation : state.nodes) {
+        if (address < allocation.address)
+            continue;
+        const auto offset = static_cast<std::size_t>(address - allocation.address);
+        if (offset <= allocation.bytes.size() && size <= allocation.bytes.size() - offset)
+            return SpriteWindow{address, std::span(allocation.bytes).subspan(offset)};
+    }
+    return {};
+}
+void advance_task_motion(SpriteWindow sprite, const SpriteSources &sources) {
+    if (sources.observe_execution)
+        sources.observe_execution({"sprite_task_motion", 0x80022cdc, {}});
+    // 80022cac scales the already-shifted motion with truncation toward zero.
+    const auto motion = [&](std::size_t at) {
+        auto value = signed_word(get(sprite.bytes, at)) >> 4;
+        const auto scale = get(sprite.bytes, 0x3a, 2);
+        if (scale != 0)
+            value = truncate_shift(product(value, static_cast<std::int32_t>(scale)), 10);
+        return static_cast<std::uint32_t>(value) * 16U;
+    };
+    put(sprite.bytes, 0, get(sprite.bytes, 0) + motion(0x0c));
+    put(sprite.bytes, 8, get(sprite.bytes, 8) + motion(0x14));
+    require_recovered((get(sprite.bytes, 0x3c) & 0x4000000U) != 0,
+                      "Grounded sprite task motion 80022b2c requires field 800ba8f4");
+    put(sprite.bytes, 4, get(sprite.bytes, 4) + motion(0x10));
+    put(sprite.bytes, 0x10, get(sprite.bytes, 0x10) + get(sprite.bytes, 0x1c));
+}
 } // namespace
 
 std::array<std::int32_t, 3> initial_sprite_bounds(SpriteWindow sprite,
@@ -121,12 +150,15 @@ std::array<std::int32_t, 3> initial_sprite_bounds(SpriteWindow sprite,
     return {first, height, third};
 }
 
-void advance_sprite_tasks(SpriteTaskState &state, const SpriteSources &sources) {
+void advance_sprite_tasks(SpriteTaskState &state, SpriteEnvironment &environment,
+                          const SpriteSources &input_sources) {
     if (state.wait_count != 0) {
         if (--state.wait_count == 0)
             state.wait_flag = 0;
         return;
     }
+    auto sources = input_sources;
+    sources.tasks = &state;
     state.next = state.head;
     std::unordered_set<std::uint32_t> seen;
     while (state.next != 0) {
@@ -134,19 +166,93 @@ void advance_sprite_tasks(SpriteTaskState &state, const SpriteSources &sources) 
         require(seen.insert(current).second, "Original sprite task list is cyclic");
         if (sources.observe_execution)
             sources.observe_execution({"sprite_task", 0x8001c964, {}});
-        const auto next = resource(sources, current + 24, 4);
-        const auto callback = resource(sources, current + 8, 4);
+        const auto node = owned_window(state, current, 28);
+        const auto next = node ? get(node->bytes, 24) : resource(sources, current + 24, 4);
+        const auto callback = node ? get(node->bytes, 8) : resource(sources, current + 8, 4);
         state.current = current;
         state.next = next;
-        require_recovered(callback == 0, "Original sprite task callback is unreconstructed");
+        if (callback == 0)
+            continue;
+        require_recovered(callback == 0x80022df4,
+                          "Original sprite task update callback is unreconstructed");
+        require_source(node.has_value(), "Sprite task update requires an owned task node");
+        const auto sprite = owned_window(state, get(node->bytes, 4), 0xb4);
+        require_source(sprite.has_value(), "Sprite task update requires its owned sprite");
+        if (sources.observe_execution)
+            sources.observe_execution({"sprite_task_callback", 0x80022df4, {}});
+        static_cast<void>(advance_sprite_timer(*sprite, environment, sources));
+        advance_task_motion(*sprite, sources);
+        if (get(sprite->bytes, 0x64) != 0) {
+            if ((get(sprite->bytes, 0xac) & 0x40) == 0)
+                continue;
+            static_cast<void>(advance_sprite_timer(*sprite, environment, sources));
+            advance_task_motion(*sprite, sources);
+            if (get(sprite->bytes, 0x64) != 0)
+                continue;
+        }
+        if (sources.observe_execution)
+            sources.observe_execution({"sprite_task_destruction", get(node->bytes, 12), {}});
+        require_recovered(false,
+                          "Completed sprite task requires its original destruction callback");
+    }
+}
+
+void remove_sprite_tasks(SpriteTaskState &state, std::uint32_t owner, SpriteWindow sprite,
+                         const SpriteSources &sources) {
+    const auto node_at = [&](std::uint32_t address) -> std::span<std::uint8_t> {
+        for (auto &allocation : state.nodes) {
+            if (address < allocation.address)
+                continue;
+            const auto offset = static_cast<std::size_t>(address - allocation.address);
+            if (offset <= allocation.bytes.size() && 28 <= allocation.bytes.size() - offset)
+                return std::span(allocation.bytes).subspan(offset, 28);
+        }
+        throw SpriteInputError("Missing owned sprite task node");
+    };
+    for (auto *head : {&state.pending_head, &state.head}) {
+        std::uint32_t previous = 0;
+        auto address = *head;
+        std::unordered_set<std::uint32_t> seen;
+        while (address != 0) {
+            require(seen.insert(address).second, "Original sprite removal list is cyclic");
+            if (sources.observe_execution)
+                sources.observe_execution({"remove_sprite_task", 0x8001ce74, {}});
+            auto node = node_at(address);
+            const auto flags = get(node, 20);
+            bool matches = false;
+            if (get(node, 0) == owner && (flags & 0x40000000U) == 0) {
+                const auto generation =
+                    owner == sprite.address ? get(sprite.bytes, 16) : get(node_at(owner), 16);
+                matches = (flags & 0x1fffffffU) == (generation & 0x1fffffffU);
+            }
+            if (matches) {
+                const auto next = get(node, 24);
+                if (previous == 0)
+                    *head = next;
+                else
+                    put(node_at(previous), 24, next);
+                if (state.next == address)
+                    state.next = next;
+                require_recovered(get(node, 12) == 0,
+                                  "Sprite task destruction callback is unreconstructed");
+            } else {
+                previous = address;
+            }
+            // The original reloads this link after the callback.
+            address = get(node, 24);
+        }
     }
 }
 
 void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> actor,
                          std::span<std::uint8_t> descriptor, const FieldSpriteArguments &arguments,
-                         FieldSpriteEnvironment &environment, const SpriteSources &sources,
+                         FieldSpriteEnvironment &environment, const SpriteSources &input_sources,
                          const SpriteAllocator &allocate, const SpriteReleaser &release,
                          const SpriteConstructionObserver &observe) {
+    auto sources = input_sources;
+    sources.tasks = &environment.tasks;
+    sources.heap = &environment.heap;
+    sources.field_actor = SpriteFieldActor{arguments.actor_index, actor};
     require(result.sprite.address == 0 && result.parts.address == 0 &&
                 result.sprite.bytes.empty() && result.parts.bytes.empty(),
             "Field sprite creation requires an unowned output");
@@ -157,9 +263,9 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
     require_recovered(arguments.mode != 0 || arguments.part_variant == 0,
                       "Alternate field sprite part constructor 80024294 is unreconstructed");
     const auto select_allocation_class = [&] {
-        environment.allocation_class = 8;
-        environment.class_eight_context = 0;
-        environment.allocation_cursor = 0;
+        environment.heap.allocation_class = 8;
+        environment.heap.class_eight_context = 0;
+        environment.heap.allocation_cursor = 0;
     };
     select_allocation_class();
     put(actor, 0x127, arguments.resource_slot, 1);
@@ -202,6 +308,7 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
         ~RetainEnvironment() { result.environment = environment.sprite; }
     } retain{result, environment};
     SpriteWindow sprite{result.sprite.address, result.sprite.bytes};
+    sources.factory_sprite = SpriteResource{sprite.address, sprite.bytes};
     put(descriptor, 4, sprite.address);
     if (arguments.mode != 0) {
         require(static_cast<bool>(release), "Original sprite part-release boundary is absent");
@@ -245,7 +352,7 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
     put(sprite.bytes, 0x68, 0x80076a74);
     if (arguments.defer_initial_step == 0) {
         static_cast<void>(advance_sprite_timer(sprite, environment.sprite, sources));
-        advance_sprite_tasks(environment.tasks, sources);
+        advance_sprite_tasks(environment.tasks, environment.sprite, sources);
         const auto active_sequencer = inside(sprite, get(sprite.bytes, 0x7c), 14);
         if (get(sprite.bytes, active_sequencer + 12, 2) == 255) {
             put(actor, 0xea, 255, 2);

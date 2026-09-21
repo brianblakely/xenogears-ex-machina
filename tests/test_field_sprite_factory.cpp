@@ -95,7 +95,7 @@ void field_factory_and_task_boundaries() {
     put(actor, 0x24, 0xfffd0000);
     put(actor, 0x28, 0xfffe8000);
     put(actor, 0x1a, 0x7777, 2);
-    field::FieldSpriteEnvironment environment{fixture.environment,     1, 1, 7, 5, 99, 88,
+    field::FieldSpriteEnvironment environment{fixture.environment,     1, 1, 7, {5, 99, 88},
                                               {0, 7, 0x11112222, 0, 9}};
     field::FieldSpriteArguments arguments{18, 2, Fixture::resource, 0, 0, 130, 1};
     std::vector<std::uint32_t> allocations, releases;
@@ -129,8 +129,8 @@ void field_factory_and_task_boundaries() {
               get(descriptor, 0x28) == 0xfffffffe && get(descriptor, 0x48) == 0xfffffffe &&
               get(result.sprite.bytes, 0) == 0x12348000 &&
               get(result.sprite.bytes, 0x84, 2) == 65533 && get(actor, 0x1a, 2) == 0x7777 &&
-              environment.initialized_count == 8 && environment.allocation_class == 8 &&
-              environment.class_eight_context == 0 && environment.allocation_cursor == 0,
+              environment.initialized_count == 8 && environment.heap.allocation_class == 8 &&
+              environment.heap.class_eight_context == 0 && environment.heap.allocation_cursor == 0,
           "Return-mode factory retains actor bounds and publishes signed coarse/fixed positions");
     check(field::initial_sprite_bounds({result.sprite.address, result.sprite.bytes}, sources) ==
               std::array<std::int32_t, 3>{16, 24, 8},
@@ -174,7 +174,7 @@ void field_factory_and_task_boundaries() {
                                    allocate, release);
     });
     field::SpriteTaskState tasks{1, 9, 11, 0xdeadbeef, 13};
-    field::advance_sprite_tasks(tasks, {});
+    field::advance_sprite_tasks(tasks, environment.sprite, {});
     check(tasks.wait_count == 0 && tasks.wait_flag == 0 && tasks.current == 11 && tasks.next == 13,
           "Task wait boundary decrements and clears only the original halfword flag");
     std::array<std::uint8_t, 28> node{};
@@ -182,7 +182,7 @@ void field_factory_and_task_boundaries() {
     const std::array<field::SpriteResource, 1> task_regions{{{0x80005000, node}}};
     sources.resources = task_regions;
     tasks.head = 0x80005000;
-    rejects([&] { field::advance_sprite_tasks(tasks, sources); });
+    rejects([&] { field::advance_sprite_tasks(tasks, environment.sprite, sources); });
     check(tasks.current == 0x80005000 && tasks.next == 0,
           "Unknown task callback retains the original pre-call cursor stores and fails");
 }
@@ -194,8 +194,8 @@ void interrupted_factory_retains_ownership() {
     fixture.data[0x171] = 11;
     fixture.data[0x172] = 22;
     fixture.data[0x173] = 33;
-    fixture.data[0xc0] = 0x96;
-    const field::FieldSpriteEnvironment initial{{0, 0, 19, 31, 0x80009900}, 1, 1, 7, 5, 99, 88,
+    fixture.data[0xc0] = 0x97;
+    const field::FieldSpriteEnvironment initial{{0, 0, 19, 31, 0x80009900}, 1, 1, 7, {5, 99, 88},
                                                 {0, 7, 0x11112222, 0, 9}};
     const field::FieldSpriteArguments arguments{2, 2, Fixture::resource, 1, 0, 2, 0};
     std::array<std::uint8_t, 312> actor{};
@@ -219,7 +219,7 @@ void interrupted_factory_retains_ownership() {
         field::create_field_sprite(result, actor, descriptor, arguments, environment,
                                    fixture.sources(), allocate, release);
     } catch (const field::UnrecoveredSpriteCommand &error) {
-        missing_command = error.command_pc == Fixture::resource + 0xc0 && error.opcode == 0x96 &&
+        missing_command = error.command_pc == Fixture::resource + 0xc0 && error.opcode == 0x97 &&
                           error.machine_address == 0x800248d4;
     }
     check(missing_command && result.sprite.address == Fixture::address &&
@@ -266,6 +266,7 @@ void task_host_limit_preserves_cursor() {
     const std::array<field::SpriteResource, 1> resources{{{first, nodes}}};
     field::SpriteSources sources{resources, {}, {}, {}, {}};
     field::SpriteTaskState state{0, 0, 0, first, 0};
+    field::SpriteEnvironment environment{};
     struct HostExecutionLimit {};
     unsigned steps = 0;
     sources.observe_execution = [&](field::SpriteExecutionPoint point) {
@@ -277,7 +278,7 @@ void task_host_limit_preserves_cursor() {
     };
     bool stopped = false;
     try {
-        field::advance_sprite_tasks(state, sources);
+        field::advance_sprite_tasks(state, environment, sources);
     } catch (const HostExecutionLimit &) {
         stopped = true;
     }
@@ -286,9 +287,53 @@ void task_host_limit_preserves_cursor() {
 
     sources.observe_execution = {};
     put(nodes, 24, first);
-    rejects([&] { field::advance_sprite_tasks(state, sources); });
+    rejects([&] { field::advance_sprite_tasks(state, environment, sources); });
     check(state.current == first && state.next == first,
           "Malformed task cycles remain input errors independent of host limits");
+}
+
+void owner_task_removal() {
+    constexpr std::uint32_t owner = 0x80001000, first = 0x80002000;
+    std::vector<std::uint8_t> sprite(356);
+    put(sprite, 16, 0xe0000042);
+    field::SpriteTaskState state{};
+    state.pending_head = first;
+    state.head = first + 4 * 28;
+    state.next = first + 28;
+    state.nodes.push_back({first, std::vector<std::uint8_t>(5 * 28)});
+    auto &nodes = state.nodes[0].bytes;
+    for (std::size_t i = 0; i < 5; ++i) {
+        put(nodes, i * 28, owner);
+        put(nodes, i * 28 + 20, 0x42);
+        if (i < 3)
+            put(nodes, i * 28 + 24, first + static_cast<std::uint32_t>((i + 1) * 28));
+    }
+    put(nodes, 2 * 28 + 20, 0x40000042); // Protected, even with matching generation.
+    put(nodes, 3 * 28 + 20, 0x43);       // Reused owner address with another generation.
+    field::SpriteSources sources{{}, {}, {}, {}, {}};
+    field::remove_sprite_tasks(state, owner, {owner, sprite}, sources);
+    check(state.pending_head == first + 2 * 28 && state.head == 0 && state.next == first + 2 * 28 &&
+              get(nodes, 2 * 28 + 24) == first + 3 * 28,
+          "Both lists remove consecutive matching generations, preserving protected/reused owners");
+
+    // Middle unlink commits before an unsupported destructor; current is not rewritten.
+    state.pending_head = first;
+    state.head = 0;
+    state.current = 0x55;
+    put(nodes, 0, owner + 4);
+    put(nodes, 24, first + 28);
+    put(nodes, 28 + 12, 0x80022eb8);
+    rejects([&] { field::remove_sprite_tasks(state, owner, {owner, sprite}, sources); });
+    check(get(nodes, 24) == first + 2 * 28 && state.current == 0x55,
+          "Removal preserves committed links at its destruction dependency");
+    put(nodes, 24, first);
+    rejects([&] { field::remove_sprite_tasks(state, owner, {owner, sprite}, sources); });
+    state.pending_head = first + 0x1000;
+    rejects([&] { field::remove_sprite_tasks(state, owner, {owner, sprite}, sources); });
+
+    state = {};
+    // An empty source list does not dereference an otherwise unavailable owner.
+    field::remove_sprite_tasks(state, 0, {owner, sprite}, sources);
 }
 
 struct Transport {
@@ -335,9 +380,9 @@ struct Transport {
         result.return_mode = word();
         result.field_gate = std::bit_cast<std::int16_t>(static_cast<std::uint16_t>(word()));
         result.initialized_count = word();
-        result.allocation_class = static_cast<std::uint16_t>(word());
-        result.class_eight_context = word();
-        result.allocation_cursor = word();
+        result.heap.allocation_class = static_cast<std::uint16_t>(word());
+        result.heap.class_eight_context = word();
+        result.heap.allocation_cursor = word();
         result.tasks.wait_count = word();
         result.tasks.wait_flag = static_cast<std::uint16_t>(word());
         result.tasks.current = word();
@@ -354,9 +399,9 @@ struct Transport {
         word(value.return_mode);
         word(static_cast<std::uint16_t>(value.field_gate));
         word(value.initialized_count);
-        word(value.allocation_class);
-        word(value.class_eight_context);
-        word(value.allocation_cursor);
+        word(value.heap.allocation_class);
+        word(value.heap.class_eight_context);
+        word(value.heap.allocation_cursor);
         word(value.tasks.wait_count);
         word(value.tasks.wait_flag);
         word(value.tasks.current);
@@ -431,7 +476,7 @@ void original_transport(const char *input_path, const char *output_path) {
         for (const auto value : bounds)
             output.word(static_cast<std::uint32_t>(value));
     } else if (operation == 2) {
-        field::advance_sprite_tasks(environment.tasks, sources);
+        field::advance_sprite_tasks(environment.tasks, environment.sprite, sources);
         output.environment(environment);
     } else {
         throw std::runtime_error("Unknown factory transport operation");
@@ -453,6 +498,7 @@ int main(int argc, char **argv) {
         field_factory_and_task_boundaries();
         interrupted_factory_retains_ownership();
         task_host_limit_preserves_cursor();
+        owner_task_removal();
         std::cout << "Field sprite factory reconstruction passed\n";
         return 0;
     } catch (const std::exception &error) {

@@ -90,14 +90,9 @@ field::ControlActor FieldActor::control() const {
 field::FieldSpriteEnvironment Program::sprite_environment() const {
     if (!field)
         throw field::FieldFormatError("Sprite environment requires a field");
-    return {resident.sprite,
-            resident.field_return_mode,
-            field->sprite_gate,
-            field->initialized_sprites,
-            resident.allocation_class,
-            resident.class_eight_context,
-            resident.allocation_cursor,
-            resident.sprite_tasks};
+    return {resident.sprite,      resident.field_return_mode,
+            field->sprite_gate,   field->initialized_sprites,
+            resident.sprite_heap, resident.sprite_tasks};
 }
 void Program::set_sprite_environment(const field::FieldSpriteEnvironment &environment) {
     auto &state = loaded(*this);
@@ -105,9 +100,7 @@ void Program::set_sprite_environment(const field::FieldSpriteEnvironment &enviro
     resident.field_return_mode = environment.return_mode;
     state.sprite_gate = environment.field_gate;
     state.initialized_sprites = environment.initialized_count;
-    resident.allocation_class = environment.allocation_class;
-    resident.class_eight_context = environment.class_eight_context;
-    resident.allocation_cursor = environment.allocation_cursor;
+    resident.sprite_heap = environment.heap;
     resident.sprite_tasks = environment.tasks;
 }
 
@@ -164,7 +157,8 @@ void Program::restore_field_data(const field::original::RestoreAllocation &alloc
 void Program::restore_field(const field::SpriteAllocator &allocate,
                             const field::SpriteReleaser &release,
                             const field::original::RestoreAllocation &allocate_extension,
-                            const ProgramObserver &observe) {
+                            const ProgramObserver &observe,
+                            const field::SpriteImageUploader &upload_image) {
     auto &state = loaded(*this);
     if (resident.field_return_mode == 0)
         throw MissingDependency({"initialize_field_events", 0x800a28d4, {}, {}},
@@ -172,12 +166,16 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
                                 "Fresh event initialization is a different original branch");
     restore_field_data(allocate_extension, observe);
     const auto resources = views(state.resources);
+    std::vector<field::SpriteWindow> mutable_resources;
+    for (auto &resource : state.resources)
+        mutable_resources.push_back({resource.address, resource.bytes});
+    field::SpriteServices services{allocate, release, upload_image, &resident.sprite_upload};
     for (std::size_t i = 0; i < state.actors.size(); ++i) {
         auto frame_list = views(state.frame_list);
         for (const auto &owned : state.actors)
             if (!owned.sprite.sprite.bytes.empty())
                 frame_list.push_back({owned.sprite.sprite.address, owned.sprite.sprite.bytes});
-        const field::SpriteSources sources{
+        field::SpriteSources sources{
             resources,
             frame_list,
             state.trigonometry,
@@ -186,7 +184,11 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
             [&](field::SpriteExecutionPoint at) {
                 observed(observe, *this,
                          {at.operation, at.machine_address, i, {}, {}, at.command_pc}, false);
-            }};
+            },
+            {},
+            &services};
+        sources.mutable_resources = mutable_resources;
+        sources.models = &resident.sprite_models;
         auto &actor = state.actors[i];
         SourcePoint point{"create_field_sprite", 0x80076ac0, i, {}};
         observed(observe, *this, point, false);

@@ -142,6 +142,7 @@ include/xem/reconstruction/field_motion.hpp
 include/xem/reconstruction/field_return.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
+include/xem/reconstruction/field_sprite_model.hpp
 include/xem/reconstruction/packed_field.hpp
 include/xem/reconstruction/program.hpp
 nix/authoring/flake.lock
@@ -170,6 +171,7 @@ src/reconstruction/field_motion.cpp
 src/reconstruction/field_return.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
+src/reconstruction/field_sprite_model.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
 src/runtime/main.cpp
@@ -241,8 +243,11 @@ tests/test_scenario_program.py
 tests/test_sector_survey.py
 tests/test_sprite_animation.py
 tests/test_sprite_matrix.py
+tests/test_sprite_model.cpp
 tests/test_sprite_replay.py
 tests/test_sprite_return.py
+tests/test_sprite_tasks.cpp
+tests/test_sprite_upload.cpp
 tests/test_sprite_vm.py
 tests/test_sweep_math.py
 tests/test_sweep_trace.py

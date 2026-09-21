@@ -81,6 +81,23 @@ class ComparisonTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "starting input"):
             compare(self.report, self.expected)
 
+    def test_upload_and_task_state_are_independent_comparison_projections(self):
+        self.report["uploads"] = [{"rectangle": [1, 2, 3, 4], "bytes": "aabb"}]
+        self.report["partial_state"] = {"task_serial": 11, "task_nodes": []}
+        self.expected["uploads"] = copy.deepcopy(self.report["uploads"])
+        self.expected["partial_state"] = copy.deepcopy(self.report["partial_state"])
+        self.assertEqual(compare(self.report, self.expected)["status"], "matched")
+        self.report["uploads"][0]["bytes"] = "aabc"
+        self.assertEqual(
+            compare(self.report, self.expected)["first_difference"]["path"], "uploads[0].bytes"
+        )
+        self.report["uploads"] = copy.deepcopy(self.expected["uploads"])
+        self.report["partial_state"]["task_serial"] += 1
+        self.assertEqual(
+            compare(self.report, self.expected)["first_difference"]["path"],
+            "partial_state.task_serial",
+        )
+
     def test_recovered_but_not_connected_is_distinct(self):
         self.report.update(dependency="instruction:primary:0x71")
         enrich(self.report)
