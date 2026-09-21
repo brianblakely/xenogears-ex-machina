@@ -1,5 +1,3 @@
-.agents/skills/typesafe-ai/LICENSE
-.agents/skills/typesafe-ai/SKILL.md
 .clang-format
 .editorconfig
 .gitignore
@@ -110,7 +108,6 @@ docs/dependencies.json
 docs/development.md
 docs/evidence-workflow.md
 docs/executable-reconstruction.md
-docs/jev.md
 docs/phase1-handoff.md
 docs/phase1-progress.md
 docs/phase1-slice-contract.md
@@ -158,7 +155,6 @@ packaging/source-files.txt
 plan.md
 prompt.md
 pyproject.toml
-skills-lock.json
 src/analysis/main.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
@@ -220,8 +216,6 @@ tests/test_fingerprint_survey.py
 tests/test_index_survey.py
 tests/test_instruction_trace.py
 tests/test_inventory_records.py
-tests/test_jev.py
-tests/test_jev_broker.py
 tests/test_jump_physics.py
 tests/test_media_survey.py
 tests/test_memory_sampler.py
@@ -273,8 +267,6 @@ tools/analysis/field_control.py
 tools/analysis/ghidra/ExportOriginalAnalysis.java
 tools/analysis/ghidra/PrepareOriginalProgram.java
 tools/analysis/ghidra_project.py
-tools/analysis/jev.py
-tools/analysis/jev_broker.py
 tools/analysis/jump_physics.py
 tools/analysis/movement_sweep.py
 tools/analysis/music_loading.py
@@ -311,7 +303,6 @@ tools/analysis/verify_media_ready.py
 tools/analysis/verify_movement_sweep.py
 tools/analysis/verify_planar_motion.py
 tools/analysis/verify_sprite_animation.py
-tools/analysis/xem-jev.service.in
 tools/authoring/package-lock.json
 tools/authoring/package.json
 tools/authoring/qualification.ts

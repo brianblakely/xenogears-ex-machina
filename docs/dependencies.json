@@ -2,36 +2,6 @@
   "schema_version": 1,
   "dependencies": [
     {
-      "name": "TypeSafe AI authoring skill",
-      "version": "skills-lock.json content 9cd84c5e535dec8dec59917c110f9c00b4a61faadb86b432ec7e41051170af12",
-      "source": "https://github.com/typesafe-ai/skills",
-      "pin": "Existing tracked .agents/skills/typesafe-ai snapshot and skills-lock.json from repository commit 11186a4; upstream commit is not recorded by the installed lock.",
-      "license_expression": "MIT",
-      "license_evidence": ".agents/skills/typesafe-ai/LICENSE: Copyright (c) 2026 TypeSafe AI",
-      "purpose": "Advisory development instructions for the optional analysis service; no game-specific source or runtime behavior.",
-      "scope": "analysis_documentation_only",
-      "decision": "review_existing_tracked_snapshot_without_modification",
-      "alternatives": "Official API documentation can be consulted directly; this already-installed skill provides navigation only.",
-      "redistribution": "Preserve the included MIT copyright/permission notice with the textual skill snapshot.",
-      "transitive_review": "Text and lock metadata only; no executable, SDK, native dependency, credential or install hook. External documentation links are references, not vendored dependencies.",
-      "review": "Codex inspected the existing skill, MIT license and lock metadata; added missing explicit source-archive entries without changing the existing tracked files."
-    },
-    {
-      "name": "TypeSafe Jev service",
-      "version": "jev-1.13.0",
-      "source": "https://docs.typesafe.ai/api",
-      "pin": "tools/analysis/jev_broker.py: jev-1.13.0; POST https://api.typesafe.ai/v1/systemone",
-      "license_expression": "LicenseRef-TypeSafe-Service-Terms",
-      "license_evidence": "Remote account-governed service; no SDK, model weights or redistribution license adopted. Independently authored adapter and broker use the project MIT license. Official API/model documentation reviewed 2026-09-20; see docs/jev.md.",
-      "purpose": "Optional relevance ranking of bounded analysis evidence and operator-authored investigations, never gameplay or a correctness oracle.",
-      "scope": "optional_external_analysis_service_only",
-      "decision": "approved_for_explicit_local_operator_use_not_build_runtime_or_public_ci",
-      "alternatives": "Existing local retrieval remains the offline path. Existing Python standard library avoids an additional SDK/package dependency. Default credential path is a separately provisioned OS-isolated fixed-operation broker; direct environment/file credentials require explicit operator selection and provide no isolation.",
-      "redistribution": "Only authored source, synthetic tests and a host deployment template are distributed. No credential, private evidence, service software or model payload is included.",
-      "transitive_review": "No new Python/Nix/C++ package or native payload. Optional Linux deployment uses the administrator's existing Python/systemd and dedicated UID; it is not installed by CMake, required by tests, or part of the native runtime.",
-      "review": "Codex reviewed the fixed endpoint/model, response projection, source/private-upload boundaries, bounded concurrency/retries/timeouts, redirect rejection and sanitized failures. Synthetic tests pass; live public ranking succeeded via the explicitly user-authorized file credential. Broker OS isolation remains unverified pending administrator deployment."
-    },
-    {
       "name": "clang",
       "version": "21.1.8",
       "source": "https://clang.llvm.org/",
