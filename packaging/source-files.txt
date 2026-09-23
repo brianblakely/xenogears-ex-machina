@@ -57,6 +57,7 @@ analysis/findings/EVID-REF-036.json
 analysis/findings/EVID-REF-037.json
 analysis/findings/EVID-REF-038.json
 analysis/findings/EVID-REF-039.json
+analysis/findings/EVID-REF-040.json
 analysis/formats/active-motion.md
 analysis/formats/actor-defaults.md
 analysis/formats/battle-continuation.md

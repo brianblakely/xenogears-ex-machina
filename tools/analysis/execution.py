@@ -232,6 +232,17 @@ def compare(report: dict, expected: dict) -> dict:
             expected["case_sha256"] == report.get("case_sha256"),
             "Comparison starting input differs",
         )
+    if "host_budget_operations" in expected:
+        require(
+            expected["host_budget_operations"] == report.get("limits", {}).get("operations"),
+            "Comparison host inspection budget differs",
+        )
+    if "runner_boundary_status" in expected:
+        require(
+            report.get("execution_status", report.get("status"))
+            == expected["runner_boundary_status"],
+            "Comparison runner boundary differs",
+        )
     checkpoints = expected.get("checkpoints")
     require(isinstance(checkpoints, list), "Missing comparison checkpoints")
     actual = report.get("checkpoints", [])
@@ -261,7 +272,8 @@ def compare(report: dict, expected: dict) -> dict:
             "actor_index": report.get("location", {}).get("actor"),
             "operation": report.get("location", {}).get("operation"),
             "opcode": report.get("opcode"),
-            "sprite_bytecode_pc": report.get("sprite_bytecode_pc"),
+            "sprite_bytecode_pc": report.get("sprite_bytecode_pc")
+            or report.get("location", {}).get("sprite_bytecode_pc"),
             "status": report.get("execution_status", report["status"]),
         }
         projected = {k: v for k, v in stop.items() if k in observed}

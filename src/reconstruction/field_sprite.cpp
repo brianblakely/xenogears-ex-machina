@@ -260,6 +260,11 @@ std::uint32_t owned_read(SpriteWindow parent, const SpriteSources &sources, std:
             static_cast<std::uint64_t>(sources.factory_sprite->address) +
                 sources.factory_sprite->bytes.size())
         return get(sources.factory_sprite->bytes, address - sources.factory_sprite->address, width);
+    for (const auto &prior : sources.frame_list)
+        if (address >= prior.address &&
+            static_cast<std::uint64_t>(address) + width <=
+                static_cast<std::uint64_t>(prior.address) + prior.bytes.size())
+            return read(sources.frame_list, address, width);
     return resource(sources, address, width);
 }
 
@@ -784,6 +789,78 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
         } else if (opcode == 0x96) {
             require_recovered(sources.tasks != nullptr, "Sprite task ownership is not connected");
             remove_sprite_tasks(*sources.tasks, get(sprite.bytes, 0x6c), sprite, sources);
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xa3) {
+            const auto flags = get(sprite.bytes, 0xa8);
+            if ((flags & 1) != 0) {
+                const auto reference = owned_read(sprite, sources, get(sprite.bytes, 0x7c) + 4, 4);
+                if (reference != 0) {
+                    put(sprite.bytes, 0x1c, reference);
+                    static_cast<void>(store_sprite_command_pc(
+                        sprite, static_cast<std::uint8_t>(opcode), sources.replay_widths));
+                    continue;
+                }
+            }
+            const auto operand = std::bit_cast<std::int8_t>(
+                static_cast<std::uint8_t>(resource(sources, pointer + 1, 1)));
+            const auto scale = signed_half(get(sprite.bytes, 0x82, 2));
+            const auto scaled = truncate_shift(product(operand * 64, scale), 12);
+            const auto divisor = (get(sprite.bytes, 0xac) >> 7) & 0xfffU;
+            require_recovered(divisor != 0, "Original A3 zero-divisor behavior is unreconstructed");
+            const auto quotient = static_cast<std::int32_t>(0x10000U / divisor);
+            const auto squared = truncate_shift(product(quotient, quotient), 8);
+            const auto initial =
+                product(signed_word(static_cast<std::uint32_t>(scaled) << 5), squared);
+            put(sprite.bytes, 0x1c, static_cast<std::uint32_t>(initial));
+            const auto rate = signed_word(static_cast<std::uint32_t>(environment.rate_control) + 1);
+            put(sprite.bytes, 0x1c,
+                static_cast<std::uint32_t>(
+                    product(truncate_shift(initial, 8), product(rate, rate))));
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xbc) {
+            const auto selector = resource(sources, pointer + 1, 1);
+            if (selector == 0xa4 || selector == 0xa5) {
+                require_recovered(sources.tasks != nullptr,
+                                  "BC task-owner storage is not connected");
+                const auto owner = get(sprite.bytes, 0x6c);
+                bool found = false;
+                for (auto &node : sources.tasks->nodes) {
+                    if (owner < node.address ||
+                        static_cast<std::uint64_t>(owner) + 24 >
+                            static_cast<std::uint64_t>(node.address) + node.bytes.size())
+                        continue;
+                    const auto at = static_cast<std::size_t>(owner - node.address) + 20;
+                    const auto flags = get(node.bytes, at);
+                    put(node.bytes, at,
+                        selector == 0xa4 ? flags | 0x40000000U : flags & ~0x40000000U);
+                    found = true;
+                    break;
+                }
+                require_source(found, "BC task owner has no owned node");
+                for (const auto offset : {0U, 4U, 8U})
+                    put(sprite.bytes, offset, get(sprite.bytes, offset + 2, 2) << 16);
+            } else if (selector == 0x96) {
+                const auto owner = get(sprite.bytes, 0x70);
+                require_source(owner != 0, "BC parent sprite pointer is absent");
+                for (const auto offset : {0U, 4U, 8U}) {
+                    const auto integer = owned_read(sprite, sources, owner + offset + 2, 2);
+                    put(sprite.bytes, offset, integer << 16);
+                }
+            } else {
+                require_recovered(false, "Original BC position selector is unreconstructed");
+            }
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0x94) {
+            if ((get(sprite.bytes, 0x3c) & 3) == 2) {
+                const auto owner = get(sprite.bytes, 0x70);
+                require_source(owner != 0, "94 parent sprite pointer is absent");
+                const auto renderer = inside(sprite, get(sprite.bytes, 0x20), 4);
+                put(sprite.bytes, renderer + 2, owned_read(sprite, sources, owner + 0x32, 2), 2);
+                put(sprite.bytes, 0x3c, get(sprite.bytes, 0x3c) | 0x10000000U);
+            }
             static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
                                                       sources.replay_widths));
         } else if (opcode == 0xa0 || opcode == 0xa1) {

@@ -1,4 +1,5 @@
 #include "xem/reconstruction/field_sprite.hpp"
+#include "xem/reconstruction/field_sprite_factory.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -629,6 +630,115 @@ struct Transport {
         word(value.frame_head);
     }
 };
+void child_motion_and_parent_position_commands() {
+    Fixture fixture;
+    constexpr std::uint32_t parent_address = 0x80002000;
+    std::array<std::uint8_t, 356> parent{};
+    std::array<std::uint8_t, 356> child{};
+    put(parent, 0, 0x0007ffff);
+    put(parent, 4, 0xfffd1234);
+    put(parent, 8, 0x80000011);
+    put(parent, 0x32, 0x1234, 2);
+    put(child, 0x20, Fixture::address + 0xb4);
+    put(child, 0x3c, 2);
+    put(child, 0x64, Fixture::resource + 0xc0);
+    put(child, 0x70, parent_address);
+    put(child, 0x82, 4096, 2);
+    put(child, 0xac, 0x8000);
+    fixture.data[0xc0] = 0xa3;
+    fixture.data[0xc1] = 0xfe;
+    fixture.data[0xc2] = 0xbc;
+    fixture.data[0xc3] = 0x96;
+    fixture.data[0xc4] = 0x94;
+    fixture.data[0xc5] = 0x97;
+    fixture.widths[0xa3] = 2;
+    fixture.widths[0xbc] = 2;
+    fixture.widths[0x94] = 1;
+    auto sources = fixture.sources();
+    sources.factory_sprite = field::SpriteResource{parent_address, parent};
+    try {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+        check(false, "Next child command must stop explicitly");
+    } catch (const field::UnrecoveredSpriteCommand &error) {
+        check(error.opcode == 0x97 && error.command_pc == Fixture::resource + 0xc5,
+              "Three recovered commands advance to the exact next dependency");
+    }
+    check(get(child, 0x1c) == 0xffffc000 && get(child, 0) == 0x00070000 &&
+              get(child, 4) == 0xfffd0000 && get(child, 8) == 0x80000000 &&
+              get(child, 0xb6, 2) == 0x1234 && get(child, 0x3c) == 0x10000002,
+          "A3 signed scaling, BC parent integer coordinates and 94 facing copy");
+
+    put(child, 0x64, Fixture::resource + 0xc0);
+    put(child, 0xa8, 1);
+    put(child, 0x7c, Fixture::address + 0xf4);
+    put(child, 0xf8, 0x89abcdef);
+    put(child, 0xac, 0);
+    try {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+    } catch (const field::SpriteError &) {
+    }
+    check(get(child, 0x1c) == 0x89abcdef,
+          "A3 nonzero sequencer reference bypasses arithmetic and zero divisor");
+    put(child, 0x64, Fixture::resource + 0xc2);
+    put(child, 0, 0);
+    put(child, 4, 0);
+    put(child, 8, 0);
+    sources.factory_sprite.reset();
+    const std::array<field::SpriteResource, 1> prior{{{parent_address, parent}}};
+    sources.frame_list = prior;
+    try {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+    } catch (const field::UnrecoveredSpriteCommand &) {
+    }
+    check(get(child, 0) == 0x00070000 && get(child, 4) == 0xfffd0000 && get(child, 8) == 0x80000000,
+          "BC resolves an earlier factory's owned parent sprite");
+    put(child, 0x64, Fixture::resource + 0xc0);
+    put(child, 0xa8, 0);
+    rejects([&] {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+    });
+    check(get(child, 0x64) == Fixture::resource + 0xc0,
+          "A3 zero divisor stops before the original PC store");
+    put(child, 0x64, Fixture::resource + 0xc2);
+    fixture.data[0xc3] = 0x95;
+    rejects([&] {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+    });
+    check(get(child, 0x64) == Fixture::resource + 0xc2,
+          "Unrecovered BC selector does not silently advance");
+
+    field::SpriteTaskState tasks{};
+    tasks.nodes.push_back({0x80003000, std::vector<std::uint8_t>(320)});
+    sources.tasks = &tasks;
+    put(child, 0x6c, 0x80003000);
+    put(child, 0, 0x1234abcd);
+    put(child, 4, 0xfffe0001);
+    put(child, 8, 0x7000abcd);
+    fixture.data[0xc3] = 0xa4;
+    try {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+    } catch (const field::UnrecoveredSpriteCommand &) {
+    }
+    check(get(tasks.nodes[0].bytes, 20) == 0x40000000 && get(child, 0) == 0x12340000 &&
+              get(child, 4) == 0xfffe0000 && get(child, 8) == 0x70000000,
+          "BC A4 protects its owned task and truncates its own coordinates");
+    put(child, 0x64, Fixture::resource + 0xc2);
+    fixture.data[0xc3] = 0xa5;
+    try {
+        static_cast<void>(field::execute_sprite_commands({Fixture::address, child},
+                                                         fixture.environment, sources));
+    } catch (const field::UnrecoveredSpriteCommand &) {
+    }
+    check(get(tasks.nodes[0].bytes, 20) == 0,
+          "BC A5 clears the same protection bit without destroying the task");
+}
+
 void original_transport(const char *input_path, const char *output_path) {
     std::ifstream input(input_path, std::ios::binary);
     check(input.is_open(), "Cannot open sprite input transport");
@@ -765,6 +875,7 @@ int main(int argc, char **argv) {
         ordinary_timer_and_checkpoint();
         host_execution_limits();
         ordinary_motion_commands();
+        child_motion_and_parent_position_commands();
         negative_animation_and_checkpoint_policy();
         std::cout << "Field sprite reconstruction passed\n";
         return 0;

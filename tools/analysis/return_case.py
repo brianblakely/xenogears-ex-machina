@@ -579,7 +579,8 @@ def first_child_command(rows: list, actor_index: int, opcode: int = 0x8D) -> tup
                     prefix_qualified = True
                 if payload["command"][0] != opcode:
                     require(
-                        payload["command"][0] in (0x8D, 0xF5), "Unqualified child prefix command"
+                        payload["command"][0] in (0x8D, 0xF5, 0xA3, 0xBC, 0x94),
+                        "Unqualified child prefix command",
                     )
                     continue
                 return gpr[2], {
@@ -657,7 +658,21 @@ def verify_return_join(defaults: list, restore: list, factories: list) -> tuple[
     return targets, expected
 
 
-def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
+def prepare_case(
+    raw: Path,
+    stop_opcode: int = 0xFC,
+    *,
+    completed_through: int | None = None,
+    host_budget_stop: bool = False,
+) -> tuple[dict, dict]:
+    require(
+        completed_through is None or 19 <= completed_through <= 24,
+        "Completed factory checkpoint must be actor 19..24",
+    )
+    require(
+        completed_through is None or not host_budget_stop,
+        "Completed factory checkpoint cannot also use a host budget stop",
+    )
     entry = "field_return"
     source = sprite_sources(raw, PROFILE, 23)
     factory_report = recorded_artifact("EVID-REF-036", FACTORY / "factory-qualification-v2.json")
@@ -759,6 +774,12 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
     )
     resources = OriginalResources(source, anchor, party)
     child_allocation, child_final = required_child(children, 19)
+    upload_allocations = required_upload_allocations(required, 19)
+    child_allocations = {19: child_allocation}
+    upload_allocations_by_actor = {19: upload_allocations}
+    for index in range(20, (completed_through or 19) + 1):
+        child_allocations[index], _ = required_child(children, index)
+        upload_allocations_by_actor[index] = required_upload_allocations(required, index)
     for row, _ in policy:
         for digest in row.get("digests", []):
             require("unavailable" not in digest, "Missing original resource digest")
@@ -902,7 +923,7 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
             row["gpr_u32"] == old_entries[index][0]["gpr_u32"],
             "Constructor allocation call lineage differs",
         )
-        if index < 19:
+        if index < (completed_through + 1 if completed_through is not None else 19):
             if index:
                 require(
                     factory_environment(finals[index - 1][1]) == factory_environment(payload),
@@ -923,15 +944,37 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
                     },
                     "environment": factory_environment(final),
                     "requested": [
-                        len(bytes.fromhex(block["bytes"])) for block in allocations_by_actor[index]
+                        len(bytes.fromhex(block["bytes"]))
+                        for block in (
+                            allocations_by_actor[index]
+                            + (
+                                upload_allocations_by_actor[index]
+                                + [child_allocations[index], geometries[index]["allocation"]]
+                                if index >= 19
+                                else []
+                            )
+                        )
                     ],
-                    "released": releases_by_actor[index],
+                    "released": releases_by_actor[index]
+                    + (
+                        [
+                            upload_allocations_by_actor[index][1]["address"],
+                            upload_allocations_by_actor[index][0]["address"],
+                        ]
+                        if index >= 19
+                        else []
+                    ),
                 }
             )
     require(
         factory_environment(finals[18][1]) == factory_environment(entries[19][1]),
         "Shared state differs at the encountered dependency",
     )
+    for index in range(20, (completed_through or 19) + 1):
+        require(
+            factory_environment(finals[index - 1][1]) == factory_environment(entries[index][1]),
+            "Original completed factory environment chain differs",
+        )
     restore_final = single(restore, "restore-after")
     require(
         u16(restore_final["globals-2078"], 0x116) == u16(first["sprite-gate"]),
@@ -945,7 +988,7 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
         "field_sprite_base": field_base,
         "party_resources": party_pointers,
         "allocations": [block for index in range(20) for block in allocations_by_actor[index]]
-        + required_upload_allocations(required, 19)
+        + upload_allocations
         + [child_allocation, geometries[19]["allocation"]],
         "task_pending_head": u32(initial_tasks, 8),
         "task_nodes": [],
@@ -992,7 +1035,9 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
         "captures": captures,
         "loader": loader_result,
         "joined_restored_actors": 25,
-        "contiguous_factory_returns": 19,
+        "contiguous_factory_returns": (
+            completed_through + 1 if completed_through is not None else 19
+        ),
         "qualified_initialization_rng_calls": 25,
         "limitations": [
             "One original encounter-return route; nine captures are correlated observations, "
@@ -1043,19 +1088,42 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
         "stop": {"actor_index": 19, "operation": "ordinary_sprite_command", "opcode": stop_opcode},
         "provenance": provenance,
     }
+    for index in range(20, (completed_through or 19) + 1):
+        case["input"]["allocations"].extend(
+            allocations_by_actor[index]
+            + upload_allocations_by_actor[index]
+            + [child_allocations[index], geometries[index]["allocation"]]
+        )
+    if completed_through is not None:
+        # The next actor has no declared heap input in this case. Compare the
+        # complete factory checkpoint without treating that host boundary as
+        # an original sprite-command stop or a completed return entry.
+        expected.pop("stop")
+        expected["runner_boundary_status"] = (
+            "completed_boundary" if completed_through == 24 else "invalid_input"
+        )
+        expected["uploads"] = [
+            request
+            for index in range(19, completed_through + 1)
+            for request in required_upload_requests(required, resources, index)
+        ]
+        expected["case_sha256"] = hashlib.sha256(
+            json.dumps(case, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        return case, expected
     command_pc, partial = encountered_command(factories, 19, stop_opcode)
     expected["stop"]["sprite_bytecode_pc"] = command_pc
     expected["partial_actor"] = partial
     expected["uploads"] = []
-    if stop_opcode in (0xE0, 0x81, 0x8D, 0xF5, 0xA3):
+    if stop_opcode in (0xE0, 0x81, 0x8D, 0xF5, 0xA3, 0xBC, 0x94, 0x30):
         expected["uploads"] = required_upload_requests(required, resources, 19)
     if stop_opcode == 0x81:
         expected["partial_state"] = child_final
-    if stop_opcode in (0x8D, 0xF5, 0xA3):
+    if stop_opcode in (0x8D, 0xF5, 0xA3, 0xBC, 0x94, 0x30):
         command_pc, expected["partial_state"] = first_child_command(children, 19, stop_opcode)
         require(command_pc == expected["stop"]["sprite_bytecode_pc"], "Child command joins differ")
         del expected["partial_actor"]
-    if stop_opcode == 0xA3:
+    if stop_opcode in (0xA3, 0xBC, 0x94, 0x30):
         expected_resources = [dict(span) for span in qualified]
         for span in expected_resources:
             if span["address"] == field_base:
@@ -1068,6 +1136,15 @@ def prepare_case(raw: Path, stop_opcode: int = 0xFC) -> tuple[dict, dict]:
             model_buffers=[geometries[19]["buffer"]],
             resources=expected_resources,
         )
+    if host_budget_stop:
+        require(stop_opcode == 0x30, "Only the qualified post-94 budget stop is supported")
+        expected["stop"] = {
+            "actor_index": 19,
+            "operation": "sprite_command",
+            "sprite_bytecode_pc": command_pc,
+            "status": "host_budget_exhausted",
+        }
+        expected["host_budget_operations"] = 86
     expected["case_sha256"] = hashlib.sha256(
         json.dumps(case, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -1084,10 +1161,17 @@ def main() -> None:
     export.add_argument("--case", type=Path, required=True)
     export.add_argument("--expected", type=Path, required=True)
     export.add_argument("--stop-opcode", type=lambda value: int(value, 0), default=0xFC)
+    export.add_argument("--completed-through", type=int)
+    export.add_argument("--host-budget-stop", action="store_true")
     args = parser.parse_args()
     case_path, expected_path = private_output(args.case), private_output(args.expected)
     require(case_path != expected_path, "Execution inputs and expectations require separate files")
-    case, expected = prepare_case(args.raw, args.stop_opcode)
+    case, expected = prepare_case(
+        args.raw,
+        args.stop_opcode,
+        completed_through=args.completed_through,
+        host_budget_stop=args.host_budget_stop,
+    )
     for path, value in ((case_path, case), (expected_path, expected)):
         with path.open("x") as stream:
             json.dump(value, stream, indent=2)
@@ -1099,7 +1183,9 @@ def main() -> None:
                 "expected": str(expected_path),
                 "entry": case["entry"],
                 "actors": 25,
-                "factory_returns": 19,
+                "factory_returns": args.completed_through + 1
+                if args.completed_through is not None
+                else 19,
             }
         )
     )

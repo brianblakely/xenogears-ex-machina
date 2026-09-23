@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-040",
+  "kind": "connected_cpp_field_return_factory_sequence",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a28d4",
+      "address_space": "PS1 KSEG0 field overlay; nonzero return branch and 80076ac0 factory",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108606,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800217a4",
+      "address_space": "PS1 KSEG0 resident sprite A3 handler; BC 800202f4, 94 8001fdc8, task removal 8001ce74",
+      "not_applicable": "Resident handler addresses are machine code, distinct from sprite-bytecode PCs."
+    }
+  ],
+  "observation": "On the qualified field-23 encounter-return route, the shared C++ Program restores the snapshot and computes all 25 consecutive factory returns. The independently captured restore and 25 factory checkpoint projections, including upload requests, match exactly. Debug and sanitized runs execute 538 modeled operations and return at the selected factory boundary. A narrower original intermediate comparison also matches actor 19 through sprite command 94.",
+  "interpretation": "The represented 800a28d4 factory loop connects source-derived sprite 96, FC, A3, BC and 94 behavior, resident task removal, resource upload and child ownership in one library. Prior constructed sprites are read from the live program frame list. The selected boundary ends before 800a3c8c checkpoint replay, cleanup, control readiness or ordinary field update 8008110c. BC selectors A4/A5 have source and synthetic tests, without observed original execution on this route.",
+  "confidence": "confirmed",
+  "author": "Codex /root, integration owner",
+  "reviewers": [
+    "Codex /root/sprite_a3_source, independent bounded review of resident A3/BC/94 source, prior-sprite ownership and comparison limits",
+    "Codex /root/task_removal_review, independent bounded review of resident 8001ce74 task removal"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; EVID-REF-028/030/036/039 private source and capture lineage remains available locally.",
+      "One correlated original encounter-return route. Original actor/shadow storage, field resources and exact game heap results are explicit starting/service inputs, separate from expected outputs.",
+      "The completed-through-24 exporter derives all 25 original factory checkpoints from qualified captures. It checks original identity and binds expectations to the canonical input digest."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command bash -c 'cmake --preset debug && cmake --build --preset debug'",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 -m tools.analysis.return_case export --completed-through 24 --case .local/execution/return-case-all-factories-003.json --expected .local/execution/return-expected-all-factories-003.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 -m tools.analysis.execution run --case .local/execution/return-case-all-factories-003.json --expected .local/execution/return-expected-all-factories-003.json --report .local/execution/return-run-all-factories-003.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command bash -c 'cmake --preset sanitize && cmake --build --preset sanitize'",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command env ASAN_OPTIONS=detect_leaks=1:halt_on_error=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 python3 -m tools.analysis.execution run --case .local/execution/return-case-all-factories-003.json --expected .local/execution/return-expected-all-factories-003.json --runner build/sanitize/xem-analysis-runner --report .local/execution/return-run-all-factories-sanitize-003.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command ctest --preset sanitize -R 'connected-program|analysis-execution|field-sprite' --output-on-failure",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 -m unittest tests.test_return_case tests.test_execution"
+    ],
+    "expected": "Exact separately captured restore and 25 factory state projections and upload requests. Runner must reach its selected modeled boundary; this status is a structural assertion, not an original-game oracle for return readiness.",
+    "actual": "Debug and ASan/UBSan/LeakSanitizer reports match 26 checkpoints and upload requests, with completed_boundary and 538 operations. Actor 19 intermediate comparison matches after sprite 94 at original sprite PC 8012a11e. Four focused sanitizer CTests and all 20 CTests in each debug, sanitizer and release preset pass; Python exporter/comparator tests pass (21 run, one skipped). Independent review found no mismatch in the reached A3/BC/94 and prior-sprite ownership branches, and flagged the final-state comparison limit now recorded here.",
+    "result": "passed",
+    "tolerance": "Exact only for listed checkpoint and upload projections. Captured original heap results are external inputs; part bytes use the qualified unchanged-write source invariant where applicable. No final whole-field, full return route, timing or readiness equivalence is claimed.",
+    "artifacts": [
+      {
+        "path": ".local/execution/return-case-all-factories-003.json",
+        "sha256": "7f287ab4301b86efbb6bfa371c2f23bd848d5c98bea90342e12b10d343a1e30c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/return-expected-all-factories-003.json",
+        "sha256": "020fecf5656f03c95b1fb39d7039c137564ec9ca7c14ae3adb1cae49ed67e3e1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/return-run-all-factories-003.json",
+        "sha256": "129c6870dcd414d1995822483c60cdee0d97930abae37985d82e353983058708",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/return-run-all-factories-sanitize-003.json",
+        "sha256": "ad1f4c181ea8b48cc2533f1c74513252445903d1bb860cb6912a763d3004da46",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/return-run-post94-002.json",
+        "sha256": "7a4591ef074eacd844538a32f47fc8b9a85afd3765ed6b68aa0d95f4b169d0c0",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "src/reconstruction/field_sprite.cpp",
+    "tests/test_field_sprite.cpp",
+    "tools/analysis/return_case.py",
+    "tools/analysis/execution.py",
+    "tests/test_execution.py"
+  ],
+  "limitations": [
+    "This establishes one observed factory route, not a complete sprite subsystem, return lifecycle or Phase 1 exit.",
+    "The completed-through comparison has no independent final-state oracle after factory 24; its checkpoints can match while an unprojected field state differs.",
+    "Initialization, original heap/shadow services, later checkpoint pass, party reassignment alternatives, cleanup, full field update, transitions, menu/persistence and required media remain open."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored reference models only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures, prepared cases and expectations remain private."
+  }
+}

@@ -98,6 +98,15 @@ class ComparisonTests(unittest.TestCase):
             "partial_state.task_serial",
         )
 
+    def test_completed_factory_projection_requires_its_runner_boundary(self):
+        self.expected.pop("stop")
+        self.expected["runner_boundary_status"] = "completed_boundary"
+        self.report["status"] = "completed_boundary"
+        self.assertEqual(compare(self.report, self.expected)["status"], "matched")
+        self.report["status"] = "dependency_needs_recovery"
+        with self.assertRaisesRegex(ValueError, "runner boundary"):
+            compare(self.report, self.expected)
+
     def test_recovered_but_not_connected_is_distinct(self):
         self.report.update(dependency="instruction:primary:0x71")
         enrich(self.report)

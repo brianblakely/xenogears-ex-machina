@@ -8,16 +8,32 @@ schedule and captures. Required map transitions, save/load, media and alternativ
 or failure cases remain explicit unresolved extensions; the complete slice is
 still a candidate.
 
-The primary integration measure is now the [connected C++ execution loop](executable-reconstruction.md),
-recorded by [EVID-REF-039](../analysis/findings/EVID-REF-039.json). A shared program
+| Slice proof domain | Remaining required work on the frozen route |
+| --- | --- |
+| Source and loading | Connect original loading, resource identities and initialization to the shared program; heap/shadow services and lifetime remain external. |
+| Field representation | Complete used geometry, material/texture, camera and sprite correlations with original source and state. |
+| Script execution | Cover every reachable route instruction, dialogue/control, triggers, transitions and resumed side effects in connected execution. |
+| Field behavior | Compare a complete `8008110c` update, contact, followers, camera, interaction, map transitions and control readiness. |
+| Encounter and return | Recover combat choices, formulas, enemy turns, failure and rewards; then checkpoint replay, cleanup and full return readiness. |
+| Menu and persistence | Recover ordinary menu/inventory/equipment and valid save/load, checksum, round trip and failure behavior. |
+| Required media | Recover used sound paths, Mono/Stereo/Wide and visual references, FMV framing/trigger and observable timing. |
+| Time and services | Distinguish original cadence and service intent from HLE observations; recover controller/disc/BIOS/GPU/audio/interrupt contracts. |
+| Reproducibility and remainder | Extend immutable original comparisons and independent reviews to all required alternatives, agent-visible ownership/actions/setup/readiness and the explicit rest-of-game backlog. |
+
+The [frozen manifest](../analysis/slices/forest23.json) retains route extensions,
+alternatives and proof obligations. Every row above is still open.
+
+The primary integration measure is the [connected C++ execution loop](executable-reconstruction.md),
+extended by [EVID-REF-040](../analysis/findings/EVID-REF-040.json). A shared program
 owner invokes the original return caller: snapshot data restore computes all 25
-actors and represented gates, then the same state feeds 19 consecutive sprite
+actors and represented gates, then the same state feeds all 25 consecutive sprite
 factories. Factory arguments and intermediate environment state are computed,
-not supplied per call. All 20 checkpoints and actor 19's partial sprite match
-qualified original observations. It executes C6 FF and stops at command 96;
-task-list removal 8001ce74 is the next source unit. Initial actor/shadow storage
-and heap results remain explicit external inputs; complete return/readiness and
-every slice proof remain open. Original snapshot bytes are not native persistence.
+not supplied per call. The 26 restore/factory checkpoints and upload requests
+match qualified original observations; the selected C++ factory boundary returns.
+This does not compare final whole-field state or execute the separate `800a3c8c`
+checkpoint pass. Initial actor/shadow storage and heap results remain explicit
+external inputs; complete return/readiness and every slice proof remain open.
+Original snapshot bytes are not native persistence.
 
 `Program` also composes existing event scheduling, core/call/control/divisor
 handlers, battle requests/continuation and music waits using resident variables,
@@ -41,11 +57,12 @@ original comparisons and independent integration review. The scheduler, control
 handler and motion prefix share one input-update word; ordinary sprite A0/A1
 commands execute the same recovered speed and impulse functions. Constructors,
 binding, facing, timers and later checkpoints now run in C++.
-[EVID-REF-036](../analysis/findings/EVID-REF-036.json) adds factory publication,
-bounds and part allocation for all 19 supported actor factories. Six required
-NPC factories still stop explicitly at unrecovered commands or task callbacks.
-Remaining used sprite instructions, cleanup and readiness remain
-required, along with reusable full movement, sweep and position source.
+[EVID-REF-036](../analysis/findings/EVID-REF-036.json) originally qualified factory
+publication, bounds and part allocation for actors 0–18. EVID-REF-040 connects
+the remaining six factories on the selected return route, including sprite
+commands `96`, `FC`, `A3`, `BC` and `94` and their encountered task/resource effects.
+Other command selectors and routes, cleanup and readiness remain required,
+along with reusable full movement, sweep and position source.
 
 The [music callers and wave callback](../analysis/formats/field-media-source.md)
 now connect to the recovered [resident CD ring](../analysis/formats/disc-stream-source.md).

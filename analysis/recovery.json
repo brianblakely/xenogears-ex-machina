@@ -3387,9 +3387,10 @@
         "EVID-REF-023",
         "EVID-REF-025",
         "EVID-REF-029",
-        "EVID-REF-030"
+        "EVID-REF-030",
+        "EVID-REF-040"
       ],
-      "next_experiment": "Reuse EVID030 actor defaults, EVID028 return data and EVID029 later checkpoints. Recover sprite construction/rebinding 8002435c/800222bc, field orchestration 80076ac0/800a28d4, remaining ordinary VM effects, destruction and owned resource lifetimes. Complete readiness remains blocked."
+      "next_experiment": "One connected 800a28d4 route now reaches all 25 factories. Connect the separate 800a3c8c checkpoint pass, remaining sprite variants, destruction and owned resource lifetimes. Compare complete return state and readiness separately; original heap/shadow results remain external inputs."
     },
     {
       "id": "field-return-sprite-ownership",
@@ -3408,9 +3409,10 @@
         "EVID-REF-029",
         "EVID-REF-030",
         "EVID-REF-036",
-        "EVID-REF-039"
+        "EVID-REF-039",
+        "EVID-REF-040"
       ],
-      "next_experiment": "Run the shared Program field_return case: EVID039 now connects 800a3474 restore to 19 complete 80076ac0 factories, computing caller arguments and shared state. Actor19 stops at sprite command96, PC8012a10a. Recover its 8001ce74 task-list removal with initialization/ownership, then FC resource upload and the remaining required commands. Keep all-factory completion before party reassignment and the separate 800a3c8c checkpoint pass. Auxiliary/party variants, optional extensions, cleanup and readiness remain unresolved. Backward work is 80080f44 allocation/default/shadow initialization, not a batch of defaults that omits 8007aa44."
+      "next_experiment": "EVID040 connects 800a3474 restore through all 25 factories on one qualified return route. Connect the separate 800a3c8c checkpoint pass after all factories and compare its original state, then cleanup and control readiness. Auxiliary/party variants, optional extensions and alternate outcomes remain unresolved. Backward work is 80080f44 allocation/default/shadow initialization including 8007aa44, not a batch of supplied defaults. Next distinct connected entry is ordinary field update 8008110c."
     }
   ],
   "unknown_formats": [
@@ -3615,7 +3617,7 @@
       "EVID-REF-022",
       "EVID-REF-023"
     ],
-    "scope": "Original generic dispatcher indexes opcode minus 8a for 115 entries. A0/A1 have observed reconstructions; B3 is source/synthetic only. The separate ordinary VM has a bounded timed-command reconstruction; all remaining generic and outer effects stay incomplete.",
+    "scope": "Original generic dispatcher indexes opcode minus 8a for 115 entries. A0/A1 and reached 94/96/A3/BC paths have observed reconstructions on bounded routes; BC A4/A5 are source/synthetic only. B3 is source/synthetic only. Other selectors and outer effects stay incomplete.",
     "rows": [
       {
         "opcode": "0x8a",
@@ -3680,8 +3682,13 @@
       {
         "opcode": "0x94",
         "handler": "0x8001fdc8",
-        "analysis_status": "unresolved",
-        "native_status": "unimplemented"
+        "analysis_status": "observed_subset",
+        "native_status": "authored_cpp_library",
+        "evidence": [
+          "EVID-REF-040"
+        ],
+        "cpp_reconstruction": "src/reconstruction/field_sprite.cpp",
+        "next_experiment": "Compare 94 on other renderer kinds and routes; current return route exercises renderer-kind 2 parent facing and sprite-flag store."
       },
       {
         "opcode": "0x95",
@@ -3692,12 +3699,14 @@
       {
         "opcode": "0x96",
         "handler": "0x8001feec",
-        "analysis_status": "unresolved",
-        "native_status": "unimplemented",
+        "analysis_status": "observed_subset",
+        "native_status": "authored_cpp_library",
         "evidence": [
-          "EVID-REF-039"
+          "EVID-REF-039",
+          "EVID-REF-040"
         ],
-        "next_experiment": "Connected field_return encounters actor19 command96 at sprite-bytecode PC0x8012a10a after C6 FF. The qualified resident generic-effect source 8001fbe4 calls 8001ce74(sprite+6c); recover task-list initialization/removal and ownership together. Implement in shared field_sprite.cpp, rerun tools.analysis.execution against the independent return_case expectations, then extend to the following FC upload. Table target0x8001feec is machine code, not the sprite PC."
+        "cpp_reconstruction": "src/reconstruction/field_sprite.cpp",
+        "next_experiment": "Observed empty-list task removal at actor19 and connected original factory sequence now compare. Exercise nonempty removal and other list ownership paths with qualified original cases; do not infer complete task-list behavior from this route."
       },
       {
         "opcode": "0x97",
@@ -3786,8 +3795,13 @@
       {
         "opcode": "0xa3",
         "handler": "0x800217a4",
-        "analysis_status": "unresolved",
-        "native_status": "unimplemented"
+        "analysis_status": "observed_subset",
+        "native_status": "authored_cpp_library",
+        "evidence": [
+          "EVID-REF-040"
+        ],
+        "cpp_reconstruction": "src/reconstruction/field_sprite.cpp",
+        "next_experiment": "Original comparison covers the reached A3 arithmetic stream. Other divisors, sequencer overrides and routes have source/synthetic coverage only."
       },
       {
         "opcode": "0xa4",
@@ -3942,8 +3956,13 @@
       {
         "opcode": "0xbc",
         "handler": "0x800202f4",
-        "analysis_status": "unresolved",
-        "native_status": "unimplemented"
+        "analysis_status": "observed_subset",
+        "native_status": "authored_cpp_library",
+        "evidence": [
+          "EVID-REF-040"
+        ],
+        "cpp_reconstruction": "src/reconstruction/field_sprite.cpp",
+        "next_experiment": "Original route compares BC selector96 parent-position copy; A4/A5 are source/synthetic only. Recover other selectors when a connected route reaches them."
       },
       {
         "opcode": "0xbd",
@@ -4553,9 +4572,10 @@
         "EVID-REF-028",
         "EVID-REF-030",
         "EVID-REF-036",
-        "EVID-REF-039"
+        "EVID-REF-039",
+        "EVID-REF-040"
       ],
-      "scope": "One resident/field owner invokes the same recovered C++ as subsystem tests. Qualified 800a28d4 return input computes 25 restored actors/globals/variables, resource selection and seven factory arguments, then 19 complete factories with shared environment and owned allocations. Twenty checkpoints and actor19's committed partial sprite agree; command96 remains required. Event passes/batches connect core/call/control/motion-divisor/battle/music-wait handlers with synthetic continuity coverage, not a full update or original connected-event proof. Analysis owns prepared cases, explicit heap results, limits and reports; independent expectations never enter C++. No complete boot, heap, mode dispatcher, return readiness or native persistence is claimed."
+      "scope": "One resident/field owner invokes the same recovered C++ as subsystem tests. Qualified 800a28d4 return input computes 25 restored actors/globals/variables, resource selection and seven factory arguments, then all 25 factories with shared environment and owned allocations on one route. Twenty-six checkpoint projections and uploads match; final whole-field state and readiness have no original oracle here. Event passes/batches connect core/call/control/motion-divisor/battle/music-wait handlers with synthetic continuity coverage, not a full update or original connected-event proof. Analysis owns prepared cases, explicit heap results, limits and reports; independent expectations never enter C++. No complete boot, heap, mode dispatcher, return readiness or native persistence is claimed."
     },
     {
       "id": "field_events_cpp",
@@ -4630,9 +4650,10 @@
       "native_status": "authored_cpp_library",
       "evidence": [
         "EVID-REF-029",
-        "EVID-REF-034"
+        "EVID-REF-034",
+        "EVID-REF-040"
       ],
-      "scope": "C++ constructor/binding/animation/facing/matrix/frame operations and bounded ordinary timer/checkpoint source. Complete captured constructors, facing and later return checkpoints compare exactly. Remaining used VM instructions, factory/rebinding lifecycle, cleanup and readiness remain open."
+      "scope": "C++ constructor/binding/animation/facing/matrix/frame operations and bounded ordinary timer/checkpoint source. Complete captured constructors, facing and later return checkpoints compare exactly. Reached ordinary commands A3/BC/94 and prior-sprite ownership participate in one 25-factory connected comparison; BC A4/A5 remain source/synthetic. Other VM variants, checkpoint replay after the factory sequence, cleanup and readiness remain open."
     },
     {
       "id": "field_actor_defaults",
@@ -4750,9 +4771,10 @@
       "execution_status": "observed_subset",
       "native_status": "authored_cpp_library",
       "evidence": [
-        "EVID-REF-036"
+        "EVID-REF-036",
+        "EVID-REF-040"
       ],
-      "scope": "Real C++ compares19 complete field sprite factory calls for actors0\u201318,25 initial bounds calls andfour empty task passes. All24724 owned bytes plus mapped factory state and allocation/free requests agree. Six required NPC factories explicitly stop at96/FC, andsix nonempty task passes stop at callback80022df4. Full required factory capability remains incomplete."
+      "scope": "The initial independent factory comparison covers 19 complete calls for actors0\u201318 and 25 initial bounds calls. The connected return route now compares all 25 factory checkpoint projections with computed shared state, task effects and upload requests. Other factory variants, full cleanup and return readiness remain incomplete."
     },
     {
       "id": "disc_stream_cpp",
@@ -4782,7 +4804,7 @@
         "sprite_creation",
         "event_execution"
       ],
-      "next_blocker": "Run EVID039 connected field_return: restore and 19 factories now execute together. Resolve encountered actor19 sprite command96 and its task-list service, then subsequent required commands and the later checkpoint pass. Expand backward through 80080f44 allocation/default/shadow ownership and loading; actor defaults alone are not full initialization or semantic readiness."
+      "next_blocker": "EVID040 connects return data and all 25 factories on one route. Execute and compare the separate 800a3c8c checkpoint pass, then cleanup and readiness; expand backward through 80080f44 allocation/default/shadow ownership and loading. Actor defaults alone are not full initialization or semantic readiness."
     },
     {
       "id": "event_execution",

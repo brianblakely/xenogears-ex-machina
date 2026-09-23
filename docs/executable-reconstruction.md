@@ -55,8 +55,7 @@ original return snapshot + initialized field storage
   -> 800a28d4 computes resource selection and seven factory arguments
   -> 80076ac0 factory: allocation, construction, bounds, animation, publication
   -> next actor uses the resulting shared sprite/task/allocator state
-  -> actors 0..18 return
-  -> actor 19 executes C6 FF, then encounters sprite command 96
+  -> actors 0..24 return on the selected original route
 ```
 
 Before this integration, comparisons supplied restored actor records, factory
@@ -73,14 +72,16 @@ current entry stops before that pass, readiness publication or return to ordinar
 field updates. Replaying a checkpoint after each individual factory would invent
 an ordering that the original does not have.
 
-The comparison checks 20 completed checkpoints and the full 356-byte partially
-constructed sprite at the stop: 29,336 bytes of direct original output and 9,984
-owned part bytes under the reviewed unchanged-write invariant, plus factory
-arguments, 16 environment values per factory and allocation/release requests.
+The current comparison checks 26 completed restore/factory checkpoints, plus
+factory arguments, environment values, allocation/release and upload requests.
+It verifies the selected runner boundary separately from the original output
+projection; it does not compare final whole-field state or original return
+readiness. Earlier EVID-REF-039 checked 20 checkpoints and actor 19's partial
+sprite at command `96`.
 Six correlated captures of one route supply this evidence; they are not six
 independent scenarios. Source/live differences in field sprite resources remain
 unavailable ranges. No tolerance, replacement bytes or unexplained mask is used.
-See [EVID-REF-039](../analysis/findings/EVID-REF-039.json).
+See [EVID-REF-040](../analysis/findings/EVID-REF-040.json).
 
 ## Focused commands
 
@@ -97,6 +98,7 @@ the expectations bind the canonical case hash. No expected value reaches C++.
 
 ```sh
 python3 -m tools.analysis.return_case export \
+  --completed-through 24 \
   --case .local/execution/return-case.json \
   --expected .local/execution/return-expected.json
 python3 -m tools.analysis.execution run \
@@ -108,13 +110,12 @@ python3 -m tools.analysis.execution compare \
   --expected .local/execution/return-expected.json
 ```
 
-The current **run exits 1** with `dependency_needs_recovery`; **compare exits 0**
-with 20 matched checkpoints and matched partial state. Agreement up to a dependency
-does not complete the selected function. Use a new report path for each run;
+The current run and comparison exit 0 with `completed_boundary`, 26 matching
+checkpoints and matching upload requests. This is the selected factory sequence,
+not the enclosing original return lifecycle. Use a new report path for each run;
 rerunning does not overwrite evidence. `--runner build/sanitize/xem-analysis-runner`
-uses the identical library under ASan/UBSan. `--max-operations 32` stops before
-actor 19's allocation; `--max-operations 35` stops after C6 commits but before
-command 96. `--timeout 30` is a separate process watchdog.
+uses the identical library under ASan/UBSan. `--timeout 30` is a separate process
+watchdog.
 
 Public focused regression commands:
 
@@ -205,12 +206,17 @@ Battle requests are pending resident state, not combat or mode dispatch.
    a concrete mode owner when battle/menu/world-map/persistence/media code needs one;
    do not build empty subsystem frameworks or invent boot state.
 
-The first current dependency is `instruction:sprite:0x96`, actor 19, sprite PC
-`0x8012a10a`, resident dispatcher `800248d4`, handler/table target `8001feec`.
-The qualified generic-effect source calls task-list removal `8001ce74(sprite+6c)`.
-Review that list's initialization, removal and ownership together, then rerun this
-case. Subsequent `FC` upload, other required NPC commands/callbacks, all-factory
-completion, party/auxiliary variants, checkpoint replay and cleanup remain queued.
+The next return dependency is the separate `800a3c8c` checkpoint pass after the
+factory sequence, followed by cleanup, control readiness and route variants.
+For the next distinct connected entry, use the manifest's ordinary field update
+`8008110c`. Its original order is event pass, previous positions, motion,
+controlled contact/position `80084158`, other positions `80084a40`, encounter
+`8008399c` and followers `800815f0`. Connect the existing C++ and qualified
+Python/source behavior into the shared library. Start with
+`tests/reference-inputs/field23-control-observation.json` and the original
+source/capture lineage in EVID-REF-026/027; compare each computed boundary to
+the corresponding original field 23 captures. Do not promote an event scheduler
+pass to a complete update.
 
 Backward work is the real `80080f44` allocation/default/shadow caller and resource
 loading. Its 25 RNG/default outputs already have exact captures, but shadow

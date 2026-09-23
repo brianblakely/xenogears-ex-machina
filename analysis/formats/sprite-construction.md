@@ -130,15 +130,16 @@ Those eight bytes are outside the factory-owned comparison, so this does not
 claim exact global-state equivalence. All other captured control bytes outside
 the owned fields must remain unchanged on the successful paths.
 
-Six factories (actors 19–24) remain incomplete. Three stop at command `96` and
-three at `fc`; the observed route also requires `e0` and task callback
-`80022df4`. The six nonempty task passes are recorded as blocked, not successes.
-Required source dependencies include list removal `8001ce74`, resource upload
-`8001fb30`/`8002dde4`, child construction `80023b84`/`80023a48` and its scheduling
-callees, and task motion `80022cdc`. Existing-sprite destruction `800230a8` and
-alternate part constructor `80024294` remain explicit boundaries; neither occurs
-on these 25 original inputs. This is a verified factory subset, not a completed
-factory or field lifecycle.
+The later connected comparison [EVID-REF-040](../findings/EVID-REF-040.json)
+extends this initial 19-factory result to all 25 on one original return route.
+It exercises resident task-list removal `8001ce74`, upload
+`8001fb30`/`8002dde4`, child construction/scheduling and the observed task motion.
+The reached `A3`, `BC` and `94` effects are source-derived in the shared C++
+library, with original intermediate comparison for actor 19 and later original
+factory checkpoints. `BC` selectors `A4`/`A5` have source/synthetic coverage only.
+Existing-sprite destruction `800230a8` and alternate part constructor `80024294`
+remain explicit boundaries; neither occurs on these 25 original inputs. This is a
+verified route subset, not a complete factory across variants or field lifecycle.
 
 ## Verification and remaining dependencies
 
@@ -169,7 +170,7 @@ The following required dependencies remain explicit: alternate platform
 construction/binding/header logic and VM `800c11cc`; flag-40 bit-0 matrix
 `MulMatrix0` behavior and original matrix inputs; new 64-byte auxiliary allocation
 in `8001f750`/`8001f8e8`; remaining ordinary VM/generic-effect commands and their
-callees; the remaining factory paths, complete return-policy loop, scheduling,
+callees; the remaining factory variants, complete return-policy loop, scheduling,
 cleanup and field readiness. Unsupported invocation throws; inspection limits
 are host diagnostics and never successful gameplay yields. Renderer/audio
 backends and a native scheduler are not hidden behind callbacks. This module

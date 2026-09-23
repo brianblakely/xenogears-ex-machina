@@ -4,8 +4,9 @@ This handoff connects qualified Ghidra C output to authored source. It is a
 partial subsystem reconstruction, not a completed field runtime or Phase 1 exit.
 The current integration entry and daily loop are documented in the
 [executable reconstruction workflow](../../docs/executable-reconstruction.md).
-EVID-REF-039 connects the nonzero return branch of `800a28d4` through data restore
-and 19 factories, retaining actor 19's state at command 96. Earlier findings below
+EVID-REF-040 extends the nonzero return branch of `800a28d4` through data restore
+and all 25 factories on one original route. EVID-REF-039 retains the earlier
+actor 19 command-96 boundary. The later checkpoint pass and readiness are open. Earlier findings below
 keep their original narrower scope.
 See [EVID-REF-027](../findings/EVID-REF-027.json) and the
 [recovery inventory](../recovery.json). Earlier findings retain their original
@@ -38,7 +39,7 @@ implementation are authored source.
 | [field_battle.cpp](../../src/reconstruction/field_battle.cpp) | Primary `71` ordered request gates, selector, mode and publication; extended `7f` wait and primary `86` continuation | Shares working PC, variables and interpreter controls with `EventContext`; ready/unequal return paths match original execution. Battle setup/rules/results and gate producers remain required source. |
 | [field_control.cpp](../../src/reconstruction/field_control.cpp), [field_motion.cpp](../../src/reconstruction/field_motion.cpp) | Direction/jump requests, mode prefix, planar arithmetic, divisor, impulse and vertical stage | Share `EventContext::pass` and actor terrain; active encounter selection and full movement/sweeps/position remain open. |
 | [field_sprite.cpp](../../src/reconstruction/field_sprite.cpp), [source contract](sprite-construction.md) | Constructor/binding/animation, matrix/facing/frame operations, bounded ordinary VM and later checkpoints | Shared A0/A1 motion arithmetic; actual incoming allocation bytes. Factory publication, remaining required commands, cleanup and readiness remain open. |
-| [field_sprite_factory.cpp](../../src/reconstruction/field_sprite_factory.cpp) | Actor factory, bounds, allocator class, part resizing and empty task passes | All 19 supported original factories compare; six required NPC factories and nonempty task callbacks remain explicit errors. |
+| [field_sprite_factory.cpp](../../src/reconstruction/field_sprite_factory.cpp) | Actor factory, bounds, allocator class and part resizing | All 25 factories compare on one connected return route; other task callbacks and variants remain explicit boundaries. |
 | [field_media.cpp](../../src/reconstruction/field_media.cpp), [disc_stream.cpp](../../src/reconstruction/disc_stream.cpp) | Music caller state machine, wave staging, retail ring allocation wrapper, selection and release | One shared field activity gate and one resident ring owner. Heap, CD producers and resident audio remain explicit unrecovered game calls. |
 | [field_events.cpp](../../src/reconstruction/field_events.cpp), [public types](../../include/xem/reconstruction/field_events.hpp) | Actor pass, slot selection, bounded dispatch, branches, waits, end/reset/jump and five variable stores | Ten primary handlers; others raise `UnsupportedInstruction` with PC and opcode |
 | [field.py](../../tools/analysis/field.py), [packed.py](../../tools/analysis/packed.py) | Existing component, event-package and collision parsing; packed decoding | Extraction/reference tools; actual source-memory context is required for decoder overreads |
