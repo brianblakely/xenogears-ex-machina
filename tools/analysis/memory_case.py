@@ -96,6 +96,17 @@ RESIDENT_ENTRIES = (
     "sound_update_voices",
     "set_next_mode",
     "field_exit",
+    "battle_turn_select",
+    "battle_turn_begin",
+    "battle_turn_actions_begin",
+    "battle_turn_actions",
+    "battle_turn_actions_resume",
+    "battle_turn_prepare",
+    "battle_turn_order",
+    "battle_turn_settle",
+    "battle_turn_finish",
+    "battle_turn_decode",
+    "battle_turn_menu",
 )
 # Field entries besides the update and move phases.
 FIELD_ENTRIES = ("field_event_extended", "movie_decision")
@@ -527,7 +538,7 @@ def run(args: argparse.Namespace) -> int:
                 entry,
                 exit,
                 report["owned"],
-                visible_registers(entry_row)[29],
+                visible_registers(entry_row)[29] + args.frame_above,
                 update_changed,
                 interrupt_changed,
                 superseded,
@@ -633,6 +644,7 @@ def run(args: argparse.Namespace) -> int:
         "tolerance": "exact; owned bytes and every unowned original write",
         "exclusions": {
             "stack_below_entry_sp": STACK_BELOW_ENTRY,
+            "callee_frames_above_entry_sp": args.frame_above,
             "scratchpad": "not compared; balanced temporary frames only",
         },
         "interrupt_attribution": (
@@ -721,6 +733,12 @@ def main() -> int:
     parser.add_argument("--budget", type=int, default=1_000_000)
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--max-divergences", type=int, default=5)
+    parser.add_argument(
+        "--frame-above",
+        type=int,
+        default=0,
+        help="Bytes of callee frames a resumed entry lies inside; its stack exclusion ends there",
+    )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     with host_slot("compare"):

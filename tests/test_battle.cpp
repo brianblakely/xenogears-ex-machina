@@ -1,6 +1,7 @@
 // An invented battle memory image exercises action commit bookkeeping, the
 // damage cap and explicit unsupported paths. It describes no original content.
 #include "xem/reconstruction/battle.hpp"
+#include "xem/reconstruction/program.hpp"
 
 #include <array>
 #include <iostream>
@@ -227,6 +228,148 @@ void enemy_script() {
             "Untranslated conditions are explicit dependencies",
             "condition 0x81 (handler 8007e954)");
 }
+
+// Turn order [0, 3, 1, 2, 4..10] from cursor 0 with slot 3 ready; party slot 0
+// then attacks enemy slot 3 through an invented action list.
+void turns() {
+    auto memory = sample();
+    memory.regions[0x80101000].resize(0x10c);
+    memory.put32(0x800d2d28, 0x80101000);
+    for (std::uint32_t slot = 0; slot < battle::combatant_slots; ++slot) {
+        memory.put16(0x800c3448 + slot * 2, 1U << slot);
+        memory.put8(0x800d2dd8 + slot, slot);
+    }
+    memory.put8(0x800d2dd8 + 1, 3);
+    memory.put8(0x800d2dd8 + 3, 1);
+    memory.put8(0x800d2de4 + 3, 1);
+    std::uint32_t seed = 1;
+    battle::Battle context{memory, seed};
+    check(battle::select_turn(context) && memory.u8(turn + 0x2d3) == 4 &&
+              memory.u8(0x800d2dd7) == 2,
+          "The first ready slot from the cursor acts (as slot + 1); the cursor passes it");
+    memory.put8(0x800d2de4 + 3, 0);
+    check(!battle::select_turn(context) && memory.u8(turn + 0x2d3) == 0 &&
+              memory.u8(0x800d2dd7) == 2,
+          "Without a ready slot nobody acts and the cursor stays");
+    memory.put8(0x800d2dc0, 2);
+    memory.put16(0x800d2e06 + 2, 9);
+    check(battle::select_turn(context) && memory.u8(turn + 0x2d3) == 2 &&
+              memory.u8(0x800d2de4 + 1) == 1 && memory.u16(0x800d2e06 + 2) == 0 &&
+              memory.u8(0x800d2dc0) == 0,
+          "A forced slot acts first and is marked ready with its timer cleared");
+    memory.put16(0x800d39e0, 8);
+    rejects([&] { static_cast<void>(battle::select_turn(context)); },
+            "The all-enemies pass is an explicit dependency", "80072324");
+    memory.put16(0x800d39e0, 0);
+
+    const auto record = 0x800ccce8U + 1 * battle::record_stride;
+    memory.put16(record + 0x7c, 0x1000);
+    memory.put8(record + 0x15d, 1);
+    memory.put16(record + 0x84, 0x8000);
+    memory.put8(record + 0x160, 2);
+    battle::begin_turn(context);
+    check(memory.u8(turn + 0x2d3) == 1 && memory.u8(0x800d3298) == 0,
+          "The turn takes the slot and holds the ATB");
+    check(memory.u16(record + 0x7c) == 0 && memory.u16(record + 0x84) == 0x8000 &&
+              memory.u8(record + 0x160) == 1,
+          "Timed statuses count down and clear at zero");
+
+    // Party slot 0: an f7 event, then an attack on slot 3 (animation 6).
+    memory.put8(turn + 0x2dc, 1);
+    memory.put8(0x800d2e5c, 0xe);
+    memory.put8(0x800d2e5c + 4, 9);
+    memory.put8(0x800d2e5c + 8, 1);
+    memory.put8(0x800d2e5c + 8 + 1, 1);
+    memory.put8(0x800d2e5c + 8 + 2, 6);
+    memory.put16(0x800d2e5c + 8 + 6, 8);
+    battle::begin_actions(context, 0);
+    std::uint32_t framed = 0;
+    battle::execute_actions(context, 0, [&](std::uint32_t mask) { framed = mask; });
+    constexpr std::uint32_t events = 0x800c3fe8;
+    check(memory.u8(events + 0x47) == 0xf7 && memory.u16(events + 0x3a) == 9 &&
+              memory.u8(events + 0x48 + 0x47) == 6 && memory.u16(events + 0x48 + 0x16) == 8 &&
+              memory.u8(events + 2 * 0x48 + 0x47) == 0xfe && memory.u8(turn + 0x2da) == 2,
+          "Actions queue their events; the queue closes with fe");
+    check(memory.u8(0x800d2ca9) == 0 && memory.u16(0x800d2c94) == 8 && framed == 0,
+          "The attack entry commits against its target mask");
+    memory.put8(0x800d2e5c + 8, 3);
+    rejects([&] { battle::execute_actions(context, 0, [](std::uint32_t) {}); },
+            "Untranslated action types are explicit dependencies", "type 3");
+
+    memory.put8(0x800d2dcc, 1);
+    memory.put8(0x800d2dcc + 3, 1);
+    memory.put16(0x800ccce8 + 0x7c, 0x800);
+    memory.put8(turn + 0x2d3, 0);
+    rejects([&] { battle::settle_turn(context); },
+            "End-of-turn regeneration is an explicit dependency", "80085b58");
+}
+
+// Member 0 moves from page 1 to page 3 with an invented queued button, defends
+// there, and tries to escape from page 9 under two rand states.
+void menu() {
+    auto memory = sample();
+    memory.regions[0x8006d634].resize(0x2358);
+    xem::reconstruction::ResidentState resident;
+    resident.pad_status = {0, 0x41};
+    resident.debug_pointer = 0x80010000;
+    resident.debug_word = 0xffffffff;
+    auto &queue = resident.input_queue;
+    queue.ring[4][3] = 0x8000;
+    queue.read = 3;
+    queue.count = 1;
+    memory.put8(0x800c3e29, 1);
+    std::uint32_t seed = 1;
+    battle::Battle context{memory, seed};
+    battle::decode_input(context, resident);
+    check(memory.u8(0x800d3014) == 2 && memory.u8(0x800c3e29) == 2 &&
+              memory.u8(0x800c3e28) == 1 && queue.count == 0 && queue.read == 4,
+          "A queued button decodes to its face code and becomes the latest face button");
+    battle::decode_input(context, resident);
+    check(memory.u8(0x800d3014) == 8, "An empty queue decodes to 8");
+    queue.overflow = 1;
+    queue.count = 1;
+    battle::decode_input(context, resident);
+    check(memory.u8(0x800d3014) == 8 && queue.count == 0 && queue.w50200 == 1 &&
+              queue.ring[4][3] == 0x8000,
+          "An overflowed queue is reset (keeping the ring) and decodes to 8");
+    resident.pad_status[0] = 0xff;
+    rejects([&] { battle::decode_input(context, resident); },
+            "The missing-controller wait is an explicit dependency", "missing-controller");
+    resident.pad_status[0] = 0;
+
+    memory.put8(turn + 0x2dd, 1);
+    memory.put8(0x800d3014, 2);
+    battle::menu_step(context, resident, 0);
+    check(memory.u8(turn + 0x2dd) == 3, "Code 2 on page 1 moves to page 3");
+    memory.put8(0x800d3014, 4);
+    battle::menu_step(context, resident, 0);
+    check((memory.u8(base + 0x15a) & 1) != 0 && memory.u8(turn + 0x2de) == 1 &&
+              memory.u8(base + 0x5fc2) == 0,
+          "Confirming page 3 defends and ends the menu");
+
+    bool escaped = false, stayed = false;
+    for (std::uint32_t start = 1; start < 64 && !(escaped && stayed); ++start) {
+        seed = start;
+        memory.put8(0x800c48ea, 0);
+        memory.put8(turn + 0x2dd, 9);
+        memory.put8(0x800d2d24 + 1, 0x7f);
+        memory.put8(0x800d2d24 + 2, 0x7f);
+        memory.put16(base + 0x4c, 33);
+        memory.put16(0x8006d8a0 + 0x4e, 999);
+        battle::menu_step(context, resident, 0);
+        if (memory.u8(0x800c48ea) == 0x40) {
+            escaped = true;
+            check(memory.u16(0x8006d8a0 + 0x4c) == 33, "A successful escape writes the party back");
+        } else {
+            stayed = true;
+            check(memory.u8(0x800c48ea) == 0, "A failed escape leaves the outcome");
+        }
+    }
+    check(escaped && stayed, "Escape succeeds for some rand states and fails for others");
+    memory.put8(turn + 0x2dd, 5);
+    rejects([&] { battle::menu_step(context, resident, 0); },
+            "Unreconstructed pages are explicit dependencies", "0x5");
+}
 } // namespace
 
 int main() {
@@ -236,7 +379,9 @@ int main() {
         rewards();
         timers();
         enemy_script();
-        std::cout << "Battle actions: five source-boundary groups passed\n";
+        turns();
+        menu();
+        std::cout << "Battle actions: seven source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

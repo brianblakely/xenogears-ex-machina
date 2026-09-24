@@ -35,6 +35,7 @@ struct SoundDriver {
     std::uint32_t pool{};         // 80059410: first sound-pool block header
     std::uint32_t start_stamp{};  // 80059504: copied into each started voice (+0c)
     std::uint32_t voice_limit{};  // 80059478; 80039db8 starts effects at voice limit - 2
+    std::uint32_t system_bank{};  // 8005919c: effect bank of the battle menu effects
     // Hardware voice bookkeeping: the owner (a voice record + 30) of each of
     // the 24 voices, voices marked when claimed or released, and voices cleared
     // when claimed or released.

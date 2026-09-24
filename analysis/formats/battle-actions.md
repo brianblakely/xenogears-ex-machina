@@ -48,6 +48,16 @@ per-action arrays follow the records: damage `+5f6c` (u32 per slot), result code
 | `801e2794` (+ `801e3a18`, `801e403c`, `801e41b4`, `801e2888`, `801e42c4` and helpers) | `grant_rewards` | Skills, tier and level flags, write-back of HP/EP/use counters and gear to persistent records, drop rolls |
 | `801e2acc` (+ `801e2eb0`, `801e308c`, `801e335c`, `801e3500`, `801e3610`, `801e3700`, `801e38cc`) | `distribute_experience` | Experience split and weighted pools, two level tracks with growth-table requirements, rand stat growth |
 | `801e1444` (+ `801e1370`) | `add_drops` | Add up to 8 drops to the five inventory lists (jump table `801de000`), stacking to 99 |
+| `800723e0` to its call of `80071b94`, plus `80071b94` to `80071bd8`/`80072254` | `select_turn` (`battle_turn.cpp`) | Turn scheduler: the forced slot `800d2dc0`, else the first slot at or after the cursor `800d2dd7` in the turn order `800d2dd8` whose ready byte `800d2de4` is exactly 1 (turn state `+2d3` = slot + 1, cursor passes it); nobody ready leaves `+2d3` 0 |
+| `80071bd8` to `80071c74` (+ `80085350`, `80071a08`, `80099890`) | `begin_turn`, `count_down_statuses` | Turn start: ATB hold (`800d3298 = 0`), `+2d3` becomes the slot, event and result counters reset, timed status counters (`+15d..+169`) count down and clear their bits at zero |
+| `80071c74` to `80071c80`/`80072090`/`800720a0`/`800720f8` | `prepare_turn` | Party turn: reaction flags `800c3d1a` cleared, acting member's marker vertices written to the draw buffer `800ccb34` of the `800c3ea4` block |
+| `80079778` to its first frame (+ `80085388`) | `begin_actions` | Event queue reset for the actor |
+| `800793f0` (+ `80079674`, `80078998`, `80078b34`, `800877e0`, `80087edc`, `80085c88`, `80085454`, `800785d4`, `800787e0`) | `execute_actions`, `resume_actions` | Action list `800d2e5c` (32 entries of 8 bytes; after entry 31 until a type 0): type 1 commits (`80085ccc`), accumulates (`80085454`) and applies results and queues the animation event; type 2 queues an approach event `fd`, plans the route `800c48ec` from the formation data `*800d3364` and moves the actor into the target's formation group; type `e` queues event `f7`; the queue closes with `fe` |
+| `80072160` to `800721dc` (+ `80072270`, `800841e0`, `80083ff4`, `80085310`) | `order_targets` | Held party timers (`800d2c9e`); each slot's default target (`+3c + 40*slot`): the lowest-HP valid target, from the same formation group when it has one |
+| `800721ec` to `80072230` | `settle_turn` | Alive updates around the end-of-turn regeneration check (`8009ada0`) |
+| `80072240` to `80072254` | `finish_turn` | Turn-timer reload, ATB enabled again |
+| `80089ccc` | `decode_input` (`battle_menu.cpp`) | Menu input: dequeue resident pad entries (`80035cdc`); `800594a4` bits `2000/4000/8000/1000` give codes 0-3 (remembered in `800c3e29`/`800c3e28`), `8005948c` bits `20/40/80/10` give 4-7, `100` d, `800` e; 8 when nothing, ff once the battle ends; menu effects `4c/4d/4e` through `80039db8` |
+| `80080160` dispatch (table `8006fe7c`), `80081504`, `8008115c`, `80082504` (+ `8009aa44`, `8009a9d0`, `8009be0c`) | `menu_step`, `defend`, `try_escape`, `write_back_party` | Command pages 1, 3 and 9 with the decoded code: face codes move between pages (items with a nonzero availability halfword beep `4f`; some need a second press of the same button), confirm on page 3 defends, on page 9 tries to escape |
 
 Explicit failures remain for paths the original leaves undefined (uninitialized
 stack reads in `80096fbc`/`80097610`) and for code not yet reconstructed: the
@@ -72,9 +82,43 @@ uses a single enemy script. A third input chooses Escape with both party
 members: every hooked call of that route matches, from the battle's ATB ticks,
 alive update and teardown heap releases (one frees the block holding the sound
 driver's effect bank, which the driver keeps only as a stale address) through the
-field return. The escape route calls no action commit, AI run or result application;
-the escape decision itself is not reconstructed, and defeat is not yet observed.
-The turn scheduler, menu input, result screens and full return readiness remain
-required work. The post-battle module is
+field return. The escape route calls no action commit, AI run or result application.
+
+## Turn procedure and command menu
+
+`80070f40` runs the battle: every frame it calls `800723e0` (while `800ccc58`
+is set) and the frame routine `800716d8`, whose logic tick `8008a274` runs the
+ATB tick and the input decode `80089ccc`. `800723e0` selects the actor and calls
+the turn procedure `80071b94`, which spans many frames (menu, animation, text,
+camera). The reconstruction stops at its presentation calls and compares each
+decision step between them: selection, turn start, party preparation, the
+enemy script (`800799c8`), the event-queue reset, the action executor, target
+ordering, the end-of-turn alive updates and the timer reload. Presentation
+stays outside every compared step: the enemy name text (`80033728`, `80034eac`,
+`800769e8`), frame waits (`80071a8c`, `80071a38`, `80071964`, `80071ae0`), the
+animation wait on `+2db`, the camera (`800ba4e0`, `800bfe48`, `800bcd98`) and,
+inside the executor, the camera framing `800bc404`: the executor step ends at
+that call (`80078c64`) and a resumed step starts at its return (`80078c6c`),
+continuing the same entry with the executor's registers; its comparison
+excludes the 40-byte frame of `80078b34` that the entry lies inside
+(`--frame-above 40`). The party menu `80080160` is compared per frame at its
+page dispatch (`800807c8` to `80080930`) and per decode call; pages whose
+handling spans frames (the attack page entry from page 1 and the attack page 5
+with its camera, direction targeting through `ratan2` and combo execution) fail
+explicitly. The escape decision is one rand draw: `rand() % 100 < 50` succeeds,
+writes the party back to persistent data (`8009be0c`) and sets the outcome to
+`40`; a failure only ends the member's menu. Defense sets the record's `+15a`
+bit 1 and command index 0.
+
+A party defeat was observed with an analysis probe: two fingerprinted setup
+writes lower the persistent HP of characters 0 and 2 to 1 before field entry
+(the scenario becomes an `analysis_probe`; it is not progression). With the
+enemy-turns input the second enemy attack knocks out the last member; the alive
+update sets the outcome `81`. The resident battle mode (`8001b758`) then clears
+`8004f30c`, selects mode 1 with the persistent map selector `8006f94e = 1ea`
+(`8001996c`), and the game enters map 490, the memory-card load screen. That
+epilogue is observed, not reconstructed.
+
+The post-battle module is
 directory `10` file 4 (sha256 `f474fd48...`), byte-identical to RAM after
 victory.

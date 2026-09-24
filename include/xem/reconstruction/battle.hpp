@@ -1,9 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <stdexcept>
 #include <vector>
+
+namespace xem::reconstruction {
+struct ResidentState;
+}
 
 namespace xem::reconstruction::battle {
 
@@ -86,6 +91,10 @@ void status_effect_95b44(Battle &battle); // 80095b44
 // 800c3fe8: u16 amounts, u8 codes at +0x18) to HP, EP, gear HP and record
 // +0xdc, marking knockouts.
 void apply_results(Battle &battle, std::uint32_t queue);
+// 800883ac: drop a slot from its formation group (group byte 800c3eb4,
+// member byte 800c3eb5, 4-byte group entries at 800d301c; enemies use entries
+// 8.., slots with 800d32a1[slot*8] set add 0x10).
+void leave_group(Battle &battle, std::uint32_t slot);
 // 8007252c: rebuild the alive mask (800d39dc) and set the battle outcome
 // (800c48ea) when either side is defeated.
 void update_alive(Battle &battle);
@@ -98,6 +107,65 @@ void run_enemy_script(Battle &battle, std::uint32_t slot, std::uint32_t flag);
 void atb_tick(Battle &battle);
 // 800718bc: reload the acting slot's turn timer (80098af8).
 void reload_turn_timer(Battle &battle);
+
+// The turn procedure between its presentation calls (frames, animation,
+// text). 80070f40 calls 800723e0 every frame while the battle runs.
+//
+// 800723e0 up to its call of 80071b94, plus that procedure's entry up to its
+// actor branch: take the forced slot (800d2dc0) or the next ready slot in the
+// turn order from the cursor 800d2dd7. Returns whether a slot acts.
+bool select_turn(Battle &battle);
+// 80071bd8..80071c74: start the selected slot's turn (turn state +2d3 becomes
+// the slot) and count down its timed statuses (80099890).
+void begin_turn(Battle &battle);
+void count_down_statuses(Battle &battle, std::uint32_t slot);
+// 80071c74 up to the actor's branch: a party turn clears the reaction flags
+// 800c3d1a and places the acting member's marker. Returns the branch: 0 enemy
+// script (80071c80), 1 command menu 80080160 (80072090), 2 menu 80080c94
+// (800720a0, +80 bit 2000), 3 no menu (800720f8, +7c bits 2080 or +80 bit 1000).
+std::uint32_t prepare_turn(Battle &battle);
+// 80079778 up to its first frame: reset the event queue for `actor`.
+void begin_actions(Battle &battle, std::uint32_t actor);
+// Presentation call of the action executor: 800bc404 frames the camera on a
+// slot mask (camera state and GTE matrices only).
+using FrameTargets = std::function<void(std::uint32_t mask)>;
+// 800793f0 and 80079674: execute the action list 800d2e5c (approach, commit,
+// results, presentation events) and close the event queue.
+void execute_actions(Battle &battle, std::uint32_t actor, const FrameTargets &frame);
+// The same from the return of a type-2 entry's camera call (80078c6c) at
+// action `index`; `more` is the executor's pending type-0 flag.
+void resume_actions(Battle &battle, std::uint32_t actor, std::uint32_t index, bool more,
+                    const FrameTargets &frame);
+// 80072160..800721dc: party timers held by 800d2c9e and every slot's
+// default target (800841e0).
+void order_targets(Battle &battle);
+// 800721ec..80072230: alive update and end-of-turn regeneration check.
+void settle_turn(Battle &battle);
+// 80072240..80072254: reload the turn timer and re-enable the ATB.
+void finish_turn(Battle &battle);
+
+// The party command menu 80080160: every frame the battle tick decodes pad
+// input into the command code 800d3014 and the menu dispatches its current
+// page (turn state +2dd) with that code.
+//
+// 80089ccc: decode the resident input queue (800594a4 buttons: 2000/4000/
+// 8000/1000 -> codes 0-3; 8005948c keys: 20/40/80/10 -> 4-7, 100 -> d,
+// 800 -> e; 8 when empty, ff once the battle ends or events finish), playing
+// the menu effects.
+void decode_input(Battle &battle, ResidentState &resident);
+// 80080160 dispatch (table 8006fe7c): one frame of page +2dd for `member`.
+// Pages 1, 3 and 9 are reconstructed: face codes move between pages (a
+// repeated press of the same button on some items), 4/6/7 confirm: page 3
+// defends, page 9 tries to escape.
+void menu_step(Battle &battle, ResidentState &resident, std::uint32_t member);
+// 8009aa44: the Defense command for `member`.
+void defend(Battle &battle, std::uint32_t member);
+// 8009a9d0: an escape attempt; rand % 100 < 50 succeeds and writes the party
+// back (8009be0c). The caller sets the outcome 800c48ea = 40.
+bool try_escape(Battle &battle, std::uint32_t slot);
+// 8009be0c: write HP, EP, use counters and gear HP back to the persistent
+// character (8006d8a0) and gear (8006dfac) records.
+void write_back_party(Battle &battle);
 
 // Post-battle module (directory 10 file 4, sha256 f474fd48..., loaded at
 // 801de000) and the persistent game data (8006d634, 2358 bytes) are

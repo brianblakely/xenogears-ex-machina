@@ -14,6 +14,7 @@
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>
@@ -83,8 +84,17 @@ struct InputQueue {
     std::array<std::uint16_t, 6> current{};
     // 800594dc, 800594e0, 800594e8, 800594ec, 800595c8, 800595cc.
     std::array<std::uint16_t, 6> other{};
-    // 80035db0.
-    void reset() { *this = {.w50200 = 1}; }
+    // The ring: 16 entries of each field in its own array (8005a0fc + 20 *
+    // field), indexed by the low 4 bits of the counters.
+    std::array<std::array<std::uint16_t, 16>, 6> ring{};
+    // 80035db0: clear the counters and entries; the ring keeps its contents.
+    void reset() {
+        const auto kept = ring;
+        *this = {.w50200 = 1};
+        ring = kept;
+    }
+    // 80035cdc: move the oldest entry into `current`; false when empty.
+    bool dequeue();
 };
 
 // Resident file reads (800295d8 and its setup 80029690). Globals whose
@@ -209,6 +219,14 @@ struct ResidentState {
     std::vector<std::uint32_t> party_sprite_resources;
     field::MathTables math;
     InputQueue input_queue;
+    // Port 0 receive-buffer status and type bytes (800625fc/800625fd) that
+    // resident 80035734 classifies; written by the pad interrupt, a platform
+    // input like `io`.
+    std::array<std::uint8_t, 2> pad_status{};
+    // 8005917c points at the word at 80010000; -1 there disables the debug
+    // input and drawing paths.
+    std::uint32_t debug_pointer{}; // 8005917c
+    std::uint32_t debug_word{};    // 80010000
     // Loaded GTE rotation/translation (control registers 0-7). Machine state
     // that survives calls: PushMatrix stores it to memory.
     field::GteMatrix gte{};
@@ -458,6 +476,9 @@ class Program {
     // Battle 8007171c / 800718bc: ATB tick and turn-timer reload.
     void tick_battle_timers();
     void reload_battle_timer();
+    // A battle step over battle memory with the resident game data and rand
+    // state (the turn procedure's steps in battle.hpp).
+    void run_battle(const std::function<void(battle::Battle &)> &step);
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.

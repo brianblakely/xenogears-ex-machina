@@ -38,9 +38,8 @@ std::uint32_t slot_in_mask(const Battle &battle, std::uint32_t mask, std::uint32
     return battle.memory.u16(slot_bits + s * 2) & mask;
 }
 
-// 800883ac: drop a knocked-out slot from its formation group (group byte
-// 800c3eb4, member byte 800c3eb5, 4-byte group entries at 800d301c; enemies
-// use entries 8.., slots with 800d32a1[slot*8] set add 0x10).
+} // namespace
+
 void leave_group(Battle &battle, std::uint32_t slot) {
     auto &memory = battle.memory;
     const std::uint32_t s = slot & 0xff;
@@ -55,6 +54,8 @@ void leave_group(Battle &battle, std::uint32_t slot) {
     const std::uint32_t members = 0x800d301d + (memory.u8(info) + bank) * 4; // 80088448 reload
     memory.put8(members, memory.u8(members) & keep);
 }
+
+namespace {
 
 // 80085618 codes 0/5/7/8 (8008570c): damage to HP, or to gear HP (u32 +0x104)
 // when the slot's gear byte 800c3eb8 is set.

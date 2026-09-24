@@ -457,6 +457,9 @@ Program import_battle(const OriginalMemory &memory) {
     // The enemy data file holding the enemy AI scripts (pointer 800c3dd0, set
     // by aux4 801e4958).
     static_cast<void>(own_block(memory.word(0x800c3dd0)));
+    // The battle scene's formation data (pointer 800d3364, copied from
+    // resident 8005949c): positions and the slot-relation table at +140.
+    static_cast<void>(own_block(memory.word(0x800d3364)));
     // After combat: the growth table file (pointer 800d2c08) and the
     // post-battle module loaded at 801de000.
     static_cast<void>(own_block(memory.word(0x800d2c08)));

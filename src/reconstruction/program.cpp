@@ -720,6 +720,21 @@ void Program::reload_battle_timer() {
     with_battle(*this, [](battle::Battle &context) { battle::reload_turn_timer(context); });
 }
 
+bool InputQueue::dequeue() {
+    if (count == 0)
+        return false;
+    --count;
+    const auto entry = read & 15;
+    ++read;
+    for (std::size_t field = 0; field < current.size(); ++field)
+        current[field] = ring[field][entry];
+    return true;
+}
+
+void Program::run_battle(const std::function<void(battle::Battle &)> &step) {
+    with_battle(*this, [&](battle::Battle &context) { step(context); });
+}
+
 void Program::grant_battle_rewards() {
     with_battle(*this, [](battle::Battle &context) { battle::grant_rewards(context); });
 }

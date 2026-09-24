@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
                                   entry == "battle_atb" || entry == "battle_reload" ||
-                                  entry == "battle_ai";
+                                  entry == "battle_ai" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -265,6 +265,47 @@ int main(int argc, char **argv) {
         } else if (entry == "battle_ai") {
             // 800799c8: A0 enemy slot, A1 flag.
             program->run_battle_enemy_script(registers[4] & 0xff, registers[5] & 0xff);
+        } else if (entry.starts_with("battle_turn_")) {
+            // Turn-procedure steps between presentation calls; A0 is the
+            // actor at 80079778 and 800793f0.
+            const auto actor = registers[4] & 0xff;
+            const auto step = entry.substr(12);
+            // The camera call 800bc404 is presentation: the executor step ends
+            // there (hook 80078c64, result 1) and resumes after it (80078c6c);
+            // a completed executor returns 0.
+            const game::battle::FrameTargets frame = [&](std::uint32_t) {
+                return_value = 1;
+                throw BoundaryReached{};
+            };
+            program->run_battle([&](game::battle::Battle &context) {
+                if (step == "select") // 1: a slot acts (80071bd8), 0: none (80072254)
+                    return_value = game::battle::select_turn(context) ? 1 : 0;
+                else if (step == "begin")
+                    game::battle::begin_turn(context);
+                else if (step == "actions_begin")
+                    game::battle::begin_actions(context, actor);
+                else if (step == "actions") {
+                    game::battle::execute_actions(context, actor, frame);
+                    return_value = 0;
+                } else if (step == "actions_resume") { // 80078b34: S1 actor, S0 index; S6 flag
+                    game::battle::resume_actions(context, registers[17], registers[16],
+                                                 (registers[22] & 0xff) != 0, frame);
+                    return_value = 0;
+                } else if (step == "prepare")
+                    return_value = game::battle::prepare_turn(context);
+                else if (step == "order")
+                    game::battle::order_targets(context);
+                else if (step == "settle")
+                    game::battle::settle_turn(context);
+                else if (step == "finish")
+                    game::battle::finish_turn(context);
+                else if (step == "decode") // 80089ccc
+                    game::battle::decode_input(context, program->resident);
+                else if (step == "menu") // 800807c8: S2 member
+                    game::battle::menu_step(context, program->resident, registers[18] & 0xff);
+                else
+                    throw InputError("Unsupported turn step");
+            });
         } else if (entry == "battle_atb") {
             program->tick_battle_timers(); // 8007171c
         } else if (entry == "battle_reload") {

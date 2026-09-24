@@ -149,6 +149,11 @@ std::vector<OriginalGlobal> build() {
                      [i](Program &p) -> auto & { return p.resident.input_queue.current[i]; });
         add_resident("input_other", input_other[i], 2,
                      [i](Program &p) -> auto & { return p.resident.input_queue.other[i]; });
+        for (std::size_t slot = 0; slot < 16; ++slot)
+            add_resident("input_ring", static_cast<std::uint32_t>(0x8005a0fc + 0x20 * i + 2 * slot),
+                         2, [i, slot](Program &p) -> auto & {
+                             return p.resident.input_queue.ring[i][slot];
+                         });
     }
     add_resident("field_map", 0x8004f34c, 4,
                  [](Program &p) -> auto & { return p.resident.field_map; });
@@ -165,6 +170,13 @@ std::vector<OriginalGlobal> build() {
     add_resident("departure_594d0", 0x800594d0, 1,
                  [](Program &p) -> auto & { return p.resident.departure_594d0; });
     add("gate_adbc4", 0x800adbc4, 4, [](Program &p) -> auto & { return f(p).gate_adbc4; });
+    for (std::size_t i = 0; i < 2; ++i)
+        add_resident("pad_status", static_cast<std::uint32_t>(0x800625fc + i), 1,
+                     [i](Program &p) -> auto & { return p.resident.pad_status[i]; });
+    add_resident("debug_pointer", 0x8005917c, 4,
+                 [](Program &p) -> auto & { return p.resident.debug_pointer; });
+    add_resident("debug_word", 0x80010000, 4,
+                 [](Program &p) -> auto & { return p.resident.debug_word; });
     add_resident("music_result", 0x8004f308, 4,
                  [](Program &p) -> auto & { return p.resident.music.gate; });
     add_resident("music_requested", 0x8004f324, 4,
@@ -571,6 +583,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sound.start_stamp; });
     add_resident("sound_voice_limit", 0x80059478, 4,
                  [](Program &p) -> auto & { return p.resident.sound.voice_limit; });
+    add_resident("sound_system_bank", 0x8005919c, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.system_bank; });
     add_resident("sound_voice_changes", 0x80059554, 4,
                  [](Program &p) -> auto & { return p.resident.sound.voice_changes; });
     add_resident("sound_voice_holds", 0x800594fc, 4,
