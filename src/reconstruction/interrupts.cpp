@@ -98,9 +98,12 @@ void DiscDrive::command(std::uint8_t code, std::span<const std::uint8_t> paramet
 }
 
 void DiscDrive::data_ready() {
-    if (!next)
-        throw PlatformInputError("A data-ready interrupt arrives while the drive position is "
-                                 "not supplied");
+    cursor = 0;
+    if (!next) {
+        // Nothing records which sector arrived: reading it fails.
+        buffer.reset();
+        return;
+    }
     if (!read_sector)
         throw PlatformInputError("A data-ready interrupt arrives without a disc image service");
     buffer = read_sector(*next);

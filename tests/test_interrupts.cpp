@@ -265,8 +265,9 @@ void cd() {
 
 void drive() {
     game::DiscDrive drive;
-    check(fails<game::PlatformInputError>([&] { drive.data_ready(); }),
-          "Data without a drive position is malformed input");
+    drive.data_ready();
+    check(fails<game::PlatformInputError>([&] { drive.transfer(4); }),
+          "An unidentified delivered sector cannot be read");
     const std::array<std::uint8_t, 3> position{0x00, 0x02, 0x10};
     drive.command(2, position);
     drive.command(6, {});

@@ -455,6 +455,24 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
             ring + header_bytes,
             copy_of(memory.range(ring + header_bytes, std::size_t{count} * 0x800))};
     }
+    // Image data of LoadImage requests waiting in the libgpu queue.
+    auto &gpu = resident.gpu;
+    for (auto at = gpu.tail; at != gpu.head; at = (at + 1U) & 63U) {
+        const auto entry = at * 0x60U;
+        const auto word = [&](std::uint32_t offset) {
+            std::uint32_t value = 0;
+            for (std::uint32_t i = 0; i < 4; ++i)
+                value |= static_cast<std::uint32_t>(gpu.queue.at(entry + offset + i)) << (8U * i);
+            return value;
+        };
+        if (word(0) != 0x800460a0 || word(4) != 0x8006be40U + entry)
+            continue;
+        const auto size = word(0x10);
+        const auto pixels = std::size_t{size & 0xffffU} * (size >> 16U);
+        if (pixels > 1024 * 512)
+            throw field::FieldFormatError("Queued image request exceeds VRAM");
+        gpu.sources.push_back({word(8), copy_of(memory.range(word(8), (pixels + 1) / 2 * 4))});
+    }
     if (cd.sync_callback == 0x8002ac24 && read.w_fe0c != 0) {
         // Entries up to and including the terminating one (file or
         // destination zero).

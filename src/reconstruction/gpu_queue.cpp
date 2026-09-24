@@ -62,6 +62,9 @@ std::uint32_t Program::ram_word(std::uint32_t address) const {
     for (const auto &block : resident.music_blocks)
         if (const auto value = in(block))
             return *value;
+    for (const auto &block : resident.gpu.sources)
+        if (const auto value = in(block))
+            return *value;
     throw field::FieldFormatError("Interrupt-side code reads RAM no Program value holds");
 }
 

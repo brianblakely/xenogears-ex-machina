@@ -138,6 +138,9 @@ struct GpuState {
     // 8006be34: 64 requests of 60h bytes: operation, parameter pointer,
     // argument, then the copied parameter.
     std::array<std::uint8_t, 64 * 0x60> queue{};
+    // Image data of queued LoadImage requests: caller memory the queue
+    // refers to. Read-only input, attached by the host.
+    std::vector<resident::HeapBlock> sources;
 };
 
 // Interrupt environment of the dispatcher 8004b9b4 and its handlers.
