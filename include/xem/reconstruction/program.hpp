@@ -4,6 +4,7 @@
 #include "xem/reconstruction/disc_stream.hpp"
 #include "xem/reconstruction/field_control.hpp"
 #include "xem/reconstruction/field_gte.hpp"
+#include "xem/reconstruction/field_movie.hpp"
 #include "xem/reconstruction/field_return.hpp"
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
@@ -204,6 +205,17 @@ struct ResidentState {
     std::uint32_t cd_dma_register{};            // 800567b4: address of DMA3 CHCR
     std::array<std::uint16_t, 2> text_cluts{};  // 800595d4 (even rows), 80059414 (odd rows)
     field::MatrixStack matrix_stack{};          // 80056d2c depth, 80056d30 records
+    // Game-mode selection (8001996c) for the mode dispatcher 80019acc.
+    std::uint32_t next_mode{}; // 80018088
+    // 800592bc: the heap block 800199cc loaded for mode_loaded (its address,
+    // or zero) with its bytes.
+    resident::HeapBlock mode_block;
+    std::uint32_t mode_loaded{}; // 800592c0: -1 once the next mode differs
+    // Field exit 8007954c globals whose meaning is not recovered.
+    std::uint8_t b_5942c{};  // 8005942c: cleared on every exit
+    std::uint32_t w_4f30c{}; // 8004f30c
+    std::uint32_t w_4f310{}; // 8004f310
+    std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
 };
 
 struct FieldState {
@@ -299,6 +311,10 @@ struct FieldState {
     std::int16_t text_speed{};                    // 800b21d6: window slide steps
     std::uint32_t dialogue_gate_afd04{};          // 800afd04: nonzero defers FC
     std::uint32_t disc_idle_known{};              // 800adb70: zero requires a disc query
+    // 800adb70 is also the movie request: extended 60 sets it and the field
+    // loop plays the movie (800a7c58) and clears it.
+    field::MovieState movie{};
+    std::uint32_t exit_mode{}; // 800b0064: bits 0-6 the next game mode, bit 80 calls 8001bb50
 };
 
 class Program;
@@ -356,6 +372,27 @@ class Program {
     std::int32_t select_directory(std::uint32_t base, std::uint32_t index);
     // Resident 8001b66c: stop the playing sequence and forget the loaded pair.
     void stop_music();
+    // Resident 800386c4: select a sound output mode (resident::SoundMode) and
+    // reapply every volume it affects; the reverb output volume goes to the
+    // SPU (libspu 8004e574) as hardware writes. The CD mix 8003885c (driver
+    // flag 4000) stops with MissingDependency.
+    void set_sound_mode(std::int32_t mode);
+    // Resident 8001996c: select the next game mode for the mode dispatcher
+    // 80019acc, dropping the cached mode block when the mode changes.
+    void set_next_mode(std::uint32_t mode);
+    // Field extended event handler that the FE handler's table reaches for
+    // actor `index`, whose working PC is the extended byte.
+    void event_extended(std::size_t index, const ProgramObserver &observe = {});
+    // Field 800a7f78: whether the movie loop drains the pad before deciding.
+    [[nodiscard]] field::MoviePad movie_pad() const;
+    // Field 800a7f78..800a80b0 once that drain has run: the loop's decision.
+    // A skip applies the CD fade and the five waits before returning.
+    field::MovieStep movie_decision(field::MovieServices &services);
+    // Field 8007954c: leave the field. Kind 3 (a map change to the mode in
+    // 800b0064) returns true where the original calls the mode dispatcher
+    // 80019acc(0), which the caller runs next; false when 8004f370 keeps the
+    // field. Other kinds stop with MissingDependency.
+    bool exit_field(std::uint32_t kind);
     // Battle 80085ccc: commit and resolve an action.
     void commit_battle_action(std::uint32_t attacker, std::uint32_t targets,
                               std::uint32_t animation);
@@ -378,6 +415,8 @@ class Program {
   private:
     void dispatch(field::EventContext &context, std::uint8_t opcode,
                   const ProgramObserver &observe);
+    void dispatch_extended(field::EventContext &context, std::uint8_t extended, SourcePoint point,
+                           const ProgramObserver &observe);
     void script(field::EventContext &context,
                 const std::function<void(field::FieldWorld &)> &handler);
     void field_pre_motion(std::size_t index);

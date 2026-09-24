@@ -416,6 +416,29 @@ std::vector<OriginalGlobal> build() {
         [](Program &p) -> auto & { return f(p).dialogue_gate_afd04; });
     add("disc_idle_known", 0x800adb70, 4,
         [](Program &p) -> auto & { return f(p).disc_idle_known; });
+    // Movie request (extended 60) and the movie loop's inputs.
+    const auto movie = [&](std::string name, std::uint32_t address, auto access) {
+        add(std::move(name), address, 2,
+            [access](Program &p) -> auto & { return access(f(p).movie.request); });
+    };
+    movie("movie_file", 0x800c3a20, [](auto &r) -> auto & { return r.movie; });
+    for (std::size_t i = 0; i < 4; ++i)
+        movie("movie_area", static_cast<std::uint32_t>(0x800c3a22 + 2 * i),
+              [i](auto &r) -> auto & { return r.area[i]; });
+    movie("movie_start_a1", 0x800c3a2a, [](auto &r) -> auto & { return r.start_a1; });
+    movie("movie_start_a2", 0x800c3a2c, [](auto &r) -> auto & { return r.start_a2; });
+    movie("movie_end_frame", 0x800c3a2e, [](auto &r) -> auto & { return r.end_frame; });
+    movie("movie_layout", 0x800c3a30, [](auto &r) -> auto & { return r.layout; });
+    for (std::size_t i = 0; i < 2; ++i)
+        movie("movie_size", static_cast<std::uint32_t>(0x800c3a32 + 2 * i),
+              [i](auto &r) -> auto & { return r.size[i]; });
+    movie("movie_buffer_mark", 0x800c3a36, [](auto &r) -> auto & { return r.buffer_mark; });
+    movie("movie_start_select", 0x800c3a38, [](auto &r) -> auto & { return r.start_select; });
+    movie("movie_hold", 0x800c3a3a, [](auto &r) -> auto & { return r.hold; });
+    add("movie_flags", 0x800adb80, 4, [](Program &p) -> auto & { return f(p).movie.flags; });
+    add("movie_signals", 0x800adb84, 4, [](Program &p) -> auto & { return f(p).movie.signals; });
+    add("movie_frame", 0x800b06a0, 4, [](Program &p) -> auto & { return f(p).movie.frame; });
+    add("field_exit_mode", 0x800b0064, 4, [](Program &p) -> auto & { return f(p).exit_mode; });
     add_resident("gpu_type", 0x800568d0, 1,
                  [](Program &p) -> auto & { return p.resident.gpu_type; });
     add_resident("disc_error", 0x8004fdfc, 4,
@@ -526,6 +549,62 @@ std::vector<OriginalGlobal> build() {
     for (std::size_t i = 0; i < 24; ++i)
         add_resident("sound_voice_owner", static_cast<std::uint32_t>(0x8006252c + 4 * i), 4,
                      [i](Program &p) -> auto & { return p.resident.sound.voice_owners[i]; });
+    // Sound output volumes and mode (800386c4 and its callees).
+    add_resident("sound_commits", 0x8005a3c0, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.commits; });
+    for (std::size_t i = 0; i < 2; ++i) {
+        add_resident("sound_master_pair", static_cast<std::uint32_t>(0x8005a3c4 + 2 * i), 2,
+                     [i](Program &p) -> auto & { return p.resident.sound.master_pair[i]; });
+        add_resident("sound_cd_pair", static_cast<std::uint32_t>(0x8005a3d0 + 2 * i), 2,
+                     [i](Program &p) -> auto & { return p.resident.sound.cd_pair[i]; });
+        add_resident("sound_reverb_pair", static_cast<std::uint32_t>(0x8005940c + 2 * i), 2,
+                     [i](Program &p) -> auto & { return p.resident.sound.reverb_pair[i]; });
+        add_resident("spu_reverb_output", static_cast<std::uint32_t>(0x800589bc + 2 * i), 2,
+                     [i](Program &p) -> auto & { return p.resident.sound.spu_reverb_output[i]; });
+    }
+    add_resident("sound_master", 0x8005a3e8, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.master; });
+    add_resident("sound_cd", 0x8005a3ea, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.cd; });
+    add_resident("sound_reverb", 0x8005a3ec, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.reverb; });
+    add_resident("sound_master_level", 0x8005a3f0, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.master_level; });
+    add_resident("sound_master_step", 0x8005a3f4, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.master_step; });
+    add_resident("sound_master_frames", 0x8005a3f8, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.master_frames; });
+    add_resident("sound_master_target", 0x8005a3fa, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.master_target; });
+    add_resident("sound_cd_level", 0x8005a3fc, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.cd_level; });
+    add_resident("sound_cd_step", 0x8005a400, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.cd_step; });
+    add_resident("sound_cd_frames", 0x8005a404, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.cd_frames; });
+    add_resident("sound_cd_target", 0x8005a406, 2,
+                 [](Program &p) -> auto & { return p.resident.sound.cd_target; });
+    add_resident("sound_mode_voice", 0x80059518, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.mode_voice; });
+    add_resident("sound_voice_releases", 0x80059550, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.voice_releases; });
+    add_resident("spu_registers", 0x80058e08, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.spu_registers; });
+    // Game-mode selection and the field exit.
+    add_resident("next_mode", 0x80018088, 4,
+                 [](Program &p) -> auto & { return p.resident.next_mode; });
+    add_resident("mode_block", 0x800592bc, 4,
+                 [](Program &p) -> auto & { return p.resident.mode_block.address; });
+    add_resident("mode_loaded", 0x800592c0, 4,
+                 [](Program &p) -> auto & { return p.resident.mode_loaded; });
+    add_resident("field_exit_5942c", 0x8005942c, 1,
+                 [](Program &p) -> auto & { return p.resident.b_5942c; });
+    add_resident("field_exit_4f30c", 0x8004f30c, 4,
+                 [](Program &p) -> auto & { return p.resident.w_4f30c; });
+    add_resident("field_exit_4f310", 0x8004f310, 4,
+                 [](Program &p) -> auto & { return p.resident.w_4f310; });
+    add_resident("field_exit_4f370", 0x8004f370, 4,
+                 [](Program &p) -> auto & { return p.resident.w_4f370; });
     add_resident("vsync_counter", 0x80058960, 4,
                  [](Program &p) -> auto & { return p.resident.vsync_counter; });
     add_resident("cd_sync_deadline", 0x8005a228, 4,

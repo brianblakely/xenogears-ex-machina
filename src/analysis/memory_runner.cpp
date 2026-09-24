@@ -84,15 +84,21 @@ int main(int argc, char **argv) {
                              "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
-        const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
-                                    entry == "music_stop" || entry == "disc_read_file";
+        const bool resident_entry =
+            entry == "heap_allocate" || entry == "heap_release" || entry == "music_stop" ||
+            entry == "disc_read_file" || entry == "sound_set_mode" || entry == "sound_set_master" ||
+            entry == "sound_set_cd" || entry == "sound_update_voices" || entry == "set_next_mode";
+        // Field entries beyond the update: one extended event handler, the
+        // movie loop's decision and the field exit.
+        const bool field_entry =
+            entry == "field_event_extended" || entry == "movie_decision" || entry == "field_exit";
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
                                   entry == "battle_atb" || entry == "battle_reload" ||
                                   entry == "battle_ai";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && !resident_entry && !battle_entry)
+            entry != "field_checkpoints" && !resident_entry && !battle_entry && !field_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -249,6 +255,47 @@ int main(int argc, char **argv) {
             }
             return_value = static_cast<std::uint32_t>(program->read_file(
                 static_cast<std::int32_t>(registers[4]), registers[5], registers[6], registers[7]));
+        } else if (entry == "sound_set_mode") {
+            program->set_sound_mode(static_cast<std::int32_t>(registers[4])); // 800386c4: A0 mode
+        } else if (entry == "sound_set_master") {
+            // 80038c68: A0 volume, A1 frames.
+            game::resident::set_master_volume(program->resident.sound, registers[4], registers[5]);
+        } else if (entry == "sound_set_cd") {
+            // 80038d18: A0 volume, A1 frames.
+            game::resident::set_cd_volume(program->resident.sound, registers[4], registers[5]);
+        } else if (entry == "sound_update_voices") {
+            // 8003ebf0: A0 sequence, A1 first voice record, A2 voice count.
+            game::resident::update_voices(program->resident.sound, registers[4], registers[5],
+                                          registers[6]);
+        } else if (entry == "set_next_mode") {
+            program->set_next_mode(registers[4]); // 8001996c: A0 mode
+        } else if (entry == "field_event_extended") {
+            // The FE table's handler for the current actor: 800afd1c indexes
+            // it and 800b0078 must be its storage.
+            const auto index = memory.word(0x800afd1c);
+            if (index >= program->field->actors.size() ||
+                program->field->actors[index].address != memory.word(0x800b0078))
+                throw InputError("The current event actor globals disagree");
+            program->event_extended(index, observer);
+        } else if (entry == "movie_decision") {
+            // Field 800a801c or 800a7fdc, after the pad drain: 0 when the loop
+            // runs another frame, 1 when it ends (at 800a80b4).
+            struct Waits final : field::MovieServices {
+                std::uint32_t count{};
+                void wait_vertical_blank() override { ++count; }
+            } waits;
+            const auto step = program->movie_decision(waits);
+            return_value = step == field::MovieStep::next_frame ? 0U : 1U;
+            std::ostringstream out;
+            out << "{\"step\":"
+                << (step == field::MovieStep::skip  ? "\"skip\""
+                    : step == field::MovieStep::end ? "\"end\""
+                                                    : "\"next_frame\"")
+                << ",\"vertical_blank_waits\":" << waits.count << '}';
+            result = out.str();
+        } else if (entry == "field_exit") {
+            // 8007954c: A0 kind; 1 where it calls the mode dispatcher 80019acc.
+            return_value = program->exit_field(registers[4]) ? 1U : 0U;
         } else if (entry == "music_stop") {
             program->stop_music(); // 8001b66c
         } else {
@@ -357,6 +404,13 @@ int main(int argc, char **argv) {
                   << static_cast<std::uint32_t>(
                          static_cast<std::int32_t>(static_cast<std::int16_t>(screen.h)));
     }
-    std::cout << "],\"owned\":[" << owned.str() << "]}\n";
+    std::cout << "],\"owned\":[" << owned.str() << "],\"hardware_writes\":[";
+    if (program && executing)
+        for (std::size_t i = 0; i < program->resident.hardware_writes.size(); ++i) {
+            const auto &write = program->resident.hardware_writes[i];
+            std::cout << (i ? "," : "") << "{\"address\":" << write.address
+                      << ",\"value\":" << write.value << ",\"width\":" << write.width << '}';
+        }
+    std::cout << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
 }

@@ -175,6 +175,16 @@ Program import_resident(const OriginalMemory &memory) {
             resident.heap.held.emplace(at + 8, copy_of(memory.range(at + 8, header[0] - at - 16)));
         at = header[0] - 8;
     }
+    // The mode block 800199cc cached (800592bc): its allocated heap extent. A
+    // pointer that outlived a heap reset names bytes the heap holds.
+    if (const auto block = resident.mode_block.address; block != 0) {
+        const auto found = resident.heap.headers.find(block - 8);
+        const auto tag = found == resident.heap.headers.end()
+                             ? 0U
+                             : found->second[1] & reconstruction::resident::heap_tag_mask;
+        if (tag != 0 && tag != reconstruction::resident::heap_end_tag)
+            resident.mode_block.bytes = copy_of(memory.range(block, found->second[0] - block - 8));
+    }
     // Sound driver objects, each owned whole. Objects in the sound pool (the
     // 6300 bytes at 80065b0c the driver initializes with 80038ec0) end at the
     // word 8 bytes before them (their pool header). Objects loaded into the
@@ -219,6 +229,8 @@ Program import_resident(const OriginalMemory &memory) {
     sound_list(sound.sequences, 0);
     copy_into(sound.spu_blocks,
               memory.range(reconstruction::resident::spu_block_table, sound.spu_blocks.size()));
+    sound.pitch_tables = copy_of(memory.range(reconstruction::resident::pitch_table_address,
+                                              reconstruction::resident::pitch_table_bytes));
     // Child blocks of each sequence (next +4) and the sound-pool header list.
     for (auto sequence = sound.sequences; sequence != 0; sequence = memory.word(sequence))
         sound_list(memory.word(sequence + 4), 4);
@@ -354,6 +366,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_ring_header", read.ring.address, read.ring.bytes);
     for (const auto &block : resident.music_blocks)
         out.bytes("music_block", block.address, block.bytes);
+    if (!resident.mode_block.bytes.empty())
+        out.bytes("mode_block", resident.mode_block.address, resident.mode_block.bytes);
     if (resident.cd.dma_set_callback) {
         out.memory.put(resident.cd.dma_services + 4, *resident.cd.dma_set_callback);
         out.claim("dma_set_callback", resident.cd.dma_services + 4, 4);
@@ -362,6 +376,9 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("sound_object", address, bytes);
     out.bytes("sound_spu_blocks", reconstruction::resident::spu_block_table,
               resident.sound.spu_blocks);
+    if (!resident.sound.pitch_tables.empty())
+        out.bytes("sound_pitch_tables", reconstruction::resident::pitch_table_address,
+                  resident.sound.pitch_tables);
     for (const auto &[address, header] : resident.sound.pool_headers) {
         for (std::uint32_t i = 0; i < 4; ++i)
             out.memory.put(address + 4 * i, header[i]);
