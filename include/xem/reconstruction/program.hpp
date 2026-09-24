@@ -485,6 +485,9 @@ class Program {
     // pending interrupt the dispatcher enables, until none is pending.
     // Asynchronous register reads come from resident.platform.
     void interrupt_dispatch();
+    // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
+    // driver flags the event handler loaded). Returns 0.
+    std::uint32_t sound_tick(std::uint32_t event);
     // Resident 8001b66c: stop the playing sequence and forget the loaded pair.
     void stop_music();
     // Battle 80085ccc: commit and resolve an action.
@@ -542,6 +545,7 @@ class Program {
     void dma_interrupt();                          // 8004c098
     void dma_completed(std::uint32_t address);     // A 8005896c entry
     void spu_interrupt();                          // 8003bfa0
+    void spu_transfer_completed();                 // 8004cb3c (sound_tick.cpp)
     void cd_interrupt();                           // 80042ca8
     std::uint32_t cd_getintr();                    // 800415b4
     void cd_poll();                                // 80041c80..80041d24

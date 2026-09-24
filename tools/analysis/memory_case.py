@@ -65,6 +65,7 @@ RESIDENT_ENTRIES = (
     "disc_read_file",
     "battle_ai",
     "interrupt_dispatch",
+    "sound_tick",
 )
 
 # Platform inputs. A hook named `load-SITE` sits on the instruction after the
