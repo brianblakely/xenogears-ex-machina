@@ -439,6 +439,27 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
                 put(self, 0xcc, word(self, 0xcc, 2) + 1, 2);
             });
             break;
+        case 0x80: // 80092664 -> 800924d4: set one byte lane of a collision attribute.
+            script(context, [&](field::FieldWorld &world) {
+                auto &self = world.actors[world.current].actor;
+                const auto at = word(self, 0xcc, 2);
+                const auto value =
+                    static_cast<std::uint32_t>(field::read_immediate15_or_variable(world, 3));
+                const auto attribute = world.program.byte(at + 1U);
+                const auto lane = world.program.byte(at + 2U);
+                if (lane < 4) {
+                    // The live table *800afb20 is the loaded component's.
+                    auto &component = state.collision_component;
+                    const auto table = word(component, 0x14) + attribute * 4U;
+                    const auto old = word(component, table);
+                    // Lane 0 ORs the unmasked value; others shift it into place.
+                    const auto updated = (old & ~(0xffU << (8U * lane))) | (value << (8U * lane));
+                    put(component, table, updated);
+                    put(state.collision.attributes_raw, attribute * 4U, updated);
+                }
+                put(self, 0xcc, at + 5, 2);
+            });
+            break;
         case 0x98: // 800932d0: request map `operand 1` at entry `operand 3`.
             script(context, [&](field::FieldWorld &world) { request_map_change(world); });
             break;

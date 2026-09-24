@@ -50,7 +50,7 @@ def u32(ram: bytes, address: int) -> int:
     return struct.unpack_from("<I", ram, address & 0x1FFFFF)[0]
 
 
-FIELD_MAP = 0x8004F34C  # Selector of the loaded field.
+FIELD_MAP = 0x8004F34C  # The field map; primary 98 stores a requested map here.
 IO_BASE = 0x1F801000  # The recorded hardware I/O page.
 SPU_PAGE = (0xC00, 0xE00)  # SPU registers inside it.
 
@@ -214,6 +214,11 @@ def slot_bytes(raw: Path, slot: int) -> bytes:
     return data
 
 
+def image_map(ram: bytes) -> int:
+    """The field map an image names (bits 0-13 of 8004f34c, as 80092f44 reads it)."""
+    return u32(ram, FIELD_MAP) & 0x3FFF
+
+
 class Sources:
     """Fingerprint-qualified field source, field overlay and party sprite files.
 
@@ -223,7 +228,7 @@ class Sources:
     the loaded ones.
     """
 
-    def __init__(self, raw: Path, map_id: int = 23, field_slot: int | None = None):
+    def __init__(self, raw: Path, map_id: int, field_slot: int | None = None):
         sources = sprite_sources(raw, PROFILE, map_id)
         self.field = sources["field_source"] if field_slot is None else slot_bytes(raw, field_slot)
         # Source slot 36: the packed field overlay; its decoded block (from
@@ -413,11 +418,11 @@ def run(args: argparse.Namespace) -> int:
     calls = pairs(capture, args.entry_hook, args.exit_hook, interrupts, tuple(outcomes))
     require(calls, "No original entry/exit pairs in the capture")
     selected = calls[args.start : args.start + args.limit]
-    # Resident entries (the heap) need no loaded field or field source.
+    # Resident entries (the heap) need no loaded field or field source. Field
+    # entries use the source of the map each entry image names, unless --map
+    # selects one (a requested map is stored before its field is loaded).
     resident = args.entry in RESIDENT_ENTRIES
-    # Field entries use the source of the map loaded at the first call.
-    map_id = None if resident else u32(snapshots.read(selected[0][0])[0], FIELD_MAP)
-    sources = None if resident else Sources(args.raw, map_id, args.field_slot)
+    loaded_sources: dict[int, Sources] = {}
     statuses = collections.Counter()
     dependencies = collections.defaultdict(list)
     divergences = []
@@ -435,17 +440,24 @@ def run(args: argparse.Namespace) -> int:
     )
     with tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory:
         work = Path(directory)
-        (work / "field.bin").write_bytes(b"" if resident else sources.field)
-        (work / "overlay.bin").write_bytes(b"" if resident else sources.overlay)
+        maps = collections.Counter()
         for index, (entry_row, exit_row, handlers) in enumerate(selected, args.start):
             # Read in capture order: entry, interrupt brackets, exit.
             entry, scratch, io = snapshots.read(entry_row)
+            sources = None
+            if not resident:
+                map_id = image_map(entry) if args.map is None else args.map
+                if map_id not in loaded_sources:
+                    loaded_sources[map_id] = Sources(args.raw, map_id, args.field_slot)
+                sources = loaded_sources[map_id]
+                maps[map_id] += 1
+            (work / "field.bin").write_bytes(b"" if resident else sources.field)
+            (work / "overlay.bin").write_bytes(b"" if resident else sources.overlay)
             brackets = [
                 (snapshots.read(before_row)[0], snapshots.read(after_row)[0])
                 for before_row, after_row in handlers
             ]
             exit, _, exit_io = snapshots.read(exit_row)
-            require(resident or u32(entry, FIELD_MAP) == map_id, "Selected calls span maps")
             (work / "ram.bin").write_bytes(entry)
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
@@ -603,7 +615,8 @@ def run(args: argparse.Namespace) -> int:
         "matched_event_opcodes": dict(sorted(opcodes.items())),
         "snapshot_file_sha256": trace["snapshot_file_sha256"],
         "entry": args.entry,
-        "field_source": None if resident else {"map": map_id, "slot": args.field_slot},
+        "field_maps": {str(k): v for k, v in sorted(maps.items())},
+        "field_slot": args.field_slot,
         "outcomes": outcomes,
         "stop": args.stop,
         "calls_available": len(calls),
@@ -697,6 +710,7 @@ def main() -> int:
     parser.add_argument(
         "--field-slot", type=int, help="Catalog slot of a field loaded outside its map pair"
     )
+    parser.add_argument("--map", type=int, help="Field source map (default: the image's map)")
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)
     parser.add_argument("--budget", type=int, default=1_000_000)

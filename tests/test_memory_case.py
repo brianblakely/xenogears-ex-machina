@@ -9,6 +9,7 @@ from tools.analysis.memory_case import (
     RAM,
     STACK_BELOW_ENTRY,
     compare,
+    image_map,
     pairs,
     superseded_bytes,
     visible_registers,
@@ -37,6 +38,11 @@ class MemoryCaseTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "Nested"):
                 pairs(capture, "entry", "exit")
+
+    def test_field_source_map_comes_from_the_image(self):
+        ram = bytearray(RAM)
+        ram[0x4F34C:0x4F350] = (0x4016).to_bytes(4, "little")
+        self.assertEqual(image_map(bytes(ram)), 22)
 
     def test_interrupt_invocations_are_bracketed_per_call(self):
         rows = [

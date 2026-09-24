@@ -130,6 +130,25 @@ void map_change_request() {
           "5b stops the actor and stays on its own PC");
 }
 
+void collision_attribute_lane() {
+    // 80 attribute 1 lane 2 = 0x134; 80 attribute 1 lane 4 (ignored).
+    auto program = events({0x80, 1, 2, 0x34, 0x81, 0x80, 1, 4, 0, 0x80, 0x03});
+    auto &state = *program.field;
+    state.collision_component.assign(0x20, 0);
+    put(state.collision_component, 0x14, 0x18);
+    put(state.collision_component, 0x1c, 0xaabbccdd);
+    state.collision.attributes_raw.assign(8, 0);
+    put(state.collision.attributes_raw, 4, 0xaabbccdd);
+    try {
+        static_cast<void>(program.event_pass());
+    } catch (const field::UnsupportedInstruction &error) {
+        check(error.pc == 10, "80 advances five for every lane");
+    }
+    check(get(state.collision_component, 0x1c, 4) == 0xab34ccdd &&
+              get(state.collision.attributes_raw, 4, 4) == 0xab34ccdd,
+          "80 ORs the shifted value into the live attribute and its parsed copy");
+}
+
 void scheduler_observation_continuity() {
     auto program = events({0x26, 0, 0x80, 0}, 2);
     bool second_actor = false;
@@ -493,6 +512,7 @@ int main() {
         state_continuity_and_moves();
         connected_handlers_and_partial_state();
         map_change_request();
+        collision_attribute_lane();
         scheduler_observation_continuity();
         extended_error_retains_prefix();
         sound_effect_dispatch();
@@ -503,7 +523,7 @@ int main() {
         original_layout_round_trip();
         music_load();
         music_load_without_stream();
-        std::cout << "13 connected program regression groups passed\n";
+        std::cout << "14 connected program regression groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;
