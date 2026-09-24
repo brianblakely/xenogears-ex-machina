@@ -118,6 +118,13 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
     for (const auto &node : resident.sprite_tasks.nodes)
         if (const auto bytes = from(node.address, node.bytes); !bytes.empty())
             return bytes;
+    // Music blocks and the disc read ring header.
+    for (const auto &block : resident.music_blocks)
+        if (const auto bytes = from(block.address, block.bytes); !bytes.empty())
+            return bytes;
+    if (const auto bytes = from(resident.disc_read.ring.address, resident.disc_read.ring.bytes);
+        !bytes.empty())
+        return bytes;
     // Persistent game data (*8005a39c).
     if (const auto bytes = from(resident.game_state, resident.game_data); !bytes.empty())
         return bytes;
@@ -177,6 +184,35 @@ void Program::supply_bytes(std::uint32_t address, std::span<const std::uint8_t> 
         const auto global = std::ranges::find_if(globals, [&](const OriginalGlobal &item) {
             return at >= item.address && at - item.address < item.width;
         });
+        // Sound pool headers (four words).
+        auto &pools = resident.sound.pool_headers;
+        if (const auto after = pools.upper_bound(at); after != pools.begin()) {
+            auto &[pool_address, pool] = *std::prev(after);
+            if (at - pool_address < 16) {
+                auto &value = pool[(at - pool_address) / 4];
+                const auto shift = 8U * ((at - pool_address) & 3U);
+                value = (value & ~(0xffU << shift)) | static_cast<std::uint32_t>(bytes[i]) << shift;
+                continue;
+            }
+        }
+        // Heap headers (next, flags) and heap-held bytes.
+        auto &heap = resident.heap;
+        if (const auto after = heap.headers.upper_bound(at); after != heap.headers.begin()) {
+            auto &[header_address, header] = *std::prev(after);
+            if (at - header_address < 8) {
+                auto &value = header[(at - header_address) / 4];
+                const auto shift = 8U * ((at - header_address) & 3U);
+                value = (value & ~(0xffU << shift)) | static_cast<std::uint32_t>(bytes[i]) << shift;
+                continue;
+            }
+        }
+        if (const auto after = heap.held.upper_bound(at); after != heap.held.begin()) {
+            auto &[held_address, held] = *std::prev(after);
+            if (at - held_address < held.size()) {
+                held[at - held_address] = bytes[i];
+                continue;
+            }
+        }
         // Event variables (800c3a68): halfword values.
         if (constexpr std::uint32_t bank = 0x800c3a68;
             at >= bank && at - bank < resident.variables.words.size() * 2) {

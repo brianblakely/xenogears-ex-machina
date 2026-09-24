@@ -563,7 +563,8 @@ class Program {
     [[nodiscard]] field::GteMatrix memory_matrix(std::uint32_t address) const;
     void set_memory_matrix(std::uint32_t address, const field::GteMatrix &m);
     // Owned record bytes (actor records, descriptors and sprites, sprite task
-    // blocks, game data and sound driver objects) at an original address: `record_block`
+    // blocks, music blocks, the disc ring header, game data and sound driver
+    // objects) at an original address: `record_block`
     // spans to the end of the owning record.
     [[nodiscard]] std::span<std::uint8_t> record_block(std::uint32_t address) const;
     [[nodiscard]] std::span<std::uint8_t> record_bytes(std::uint32_t address,
