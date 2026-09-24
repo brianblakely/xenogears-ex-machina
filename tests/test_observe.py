@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import json
 import struct
@@ -11,7 +12,14 @@ import unittest
 import zlib
 from pathlib import Path
 
-from tools.reference.observe import validate_inputs, validate_reference_state, write_png
+from tools.reference.observe import (
+    CARD_BYTES,
+    capture_lock,
+    read_card_image,
+    validate_inputs,
+    validate_reference_state,
+    write_png,
+)
 
 
 class CaptureImageTests(unittest.TestCase):
@@ -126,5 +134,30 @@ class ReferenceCheckpointTests(unittest.TestCase):
                 validate_reference_state(path, identity)
 
 
+class CardImageTests(unittest.TestCase):
+    def test_exact_raw_card_is_read_and_other_sizes_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "card.mcd"
+            image = bytes(range(256)) * (CARD_BYTES // 256)
+            path.write_bytes(image)
+            self.assertEqual(read_card_image(path), image)
+            for size in (0, CARD_BYTES - 1, CARD_BYTES + 64):
+                with self.subTest(size=size), self.assertRaisesRegex(ValueError, "exactly"):
+                    path.write_bytes(bytes(size))
+                    read_card_image(path)
+
+
 if __name__ == "__main__":
     unittest.main()
+
+
+class CaptureLockTests(unittest.TestCase):
+    def test_lock_excludes_a_second_capture_until_released(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "scenarios/.capture.lock"
+            with capture_lock(path), path.open("a") as other:
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            with path.open("a") as other:
+                fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(other, fcntl.LOCK_UN)

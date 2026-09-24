@@ -34,6 +34,15 @@ struct PackedBlock {
 // at a time. Unsafe original reads/writes fail explicitly within supplied bounds.
 [[nodiscard]] PackedBlock decode_packed_block(std::span<const std::uint8_t> source_memory,
                                               std::size_t output_limit = 0x200000);
+// The same decoder where source and output share one address space starting
+// at `base`, as in RAM: input is read when reached, so output written over
+// input not yet read is decoded as written. Output goes to `destination`;
+// the returned block records positions and leaves `data` empty. As in
+// decode_packed_block, a backward distance of zero or before the output start
+// and a copy past the declared size fail explicitly; the original would read
+// whatever memory lies there or never stop.
+PackedBlock decode_packed_in_memory(std::span<std::uint8_t> memory, std::uint32_t base,
+                                    std::uint32_t source, std::uint32_t destination);
 
 struct FieldComponent {
     std::uint32_t index{};

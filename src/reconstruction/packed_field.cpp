@@ -34,24 +34,19 @@ std::int16_t signed_word(View data, std::size_t offset) {
 }
 } // namespace
 
-PackedBlock decode_packed_block(View source_memory, std::size_t output_limit) {
-    if (source_memory.size() < 4)
-        throw PackedError("Missing u32le output length at source +0");
-    const std::size_t size = dword(source_memory, 0);
-    if (size > output_limit)
-        throw PackedError("Declared output exceeds supplied bound");
+namespace {
+// The 80032eb4 loop over any byte store. `source(i)` reads packed byte i,
+// `put(i, value)` writes output byte i and `output(i)` reads it back, so a
+// store where output overwrites not yet read input behaves as the original.
+template <typename Source, typename Put, typename Output>
+PackedBlock decode(std::size_t size, Source source, Put put, Output output) {
     PackedBlock result;
-    result.data.reserve(size);
     std::size_t position = 4;
-    const auto read_byte = [&]() {
-        if (position >= source_memory.size())
-            throw PackedError("Source truncated at byte " + std::to_string(position));
-        return source_memory[position++];
-    };
+    std::size_t written = 0;
     for (;;) {
         const auto flag_position = position;
-        const auto flags = read_byte();
-        if (result.data.size() == size) {
+        const auto flags = source(position++);
+        if (written == size) {
             result.token_bytes = flag_position;
             result.source_bytes_read = position;
             return result;
@@ -59,28 +54,75 @@ PackedBlock decode_packed_block(View source_memory, std::size_t output_limit) {
         ++result.groups;
         for (unsigned token = 0; token < 8; ++token) {
             const auto token_position = position;
-            const auto low = read_byte();
+            const auto low = source(position++);
             if ((flags & (1U << token)) != 0) {
-                const auto high = read_byte();
+                const auto high = source(position++);
                 const std::size_t distance =
                     static_cast<std::size_t>(low) | (static_cast<std::size_t>(high & 0x0fU) << 8U);
                 const std::size_t length = (high >> 4U) + 3U;
-                if (distance == 0 || distance > result.data.size())
+                if (distance == 0 || distance > written)
                     throw PackedError("Invalid backward distance at byte " +
                                       std::to_string(token_position));
-                if (length > size - result.data.size())
+                if (length > size - written)
                     throw PackedError("Copy crosses output length at byte " +
                                       std::to_string(token_position));
-                for (std::size_t i = 0; i < length; ++i)
-                    result.data.push_back(result.data[result.data.size() - distance]);
+                for (std::size_t i = 0; i < length; ++i, ++written)
+                    put(written, output(written - distance));
             } else {
-                if (result.data.size() >= size)
+                if (written >= size)
                     throw PackedError("Flag group crosses output length at byte " +
                                       std::to_string(token_position));
-                result.data.push_back(low);
+                put(written++, low);
             }
         }
     }
+}
+} // namespace
+
+PackedBlock decode_packed_block(View source_memory, std::size_t output_limit) {
+    if (source_memory.size() < 4)
+        throw PackedError("Missing u32le output length at source +0");
+    const std::size_t size = dword(source_memory, 0);
+    if (size > output_limit)
+        throw PackedError("Declared output exceeds supplied bound");
+    std::vector<std::uint8_t> data;
+    data.reserve(size);
+    auto result = decode(
+        size,
+        [&](std::size_t position) {
+            if (position >= source_memory.size())
+                throw PackedError("Source truncated at byte " + std::to_string(position));
+            return source_memory[position];
+        },
+        [&](std::size_t, std::uint8_t value) { data.push_back(value); },
+        [&](std::size_t index) { return data[index]; });
+    result.data = std::move(data);
+    return result;
+}
+
+PackedBlock decode_packed_in_memory(std::span<std::uint8_t> memory, std::uint32_t base,
+                                    std::uint32_t source, std::uint32_t destination) {
+    const auto at = [&](std::uint32_t address, const char *what) -> std::uint8_t & {
+        const auto offset = static_cast<std::uint64_t>(address) - base;
+        if (address < base || offset >= memory.size())
+            throw PackedError(std::string(what) + " outside the supplied memory");
+        return memory[static_cast<std::size_t>(offset)];
+    };
+    std::uint32_t size = 0;
+    for (std::uint32_t i = 0; i < 4; ++i)
+        size |= static_cast<std::uint32_t>(at(source + i, "Packed length")) << (8U * i);
+    auto result = decode(
+        size,
+        [&](std::size_t position) {
+            return at(source + static_cast<std::uint32_t>(position), "Packed source");
+        },
+        [&](std::size_t index, std::uint8_t value) {
+            at(destination + static_cast<std::uint32_t>(index), "Decoder output") = value;
+        },
+        [&](std::size_t index) {
+            return at(destination + static_cast<std::uint32_t>(index), "Decoder output");
+        });
+    return result;
 }
 
 std::span<const std::uint8_t> FieldComponent::logical_data() const {

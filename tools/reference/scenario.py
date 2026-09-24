@@ -12,15 +12,16 @@ from pathlib import Path
 if __package__:
     from .instruction_trace import load_instruction_trace
     from .memory_sampler import load_sampling
-    from .observe import sha256_file
+    from .observe import read_card_image, sha256_file
     from .scenario_program import integer, keys, validate_program
 else:
     from instruction_trace import load_instruction_trace
     from memory_sampler import load_sampling
-    from observe import sha256_file
+    from observe import read_card_image, sha256_file
     from scenario_program import integer, keys, validate_program
 
 ROOT = Path(__file__).resolve().parents[2]
+CAPTURES = ROOT / ".local/scenarios"
 SCENARIOS = ROOT / "analysis/scenarios"
 PROFILE_IDS = (
     "na-slus-00664-39c547a9afc6",
@@ -243,6 +244,32 @@ def compile_scenario(scenario: object, availability: dict) -> tuple[dict, int]:
     return program, budget
 
 
+def completed_captures(root: Path) -> list[dict]:
+    """Summarize every completed capture under `root` for reuse before a new run."""
+    rows = []
+    for report_path in sorted(root.glob("*/report.json")):
+        try:
+            report = json.loads(report_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not report.get("complete"):
+            continue
+        row = {
+            "path": str(report_path.parent),
+            "route": report["scenario"]["name"],
+            "scenario_sha256": report["scenario_sha256"],
+            "card": "input_card" in report,
+        }
+        spec_path = report_path.parent / "instruction-trace-spec.json"
+        if spec_path.is_file():
+            spec = json.loads(spec_path.read_text())
+            row["frames"] = [spec["start_frame"], spec["end_frame"]]
+            row["hooks"] = [hook["name"] for hook in spec["hooks"]]
+            row["snapshot_hooks"] = [hook["name"] for hook in spec["hooks"] if hook.get("snapshot")]
+        rows.append(row)
+    return rows
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("scenario", nargs="?", help="Checked-in scenario name or JSON path")
@@ -257,7 +284,15 @@ def main() -> None:
     parser.add_argument(
         "--trace-instructions", type=Path, help="Guarded instruction-address trace JSON"
     )
+    parser.add_argument("--card", type=Path, help="Raw 128 KiB image inserted as card 1")
     parser.add_argument("--list", action="store_true")
+    parser.add_argument(
+        "--captures",
+        nargs="?",
+        const="",
+        metavar="FILTER",
+        help="List completed captures (route, frames, hooks) whose text contains FILTER",
+    )
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     compiler_hash = sha256_file(Path(__file__))
@@ -266,8 +301,14 @@ def main() -> None:
             if path.name != "schema.json":
                 print(path.stem)
         return
+    if args.captures is not None:
+        for row in completed_captures(CAPTURES):
+            if args.captures in json.dumps(row):
+                print(json.dumps(row))
+        return
     sampler, sampling_bytes = None, None
     instruction_spec, instruction_bytes = None, None
+    card = None
     try:
         if args.scenario:
             direct = Path(args.scenario)
@@ -299,6 +340,8 @@ def main() -> None:
             instruction_spec, instruction_bytes = load_instruction_trace(args.trace_instructions)
             if instruction_spec["source_profile"] != scenario["source_profile"]:
                 raise ValueError("Instruction tracing targets a different source profile")
+        if args.card:
+            card = read_card_image(args.card)
     except (ValueError, OSError, KeyError) as error:
         parser.error(str(error))
     if args.dry_run:
@@ -352,6 +395,12 @@ def main() -> None:
             "specification": "instruction-trace-spec.json",
             "specification_sha256": hashlib.sha256(instruction_bytes).hexdigest(),
         }
+    if card is not None:
+        (out / "input-card1.mcd").write_bytes(card)
+        provenance["input_card"] = {
+            "image": "input-card1.mcd",
+            "sha256": hashlib.sha256(card).hexdigest(),
+        }
     (out / "started.json").write_text(json.dumps(provenance, indent=2) + "\n")
     command = [
         sys.executable,
@@ -373,6 +422,8 @@ def main() -> None:
         command += ["--sample-memory", str(out / "memory-sampling.json")]
     if instruction_spec:
         command += ["--trace-instructions", str(out / "instruction-trace-spec.json")]
+    if card is not None:
+        command += ["--card", str(out / "input-card1.mcd")]
     result = subprocess.run(command, cwd=ROOT, check=False)
     if result.returncode:
         raise SystemExit(result.returncode)

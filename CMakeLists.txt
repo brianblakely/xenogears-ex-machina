@@ -26,6 +26,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_collision.cpp
   src/reconstruction/field_media.cpp
   src/reconstruction/field_script.cpp
+  src/reconstruction/field_disassembler.cpp
   src/reconstruction/field_update.cpp
   src/reconstruction/field_move.cpp
   src/reconstruction/field_dialogue.cpp
@@ -38,6 +39,9 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/battle_rules.cpp
   src/reconstruction/battle_steps.cpp
   src/reconstruction/battle_turns.cpp
+  src/reconstruction/menu_equipment.cpp
+  src/reconstruction/menu_items.cpp
+  src/reconstruction/menu_save.cpp
   src/reconstruction/resident_heap.cpp
   src/reconstruction/sound_driver.cpp
   src/reconstruction/field_gte.cpp
@@ -48,6 +52,8 @@ target_link_libraries(xem-reconstruction PUBLIC xem_project_options)
 
 add_executable(xem-analysis-runner src/analysis/main.cpp)
 target_link_libraries(xem-analysis-runner PRIVATE xem-reconstruction)
+add_executable(xem-event-disassembler src/analysis/event_disassembler.cpp)
+target_link_libraries(xem-event-disassembler PRIVATE xem-reconstruction)
 add_executable(xem-memory-runner src/analysis/memory_runner.cpp src/analysis/field_memory.cpp)
 target_link_libraries(xem-memory-runner PRIVATE xem-reconstruction)
 
@@ -116,12 +122,21 @@ if(BUILD_TESTING)
   add_executable(test-battle tests/test_battle.cpp)
   target_link_libraries(test-battle PRIVATE xem-reconstruction)
   add_test(NAME battle-reconstruction COMMAND test-battle)
+  add_executable(test-menu tests/test_menu.cpp)
+  target_link_libraries(test-menu PRIVATE xem-reconstruction)
+  add_test(NAME menu-reconstruction COMMAND test-menu)
+  add_executable(test-menu-save tests/test_menu_save.cpp)
+  target_link_libraries(test-menu-save PRIVATE xem-reconstruction)
+  add_test(NAME menu-save-reconstruction COMMAND test-menu-save)
   add_executable(test-sound-driver tests/test_sound_driver.cpp)
   target_link_libraries(test-sound-driver PRIVATE xem-reconstruction)
   add_test(NAME sound-driver-reconstruction COMMAND test-sound-driver)
   add_executable(test-field-script tests/test_field_script.cpp)
   target_link_libraries(test-field-script PRIVATE xem-reconstruction)
   add_test(NAME field-script-reconstruction COMMAND test-field-script)
+  add_executable(test-field-disassembler tests/test_field_disassembler.cpp)
+  target_link_libraries(test-field-disassembler PRIVATE xem-reconstruction)
+  add_test(NAME field-disassembler-reconstruction COMMAND test-field-disassembler)
   add_executable(test-field-media tests/test_field_media.cpp)
   target_link_libraries(test-field-media PRIVATE xem-reconstruction)
   add_test(NAME field-media-reconstruction COMMAND test-field-media)

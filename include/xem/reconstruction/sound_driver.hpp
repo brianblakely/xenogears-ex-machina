@@ -34,6 +34,7 @@ struct SoundDriver {
     std::uint32_t sequences{};    // 80059564: sequence list (next +0)
     std::uint32_t pool{};         // 80059410: first sound-pool block header
     std::uint32_t start_stamp{};  // 80059504: copied into each started voice (+0c)
+    std::uint32_t voice_limit{};  // 80059478; 80039db8 starts effects at voice limit - 2
     // Hardware voice bookkeeping: the owner (a voice record + 30) of each of
     // the 24 voices, voices marked when claimed or released, and voices cleared
     // when claimed or released.
@@ -66,6 +67,11 @@ void stop_effect_pair(SoundDriver &driver, std::uint32_t channel);
 // `channel` (8003b644). `volume` and `pan` are the original byte arguments.
 void start_effect(SoundDriver &driver, std::uint32_t id, std::uint32_t channel,
                   std::uint32_t volume, std::uint32_t pan);
+
+// 80039db8 with the argument 801c8574 builds: when effects are enabled, start
+// effect `effect` of effect bank object `bank` (its id at +14) on two voices
+// from voice_limit - 2 (code 8000 | voice) at volume 6000, pan 4000.
+void start_bank_effect(SoundDriver &driver, std::uint32_t bank, std::uint32_t effect);
 
 // 80039c4c: stop a sequence (clear flag 8000) and release its voices.
 void stop_sequence(SoundDriver &driver, std::uint32_t sequence);

@@ -63,7 +63,26 @@ RESIDENT_ENTRIES = (
     "battle_atb",
     "battle_reload",
     "disc_read_file",
+    "disc_read_files",
+    "disc_read_stream",
+    "decode_block",
     "battle_ai",
+    "menu_item_effect",
+    "menu_item_use",
+    "menu_equip_swap",
+    "menu_equip_bonus",
+    "menu_equip_stats",
+    "menu_save_serialize",
+    "menu_save_seal",
+    "menu_save_store",
+    "menu_names_decode",
+    "menu_load_check",
+    "menu_load_restore",
+    "menu_load_apply",
+    "menu_load_slot_valid",
+    "menu_load_find_slot",
+    "menu_text_encode",
+    "menu_text_decode",
 )
 
 
@@ -450,14 +469,15 @@ def run(args: argparse.Namespace) -> int:
             # Exact GTE rotation/translation at exit. Interrupt handlers are not
             # modeled; one that changed these registers would surface here.
             expected_gte = gte_words(exit_row)
-            # A returned value must equal the original V0 at the exit hook.
+            # A returned value must equal the original result register (V0
+            # unless the exit hook precedes a delay slot that moves it there).
             if (
                 report["return_value"] is not None
-                and report["return_value"] != visible_registers(exit_row)[2]
+                and report["return_value"] != visible_registers(exit_row)[args.return_register]
             ):
                 result["return_mismatch"] = {
                     "computed": report["return_value"],
-                    "original": visible_registers(exit_row)[2],
+                    "original": visible_registers(exit_row)[args.return_register],
                 }
                 result["mismatch_count"] += 1
             if report["gte"] != expected_gte:
@@ -492,7 +512,12 @@ def run(args: argparse.Namespace) -> int:
         "source_revision": subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
         ).stdout.strip(),
-        "hooks": {"entry": args.entry_hook, "exit": args.exit_hook, "interrupts": interrupts},
+        "hooks": {
+            "entry": args.entry_hook,
+            "exit": args.exit_hook,
+            "interrupts": interrupts,
+            "return_register": args.return_register,
+        },
         "matched_behaviours": [
             {"changed_ranges": list(key), "calls": count} for key, count in behaviours.items()
         ],
@@ -573,6 +598,13 @@ def main() -> int:
         action="append",
         default=[],
         help="ENTRY:EXIT hook names bracketing interrupt-context code (repeatable)",
+    )
+    parser.add_argument(
+        "--return-register",
+        type=int,
+        choices=range(32),
+        default=2,
+        help="Register holding the original result at the exit hook",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

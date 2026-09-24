@@ -81,6 +81,36 @@ independent scenarios. Source/live differences in field sprite resources remain
 unavailable ranges. No tolerance, replacement bytes or unexplained mask is used.
 See [EVID-REF-040](../analysis/findings/EVID-REF-040.json).
 
+## Choosing the validation and capturing lean
+
+Pick the cheapest validation that is exact for the behavior under test:
+
+| Behavior | Validation |
+| --- | --- |
+| Deterministic in disc data or constant tables (decoders, parsers, lookups, layouts, disassembly, table arithmetic) | Static review against the original code plus disc-data checks: projection hashes, decoded bytes, and source-to-RAM correlation read from RAM already in an existing capture. Synthetic tests cover bounds and errors. |
+| Depends on runtime state (interrupts, battle turns, menus and saves, field frame state, loader progress) | Exact per-call memory-image comparison, below. |
+
+Snapshot captures are expensive, so capture per route, not per function:
+
+1. **Reuse first.** `python3 tools/reference/scenario.py --captures [FILTER]` lists
+   every completed capture with its route, frame window, hooks and snapshot hooks.
+   A function whose calls fall in an existing snapshot window, or whose entry and
+   exit are already hooked on that route, is compared against that capture.
+2. **Capture wide, once or twice per route.** When a route lacks what you need,
+   make one shared capture with every hook the route's current work needs, not a
+   separate run per function. Always include the interrupt brackets. Mark
+   `snapshot` only on hooks that need an image comparison. Hooks that only
+   locate or count calls stay register-only. Name the output
+   `p1shared-<route>-<purpose>`. Choose one frame window covering the calls, not
+   many small windows. If one window exceeds the snapshot budget, split it into
+   the fewest contiguous windows that fit.
+3. **One emulator at a time.** `observe.py` holds an exclusive lock
+   (`.local/scenarios/.capture.lock`), so concurrent captures queue instead of
+   competing. Don't script many small captures in a loop.
+4. **Probes are disposable.** Exploratory probes, such as navigation or
+   discovering button meanings, use no snapshot hooks. Delete them once a finding
+   cites a shared capture. Cited captures are immutable.
+
 ## Memory-image comparison
 
 Connected entries are compared against complete original memory, not selected

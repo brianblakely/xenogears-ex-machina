@@ -440,6 +440,7 @@ std::vector<OriginalGlobal> build() {
     disc("disc_file_table", 0x8004fdf0, 4, &Read::file_table);
     disc("disc_directory_table", 0x8004fdf4, 4, &Read::directory_table);
     disc("disc_size", 0x8004fdf8, 4, &Read::size);
+    disc("disc_fe00", 0x8004fe00, 4, &Read::w_fe00);
     disc("disc_sector", 0x8004fe04, 4, &Read::sector);
     disc("disc_destination", 0x8004fe08, 4, &Read::destination);
     disc("disc_fe0c", 0x8004fe0c, 4, &Read::w_fe0c);
@@ -451,11 +452,22 @@ std::vector<OriginalGlobal> build() {
     disc("disc_ring_slots", 0x8004fe2c, 4, &Read::ring_slots);
     disc("disc_fe34", 0x8004fe34, 4, &Read::w_fe34);
     disc("disc_offset", 0x8004fe38, 4, &Read::offset);
+    disc("disc_fe3c", 0x8004fe3c, 4, &Read::w_fe3c);
     disc("disc_host_file", 0x8004fe4c, 4, &Read::host_file);
     disc("disc_file", 0x80059f0c, 4, &Read::file);
     disc("disc_59f60", 0x80059f60, 2, &Read::h_59f60);
     disc("disc_requests", 0x8005a488, 4, &Read::requests);
     disc("disc_5a4dc", 0x8005a4dc, 4, &Read::w_5a4dc);
+    disc("disc_59f3c", 0x80059f3c, 4, &Read::w_59f3c);
+    for (std::uint32_t i = 0; i < 6; ++i)
+        add_resident("disc_59f24", 0x80059f24 + i * 4, 2,
+                     [i](Program &p) -> auto & { return p.resident.disc_read.h_59f24[i]; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("disc_59f40", 0x80059f40 + i * 4, 2,
+                     [i](Program &p) -> auto & { return p.resident.disc_read.h_59f40[i]; });
+    for (std::uint32_t i = 0; i < 2; ++i)
+        add_resident("disc_59f4c", 0x80059f4c + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.disc_read.w_59f4c[i]; });
     for (std::uint32_t i = 0; i < 3; ++i)
         add_resident("disc_59ef8", 0x80059ef8 + i * 4, 4,
                      [i](Program &p) -> auto & { return p.resident.disc_read.w_59ef8[i]; });
@@ -519,6 +531,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sound.pool; });
     add_resident("sound_start_stamp", 0x80059504, 4,
                  [](Program &p) -> auto & { return p.resident.sound.start_stamp; });
+    add_resident("sound_voice_limit", 0x80059478, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.voice_limit; });
     add_resident("sound_voice_changes", 0x80059554, 4,
                  [](Program &p) -> auto & { return p.resident.sound.voice_changes; });
     add_resident("sound_voice_holds", 0x800594fc, 4,

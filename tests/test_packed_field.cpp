@@ -278,9 +278,48 @@ void collision_bounds() {
 }
 } // namespace
 
+// Source and output in one address space (80032eb4 in RAM): input is read when
+// reached, so output written ahead of the reader is decoded as written.
+void decoder_in_memory() {
+    constexpr std::uint32_t base = 0x80100000;
+    Bytes memory(32, 0xee);
+    put32(memory, 0, 8);
+    memory[4] = 0x00; // Eight literals.
+    for (std::uint8_t i = 0; i < 8; ++i)
+        memory[5 + i] = static_cast<std::uint8_t>(0x10 + i);
+    memory[13] = 0x00; // Flag read after the last group.
+    const Bytes original = memory;
+
+    auto separate = memory;
+    const auto apart = field::decode_packed_in_memory(separate, base, base, base + 20);
+    check(apart.source_bytes_read == 14 && apart.data.empty(),
+          "Positions are reported and output stays in memory");
+    for (std::size_t i = 0; i < 8; ++i)
+        check(separate[20 + i] == 0x10 + i, "Disjoint output holds the literals");
+
+    // Output starting one byte after the first literal overwrites each literal
+    // just before it is read, so every output byte repeats the first.
+    auto overlapped = memory;
+    static_cast<void>(field::decode_packed_in_memory(overlapped, base, base, base + 6));
+    for (std::size_t i = 0; i < 8; ++i)
+        check(overlapped[6 + i] == 0x10, "Overlapping output is decoded as written");
+    check(field::decode_packed_block(std::span(original).first(14)).data ==
+              Bytes{0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17},
+          "The separate decoder reads the original input");
+
+    auto outside = memory;
+    rejects<field::PackedError>(
+        [&] { (void)field::decode_packed_in_memory(outside, base, base, base + 28); },
+        "Output beyond the supplied memory is rejected");
+    rejects<field::PackedError>(
+        [&] { (void)field::decode_packed_in_memory(outside, base, base - 4, base + 20); },
+        "A source below the supplied memory is rejected");
+}
+
 int main() {
     try {
         decoder_groups_and_bounds();
+        decoder_in_memory();
         component_bounds();
         event_bounds_and_connection();
         collision_bounds();

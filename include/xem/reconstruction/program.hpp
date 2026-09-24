@@ -8,6 +8,8 @@
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
+#include "xem/reconstruction/menu.hpp"
+#include "xem/reconstruction/menu_save.hpp"
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
@@ -90,6 +92,7 @@ struct DiscReadState {
     std::uint32_t file_table{};             // 8004fdf0: 7-byte records, sector then size
     std::uint32_t directory_table{};        // 8004fdf4: u16 first file + 1 per directory
     std::uint32_t size{};                   // 8004fdf8: bytes to read, rounded to words
+    std::uint32_t w_fe00{};                 // 8004fe00: file count of a list read
     std::uint32_t sector{};                 // 8004fe04
     std::uint32_t destination{};            // 8004fe08
     std::uint32_t w_fe0c{};                 // 8004fe0c
@@ -101,14 +104,22 @@ struct DiscReadState {
     std::uint32_t ring_slots{};             // 8004fe2c: first slot of the selected ring
     std::uint32_t w_fe34{};                 // 8004fe34
     std::uint32_t offset{};                 // 8004fe38: low halfword of the read offset
+    std::uint32_t w_fe3c{};                 // 8004fe3c
     std::uint32_t host_file{};              // 8004fe4c: host file handle
     std::array<std::uint32_t, 3> w_59ef8{}; // 80059ef8..80059f03, cleared per read
     std::uint32_t file{};                   // 80059f0c
     std::array<std::uint8_t, 4> location{}; // 80059f10: minute, second, sector (BCD), unused
     std::array<std::uint8_t, 4> b_59f18{};  // 80059f18: ring-mode control bytes
-    std::uint16_t h_59f60{};                // 80059f60
-    std::uint32_t requests{};               // 8005a488: CD reads issued
-    std::uint32_t w_5a4dc{};                // 8005a4dc
+    // Stream reads (80029eb0): six halfword parameters at 80059f24 + 4 * i,
+    // then state cleared per stream: 80059f3c, halfwords 80059f40/44/48 and
+    // words 80059f4c/50.
+    std::array<std::uint16_t, 6> h_59f24{};
+    std::uint32_t w_59f3c{};
+    std::array<std::uint16_t, 3> h_59f40{};
+    std::array<std::uint32_t, 2> w_59f4c{};
+    std::uint16_t h_59f60{};  // 80059f60
+    std::uint32_t requests{}; // 8005a488: CD reads issued
+    std::uint32_t w_5a4dc{};  // 8005a4dc
     // The tables at 8004fdf0 (8000 bytes) and 8004fdf4 (7a bytes), the sizes
     // 80028230 reads them with; empty before they are loaded.
     std::vector<std::uint8_t> files;
@@ -116,6 +127,10 @@ struct DiscReadState {
     // Header of the ring a stream read selects: count, eight-byte slots, then
     // the 24-byte tail before the payload (0x24 + 8 * count bytes).
     resident::HeapBlock ring;
+    // The caller's list a list read (80029afc) sorts in place and keeps
+    // (8004fe0c): 8-byte entries of u16 file, u16 unused, u32 destination,
+    // then the halfword of the terminating zero file.
+    resident::HeapBlock list;
 };
 
 // CD library state reached by read setup: CdControl 8004111c, the command
@@ -315,6 +330,8 @@ class Program {
     std::unique_ptr<FieldState> field;
     // Battle-mode memory while the battle overlay is loaded.
     std::optional<battle::BattleMemory> battle;
+    // Menu-mode memory while the menu overlay is loaded.
+    std::optional<menu::MenuMemory> menu;
 
     [[nodiscard]] field::FieldSpriteEnvironment sprite_environment() const;
     void set_sprite_environment(const field::FieldSpriteEnvironment &environment);
@@ -354,6 +371,17 @@ class Program {
                            std::uint32_t mode);
     // Resident 80028470: select directory `base + index`; -1 when it is empty.
     std::int32_t select_directory(std::uint32_t base, std::uint32_t index);
+    // Resident 80029afc: sort the owned list (disc_read.list) into file order
+    // and start reading its first file at `offset`; the interrupt callbacks
+    // read the rest. When the first sorted entry has no destination,
+    // `offset` instead names a file to seek to (8002a394; not positive:
+    // pause). Returns 0, or -3 for a missing or empty list.
+    std::int32_t read_files(std::int32_t offset);
+    // Resident 80029eb0: stream `file` into the owned ring (disc_read.ring,
+    // at least two slots) with six halfword stream parameters; the interrupt
+    // callbacks deliver it. Returns 0, -4 (no ring) or -3 (no such file).
+    std::int32_t read_stream(std::int32_t file, std::uint32_t ring, std::uint32_t offset,
+                             const std::array<std::uint16_t, 6> &parameters);
     // Resident 8001b66c: stop the playing sequence and forget the loaded pair.
     void stop_music();
     // Battle 80085ccc: commit and resolve an action.
@@ -374,6 +402,33 @@ class Program {
     void total_battle_rewards();
     // Post-battle 801e1444: add drops to the inventory.
     void add_battle_drops(std::uint32_t ids, std::uint32_t counts, std::uint32_t categories);
+    // Menu 801e31c0: apply a consumable to a character; nonzero when it
+    // restored nothing.
+    std::uint32_t apply_menu_item_effect(std::uint32_t tables, std::uint32_t character,
+                                         std::uint32_t item);
+    // Menu 801db920 from 801dbba4 to 801dbc90: use inventory entry `index`
+    // on the party slots in `targets`.
+    void use_menu_item(std::uint32_t index, std::uint32_t targets);
+    // Menu 801df0d4: commit an equipment change.
+    std::uint32_t swap_menu_equipment(std::uint32_t slot, std::uint32_t part, std::uint32_t special,
+                                      std::uint32_t gear);
+    // Menu 801e36d4 / 801e3a80: equipment bonuses and the shown stats.
+    void menu_equipment_bonuses(std::uint32_t tables, std::uint32_t character);
+    void menu_equipment_stats(std::uint32_t tables, std::uint32_t character);
+    // Menu save and load (menu_save.hpp) with the resident game data.
+    // `scratch` is 801cb184's name buffer as the caller's stack holds it.
+    void serialize_menu_save(std::uint32_t payload, std::uint32_t digit,
+                             menu::NameScratch &scratch);                     // 801cba4c
+    std::uint32_t seal_menu_save(std::uint32_t payload);                      // 801cc424..801cc448
+    void store_menu_game_data(std::uint32_t payload);                         // 801e4a28
+    void decode_menu_names(menu::NameScratch &scratch);                       // 801cb184
+    menu::LoadCheck check_menu_load(std::uint32_t buffer);                    // 801cb6f0..801cb71c
+    void restore_menu_game_data(std::uint32_t payload, std::uint32_t tables); // 801e4d10
+    void apply_menu_load(std::uint32_t payload, menu::NameScratch &scratch);  // 801cb28c
+    bool menu_load_slot_valid(std::uint32_t mode);                            // 801c9bcc
+    std::uint32_t find_menu_load_slot(std::uint32_t mode);                    // 801c9d34
+    // Resident 80028530: the current disc (u16 at the directory table + 78).
+    [[nodiscard]] std::uint32_t current_disc() const;
 
   private:
     void dispatch(field::EventContext &context, std::uint8_t opcode,
@@ -393,6 +448,8 @@ class Program {
     std::uint32_t disc_busy();                  // Resident 800286cc
     void disc_wait(std::uint32_t once);         // Resident 80028a60
     std::uint32_t file_size(std::int32_t file); // Resident 80028738
+    std::uint32_t read_size(std::int32_t file); // Resident 80028808
+    void seek_file(std::int32_t file);          // Resident 8002a394
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4

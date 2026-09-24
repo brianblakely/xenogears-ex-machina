@@ -252,8 +252,1029 @@
             "evidence": "EVID-REF-027"
           }
         ],
-        "complete_inventory": false,
-        "open_work": "Complete battle/menu/media subresources and loading/initialization/return lifetimes remain required."
+        "complete_inventory": true,
+        "open_work": "Sector delivery and read-completion interrupts (8002a68c state machine and libcd callbacks) and the menu/save extensions remain; see the source-loading proof.",
+        "route_reads": [
+          {
+            "slot": 24,
+            "lba": 108754,
+            "bytes": 61680,
+            "projection_sha256": "019c832e22c0c24a95f3cef180518777187288d35756f4686e253f9a1dd85e57",
+            "loads": [
+              {
+                "frame": 8,
+                "loader": "800295d8",
+                "caller": "0x800196e8",
+                "destination": "0x8006faf8",
+                "heap_block": {
+                  "address": "0x8006faf8",
+                  "allocated_frame": 8,
+                  "released_frame": 136
+                }
+              }
+            ]
+          },
+          {
+            "slot": 25,
+            "lba": 108785,
+            "bytes": 155120,
+            "projection_sha256": "c3b2ceee6da831a5ba2f5cfdcc84055687c028cbb773ab4699dd5fe5fc6adee1",
+            "loads": [
+              {
+                "frame": 8,
+                "loader": "800295d8",
+                "caller": "0x800196fc",
+                "destination": "0x8007ebf0",
+                "heap_block": {
+                  "address": "0x8007ebf0",
+                  "allocated_frame": 8,
+                  "released_frame": 136
+                }
+              }
+            ]
+          },
+          {
+            "slot": 26,
+            "lba": 108861,
+            "bytes": 23744,
+            "projection_sha256": "f703ab679ee42fccf79977b1da783ad87cadfa7686cc4828de0f8e5ea93f985a",
+            "loads": [
+              {
+                "frame": 49,
+                "loader": "800295d8",
+                "caller": "0x80019710",
+                "destination": "0x800a49e8",
+                "heap_block": {
+                  "address": "0x800a49e8",
+                  "allocated_frame": 8,
+                  "released_frame": 136
+                }
+              }
+            ]
+          },
+          {
+            "slot": 27,
+            "lba": 108873,
+            "bytes": 21984,
+            "projection_sha256": "ec6ae588d85e342f973ebf1ca1e87073c1721f37dbf06d521ccbcd70a6f65262",
+            "loads": [
+              {
+                "frame": 88,
+                "loader": "800295d8",
+                "caller": "0x80019724",
+                "destination": "0x800aa6b0",
+                "heap_block": {
+                  "address": "0x800aa6b0",
+                  "allocated_frame": 8,
+                  "released_frame": 136
+                }
+              }
+            ]
+          },
+          {
+            "slot": 28,
+            "lba": 108884,
+            "bytes": 2660,
+            "projection_sha256": "79e7807d04470934db27bd51c8cdaf33f4d2cd92772533e3d5af94e2b0bae24d",
+            "loads": [
+              {
+                "frame": 115,
+                "loader": "800295d8",
+                "caller": "0x800197ac",
+                "destination": "0x800afc98",
+                "heap_block": {
+                  "address": "0x800afc98",
+                  "allocated_frame": 115,
+                  "released_frame": 124
+                }
+              }
+            ]
+          },
+          {
+            "slot": 29,
+            "lba": 108886,
+            "bytes": 13768,
+            "projection_sha256": "4b6ca5e621c92d4603ccc4368b05d9d6815f61e098972737ed8af22778a47bc3",
+            "loads": [
+              {
+                "frame": 124,
+                "loader": "800295d8",
+                "caller": "0x80019804",
+                "destination": "0x800afc98",
+                "heap_block": {
+                  "address": "0x800afc98",
+                  "allocated_frame": 124,
+                  "released_frame": 136
+                }
+              }
+            ],
+            "decodes": 2
+          },
+          {
+            "slot": 36,
+            "lba": 108933,
+            "bytes": 125304,
+            "projection_sha256": "7735f4e2f204b7afd053d95f2812053b56eb03306c7d2de38c08b2d78ba392dd",
+            "role": "field overlay (packed; decoded image 38a1ce82...)",
+            "loads": [
+              {
+                "frame": 320,
+                "loader": "800295d8",
+                "caller": "0x80019a6c",
+                "destination": "0x801d4b34",
+                "heap_block": {
+                  "address": "0x801d4b34",
+                  "allocated_frame": 320,
+                  "released_frame": 384
+                }
+              },
+              {
+                "frame": 8491,
+                "loader": "800295d8",
+                "caller": "0x80019a6c",
+                "destination": "0x80194fb4",
+                "heap_block": {
+                  "address": "0x80194fb4",
+                  "allocated_frame": 8491,
+                  "released_frame": 10165
+                }
+              }
+            ],
+            "decodes": 2
+          },
+          {
+            "slot": 38,
+            "lba": 109041,
+            "bytes": 166564,
+            "projection_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+            "role": "battle overlay (packed; decoded image 1830b4ef...)",
+            "loads": [
+              {
+                "frame": 5923,
+                "loader": "800295d8",
+                "caller": "0x80019a6c",
+                "destination": "0x801caa08",
+                "heap_block": {
+                  "address": "0x801caa08",
+                  "allocated_frame": 5923,
+                  "released_frame": 5976
+                }
+              }
+            ],
+            "decodes": 1
+          },
+          {
+            "slot": 146,
+            "lba": 111622,
+            "bytes": 168000,
+            "projection_sha256": "a71f84126bb6fccfb664ae6f86d6a8adf47465d618dcf35e5e281798526e12a8",
+            "role": "music wave stream (ring read by field 800855a0)",
+            "loads": [
+              {
+                "frame": 1551,
+                "loader": "800295d8",
+                "caller": "0x800855a0",
+                "destination": "0x801ef43c",
+                "heap_block": {
+                  "address": "0x801ef43c",
+                  "allocated_frame": 1551,
+                  "released_frame": 1591
+                }
+              },
+              {
+                "frame": 10306,
+                "loader": "800295d8",
+                "caller": "0x800855a0",
+                "destination": "0x801e7434",
+                "heap_block": {
+                  "address": "0x801e7434",
+                  "allocated_frame": 10306,
+                  "released_frame": 10358
+                }
+              }
+            ]
+          },
+          {
+            "slot": 147,
+            "lba": 111705,
+            "bytes": 5436,
+            "projection_sha256": "fd395df9600a4cb028f50d9a2697bb2e267bad180870d053dd7938cefdd4f283",
+            "role": "music sequence data (field music load 80085b20)",
+            "loads": [
+              {
+                "frame": 1591,
+                "loader": "800295d8",
+                "caller": "0x80085da8",
+                "destination": "0x80062648",
+                "heap_block": null
+              },
+              {
+                "frame": 10358,
+                "loader": "800295d8",
+                "caller": "0x80085da8",
+                "destination": "0x80062648",
+                "heap_block": null
+              }
+            ]
+          },
+          {
+            "slot": 159,
+            "lba": 112266,
+            "bytes": 464,
+            "projection_sha256": "f6dbcfe7c6a44fe39c4419200f6094d45448d3f4ade7fb0a0851f9352d11bd49",
+            "role": "music sequence data (field music load 80085b20)",
+            "loads": [
+              {
+                "frame": 573,
+                "loader": "800295d8",
+                "caller": "0x80085da8",
+                "destination": "0x80062648",
+                "heap_block": null
+              }
+            ]
+          },
+          {
+            "slot": 193,
+            "lba": 113860,
+            "bytes": 7132,
+            "projection_sha256": "26b61396a30489c23c7a965570782d0b2998f5b6bb2de8a83bb18239fdba3dcc",
+            "role": "music sequence data (field music load 80085b20)",
+            "loads": [
+              {
+                "frame": 5907,
+                "loader": "800295d8",
+                "caller": "0x80085da8",
+                "destination": "0x80062648",
+                "heap_block": null
+              }
+            ]
+          },
+          {
+            "slot": 427,
+            "lba": 119504,
+            "bytes": 56632,
+            "projection_sha256": "657d25413a07c2323c0856a8a9c3aefa9ae1e952cf4fb111eef97cced44450b3",
+            "role": "party character 0 sprite (EVID-REF-022)",
+            "loads": [
+              {
+                "frame": 423,
+                "loader": "80029afc",
+                "caller": "0x8001ae80",
+                "destination": "0x80107228",
+                "heap_block": {
+                  "address": "0x80107228",
+                  "allocated_frame": 423,
+                  "released_frame": 465
+                }
+              },
+              {
+                "frame": 8410,
+                "loader": "80029afc",
+                "caller": "0x8001b35c",
+                "destination": "0x801d02b8",
+                "heap_block": {
+                  "address": "0x801d02b8",
+                  "allocated_frame": 8410,
+                  "released_frame": 10165
+                }
+              }
+            ],
+            "decodes": 1
+          },
+          {
+            "slot": 429,
+            "lba": 119559,
+            "bytes": 55060,
+            "projection_sha256": "f551818a2e4b9c892674f746ed838e45b15cadd1388cb6f204c4787b848a7188",
+            "role": "party character 2 sprite (EVID-REF-022)",
+            "loads": [
+              {
+                "frame": 423,
+                "loader": "80029afc",
+                "caller": "0x8001ae80",
+                "destination": "0x80114f68",
+                "heap_block": {
+                  "address": "0x80114f68",
+                  "allocated_frame": 423,
+                  "released_frame": 467
+                }
+              },
+              {
+                "frame": 8410,
+                "loader": "80029afc",
+                "caller": "0x8001b35c",
+                "destination": "0x801c2b9c",
+                "heap_block": {
+                  "address": "0x801c2b9c",
+                  "allocated_frame": 8410,
+                  "released_frame": 10165
+                }
+              }
+            ],
+            "decodes": 1
+          },
+          {
+            "slot": 589,
+            "lba": 120579,
+            "bytes": 33480,
+            "projection_sha256": "8484b4e9f371f03bb37baf841825cef4978c487d74197a6f0aa9a6f733089016",
+            "loads": [
+              {
+                "frame": 408,
+                "loader": "800295d8",
+                "caller": "0x80077684",
+                "destination": "0x801eb1e4",
+                "heap_block": {
+                  "address": "0x801eb1e4",
+                  "allocated_frame": 408,
+                  "released_frame": 423
+                }
+              },
+              {
+                "frame": 8410,
+                "loader": "80029afc",
+                "caller": "0x8001b35c",
+                "destination": "0x801ba8cc",
+                "heap_block": {
+                  "address": "0x801ba8cc",
+                  "allocated_frame": 8410,
+                  "released_frame": 10165
+                }
+              }
+            ]
+          },
+          {
+            "slot": 590,
+            "lba": 120596,
+            "bytes": 28560,
+            "projection_sha256": "30c69d1b2400c7f2d8d654592f47db07e7f4d51d8210c6c87db0faecda699129",
+            "loads": [
+              {
+                "frame": 385,
+                "loader": "800295d8",
+                "caller": "0x800858f4",
+                "destination": "0x800c4278",
+                "heap_block": {
+                  "address": "0x800c4278",
+                  "allocated_frame": 385,
+                  "released_frame": 5921
+                }
+              },
+              {
+                "frame": 8410,
+                "loader": "80029afc",
+                "caller": "0x8001b35c",
+                "destination": "0x801b3934",
+                "heap_block": {
+                  "address": "0x801b3934",
+                  "allocated_frame": 8410,
+                  "released_frame": 10165
+                }
+              }
+            ]
+          },
+          {
+            "slot": 652,
+            "lba": 124528,
+            "bytes": 110052,
+            "projection_sha256": "0f0a131acdf052cae070a64912fc09eb00e0b5e6a81f9d8cb4719d6416213add",
+            "role": "field 23 source (event, collision, geometry, sprite components)",
+            "loads": [
+              {
+                "frame": 467,
+                "loader": "800295d8",
+                "caller": "0x8001b58c",
+                "destination": "0x801d06b4",
+                "heap_block": {
+                  "address": "0x801d06b4",
+                  "allocated_frame": 467,
+                  "released_frame": 510
+                }
+              },
+              {
+                "frame": 10179,
+                "loader": "800295d8",
+                "caller": "0x8001b58c",
+                "destination": "0x801d06b4",
+                "heap_block": {
+                  "address": "0x801d06b4",
+                  "allocated_frame": 10179,
+                  "released_frame": 10243
+                }
+              }
+            ],
+            "decodes": 18
+          },
+          {
+            "slot": 653,
+            "lba": 124582,
+            "bytes": 256000,
+            "projection_sha256": "739b9fe57fc30c361d3bef8c05db9a9d822b961ba7f8b735574c9e74dd43e36b",
+            "role": "field 23 pair file, streamed into a ring by 80029eb0",
+            "loads": []
+          },
+          {
+            "slot": 2593,
+            "lba": 239265,
+            "bytes": 65408,
+            "projection_sha256": "4aec6a89bcf155d19a11b76df7d4f73139b840bf1e04482a4328ae80b3428c2b",
+            "loads": [
+              {
+                "frame": 10800,
+                "loader": "80029afc",
+                "caller": "0x80079c94",
+                "destination": "0x801b5078",
+                "heap_block": {
+                  "address": "0x801b5078",
+                  "allocated_frame": 10800,
+                  "released_frame": 10887
+                }
+              }
+            ],
+            "decodes": 5
+          },
+          {
+            "slot": 2595,
+            "lba": 239317,
+            "bytes": 9048,
+            "projection_sha256": "d892fa678f66ab12e0d2cb5ccb6cd432ecbc055b41360d8a4c4404fd38f1e20b",
+            "loads": [
+              {
+                "frame": 136,
+                "loader": "800295d8",
+                "caller": "0x8001b9c4",
+                "destination": "0x801f1154",
+                "heap_block": {
+                  "address": "0x801f1154",
+                  "allocated_frame": 136,
+                  "released_frame": 170
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2596,
+            "lba": 239322,
+            "bytes": 25856,
+            "projection_sha256": "f474fd482506b89eaff9601d5958a1c867d35a4ad11c1f58f0ecef630008a0c8",
+            "role": "post-battle module loaded at 801de000",
+            "loads": [
+              {
+                "frame": 8331,
+                "loader": "800295d8",
+                "caller": "0x800715ec",
+                "destination": "0x801de000",
+                "heap_block": {
+                  "address": "0x801ddff8",
+                  "allocated_frame": 8331,
+                  "released_frame": 10162
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2597,
+            "lba": 239335,
+            "bytes": 153864,
+            "projection_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+            "role": "menu overlay image (sha256 82f84a24..., loaded at 801c5000)",
+            "loads": [
+              {
+                "frame": 10800,
+                "loader": "80029afc",
+                "caller": "0x80079c94",
+                "destination": "0x801c5000",
+                "heap_block": {
+                  "address": "0x801c5000",
+                  "allocated_frame": 10800,
+                  "released_frame": null
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2605,
+            "lba": 239684,
+            "bytes": 11328,
+            "projection_sha256": "2dbd189c8867e19fb6b433d61d9013e6c7ad8783e37f9f19ab4da4c44d7376a2",
+            "loads": [
+              {
+                "frame": 10887,
+                "loader": "800295d8",
+                "caller": "0x801c6520",
+                "destination": "0x801c23b8",
+                "heap_block": {
+                  "address": "0x801c23b8",
+                  "allocated_frame": 10887,
+                  "released_frame": 10897
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2607,
+            "lba": 239694,
+            "bytes": 31444,
+            "projection_sha256": "99e9ebe35b44f2fda25ce3e6fe0697efc3b8b25e25f4505f78e84fcdf06488f8",
+            "loads": [
+              {
+                "frame": 8382,
+                "loader": "800295d8",
+                "caller": "0x801e21d4",
+                "destination": "0x801d651c",
+                "heap_block": {
+                  "address": "0x801d651c",
+                  "allocated_frame": 8382,
+                  "released_frame": 8409
+                }
+              }
+            ],
+            "decodes": 4
+          },
+          {
+            "slot": 2613,
+            "lba": 239748,
+            "bytes": 1664,
+            "projection_sha256": "461f2dcf92bcc11a2af317353e9aabfaaeb0053e971bed2d83e38c853a5a316f",
+            "loads": [
+              {
+                "frame": 5976,
+                "loader": "80029afc",
+                "caller": "0x8001bc94",
+                "destination": "0x801e3970",
+                "heap_block": {
+                  "address": "0x801e3970",
+                  "allocated_frame": 5976,
+                  "released_frame": 6287
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2614,
+            "lba": 239749,
+            "bytes": 56260,
+            "projection_sha256": "52805ab340a772ad978266fb56cd747baae3549cee9260194e91605653cad369",
+            "loads": [
+              {
+                "frame": 5976,
+                "loader": "80029afc",
+                "caller": "0x8001bc94",
+                "destination": "0x801d5da4",
+                "heap_block": {
+                  "address": "0x801d5da4",
+                  "allocated_frame": 5976,
+                  "released_frame": 6029
+                }
+              }
+            ],
+            "decodes": 12
+          },
+          {
+            "slot": 2615,
+            "lba": 239777,
+            "bytes": 22208,
+            "projection_sha256": "4300fdd99d19805a7a68ded0b21db49e1261688e90bf58e10dead9b978b52885",
+            "loads": [
+              {
+                "frame": 5976,
+                "loader": "80029afc",
+                "caller": "0x8001bc94",
+                "destination": "0x801e4000",
+                "heap_block": {
+                  "address": "0x801e3ff8",
+                  "allocated_frame": 5976,
+                  "released_frame": 6287
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2620,
+            "lba": 239861,
+            "bytes": 5255,
+            "projection_sha256": "33e53c34b2b8a32b418f828008b87309928fb424b8a02018a384822a0d7c1447",
+            "loads": [
+              {
+                "frame": 6029,
+                "loader": "80029afc",
+                "caller": "0x801e5804",
+                "destination": "0x800e97dc",
+                "heap_block": {
+                  "address": "0x800e97dc",
+                  "allocated_frame": 6029,
+                  "released_frame": 10162
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2621,
+            "lba": 239864,
+            "bytes": 139844,
+            "projection_sha256": "dba4afc9a44a8926c425cfc88104eb97fd818c35e330176580926cd75a5515aa",
+            "loads": [
+              {
+                "frame": 6029,
+                "loader": "80029afc",
+                "caller": "0x801e5804",
+                "destination": "0x801a2bd4",
+                "heap_block": {
+                  "address": "0x801a2bd4",
+                  "allocated_frame": 6029,
+                  "released_frame": 6185
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2777,
+            "lba": 246547,
+            "bytes": 276704,
+            "projection_sha256": "ec4860771487e0be41c7ca91700d3ebce43e61d2459faf32806a7d282e350e91",
+            "loads": [
+              {
+                "frame": 6068,
+                "loader": "80029afc",
+                "caller": "0x80037b04",
+                "destination": "0x8015f2ec",
+                "heap_block": {
+                  "address": "0x8015f2ec",
+                  "allocated_frame": 6068,
+                  "released_frame": 6184
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2778,
+            "lba": 246683,
+            "bytes": 7772,
+            "projection_sha256": "04fa96b03fa63d2f74cfc4cf33ddf0f3fd6b676956c1a1882996b5df7d16b99c",
+            "loads": [
+              {
+                "frame": 6068,
+                "loader": "80029afc",
+                "caller": "0x80037b04",
+                "destination": "0x801e1b0c",
+                "heap_block": {
+                  "address": "0x801e1b0c",
+                  "allocated_frame": 6068,
+                  "released_frame": 6184
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2988,
+            "lba": 254517,
+            "bytes": 71640,
+            "projection_sha256": "bc6c241427ce32b2407a323ddceb7fe97479dbdadbe434f5eb73a5db2f9d290f",
+            "loads": [
+              {
+                "frame": 6185,
+                "loader": "80029afc",
+                "caller": "0x801e6a18",
+                "destination": "0x8011bb58",
+                "heap_block": {
+                  "address": "0x8011bb58",
+                  "allocated_frame": 6185,
+                  "released_frame": 10163
+                }
+              }
+            ]
+          },
+          {
+            "slot": 2991,
+            "lba": 254649,
+            "bytes": 77772,
+            "projection_sha256": "130dc97cc2ef4ff76648c96d4409412af2d8c0e634784cde352ee0556a9330c8",
+            "loads": [
+              {
+                "frame": 6185,
+                "loader": "80029afc",
+                "caller": "0x801e6a18",
+                "destination": "0x8012d338",
+                "heap_block": {
+                  "address": "0x8012d338",
+                  "allocated_frame": 6185,
+                  "released_frame": 10163
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3005,
+            "lba": 255202,
+            "bytes": 143340,
+            "projection_sha256": "4d496a03f57038bf484a379be098f6fca770ac093d46e39b35e37c54565ea6d6",
+            "loads": [
+              {
+                "frame": 6821,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d04c0",
+                "heap_block": {
+                  "address": "0x801d04c0",
+                  "allocated_frame": 6821,
+                  "released_frame": 6911
+                }
+              },
+              {
+                "frame": 6911,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d04c0",
+                "heap_block": {
+                  "address": "0x801d04c0",
+                  "allocated_frame": 6911,
+                  "released_frame": 6920
+                }
+              },
+              {
+                "frame": 6920,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d04c0",
+                "heap_block": {
+                  "address": "0x801d04c0",
+                  "allocated_frame": 6920,
+                  "released_frame": 7204
+                }
+              },
+              {
+                "frame": 7717,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d04c0",
+                "heap_block": {
+                  "address": "0x801d04c0",
+                  "allocated_frame": 7717,
+                  "released_frame": 7809
+                }
+              },
+              {
+                "frame": 7809,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d04c0",
+                "heap_block": {
+                  "address": "0x801d04c0",
+                  "allocated_frame": 7809,
+                  "released_frame": 7818
+                }
+              },
+              {
+                "frame": 7818,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d04c0",
+                "heap_block": {
+                  "address": "0x801d04c0",
+                  "allocated_frame": 7818,
+                  "released_frame": 8225
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3008,
+            "lba": 255443,
+            "bytes": 125344,
+            "projection_sha256": "d50199574dcb41571955645274ce84f9b9ac838d9e0254ad08d0be216aa033f0",
+            "loads": [
+              {
+                "frame": 6585,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 6585,
+                  "released_frame": 6821
+                }
+              },
+              {
+                "frame": 7204,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 7204,
+                  "released_frame": 7292
+                }
+              },
+              {
+                "frame": 7292,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 7292,
+                  "released_frame": 7301
+                }
+              },
+              {
+                "frame": 7301,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 7301,
+                  "released_frame": 7717
+                }
+              },
+              {
+                "frame": 8225,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 8225,
+                  "released_frame": 8312
+                }
+              },
+              {
+                "frame": 8312,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 8312,
+                  "released_frame": 8321
+                }
+              },
+              {
+                "frame": 8321,
+                "loader": "800295d8",
+                "caller": "0x800bf30c",
+                "destination": "0x801d4b0c",
+                "heap_block": {
+                  "address": "0x801d4b0c",
+                  "allocated_frame": 8321,
+                  "released_frame": 8331
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3080,
+            "lba": 257038,
+            "bytes": 57904,
+            "projection_sha256": "73e98bdedbc030aafea113a4d7c1f8e9c2dfd93900d93568b9446fdb222b0fa4",
+            "loads": [
+              {
+                "frame": 6242,
+                "loader": "80029afc",
+                "caller": "0x801e6fbc",
+                "destination": "0x801d569c",
+                "heap_block": {
+                  "address": "0x801d569c",
+                  "allocated_frame": 6242,
+                  "released_frame": 6268
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3081,
+            "lba": 257067,
+            "bytes": 8668,
+            "projection_sha256": "cb166ac6ad7041e73fb025619caf48c2675d35df54b6fcc247fc07d240ffefa6",
+            "loads": [
+              {
+                "frame": 6242,
+                "loader": "80029afc",
+                "caller": "0x801e6fbc",
+                "destination": "0x80143074",
+                "heap_block": {
+                  "address": "0x80143074",
+                  "allocated_frame": 6242,
+                  "released_frame": 10163
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3082,
+            "lba": 257072,
+            "bytes": 8852,
+            "projection_sha256": "725adf1439b8b662fc05d3668a0a61c59ed6a8f5aa714d314103d4f0d0b76021",
+            "loads": [
+              {
+                "frame": 6242,
+                "loader": "80029afc",
+                "caller": "0x801e6fbc",
+                "destination": "0x80145258",
+                "heap_block": {
+                  "address": "0x80145258",
+                  "allocated_frame": 6242,
+                  "released_frame": 10163
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3084,
+            "lba": 257108,
+            "bytes": 21984,
+            "projection_sha256": "ec6ae588d85e342f973ebf1ca1e87073c1721f37dbf06d521ccbcd70a6f65262",
+            "loads": [
+              {
+                "frame": 8355,
+                "loader": "800295d8",
+                "caller": "0x800b86e0",
+                "destination": "0x801d8a10",
+                "heap_block": {
+                  "address": "0x801d8a10",
+                  "allocated_frame": 8355,
+                  "released_frame": 8380
+                }
+              },
+              {
+                "frame": 8535,
+                "loader": "800295d8",
+                "caller": "0x800bfbf0",
+                "destination": "0x800e1d90",
+                "heap_block": {
+                  "address": "0x800e1d90",
+                  "allocated_frame": 8535,
+                  "released_frame": 8573
+                }
+              }
+            ]
+          },
+          {
+            "slot": 3086,
+            "lba": 257131,
+            "bytes": 40480,
+            "projection_sha256": "8186f94ca2537645e3e2ae739a509a515339a0732556ce0b749704f280c9d70b",
+            "loads": [
+              {
+                "frame": 6856,
+                "loader": "800295d8",
+                "caller": "0x800b8ba0",
+                "destination": "0x8014754c",
+                "heap_block": {
+                  "address": "0x8014754c",
+                  "allocated_frame": 6856,
+                  "released_frame": 6874
+                }
+              },
+              {
+                "frame": 7236,
+                "loader": "800295d8",
+                "caller": "0x800b8ba0",
+                "destination": "0x8014754c",
+                "heap_block": {
+                  "address": "0x8014754c",
+                  "allocated_frame": 7236,
+                  "released_frame": 7255
+                }
+              },
+              {
+                "frame": 7754,
+                "loader": "800295d8",
+                "caller": "0x800b8ba0",
+                "destination": "0x8014754c",
+                "heap_block": {
+                  "address": "0x8014754c",
+                  "allocated_frame": 7754,
+                  "released_frame": 7772
+                }
+              },
+              {
+                "frame": 8257,
+                "loader": "800295d8",
+                "caller": "0x800b8ba0",
+                "destination": "0x8014754c",
+                "heap_block": {
+                  "address": "0x8014754c",
+                  "allocated_frame": 8257,
+                  "released_frame": 8275
+                }
+              }
+            ]
+          }
+        ],
+        "embedded_packed_data": [
+          {
+            "source": "0x8004eabc",
+            "caller": "0x80019d6c",
+            "destination": "0x801f1c68"
+          },
+          {
+            "source": "0x80050240",
+            "caller": "0x800375bc",
+            "destination": "0x8006faf8"
+          }
+        ],
+        "inventory_evidence": "EVID-REF-047: every CD Setloc on the frozen route (57), all 42 single-file reads (800295d8), 8 list reads (80029afc) with their sorted entries, 2 ring reads (80029eb0), all 50 packed-block decodes (80032eb4) and every heap allocation/release, frames 0-11400."
       },
       "source_coordinates": {
         "contact_function": "field 0x8008399c",

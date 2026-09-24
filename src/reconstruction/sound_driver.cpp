@@ -304,6 +304,17 @@ void start_effect(SoundDriver &driver, std::uint32_t id, std::uint32_t channel,
     start_effect_voices(driver, ((channel & 0xfe) ^ 8) | 0x2000, id, widen(volume), widen(pan));
 }
 
+void start_bank_effect(SoundDriver &driver, std::uint32_t bank, std::uint32_t effect) {
+    if ((driver.flags & 0x800) == 0)
+        return;
+    driver.effect_run = 2;
+    // (limit - 2) | ffff8000, sign-extended from 16 bits.
+    const auto code = static_cast<std::uint32_t>(
+        static_cast<std::int16_t>(static_cast<std::uint16_t>((driver.voice_limit - 2) | 0x8000)));
+    start_effect_voices(driver, code, u16(driver, bank + 0x14) << 16 | (effect & 0xff), 0x6000,
+                        0x4000);
+}
+
 void stop_sequence(SoundDriver &driver, std::uint32_t sequence) {
     if (sequence == 0)
         throw SoundError("Stopping a null sequence reaches the driver error handler 8003f6b0");

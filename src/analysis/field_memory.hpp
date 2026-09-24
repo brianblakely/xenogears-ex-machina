@@ -51,6 +51,21 @@ struct ResourceExtent {
 [[nodiscard]] std::vector<OwnedRange> export_battle(const reconstruction::Program &program,
                                                     OriginalMemory &memory);
 
+// Builds menu-mode Program state: resident state plus the heap block holding
+// the menu overlay (801c5000), the menu state pointer word 800625a0 and the
+// heap blocks the menu actions reach through it (menu state, party list, data
+// table directory and its tables, equipment screen state, card state), the
+// resident words the save and load use (play counter 80059488, globals
+// 8005a3a0, text state pointer 80059360 and one-byte limit 8005934c) and the
+// heap blocks of the text state and its name code table.
+[[nodiscard]] reconstruction::Program import_menu(const OriginalMemory &memory);
+// Adds the allocated heap block containing `address` (a save or load buffer)
+// to menu memory.
+void import_menu_block(reconstruction::Program &program, const OriginalMemory &memory,
+                       std::uint32_t address);
+[[nodiscard]] std::vector<OwnedRange> export_menu(const reconstruction::Program &program,
+                                                  OriginalMemory &memory);
+
 // Builds field-mode Program state from the entry image. Field components are
 // decoded from the separately qualified original source and must equal the
 // loaded copies they describe; RAM is never parsed as a substitute format.

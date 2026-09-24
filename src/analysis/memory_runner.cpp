@@ -78,6 +78,9 @@ int main(int argc, char **argv) {
     std::optional<game::Program> program;
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
+    // Memory a pure resident service writes outside Program state: the
+    // decoder's output range.
+    std::optional<std::pair<std::uint32_t, std::vector<std::uint8_t>>> service_output;
     try {
         if (argc != 12)
             throw InputError("Usage: xem-memory-runner ENTRY BUDGET STOP RAM SCRATCHPAD "
@@ -85,14 +88,26 @@ int main(int argc, char **argv) {
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
         const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
-                                    entry == "music_stop" || entry == "disc_read_file";
+                                    entry == "music_stop" || entry == "disc_read_file" ||
+                                    entry == "disc_read_files" || entry == "disc_read_stream" ||
+                                    entry == "decode_block";
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
                                   entry == "battle_atb" || entry == "battle_reload" ||
                                   entry == "battle_ai";
+        const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
+                                     entry == "menu_save_seal" || entry == "menu_save_store" ||
+                                     entry == "menu_names_decode" || entry == "menu_load_check" ||
+                                     entry == "menu_load_restore" || entry == "menu_load_apply" ||
+                                     entry == "menu_load_slot_valid" ||
+                                     entry == "menu_load_find_slot" ||
+                                     entry == "menu_text_encode" || entry == "menu_text_decode";
+        const bool menu_entry = entry == "menu_item_effect" || entry == "menu_item_use" ||
+                                entry == "menu_equip_swap" || entry == "menu_equip_bonus" ||
+                                entry == "menu_equip_stats" || menu_save_entry;
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && !resident_entry && !battle_entry)
+            entry != "field_checkpoints" && !resident_entry && !battle_entry && !menu_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -124,6 +139,17 @@ int main(int argc, char **argv) {
             program = analysis::import_resident(memory);
         } else if (battle_entry) {
             program = analysis::import_battle(memory);
+        } else if (menu_entry) {
+            program = analysis::import_menu(memory);
+            // The save payload (A0; S4 at the seal) and the load buffer (S4
+            // at the check; A0 = buffer + 100 at restore and apply) are heap
+            // blocks the menu allocates for the transfer.
+            if (entry == "menu_save_serialize" || entry == "menu_save_file" ||
+                entry == "menu_save_store" || entry == "menu_load_restore" ||
+                entry == "menu_load_apply")
+                analysis::import_menu_block(*program, memory, registers[4]);
+            else if (entry == "menu_save_seal" || entry == "menu_load_check")
+                analysis::import_menu_block(*program, memory, registers[20]);
         } else {
             // Qualified resource extents: one "address size" decimal pair per line.
             std::vector<analysis::ResourceExtent> resources;
@@ -229,6 +255,102 @@ int main(int argc, char **argv) {
         } else if (entry == "battle_drops") {
             // 801e1444: A0 ids, A1 counts, A2 categories.
             program->add_battle_drops(registers[4], registers[5], registers[6]);
+        } else if (entry == "menu_item_effect") {
+            // 801e31c0: A0 table directory, A1 character, A2 item.
+            return_value =
+                program->apply_menu_item_effect(registers[4], registers[5], registers[6]);
+        } else if (entry == "menu_item_use") {
+            // 801dbba4 inside 801db920: FP inventory entry, S3 target mask.
+            program->use_menu_item(registers[30], registers[19]);
+        } else if (entry == "menu_equip_swap") {
+            // 801df0d4: A0 party slot, A1 part, A2 special, A3 gear.
+            return_value = program->swap_menu_equipment(registers[4], registers[5], registers[6],
+                                                        registers[7]);
+        } else if (entry == "menu_equip_bonus") {
+            program->menu_equipment_bonuses(registers[4], registers[5]); // 801e36d4
+        } else if (entry == "menu_equip_stats") {
+            program->menu_equipment_stats(registers[4], registers[5]); // 801e3a80
+        } else if (menu_save_entry) {
+            // 801cb184 keeps its name buffer at its SP + 28; the buffer's
+            // bytes at the call are the caller's stack as the entry image
+            // holds it (serialize: SP - 58 - 58 + 28, nothing between writes
+            // there; apply: 801e4d10's frame, SP - 18 - 30, whose first 10
+            // bytes it leaves and whose +10 holds its saved S0, the payload).
+            const auto stack = [&](std::uint32_t address) {
+                game::menu::NameScratch bytes{};
+                std::ranges::copy(memory.range(address, bytes.size()), bytes.begin());
+                return bytes;
+            };
+            const auto sp = registers[29];
+            if (entry == "menu_save_serialize" || entry == "menu_save_file") {
+                // 801cba4c: A0 payload, A2 file digit (A1 card unused).
+                auto buffer = stack(sp - 0x58 - 0x58 + 0x28);
+                program->serialize_menu_save(registers[4], registers[6] & 0xff, buffer);
+                if (entry == "menu_save_file") {
+                    // Then the seal of 801cc424 and the card file 801cbd90
+                    // writes: header template, then the payload.
+                    static_cast<void>(program->seal_menu_save(registers[4]));
+                    const auto block = game::menu::save_file_block(
+                        game::menu::Menu{*program->menu, program->resident.sound}, registers[4]);
+                    result = "{\"block\":" + quote(hex(block)) + '}';
+                }
+            } else if (entry == "menu_save_seal") {
+                return_value = program->seal_menu_save(registers[20]); // S4 payload
+            } else if (entry == "menu_save_store") {
+                program->store_menu_game_data(registers[4]); // 801e4a28: A0 payload
+            } else if (entry == "menu_names_decode") {
+                auto buffer = stack(sp - 0x58 + 0x28);
+                program->decode_menu_names(buffer);
+            } else if (entry == "menu_load_check") {
+                // 801cb6f0 to the decision at 801cb71c: S4 file buffer.
+                const auto check = program->check_menu_load(registers[20]);
+                return_value = check.sum;
+                std::ostringstream out;
+                out << "{\"sum\":" << +check.sum << ",\"stored\":" << +check.stored
+                    << ",\"decision\":"
+                    << (check.decision == game::menu::LoadDecision::accepted
+                            ? "\"accepted\""
+                            : "\"checksum_mismatch\"")
+                    << '}';
+                result = out.str();
+            } else if (entry == "menu_load_restore") {
+                program->restore_menu_game_data(registers[4], registers[5]); // 801e4d10
+            } else if (entry == "menu_load_apply") {
+                auto buffer = stack(sp - 0x18 - 0x30);
+                for (std::uint32_t i = 0; i < 4; ++i)
+                    buffer[0x10 + i] = static_cast<std::uint8_t>(registers[4] >> (8 * i));
+                program->apply_menu_load(registers[4], buffer); // 801cb28c: A0 payload
+            } else if (entry == "menu_load_slot_valid") {
+                return_value =
+                    program->menu_load_slot_valid(registers[4]) ? 1U : 0U; // 801c9bcc: A0 mode
+            } else if (entry == "menu_load_find_slot") {
+                return_value = program->find_menu_load_slot(registers[4]); // 801c9d34: A0 mode
+            } else {
+                // Resident 80033c20 (A0 text, A1 codes) or 80033b34 (A0 codes,
+                // A1 text, A2 count) over their callers' stack buffers. The
+                // encoder's source is known up to its destination, which
+                // follows it in 801cba4c's frame.
+                const auto codec = game::menu::name_codec(*program->menu);
+                std::vector<std::uint8_t> output;
+                if (entry == "menu_text_encode") {
+                    if (registers[5] <= registers[4] || registers[5] - registers[4] > 0x100)
+                        throw InputError("Encoder source must precede its destination");
+                    const auto encoded = game::menu::encode_text(
+                        codec, memory.range(registers[4], registers[5] - registers[4]));
+                    for (const auto code : encoded.codes) {
+                        output.push_back(static_cast<std::uint8_t>(code));
+                        output.push_back(static_cast<std::uint8_t>(code >> 8));
+                    }
+                    return_value = static_cast<std::uint32_t>(encoded.result);
+                } else {
+                    const auto count = registers[6];
+                    if (count > 0x100)
+                        throw InputError("Decoder count exceeds the supported buffer");
+                    output = game::menu::decode_text(codec, memory.range(registers[4], count * 2),
+                                                     count);
+                }
+                service_output.emplace(registers[5], std::move(output));
+            }
         } else if (entry == "disc_read_file") {
             // 800295d8: A0 file, A1 destination, A2 offset, A3 mode. A stream
             // read (mode 100 or 200) selects the destination as its ring; its
@@ -249,6 +371,56 @@ int main(int argc, char **argv) {
             }
             return_value = static_cast<std::uint32_t>(program->read_file(
                 static_cast<std::int32_t>(registers[4]), registers[5], registers[6], registers[7]));
+        } else if (entry == "decode_block") {
+            // 80032eb4: A0 packed source, A1 output, both in RAM. The decoder
+            // reads its input from the entry image as it reaches it, so
+            // output written over unread input is decoded as written. V0 is
+            // set in the return's delay slot, after the exit hook.
+            auto ram = memory.ram;
+            const auto block =
+                game::field::decode_packed_in_memory(ram, 0x80000000U, registers[4], registers[5]);
+            const auto size = static_cast<std::uint32_t>(memory.word(registers[4]));
+            const auto begin = (registers[5] & 0x1fffffffU);
+            service_output.emplace(
+                registers[5],
+                std::vector<std::uint8_t>(ram.begin() + begin, ram.begin() + begin + size));
+            std::ostringstream out;
+            out << "{\"groups\":" << block.groups
+                << ",\"source_bytes_read\":" << block.source_bytes_read << '}';
+            result = out.str();
+        } else if (entry == "disc_read_stream") {
+            // 80029eb0: A0 file, A1 ring, A2 offset (A3 unused); halfword
+            // parameters five to ten on the caller's stack (SP + 0x10..0x24).
+            const auto ring = registers[5];
+            if (ring != 0 && (ring & 0x1fffffffU) + 4U <= analysis::ram_bytes) {
+                const auto count = std::uint64_t{memory.word(ring)};
+                if ((ring & 0x1fffffffU) + 0x24U + count * 8U <= analysis::ram_bytes) {
+                    const auto header =
+                        memory.range(ring, 0x24U + static_cast<std::size_t>(count) * 8U);
+                    program->resident.disc_read.ring = {ring, {header.begin(), header.end()}};
+                }
+            }
+            std::array<std::uint16_t, 6> parameters{};
+            for (std::uint32_t i = 0; i < parameters.size(); ++i)
+                parameters[i] =
+                    static_cast<std::uint16_t>(memory.word(registers[29] + 0x10 + i * 4, 2));
+            return_value = static_cast<std::uint32_t>(program->read_stream(
+                static_cast<std::int32_t>(registers[4]), ring, registers[6], parameters));
+        } else if (entry == "disc_read_files") {
+            // 80029afc: A0 list, A1 offset (or seek file). The list is the
+            // caller's memory, sorted in place: its entries up to the zero
+            // file and that halfword become Program-owned.
+            const auto list = registers[4];
+            if (list != 0) {
+                std::uint32_t count = 0;
+                while ((list & 0x1fffffffU) + count * 8U + 2U <= analysis::ram_bytes &&
+                       memory.word(list + count * 8U, 2) != 0 && count < 0x1000)
+                    ++count;
+                const auto extent = memory.range(list, count * 8U + 2U);
+                program->resident.disc_read.list = {list, {extent.begin(), extent.end()}};
+            }
+            return_value = static_cast<std::uint32_t>(
+                program->read_files(static_cast<std::int32_t>(registers[5])));
         } else if (entry == "music_stop") {
             program->stop_music(); // 8001b66c
         } else {
@@ -311,7 +483,14 @@ int main(int argc, char **argv) {
         try {
             const auto ranges = program->field    ? analysis::export_field(*program, image)
                                 : program->battle ? analysis::export_battle(*program, image)
+                                : program->menu   ? analysis::export_menu(*program, image)
                                                   : analysis::export_resident(*program, image);
+            if (service_output) {
+                owned << "{\"name\":\"decoder_output\",\"address\":" << service_output->first
+                      << ",\"hex\":" << quote(hex(service_output->second)) << '}';
+                if (!ranges.empty())
+                    owned << ',';
+            }
             for (std::size_t i = 0; i < ranges.size(); ++i) {
                 const auto &range = ranges[i];
                 owned << (i ? "," : "") << "{\"name\":" << quote(range.name)

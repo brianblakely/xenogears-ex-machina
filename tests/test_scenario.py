@@ -1,9 +1,17 @@
 """Source availability and unsupported-feature checks for the scenario compiler."""
 
 import copy
+import json
+import tempfile
 import unittest
+from pathlib import Path
 
-from tools.reference.scenario import PROFILE_IDS, PROFILE_SOURCES, compile_scenario
+from tools.reference.scenario import (
+    PROFILE_IDS,
+    PROFILE_SOURCES,
+    compile_scenario,
+    completed_captures,
+)
 
 
 class ScenarioCompilerTests(unittest.TestCase):
@@ -121,3 +129,30 @@ class ScenarioCompilerTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CaptureListingTests(unittest.TestCase):
+    def test_only_completed_captures_are_listed_with_their_hooks(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            done = root / "route-a"
+            done.mkdir()
+            report = {"complete": True, "scenario": {"name": "route"}, "scenario_sha256": "ab"}
+            (done / "report.json").write_text(json.dumps(report))
+            spec = {
+                "start_frame": 10,
+                "end_frame": 20,
+                "hooks": [{"name": "entry", "snapshot": True}, {"name": "count"}],
+            }
+            (done / "instruction-trace-spec.json").write_text(json.dumps(spec))
+            failed = root / "route-b"
+            failed.mkdir()
+            (failed / "report.json").write_text(json.dumps({**report, "complete": False}))
+            (root / "route-c").mkdir()
+            rows = completed_captures(root)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["route"], "route")
+            self.assertEqual(rows[0]["frames"], [10, 20])
+            self.assertEqual(rows[0]["hooks"], ["entry", "count"])
+            self.assertEqual(rows[0]["snapshot_hooks"], ["entry"])
+            self.assertFalse(rows[0]["card"])

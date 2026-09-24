@@ -352,6 +352,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_directories", read.directory_table, read.directories);
     if (!read.ring.bytes.empty())
         out.bytes("disc_ring_header", read.ring.address, read.ring.bytes);
+    if (!read.list.bytes.empty())
+        out.bytes("disc_file_list", read.list.address, read.list.bytes);
     for (const auto &block : resident.music_blocks)
         out.bytes("music_block", block.address, block.bytes);
     if (resident.cd.dma_set_callback) {
@@ -432,6 +434,68 @@ std::vector<OwnedRange> export_battle(const Program &program, OriginalMemory &me
     export_resident_into(program, out);
     for (const auto &[address, bytes] : program.battle->regions)
         out.bytes("battle_memory", address, bytes);
+    return std::move(out.owned);
+}
+
+void import_menu_block(Program &program, const OriginalMemory &memory, std::uint32_t address) {
+    // The allocated heap block containing `address`, owned whole; a block
+    // holding a sound-driver object stays the driver's.
+    auto &regions = program.menu.value().regions;
+    for (const auto &[at, header] : program.resident.heap.headers) {
+        const auto tag = header[1] & reconstruction::resident::heap_tag_mask;
+        if (tag == 0 || tag == reconstruction::resident::heap_end_tag || address < at + 8 ||
+            address >= header[0] - 8)
+            continue;
+        if (program.resident.sound.objects.contains(at + 8))
+            throw field::FieldFormatError("A menu pointer names a sound-driver object");
+        if (!regions.contains(at + 8))
+            regions.emplace(at + 8, copy_of(memory.range(at + 8, header[0] - 16 - at)));
+        return;
+    }
+    throw field::FieldFormatError("A menu pointer does not name a heap block");
+}
+
+Program import_menu(const OriginalMemory &memory) {
+    namespace menu = reconstruction::menu;
+    auto program = import_resident(memory);
+    auto &regions = program.menu.emplace().regions;
+    const auto own_block = [&](std::uint32_t address) {
+        import_menu_block(program, memory, address);
+    };
+    // Resident words of the save and load, and the name codec's blocks.
+    for (const auto [address, size] :
+         {std::pair{menu::play_frames, 4U}, std::pair{menu::saved_globals, 0x20U},
+          std::pair{menu::text_state, 4U}, std::pair{menu::text_single_limit, 4U}})
+        regions.emplace(address, copy_of(memory.range(address, size)));
+    const auto text = memory.word(menu::text_state);
+    own_block(text);
+    own_block(memory.word(text + 0x6c));
+    own_block(menu::overlay_base);
+    regions.emplace(menu::state_pointer, copy_of(memory.range(menu::state_pointer, 4)));
+    const auto state = memory.word(menu::state_pointer);
+    own_block(state);
+    own_block(memory.word(state + menu::state_party));
+    const auto tables = memory.word(state + menu::state_tables);
+    own_block(tables);
+    // The directory's table pointers (weapons +0 .. consumables +1c), when
+    // loaded, and the equipment screen state while that screen is open.
+    for (std::uint32_t offset = 0; offset <= menu::item_table; offset += 4)
+        if (const auto table = memory.word(tables + offset); table != 0)
+            own_block(table);
+    if (const auto screen = memory.word(state + menu::state_equip_screen); screen != 0)
+        own_block(screen);
+    if (const auto card = memory.word(state + menu::state_card); card != 0)
+        own_block(card);
+    return program;
+}
+
+std::vector<OwnedRange> export_menu(const Program &program, OriginalMemory &memory) {
+    if (!program.menu)
+        throw field::FieldFormatError("Export requires menu memory");
+    Claims out{memory, {}, {}};
+    export_resident_into(program, out);
+    for (const auto &[address, bytes] : program.menu->regions)
+        out.bytes("menu_memory", address, bytes);
     return std::move(out.owned);
 }
 

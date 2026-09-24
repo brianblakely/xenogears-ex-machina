@@ -36,6 +36,19 @@ std::uint32_t command_entry(const std::array<std::uint32_t, 32> &table, std::uin
                             "8004c348, 8004c398) is not reconstructed");
 }
 
+// 80041430 CdIntToPos: the sector as BCD minute, second and sector; the
+// fourth byte is left as it was.
+void set_position(std::uint32_t sector, std::array<std::uint8_t, 4> &location) {
+    const auto frames = s32(sector + 150U);
+    const auto seconds = frames / 75;
+    const auto bcd = [](std::int32_t value) {
+        return static_cast<std::uint8_t>(value / 10 * 16 + value % 10);
+    };
+    location[2] = bcd(frames % 75);
+    location[1] = bcd(seconds % 60);
+    location[0] = bcd(seconds / 60);
+}
+
 [[noreturn]] void printf_call(std::uint32_t address) {
     throw MissingDependency({"cd_debug_print", address, {}, {}}, "symbol:printf-80019964", false,
                             "CD library debug printing (80019964) is not reconstructed");
@@ -87,6 +100,159 @@ std::int32_t Program::read_file(std::int32_t file, std::uint32_t destination, st
     return read_setup(u32(file), destination, offset, mode);
 }
 
+// Resident 80028808: the byte size of `file` in the directory of the current
+// read (8004fe18), rounded up to words as a signed MIPS quotient.
+std::uint32_t Program::read_size(std::int32_t file) {
+    if (resident.disc_stream.host_file_table != 0)
+        host_file(0x8002882c);
+    const auto &read = resident.disc_read;
+    const auto index = u32(file) + read.read_directory - 1U;
+    const auto size = s32(bytes(read.files, index * 7U + 3U, 4, "File table"));
+    const auto rounded = s32(u32(size) + 3U);
+    return u32((rounded >= 0 ? rounded : s32(u32(size) + 6U)) >> 2) << 2U;
+}
+
+// Resident 8002a394: seek to the first sector of `file` (state 3), or pause
+// the drive (state 5) when `file` is not positive. The disc callback 8002a68c
+// continues from that state.
+void Program::seek_file(std::int32_t file) {
+    auto &read = resident.disc_read;
+    if (file < 1) {
+        resident.disc_pending = 5;
+        resident.cd.ready_callback = 0x8002a68c; // 80040fb4
+        static_cast<void>(cd_control(9, nullptr));
+        return;
+    }
+    // 800289d0: the first sector, from the selected directory (8004fe14).
+    const auto sector = bytes(read.files, (u32(file) + read.directory - 1U) * 7U, 3, "File table");
+    set_position(sector, read.location);
+    resident.disc_pending = 3;
+    resident.cd.ready_callback = 0x8002a68c; // 80040fb4
+    static_cast<void>(cd_control(2, &read.location));
+}
+
+std::int32_t Program::read_files(std::int32_t offset) {
+    auto &read = resident.disc_read;
+    auto &list = read.list.bytes;
+    if (read.list.address == 0)
+        return -3;
+    const auto file_of = [&](std::uint32_t entry) {
+        return bytes(list, entry * 8U, 2, "File list");
+    };
+    std::uint32_t count = 0;
+    while (file_of(count) != 0)
+        ++count;
+    if (count == 0)
+        return -3;
+    // Selection sort by file number; each swap moves the file halfword and
+    // the destination word, never the unused halfword between them.
+    const auto put = [&](std::uint32_t offset_in_list, std::uint32_t value, std::uint32_t width) {
+        for (std::uint32_t i = 0; i < width; ++i)
+            list[offset_in_list + i] = static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    for (std::uint32_t i = 0; s32(i) < s32(count - 1U); ++i) {
+        auto lowest = i;
+        auto file = file_of(i);
+        for (auto j = i + 1U; j < count; ++j) {
+            if (file_of(j) < file) {
+                lowest = j;
+                file = file_of(j);
+            }
+        }
+        const auto moved = file_of(lowest);
+        const auto first_file = file_of(i);
+        const auto first_destination = bytes(list, i * 8U + 4U, 4, "File list");
+        put(i * 8U, moved, 2);
+        put(i * 8U + 4U, bytes(list, lowest * 8U + 4U, 4, "File list"), 4);
+        put(lowest * 8U, first_file, 2);
+        put(lowest * 8U + 4U, first_destination, 4);
+    }
+    disc_wait(0);
+    read.read_directory = read.directory;
+    read.w_59ef8 = {};
+    const auto file = file_of(0);
+    const auto destination = bytes(list, 4, 4, "File list");
+    read.w_fe10 = 0;
+    read.w_fe0c = read.list.address;
+    resident.disc_error = count;
+    read.w_fe00 = count;
+    read.destination = destination;
+    if (file == 0 || destination == 0) {
+        seek_file(offset);
+    } else {
+        read.file = file;
+        read.sector = bytes(read.files, (file + read.directory - 1U) * 7U, 3, "File table");
+        read.size = read_size(s32(file));
+        read.offset = u32(offset) & 0xffffU;
+        read.w_fe3c = 0;
+        read.w_fe34 = 0;
+        read.w_5a4dc = 0;
+        set_position(read.sector, read.location);
+        if (resident.disc_stream.host_file_table != 0)
+            host_file(0x80029cf4);
+        resident.disc_pending = 1;
+        cd_dma_callback(0x8002ba40);
+        resident.cd.ready_callback = 0x8002a68c; // 80040fb4
+        resident.cd.sync_callback = 0x8002ac24;  // 80040fcc
+        ++read.requests;
+        static_cast<void>(cd_control(2, &read.location));
+        return 0;
+    }
+    read.size = 0;
+    resident.disc_error = 0;
+    return 0;
+}
+
+std::int32_t Program::read_stream(std::int32_t file, std::uint32_t ring, std::uint32_t offset,
+                                  const std::array<std::uint16_t, 6> &parameters) {
+    auto &read = resident.disc_read;
+    if (ring == 0)
+        return -4;
+    if (read.ring.address != ring || read.ring.bytes.size() < 4)
+        throw field::FieldFormatError("The stream ring's header is not Program-owned");
+    const auto count = bytes(read.ring.bytes, 0, 4, "Disc ring");
+    if (count < 2)
+        return -4;
+    if (file <= 0 || s32(file_size(file)) <= 0)
+        return -3;
+    disc_wait(0);
+    read.read_directory = read.directory;
+    read.w_59ef8 = {};
+    static_cast<void>(field::select_disc_stream_ring(resident.disc_stream, ring)); // 80028a94
+    read.file = u32(file);
+    read.sector = bytes(read.files, (u32(file) + read.directory - 1U) * 7U, 3, "File table");
+    // 800288ec: the size rounded up to words, as a signed MIPS quotient.
+    const auto size = s32(file_size(file));
+    const auto rounded = s32(u32(size) + 3U);
+    read.size = u32((rounded >= 0 ? rounded : s32(u32(size) + 6U)) >> 2) << 2U;
+    read.destination = ring + count * 8U + 0x24U;
+    read.ring_slots = ring + 4U;
+    resident.disc_error = 1;
+    read.offset = offset & 0xffffU;
+    read.w_fe10 = 0;
+    resident.disc_stream.active_block_count = s32(count);
+    read.h_fe26 = 0;
+    read.h_fe28 = 0;
+    read.w_fe0c = 0;
+    read.w_fe34 = 0;
+    read.w_5a4dc = 0;
+    read.h_59f24 = parameters;
+    read.w_59f3c = 0;
+    read.h_59f40 = {};
+    read.w_59f4c = {};
+    static_cast<void>(field::reset_disc_stream_ring(resident.disc_stream, read.ring.bytes));
+    set_position(read.sector, read.location);
+    if (resident.disc_stream.host_file_table != 0)
+        host_file(0x8002a0d4);
+    resident.disc_pending = 1;
+    cd_dma_callback(0x8002bb50);
+    resident.cd.ready_callback = 0x8002a68c; // 80040fb4
+    resident.cd.sync_callback = 0x8002b5d0;  // 80040fcc
+    ++read.requests;
+    static_cast<void>(cd_control(2, &read.location));
+    return 0;
+}
+
 // 80028a94 then the ring checks of 80029690: select `destination` as the ring,
 // point the read at its payload and reset its slots (80028aac). Returns the
 // ring's block count; zero means an empty ring.
@@ -123,15 +289,7 @@ std::int32_t Program::read_setup(std::uint32_t file, std::uint32_t destination,
     read.w_fe0c = 0;
     read.w_fe34 = 0;
     read.w_5a4dc = 0;
-    // 80041430 CdIntToPos: the sector as BCD minute, second and sector.
-    const auto frames = s32(read.sector + 150U);
-    const auto seconds = frames / 75;
-    const auto bcd = [](std::int32_t value) {
-        return static_cast<std::uint8_t>(value / 10 * 16 + value % 10);
-    };
-    read.location[2] = bcd(frames % 75);
-    read.location[1] = bcd(seconds % 60);
-    read.location[0] = bcd(seconds / 60);
+    set_position(read.sector, read.location);
     std::uint32_t sync = 0x8002b084;
     if ((mode & 0x100U) != 0) {
         if (select_ring(destination) == 0)

@@ -38,3 +38,4 @@ node_modules/
 *.state
 *.dump
 *.core
+/.claude/worktrees/

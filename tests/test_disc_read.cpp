@@ -1,6 +1,6 @@
 // Invented file and directory tables exercise resident read_file (800295d8)
-// in its CD and ring modes and each explicit stop. They describe no original
-// content or observation.
+// in its CD and ring modes, the list read 80029afc and each explicit stop. They describe no
+// original content or observation.
 #include "xem/reconstruction/program.hpp"
 
 #include <iostream>
@@ -195,7 +195,135 @@ void stops_explicitly() {
     }
     check(rejected, "A ring without owned header bytes is rejected");
 }
+constexpr std::uint32_t list_address = 0x80130000;
+
+// Files 5, 3 and 4 of directory 1 (records 14, 12 and 13), then the zero file.
+game::Program listed() {
+    auto program = sample();
+    auto &read = program.resident.disc_read;
+    read.directory = 10;
+    put(read.files, 13 * 7, 0x20000, 3);
+    put(read.files, 13 * 7 + 3, 0x800, 4);
+    put(read.files, 14 * 7, 0x30000, 3);
+    put(read.files, 14 * 7 + 3, 0x801, 4);
+    read.list = {list_address, std::vector<std::uint8_t>(3 * 8 + 2, 0)};
+    const std::array<std::uint32_t, 3> files{5, 3, 4}, spare{0xaaaa, 0xbbbb, 0xcccc};
+    for (std::size_t i = 0; i < 3; ++i) {
+        put(read.list.bytes, i * 8, files[i], 2);
+        put(read.list.bytes, i * 8 + 2, spare[i], 2);
+        put(read.list.bytes, i * 8 + 4, 0x80100000 + 0x1000 * files[i], 4);
+    }
+    return program;
+}
+
+void list_read() {
+    auto program = listed();
+    auto &resident = program.resident;
+    check(program.read_files(0x12345) == 0, "A list read returns zero");
+    const auto &read = resident.disc_read;
+    for (std::size_t i = 0; i < 3; ++i)
+        check(get(read.list.bytes, i * 8, 2) == 3 + i &&
+                  get(read.list.bytes, i * 8 + 4, 4) == 0x80103000 + 0x1000 * i,
+              "The list is sorted by file with its destinations");
+    check(get(read.list.bytes, 2, 2) == 0xaaaa && get(read.list.bytes, 10, 2) == 0xbbbb &&
+              get(read.list.bytes, 18, 2) == 0xcccc,
+          "Sorting leaves the unused halfwords in place");
+    check(read.file == 3 && read.sector == 0x12345 && read.size == 0x1004 &&
+              read.destination == 0x80103000 && read.offset == 0x2345 &&
+              read.read_directory == 10 && read.w_fe0c == list_address && read.w_fe00 == 3,
+          "The first sorted file is set up with the list's count");
+    check(resident.disc_error == 3 && resident.disc_pending == 1 && read.requests == 1,
+          "The list read is active for all its files");
+    check(resident.cd.ready_callback == 0x8002a68c && resident.cd.sync_callback == 0x8002ac24 &&
+              resident.cd.dma_callback == 0x8002ba40,
+          "List reads install their callbacks");
+    check(resident.hardware_writes == setloc, "The first file's Setloc goes to the controller");
+
+    auto one = listed();
+    put(one.resident.disc_read.list.bytes, 8, 0, 2);
+    check(one.read_files(0) == 0 && one.resident.disc_read.file == 5 &&
+              get(one.resident.disc_read.list.bytes, 0, 2) == 5,
+          "A single entry needs no sorting");
+}
+
+void list_seek() {
+    auto seek = listed();
+    put(seek.resident.disc_read.list.bytes, 12, 0, 4); // File 3 sorts first.
+    check(seek.read_files(3) == 0, "A list without a first destination returns zero");
+    const auto &resident = seek.resident;
+    check(resident.disc_pending == 3 && resident.disc_error == 0 && resident.disc_read.size == 0 &&
+              resident.disc_read.w_fe00 == 3 && resident.disc_read.requests == 0,
+          "The seek-only list sets state 3 and no active read");
+    check(resident.disc_read.location == std::array<std::uint8_t, 4>{0x16, 0x36, 0x15, 0} &&
+              resident.hardware_writes == setloc,
+          "It seeks to the argument's file");
+    auto pause = listed();
+    put(pause.resident.disc_read.list.bytes, 12, 0, 4);
+    check(pause.read_files(0) == 0 && pause.resident.disc_pending == 5, "A zero argument pauses");
+    check(pause.resident.hardware_writes ==
+              std::vector<Write>{{0x1f801800, 0, 1}, {0x1f801801, 9, 1}},
+          "Pause has no parameters");
+
+    auto none = listed();
+    none.resident.disc_read.list.address = 0;
+    check(none.read_files(0) == -3, "A missing list is rejected");
+    auto empty = listed();
+    put(empty.resident.disc_read.list.bytes, 0, 0, 2);
+    check(empty.read_files(0) == -3 && empty.resident.disc_error == 0,
+          "An empty list is rejected before any state changes");
+    auto busy = listed();
+    busy.resident.disc_pending = 1;
+    stops([&] { busy.read_files(0); }, 0x80028a6c, "A list read waits for an earlier read");
+    auto truncated = listed();
+    truncated.resident.disc_read.list.bytes.resize(3 * 8);
+    bool rejected = false;
+    try {
+        static_cast<void>(truncated.read_files(0));
+    } catch (const game::field::FieldFormatError &) {
+        rejected = true;
+    }
+    check(rejected, "A list without its terminating halfword is rejected");
+}
 } // namespace
+
+void stream_read() {
+    auto program = sample();
+    auto &resident = program.resident;
+    resident.disc_read.directory = 10;
+    const std::array<std::uint16_t, 6> parameters{1, 2, 3, 4, 5, 0xffff};
+    check(program.read_stream(3, ring, 0x12345, parameters) == 0, "A stream read returns zero");
+    const auto &read = resident.disc_read;
+    check(read.file == 3 && read.sector == 0x12345 && read.size == 0x1004 &&
+              read.offset == 0x2345 && read.read_directory == 10,
+          "The stream's file, rounded size and low offset are recorded");
+    check(read.destination == ring + 0x34 && read.ring_slots == ring + 4 &&
+              resident.disc_stream.ring_buffer == ring &&
+              resident.disc_stream.active_block_count == 2,
+          "The ring's payload is the destination");
+    check(read.h_59f24 == parameters && read.w_59f3c == 0 && read.w_fe0c == 0,
+          "The six parameters are stored and stream state cleared");
+    check(get(read.ring.bytes, 8, 4) == 2 && get(read.ring.bytes, 12, 4) == 0,
+          "The ring's slots are reset");
+    check(resident.disc_pending == 1 && resident.disc_error == 1 && read.requests == 1 &&
+              resident.cd.ready_callback == 0x8002a68c && resident.cd.sync_callback == 0x8002b5d0 &&
+              resident.cd.dma_callback == 0x8002bb50,
+          "Stream reads install their callbacks");
+    auto expected = setloc;
+    expected.insert(expected.begin(), {0x1f8010f4, 0x980000, 4});
+    check(resident.hardware_writes == expected, "The stream's Setloc goes to the controller");
+
+    auto short_ring = sample();
+    put(short_ring.resident.disc_read.ring.bytes, 0, 1, 4);
+    check(short_ring.read_stream(3, ring, 0, parameters) == -4, "A one-slot ring is rejected");
+    auto no_ring = sample();
+    check(no_ring.read_stream(3, 0, 0, parameters) == -4, "A missing ring is rejected");
+    auto no_file = sample();
+    no_file.resident.disc_read.directory = 10;
+    check(no_file.read_stream(0, ring, 0, parameters) == -3 &&
+              no_file.read_stream(4, ring, 0, parameters) == -3 &&
+              no_file.resident.hardware_writes.empty(),
+          "Missing or empty files are rejected before any command");
+}
 
 int main() {
     try {
@@ -203,6 +331,9 @@ int main() {
         ring_read();
         rejected();
         stops_explicitly();
+        list_read();
+        list_seek();
+        stream_read();
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

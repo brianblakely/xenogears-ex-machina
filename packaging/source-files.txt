@@ -143,6 +143,7 @@ include/xem/reconstruction/field_actor.hpp
 include/xem/reconstruction/field_battle.hpp
 include/xem/reconstruction/field_collision.hpp
 include/xem/reconstruction/field_control.hpp
+include/xem/reconstruction/field_disassembler.hpp
 include/xem/reconstruction/field_events.hpp
 include/xem/reconstruction/field_gte.hpp
 include/xem/reconstruction/field_media.hpp
@@ -152,6 +153,8 @@ include/xem/reconstruction/field_script.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/field_sprite_model.hpp
+include/xem/reconstruction/menu.hpp
+include/xem/reconstruction/menu_save.hpp
 include/xem/reconstruction/original_layout.hpp
 include/xem/reconstruction/packed_field.hpp
 include/xem/reconstruction/program.hpp
@@ -170,6 +173,7 @@ packaging/source-files.txt
 plan.md
 prompt.md
 pyproject.toml
+src/analysis/event_disassembler.cpp
 src/analysis/field_memory.cpp
 src/analysis/field_memory.hpp
 src/analysis/main.cpp
@@ -189,6 +193,7 @@ src/reconstruction/field_battle.cpp
 src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp
 src/reconstruction/field_dialogue.cpp
+src/reconstruction/field_disassembler.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_gte.cpp
 src/reconstruction/field_media.cpp
@@ -200,6 +205,9 @@ src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
 src/reconstruction/field_update.cpp
+src/reconstruction/menu_equipment.cpp
+src/reconstruction/menu_items.cpp
+src/reconstruction/menu_save.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
@@ -209,14 +217,24 @@ src/runtime/main.cpp
 tests/fixtures/README.md
 tests/packed_field_probe.cpp
 tests/reference-inputs/battle-gate-probe-route.json
+tests/reference-inputs/field22-load-observation.json
+tests/reference-inputs/field22-save-card1-failure-observation.json
+tests/reference-inputs/field22-save-observation.json
 tests/reference-inputs/field23-control-observation.json
 tests/reference-inputs/field23-encounter-observation.json
 tests/reference-inputs/field23-enemy-turns-observation.json
 tests/reference-inputs/field23-entry-dialogue.json
 tests/reference-inputs/field23-escape-observation.json
+tests/reference-inputs/field23-menu-actions-observation.json
 tests/reference-inputs/field23-ramp-observation.json
+tests/reference-inputs/field23-transition-observation.json
 tests/reference-inputs/kernel-mode-observation-route.json
 tests/reference-inputs/menu-observation-route.json
+tests/reference-inputs/new-game-movie-skip.json
+tests/reference-inputs/new-game-movie-transition.json
+tests/reference-inputs/new-game-sound-mode-mono.json
+tests/reference-inputs/new-game-sound-mode-stereo.json
+tests/reference-inputs/new-game-sound-mode-wide.json
 tests/reference-inputs/opening-observation-route.json
 tests/reference-inputs/title-new-game.json
 tests/sprite_fixtures.py
@@ -245,6 +263,7 @@ tests/test_field_battle.cpp
 tests/test_field_collision.cpp
 tests/test_field_control.cpp
 tests/test_field_control.py
+tests/test_field_disassembler.cpp
 tests/test_field_events.cpp
 tests/test_field_gte.cpp
 tests/test_field_media.cpp
@@ -261,6 +280,9 @@ tests/test_jump_physics.py
 tests/test_media_survey.py
 tests/test_memory_case.py
 tests/test_memory_sampler.py
+tests/test_menu.cpp
+tests/test_menu_save.cpp
+tests/test_menu_save_file.py
 tests/test_movement_sweep.py
 tests/test_music_loading.py
 tests/test_observe.py
@@ -313,6 +335,7 @@ tools/analysis/ghidra/PrepareOriginalProgram.java
 tools/analysis/ghidra_project.py
 tools/analysis/jump_physics.py
 tools/analysis/memory_case.py
+tools/analysis/menu_save_file.py
 tools/analysis/movement_sweep.py
 tools/analysis/music_loading.py
 tools/analysis/original_trace.py

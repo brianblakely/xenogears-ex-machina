@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "parity_version": "1.7.2",
+  "parity_version": "1.8.0",
   "protocol_version": "0.1",
-  "review_date": "2026-09-23",
+  "review_date": "2026-09-24",
   "status_semantics": {
     "observed_original": "Original finding establishes only the named observed paths; tools tests additionally verify rejection/bounds.",
     "tooling_tested": "Inspected implementation and public synthetic tests; no original gameplay capability promotion.",
@@ -48,11 +48,11 @@
     },
     {
       "path": "tests/test_observe.py",
-      "sha256": "80f8b4d6bebf08cbfbb88c907d626760838585089ec3b7f8144f4647075b8e6e"
+      "sha256": "7d204475e12bbbc84f73f0456eba84e468f55af892643e990bc5bc9850bc59b4"
     },
     {
       "path": "tests/test_scenario.py",
-      "sha256": "b3acb962efe3987f1d5401efef0908a0c33736fe1a946e5e3f29d9c180ffd059"
+      "sha256": "ba330b49fa13476cc56ab59660af1fb40103473e10168cadfadfdd50f9d008b4"
     },
     {
       "path": "tests/test_scenario_program.py",
@@ -68,11 +68,11 @@
     },
     {
       "path": "tools/reference/observe.py",
-      "sha256": "4364ae2b18745cf371e7bf1e75d6a22966569bc37bed7fd962f2c99d265f87c6"
+      "sha256": "8d01a8e7ea7675a9d7c452302120e2a032297dc21334b982292cf8a829f9a44d"
     },
     {
       "path": "tools/reference/scenario.py",
-      "sha256": "750d60ec751d76f41a2b2f8acaeac62fab6c324d7e9e0ca0ffda6899083fffe8"
+      "sha256": "1d4bc112a53f842da6a5c72692634ef54f4d6035a19dffe3a78b3eae87478e53"
     },
     {
       "path": "tools/reference/scenario_program.py",
@@ -311,14 +311,15 @@
       "id": "PARITY-CAPTURE",
       "emulator": {
         "status": "observed_original",
-        "scope": "Requested step images/RAM plus periodic 600-frame captures; accumulated audio and final external-core state. Capture is original output with hashes, not structured native introspection or an attachable live spectator stream.",
+        "scope": "Requested step images/RAM plus periodic 600-frame captures; accumulated audio and final external-core state. Capture is original output with hashes, not structured native introspection or an attachable live spectator stream. Captures always record card 1 (libretro save RAM) as card1.mcd with its hash and card 2's file hash; an optional exact 128 KiB --card image is inserted as card 1 before the first frame and recorded in provenance. Under the HLE BIOS card 2 formats and saves; card 1 formatting fails in the pinned core.",
         "sources": [
           "analysis/scenarios/README.md",
           "tools/reference/scenario.py",
           "tools/reference/observe.py"
         ],
         "tests": [
-          "tests/test_observe.py"
+          "tests/test_observe.py",
+          "tests/test_scenario.py"
         ],
         "original_findings": [
           "EVID-REF-007"
@@ -721,8 +722,8 @@
   ],
   "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation.",
   "change_review": {
-    "version": "1.7.2",
+    "version": "1.8.0",
     "author": "Claude Opus 5.5",
-    "scope": "Raised the scenario bounds from 100 runtime steps and 256 program steps to 400 and 1024 so ordinary alternative routes (repeated battle commands) fit; the 36000-frame execution budget is unchanged. Tests cover both new bounds. Core, hooks and capture semantics are unchanged; refreshed live baseline hashes; native methods remain unimplemented."
+    "scope": "Reviewed the memory-card capture extension (observe.py read_card_image/--card, card1.mcd and final card hashes on success and failure; scenario.py --card with provenance) and the capture-economy tooling: observe.py serializes emulator runs with an exclusive lock and scenario.py --captures lists completed captures with their hooks for reuse (docs/executable-reconstruction.md). CardImageTests, CaptureLockTests and CaptureListingTests cover them. Core, hooks and trace semantics are unchanged; refreshed live baseline hashes; native methods remain unimplemented."
   }
 }

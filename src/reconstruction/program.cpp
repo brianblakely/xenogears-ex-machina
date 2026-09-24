@@ -628,6 +628,114 @@ void Program::add_battle_drops(std::uint32_t ids, std::uint32_t counts, std::uin
     });
 }
 
+namespace {
+// A menu computation over menu memory, with the resident game data
+// addressable at its original address for the duration (moved, not copied).
+template <typename Body> auto with_menu(Program &program, Body body) {
+    if (!program.menu)
+        throw field::FieldFormatError("A menu entry requires loaded menu memory");
+    auto &regions = program.menu->regions;
+    auto &resident = program.resident;
+    if (resident.game_data.size() != game_data_bytes)
+        throw field::FieldFormatError("A menu entry requires loaded game data");
+    const auto start = resident.game_state;
+    for (const auto &[address, bytes] : regions)
+        if (address < start + game_data_bytes && start < address + bytes.size())
+            throw field::FieldFormatError("Game data overlaps menu memory");
+    regions.emplace(start, std::move(resident.game_data));
+    struct Restore {
+        Program &program;
+        std::uint32_t start;
+        ~Restore() {
+            program.resident.game_data = std::move(program.menu->regions.extract(start).mapped());
+        }
+    } restore{program, start};
+    menu::Menu context{*program.menu, resident.sound};
+    return body(context);
+}
+} // namespace
+
+std::uint32_t Program::apply_menu_item_effect(std::uint32_t tables, std::uint32_t character,
+                                              std::uint32_t item) {
+    return with_menu(*this, [&](menu::Menu &context) {
+        return menu::apply_item_effect(context, tables, character, item);
+    });
+}
+
+void Program::use_menu_item(std::uint32_t index, std::uint32_t targets) {
+    with_menu(*this, [&](menu::Menu &context) { menu::use_item(context, index, targets); });
+}
+
+std::uint32_t Program::swap_menu_equipment(std::uint32_t slot, std::uint32_t part,
+                                           std::uint32_t special, std::uint32_t gear) {
+    return with_menu(*this, [&](menu::Menu &context) {
+        return menu::swap_equipment(context, slot, part, special, gear);
+    });
+}
+
+void Program::menu_equipment_bonuses(std::uint32_t tables, std::uint32_t character) {
+    with_menu(*this,
+              [&](menu::Menu &context) { menu::equipment_bonuses(context, tables, character); });
+}
+
+void Program::menu_equipment_stats(std::uint32_t tables, std::uint32_t character) {
+    with_menu(*this,
+              [&](menu::Menu &context) { menu::equipment_stats(context, tables, character); });
+}
+
+std::uint32_t Program::current_disc() const {
+    const auto &directories = resident.disc_read.directories;
+    if (directories.size() < 0x7a)
+        throw MissingDependency({"current_disc", 0x80028530, {}, {}}, "state:disc-directory-table",
+                                false, "The disc directory table is not loaded");
+    return static_cast<std::uint32_t>(directories[0x78] | directories[0x79] << 8);
+}
+
+void Program::serialize_menu_save(std::uint32_t payload, std::uint32_t digit,
+                                  menu::NameScratch &scratch) {
+    const auto disc = current_disc();
+    with_menu(*this, [&](menu::Menu &context) {
+        menu::serialize(context, payload, digit, disc, scratch);
+    });
+}
+
+std::uint32_t Program::seal_menu_save(std::uint32_t payload) {
+    return with_menu(*this,
+                     [&](menu::Menu &context) { return menu::seal_payload(context, payload); });
+}
+
+void Program::store_menu_game_data(std::uint32_t payload) {
+    with_menu(*this, [&](menu::Menu &context) { menu::store_game_data(context, payload); });
+}
+
+void Program::decode_menu_names(menu::NameScratch &scratch) {
+    with_menu(*this, [&](menu::Menu &context) { menu::decode_names(context, scratch); });
+}
+
+menu::LoadCheck Program::check_menu_load(std::uint32_t buffer) {
+    return with_menu(*this,
+                     [&](menu::Menu &context) { return menu::check_loaded(context, buffer); });
+}
+
+void Program::restore_menu_game_data(std::uint32_t payload, std::uint32_t tables) {
+    with_menu(*this,
+              [&](menu::Menu &context) { menu::restore_game_data(context, payload, tables); });
+}
+
+void Program::apply_menu_load(std::uint32_t payload, menu::NameScratch &scratch) {
+    with_menu(*this, [&](menu::Menu &context) { menu::apply_loaded(context, payload, scratch); });
+}
+
+bool Program::menu_load_slot_valid(std::uint32_t mode) {
+    return with_menu(*this,
+                     [&](menu::Menu &context) { return menu::load_slot_valid(context, mode); });
+}
+
+std::uint32_t Program::find_menu_load_slot(std::uint32_t mode) {
+    return with_menu(*this,
+                     [&](menu::Menu &context) { return menu::find_load_slot(context, mode); });
+}
+
 std::array<std::uint8_t, 3> ResidentState::party_modes() const {
     if (game_data.size() != game_data_bytes)
         throw field::FieldFormatError("Party modes require loaded game data");

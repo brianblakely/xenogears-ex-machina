@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "name": "phase1-field23-transition-field22",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "description": "Field 23 entry dialogue, walk east along the ground and up the root ramp, jump (Triangle) past the root end onto the raised root, and walk east into trigger zone 1, whose field script (primary 0x98, map 22 entry 1) loads field 22. Ends 300 frames after the last input, before any field 22 encounter.",
+  "entry": {
+    "type": "field",
+    "map": 23
+  },
+  "launch": {
+    "ready": "map",
+    "timeout_frames": 5000,
+    "settle_frames": 600
+  },
+  "steps": [
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 80,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 50,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "up",
+        "triangle"
+      ],
+      "hold_frames": 2,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "up"
+      ],
+      "hold_frames": 40,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 60,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "wait_frames": 300,
+      "capture": true
+    }
+  ]
+}

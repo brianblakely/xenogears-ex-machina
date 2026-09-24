@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "name": "phase1-field22-load-card1",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "description": "Cold-boot Kernel MENU, Cross on Field reaches the original title; Start, then Cross opens New Game/Continue with Continue selected. Continue checks both cards and shows Load/Copy/Delete; Load, select Card 1 slot 1, Load this file? Yes. Run with --card set to the card written by field22-save-observation (its card-2 file inserted as card 1). The same input with an empty formatted card reports No data.",
+  "entry": {
+    "type": "kernel"
+  },
+  "launch": {
+    "settle_frames": 120
+  },
+  "steps": [
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 600,
+      "capture": true
+    },
+    {
+      "wait_frames": 300,
+      "capture": true
+    },
+    {
+      "wait_frames": 300,
+      "capture": true
+    },
+    {
+      "wait_frames": 300,
+      "capture": true
+    },
+    {
+      "wait_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "start"
+      ],
+      "hold_frames": 8,
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 200,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "wait_frames": 121,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 90,
+      "capture": true
+    },
+    {
+      "wait_frames": 91,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 90,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 8,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "wait_frames": 301,
+      "capture": true
+    },
+    {
+      "wait_frames": 301,
+      "capture": true
+    },
+    {
+      "wait_frames": 301,
+      "capture": true
+    },
+    {
+      "wait_frames": 301,
+      "capture": true
+    },
+    {
+      "wait_frames": 301,
+      "capture": true
+    },
+    {
+      "wait_frames": 301,
+      "capture": true
+    }
+  ]
+}

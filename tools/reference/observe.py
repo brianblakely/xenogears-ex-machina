@@ -9,7 +9,9 @@ game runtime and does not establish hardware timing or recovered game semantics.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import ctypes as ct
+import fcntl
 import hashlib
 import json
 import os
@@ -32,6 +34,7 @@ else:
     from scenario_program import ScenarioProgram
 
 ROOT = Path(__file__).resolve().parents[2]
+CARD_BYTES = 128 * 1024
 BUTTONS = {
     "cross": 0,
     "square": 1,
@@ -148,6 +151,14 @@ def validate_reference_state(path: Path, identity: dict) -> bytes:
     return path.read_bytes()
 
 
+def read_card_image(path: Path) -> bytes:
+    """Read a raw 128 KiB PS1 memory-card image for the core's card 1."""
+    data = path.read_bytes()
+    if len(data) != CARD_BYTES:
+        raise ValueError(f"A card image must be exactly {CARD_BYTES} raw bytes")
+    return data
+
+
 def write_png(
     path: Path, raw: bytes, width: int, height: int, pitch: int, pixel_format: int
 ) -> None:
@@ -190,7 +201,28 @@ def write_png(
     )
 
 
+@contextlib.contextmanager
+def capture_lock(path: Path):
+    """Hold the exclusive emulator lock: original captures run one at a time."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as handle:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print(f"Waiting for the capture lock {path}", flush=True)
+            fcntl.flock(handle, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+
+
 def main() -> None:
+    with capture_lock(ROOT / ".local/scenarios/.capture.lock"):
+        observe()
+
+
+def observe() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core", type=Path, default=os.environ.get("XEM_REFERENCE_CORE"))
     parser.add_argument("--content", type=Path, required=True)
@@ -205,6 +237,7 @@ def main() -> None:
         "--trace-instructions", type=Path, help="Guarded instruction-address trace JSON"
     )
     parser.add_argument("--bios", type=Path, help="Optional user-supplied 512 KiB PS1 BIOS dump")
+    parser.add_argument("--card", type=Path, help="Raw 128 KiB image inserted as card 1")
     args = parser.parse_args()
     if not 1 <= args.frames <= 36000 or args.capture_every < 1:
         parser.error("Frame budget must be 1..36000 and capture interval positive")
@@ -256,6 +289,12 @@ def main() -> None:
             parser.error(str(error))
         if instruction_spec["source_profile"] != profile["id"]:
             parser.error("Instruction tracing targets a different source profile")
+    card = None
+    if args.card:
+        try:
+            card = read_card_image(args.card)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
     try:
         schedule = validate_inputs(
             json.loads(args.inputs.read_text()) if args.inputs else [], args.frames
@@ -457,6 +496,15 @@ def main() -> None:
     if not core.retro_load_game(ct.byref(content)):
         raise RuntimeError("External core could not load content")
     core.retro_set_controller_port_device(0, 1)
+
+    def card_memory():
+        pointer = core.retro_get_memory_data(0)
+        if not pointer or core.retro_get_memory_size(0) != CARD_BYTES:
+            raise RuntimeError("External core did not expose card 1 as 128 KiB save RAM")
+        return pointer
+
+    if card is not None:
+        ct.memmove(card_memory(), card, CARD_BYTES)
     av = AvInfo()
     core.retro_get_system_av_info(ct.byref(av))
     identity = {
@@ -503,6 +551,7 @@ def main() -> None:
         "fps_reported_by_core": av.timing.fps,
         "sample_rate_reported_by_core": av.timing.sample_rate,
         "initial_reference_state_sha256": sha256_file(args.load_state) if args.load_state else None,
+        "input_card_sha256": hashlib.sha256(card).hexdigest() if card is not None else None,
         "limitations": [
             "External emulation is an observation aid, not proof of hardware timing.",
             "Frame numbers count frontend retro_run calls, not recovered simulation ticks.",
@@ -614,6 +663,15 @@ def main() -> None:
             flush=True,
         )
 
+    def write_card():
+        path = out / "card1.mcd"
+        path.write_bytes(ct.string_at(card_memory(), CARD_BYTES))
+        report["final_card1_sha256"] = sha256_file(path)
+        # The pinned core keeps card 2 as a file in the saves directory.
+        card2 = saves / "pcsx-card2.mcd"
+        if card2.is_file():
+            report["final_card2_sha256"] = sha256_file(card2)
+
     completed_frames = 0
     try:
         for boundary in range(args.frames + 1):
@@ -666,6 +724,7 @@ def main() -> None:
                 {"complete": False, "events": program.events, "last_conditions": program.observed}
             )
         report.update({"error": str(error), "frames": completed_frames})
+        write_card()
         (out / "failure.json").write_text(json.dumps(report, indent=2) + "\n")
         wav.close()
         wav = None
@@ -695,6 +754,7 @@ def main() -> None:
     )
     if program:
         report["scenario"].update({"complete": True, "events": program.events})
+    write_card()
     core.retro_unload_game()
     core.retro_deinit()
     (out / "observation.json").write_text(json.dumps(report, indent=2) + "\n")

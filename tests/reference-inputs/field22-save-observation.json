@@ -1,0 +1,1124 @@
+{
+  "schema_version": 1,
+  "name": "phase1-field22-save-point-card2",
+  "source_profile": "na-slus-00664-39c547a9afc6",
+  "description": "Field 23 entry dialogue, the field23-transition-observation walk into field 22 (zone 1, map 22 entry 1), then walk along the root and ground to the field 22 save point (actor 37; talk event 2 runs extended FE 99 00 / FE 55). Cross opens the game menu on File; Save; cursor to Card 2 slot 1; the game reports the slot-2 card unformatted, formats it (Yes), then saves to the free block (Yes). Circle closes the menu. Card 1 (libretro-managed) cannot be formatted under HLE; see report.",
+  "entry": {
+    "type": "field",
+    "map": 23
+  },
+  "launch": {
+    "ready": "map",
+    "timeout_frames": 5000,
+    "settle_frames": 600
+  },
+  "steps": [
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "after_frames": 300,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 617,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "up",
+        "triangle"
+      ],
+      "hold_frames": 2,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "up"
+      ],
+      "hold_frames": 40,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 498,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "wait_frames": 40,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 20,
+      "capture": false
+    },
+    {
+      "wait_frames": 40,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 20,
+      "capture": false
+    },
+    {
+      "wait_frames": 40,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right",
+        "up"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 43,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 43,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 43,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 54,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "up"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "up"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down"
+      ],
+      "hold_frames": 21,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "right",
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "down",
+        "circle"
+      ],
+      "hold_frames": 10,
+      "after_frames": 1,
+      "capture": false
+    },
+    {
+      "buttons": [
+        "left",
+        "down"
+      ],
+      "hold_frames": 32,
+      "after_frames": 1,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 60,
+      "capture": true
+    },
+    {
+      "wait_frames": 182,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 60,
+      "capture": true
+    },
+    {
+      "wait_frames": 121,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 60,
+      "capture": true
+    },
+    {
+      "wait_frames": 61,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "right"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 90,
+      "capture": true
+    },
+    {
+      "wait_frames": 91,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 90,
+      "capture": true
+    },
+    {
+      "wait_frames": 91,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 90,
+      "capture": true
+    },
+    {
+      "wait_frames": 242,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "left"
+      ],
+      "hold_frames": 6,
+      "after_frames": 30,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "cross"
+      ],
+      "hold_frames": 6,
+      "after_frames": 90,
+      "capture": true
+    },
+    {
+      "wait_frames": 360,
+      "capture": true
+    },
+    {
+      "buttons": [
+        "circle"
+      ],
+      "hold_frames": 6,
+      "after_frames": 120,
+      "capture": true
+    },
+    {
+      "wait_frames": 120,
+      "capture": true
+    }
+  ]
+}
