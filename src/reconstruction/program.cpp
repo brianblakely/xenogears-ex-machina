@@ -323,6 +323,41 @@ void Program::script(field::EventContext &context,
     *context.current_actor = state.actors[index].events();
 }
 
+void Program::request_map_change(field::FieldWorld &world) {
+    auto &state = loaded(*this);
+    auto &self = world.actors[world.current].actor;
+    const auto &request = resident.battle_request;
+    // The original retries (break, PC kept) until every gate allows a change.
+    if (request.field_active == 0 || world.control.gate_values[1] == 0 || request.menu_gate != 0 ||
+        resident.music.gate == 0xffffffffU || request.gate_90 != 0 || state.disc_idle_known != 0) {
+        world.control.break_requested = 1;
+        return;
+    }
+    world.encounter_inhibition = -1;
+    if (world.control.gate_values[2] != 0) { // ADBEC: no change requested yet
+        const auto entry = field::read_immediate15_or_variable(world, 3);
+        const auto map = field::read_immediate15_or_variable(world, 1);
+        // 80092f44: record the departure in variables 4, 6, 8 and count it in 12.
+        auto &variables = world.variables;
+        variables.write(4, static_cast<std::int32_t>(resident.field_map & 0x3fffU));
+        const auto controlled = static_cast<std::size_t>(world.controlled);
+        if (controlled >= world.actors.size())
+            throw field::EventError("Map change requires the controlled actor's record");
+        // 8009744c: the controlled actor's facing octant; 8009a514: the camera's.
+        const auto facing =
+            static_cast<std::int16_t>(word(world.actors[controlled].actor, 0x106, 2));
+        variables.write(6, (((facing + 0x100) >> 9) + 2) & 7);
+        variables.write(8, (7 - ((state.control_inputs.camera_angle - 0x100) >> 9)) & 7);
+        variables.write(0x12, variables.read(0x12) + 1);
+        world.control.gate_values[2] = 0;
+        variables.write(2, entry);
+        resident.field_map = static_cast<std::uint32_t>(map);
+        // 800931f8 returns at once.
+    }
+    world.control.break_requested = 1;
+    put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
+}
+
 void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
                        const ProgramObserver &observe) {
     auto &state = loaded(*this);
@@ -391,6 +426,21 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
             break;
         case 0x75:
             change_music(context);
+            break;
+        case 0x15: // 80093c6c: wait until the field is active and gate ADBE4 is set.
+            script(context, [&](field::FieldWorld &world) {
+                auto &self = world.actors[world.current].actor;
+                if (resident.battle_request.field_active == 0 ||
+                    world.control.gate_values[1] == 0) {
+                    world.control.break_requested = 1;
+                    return;
+                }
+                world.encounter_inhibition = -1;
+                put(self, 0xcc, word(self, 0xcc, 2) + 1, 2);
+            });
+            break;
+        case 0x98: // 800932d0: request map `operand 1` at entry `operand 3`.
+            script(context, [&](field::FieldWorld &world) { request_map_change(world); });
             break;
         case 0x19:   // 8009e4bc: place at X/Z operands.
         case 0x1a:   // 8009e428: set the layer and re-place at the current position.

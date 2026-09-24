@@ -191,6 +191,8 @@ struct ResidentState {
     field::original::Bytes field_snapshot;
     std::array<std::uint32_t, 3> saved_party_modes{}; // 8005a408, written with a snapshot
     std::uint32_t game_state{};                       // 8005a39c: resident game-state pointer
+    // 8004f34c: the field map; primary 98 stores the requested one.
+    std::uint32_t field_map{};
     // Persistent game data at *8005a39c: the 2358-byte block resident 8001b9d8
     // initializes for a new game (empty before boot allocates it).
     std::vector<std::uint8_t> game_data;
@@ -494,13 +496,14 @@ class Program {
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
     std::int32_t cd_control(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter);
     std::int32_t cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                            bool nowait);            // 80042088
-    std::int32_t cd_sync();                          // 80041b3c(0, 0)
-    void cd_dma_callback(std::uint32_t function);    // 800413ec
-    std::int32_t disc_idle_query();                  // Field 8008a558
-    void change_music(field::EventContext &context); // Field 8008f76c (primary 75)
-    void load_music(std::uint32_t id);               // Field 80085b20
-    void release_shared_wave();                      // Field 80086024
+                            bool nowait);              // 80042088
+    std::int32_t cd_sync();                            // 80041b3c(0, 0)
+    void cd_dma_callback(std::uint32_t function);      // 800413ec
+    std::int32_t disc_idle_query();                    // Field 8008a558
+    void change_music(field::EventContext &context);   // Field 8008f76c (primary 75)
+    void request_map_change(field::FieldWorld &world); // Field 800932d0 (primary 98)
+    void load_music(std::uint32_t id);                 // Field 80085b20
+    void release_shared_wave();                        // Field 80086024
     [[nodiscard]] std::uint8_t overlay_byte(std::uint32_t address) const;
     // Field 80085634 (extended 65): stop the effect voice pair of `channel`
     // and, for a nonzero id, start that effect at full volume, centered.

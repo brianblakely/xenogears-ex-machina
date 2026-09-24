@@ -92,6 +92,44 @@ void connected_handlers_and_partial_state() {
           "Committed handler state survives; interrupted scheduler has not committed resume PC");
 }
 
+void map_change_request() {
+    // 15; 98 map 22 entry 1; 5b.
+    auto program = events({0x15, 0x98, 22, 0x80, 1, 0x80, 0x5b});
+    auto &state = *program.field;
+    auto &variables = program.resident.variables.words;
+    state.actors[0].sprite.sprite.bytes.assign(0x20, 0xff);
+    put(state.actors[0].storage, 0x106, 0x0400, 2);
+    put(state.actors[0].storage, 0x30, 7);
+    state.control_inputs.camera_angle = 0x300;
+    program.resident.field_map = 0x4017;
+    variables[9] = 5;
+    program.resident.battle_request.field_active = 0;
+    static_cast<void>(program.event_pass());
+    check(state.actors[0].events().pc == 0, "15 waits while the field is inactive");
+    program.resident.battle_request.field_active = 1;
+    program.resident.music.gate = 0xffffffffU;
+    static_cast<void>(program.event_pass());
+    check(state.actors[0].events().pc == 1 && state.control_inputs.encounter.inhibition == -1 &&
+              program.resident.field_map == 0x4017,
+          "15 passes; 98 retries while music is pending");
+    program.resident.music.gate = 0;
+    static_cast<void>(program.event_pass());
+    check(state.actors[0].events().pc == 6 && program.resident.field_map == 22 &&
+              state.event_control.gate_values[2] == 0,
+          "98 stores the requested map, closes gate ADBEC and breaks after its operands");
+    check(variables[1] == 1 && variables[2] == 0x17 && variables[3] == 4 && variables[4] == 6 &&
+              variables[9] == 6,
+          "80092f44 records departure map, facing and camera octants and counts the change");
+    static_cast<void>(program.event_pass());
+    check(state.actors[0].events().pc == 6, "The closed gate blocks later event passes");
+    state.event_control.gate_values[2] = 1;
+    static_cast<void>(program.event_pass());
+    check(state.actors[0].events().pc == 6 && get(state.actors[0].storage, 0x30, 4) == 0 &&
+              get(state.actors[0].storage, 0x104, 2) == 0x8000 &&
+              get(state.actors[0].sprite.sprite.bytes, 0xc, 4) == 0,
+          "5b stops the actor and stays on its own PC");
+}
+
 void scheduler_observation_continuity() {
     auto program = events({0x26, 0, 0x80, 0}, 2);
     bool second_actor = false;
@@ -454,6 +492,7 @@ int main() {
     try {
         state_continuity_and_moves();
         connected_handlers_and_partial_state();
+        map_change_request();
         scheduler_observation_continuity();
         extended_error_retains_prefix();
         sound_effect_dispatch();
@@ -464,7 +503,7 @@ int main() {
         original_layout_round_trip();
         music_load();
         music_load_without_stream();
-        std::cout << "12 connected program regression groups passed\n";
+        std::cout << "13 connected program regression groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

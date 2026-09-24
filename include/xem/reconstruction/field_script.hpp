@@ -160,7 +160,7 @@ struct FieldWorld {
     const std::array<std::uint16_t, 24> &direction_tables;
 };
 
-// Primary 07, 29, 2c, 3c, 57, 5a, 5f, 60, 61, 62, 63, 64, 65, 66, 87, 89, 99, 9a, 9c, 9d, a0, b3,
+// Primary 07, 29, 2c, 3c, 57, 5a, 5b, 5f, 60, 61, 62, 63, 64, 65, 66, 87, 89, 99, 9a, 9c, 9d, a0, b3,
 // b4, c9, d9, de, df, ef and f2; unsupported opcodes throw UnsupportedInstruction. Every handler
 // advances or replaces the working PC at actor +cc exactly as the original does, including its
 // batch-limit bump.

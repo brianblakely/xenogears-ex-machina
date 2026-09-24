@@ -150,6 +150,8 @@ std::vector<OriginalGlobal> build() {
         add_resident("input_other", input_other[i], 2,
                      [i](Program &p) -> auto & { return p.resident.input_queue.other[i]; });
     }
+    add_resident("field_map", 0x8004f34c, 4,
+                 [](Program &p) -> auto & { return p.resident.field_map; });
     add_resident("music_result", 0x8004f308, 4,
                  [](Program &p) -> auto & { return p.resident.music.gate; });
     add_resident("music_requested", 0x8004f324, 4,

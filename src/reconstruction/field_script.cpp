@@ -301,8 +301,10 @@ void wait_dialogue(FieldWorld &world) {
     world.control.break_requested = 1;
 }
 
-// 8009524c -> 80095284: stop the current actor's planar and additive motion.
-void stop_actor(FieldWorld &world) {
+// 80095284 (primary 5b): stop the current actor's planar and additive motion
+// and break, leaving the PC on 5b. 8009524c (primary 5a) calls it, then
+// advances one.
+void stop_actor(FieldWorld &world, bool advance) {
     auto &self = world.actors[world.current];
     if (self.sprite.bytes.size() < 0x1c)
         throw EventError("Stopping an actor requires its sprite");
@@ -314,7 +316,8 @@ void stop_actor(FieldWorld &world) {
     write(self.actor, 0x104, direction, 2);
     for (const std::size_t offset : {0x0cU, 0x14U, 0x18U})
         write(self.sprite.bytes, offset, 0, 4);
-    set_pc(world, pc(world) + 1U);
+    if (advance)
+        set_pc(world, pc(world) + 1U);
 }
 
 // 8009eb78: request an event (tag low five bits, priority high three) on
@@ -563,7 +566,8 @@ void execute_script_instruction(FieldWorld &world, std::uint8_t opcode) {
         scripted_arc(world);
         return;
     case 0x5a:
-        stop_actor(world);
+    case 0x5b:
+        stop_actor(world, opcode == 0x5a);
         return;
     case 0x9c:
         wait_dialogue(world);
