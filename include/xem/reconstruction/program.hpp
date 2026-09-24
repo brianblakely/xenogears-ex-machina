@@ -175,6 +175,8 @@ struct FrameServices {
     std::deque<std::uint32_t> dma_busy;
     // SetIntrMask(0) results: the interrupt mask replaced around a call.
     std::deque<std::uint32_t> interrupt_masks;
+    // GPU information reads (GP1 10h, then GPUREAD) by libgpu _param (80046638).
+    std::deque<std::uint32_t> gpu_info;
 };
 
 // A platform result the host did not supply: invalid input, not a game result.
@@ -232,6 +234,23 @@ struct ResidentState {
     std::uint32_t vsync_hcount{};               // 80057844: root counter 1 at the last VSync(0)
     std::uint32_t vsync_previous{};             // 80057848: vertical blanks at the last VSync(0)
     GpuLibrary gpu;
+    // Resident primitive renderer (8002c700 and the routines of table 8004fe50).
+    struct Renderer {
+        std::uint32_t packets{};                 // 80059424: next packet
+        std::uint32_t w_59498{};                 // 80059498: model +18
+        std::uint32_t records{};                 // 80059528: current primitive record
+        std::uint32_t normals{};                 // 8005952c: model +c
+        std::uint32_t vertices{};                // 8005953c: model +8
+        std::uint32_t table{};                   // 80059568: ordering table
+        std::uint32_t drawn{};                   // 80059578: primitives past the screen tests
+        std::uint32_t submitted{};               // 800595c0: primitive counts of the models drawn
+        std::array<std::uint8_t, 3> fog_color{}; // 80059598
+        std::uint32_t x_limit{};                 // 800500f8
+        std::uint32_t y_limit{};                 // 800500fc: compared with whole SXY words
+        std::uint32_t depth_shift{};             // 80050100
+        std::uint32_t lod{};                     // 80050104: nonzero runs 8003101c first
+        field::GteMatrix light_source{};         // 80059f64 (rotation)
+    } renderer;
     std::uint32_t video_mode{};                // 80058990: GetVideoMode (1 PAL)
     std::uint32_t w_4f378{};                   // 8004f378: nonzero hides the field compass
     std::uint32_t cd_sync_deadline{};          // 8005a228
@@ -351,9 +370,25 @@ struct FieldState {
     std::int16_t compass_heading{};                     // 800adb48
     std::int16_t compass_target{};                      // 800adb4a
     field::GteMatrix matrix_afa84{}; // 800afa84: compass base times the camera rotation
-    // Packet memory: both draw buffer blocks (800b249c) and the packet
-    // buffers the frame's drawing code fills.
-    PacketMemory packets;
+    // Regions the frame's drawing code addresses: both draw buffer blocks
+    // (800b249c), packet buffers and model instance records.
+    OriginalRegions regions;
+    // Descriptors after the event actors' (map pieces), 5c bytes each.
+    struct Piece {
+        std::uint32_t address{};
+        field::original::Block<0x5c> descriptor{};
+    };
+    std::vector<Piece> pieces;
+    // Model pass (800748e8).
+    field::GteMatrix cull_view{};                    // 800b00e8: bounding centre in view
+    std::array<std::uint32_t, 2> cull_margins{};     // 800c3a5c x, 800c3a60 y
+    std::array<std::int16_t, 3> piece_drift{};       // 800b21ae x, 800b21b0 z, 800b21b2 y
+    std::array<std::int32_t, 3> piece_drift_total{}; // 800b21bc x, y, z
+    std::uint8_t piece_drift_mode{};                 // 800b21d2: 7f bits select, 80 draws always
+    std::array<std::uint8_t, 3> fog_color{};         // 800b2190
+    std::array<std::uint8_t, 3> far_color{};         // 800b2194
+    std::array<std::int16_t, 2> fog_range{};         // 800b2198 near, 800b219a far
+    std::array<std::uint16_t, 3> back_color{};       // 800afb04: lit models' background
 };
 
 class Program;
@@ -439,6 +474,12 @@ class Program {
     void frame_emitters(std::uint32_t listener); // 80086590
     void frame_fade();                           // 80071cb4
     void frame_compass(FrameServices &services); // 80074108
+    void frame_models();                         // 800748e8
+    [[nodiscard]] std::span<std::uint8_t> descriptor_bytes(std::size_t index);
+    [[nodiscard]] bool model_culled(std::uint32_t instance); // 800aaa74
+    void draw_model(std::uint32_t model, std::uint32_t packets, std::uint32_t table,
+                    std::int32_t mode); // 8002c700
+    void draw_primitives(std::uint32_t routine, std::uint32_t record, std::int32_t count);
     // Field 8007ab6c/8007ac58: one compass quad (a letter when `label`).
     void compass_quad(std::uint32_t table, std::uint32_t record, const field::GteMatrix &m,
                       bool label);
@@ -446,6 +487,8 @@ class Program {
     // Original addresses of Program-owned packets and globals, for the
     // drawing code that links packets by address.
     [[nodiscard]] std::uint32_t memory(std::uint32_t address, std::size_t width = 4) const;
+    [[nodiscard]] std::span<std::uint8_t> resource_bytes(std::uint32_t address,
+                                                         std::size_t width) const;
     void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
     void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
     // Resident libgpu calls on their immediate path (gpu_calls.cpp).

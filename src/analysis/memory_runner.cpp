@@ -182,6 +182,8 @@ int main(int argc, char **argv) {
                     services.dma_busy.push_back(first);
                 else if (name == "interrupt_mask")
                     services.interrupt_masks.push_back(first);
+                else if (name == "gpu_info")
+                    services.gpu_info.push_back(first);
                 else
                     throw InputError("Unknown service result " + name);
             }

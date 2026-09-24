@@ -448,6 +448,53 @@ std::vector<OriginalGlobal> build() {
     add("compass_target", 0x800adb4a, 2, [](Program &p) -> auto & { return f(p).compass_target; });
     matrix("matrix_afa84", 0x800afa84, [](Program &p) -> auto & { return f(p).matrix_afa84; });
     add_resident("w_4f378", 0x8004f378, 4, [](Program &p) -> auto & { return p.resident.w_4f378; });
+    matrix("cull_view", 0x800b00e8, [](Program &p) -> auto & { return f(p).cull_view; });
+    for (std::uint32_t i = 0; i < 2; ++i)
+        add("cull_margins", 0x800c3a5c + i * 4, 4,
+            [i](Program &p) -> auto & { return f(p).cull_margins[i]; });
+    for (std::uint32_t i = 0; i < 3; ++i) {
+        add("piece_drift", 0x800b21ae + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).piece_drift[i]; });
+        add("piece_drift_total", 0x800b21bc + i * 4, 4,
+            [i](Program &p) -> auto & { return f(p).piece_drift_total[i]; });
+        add("fog_color", 0x800b2190 + i, 1,
+            [i](Program &p) -> auto & { return f(p).fog_color[i]; });
+        add("far_color", 0x800b2194 + i, 1,
+            [i](Program &p) -> auto & { return f(p).far_color[i]; });
+        add("back_color", 0x800afb04 + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).back_color[i]; });
+    }
+    add("piece_drift_mode", 0x800b21d2, 1,
+        [](Program &p) -> auto & { return f(p).piece_drift_mode; });
+    for (std::uint32_t i = 0; i < 2; ++i)
+        add("fog_range", 0x800b2198 + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).fog_range[i]; });
+    // Resident primitive renderer.
+    const auto renderer = [&](std::string name, std::uint32_t address, auto member) {
+        add_resident(std::move(name), address, 4,
+                     [member](Program &p) -> auto & { return p.resident.renderer.*member; });
+    };
+    using Renderer = ResidentState::Renderer;
+    renderer("renderer_packets", 0x80059424, &Renderer::packets);
+    renderer("renderer_59498", 0x80059498, &Renderer::w_59498);
+    renderer("renderer_records", 0x80059528, &Renderer::records);
+    renderer("renderer_normals", 0x8005952c, &Renderer::normals);
+    renderer("renderer_vertices", 0x8005953c, &Renderer::vertices);
+    renderer("renderer_table", 0x80059568, &Renderer::table);
+    renderer("renderer_drawn", 0x80059578, &Renderer::drawn);
+    renderer("renderer_submitted", 0x800595c0, &Renderer::submitted);
+    renderer("renderer_x_limit", 0x800500f8, &Renderer::x_limit);
+    renderer("renderer_y_limit", 0x800500fc, &Renderer::y_limit);
+    renderer("renderer_depth_shift", 0x80050100, &Renderer::depth_shift);
+    renderer("renderer_lod", 0x80050104, &Renderer::lod);
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("renderer_fog_color", 0x80059598 + i, 1,
+                     [i](Program &p) -> auto & { return p.resident.renderer.fog_color[i]; });
+    for (std::uint32_t i = 0; i < 9; ++i)
+        add_resident("renderer_light_source", 0x80059f64 + i * 2, 2,
+                     [i](Program &p) -> auto & { return p.resident.renderer.light_source.r[i]; });
+    add_resident("renderer_light_source", 0x80059f76, 2,
+                 [](Program &p) -> auto & { return p.resident.renderer.light_source.pad; });
     add("emitter_source", 0x800b22e0, 2, [](Program &p) -> auto & { return f(p).emitter_source; });
     for (std::uint32_t i = 0; i < 3; ++i)
         for (std::uint32_t j = 0; j < 3; ++j)
@@ -708,8 +755,15 @@ template <typename Visit> void each_entry(std::uint32_t address, std::size_t siz
     const auto &index = by_address();
     for (std::size_t offset = 0; offset < size;) {
         const auto found = index.find(address + static_cast<std::uint32_t>(offset));
-        if (found == index.end() || found->second->width > size - offset)
-            throw field::FieldFormatError("Original range byte is not owned by one Program value");
+        if (found == index.end() || found->second->width > size - offset) {
+            constexpr char digits[] = "0123456789abcdef";
+            const auto at = address + static_cast<std::uint32_t>(offset);
+            std::string text(8, '0');
+            for (std::size_t i = 0; i < 8; ++i)
+                text[7 - i] = digits[(at >> (4 * i)) & 15U];
+            throw field::FieldFormatError("Original range byte " + text +
+                                          " is not owned by one Program value");
+        }
         visit(*found->second, offset);
         offset += found->second->width;
     }

@@ -69,17 +69,46 @@ std::uint32_t take_service(std::deque<std::uint32_t> &results, const char *what)
     return value;
 }
 
+// Resources (qualified source extents, such as the field geometry) are owned
+// bytes the drawing code reads through their original address.
+std::span<std::uint8_t> Program::resource_bytes(std::uint32_t address, std::size_t width) const {
+    if (field)
+        for (auto &resource : field->resources)
+            if (address >= resource.address &&
+                address - resource.address <= resource.bytes.size() &&
+                width <= resource.bytes.size() - (address - resource.address))
+                return std::span(const_cast<std::vector<std::uint8_t> &>(resource.bytes))
+                    .subspan(address - resource.address, width);
+    return {};
+}
+
+// RAM through its KUSEG, KSEG0 and KSEG1 mirrors: drawing code keeps packet
+// cursors as 24-bit link addresses and stores through them.
+std::uint32_t ram_address(std::uint32_t address) {
+    if ((address & 0x1fffffffU) >= 0x200000U)
+        throw field::FieldFormatError("Address outside main RAM");
+    return 0x80000000U | (address & 0x1fffffU);
+}
+
 std::uint32_t Program::memory(std::uint32_t address, std::size_t width) const {
-    if (field && field->packets.contains(address, width))
-        return field->packets.word(address, width);
+    address = ram_address(address);
+    if (field && field->regions.contains(address, width))
+        return field->regions.word(address, width);
+    if (const auto bytes = resource_bytes(address, width); !bytes.empty())
+        return word(bytes, 0, width);
     std::array<std::uint8_t, 4> bytes{};
     read_original(*this, address, std::span(bytes).first(width));
     return word(bytes, 0, width);
 }
 
 void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t width) {
-    if (field && field->packets.contains(address, width)) {
-        field->packets.put(address, value, width);
+    address = ram_address(address);
+    if (field && field->regions.contains(address, width)) {
+        field->regions.put(address, value, width);
+        return;
+    }
+    if (const auto bytes = resource_bytes(address, width); !bytes.empty()) {
+        put(bytes, 0, value, width);
         return;
     }
     std::array<std::uint8_t, 4> bytes{};
@@ -382,8 +411,13 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
     observed(observe, *this, {"field_frame_fade", 0x80071cb4, {}, {}}, true);
     frame_compass(services);
     observed(observe, *this, {"field_frame_compass", 0x80074108, {}, {}}, true);
-    throw MissingDependency({"field_frame_models", 0x800748e8, {}, {}}, "symbol:field-frame-models",
-                            false, "The model pass of 800748e8 is not connected");
+    // The model and character passes run on a stack in the scratchpad
+    // (1f8003fc); no Program state lives there.
+    frame_models();
+    observed(observe, *this, {"field_frame_models", 0x800748e8, {}, {}}, true);
+    throw MissingDependency({"field_frame_characters", 0x800752c8, {}, {}},
+                            "symbol:field-frame-characters", false,
+                            "The character pass of 800752c8 is not connected");
 }
 
 } // namespace xem::reconstruction

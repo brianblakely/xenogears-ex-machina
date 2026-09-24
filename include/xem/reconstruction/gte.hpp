@@ -34,6 +34,16 @@ class Gte {
     void nclip() { execute(0x06U); }
     void avsz3() { execute(0x2dU | sf_bit); }
     void avsz4() { execute(0x2eU | sf_bit); }
+    // MVMVA: matrix mx (0 rotation, 1 light, 2 color) times vector v (0-2, 3
+    // IR) plus cv (0 translation, 1 background, 3 none).
+    void mvmva(std::uint32_t mx, std::uint32_t v, std::uint32_t cv) {
+        execute(0x12U | sf_bit | mx << 17U | v << 15U | cv << 13U);
+    }
+    void set_ir(const field::GteVector &vector) {
+        ir_[1] = vector[0];
+        ir_[2] = vector[1];
+        ir_[3] = vector[2];
+    }
 
     // Vector/data accessors used by reconstructed callers.
     [[nodiscard]] std::int32_t mac(std::size_t index) const { return mac_[index]; }

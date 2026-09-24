@@ -87,7 +87,7 @@ def gte_words(row: dict) -> list[int]:
 # hook records the value at the original service's return: VSync(1) results,
 # the VSync(0) globals, each libgpu alarm's VSync(-1), the alarm polls counted
 # by DrawSync/LoadImage waits, ClearImage's GPUSTAT read, the queue's DMA busy
-# check and SetIntrMask(0)'s previous mask.
+# check, SetIntrMask(0)'s previous mask and GPU information reads (GPUREAD).
 def service_line(row: dict) -> str | None:
     hook = row["hook"]
     registers = visible_registers(row)
@@ -111,6 +111,8 @@ def service_line(row: dict) -> str | None:
         return f"dma_busy {registers[2]:x}"
     if hook == "intr-mask":
         return f"interrupt_mask {registers[2]:x}"
+    if hook == "gpu-info":
+        return f"gpu_info {registers[2]:x}"
     return None
 
 
@@ -219,9 +221,11 @@ PARTY_RESOURCES = 0x8005A414
 PARTY_SLOTS = 0x8005A444
 FIELD_SPRITES = 0x800AFB1C
 FIELD_GEOMETRY = 0x800AFB14  # Component 2: models, including collision models.
-# Resident read-only sprite tables used by the recovered sprite code; the same
-# extents are qualified by the EVID-REF-040 return case.
-RESIDENT_TABLES = ((0x800B1F78, 256), (0x8004FD40, 12), (0x8004FF30, 40), (0x80050070, 40))
+# Resident read-only tables: sprite tables used by the recovered sprite code
+# (qualified by the EVID-REF-040 return case) and the primitive routine table
+# 8004fe50 of the model renderer, 17 rows of 28 bytes, which contains the two
+# sprite tables at 8004ff30 and 80050070.
+RESIDENT_TABLES = ((0x800B1F78, 256), (0x8004FD40, 12), (0x8004FE50, 17 * 0x28))
 
 
 class Sources:

@@ -6,6 +6,7 @@
 #include <bit>
 #include <functional>
 #include <map>
+#include <set>
 #include <stdexcept>
 #include <string>
 
@@ -41,6 +42,8 @@ constexpr std::size_t disc_directory_table_bytes = 0x7a;
 // Field frame draw buffers: two 80f4-byte blocks (environments, ordering tables).
 constexpr std::uint32_t draw_blocks = 0x800b249c;
 constexpr std::size_t draw_block_bytes = 0x80f4;
+
+constexpr std::uint32_t primitive_table = 0x8004fe50;
 
 constexpr std::size_t actor_bytes = 0x138;
 constexpr std::size_t descriptor_bytes = 0x5c;
@@ -311,17 +314,55 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
         state.resources.push_back({address, copy_of(memory.range(address, size))});
     for (std::uint32_t i = 0; i < 2; ++i) {
         const auto address = draw_blocks + i * static_cast<std::uint32_t>(draw_block_bytes);
-        state.packets.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
+        state.regions.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
     }
     // Compass quads (19 records of four vectors and a packet per buffer) and
     // the draw-mode packets (twelve bytes each, c0 bytes per buffer) that end
     // where the resident sprite table at 800b1f78 begins.
-    state.packets.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
-    state.packets.add("draw_modes", 0x800b1e00, copy_of(memory.range(0x800b1e00, 0x174)));
+    state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
+    state.regions.add("draw_modes", 0x800b1e00, copy_of(memory.range(0x800b1e00, 0x174)));
+    // Descriptors after the event actors' (map pieces), and every model
+    // instance: its 24-byte record and a packet buffer per draw buffer, sized
+    // from its primitive groups by the resident primitive table (8004fe50).
+    for (std::uint32_t i = count; i < state.descriptor_count; ++i) {
+        auto &piece = state.pieces.emplace_back();
+        piece.address = table + i * static_cast<std::uint32_t>(descriptor_bytes);
+        copy_into(piece.descriptor, memory.range(piece.address, descriptor_bytes));
+    }
+    std::set<std::uint32_t> instances;
+    for (std::uint32_t i = 0; i < state.descriptor_count; ++i) {
+        const auto instance = memory.word(table + i * static_cast<std::uint32_t>(descriptor_bytes));
+        if (instance == 0 || !instances.insert(instance).second)
+            continue;
+        state.regions.add("model_instance", instance, copy_of(memory.range(instance, 0x24)));
+        const auto model = memory.word(instance + 4);
+        auto record = memory.word(model + 0x10);
+        std::size_t size = 0;
+        for (auto groups = memory.word(model + 6, 2); groups != 0; --groups) {
+            const auto type = memory.word(record, 1);
+            const auto primitives = convert<std::int16_t>(memory.word(record + 2, 2));
+            if (type >= 17 || primitives < 0)
+                throw field::FieldFormatError("Model primitive group outside the resident table");
+            const auto entry = primitive_table + type * 0x28;
+            size += static_cast<std::size_t>(primitives) * memory.word(entry + 0x24);
+            record += 4 + static_cast<std::uint32_t>(primitives) * memory.word(entry + 0x1c);
+        }
+        for (std::uint32_t buffer = 0; buffer < 2; ++buffer) {
+            const auto packets = memory.word(instance + 8 + buffer * 4);
+            state.regions.add("model_packets", packets, copy_of(memory.range(packets, size)));
+        }
+    }
     return program;
 }
 
 namespace {
+std::string hex_address(std::uint32_t address) {
+    constexpr char digits[] = "0123456789abcdef";
+    std::string text(8, '0');
+    for (std::size_t i = 0; i < 8; ++i)
+        text[7 - i] = digits[(address >> (4 * i)) & 15U];
+    return text;
+}
 // Owned ranges written back over the entry image; overlaps are rejected.
 struct Claims {
     OriginalMemory &memory;
@@ -329,11 +370,21 @@ struct Claims {
     std::map<std::uint32_t, std::size_t> claimed;
     void claim(std::string_view name, std::uint32_t address, std::size_t size) {
         const auto next = claimed.lower_bound(address);
-        const bool overlaps =
-            (next != claimed.end() && next->first < address + size) ||
-            (next != claimed.begin() && std::prev(next)->first + std::prev(next)->second > address);
-        if (overlaps)
-            throw field::FieldFormatError("Owned original ranges overlap at " + std::string(name));
+        const auto other = [&](std::map<std::uint32_t, std::size_t>::const_iterator at) {
+            for (const auto &range : owned)
+                if (range.address == at->first)
+                    return std::string(range.name) + " " + hex_address(at->first);
+            return hex_address(at->first);
+        };
+        std::string conflict;
+        if (next != claimed.end() && next->first < address + size)
+            conflict = other(next);
+        else if (next != claimed.begin() &&
+                 std::prev(next)->first + std::prev(next)->second > address)
+            conflict = other(std::prev(next));
+        if (!conflict.empty())
+            throw field::FieldFormatError("Owned original ranges overlap at " + std::string(name) +
+                                          " " + hex_address(address) + " and " + conflict);
         claimed.emplace(address, size);
         owned.push_back({name, address, size});
     }
@@ -483,8 +534,10 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
             out.bytes("dialogue_block", block.address, block.bytes);
     for (const auto &resource : state.resources)
         out.bytes("resource", resource.address, resource.bytes);
-    for (const auto &[address, region] : state.packets.regions())
+    for (const auto &[address, region] : state.regions.regions())
         out.bytes(region.name, address, region.bytes);
+    for (const auto &piece : state.pieces)
+        out.bytes("descriptor", piece.address, piece.descriptor);
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
         memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));

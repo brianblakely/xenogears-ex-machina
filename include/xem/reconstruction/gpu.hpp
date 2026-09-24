@@ -19,11 +19,11 @@ namespace gpu {
 [[nodiscard]] std::uint32_t texture_window(const std::array<std::int16_t, 4> *rect);
 } // namespace gpu
 
-// GPU packet memory built in original layout: ordering tables and primitive
-// packets that DrawOTag hands to the GPU. Packets link through 24-bit original
-// addresses, so regions keep their original address. Each region is owned
-// whole by the drawing state that builds it.
-class PacketMemory {
+// Owned regions in original layout that drawing code addresses: ordering
+// tables and primitive packets DrawOTag hands to the GPU (linked through
+// 24-bit original addresses), and the records that describe them. Each region
+// is owned whole.
+class OriginalRegions {
   public:
     struct Region {
         std::string name;
@@ -34,7 +34,7 @@ class PacketMemory {
     [[nodiscard]] std::uint32_t word(std::uint32_t address, std::size_t width = 4) const;
     void put(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
     [[nodiscard]] const std::map<std::uint32_t, Region> &regions() const { return regions_; }
-    bool operator==(const PacketMemory &) const = default;
+    bool operator==(const OriginalRegions &) const = default;
 
   private:
     [[nodiscard]] const Region *find(std::uint32_t address, std::size_t width,

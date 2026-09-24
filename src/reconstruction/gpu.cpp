@@ -1,4 +1,4 @@
-// Resident libgpu packet helpers and GPU packet memory.
+// Resident libgpu packet helpers and owned original regions.
 #include "xem/reconstruction/gpu.hpp"
 
 #include <stdexcept>
@@ -37,18 +37,19 @@ std::uint32_t texture_window(const std::array<std::int16_t, 4> *rect) {
 }
 } // namespace gpu
 
-void PacketMemory::add(std::string name, std::uint32_t address, std::vector<std::uint8_t> bytes) {
+void OriginalRegions::add(std::string name, std::uint32_t address,
+                          std::vector<std::uint8_t> bytes) {
     const auto size = bytes.size();
     const auto next = regions_.lower_bound(address);
     if ((next != regions_.end() && next->first < address + size) ||
         (next != regions_.begin() &&
          std::prev(next)->first + std::prev(next)->second.bytes.size() > address))
-        throw std::invalid_argument("Packet memory regions overlap");
+        throw std::invalid_argument("Original regions overlap");
     regions_.emplace(address, Region{std::move(name), std::move(bytes)});
 }
 
-const PacketMemory::Region *PacketMemory::find(std::uint32_t address, std::size_t width,
-                                               std::uint32_t &offset) const {
+const OriginalRegions::Region *OriginalRegions::find(std::uint32_t address, std::size_t width,
+                                                     std::uint32_t &offset) const {
     auto found = regions_.upper_bound(address);
     if (found == regions_.begin())
         return nullptr;
@@ -59,27 +60,27 @@ const PacketMemory::Region *PacketMemory::find(std::uint32_t address, std::size_
     return &found->second;
 }
 
-bool PacketMemory::contains(std::uint32_t address, std::size_t width) const {
+bool OriginalRegions::contains(std::uint32_t address, std::size_t width) const {
     std::uint32_t offset = 0;
     return find(address, width, offset) != nullptr;
 }
 
-std::uint32_t PacketMemory::word(std::uint32_t address, std::size_t width) const {
+std::uint32_t OriginalRegions::word(std::uint32_t address, std::size_t width) const {
     std::uint32_t offset = 0;
     const auto *region = find(address, width, offset);
     if (region == nullptr)
-        throw std::out_of_range("Packet memory read outside owned regions");
+        throw std::out_of_range("Read outside owned original regions");
     std::uint32_t value = 0;
     for (std::size_t i = 0; i < width; ++i)
         value |= static_cast<std::uint32_t>(region->bytes[offset + i]) << (8U * i);
     return value;
 }
 
-void PacketMemory::put(std::uint32_t address, std::uint32_t value, std::size_t width) {
+void OriginalRegions::put(std::uint32_t address, std::uint32_t value, std::size_t width) {
     std::uint32_t offset = 0;
     auto *region = const_cast<Region *>(find(address, width, offset));
     if (region == nullptr)
-        throw std::out_of_range("Packet memory write outside owned regions");
+        throw std::out_of_range("Write outside owned original regions");
     for (std::size_t i = 0; i < width; ++i)
         region->bytes[offset + i] = static_cast<std::uint8_t>(value >> (8U * i));
 }

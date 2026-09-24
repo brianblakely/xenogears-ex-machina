@@ -45,6 +45,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/gpu.cpp
   src/reconstruction/gpu_calls.cpp
   src/reconstruction/field_frame.cpp
+  src/reconstruction/field_models.cpp
   src/reconstruction/field_view.cpp
   src/reconstruction/disc_stream.cpp
   src/reconstruction/disc_read.cpp)
