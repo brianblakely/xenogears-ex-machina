@@ -118,15 +118,16 @@ def service_line(row: dict) -> str | None:
 
 def frame_services(
     capture: Path, entry_hook: str, exit_hook: str, interrupts: tuple[tuple[str, str], ...]
-) -> dict[str, str]:
-    """Service lines per call, keyed by the entry snapshot's RAM digest.
+) -> dict[str, tuple[int, list[tuple[int, str]]]]:
+    """Entry cycle and (cycle, service line) pairs per call, keyed by the entry
+    snapshot's RAM digest.
 
     The key lets a capture of the identical execution with other hooks supply
     the results; records inside interrupt brackets are not the call's.
     """
     starts = {entry for entry, _ in interrupts}
     ends = {exit for _, exit in interrupts}
-    result, lines, key, depth = {}, None, None, 0
+    result, lines, key, depth, start = {}, None, None, 0, 0
     for line in (capture / "instruction-trace.jsonl").read_text().splitlines():
         row = json.loads(line)
         hook = row["hook"]
@@ -135,19 +136,19 @@ def frame_services(
         elif hook in ends:
             depth -= 1
         elif hook == entry_hook:
-            key, lines = row["snapshot"]["ram_sha256"], []
+            key, lines, start = row["snapshot"]["ram_sha256"], [], row["cycle_u32"]
         elif hook == exit_hook and lines is not None:
             require(key not in result, "Two calls start from the same image")
-            result[key] = "".join(item + "\n" for item in lines)
+            result[key] = (start, lines)
             lines = None
         elif lines is not None and depth == 0:
             item = service_line(row)
             if item is not None:
-                lines.append(item)
+                lines.append((row["cycle_u32"], item))
     # A frame the window cut short keeps the results it recorded; a later
     # result it would need is reported as not supplied.
     if lines is not None:
-        result[key] = "".join(item + "\n" for item in lines)
+        result[key] = (start, lines)
     return result
 
 
@@ -423,9 +424,21 @@ def run(args: argparse.Namespace) -> int:
     matched = 0
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
-    services = {}
+    services, frame_keys = {}, {}
     if args.entry == "field_frame":
         services = frame_services(args.services or capture, "frame-entry", "frame-exit", interrupts)
+        # Each call's frame: the latest frame entry at or before its entry record.
+        key = None
+        for line in (capture / "instruction-trace.jsonl").read_text().splitlines():
+            row = json.loads(line)
+            if row["hook"] == "frame-entry":
+                key = row["snapshot"]["ram_sha256"]
+            for call_entry, _, _ in calls:
+                if call_entry["event"] == row["event"]:
+                    frame_keys[id(call_entry)] = key
+        # A call in a frame that began before the capture window has no
+        # recorded services; it is not comparable.
+        selected = [call for call in selected if frame_keys.get(id(call[0])) is not None]
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     require(not trace.get("failed"), "Capture instruction trace failed")
     # The trace and snapshot files must be the ones the capture recorded.
@@ -451,15 +464,25 @@ def run(args: argparse.Namespace) -> int:
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
             if args.entry == "field_frame":
-                key = entry_row["snapshot"]["ram_sha256"]
+                # Results of the frame containing the entry, from the entry on:
+                # captures of one execution share cycle counts.
+                key = frame_keys[id(entry_row)]
                 require(key in services, "No service results recorded for this frame")
-                (work / "services.txt").write_text(services[key])
+                start = services[key][0]
+                (work / "services.txt").write_text(
+                    "".join(
+                        line + "\n"
+                        for cycle, line in services[key][1]
+                        if (cycle - start) % (1 << 32)
+                        >= (entry_row["cycle_u32"] - start) % (1 << 32)
+                    )
+                )
             else:
                 (work / "services.txt").write_text("")
             process = subprocess.run(
                 [
                     str(args.runner),
-                    args.entry,
+                    args.entry + (f":{args.frame_from}" if args.frame_from else ""),
                     str(args.budget),
                     args.stop,
                     str(work / "ram.bin"),
@@ -649,6 +672,9 @@ def main() -> int:
         "--services",
         type=Path,
         help="Capture of the same execution whose service hooks supply field_frame results",
+    )
+    parser.add_argument(
+        "--frame-from", help="field_frame step to resume at (the entry hook's call site)"
     )
     parser.add_argument("--entry-hook", default="update-entry")
     parser.add_argument("--exit-hook", default="update-return")

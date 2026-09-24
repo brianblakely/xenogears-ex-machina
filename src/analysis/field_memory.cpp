@@ -317,10 +317,14 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
         state.regions.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
     }
     // Compass quads (19 records of four vectors and a packet per buffer) and
-    // the draw-mode packets (twelve bytes each, c0 bytes per buffer) that end
-    // where the resident sprite table at 800b1f78 begins.
+    // the draw-mode packets (twelve bytes each, 16 per buffer).
     state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
-    state.regions.add("draw_modes", 0x800b1e00, copy_of(memory.range(0x800b1e00, 0x174)));
+    state.regions.add("draw_modes", 0x800b1df4, copy_of(memory.range(0x800b1df4, 0x180)));
+    // The sprite system's per-buffer arenas (packets and upload nodes).
+    for (const auto arena : resident.sprite_arenas)
+        if (arena != 0)
+            state.regions.add("sprite_arena", arena,
+                              copy_of(memory.range(arena, resident.sprite_arena_bytes)));
     // Descriptors after the event actors' (map pieces), and every model
     // instance: its 24-byte record and a packet buffer per draw buffer, sized
     // from its primitive groups by the resident primitive table (8004fe50).
@@ -329,13 +333,9 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
         piece.address = table + i * static_cast<std::uint32_t>(descriptor_bytes);
         copy_into(piece.descriptor, memory.range(piece.address, descriptor_bytes));
     }
-    std::set<std::uint32_t> instances;
-    for (std::uint32_t i = 0; i < state.descriptor_count; ++i) {
-        const auto instance = memory.word(table + i * static_cast<std::uint32_t>(descriptor_bytes));
-        if (instance == 0 || !instances.insert(instance).second)
-            continue;
-        state.regions.add("model_instance", instance, copy_of(memory.range(instance, 0x24)));
-        const auto model = memory.word(instance + 4);
+    // A model's packet buffer size: its primitive groups by the resident
+    // primitive table (8004fe50).
+    const auto packet_bytes = [&](std::uint32_t model) {
         auto record = memory.word(model + 0x10);
         std::size_t size = 0;
         for (auto groups = memory.word(model + 6, 2); groups != 0; --groups) {
@@ -347,11 +347,54 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
             size += static_cast<std::size_t>(primitives) * memory.word(entry + 0x24);
             record += 4 + static_cast<std::uint32_t>(primitives) * memory.word(entry + 0x1c);
         }
+        return size;
+    };
+    std::set<std::uint32_t> instances;
+    for (std::uint32_t i = 0; i < state.descriptor_count; ++i) {
+        const auto instance = memory.word(table + i * static_cast<std::uint32_t>(descriptor_bytes));
+        if (instance == 0 || !instances.insert(instance).second)
+            continue;
+        state.regions.add("model_instance", instance, copy_of(memory.range(instance, 0x24)));
+        const auto size = packet_bytes(memory.word(instance + 4));
         for (std::uint32_t buffer = 0; buffer < 2; ++buffer) {
             const auto packets = memory.word(instance + 8 + buffer * 4);
             state.regions.add("model_packets", packets, copy_of(memory.range(packets, size)));
         }
     }
+    // Sprite task nodes, each with the heap block it shares with its sprite,
+    // and the packet buffers of task sprites that draw a model (sprite +20:
+    // renderer, +2c/+30 packets, +34 model).
+    auto &tasks = resident.sprite_tasks;
+    for (auto head : {tasks.head, tasks.pending_head})
+        for (auto node = head, visited = 0U; node != 0; node = memory.word(node + 0x18)) {
+            if (++visited > 0x1000)
+                throw field::FieldFormatError("Sprite task list does not terminate");
+            const auto owned = std::ranges::any_of(tasks.nodes, [&](const auto &block) {
+                return node >= block.address && node - block.address < block.bytes.size();
+            });
+            if (owned)
+                continue;
+            bool found = false;
+            for (const auto &[at, header] : resident.heap.headers) {
+                if (node < at + 8 || node >= header[0] - 8)
+                    continue;
+                tasks.nodes.push_back({at + 8, copy_of(memory.range(at + 8, header[0] - 16 - at))});
+                found = true;
+                break;
+            }
+            if (!found)
+                throw field::FieldFormatError("Sprite task node is outside the heap");
+            const auto sprite = memory.word(node + 4);
+            const auto renderer = memory.word(sprite + 0x20);
+            if (const auto model = memory.word(renderer + 0x34); model != 0) {
+                const auto size = packet_bytes(model);
+                for (std::uint32_t buffer = 0; buffer < 2; ++buffer) {
+                    const auto packets = memory.word(renderer + 0x2c + buffer * 4);
+                    state.regions.add("task_model_packets", packets,
+                                      copy_of(memory.range(packets, size)));
+                }
+            }
+        }
     return program;
 }
 
@@ -538,6 +581,8 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes(region.name, address, region.bytes);
     for (const auto &piece : state.pieces)
         out.bytes("descriptor", piece.address, piece.descriptor);
+    for (const auto &node : resident.sprite_tasks.nodes)
+        out.bytes("sprite_task_block", node.address, node.bytes);
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
         memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));

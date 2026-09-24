@@ -116,6 +116,12 @@ void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t
     write_original(*this, address, std::span(bytes).first(width));
 }
 
+// AddPrims (80043b84): link the packet list p0..p1 at the head of `table`.
+void Program::add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last) {
+    set_memory(last, (memory(last) & 0xff000000U) | (memory(table) & 0xffffffU));
+    set_memory(table, (memory(table) & 0xff000000U) | (first & 0xffffffU));
+}
+
 // PsyQ addPrim: link the packet at the head of the ordering-table entry.
 void Program::add_primitive(std::uint32_t table_entry, std::uint32_t packet) {
     set_memory(packet, (memory(packet) & 0xff000000U) | (memory(table_entry) & 0xffffffU));
@@ -392,32 +398,255 @@ void Program::frame_compass(FrameServices &services) {
     gte.screen.h = static_cast<std::uint16_t>(c.projection);
 }
 
-// Field 8007554c.
-void Program::field_frame(FrameServices &services, const ProgramObserver &observe) {
+// Field 800805f4: per dialogue window, close it (8007f6f8) when its hold
+// timer (+3f0) ran out without a keep flag, or once it was cleared, then
+// count the timer down.
+void Program::frame_dialogue_timers() {
+    auto &state = *field;
+    for (std::size_t w = 0; w < state.dialogue.size(); ++w) {
+        auto &window = state.dialogue[w];
+        if (window.half(field::DialogueWindow::busy) != 0)
+            continue;
+        const bool expired = window.half(0x3f0) == 0 && (window.half(0x10) & 4) == 0;
+        if (expired || window.half(field::DialogueWindow::cleared) == 0)
+            throw MissingDependency({"field_frame_dialogue_timers", 0x8007f6f8, w, {}},
+                                    "symbol:dialogue-window-close", false,
+                                    "Closing a dialogue window from the frame is not recovered");
+        if (const auto hold = window.half(0x3f0); hold != 0)
+            window.set_half(0x3f0, static_cast<std::uint16_t>(hold - 1));
+    }
+}
+
+// Field 8008004c: the cursor animation counters, then every displayed window
+// (+3fa set) is drawn in its order (+3f8), then the order is renumbered and
+// the frame's text draw mode is linked into `table`.
+void Program::frame_dialogue(std::uint32_t table) {
+    auto &state = *field;
+    ++state.dialogue_ticks;
+    if ((state.dialogue_ticks & 3U) == 0)
+        ++state.dialogue_cursor;
+    if (s32(state.dialogue_cursor) > 4)
+        state.dialogue_cursor = 0;
+    const auto draw = [&](std::size_t w) {
+        throw MissingDependency({"field_frame_dialogue", 0x8008004c, w, {}},
+                                "symbol:dialogue-window-draw", false,
+                                "Drawing dialogue windows is not recovered");
+    };
+    // The last window with +3fa set is drawn first, the others by rank.
+    std::size_t selected = 0xff;
+    for (std::size_t w = 0; w < state.dialogue.size(); ++w)
+        if (state.dialogue[w].half(0x3fa) != 0)
+            selected = w;
+    for (std::size_t w = 0; w < state.dialogue.size(); ++w) {
+        const auto &window = state.dialogue[w];
+        if (window.half(field::DialogueWindow::busy) == 0 && window.half(0x3fa) != 0)
+            draw(w);
+    }
+    std::array<std::uint32_t, 4> order{0xffff, 0xffff, 0xffff, 0xffff};
+    std::uint32_t next = 0;
+    for (std::uint32_t rank = 0; rank < 4; ++rank)
+        for (std::size_t w = 0; w < state.dialogue.size(); ++w) {
+            const auto &window = state.dialogue[w];
+            const auto current = static_cast<std::uint16_t>(window.half(0x3f8));
+            if (current == rank) {
+                order[w] = next++;
+                if (window.half(field::DialogueWindow::busy) == 0 && w != selected)
+                    draw(w);
+            }
+            if (current == 0xffff)
+                order[w] = 0xffff;
+        }
+    for (std::size_t w = 0; w < state.dialogue.size(); ++w)
+        state.dialogue[w].set_half(0x3f8, static_cast<std::uint16_t>(order[w]));
+    add_primitive(table, 0x800b1df4 + state.draw_buffer * 0xc0);
+}
+
+// Field 8007554c, resumable at `from` (the call the frame makes next).
+void Program::field_frame(FrameServices &services, const ProgramObserver &observe, FrameStep from) {
     auto &state = loaded(*this);
     if (state.event_control.diagnostic_suppression == 0)
         throw MissingDependency({"field_frame", 0x8007554c, {}, {}},
                                 "symbol:field-diagnostic-output", false,
                                 "Unsuppressed frame diagnostic output is not recovered");
-    // 8007555c VSync(1); the VSync(-1) that follows only paces the final wait.
-    state.frame_start_hcount = take_service(services.hblank_counts, "VSync(1) at frame start");
-    field_move(observe);
-    // 80086908: the listener for positional sound emitters.
-    const auto source = state.emitter_source;
-    if (source >= 0 && source <= 2)
-        frame_emitters(static_cast<std::uint32_t>(source));
-    observed(observe, *this, {"field_frame_emitters", 0x80086908, {}, {}}, true);
-    frame_fade();
-    observed(observe, *this, {"field_frame_fade", 0x80071cb4, {}, {}}, true);
-    frame_compass(services);
-    observed(observe, *this, {"field_frame_compass", 0x80074108, {}, {}}, true);
-    // The model and character passes run on a stack in the scratchpad
-    // (1f8003fc); no Program state lives there.
-    frame_models();
-    observed(observe, *this, {"field_frame_models", 0x800748e8, {}, {}}, true);
-    throw MissingDependency({"field_frame_characters", 0x800752c8, {}, {}},
-                            "symbol:field-frame-characters", false,
-                            "The character pass of 800752c8 is not connected");
+    const auto done = [&](std::string_view operation, std::uint32_t address) {
+        observed(observe, *this, {operation, address, {}, {}}, true);
+    };
+    const auto unrecovered = [&](std::string_view operation, std::uint32_t address, const char *id,
+                                 const char *reason) {
+        throw MissingDependency({operation, address, {}, {}}, id, false, reason);
+    };
+    const auto block = [&] { return state.draw_block; };
+    switch (from) {
+    case FrameStep::start:
+        // 8007555c VSync(1); the VSync(-1) that follows only paces the final wait.
+        state.frame_start_hcount = take_service(services.hblank_counts, "VSync(1) at frame start");
+        field_move(observe);
+        [[fallthrough]];
+    case FrameStep::emitters:
+        // 80086908: the listener for positional sound emitters.
+        if (state.emitter_source >= 0 && state.emitter_source <= 2)
+            frame_emitters(static_cast<std::uint32_t>(state.emitter_source));
+        done("field_frame_emitters", 0x80086908);
+        [[fallthrough]];
+    case FrameStep::fade:
+        frame_fade();
+        done("field_frame_fade", 0x80071cb4);
+        [[fallthrough]];
+    case FrameStep::compass:
+        frame_compass(services);
+        done("field_frame_compass", 0x80074108);
+        [[fallthrough]];
+    case FrameStep::models:
+        // The model and character passes run on a stack in the scratchpad
+        // (1f8003fc); no Program state lives there.
+        frame_models();
+        done("field_frame_models", 0x800748e8);
+        [[fallthrough]];
+    case FrameStep::characters:
+        unrecovered("field_frame_characters", 0x800752c8, "symbol:field-frame-characters",
+                    "The character pass of 800752c8 is not connected");
+        [[fallthrough]];
+    case FrameStep::particles:
+        // 800a9688: particle emitters of the 64 slots (800b14b0).
+        if (state.particles_paused == 0)
+            for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot)
+                if (state.particle_slots[slot] == 1)
+                    unrecovered("field_frame_particles", 0x800a9688, "symbol:field-particles",
+                                "Active particle emitters are not recovered");
+        done("field_frame_particles", 0x800a9688);
+        [[fallthrough]];
+    case FrameStep::distortion:
+        // 800a4dac: the screen distortion effect.
+        if (state.distortion != 0)
+            unrecovered("field_frame_distortion", 0x800a4dac, "symbol:field-screen-distortion",
+                        "The screen distortion effect is not recovered");
+        done("field_frame_distortion", 0x800a4dac);
+        [[fallthrough]];
+    case FrameStep::call_800a84c0:
+        if (state.w_af278 != 0)
+            unrecovered("field_frame_800a84c0", 0x800a84c0, "symbol:field-800a84c0",
+                        "The display of 800a84c0 is not recovered");
+        done("field_frame_800a84c0", 0x800a84c0);
+        [[fallthrough]];
+    case FrameStep::call_80075484:
+        if (state.h_b00b2 != 0 && state.w_adb50 == 0)
+            unrecovered("field_frame_80075484", 0x800273c4, "symbol:field-80075484",
+                        "The drawing of 80075484 (800273c4) is not recovered");
+        done("field_frame_80075484", 0x80075484);
+        [[fallthrough]];
+    case FrameStep::call_8007520c:
+        if (resident.w_4f380 == 0 && state.w_b2264 != 0)
+            unrecovered("field_frame_8007520c", 0x8007520c, "symbol:field-8007520c",
+                        "The drawing of 8007520c is not recovered");
+        done("field_frame_8007520c", 0x8007520c);
+        [[fallthrough]];
+    case FrameStep::call_800abec8:
+        if (state.w_adb54 != 0)
+            unrecovered("field_frame_800abec8", 0x800abec8, "symbol:field-800abec8",
+                        "The packets of 800abec8 are not recovered");
+        done("field_frame_800abec8", 0x800abec8);
+        [[fallthrough]];
+    case FrameStep::drawn_time:
+        // 80075694 VSync(1).
+        state.frame_drawn_hcount = take_service(services.hblank_counts, "VSync(1) after drawing");
+        done("field_frame_drawn_time", 0x80075694);
+        [[fallthrough]];
+    case FrameStep::draw_sync:
+        draw_sync(services);
+        done("field_frame_draw_sync", 0x800445d0);
+        [[fallthrough]];
+    case FrameStep::dialogue_timers:
+        frame_dialogue_timers();
+        done("field_frame_dialogue_timers", 0x800805f4);
+        [[fallthrough]];
+    case FrameStep::dialogue:
+        frame_dialogue(block() + 0x80d4U);
+        done("field_frame_dialogue", 0x8008004c);
+        [[fallthrough]];
+    case FrameStep::vertical_sync: {
+        // 800756cc VSync(0): wait for the next vertical blank; libetc keeps
+        // the counter and root counter 1 at its return.
+        if (services.vblank_waits.empty())
+            throw ServiceUnavailable("VSync(0) result");
+        const auto wait = services.vblank_waits.front();
+        services.vblank_waits.pop_front();
+        resident.vsync_hcount = wait[0];
+        resident.vsync_previous = wait[1];
+        done("field_frame_vertical_sync", 0x8004b54c);
+        [[fallthrough]];
+    }
+    case FrameStep::timed_release:
+        // Resident 80032cb8: release blocks whose frame countdown ran out.
+        if (resident.timed_releases != 0)
+            unrecovered("field_frame_timed_release", 0x80032cb8, "symbol:heap-timed-release",
+                        "Frame-timed heap releases are not recovered");
+        done("field_frame_timed_release", 0x80032cb8);
+        [[fallthrough]];
+    case FrameStep::clear:
+        // Clear the next frame's draw area to the field's background color,
+        // black while the camera cuts (mode 3 copies VRAM instead).
+        if (state.camera_cut != 0 && state.background_mode == 3)
+            unrecovered("field_frame_clear", 0x8004495c, "symbol:field-background-copy",
+                        "The MoveImage background of mode 3 is not recovered");
+        {
+            const auto &c = state.clear_color;
+            const auto color =
+                state.camera_cut != 0 ? 0U : u32(c[0]) | u32(c[1]) << 8U | u32(c[2]) << 16U;
+            clear_image(services, block() + 0x5c, color);
+        }
+        done("field_frame_clear", 0x80044764);
+        [[fallthrough]];
+    case FrameStep::environments:
+        put_disp_env(services, block() + 0xb8);
+        put_draw_env(services, block());
+        done("field_frame_environments", 0x80044c44);
+        [[fallthrough]];
+    case FrameStep::uploads: {
+        // Resident 80025044: this buffer's pending image uploads and clears.
+        // Nodes (rect, source, next) come from the buffer's sprite arena
+        // (800251c8); a node without source clears its rectangle.
+        auto &uploads = resident.sprite_uploads.at(resident.sprite_buffer);
+        for (auto rect = uploads; rect != 0; rect = memory(rect + 0xc)) {
+            if (const auto source = memory(rect + 8); source != 0)
+                load_image(services, rect, source);
+            else
+                clear_image(services, rect, 0);
+        }
+        uploads = 0;
+        done("field_frame_uploads", 0x80025044);
+        [[fallthrough]];
+    }
+    case FrameStep::call_800920d8:
+        if (state.h_afea8 > 0)
+            unrecovered("field_frame_800920d8", 0x80027eac, "symbol:field-800920d8",
+                        "The per-frame calls of 800920d8 (80027eac) are not recovered");
+        done("field_frame_800920d8", 0x800920d8);
+        [[fallthrough]];
+    case FrameStep::load:
+        if (state.pending_load != 0) {
+            load_image(services, 0x800afc58, state.pending_load_source);
+            state.pending_load = 0;
+        }
+        done("field_frame_load", 0x800757f8);
+        [[fallthrough]];
+    case FrameStep::tables:
+        // AddPrims (80043b84 via 80075458): the model table joins the frame's
+        // small table when no cut is in progress.
+        if (state.camera_cut == 0) {
+            const auto depth = static_cast<std::uint32_t>(state.ot_depth) * 4U;
+            if (state.w_adb4c != 0)
+                add_primitives(block() + 0xcc + depth, block() + 0x40d0 + depth, block() + 0x40d0);
+            add_primitives(block() + 0x80f0, block() + 0xcc + depth, block() + 0xcc);
+        }
+        done("field_frame_tables", 0x80075850);
+        [[fallthrough]];
+    case FrameStep::draw:
+        draw_otag(services, block() + 0x80f0);
+        // The frame then waits until VSync(-1) reaches its start count plus
+        // 800b217c + 2; the wait changes no RAM.
+        done("field_frame", 0x8007554c);
+        break;
+    }
 }
 
 } // namespace xem::reconstruction

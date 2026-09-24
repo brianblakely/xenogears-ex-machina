@@ -135,20 +135,20 @@ bool Program::model_culled(std::uint32_t instance) {
 // type selects for the sort mode.
 void Program::draw_model(std::uint32_t model, std::uint32_t packets, std::uint32_t table,
                          std::int32_t mode) {
-    auto &r = resident.renderer;
+    auto &r = resident.sprite_models;
     if (r.lod != 0)
         throw MissingDependency({"draw_model", 0x8003101c, {}, {}}, "symbol:model-level-of-detail",
                                 false, "The model detail test 8003101c is not recovered");
     auto groups = memory(model + 6, 2);
-    r.records = memory(model + 0x10);
-    r.w_59498 = memory(model + 0x18);
+    r.geometry = memory(model + 0x10);
+    r.auxiliary = memory(model + 0x18);
     r.normals = memory(model + 0xc);
     r.vertices = memory(model + 8);
-    r.submitted += memory(model + 4, 2);
-    r.packets = packets;
+    r.primitive_count += memory(model + 4, 2);
+    r.output = packets;
     r.table = table;
     for (; groups != 0; --groups) {
-        const auto record = r.records;
+        const auto record = r.geometry;
         // Resident table 8004fe50: per primitive type, the routine for sort
         // modes 0-5, a spare routine, the record stride, a size and the
         // packet size (28 bytes a row).
@@ -159,9 +159,9 @@ void Program::draw_model(std::uint32_t model, std::uint32_t packets, std::uint32
                                     "A primitive sort mode outside 0-5 is not recovered");
         const auto routine = memory(entry + u32(mode) * 4);
         const auto count = s16(memory(record + 2, 2));
-        r.records = record + 4;
+        r.geometry = record + 4;
         draw_primitives(routine, record + 4, count);
-        r.records += u32(count) * memory(entry + 0x1c);
+        r.geometry += u32(count) * memory(entry + 0x1c);
     }
 }
 
@@ -178,9 +178,9 @@ void Program::draw_primitives(std::uint32_t routine, std::uint32_t record, std::
     if (count < 0)
         throw MissingDependency({"draw_primitives", routine, {}, {}}, "symbol:model-negative-group",
                                 false, "A negative primitive count loops in the original");
-    auto &r = resident.renderer;
+    auto &r = resident.sprite_models;
     auto &gte = resident.gte;
-    auto cursor = r.packets - shape->size;
+    auto cursor = r.output - shape->size;
     auto drawn = r.drawn;
     const auto shift = r.depth_shift + (shape->farthest ? 2U : 0U);
     const auto vertex = [&](std::uint32_t index) {
@@ -292,18 +292,18 @@ void Program::draw_primitives(std::uint32_t routine, std::uint32_t record, std::
         link(std::max({gte.sz(0), gte.sz(1), gte.sz(2), gte.sz(3)}));
     }
     r.drawn = drawn;
-    r.packets = cursor + shape->size;
+    r.output = cursor + shape->size;
 }
 
 // Field 800748e8.
 void Program::frame_models() {
     auto &state = *field;
     auto &gte = resident.gte;
-    auto &r = resident.renderer;
+    auto &r = resident.sprite_models;
     auto &c = state.camera;
     const auto &trig = resident.math.trigonometry;
     r.drawn = 0;
-    r.submitted = 0;
+    r.primitive_count = 0;
     if (state.sprite_gate != 0) {
         r.fog_color = state.fog_color; // 8002c6e0
         // SetFarColor (8004a10c).

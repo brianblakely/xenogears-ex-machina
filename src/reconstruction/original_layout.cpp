@@ -469,32 +469,124 @@ std::vector<OriginalGlobal> build() {
     for (std::uint32_t i = 0; i < 2; ++i)
         add("fog_range", 0x800b2198 + i * 2, 2,
             [i](Program &p) -> auto & { return f(p).fog_range[i]; });
-    // Resident primitive renderer.
-    const auto renderer = [&](std::string name, std::uint32_t address, auto member) {
-        add_resident(std::move(name), address, 4,
-                     [member](Program &p) -> auto & { return p.resident.renderer.*member; });
+    // Later field frame steps.
+    add("particles_paused", 0x800adb34, 4,
+        [](Program &p) -> auto & { return f(p).particles_paused; });
+    for (std::uint32_t i = 0; i < 64; ++i)
+        add("particle_slots", 0x800b14b0 + i, 1,
+            [i](Program &p) -> auto & { return f(p).particle_slots[i]; });
+    add("distortion", 0x800b2078, 2, [](Program &p) -> auto & { return f(p).distortion; });
+    add("w_af278", 0x800af278, 4, [](Program &p) -> auto & { return f(p).w_af278; });
+    add("h_b00b2", 0x800b00b2, 2, [](Program &p) -> auto & { return f(p).h_b00b2; });
+    add("w_adb50", 0x800adb50, 4, [](Program &p) -> auto & { return f(p).w_adb50; });
+    add("w_b2264", 0x800b2264, 4, [](Program &p) -> auto & { return f(p).w_b2264; });
+    add("w_adb54", 0x800adb54, 4, [](Program &p) -> auto & { return f(p).w_adb54; });
+    add("dialogue_ticks", 0x800ade98, 4, [](Program &p) -> auto & { return f(p).dialogue_ticks; });
+    add("dialogue_cursor", 0x800ade94, 4,
+        [](Program &p) -> auto & { return f(p).dialogue_cursor; });
+    add("background_mode", 0x800b0048, 4,
+        [](Program &p) -> auto & { return f(p).background_mode; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add("clear_color", 0x800b219c + i, 1,
+            [i](Program &p) -> auto & { return f(p).clear_color[i]; });
+    add("h_afea8", 0x800afea8, 2, [](Program &p) -> auto & { return f(p).h_afea8; });
+    add("pending_load", 0x800adbb4, 4, [](Program &p) -> auto & { return f(p).pending_load; });
+    add("pending_load_source", 0x800af87c, 4,
+        [](Program &p) -> auto & { return f(p).pending_load_source; });
+    for (std::uint32_t i = 0; i < 4; ++i)
+        add("pending_load_rect", 0x800afc58 + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).pending_load_rect[i]; });
+    add("w_adb4c", 0x800adb4c, 4, [](Program &p) -> auto & { return f(p).w_adb4c; });
+    add("ot_depth", 0x800b21d4, 2, [](Program &p) -> auto & { return f(p).ot_depth; });
+    add_resident("w_4f380", 0x8004f380, 4, [](Program &p) -> auto & { return p.resident.w_4f380; });
+    add_resident("timed_releases", 0x80059fcc, 4,
+                 [](Program &p) -> auto & { return p.resident.timed_releases; });
+    add_resident("sprite_buffer", 0x800592f8, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_buffer; });
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        add_resident("sprite_uploads", 0x800594c4 + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.sprite_uploads[i]; });
+        add_resident("sprite_arenas", 0x800594b4 + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.sprite_arenas[i]; });
+        add_resident("sprite_releases", 0x80059300 + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.sprite_releases[i]; });
+    }
+    add_resident("sprite_table", 0x8005956c, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_table; });
+    add_resident("sprite_platform_b", 0x800591ae, 1,
+                 [](Program &p) -> auto & { return p.resident.sprite_platform_b; });
+    for (std::uint32_t i = 0; i < 9; ++i)
+        add_resident("sprite_view", 0x8004fbb8 + i * 2, 2,
+                     [i](Program &p) -> auto & { return p.resident.sprite_view.r[i]; });
+    add_resident("sprite_view", 0x8004fbca, 2,
+                 [](Program &p) -> auto & { return p.resident.sprite_view.pad; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("sprite_view", 0x8004fbcc + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.sprite_view.t[i]; });
+    for (std::uint32_t i = 0; i < 4; ++i)
+        for (std::uint32_t k = 0; k < 4; ++k)
+            add_resident("sprite_quad", 0x8004fb98 + i * 8 + k * 2, 2,
+                         [i, k](Program &p) -> auto & { return p.resident.sprite_quad[i][k]; });
+    // Sprite task lists (8001c964, 8001c9f8) and their counters.
+    const auto tasks = [&](std::string name, std::uint32_t address, std::size_t width,
+                           auto member) {
+        add_resident(std::move(name), address, width,
+                     [member](Program &p) -> auto & { return p.resident.sprite_tasks.*member; });
     };
-    using Renderer = ResidentState::Renderer;
-    renderer("renderer_packets", 0x80059424, &Renderer::packets);
-    renderer("renderer_59498", 0x80059498, &Renderer::w_59498);
-    renderer("renderer_records", 0x80059528, &Renderer::records);
-    renderer("renderer_normals", 0x8005952c, &Renderer::normals);
-    renderer("renderer_vertices", 0x8005953c, &Renderer::vertices);
-    renderer("renderer_table", 0x80059568, &Renderer::table);
-    renderer("renderer_drawn", 0x80059578, &Renderer::drawn);
-    renderer("renderer_submitted", 0x800595c0, &Renderer::submitted);
-    renderer("renderer_x_limit", 0x800500f8, &Renderer::x_limit);
-    renderer("renderer_y_limit", 0x800500fc, &Renderer::y_limit);
-    renderer("renderer_depth_shift", 0x80050100, &Renderer::depth_shift);
-    renderer("renderer_lod", 0x80050104, &Renderer::lod);
+    using Tasks = field::SpriteTaskState;
+    tasks("sprite_task_wait", 0x80059428, 4, &Tasks::wait_count);
+    tasks("sprite_task_wait_flag", 0x80059494, 2, &Tasks::wait_flag);
+    tasks("sprite_task_current", 0x800594c0, 4, &Tasks::current);
+    tasks("sprite_task_head", 0x8005958c, 4, &Tasks::head);
+    tasks("sprite_task_next", 0x80059590, 4, &Tasks::next);
+    tasks("sprite_task_pending", 0x80059594, 4, &Tasks::pending_head);
+    tasks("sprite_task_serial", 0x80059184, 4, &Tasks::serial);
+    tasks("sprite_task_primary", 0x80059188, 4, &Tasks::primary_count);
+    tasks("sprite_task_auxiliary", 0x8005918c, 4, &Tasks::auxiliary_count);
+    tasks("sprite_task_active", 0x80059464, 4, &Tasks::active_flags);
+    tasks("sprite_task_creation", 0x800591ac, 1, &Tasks::creation_flags);
+    tasks("sprite_task_allocation", 0x800591af, 1, &Tasks::allocation_mode);
+    add_resident("sprite_arena_bytes", 0x800592fc, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_arena_bytes; });
+    add_resident("sprite_arena_cursor", 0x80059580, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_arena_cursor; });
+    add_resident("sprite_arena_start", 0x80059524, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_arena_start; });
+    add_resident("sprite_arena_end", 0x80059534, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_arena_end; });
+    // Resident model renderer.
+    const auto renderer = [&](std::string name, std::uint32_t address, std::size_t width,
+                              auto member) {
+        add_resident(std::move(name), address, width,
+                     [member](Program &p) -> auto & { return p.resident.sprite_models.*member; });
+    };
+    using Models = field::SpriteModelState;
+    renderer("renderer_output", 0x80059424, 4, &Models::output);
+    renderer("renderer_auxiliary", 0x80059498, 4, &Models::auxiliary);
+    renderer("renderer_geometry", 0x80059528, 4, &Models::geometry);
+    renderer("renderer_normals", 0x8005952c, 4, &Models::normals);
+    renderer("renderer_shading", 0x80059538, 4, &Models::shading);
+    renderer("renderer_vertices", 0x8005953c, 4, &Models::vertices);
+    renderer("renderer_table", 0x80059568, 4, &Models::table);
+    renderer("renderer_drawn", 0x80059578, 4, &Models::drawn);
+    renderer("renderer_primitive_count", 0x800595c0, 4, &Models::primitive_count);
+    renderer("renderer_material_page", 0x80059308, 2, &Models::material_page);
+    renderer("renderer_material_palette", 0x8005930c, 2, &Models::material_palette);
+    renderer("renderer_palette_base", 0x80059314, 4, &Models::palette_base);
+    renderer("renderer_palette_mode", 0x8005010c, 4, &Models::palette_mode);
+    renderer("renderer_x_limit", 0x800500f8, 4, &Models::x_limit);
+    renderer("renderer_y_limit", 0x800500fc, 4, &Models::y_limit);
+    renderer("renderer_depth_shift", 0x80050100, 4, &Models::depth_shift);
+    renderer("renderer_lod", 0x80050104, 4, &Models::lod);
     for (std::uint32_t i = 0; i < 3; ++i)
         add_resident("renderer_fog_color", 0x80059598 + i, 1,
-                     [i](Program &p) -> auto & { return p.resident.renderer.fog_color[i]; });
+                     [i](Program &p) -> auto & { return p.resident.sprite_models.fog_color[i]; });
     for (std::uint32_t i = 0; i < 9; ++i)
-        add_resident("renderer_light_source", 0x80059f64 + i * 2, 2,
-                     [i](Program &p) -> auto & { return p.resident.renderer.light_source.r[i]; });
+        add_resident("renderer_light_source", 0x80059f64 + i * 2, 2, [i](Program &p) -> auto & {
+            return p.resident.sprite_models.light_source.r[i];
+        });
     add_resident("renderer_light_source", 0x80059f76, 2,
-                 [](Program &p) -> auto & { return p.resident.renderer.light_source.pad; });
+                 [](Program &p) -> auto & { return p.resident.sprite_models.light_source.pad; });
     add("emitter_source", 0x800b22e0, 2, [](Program &p) -> auto & { return f(p).emitter_source; });
     for (std::uint32_t i = 0; i < 3; ++i)
         for (std::uint32_t j = 0; j < 3; ++j)

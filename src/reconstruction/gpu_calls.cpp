@@ -8,6 +8,7 @@
 #include "xem/reconstruction/program.hpp"
 
 #include <bit>
+#include <vector>
 
 namespace xem::reconstruction {
 namespace {
@@ -102,18 +103,34 @@ void Program::clear_image(FrameServices &services, std::uint32_t rect, std::uint
         set_memory(rect + 4, static_cast<std::uint16_t>(w), 2);
         const auto h = clamp_extent(s16(memory(rect + 6, 2)), gpu.vram_height, true);
         set_memory(rect + 6, static_cast<std::uint16_t>(h), 2);
-        if ((memory(rect, 2) & 0x3fU) != 0 || (static_cast<std::uint32_t>(w) & 0x3fU) != 0)
-            throw MissingDependency({"clear_image", 0x80045ef8, {}, {}},
-                                    "symbol:libgpu-clear-unaligned", false,
-                                    "Clearing an unaligned rectangle reads back GPU state");
         const auto status = take_service(services.gpu_status, "GPUSTAT read by ClearImage");
-        const std::array<std::uint32_t, 6> packet{0x05ffffffU,
-                                                  0xe6000000U,
-                                                  0xe1000000U | (color >> 31U) << 10U |
-                                                      (status & 0x7ffU),
-                                                  0x02000000U | (color & 0xffffffU),
-                                                  memory(rect),
-                                                  memory(rect + 4)};
+        const auto mode = 0xe1000000U | (color >> 31U) << 10U | (status & 0x7ffU);
+        std::vector<std::uint32_t> packet;
+        if ((memory(rect, 2) & 0x3fU) == 0 && (static_cast<std::uint32_t>(w) & 0x3fU) == 0) {
+            // Aligned: a VRAM fill.
+            packet = {0x05ffffffU,  0xe6000000U,     mode, 0x02000000U | (color & 0xffffffU),
+                      memory(rect), memory(rect + 4)};
+        } else {
+            // Unaligned: open the drawing area, draw a rectangle, then restore
+            // the area and offset read back through _param (80046638): GP1
+            // 10000003..5, then GPUREAD.
+            const auto info = [&](std::uint32_t index) {
+                gpu.commands.push_back({GpuCommand::Kind::control, {}, 0, 0x10000000U | index});
+                return take_service(services.gpu_info, "GPUREAD for ClearImage") & 0xffffffU;
+            };
+            packet = {0x0805a25cU,
+                      0xe3000000U,
+                      0xe4ffffffU,
+                      0xe5000000U,
+                      0xe6000000U,
+                      mode,
+                      0x60000000U | (color & 0xffffffU),
+                      memory(rect),
+                      memory(rect + 4),
+                      0x03ffffffU};
+            for (std::uint32_t index = 3; index <= 5; ++index)
+                packet.push_back(info(index) | (0xe0000000U + (index << 24U)));
+        }
         for (std::size_t i = 0; i < packet.size(); ++i)
             for (std::size_t b = 0; b < 4; ++b)
                 gpu.packet[i * 4 + b] = static_cast<std::uint8_t>(packet[i] >> (8U * b));

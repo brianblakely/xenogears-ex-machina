@@ -234,29 +234,29 @@ struct ResidentState {
     std::uint32_t vsync_hcount{};               // 80057844: root counter 1 at the last VSync(0)
     std::uint32_t vsync_previous{};             // 80057848: vertical blanks at the last VSync(0)
     GpuLibrary gpu;
-    // Resident primitive renderer (8002c700 and the routines of table 8004fe50).
-    struct Renderer {
-        std::uint32_t packets{};                 // 80059424: next packet
-        std::uint32_t w_59498{};                 // 80059498: model +18
-        std::uint32_t records{};                 // 80059528: current primitive record
-        std::uint32_t normals{};                 // 8005952c: model +c
-        std::uint32_t vertices{};                // 8005953c: model +8
-        std::uint32_t table{};                   // 80059568: ordering table
-        std::uint32_t drawn{};                   // 80059578: primitives past the screen tests
-        std::uint32_t submitted{};               // 800595c0: primitive counts of the models drawn
-        std::array<std::uint8_t, 3> fog_color{}; // 80059598
-        std::uint32_t x_limit{};                 // 800500f8
-        std::uint32_t y_limit{};                 // 800500fc: compared with whole SXY words
-        std::uint32_t depth_shift{};             // 80050100
-        std::uint32_t lod{};                     // 80050104: nonzero runs 8003101c first
-        field::GteMatrix light_source{};         // 80059f64 (rotation)
-    } renderer;
-    std::uint32_t video_mode{};                // 80058990: GetVideoMode (1 PAL)
-    std::uint32_t w_4f378{};                   // 8004f378: nonzero hides the field compass
-    std::uint32_t cd_sync_deadline{};          // 8005a228
-    std::uint32_t cd_sync_polls{};             // 8005a22c
-    std::uint32_t cd_sync_label{};             // 8005a230: diagnostic string for a timeout
-    std::uint32_t cd_dma_register{};           // 800567b4: address of DMA3 CHCR
+    std::uint32_t video_mode{};     // 80058990: GetVideoMode (1 PAL)
+    std::uint32_t w_4f378{};        // 8004f378: nonzero hides the field compass
+    std::uint32_t w_4f380{};        // 8004f380: nonzero skips 8007520c
+    std::uint32_t timed_releases{}; // 80059fcc: blocks released after a frame countdown
+    std::uint32_t sprite_buffer{};  // 800592f8: draw buffer of the sprite system
+    std::array<std::uint32_t, 2> sprite_uploads{}; // 800594c4: pending uploads per buffer
+    // Per-buffer sprite arenas (800594b4, 800592fc bytes each) and the bump
+    // allocation within the current one.
+    std::array<std::uint32_t, 2> sprite_arenas{};   // 800594b4
+    std::uint32_t sprite_arena_bytes{};             // 800592fc
+    std::uint32_t sprite_arena_cursor{};            // 80059580
+    std::uint32_t sprite_arena_start{};             // 80059524
+    std::uint32_t sprite_arena_end{};               // 80059534
+    std::array<std::uint32_t, 2> sprite_releases{}; // 80059300: blocks freed per buffer
+    std::uint32_t sprite_table{};                   // 8005956c: ordering table sprites draw into
+    field::GteMatrix sprite_view{}; // 8004fbb8: camera matrix sprites are placed with
+    std::array<std::array<std::int16_t, 4>, 4>
+        sprite_quad{};                // 8004fb98: projected corners (SVECTOR)
+    std::uint8_t sprite_platform_b{}; // 800591ae: with 800591ad, forces sprite matrix updates
+    std::uint32_t cd_sync_deadline{}; // 8005a228
+    std::uint32_t cd_sync_polls{};    // 8005a22c
+    std::uint32_t cd_sync_label{};    // 8005a230: diagnostic string for a timeout
+    std::uint32_t cd_dma_register{};  // 800567b4: address of DMA3 CHCR
     std::array<std::uint16_t, 2> text_cluts{}; // 800595d4 (even rows), 80059414 (odd rows)
     field::MatrixStack matrix_stack{};         // 80056d2c depth, 80056d30 records
 };
@@ -389,6 +389,57 @@ struct FieldState {
     std::array<std::uint8_t, 3> far_color{};         // 800b2194
     std::array<std::int16_t, 2> fog_range{};         // 800b2198 near, 800b219a far
     std::array<std::uint16_t, 3> back_color{};       // 800afb04: lit models' background
+    // Later frame steps. Gates whose drawing is not recovered keep their
+    // original address as their name.
+    std::uint32_t particles_paused{};                // 800adb34
+    std::array<std::uint8_t, 64> particle_slots{};   // 800b14b0: 1 while an emitter runs
+    std::int16_t distortion{};                       // 800b2078: screen distortion active
+    std::uint32_t w_af278{};                         // 800af278: gates 800a84c0
+    std::int16_t h_b00b2{};                          // 800b00b2: with 800adb50, gates 80075484
+    std::uint32_t w_adb50{};                         // 800adb50
+    std::uint32_t w_b2264{};                         // 800b2264: gates 8007520c
+    std::uint32_t w_adb54{};                         // 800adb54: gates 800abec8
+    std::uint32_t dialogue_ticks{};                  // 800ade98
+    std::uint32_t dialogue_cursor{};                 // 800ade94: 0..4, every fourth tick
+    std::uint32_t background_mode{};                 // 800b0048: 3 copies VRAM behind cuts
+    std::array<std::uint8_t, 3> clear_color{};       // 800b219c
+    std::int16_t h_afea8{};                          // 800afea8: calls of 800920d8
+    std::uint32_t pending_load{};                    // 800adbb4
+    std::uint32_t pending_load_source{};             // 800af87c
+    std::array<std::int16_t, 4> pending_load_rect{}; // 800afc58
+    std::uint32_t w_adb4c{};                         // 800adb4c: joins the second model table
+    std::int16_t ot_depth{};                         // 800b21d4: model table entries joined
+};
+
+// Resumable points of field frame 8007554c: each names the call the frame
+// makes next (original call site in comments). Analysis resumes a frame from
+// an original snapshot taken at that call; a native frame starts at `start`.
+enum class FrameStep : std::uint8_t {
+    start,           // 8007554c
+    emitters,        // 8007557c: 80086908
+    fade,            // 800755a8: 80071cb4
+    compass,         // 800755e4: 80074108
+    models,          // 80075604: 800748e8
+    characters,      // 8007560c: 800752c8
+    particles,       // 80075614: 800a9688
+    distortion,      // 80075638: 800a4dac
+    call_800a84c0,   // 80075648
+    call_80075484,   // 80075650
+    call_8007520c,   // 80075658
+    call_800abec8,   // 80075660
+    drawn_time,      // 80075694: VSync(1)
+    draw_sync,       // 800756a4: DrawSync(0)
+    dialogue_timers, // 800756ac: 800805f4
+    dialogue,        // 800756c4: 8008004c
+    vertical_sync,   // 800756cc: VSync(0)
+    timed_release,   // 800756d4: 80032cb8
+    clear,           // 800756dc: ClearImage or MoveImage
+    environments,    // 80075780: PutDispEnv, PutDrawEnv
+    uploads,         // 800757c4: 80025044
+    call_800920d8,   // 800757f0
+    load,            // 800757f8: a pending LoadImage
+    tables,          // 80075850: AddPrims
+    draw,            // 800758bc: DrawOTag
 };
 
 class Program;
@@ -439,7 +490,8 @@ class Program {
     // Field overlay 8007554c: one field frame (move phase, drawing, buffer
     // presentation and the frame-rate wait). Services supply platform timing
     // and GPU status results; see FrameServices.
-    void field_frame(FrameServices &services, const ProgramObserver &observe = {});
+    void field_frame(FrameServices &services, const ProgramObserver &observe = {},
+                     FrameStep from = FrameStep::start);
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -491,6 +543,9 @@ class Program {
                                                          std::size_t width) const;
     void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
     void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
+    void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);
+    void frame_dialogue_timers();             // 800805f4
+    void frame_dialogue(std::uint32_t table); // 8008004c
     // Resident libgpu calls on their immediate path (gpu_calls.cpp).
     void gpu_alarm(FrameServices &services);       // 80046efc
     void gpu_check_rect(std::uint32_t rect) const; // 8004463c

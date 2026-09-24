@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
                                   entry == "battle_atb" || entry == "battle_reload" ||
                                   entry == "battle_ai";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && entry != "field_frame" && !resident_entry &&
+            entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
             !battle_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
@@ -209,8 +209,45 @@ int main(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_update") {
             program->field_update(observer);
-        } else if (entry == "field_frame") {
-            program->field_frame(services, observer);
+        } else if (entry.starts_with("field_frame")) {
+            // "field_frame" or "field_frame:STEP" resumes at a frame step.
+            static const std::map<std::string_view, game::FrameStep> steps{
+                {"start", game::FrameStep::start},
+                {"emitters", game::FrameStep::emitters},
+                {"fade", game::FrameStep::fade},
+                {"compass", game::FrameStep::compass},
+                {"models", game::FrameStep::models},
+                {"characters", game::FrameStep::characters},
+                {"particles", game::FrameStep::particles},
+                {"distortion", game::FrameStep::distortion},
+                {"call_800a84c0", game::FrameStep::call_800a84c0},
+                {"call_80075484", game::FrameStep::call_80075484},
+                {"call_8007520c", game::FrameStep::call_8007520c},
+                {"call_800abec8", game::FrameStep::call_800abec8},
+                {"drawn_time", game::FrameStep::drawn_time},
+                {"draw_sync", game::FrameStep::draw_sync},
+                {"dialogue_timers", game::FrameStep::dialogue_timers},
+                {"dialogue", game::FrameStep::dialogue},
+                {"vertical_sync", game::FrameStep::vertical_sync},
+                {"timed_release", game::FrameStep::timed_release},
+                {"clear", game::FrameStep::clear},
+                {"environments", game::FrameStep::environments},
+                {"uploads", game::FrameStep::uploads},
+                {"call_800920d8", game::FrameStep::call_800920d8},
+                {"load", game::FrameStep::load},
+                {"tables", game::FrameStep::tables},
+                {"draw", game::FrameStep::draw}};
+            auto from = game::FrameStep::start;
+            if (entry != "field_frame") {
+                const auto found =
+                    entry.starts_with("field_frame:")
+                        ? steps.find(entry.substr(std::string_view("field_frame:").size()))
+                        : steps.end();
+                if (found == steps.end())
+                    throw InputError("Unknown field frame step");
+                from = found->second;
+            }
+            program->field_frame(services, observer, from);
         } else if (entry == "field_checkpoints") {
             program->checkpoint_pass(observer);
         } else if (entry == "heap_allocate") {
