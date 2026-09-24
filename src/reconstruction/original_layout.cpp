@@ -474,7 +474,7 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.cd.sync_callback; });
     add_resident("cd_debug", 0x800564b4, 4,
                  [](Program &p) -> auto & { return p.resident.cd.debug; });
-    add_resident("cd_status", 0x800564b8, 1,
+    add_resident("cd_status", 0x800564b8, 4,
                  [](Program &p) -> auto & { return p.resident.cd.status; });
     add_resident("cd_mode", 0x800564c8, 1, [](Program &p) -> auto & { return p.resident.cd.mode; });
     add_resident("cd_command", 0x800564c9, 1,
@@ -599,6 +599,7 @@ std::vector<OriginalGlobal> build() {
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
     add("party_reassignment", 0x800b2268, 4,
         [](Program &p) -> auto & { return f(p).party_reassignment; });
+    add_interrupt_globals(g);
     // Remaining bytes of the regions a field-return snapshot copies.
     const auto covered = [&](std::uint32_t address) {
         return std::ranges::any_of(g, [&](const OriginalGlobal &item) {

@@ -177,8 +177,13 @@ void stops_explicitly() {
     auto poll = sample();
     poll.resident.disc_read.directory = 10;
     poll.resident.cd.interrupt_poll = 1;
-    stops([&] { poll.read_file(3, 0x80100000, 0, 0); }, 0x800415b4,
-          "Polling the controller is not recovered");
+    bool unsupplied = false;
+    try {
+        static_cast<void>(poll.read_file(3, 0x80100000, 0, 0));
+    } catch (const game::PlatformInputError &) {
+        unsupplied = true;
+    }
+    check(unsupplied, "Polling the controller inside an interrupt needs its register reads");
     auto timeout = sample();
     timeout.resident.disc_read.directory = 10;
     timeout.resident.vsync_counter = 0x7fffff00;

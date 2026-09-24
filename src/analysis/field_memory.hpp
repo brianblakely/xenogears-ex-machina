@@ -60,6 +60,15 @@ struct ResourceExtent {
                                                    std::span<const std::uint8_t> overlay,
                                                    std::span<const ResourceExtent> resources);
 
+// Supplies recorded platform inputs to the Program. `platform` has one input
+// per line: `drive LBA` (the sector the drive delivers next), `read SITE
+// VALUE` (hex) or `interrupt`. `disc` is the raw 2352-byte-sector track the
+// drive service reads; empty when the case needs none.
+void load_platform(reconstruction::Program &program, const char *platform, const char *disc);
+// Attaches the RAM that interrupt-context disc callbacks read: the active
+// stream ring header and the list of a list read.
+void attach_interrupt_memory(reconstruction::Program &program, const OriginalMemory &memory);
+
 // Writes every Program-owned original correlation back over a copy of the entry
 // image and lists the owned ranges. Comparison is performed by the caller.
 [[nodiscard]] std::vector<OwnedRange> export_field(const reconstruction::Program &program,

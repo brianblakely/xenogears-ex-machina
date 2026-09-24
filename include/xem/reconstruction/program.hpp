@@ -8,6 +8,7 @@
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
+#include "xem/reconstruction/interrupts.hpp"
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
@@ -80,8 +81,50 @@ struct InputQueue {
     std::array<std::uint16_t, 6> current{};
     // 800594dc, 800594e0, 800594e8, 800594ec, 800595c8, 800595cc.
     std::array<std::uint16_t, 6> other{};
+    // Ring storage, one 16-entry halfword array per entry field: 8005a0fc,
+    // 8005a11c, 8005a13c, 8005a15c, 8005a17c, 8005a19c.
+    std::array<std::array<std::uint16_t, 16>, 6> ring{};
     // 80035db0.
-    void reset() { *this = {.w50200 = 1}; }
+    void reset() { *this = {.w50200 = 1, .ring = ring}; }
+};
+
+// Per-VSync controller and clock state (VSync callback 8003634c and callees
+// 800358bc, 80035e44, 80036220). The pad buffers are the BIOS pad driver's
+// receive buffers: platform input, read only.
+struct PadState {
+    std::uint32_t vsyncs{};                                // 80059488: VSync callbacks run
+    std::uint32_t hook{};                                  // 800501fc: optional per-VSync call
+    std::uint32_t debugger{};                              // 80059390
+    std::uint32_t text_word{};                             // 80010000, compared with -1
+    std::uint8_t type{};                                   // 80059388: last controller type
+    std::array<std::array<std::uint8_t, 34>, 2> buffers{}; // 800625fc, 8006261e
+    std::array<std::uint32_t, 2> held{};                   // 80059374: last buttons per port
+    std::array<std::uint32_t, 2> repeat_delay{};           // 8005022c: VSyncs since a new press
+    // Analog bytes per port: 80059444, 8005944c, 80059430, 80059438 and
+    // 80059448, 80059450, 80059434, 8005943c.
+    std::array<std::array<std::uint8_t, 4>, 2> analog{};
+    std::array<std::uint16_t, 8> remap_bits{};  // 800501e8
+    std::array<std::uint8_t, 8> remap_index{};  // 80050238
+    std::array<std::uint8_t, 16> direction_x{}; // 8005020c: by d-pad nibble
+    std::array<std::uint8_t, 16> direction_y{}; // 8005021c
+    std::uint8_t clock_stopped{};               // 800501f8
+    // Play clock: 80059370 frames, 80059418 seconds, 80059420 minutes, 80059484 hours.
+    std::array<std::uint8_t, 4> clock{};
+    std::array<std::array<std::uint8_t, 8>, 2> actuators{}; // 8005a1bc
+};
+
+// Interrupt environment of the dispatcher 8004b9b4 and its handlers.
+struct InterruptState {
+    std::uint16_t initialized{};              // 800578a4
+    std::array<std::uint32_t, 11> handlers{}; // 800578a8: one per I_STAT bit
+    std::uint16_t mask{};                     // 800578d4: bits the dispatcher serves
+    std::array<std::uint32_t, 3> registers{}; // 80058930: I_STAT, I_MASK, DPCR addresses
+    std::uint32_t unexpected{};               // 8005893c: dispatches ending with a pending bit
+    std::array<std::uint32_t, 8> vsync_callbacks{}; // 80058940
+    // 8005896c: DMA completion callbacks; channel 3 is CdState::dma_callback.
+    std::array<std::uint32_t, 7> dma_callbacks{};
+    std::uint32_t spu_callback{}; // 8005950c: SPU interrupt callback
+    std::uint32_t spu_count{};    // 80059514: SPU interrupts served
 };
 
 // Resident file reads (800295d8 and its setup 80029690). Globals whose
@@ -108,7 +151,23 @@ struct DiscReadState {
     std::array<std::uint8_t, 4> b_59f18{};  // 80059f18: ring-mode control bytes
     std::uint16_t h_59f60{};                // 80059f60
     std::uint32_t requests{};               // 8005a488: CD reads issued
-    std::uint32_t w_5a4dc{};                // 8005a4dc
+    std::uint32_t w_5a4dc{};                // 8005a4dc: failed data interrupts in a row
+    // Interrupt-side read state (callbacks 8002a68c, 8002ac24, 8002b084,
+    // 8002b2f0, 8002b5d0, DMA callbacks 8002ba40, 8002ba58, 8002bb50).
+    std::uint32_t retry_reason{};           // 8004fe20
+    std::uint32_t w_fe00{};                 // 8004fe00
+    std::uint32_t w_fe3c{};                 // 8004fe3c
+    std::uint32_t w_fde0{};                 // 8004fde0
+    std::array<std::uint32_t, 3> skipped{}; // 8004fde4, 8004fde8, 8004fdec: unexpected sectors
+    std::uint32_t saved_callback{};         // 80059f08: callback 80040fcc replaced
+    std::array<std::uint8_t, 2> b_59f14{};  // 80059f14
+    std::array<std::uint32_t, 2> w_5a48c{}; // 8005a48c, 8005a490
+    std::array<std::uint32_t, 2> w_5a494{}; // 8005a494, 8005a498
+    std::array<std::uint32_t, 2> w_5a4a4{}; // 8005a4a4, 8005a4a8
+    std::uint32_t w_5a4b4{};                // 8005a4b4
+    // The list a list read walks (8004fe0c): halfword file, word destination
+    // per eight-byte entry. Read-only input; empty unless attached.
+    resident::HeapBlock list;
     // The tables at 8004fdf0 (8000 bytes) and 8004fdf4 (7a bytes), the sizes
     // 80028230 reads them with; empty before they are loaded.
     std::vector<std::uint8_t> files;
@@ -120,11 +179,15 @@ struct DiscReadState {
 
 // CD library state reached by read setup: CdControl 8004111c, the command
 // writer 80042088, the sync wait 80041b3c and the DMA callback 8004c21c.
+// The interrupt handler 80042ca8 calls ready_callback for a completed command
+// and sync_callback for delivered data.
 struct CdState {
     std::uint32_t ready_callback{};         // 800564a8
     std::uint32_t sync_callback{};          // 800564ac
     std::int32_t debug{};                   // 800564b4: nonzero levels print
-    std::uint8_t status{};                  // 800564b8: last drive status
+    std::uint32_t status{};                 // 800564b8: last drive status (first response byte)
+    std::uint32_t status2{};                // 800564bc: second response byte
+    std::uint32_t shell_opened{};           // 800564c0: status bit 10 transitions to set
     std::array<std::uint8_t, 4> position{}; // 800564c4: last Setloc parameter
     std::uint8_t mode{};                    // 800564c8: last Setmode parameter
     std::uint8_t command{};                 // 800564c9: last command
@@ -142,6 +205,20 @@ struct CdState {
     std::optional<std::uint32_t> dma_set_callback; // *8005892c + 4
     std::uint32_t dma_interrupt_register{};        // 80058968: address of DICR
     std::uint32_t dma_callback{}; // 80058978: DMA channel 3 callback (table 8005896c)
+    // Interrupt side (80042ca8, 800415b4).
+    std::uint8_t end_status{};                  // 8005678a
+    std::array<std::uint8_t, 8> sync_result{};  // 8005a210: response of the last command
+    std::array<std::uint8_t, 8> ready_result{}; // 8005a218: response of the last data
+    std::array<std::uint8_t, 8> end_result{};   // 8005a220
+    std::array<std::uint32_t, 32>
+        completes{}; // 80056570: acknowledged commands that complete later
+    std::array<std::uint32_t, 32>
+        ack_updates{};             // 80056670: acknowledgements that update the status
+    std::uint32_t flag_register{}; // 8005677c: request/interrupt-flag register address
+    // Register addresses of the sector transfer 80042aa8: 800567a4 (delay),
+    // 80056780 (size), 800567a8 (DPCR), 800567ac (DMA3 address), 800567b0
+    // (DMA3 block).
+    std::array<std::uint32_t, 5> transfer_registers{};
 };
 
 // A hardware register store, in program order. Not RAM: a native service
@@ -204,6 +281,14 @@ struct ResidentState {
     std::uint32_t cd_dma_register{};            // 800567b4: address of DMA3 CHCR
     std::array<std::uint16_t, 2> text_cluts{};  // 800595d4 (even rows), 80059414 (odd rows)
     field::MatrixStack matrix_stack{};          // 80056d2c depth, 80056d30 records
+    InterruptState interrupts;
+    PadState pad;
+    // RAM that disc DMA filled and no other Program value owns (file
+    // destinations, the sector tail buffer 800596f8), by address.
+    std::vector<resident::HeapBlock> disc_transfers;
+    // Platform inputs, consumed in order; see interrupts.hpp.
+    std::deque<PlatformInput> platform;
+    DiscDrive drive;
 };
 
 struct FieldState {
@@ -354,6 +439,10 @@ class Program {
                            std::uint32_t mode);
     // Resident 80028470: select directory `base + index`; -1 when it is empty.
     std::int32_t select_directory(std::uint32_t base, std::uint32_t index);
+    // Resident 8004b9b4, entered from the BIOS exception hook: serve every
+    // pending interrupt the dispatcher enables, until none is pending.
+    // Asynchronous register reads come from resident.platform.
+    void interrupt_dispatch();
     // Resident 8001b66c: stop the playing sequence and forget the loaded pair.
     void stop_music();
     // Battle 80085ccc: commit and resolve an action.
@@ -390,17 +479,47 @@ class Program {
     std::int32_t open_dialogue(field::FieldWorld &world, field::FieldPassState &pass,
                                std::uint32_t speaker, std::uint32_t mode);
     std::array<std::int32_t, 2> project_actor(std::size_t index, std::int16_t height);
-    std::uint32_t disc_busy();                  // Resident 800286cc
-    void disc_wait(std::uint32_t once);         // Resident 80028a60
+    std::uint32_t disc_busy();          // Resident 800286cc
+    void disc_wait(std::uint32_t once); // Resident 80028a60
+    // A waiting loop polls again: run the next interrupt arrival, if any.
+    bool deliver_interrupt();
     std::uint32_t file_size(std::int32_t file); // Resident 80028738
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
     std::int32_t cd_control(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter);
     std::int32_t cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                            bool nowait);            // 80042088
-    std::int32_t cd_sync();                          // 80041b3c(0, 0)
-    void cd_dma_callback(std::uint32_t function);    // 800413ec
+                            bool nowait);         // 80042088
+    std::int32_t cd_sync();                       // 80041b3c(0, 0)
+    void cd_dma_callback(std::uint32_t function); // 800413ec
+    // Interrupt context (interrupts.cpp, disc_read.cpp).
+    void interrupt_handler(std::uint32_t address); // An 800578a8 entry
+    void vsync_interrupt();                        // 8004bf78
+    void vsync_update();                           // 8003634c
+    void pad_update();                             // 800358bc
+    void dma_interrupt();                          // 8004c098
+    void dma_completed(std::uint32_t address);     // A 8005896c entry
+    void spu_interrupt();                          // 8003bfa0
+    void cd_interrupt();                           // 80042ca8
+    std::uint32_t cd_getintr();                    // 800415b4
+    void cd_poll();                                // 80041c80..80041d24
+    void cd_callback(std::uint32_t address, std::uint8_t status,
+                     const std::array<std::uint8_t, 8> &result);
+    void disc_command_done(std::uint8_t status,
+                           const std::array<std::uint8_t, 8> &result); // 8002a68c
+    void disc_data(std::uint8_t status);                               // 8002b084
+    void disc_ring_data(std::uint8_t status);                          // 8002b2f0
+    void disc_list_data(std::uint8_t status);                          // 8002ac24
+    void disc_data_failed(bool counted);                               // 8002b204 and its copies
+    void disc_ring_transferred();                                      // 8002ba58
+    void disc_continue(std::uint32_t file);                            // 8002a394
+    void cd_get_sector(std::uint32_t buffer, std::uint32_t words);     // 800413ac / 80042aa8
+    // RAM that DMA fills: owned globals, else a disc transfer block.
+    void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);
+    // A register only software changes: its last recorded write, else the
+    // observed I/O page.
+    [[nodiscard]] std::uint32_t io_latch(std::uint32_t address, std::uint32_t width) const;
+    void io_write(std::uint32_t address, std::uint32_t value, std::uint32_t width);
     std::int32_t disc_idle_query();                  // Field 8008a558
     void change_music(field::EventContext &context); // Field 8008f76c (primary 75)
     void load_music(std::uint32_t id);               // Field 80085b20

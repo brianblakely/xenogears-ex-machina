@@ -31,7 +31,7 @@ class MemoryCaseTests(unittest.TestCase):
                 "".join(json.dumps(row) + "\n" for row in rows)
             )
             result = pairs(capture, "entry", "exit")
-            self.assertEqual([(a["event"], b["event"]) for a, b, _ in result], [(0, 2), (4, 5)])
+            self.assertEqual([(a["event"], b["event"]) for a, b, _, _ in result], [(0, 2), (4, 5)])
             (capture / "instruction-trace.jsonl").write_text(
                 "".join(json.dumps(row) + "\n" for row in rows[:1] * 2)
             )
@@ -55,7 +55,7 @@ class MemoryCaseTests(unittest.TestCase):
                 "".join(json.dumps(row) + "\n" for row in rows)
             )
             interrupts = (("tick", "tick-return"), ("dispatch", "dispatch-return"))
-            [(entry, exit, handlers)] = pairs(capture, "entry", "exit", interrupts)
+            [(entry, exit, handlers, _)] = pairs(capture, "entry", "exit", interrupts)
             self.assertEqual((entry["event"], exit["event"]), (0, 5))
             self.assertEqual([(a["event"], b["event"]) for a, b in handlers], [(1, 2), (3, 4)])
             (capture / "instruction-trace.jsonl").write_text(

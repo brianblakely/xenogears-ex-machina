@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "parity_version": "1.7.2",
+  "parity_version": "1.7.3",
   "protocol_version": "0.1",
-  "review_date": "2026-09-23",
+  "review_date": "2026-09-24",
   "status_semantics": {
     "observed_original": "Original finding establishes only the named observed paths; tools tests additionally verify rejection/bounds.",
     "tooling_tested": "Inspected implementation and public synthetic tests; no original gameplay capability promotion.",
@@ -36,11 +36,11 @@
     },
     {
       "path": "nix/reference-trace.h",
-      "sha256": "6f60b410c6ec15d6bc5cda1cec1938342cb7c49cf93e9ccc087dc8422d0fa7f7"
+      "sha256": "f76f66cd0c1fde5833840ef56ffbde29f0702ee463afec28919ccda2c90478e3"
     },
     {
       "path": "tests/test_instruction_trace.py",
-      "sha256": "314a567160ced1c18e4476234402c2665e85c722f0843065bd7973f91d7c4436"
+      "sha256": "af0799a5b7746f0cbba2d9bf79783b98444f666ef829de781ba05573ad3d65af"
     },
     {
       "path": "tests/test_memory_sampler.py",
@@ -60,7 +60,7 @@
     },
     {
       "path": "tools/reference/instruction_trace.py",
-      "sha256": "6788e61d1b764df1d0c31ac506c4366b12061aae95580a6f6a30f197adf30758"
+      "sha256": "2ba976c5e2bb5e35ad9d219646241d33f810777a6efc098d67a99048f4ddd525"
     },
     {
       "path": "tools/reference/memory_sampler.py",
@@ -721,8 +721,8 @@
   ],
   "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation.",
   "change_review": {
-    "version": "1.7.2",
+    "version": "1.7.3",
     "author": "Claude Opus 5.5",
-    "scope": "Raised the scenario bounds from 100 runtime steps and 256 program steps to 400 and 1024 so ordinary alternative routes (repeated battle commands) fit; the 36000-frame execution budget is unchanged. Tests cover both new bounds. Core, hooks and capture semantics are unchanged; refreshed live baseline hashes; native methods remain unimplemented."
+    "scope": "Raised the instruction-trace hook bound from 16 to 64 in the trace extension and its specification validator so one capture can record every hardware load of the interrupt handlers next to their entry/exit snapshots. The hook callback, record format, guards, budgets and capture semantics are unchanged; a test covers the 64 and 65 hook bounds. Refreshed live baseline hashes; native methods remain unimplemented."
   }
 }

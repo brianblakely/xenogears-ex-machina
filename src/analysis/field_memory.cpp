@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <fstream>
 #include <functional>
 #include <map>
 #include <stdexcept>
@@ -37,6 +38,7 @@ constexpr std::uint32_t field_snapshot = 0x8005a4e4;
 constexpr std::size_t field_snapshot_bytes = 0x3804;
 constexpr std::size_t disc_file_table_bytes = 0x8000;
 constexpr std::size_t disc_directory_table_bytes = 0x7a;
+constexpr std::uint32_t pad_buffers = 0x800625fc;
 
 constexpr std::size_t actor_bytes = 0x138;
 constexpr std::size_t descriptor_bytes = 0x5c;
@@ -155,6 +157,11 @@ Program import_resident(const OriginalMemory &memory) {
         read.directories = copy_of(memory.range(read.directory_table, disc_directory_table_bytes));
     if (in_ram(resident.cd.dma_services + 4, 4))
         resident.cd.dma_set_callback = memory.word(resident.cd.dma_services + 4);
+    // Read-only inputs of the VSync callback: the BIOS pad driver's receive
+    // buffers and the first word of the executable's text.
+    for (std::uint32_t port = 0; port < 2; ++port)
+        copy_into(resident.pad.buffers[port], memory.range(pad_buffers + port * 34, 34));
+    resident.pad.text_word = memory.word(0x80010000);
     // The game data is allocated during boot; before that there is none.
     if (game_state_loaded(resident))
         resident.game_data =
@@ -376,8 +383,84 @@ void export_resident_into(const Program &program, Claims &out) {
     }
     for (const auto &[address, held] : resident.heap.held)
         out.bytes("heap_held", address, held);
+    for (const auto &block : resident.disc_transfers)
+        out.bytes("disc_transfer", block.address, block.bytes);
 }
 } // namespace
+
+void load_platform(Program &program, const char *platform, const char *disc) {
+    auto &resident = program.resident;
+    std::ifstream lines(platform);
+    if (!lines)
+        throw field::FieldFormatError("Cannot open the platform input file");
+    const auto number = [](const std::string &text, int base) {
+        std::size_t used = 0;
+        const auto value = std::stoul(text, &used, base);
+        if (used != text.size() || value > 0xffffffffUL)
+            throw field::FieldFormatError("Malformed platform input number");
+        return static_cast<std::uint32_t>(value);
+    };
+    for (std::string kind; lines >> kind;) {
+        if (kind == "drive") {
+            std::string lba;
+            if (!(lines >> lba) || resident.drive.next)
+                throw field::FieldFormatError("Malformed or repeated drive position");
+            resident.drive.next = number(lba, 10);
+        } else if (kind == "read") {
+            std::string site, value;
+            if (!(lines >> site >> value))
+                throw field::FieldFormatError("Malformed platform read");
+            resident.platform.push_back(
+                {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
+        } else if (kind == "interrupt") {
+            resident.platform.push_back({reconstruction::PlatformInput::Kind::interrupt, 0, 0});
+        } else {
+            throw field::FieldFormatError("Unknown platform input " + kind);
+        }
+    }
+    if (!lines.eof())
+        throw field::FieldFormatError("Malformed platform input file");
+    // The drive received the Setmode libcd last recorded sending.
+    resident.drive.mode = resident.cd.mode;
+    if (disc != nullptr && *disc != 0) {
+        const std::string path = disc;
+        resident.drive.read_sector = [path](std::uint32_t lba) {
+            std::ifstream stream(path, std::ios::binary);
+            reconstruction::RawSector sector{};
+            stream.seekg(static_cast<std::streamoff>(lba) * reconstruction::raw_sector_bytes);
+            if (!stream.read(reinterpret_cast<char *>(sector.data()), sector.size()))
+                throw reconstruction::PlatformInputError("Disc image has no sector " +
+                                                         std::to_string(lba));
+            return sector;
+        };
+    }
+}
+
+void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
+    auto &resident = program.resident;
+    auto &read = resident.disc_read;
+    const auto &cd = resident.cd;
+    const auto ring = resident.disc_stream.ring_buffer;
+    if ((cd.sync_callback == 0x8002b2f0 || cd.dma_callback == 0x8002ba58) && ring != 0) {
+        const auto count = memory.word(ring);
+        if (count > 0x1000)
+            throw field::FieldFormatError("Active disc ring has an implausible block count");
+        const auto header = memory.range(ring, 0x24 + std::size_t{count} * 8);
+        read.ring = {ring, copy_of(header)};
+    }
+    if (cd.sync_callback == 0x8002ac24 && read.w_fe0c != 0) {
+        // Entries up to and including the terminating one (file or
+        // destination zero).
+        std::uint32_t entries = 0;
+        for (auto at = read.w_fe0c;; at += 8) {
+            if (++entries > 0x1000)
+                throw field::FieldFormatError("Disc read list does not terminate");
+            if (memory.word(at, 2) == 0 || memory.word(at + 4) == 0)
+                break;
+        }
+        read.list = {read.w_fe0c, copy_of(memory.range(read.w_fe0c, entries * 8))};
+    }
+}
 
 std::vector<OwnedRange> export_resident(const Program &program, OriginalMemory &memory) {
     Claims out{memory, {}, {}};

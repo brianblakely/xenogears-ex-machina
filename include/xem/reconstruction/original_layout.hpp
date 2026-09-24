@@ -24,6 +24,8 @@ struct OriginalGlobal {
     std::function<void(Program &, std::uint32_t)> set;
 };
 [[nodiscard]] const std::vector<OriginalGlobal> &original_globals();
+// Entries of the interrupt-context state (interrupts.cpp), part of the table.
+void add_interrupt_globals(std::vector<OriginalGlobal> &table);
 
 struct OriginalRegion {
     std::uint32_t address;

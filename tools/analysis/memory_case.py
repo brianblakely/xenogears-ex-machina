@@ -64,7 +64,17 @@ RESIDENT_ENTRIES = (
     "battle_reload",
     "disc_read_file",
     "battle_ai",
+    "interrupt_dispatch",
 )
+
+# Platform inputs. A hook named `load-SITE` sits on the instruction after the
+# original hardware load at SITE (hex); the loaded value is that load's target
+# register with pending loads committed. A hook named `sector` sits on the
+# sector-position conversion 80041534 with a four-byte range at A0: the header
+# (BCD minute, second, sector) of the sector the drive delivered.
+LOAD_PREFIX = "load-"
+SECTOR_HOOK = "sector"
+LOADS = {0x20: 1, 0x21: 2, 0x23: 4, 0x24: 1, 0x25: 2}
 
 
 def file_sha256(path: Path) -> str:
@@ -115,12 +125,15 @@ def pairs(
     entry_hook: str,
     exit_hook: str,
     interrupts: tuple[tuple[str, str], ...] = (),
-) -> list[tuple[dict, dict, list]]:
+    arrival: str | None = None,
+) -> list[tuple[dict, dict, list, list]]:
     """Adjacent entry/exit records of one call, in original order.
 
     Interrupt pairs name the entry and return hooks of interrupt-context code
     (a dispatcher or callback). Each call lists the complete interrupt
-    invocations observed between its entry and exit.
+    invocations observed between its entry and exit, and its platform-input
+    records (load and sector hooks, and `arrival` hook records) outside those
+    interrupts, in order.
     """
     rows = [
         json.loads(line) for line in (capture / "instruction-trace.jsonl").read_text().splitlines()
@@ -129,9 +142,15 @@ def pairs(
     ends = {exit: entry for entry, exit in interrupts}
     # Different interrupt paths may overlap (a BIOS event callback can run
     # while the dispatcher's context is active); one path never nests itself.
-    result, pending, handlers, open_handlers = [], None, [], {}
+    result, pending, handlers, open_handlers, platform = [], None, [], {}, []
     for row in rows:
-        if row["hook"] in starts:
+        platform_row = row["hook"] != entry_hook and (
+            row["hook"].startswith(LOAD_PREFIX) or row["hook"] in (SECTOR_HOOK, arrival)
+        )
+        if platform_row:
+            if pending is not None and not open_handlers:
+                platform.append(row)
+        elif row["hook"] in starts:
             require(row["hook"] not in open_handlers, "Nested interrupt records")
             open_handlers[row["hook"]] = row
         elif row["hook"] in ends:
@@ -142,12 +161,48 @@ def pairs(
         elif row["hook"] == entry_hook:
             require(pending is None, "Nested or unmatched original entry record")
             require(not open_handlers, "Call entry inside interrupt code")
-            pending, handlers = row, []
+            pending, handlers, platform = row, [], []
         elif row["hook"] == exit_hook and pending is not None:
             require(not open_handlers, "Call exit inside interrupt code")
-            result.append((pending, row, handlers))
+            result.append((pending, row, handlers, platform))
             pending = None
     return result
+
+
+def header_sector(row: dict) -> int:
+    """LBA of a delivered sector from its recorded BCD header."""
+    require(row["ranges"] and row["ranges"][0]["size"] == 4, "Sector hook lacks its header range")
+    header = bytes.fromhex(row["ranges"][0]["hex"])
+
+    def decimal(value: int) -> int:
+        return (value >> 4) * 10 + (value & 15)
+
+    return (decimal(header[0]) * 60 + decimal(header[1])) * 75 + decimal(header[2]) - 150
+
+
+def platform_inputs(rows: list[dict], ram: bytes, arrival: str | None) -> tuple[str, list[int]]:
+    """The runner's platform input file and the recorded delivered sectors.
+
+    Load values come from the original registers after each load; nothing is
+    taken from an exit image.
+    """
+    lines, sectors = [], []
+    for row in rows:
+        hook = row["hook"]
+        if hook == arrival:
+            lines.append("interrupt")
+        elif hook == SECTOR_HOOK:
+            sectors.append(header_sector(row))
+        else:
+            site = int(hook[len(LOAD_PREFIX) :], 16)
+            require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
+            code = u32(ram, site)
+            require(code >> 26 in LOADS, "Load hook does not follow a load instruction")
+            value = visible_registers(row)[(code >> 16) & 31]
+            lines.append(f"read {site:08x} {value:08x}")
+    if sectors:
+        lines.insert(0, f"drive {sectors[0]}")
+    return "".join(line + "\n" for line in lines), sectors
 
 
 PARTY_RESOURCES = 0x8005A414
@@ -341,7 +396,7 @@ def run(args: argparse.Namespace) -> int:
     snapshots = SnapshotReader(snapshot_file)
     interrupts = tuple(tuple(item.split(":", 1)) for item in args.interrupt)
     require(all(len(item) == 2 for item in interrupts), "Interrupt pairs are ENTRY:EXIT")
-    calls = pairs(capture, args.entry_hook, args.exit_hook, interrupts)
+    calls = pairs(capture, args.entry_hook, args.exit_hook, interrupts, args.arrival)
     require(calls, "No original entry/exit pairs in the capture")
     selected = calls[args.start : args.start + args.limit]
     # Resident entries (the heap) need no loaded field or field source.
@@ -366,7 +421,7 @@ def run(args: argparse.Namespace) -> int:
         work = Path(directory)
         (work / "field.bin").write_bytes(b"" if resident else sources.field)
         (work / "overlay.bin").write_bytes(b"" if resident else sources.overlay)
-        for index, (entry_row, exit_row, handlers) in enumerate(selected, args.start):
+        for index, (entry_row, exit_row, handlers, inputs) in enumerate(selected, args.start):
             # Read in capture order: entry, interrupt brackets, exit.
             entry, scratch, io = snapshots.read(entry_row)
             brackets = [
@@ -378,6 +433,8 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
+            platform, recorded_sectors = platform_inputs(inputs, entry, args.arrival)
+            (work / "platform.txt").write_text(platform)
             process = subprocess.run(
                 [
                     str(args.runner),
@@ -394,6 +451,8 @@ def run(args: argparse.Namespace) -> int:
                     # CPU registers at entry supply arguments (A0, A1, RA).
                     ",".join(f"{value:x}" for value in visible_registers(entry_row)),
                     str(work / "io.bin"),
+                    str(work / "platform.txt"),
+                    str(args.raw) if args.raw.exists() else "",
                 ],
                 capture_output=True,
                 timeout=args.timeout,
@@ -458,6 +517,17 @@ def run(args: argparse.Namespace) -> int:
                 result["return_mismatch"] = {
                     "computed": report["return_value"],
                     "original": visible_registers(exit_row)[2],
+                }
+                result["mismatch_count"] += 1
+            # Every recorded platform input must be consumed, and the drive
+            # must deliver the sectors the original received.
+            if report["platform_unconsumed"]:
+                result["platform_unconsumed"] = report["platform_unconsumed"]
+                result["mismatch_count"] += 1
+            if recorded_sectors and report["delivered_sectors"] != recorded_sectors:
+                result["sector_mismatch"] = {
+                    "computed": report["delivered_sectors"],
+                    "recorded": recorded_sectors,
                 }
                 result["mismatch_count"] += 1
             if report["gte"] != expected_gte:
@@ -573,6 +643,10 @@ def main() -> int:
         action="append",
         default=[],
         help="ENTRY:EXIT hook names bracketing interrupt-context code (repeatable)",
+    )
+    parser.add_argument(
+        "--arrival",
+        help="Hook whose records inside a call are interrupt arrivals the call's waits deliver",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

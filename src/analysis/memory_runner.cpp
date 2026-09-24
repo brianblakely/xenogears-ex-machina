@@ -79,13 +79,16 @@ int main(int argc, char **argv) {
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
     try {
-        if (argc != 12)
+        if (argc != 14)
             throw InputError("Usage: xem-memory-runner ENTRY BUDGET STOP RAM SCRATCHPAD "
-                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO");
+                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO PLATFORM DISC");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
+        // PLATFORM lists recorded platform inputs; DISC is the raw track the
+        // disc drive service delivers sectors from (may be empty).
         const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
-                                    entry == "music_stop" || entry == "disc_read_file";
+                                    entry == "music_stop" || entry == "disc_read_file" ||
+                                    entry == "interrupt_dispatch";
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
@@ -154,6 +157,8 @@ int main(int argc, char **argv) {
         program->resident.gte_screen = {static_cast<std::int32_t>(gte[24]),
                                         static_cast<std::int32_t>(gte[25]),
                                         static_cast<std::uint16_t>(gte[26])};
+        analysis::load_platform(*program, argv[12], argv[13]);
+        analysis::attach_interrupt_memory(*program, memory);
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -249,6 +254,8 @@ int main(int argc, char **argv) {
             }
             return_value = static_cast<std::uint32_t>(program->read_file(
                 static_cast<std::int32_t>(registers[4]), registers[5], registers[6], registers[7]));
+        } else if (entry == "interrupt_dispatch") {
+            program->interrupt_dispatch(); // 8004b9b4
         } else if (entry == "music_stop") {
             program->stop_music(); // 8001b66c
         } else {
@@ -295,6 +302,11 @@ int main(int argc, char **argv) {
         status = "dependency_needs_recovery";
         reason = error.what();
         dependency = "symbol:field-return-sprite-ownership";
+    } catch (const game::PlatformInputError &error) {
+        // The recovered code asked for a platform input the original did not
+        // read at that point: its path differs from the original's.
+        status = "behavioral_divergence";
+        reason = error.what();
     } catch (const InputError &error) {
         status = "invalid_input";
         reason = error.what();
@@ -357,6 +369,11 @@ int main(int argc, char **argv) {
                   << static_cast<std::uint32_t>(
                          static_cast<std::int32_t>(static_cast<std::int16_t>(screen.h)));
     }
+    std::cout << "],\"platform_unconsumed\":" << (program ? program->resident.platform.size() : 0)
+              << ",\"delivered_sectors\":[";
+    if (program)
+        for (std::size_t i = 0; i < program->resident.drive.delivered.size(); ++i)
+            std::cout << (i ? "," : "") << program->resident.drive.delivered[i];
     std::cout << "],\"owned\":[" << owned.str() << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
 }

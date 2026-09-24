@@ -152,6 +152,7 @@ include/xem/reconstruction/field_script.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/field_sprite_model.hpp
+include/xem/reconstruction/interrupts.hpp
 include/xem/reconstruction/original_layout.hpp
 include/xem/reconstruction/packed_field.hpp
 include/xem/reconstruction/program.hpp
@@ -200,6 +201,7 @@ src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
 src/reconstruction/field_update.cpp
+src/reconstruction/interrupts.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
