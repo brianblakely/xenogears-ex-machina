@@ -21,6 +21,7 @@ from pathlib import Path
 from tools.analysis.field import field_components
 from tools.analysis.packed import decode_block
 from tools.analysis.party_sprites import sprite_sources
+from tools.reference.host_slots import slot as host_slot
 from tools.reference.inspect_disc import RawCd
 from tools.reference.instruction_trace import SnapshotReader, snapshot_path
 
@@ -721,7 +722,9 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--max-divergences", type=int, default=5)
     parser.add_argument("--report", type=Path)
-    return run(parser.parse_args())
+    args = parser.parse_args()
+    with host_slot("compare"):
+        return run(args)
 
 
 if __name__ == "__main__":

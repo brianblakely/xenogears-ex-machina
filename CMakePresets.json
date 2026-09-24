@@ -14,13 +14,13 @@
     {"name": "release", "inherits": "base", "cacheVariables": {"CMAKE_BUILD_TYPE": "Release"}}
   ],
   "buildPresets": [
-    {"name": "debug", "configurePreset": "debug"},
-    {"name": "sanitize", "configurePreset": "sanitize"},
-    {"name": "release", "configurePreset": "release"}
+    {"name": "debug", "configurePreset": "debug", "jobs": 8},
+    {"name": "sanitize", "configurePreset": "sanitize", "jobs": 8},
+    {"name": "release", "configurePreset": "release", "jobs": 8}
   ],
   "testPresets": [
-    {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}},
-    {"name": "sanitize", "configurePreset": "sanitize", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}, "environment": {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"}},
-    {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error"}}
+    {"name": "debug", "configurePreset": "debug", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error", "jobs": 4}},
+    {"name": "sanitize", "configurePreset": "sanitize", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error", "jobs": 4}, "environment": {"ASAN_OPTIONS": "detect_leaks=1:halt_on_error=1", "UBSAN_OPTIONS": "print_stacktrace=1:halt_on_error=1"}},
+    {"name": "release", "configurePreset": "release", "output": {"outputOnFailure": true}, "execution": {"noTestsAction": "error", "jobs": 4}}
   ]
 }

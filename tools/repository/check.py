@@ -10,6 +10,20 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+from tools.reference.host_slots import slot  # noqa: E402
+
+
+def run_all(commands: list[list[str]]) -> list[dict]:
+    """Run commands in order, stopping at the first failure."""
+    results = []
+    for command in commands:
+        print("Running: " + " ".join(command), flush=True)
+        result = subprocess.run(command, cwd=ROOT, check=False)
+        results.append({"command": command, "exit_code": result.returncode})
+        if result.returncode:
+            raise SystemExit(result.returncode)
+    return results
 
 
 def main() -> None:
@@ -30,13 +44,8 @@ def main() -> None:
             ["cmake", "--build", "--preset", preset],
             ["ctest", "--preset", preset],
         ]
-    results = []
-    for command in commands:
-        print("Running: " + " ".join(command), flush=True)
-        result = subprocess.run(command, cwd=ROOT, check=False)
-        results.append({"command": command, "exit_code": result.returncode})
-        if result.returncode:
-            raise SystemExit(result.returncode)
+    with slot("build"):
+        results = run_all(commands)
     output = ROOT / ".local/verification/public-check.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps({"schema_version": 1, "commands": results}, indent=2) + "\n")

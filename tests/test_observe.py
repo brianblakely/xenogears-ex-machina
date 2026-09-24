@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import fcntl
 import hashlib
 import json
 import struct
@@ -14,7 +13,6 @@ from pathlib import Path
 
 from tools.reference.observe import (
     CARD_BYTES,
-    capture_lock,
     read_card_image,
     validate_inputs,
     validate_reference_state,
@@ -149,15 +147,3 @@ class CardImageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
-class CaptureLockTests(unittest.TestCase):
-    def test_lock_excludes_a_second_capture_until_released(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "scenarios/.capture.lock"
-            with capture_lock(path), path.open("a") as other:
-                with self.assertRaises(BlockingIOError):
-                    fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            with path.open("a") as other:
-                fcntl.flock(other, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                fcntl.flock(other, fcntl.LOCK_UN)

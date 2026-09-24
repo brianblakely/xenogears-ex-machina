@@ -9,9 +9,7 @@ game runtime and does not establish hardware timing or recovered game semantics.
 from __future__ import annotations
 
 import argparse
-import contextlib
 import ctypes as ct
-import fcntl
 import hashlib
 import json
 import os
@@ -25,10 +23,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 if __package__:
+    from .host_slots import slot
     from .instruction_trace import InstructionTrace, load_instruction_trace
     from .memory_sampler import load_sampling
     from .scenario_program import ScenarioProgram
 else:
+    from host_slots import slot
     from instruction_trace import InstructionTrace, load_instruction_trace
     from memory_sampler import load_sampling
     from scenario_program import ScenarioProgram
@@ -201,24 +201,8 @@ def write_png(
     )
 
 
-@contextlib.contextmanager
-def capture_lock(path: Path):
-    """Hold the exclusive emulator lock: original captures run one at a time."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a") as handle:
-        try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            print(f"Waiting for the capture lock {path}", flush=True)
-            fcntl.flock(handle, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle, fcntl.LOCK_UN)
-
-
 def main() -> None:
-    with capture_lock(ROOT / ".local/scenarios/.capture.lock"):
+    with slot("capture"):
         observe()
 
 

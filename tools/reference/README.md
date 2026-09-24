@@ -3,8 +3,8 @@
 Follow the capture policy in [executable reconstruction](../../docs/executable-reconstruction.md#choosing-the-validation-and-capturing-lean):
 reuse completed captures (`scenario.py --captures [FILTER]`), make wide
 per-route captures, and validate data-deterministic behavior without new
-snapshots. `observe.py` serializes emulator runs with an exclusive lock on
-`.local/scenarios/.capture.lock`.
+snapshots. Captures, builds and comparisons take host-wide slots
+(`host_slots.py`): `observe.py` holds the single capture slot.
 
 `capture.py` verifies a supplied CHD and measures standard disc/boot metadata.
 `scenario.py` provides checkpoint-free original-game scene testing. Its bounded

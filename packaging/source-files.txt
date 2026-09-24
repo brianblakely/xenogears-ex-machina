@@ -278,6 +278,7 @@ tests/test_field_script.cpp
 tests/test_field_sprite.cpp
 tests/test_field_sprite_factory.cpp
 tests/test_fingerprint_survey.py
+tests/test_host_slots.py
 tests/test_index_survey.py
 tests/test_instruction_trace.py
 tests/test_inventory_records.py
@@ -386,6 +387,7 @@ tools/extraction/README.md
 tools/reference/README.md
 tools/reference/capture.py
 tools/reference/fingerprint_survey.py
+tools/reference/host_slots.py
 tools/reference/index_survey.py
 tools/reference/inspect_disc.py
 tools/reference/instruction_trace.py
@@ -397,6 +399,7 @@ tools/reference/scenario_program.py
 tools/reference/sector_survey.py
 tools/repository/agent_contract.py
 tools/repository/authoring_contract.py
+tools/repository/build.py
 tools/repository/check.py
 tools/repository/format.py
 tools/repository/matrix.py

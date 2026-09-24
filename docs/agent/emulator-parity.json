@@ -48,7 +48,7 @@
     },
     {
       "path": "tests/test_observe.py",
-      "sha256": "7d204475e12bbbc84f73f0456eba84e468f55af892643e990bc5bc9850bc59b4"
+      "sha256": "b83de22be1880a4934051d449ff60728b204d981be3a5ec324fd2149f4ffebfd"
     },
     {
       "path": "tests/test_scenario.py",
@@ -68,7 +68,7 @@
     },
     {
       "path": "tools/reference/observe.py",
-      "sha256": "8d01a8e7ea7675a9d7c452302120e2a032297dc21334b982292cf8a829f9a44d"
+      "sha256": "932e938abd903fb973ae29569da921525ec268ff8b37c5ce3deb032e0474a84f"
     },
     {
       "path": "tools/reference/scenario.py",
@@ -724,6 +724,6 @@
   "change_review": {
     "version": "1.8.0",
     "author": "Claude Opus 5.5",
-    "scope": "Reviewed the memory-card capture extension (observe.py read_card_image/--card, card1.mcd and final card hashes on success and failure; scenario.py --card with provenance) and the capture-economy tooling: observe.py serializes emulator runs with an exclusive lock and scenario.py --captures lists completed captures with their hooks for reuse (docs/executable-reconstruction.md). CardImageTests, CaptureLockTests and CaptureListingTests cover them. Core, hooks and trace semantics are unchanged; refreshed live baseline hashes; native methods remain unimplemented."
+    "scope": "Reviewed the memory-card capture extension (observe.py read_card_image/--card, card1.mcd and final card hashes on success and failure; scenario.py --card with provenance) and the capture-economy tooling: observe.py holds the single host-wide capture slot (tools/reference/host_slots.py, shared by all worktrees) and scenario.py --captures lists completed captures with their hooks for reuse (docs/executable-reconstruction.md). CardImageTests, CaptureLockTests and CaptureListingTests cover them. Core, hooks and trace semantics are unchanged; refreshed live baseline hashes; native methods remain unimplemented."
   }
 }

@@ -27,16 +27,13 @@ execution, tests and future native integration use `xem-reconstruction`. Run the
 full public gate at integration milestones; original comparisons require their
 separately qualified local evidence.
 
+Builds hold the host's single build slot, shared by every worktree (see the
+[capture and concurrency policy](executable-reconstruction.md#choosing-the-validation-and-capturing-lean)):
+
 ```sh
-cmake --preset debug
-cmake --build --preset debug
-ctest --preset debug
-cmake --preset sanitize
-cmake --build --preset sanitize
-ctest --preset sanitize
-cmake --preset release
-cmake --build --preset release
-ctest --preset release
+python3 tools/repository/build.py debug --test .
+python3 tools/repository/build.py sanitize --test .
+python3 tools/repository/build.py release --test .
 python3 tools/repository/format.py
 python3 tools/repository/matrix.py
 python3 tools/repository/validate.py

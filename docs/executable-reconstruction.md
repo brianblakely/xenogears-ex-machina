@@ -104,10 +104,19 @@ Snapshot captures are expensive, so capture per route, not per function:
    `p1shared-<route>-<purpose>`. Choose one frame window covering the calls, not
    many small windows. If one window exceeds the snapshot budget, split it into
    the fewest contiguous windows that fit.
-3. **One emulator at a time.** `observe.py` holds an exclusive lock
-   (`.local/scenarios/.capture.lock`), so concurrent captures queue instead of
-   competing. Don't script many small captures in a loop.
-4. **Probes are disposable.** Exploratory probes, such as navigation or
+3. **Capped concurrency for heavy work.** Captures, builds and comparisons take
+   host-wide slots (`tools/reference/host_slots.py`): one capture, one build and
+   two comparison runs at a time across every worktree of the checkout. The locks
+   live in the git common directory. `observe.py`, `memory_case.py` and
+   `check.py` take their slots themselves. Build and test through
+   `python3 tools/repository/build.py PRESET [--target T] [--test REGEX]`, not
+   bare `cmake --build`. Build presets cap compile jobs at 8 and tests at 4.
+   Give a batch of comparisons to one sequential driver instead of launching
+   them all at once.
+4. **No polling loops.** Don't leave `until`/`while` sleep loops watching files
+   or processes. Wait for a job by running it as a background command that exits
+   when the job ends, and stop any watcher once its job is done.
+5. **Probes are disposable.** Exploratory probes, such as navigation or
    discovering button meanings, use no snapshot hooks. Delete them once a finding
    cites a shared capture. Cited captures are immutable.
 
