@@ -228,10 +228,11 @@ Program import_resident(const OriginalMemory &memory) {
         sound.statics.emplace(address, copy_of(memory.range(address, size)));
     for (const auto &[address, size] : reconstruction::resident::sound_constants)
         sound.constants.emplace(address, copy_of(memory.range(address, size)));
-    // The SPU transfer queue the transfer callback reads.
+    // The SPU transfer queue (owned: transfers are queued and started),
+    // unless a driver object already holds it.
     if (const auto queue = memory.word(0x80059458);
-        in_ram(queue, reconstruction::resident::transfer_queue_bytes))
-        sound.constants.emplace(
+        in_ram(queue, reconstruction::resident::transfer_queue_bytes) && !owned(queue))
+        sound.statics.emplace(
             queue, copy_of(memory.range(queue, reconstruction::resident::transfer_queue_bytes)));
     // Each sequence's event data (+8), a block whose third word is its byte
     // length; the tick only reads it. Every voice's event pointer must lie

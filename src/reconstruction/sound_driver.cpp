@@ -188,28 +188,6 @@ void release_sequence_voices(SoundDriver &driver, std::uint32_t sequence) {
         release_voice(driver, voice + 0x30, u8(driver, voice + 0x27));
 }
 
-// 80039144: unlink a pool block from the allocated list between BIOS
-// DisableEvent/EnableEvent. The original skips the unlink when the block is
-// the list head.
-void free_pool_block(SoundDriver &driver, std::uint32_t object) {
-    const auto header = object - 0x10;
-    if (driver.pool == header)
-        return;
-    auto previous = driver.pool;
-    for (;;) {
-        const auto found = driver.pool_headers.find(previous);
-        if (found == driver.pool_headers.end())
-            throw SoundError("Sound pool list leaves its owned headers");
-        if (found->second[3] == header)
-            break;
-        previous = found->second[3];
-    }
-    const auto freed = driver.pool_headers.find(header);
-    if (freed == driver.pool_headers.end())
-        throw SoundError("Freed sound pool block has no owned header");
-    driver.pool_headers.at(previous)[3] = freed->second[3];
-}
-
 // 800396e0: free the SPU allocation holding `address`; returns it, or zero
 // when no entry holds it.
 std::uint32_t free_spu_block(SoundDriver &driver, std::uint32_t address) {
@@ -270,6 +248,28 @@ void unlink_sequence(SoundDriver &driver, std::uint32_t sequence) {
 }
 
 } // namespace
+
+// 80039144: unlink a pool block from the allocated list between BIOS
+// DisableEvent/EnableEvent. The original skips the unlink when the block is
+// the list head.
+void free_pool_block(SoundDriver &driver, std::uint32_t object) {
+    const auto header = object - 0x10;
+    if (driver.pool == header)
+        return;
+    auto previous = driver.pool;
+    for (;;) {
+        const auto found = driver.pool_headers.find(previous);
+        if (found == driver.pool_headers.end())
+            throw SoundError("Sound pool list leaves its owned headers");
+        if (found->second[3] == header)
+            break;
+        previous = found->second[3];
+    }
+    const auto freed = driver.pool_headers.find(header);
+    if (freed == driver.pool_headers.end())
+        throw SoundError("Freed sound pool block has no owned header");
+    driver.pool_headers.at(previous)[3] = freed->second[3];
+}
 
 void set_effect_pair(SoundDriver &driver, std::uint32_t channel, std::uint32_t field,
                      std::uint32_t value) {

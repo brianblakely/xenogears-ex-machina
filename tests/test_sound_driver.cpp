@@ -219,10 +219,12 @@ game::Program tick_sample() {
 }
 Input read(std::uint32_t site, std::uint32_t value) { return {Input::Kind::read, site, value}; }
 std::uint32_t statics(game::Program &program, std::uint32_t address) {
-    const auto &bytes = program.resident.sound.statics.at(address);
+    const auto &statics = program.resident.sound.statics;
+    const auto found = std::prev(statics.upper_bound(address));
+    const auto offset = address - found->first;
     std::uint32_t value = 0;
-    for (std::size_t i = 0; i < bytes.size() && i < 4; ++i)
-        value |= static_cast<std::uint32_t>(bytes[i]) << (8U * i);
+    for (std::size_t i = 0; offset + i < found->second.size() && i < 4; ++i)
+        value |= static_cast<std::uint32_t>(found->second[offset + i]) << (8U * i);
     return value;
 }
 template <typename Error, typename Call> bool raises(Call call) {
@@ -366,9 +368,46 @@ void transfer() {
     try {
         spu_dma(queued, {read(0x8004cb64, 0), read(0x8004cb74, 0)});
     } catch (const game::MissingDependency &error) {
-        next = error.point.machine_address == 0x8003be68;
+        next = error.point.machine_address == 0x8003bf14;
     }
-    check(next, "Starting the next queued transfer is not reconstructed");
+    check(next, "A queued transfer of an unrecovered type stops");
+
+    // A chunked upload continues: 900h bytes left queue one 800h chunk,
+    // which starts at once as a DMA write of 32 blocks.
+    auto upload = tick_sample();
+    auto &d = upload.resident.sound;
+    d.constants.at(0x80058e40) = callback;
+    d.statics[queue] = resident.sound.constants.at(queue);
+    d.constants.at(0x80059458) = pointer;
+    const auto put = [&](std::map<std::uint32_t, std::vector<std::uint8_t>> &blocks,
+                         std::uint32_t address, std::uint32_t value) {
+        auto found = std::prev(blocks.upper_bound(address));
+        for (std::uint32_t i = 0; i < 4; ++i)
+            found->second[address - found->first + i] =
+                static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    put(d.statics, queue + 16, 0x80038b4c); // entry 0 finished; its callback
+    put(d.statics, 0x800595a4, 0x80150000); // staging block
+    put(d.statics, 0x800595dc, 0x1010);     // SPU address
+    put(d.statics, 0x800595e0, 0x900);      // bytes left
+    put(d.constants, 0x80058e0c, 0x1f8010c0);
+    put(d.constants, 0x80058e10, 0x1f8010c4);
+    put(d.constants, 0x80058e14, 0x1f8010c8);
+    put(d.constants, 0x80058e1c, 0x1f801014);
+    put(d.constants, 0x80058e30, 3);
+    upload.resident.io[0x14] = 0x20; // SPU delay register as observed
+    d.flags = 0x10;                  // a transfer is running
+    spu_dma(upload, {read(0x8004cb64, 0xc030), read(0x8004cb74, 0)});
+    check(statics(upload, 0x800595e0) == 0x100 && statics(upload, 0x800595dc) == 0x1810 &&
+              statics(upload, 0x80059510) == 1 && statics(upload, 0x800594f4) == 1 &&
+              statics(upload, 0x80058e60) == 32 && statics(upload, 0x80058e5c) == 0x80150000,
+          "The upload queues and starts its next 800h chunk");
+    const auto &w = upload.resident.hardware_writes;
+    check(w.size() == 9 && w[3] == game::HardwareWrite{0x1f801da6, 0x202, 2} &&
+              w[4] == game::HardwareWrite{0x1f801daa, 0xc020, 2} &&
+              w[5] == game::HardwareWrite{0x1f801014, 0x20000020, 4} &&
+              w[8] == game::HardwareWrite{0x1f8010c8, 0x01000201, 4},
+          "The chunk goes to the SPU by DMA channel 4");
 
     auto event = tick_sample();
     bool delivered = false;

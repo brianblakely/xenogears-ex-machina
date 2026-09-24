@@ -228,12 +228,151 @@ class Tick {
         const auto index = m.u16(0x80059510);
         const auto entry = m.u32(0x80059458) + index * 20;
         m.d.flags |= 4U;
-        if (const auto done = m.u32(entry + 16); done != 0)
+        switch (const auto done = m.u32(entry + 16); done) {
+        case 0:
+            break;
+        case 0x80038b4c:
+            upload_continue();
+            break;
+        default:
             missing("spu_transfer_entry_callback", done);
+        }
         m.d.flags &= 0xffefU;
         if (m.u16(0x80059510) != m.u16(0x800594f4))
-            missing("spu_transfer_next", 0x8003be68);
+            next_transfer();
         m.d.flags &= 0xfffbU;
+    }
+
+    // 80038b4c: queue the next chunk (at most 800h bytes, the whole rest when
+    // under 841h) of a chunked SPU upload; after the last, free the staging
+    // block and restore the reverb settings.
+    void upload_continue() {
+        const auto left = m.u32(0x800595e0);
+        if (left == 0) {
+            free_pool_block(m.d, m.u32(0x800595a4));
+            m.w32(0x800595a4, 0);
+            // 8004e574: reverb depth, left and right.
+            const auto depth_left = m.u16(0x8005940c);
+            const auto depth_right = m.u16(0x8005940e);
+            const auto base = m.u32(0x80058e08);
+            spu_write(base + 0x184, depth_left);
+            spu_write(base + 0x186, depth_right);
+            m.w16(0x800589bc, depth_left);
+            m.w16(0x800589be, depth_right);
+            // 8004e5a0 and 8004e6b8: delay and feedback apply only in the
+            // reverb modes 7 and 8.
+            if (const auto mode = s32(m.u32(0x800589b8)); mode == 7 || mode == 8)
+                missing("spu_reverb_delay", 0x8004e5a0);
+            m.d.flags &= 0xffdfU;
+            return;
+        }
+        const auto size = s32(left) < 0x841 ? left : 0x800U;
+        const auto spu = m.u32(0x800595dc);
+        const auto block = m.u32(0x800595a4);
+        m.w32(0x800595e0, left - size);
+        m.w32(0x800595dc, spu + size);
+        enqueue(1, spu, block, size, 0x80038b4c);
+        if ((m.d.flags & 0x10U) == 0)
+            enqueue(1, spu, block, size, 0);
+    }
+
+    // 8003bca0: append a transfer to the queue and start it when idle.
+    void enqueue(std::uint32_t type, std::uint32_t spu, std::uint32_t ram, std::uint32_t size,
+                 std::uint32_t callback) {
+        const auto flags = m.d.flags;
+        if ((flags & 4U) == 0)
+            missing("spu_transfer_wait", 0x8003bce4);
+        auto end = (m.u16(0x800594f4) + 1U) & 0xffffU;
+        if (end >= 8)
+            end = 0;
+        m.w16(0x800594f4, end);
+        const auto entry = m.u32(0x80059458) + end * 20;
+        m.w16(entry, type & 0xfU);
+        m.w16(entry + 2, 0);
+        m.w32(entry + 4, ram);
+        m.w32(entry + 8, spu & 0x7fff8U);
+        m.w32(entry + 12, size);
+        m.w32(entry + 16, callback);
+        if ((m.d.flags & 0x10U) == 0)
+            next_transfer();
+    }
+
+    // 8003be68: start the next queued transfer (SPU DMA write).
+    void next_transfer() {
+        auto index = (m.u16(0x80059510) + 1U) & 0xffffU;
+        if (index >= 8)
+            index = 0;
+        m.w16(0x80059510, index);
+        m.d.flags |= 0x10U;
+        const auto entry = m.u32(0x80059458) + index * 20;
+        // 8004d964: the completion callback.
+        if (m.u32(0x80058e40) != 0x8003bb64)
+            missing("spu_transfer_callback_change", 0x8004d964);
+        // 8004d930(0): DMA transfer mode.
+        m.w32(0x800589a4, 0);
+        m.w32(0x80058e24, 0);
+        // 8004d8d8: the SPU transfer address in 8-byte units.
+        const auto address = m.u32(entry + 8);
+        if (address - 0x1010U <= 0x7efe8U) {
+            auto aligned = address;
+            if (m.u32(0x80058e2c) != 0) {
+                const auto unit = m.u32(0x80058e34);
+                if (unit == 0)
+                    missing("spu_alignment_break", 0x8004d09c);
+                if (aligned % unit != 0)
+                    aligned = (aligned + unit) & ~m.u32(0x80058e38);
+            }
+            m.w16(0x80058e20, (aligned >> (m.u32(0x80058e30) & 31U)) & 0xffffU);
+        }
+        if (m.u16(entry) != 1)
+            missing("spu_transfer_type", 0x8003bf14);
+        // 8004d878 -> 8004cf38: DMA write of up to 7eff0h bytes.
+        auto size = m.u32(entry + 12);
+        if (size > 0x7eff0U)
+            size = 0x7eff0U;
+        if (m.u32(0x80058e24) != 0)
+            missing("spu_transfer_io", 0x8004c970);
+        const auto base = m.u32(0x80058e08);
+        const auto shift = m.u32(0x80058e30) & 31U;
+        // 8004cca8(2): transfer address register.
+        const auto start = ((m.u16(0x80058e20) << shift) >> shift) & 0xffffU;
+        m.w16(0x80058e20, start);
+        spu_write(base + 0x1a6, start);
+        // 8004cca8(1): wait until it reads back, then select DMA write.
+        m.w32(0x80058e58, 0);
+        if (latch(base + 0x1a6, 0x8004cd48) != start)
+            missing("spu_transfer_address_timeout", 0x8004cd60);
+        spu_write(base + 0x1aa, (latch(base + 0x1aa, 0x8004cd8c) & 0xffcfU) | 0x20U);
+        // 8004cca8(3): wait for the mode, set the SPU delay, start DMA 4.
+        if ((latch(base + 0x1aa, 0x8004ce38) & 0x30U) != 0x20U)
+            missing("spu_transfer_mode_timeout", 0x8004ce4c);
+        const auto delay = m.u32(0x80058e1c);
+        const auto timing = (latch(delay, 0x8004d1bc) & 0xf0ffffffU) | 0x20000000U;
+        resident.hardware_writes.push_back({delay, timing, 4});
+        const auto ram = m.u32(entry + 4);
+        m.w32(0x80058e5c, ram);
+        const auto blocks = (size >> 6U) + ((size & 63U) != 0 ? 1U : 0U);
+        m.w32(0x80058e60, blocks);
+        resident.hardware_writes.push_back({m.u32(0x80058e0c), ram, 4});
+        resident.hardware_writes.push_back({m.u32(0x80058e10), (blocks << 16U) | 0x10U, 4});
+        resident.hardware_writes.push_back({m.u32(0x80058e14), 0x01000201U, 4});
+    }
+
+    // A register only software changes, read back: its last recorded write
+    // in this run, else the observed I/O page (SPU registers are not in it).
+    // `site` names the original load.
+    std::uint32_t latch(std::uint32_t address, std::uint32_t site) {
+        for (auto write = resident.hardware_writes.rbegin();
+             write != resident.hardware_writes.rend(); ++write)
+            if (write->address == address)
+                return write->value;
+        const auto offset = address - 0x1f801000U;
+        if (offset >= 0xc00U || (address & 3U) != 0)
+            missing("unrecorded_register_read", site);
+        std::uint32_t value = 0;
+        for (std::uint32_t i = 0; i < 4; ++i)
+            value |= static_cast<std::uint32_t>(resident.io[offset + i]) << (8U * i);
+        return value;
     }
 
   private:
