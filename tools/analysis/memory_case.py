@@ -21,6 +21,7 @@ from pathlib import Path
 from tools.analysis.field import field_components
 from tools.analysis.packed import decode_block
 from tools.analysis.party_sprites import sprite_sources
+from tools.reference.inspect_disc import RawCd
 from tools.reference.instruction_trace import SnapshotReader, snapshot_path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -47,6 +48,11 @@ def require(condition: bool, message: str) -> None:
 
 def u32(ram: bytes, address: int) -> int:
     return struct.unpack_from("<I", ram, address & 0x1FFFFF)[0]
+
+
+FIELD_MAP = 0x8004F34C  # Selector of the loaded field.
+IO_BASE = 0x1F801000  # The recorded hardware I/O page.
+SPU_PAGE = (0xC00, 0xE00)  # SPU registers inside it.
 
 
 # Entries that need no loaded field or field source.
@@ -83,7 +89,15 @@ RESIDENT_ENTRIES = (
     "menu_load_find_slot",
     "menu_text_encode",
     "menu_text_decode",
+    "sound_set_mode",
+    "sound_set_master",
+    "sound_set_cd",
+    "sound_update_voices",
+    "set_next_mode",
+    "field_exit",
 )
+# Field entries besides the update and move phases.
+FIELD_ENTRIES = ("field_event_extended", "movie_decision")
 
 
 def file_sha256(path: Path) -> str:
@@ -134,13 +148,16 @@ def pairs(
     entry_hook: str,
     exit_hook: str,
     interrupts: tuple[tuple[str, str], ...] = (),
+    outcomes: tuple[str, ...] = (),
 ) -> list[tuple[dict, dict, list]]:
     """Adjacent entry/exit records of one call, in original order.
 
     Interrupt pairs name the entry and return hooks of interrupt-context code
     (a dispatcher or callback). Each call lists the complete interrupt
-    invocations observed between its entry and exit.
+    invocations observed between its entry and exit. Outcome hooks close a
+    call like the exit hook; they mark the branch a decision took.
     """
+    exits = {exit_hook, *outcomes}
     rows = [
         json.loads(line) for line in (capture / "instruction-trace.jsonl").read_text().splitlines()
     ]
@@ -162,7 +179,7 @@ def pairs(
             require(pending is None, "Nested or unmatched original entry record")
             require(not open_handlers, "Call entry inside interrupt code")
             pending, handlers = row, []
-        elif row["hook"] == exit_hook and pending is not None:
+        elif row["hook"] in exits and pending is not None:
             require(not open_handlers, "Call exit inside interrupt code")
             result.append((pending, row, handlers))
             pending = None
@@ -178,12 +195,37 @@ FIELD_GEOMETRY = 0x800AFB14  # Component 2: models, including collision models.
 RESIDENT_TABLES = ((0x800B1F78, 256), (0x8004FD40, 12), (0x8004FF30, 40), (0x80050070, 40))
 
 
-class Sources:
-    """Fingerprint-qualified field 23 source, field overlay and party sprite files."""
+def slot_bytes(raw: Path, slot: int) -> bytes:
+    """The fingerprint-qualified physical bytes of one catalog source slot."""
+    catalog = json.loads((ROOT / "analysis/coverage/source-fingerprints.json").read_text())
+    profile = next(p for p in catalog["profiles"] if p["source_profile"] == PROFILE)
+    records = [dict(zip(profile["records_columns"], r, strict=True)) for r in profile["records"]]
+    record = next((r for r in records if r["slot"] == slot), None)
+    require(record is not None and record["projection_unit"] == 2048, "Unknown field slot")
+    with raw.open("rb") as stream:
+        data = RawCd(stream, raw.stat().st_size).read_extent(
+            record["source_lba"], record["source_sector_count"] * 2048
+        )
+    require(
+        hashlib.sha256(data[: record["projected_bytes"]]).hexdigest()
+        == record["projection_sha256"],
+        "Field slot projection differs from its record",
+    )
+    return data
 
-    def __init__(self, raw: Path):
-        sources = sprite_sources(raw, PROFILE, 23)
-        self.field = sources["field_source"]
+
+class Sources:
+    """Fingerprint-qualified field source, field overlay and party sprite files.
+
+    The map is the field loaded in the capture (the selector at 8004f34c). A
+    field that is not the map's own file pair (the New Game prologue's) names
+    its catalog slot instead; import still requires its components to equal
+    the loaded ones.
+    """
+
+    def __init__(self, raw: Path, map_id: int = 23, field_slot: int | None = None):
+        sources = sprite_sources(raw, PROFILE, map_id)
+        self.field = sources["field_source"] if field_slot is None else slot_bytes(raw, field_slot)
         # Source slot 36: the packed field overlay; its decoded block (from
         # decode_block in math_sources) is the image loaded at 8006faf0.
         record = sources["overlay_record"]
@@ -252,7 +294,10 @@ def compare(
             require(base + i not in computed, "Overlapping owned ranges")
             computed[base + i] = value
             names[base + i] = (item["name"], item["address"], i)
-    low, high = (sp & 0x1FFFFF) - STACK_BELOW_ENTRY, sp & 0x1FFFFF
+    # An entry SP of 80200000 (seen inside the mode dispatcher) is the end
+    # of RAM, not offset zero.
+    high = ((sp - 1) & 0x1FFFFF) + 1
+    low = high - STACK_BELOW_ENTRY
     changed = unowned_offsets(entry, exit)
     own = update_changed if update_changed is not None else set(changed)
     kernel = {
@@ -360,12 +405,19 @@ def run(args: argparse.Namespace) -> int:
     snapshots = SnapshotReader(snapshot_file)
     interrupts = tuple(tuple(item.split(":", 1)) for item in args.interrupt)
     require(all(len(item) == 2 for item in interrupts), "Interrupt pairs are ENTRY:EXIT")
-    calls = pairs(capture, args.entry_hook, args.exit_hook, interrupts)
+    outcomes = {}
+    for item in args.outcome:
+        hook, _, value = item.partition("=")
+        require(hook and value.isdigit(), "Outcomes are HOOK=VALUE")
+        outcomes[hook] = int(value)
+    calls = pairs(capture, args.entry_hook, args.exit_hook, interrupts, tuple(outcomes))
     require(calls, "No original entry/exit pairs in the capture")
     selected = calls[args.start : args.start + args.limit]
     # Resident entries (the heap) need no loaded field or field source.
     resident = args.entry in RESIDENT_ENTRIES
-    sources = None if resident else Sources(args.raw)
+    # Field entries use the source of the map loaded at the first call.
+    map_id = None if resident else u32(snapshots.read(selected[0][0])[0], FIELD_MAP)
+    sources = None if resident else Sources(args.raw, map_id, args.field_slot)
     statuses = collections.Counter()
     dependencies = collections.defaultdict(list)
     divergences = []
@@ -392,7 +444,8 @@ def run(args: argparse.Namespace) -> int:
                 (snapshots.read(before_row)[0], snapshots.read(after_row)[0])
                 for before_row, after_row in handlers
             ]
-            exit, _, _ = snapshots.read(exit_row)
+            exit, _, exit_io = snapshots.read(exit_row)
+            require(resident or u32(entry, FIELD_MAP) == map_id, "Selected calls span maps")
             (work / "ram.bin").write_bytes(entry)
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
@@ -469,9 +522,17 @@ def run(args: argparse.Namespace) -> int:
             # Exact GTE rotation/translation at exit. Interrupt handlers are not
             # modeled; one that changed these registers would surface here.
             expected_gte = gte_words(exit_row)
+            # A call closed by an outcome hook must return that hook's value.
+            if exit_row["hook"] in outcomes:
+                if report["return_value"] != outcomes[exit_row["hook"]]:
+                    result["outcome_mismatch"] = {
+                        "computed": report["return_value"],
+                        "original": exit_row["hook"],
+                    }
+                    result["mismatch_count"] += 1
             # A returned value must equal the original result register (V0
             # unless the exit hook precedes a delay slot that moves it there).
-            if (
+            elif (
                 report["return_value"] is not None
                 and report["return_value"] != visible_registers(exit_row)[args.return_register]
             ):
@@ -483,6 +544,24 @@ def run(args: argparse.Namespace) -> int:
             if report["gte"] != expected_gte:
                 result["gte_mismatch"] = {"computed": report["gte"], "original": expected_gte}
                 result["mismatch_count"] += 1
+            # Each SPU register the call wrote must hold its last written value
+            # in the exit I/O page. Other registers (DMA, CD ports) do not read
+            # back what was written and are not compared here.
+            written = {}
+            for write in report.get("hardware_writes", []):
+                offset = write["address"] - IO_BASE
+                if SPU_PAGE[0] <= offset < SPU_PAGE[1]:
+                    written[offset] = write
+            io_mismatches = [
+                {"address": hex(IO_BASE + offset), "computed": write["value"], "original": value}
+                for offset, write in sorted(written.items())
+                if (value := int.from_bytes(exit_io[offset : offset + write["width"]], "little"))
+                != write["value"]
+            ]
+            result["hardware_writes"] = len(report.get("hardware_writes", []))
+            if io_mismatches:
+                result["hardware_mismatch"] = io_mismatches
+                result["mismatch_count"] += len(io_mismatches)
             result["interrupts"] = len(handlers)
             if result["mismatch_count"] or result["unowned_count"] or result["interrupt_conflicts"]:
                 divergences.append({"call": index, "frontend_run": frame, **result})
@@ -524,6 +603,8 @@ def run(args: argparse.Namespace) -> int:
         "matched_event_opcodes": dict(sorted(opcodes.items())),
         "snapshot_file_sha256": trace["snapshot_file_sha256"],
         "entry": args.entry,
+        "field_source": None if resident else {"map": map_id, "slot": args.field_slot},
+        "outcomes": outcomes,
         "stop": args.stop,
         "calls_available": len(calls),
         "calls_selected": len(selected),
@@ -587,6 +668,7 @@ def main() -> int:
             "field_move",
             "field_checkpoints",
             *RESIDENT_ENTRIES,
+            *FIELD_ENTRIES,
         ),
         required=True,
     )
@@ -605,6 +687,15 @@ def main() -> int:
         choices=range(32),
         default=2,
         help="Register holding the original result at the exit hook",
+    )
+    parser.add_argument(
+        "--outcome",
+        action="append",
+        default=[],
+        help="HOOK=VALUE: another exit hook; calls it closes must return VALUE (repeatable)",
+    )
+    parser.add_argument(
+        "--field-slot", type=int, help="Catalog slot of a field loaded outside its map pair"
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

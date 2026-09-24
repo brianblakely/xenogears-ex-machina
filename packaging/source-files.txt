@@ -148,6 +148,7 @@ include/xem/reconstruction/field_events.hpp
 include/xem/reconstruction/field_gte.hpp
 include/xem/reconstruction/field_media.hpp
 include/xem/reconstruction/field_motion.hpp
+include/xem/reconstruction/field_movie.hpp
 include/xem/reconstruction/field_return.hpp
 include/xem/reconstruction/field_script.hpp
 include/xem/reconstruction/field_sprite.hpp
@@ -199,12 +200,14 @@ src/reconstruction/field_gte.cpp
 src/reconstruction/field_media.cpp
 src/reconstruction/field_motion.cpp
 src/reconstruction/field_move.cpp
+src/reconstruction/field_movie.cpp
 src/reconstruction/field_return.cpp
 src/reconstruction/field_script.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
 src/reconstruction/field_update.cpp
+src/reconstruction/media.cpp
 src/reconstruction/menu_equipment.cpp
 src/reconstruction/menu_items.cpp
 src/reconstruction/menu_save.cpp
@@ -268,6 +271,7 @@ tests/test_field_events.cpp
 tests/test_field_gte.cpp
 tests/test_field_media.cpp
 tests/test_field_motion.cpp
+tests/test_field_movie.cpp
 tests/test_field_return.cpp
 tests/test_field_script.cpp
 tests/test_field_sprite.cpp
@@ -301,6 +305,7 @@ tests/test_scenario.py
 tests/test_scenario_program.py
 tests/test_sector_survey.py
 tests/test_sound_driver.cpp
+tests/test_sound_output.cpp
 tests/test_sprite_animation.py
 tests/test_sprite_matrix.py
 tests/test_sprite_model.cpp

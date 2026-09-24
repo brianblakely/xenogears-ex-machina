@@ -1,6 +1,8 @@
 #include "xem/reconstruction/sound_driver.hpp"
 
+#include <algorithm>
 #include <iterator>
+#include <limits>
 #include <optional>
 
 namespace xem::reconstruction::resident {
@@ -357,6 +359,222 @@ void release_wave_bank(SoundDriver &driver, std::uint32_t wave) {
     if (free_spu_block(driver, spu) != spu)
         throw SoundError("Released wave bank's SPU block is not allocated (driver error 0x24)");
     free_pool_block(driver, wave);
+}
+
+namespace {
+
+// 80038e6c: set both halves of a volume pair to `value`, then negate one half
+// in the negating modes. `reverb` selects the reverb pair's convention.
+void set_volume_pair(const SoundDriver &driver, std::array<std::uint16_t, 2> &pair,
+                     std::uint32_t value, bool reverb) {
+    pair = {static_cast<std::uint16_t>(value), static_cast<std::uint16_t>(value)};
+    if ((driver.flags & 0x600U) == 0)
+        return;
+    // Wide stereo (bit 200) negates the master's right half and the reverb's
+    // left half; mode 500 the opposite halves.
+    const bool right = ((driver.flags & 0x200U) != 0) != reverb;
+    pair[right ? 1 : 0] = static_cast<std::uint16_t>(0U - value);
+}
+
+// 80038c68 / 80038d18 with a nonzero frame count: the per-tick step from the
+// current 16.16 level toward `volume`. No step is stored when already there.
+void fade(std::uint32_t volume, std::uint32_t level, std::uint32_t frames, std::uint32_t &step,
+          std::uint16_t &remaining) {
+    const auto current = static_cast<std::uint32_t>(static_cast<std::int32_t>(level) >> 8);
+    const auto distance = static_cast<std::int32_t>((volume << 8) - current);
+    if (distance == 0)
+        return;
+    const auto divisor = static_cast<std::int32_t>(frames);
+    if (distance == std::numeric_limits<std::int32_t>::min() && divisor == -1)
+        throw SoundError("A volume fade divides the most negative distance by -1");
+    remaining = static_cast<std::uint16_t>(frames);
+    step = static_cast<std::uint32_t>(distance / divisor) << 8;
+}
+
+// 8003eea0: SPU pitch of a note in 1/256 semitones: the octave/semitone byte
+// 80050b78[(note & 7fff) >> 8] selects step row 80050bf0[semitone][note & ff],
+// shifted right by 6 - octave (left when negative).
+std::int32_t note_pitch(const SoundDriver &driver, std::int32_t note) {
+    if (driver.pitch_tables.size() != pitch_table_bytes)
+        throw SoundError("The pitch tables are not loaded");
+    const auto table = [&](std::uint32_t address) -> std::uint32_t {
+        return driver.pitch_tables.at(address - pitch_table_address);
+    };
+    const auto raw = static_cast<std::uint32_t>(note);
+    const auto position = table(pitch_table_address + ((raw & 0x7fffU) >> 8));
+    const auto address = 0x80050bf0U + ((raw & 0xffU) + ((position & 0xfU) << 8)) * 2U;
+    auto step = static_cast<std::int32_t>(
+        static_cast<std::int16_t>(table(address) | (table(address + 1) << 8)));
+    const auto shift = 6 - static_cast<std::int32_t>(position >> 4);
+    step = shift >= 0 ? step >> shift
+                      : static_cast<std::int32_t>(static_cast<std::uint32_t>(step) << -shift);
+    return static_cast<std::int16_t>(step);
+}
+
+// 8003ef04: claim hardware voice `channel` for a key-on unless a holder has a
+// higher priority; a voice the owner holds is marked in voice_holds.
+void key_on_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel) {
+    if (channel >= driver.voice_owners.size())
+        return;
+    const auto holder = driver.voice_owners[channel];
+    if (holder != owner) {
+        if (holder != 0 && s16(u16(driver, owner + 4)) < s16(u16(driver, holder + 4)))
+            return;
+        put16(driver, owner + 6, 0xffff);
+        put16(driver, owner, channel);
+        driver.voice_owners[channel] = owner;
+        driver.voice_changes |= bit(channel);
+    }
+    driver.voice_holds |= bit(channel);
+}
+
+// 8003efa0: mark hardware voice `channel` for release if `owner` holds it.
+void request_release(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel) {
+    if (channel < driver.voice_owners.size() && driver.voice_owners[channel] == owner)
+        driver.voice_releases |= bit(channel);
+}
+
+// 8003ecb0..8003edd0: first and second output of a voice at `volume` and pan
+// `pan` (0 .. 4000 centre .. 7f00). Stereo modes (flag 100) use two linear
+// ramps that both give 5a00 at the centre; mono gives 5a00 on both sides.
+std::array<std::int32_t, 2> pan_law(std::uint32_t flags, std::int32_t volume, std::int32_t pan) {
+    if ((flags & 0x100U) == 0) {
+        const auto both = (volume * 45 * 512) >> 15;
+        return {both, both};
+    }
+    const auto near = [](std::int32_t p) { return 0x7f00 - ((p * 37 * 256) >> 14); };
+    const auto far = [](std::int32_t p) { return (p * 45 * 512) >> 14; };
+    const bool first_half = pan < 0x4000;
+    const auto distance = first_half ? pan : 0x8000 - pan;
+    const auto first = first_half ? near(distance) : far(distance);
+    const auto second = first_half ? far(distance) : near(distance);
+    return {(first * volume) >> 15, (second * volume) >> 15};
+}
+
+} // namespace
+
+void select_sound_mode(SoundDriver &driver, std::int32_t mode) {
+    driver.flags &= 0xf8ffU;
+    if (mode == static_cast<std::int32_t>(SoundMode::stereo))
+        driver.flags |= 0x100U;
+    else if (mode == static_cast<std::int32_t>(SoundMode::wide))
+        driver.flags |= 0x300U;
+    else if (mode == static_cast<std::int32_t>(SoundMode::reverse_wide))
+        driver.flags |= 0x500U;
+    reapply_volumes(driver);
+}
+
+void update_mode_voice(SoundDriver &driver) {
+    const auto record = driver.mode_voice;
+    if (record == 0 || (u16(driver, record) & 1U) == 0)
+        return;
+    const auto level = u16(driver, record + 0x12);
+    const bool stereo = sound_mode(driver) != 0;
+    const auto first = level << (stereo ? 7U : 6U);
+    put16(driver, record + 0x38, first);
+    put16(driver, record + 0x3a, stereo ? 0U : first);
+    put16(driver, record + 0x64, stereo ? 0U : first);
+    put16(driver, record + 0x66, first);
+    put16(driver, record + 0x36, 1);
+    put16(driver, record + 0x62, 1);
+}
+
+std::uint32_t sound_mode(const SoundDriver &driver) {
+    if ((driver.flags & 0x700U) == 0)
+        return 0;
+    return (driver.flags & 0x600U) == 0 ? 1 : 2;
+}
+
+void set_master_volume(SoundDriver &driver, std::uint32_t volume, std::uint32_t frames) {
+    driver.master_target = static_cast<std::uint16_t>(volume);
+    if (frames != 0) {
+        fade(volume, driver.master_level, frames, driver.master_step, driver.master_frames);
+        return;
+    }
+    driver.master_level = volume << 16;
+    driver.master_frames = 0;
+    driver.master = static_cast<std::uint16_t>(volume);
+    set_volume_pair(driver, driver.master_pair, static_cast<std::uint32_t>(s16(volume)), false);
+    driver.commits |= 3U;
+}
+
+void set_cd_volume(SoundDriver &driver, std::uint32_t volume, std::uint32_t frames) {
+    driver.cd_target = static_cast<std::uint16_t>(volume);
+    if (frames != 0) {
+        fade(volume, driver.cd_level, frames, driver.cd_step, driver.cd_frames);
+        return;
+    }
+    driver.cd_level = volume << 16;
+    driver.cd_frames = 0;
+    driver.cd = static_cast<std::uint16_t>(volume);
+    driver.cd_pair = {static_cast<std::uint16_t>(volume), static_cast<std::uint16_t>(volume)};
+    driver.commits |= 0xc0U;
+}
+
+void reapply_volumes(SoundDriver &driver) {
+    set_volume_pair(driver, driver.master_pair, static_cast<std::uint32_t>(s16(driver.master)),
+                    false);
+    driver.cd_pair = {driver.cd, driver.cd};
+    set_volume_pair(driver, driver.reverb_pair, static_cast<std::uint32_t>(s16(driver.reverb)),
+                    true);
+    driver.commits |= 0xc3U;
+}
+
+void mark_sequence_voices(SoundDriver &driver, std::uint32_t sequence, std::uint32_t bits) {
+    auto count = u8(driver, sequence + 0x14);
+    if (count == 0)
+        throw SoundError("A sequence without voices loops through the whole counter");
+    for (auto record = sequence + voice_records; count != 0; --count, record += voice_stride)
+        if (u16(driver, record) != 0)
+            put16(driver, record + 2, u16(driver, record + 2) | bits);
+}
+
+void mark_sequences(SoundDriver &driver, std::uint32_t bits) {
+    for (auto sequence = driver.sequences; sequence != 0; sequence = u32(driver, sequence))
+        mark_sequence_voices(driver, sequence, bits);
+}
+
+void update_voices(SoundDriver &driver, std::uint32_t sequence, std::uint32_t voices,
+                   std::uint32_t count) {
+    if ((u16(driver, sequence + 0x10) & 0x20U) != 0)
+        return;
+    // The loop decrements a 16-bit count after each voice.
+    if ((count & 0xffffU) == 0)
+        throw SoundError("A zero voice count loops through the whole 16-bit counter");
+    for (auto remaining = count & 0xffffU; remaining != 0; --remaining, voices += voice_stride) {
+        const auto record = voices;
+        if (u16(driver, record) == 0)
+            continue;
+        const auto changes = u16(driver, record + 2);
+        if ((changes & 0x100U) != 0) {
+            const auto attenuation = s16(u16(driver, record + 0x7a));
+            const auto scale = std::clamp(
+                attenuation - ((attenuation * s16(u16(driver, record + 0xd2))) >> 15), 0, 0x7fff);
+            auto volume = (s16(u16(driver, record + 0x76)) * scale) >> 15;
+            volume = (s16(u16(driver, sequence + 0x72)) * volume) >> 16;
+            const auto pan =
+                std::clamp(s16(u16(driver, record + 0x74)) + s16(u16(driver, record + 0xd4)) +
+                               s16(u16(driver, sequence + 0x8a)),
+                           0, 0x7f00);
+            const auto [first, second] = pan_law(driver.flags, volume, pan);
+            put16(driver, record + 0x38, static_cast<std::uint32_t>(first));
+            put16(driver, record + 0x3a, static_cast<std::uint32_t>(second));
+            put16(driver, record + 0x36, u16(driver, record + 0x36) | 1U);
+        }
+        if ((changes & 0x200U) != 0) {
+            const auto note = static_cast<std::int16_t>(s16(u16(driver, record + 0x6a)) +
+                                                        s16(u16(driver, record + 0xd0)) +
+                                                        s16(u16(driver, sequence + 0x7e)));
+            put16(driver, record + 0x44,
+                  static_cast<std::uint32_t>(note_pitch(driver, note)) & 0x3fffU);
+            put16(driver, record + 0x36, u16(driver, record + 0x36) | 4U);
+        }
+        if ((changes & 1U) != 0 && (u16(driver, record) & 0x20U) == 0)
+            key_on_voice(driver, record + 0x30, u8(driver, record + 0x27));
+        if ((changes & 2U) != 0)
+            request_release(driver, record + 0x30, u8(driver, record + 0x27));
+        put16(driver, record + 2, 0);
+    }
 }
 
 } // namespace xem::reconstruction::resident

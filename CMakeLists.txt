@@ -44,6 +44,8 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/menu_save.cpp
   src/reconstruction/resident_heap.cpp
   src/reconstruction/sound_driver.cpp
+  src/reconstruction/media.cpp
+  src/reconstruction/field_movie.cpp
   src/reconstruction/field_gte.cpp
   src/reconstruction/disc_stream.cpp
   src/reconstruction/disc_read.cpp)
@@ -131,6 +133,12 @@ if(BUILD_TESTING)
   add_executable(test-sound-driver tests/test_sound_driver.cpp)
   target_link_libraries(test-sound-driver PRIVATE xem-reconstruction)
   add_test(NAME sound-driver-reconstruction COMMAND test-sound-driver)
+  add_executable(test-sound-output tests/test_sound_output.cpp)
+  target_link_libraries(test-sound-output PRIVATE xem-reconstruction)
+  add_test(NAME sound-output-reconstruction COMMAND test-sound-output)
+  add_executable(test-field-movie tests/test_field_movie.cpp)
+  target_link_libraries(test-field-movie PRIVATE xem-reconstruction)
+  add_test(NAME field-movie-reconstruction COMMAND test-field-movie)
   add_executable(test-field-script tests/test_field_script.cpp)
   target_link_libraries(test-field-script PRIVATE xem-reconstruction)
   add_test(NAME field-script-reconstruction COMMAND test-field-script)

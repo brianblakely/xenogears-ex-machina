@@ -429,37 +429,7 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
             break;
         case 0xfe:
             field::run_extended_event(context, [&](auto &active, auto extended) {
-                auto extended_point = point;
-                extended_point.event_opcode = static_cast<std::uint16_t>(0xfe00U | extended);
-                observed(observe, *this, extended_point, false);
-                if (extended == 0x7f)
-                    field::wait_battle_request_extended(active, resident.battle_request);
-                else if (extended == 0xa2)
-                    field::execute_music_extended_event(active, extended, resident.music);
-                else if (extended == 0x24)
-                    script(active, [&](auto &world) { party_gather(world); });
-                else if (extended == 0x62 || extended == 0x63) // 8008f444, 8008f4a0
-                    script(active, [&](field::FieldWorld &world) {
-                        auto &self = world.actors[world.current].actor;
-                        const auto channel = field::read_immediate15_or_variable(world, 3);
-                        const auto value = field::read_immediate15_or_variable(world, 1);
-                        resident::set_effect_pair(
-                            resident.sound, static_cast<std::uint32_t>(channel) << 1,
-                            extended == 0x62 ? 0x76U : 0x74U, static_cast<std::uint32_t>(value));
-                        put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
-                    });
-                else if (extended == 0x65) // 8008f4fc
-                    script(active, [&](field::FieldWorld &world) {
-                        auto &self = world.actors[world.current].actor;
-                        const auto id = field::read_immediate15_or_variable(world, 1);
-                        const auto channel = field::read_immediate15_or_variable(world, 3);
-                        play_sound_effect(static_cast<std::uint32_t>(id),
-                                          static_cast<std::uint32_t>(channel));
-                        put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
-                    });
-                else
-                    script(active,
-                           [&](auto &world) { field::execute_script_extended(world, extended); });
+                dispatch_extended(active, extended, point, observe);
             });
             break;
         case 0:
@@ -483,6 +453,45 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
     }
     commit();
     observed(observe, *this, point, true);
+}
+
+void Program::dispatch_extended(field::EventContext &active, std::uint8_t extended,
+                                SourcePoint point, const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    auto extended_point = point;
+    extended_point.event_opcode = static_cast<std::uint16_t>(0xfe00U | extended);
+    observed(observe, *this, extended_point, false);
+    if (extended == 0x7f)
+        field::wait_battle_request_extended(active, resident.battle_request);
+    else if (extended == 0xa2)
+        field::execute_music_extended_event(active, extended, resident.music);
+    else if (extended == 0x24)
+        script(active, [&](auto &world) { party_gather(world); });
+    else if (extended == 0x62 || extended == 0x63) // 8008f444, 8008f4a0
+        script(active, [&](field::FieldWorld &world) {
+            auto &self = world.actors[world.current].actor;
+            const auto channel = field::read_immediate15_or_variable(world, 3);
+            const auto value = field::read_immediate15_or_variable(world, 1);
+            resident::set_effect_pair(resident.sound, static_cast<std::uint32_t>(channel) << 1,
+                                      extended == 0x62 ? 0x76U : 0x74U,
+                                      static_cast<std::uint32_t>(value));
+            put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
+        });
+    else if (extended == 0x65) // 8008f4fc
+        script(active, [&](field::FieldWorld &world) {
+            auto &self = world.actors[world.current].actor;
+            const auto id = field::read_immediate15_or_variable(world, 1);
+            const auto channel = field::read_immediate15_or_variable(world, 3);
+            play_sound_effect(static_cast<std::uint32_t>(id), static_cast<std::uint32_t>(channel));
+            put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
+        });
+    else if (extended == 0x60) // 8008ec30
+        script(active, [&](field::FieldWorld &world) {
+            field::request_movie(world, state.movie, resident.battle_request.field_active,
+                                 state.single_actor_mode, state.disc_idle_known);
+        });
+    else
+        script(active, [&](auto &world) { field::execute_script_extended(world, extended); });
 }
 
 field::ScheduleResult Program::event_pass(const ProgramObserver &observe) {
@@ -555,6 +564,38 @@ field::BatchResult Program::event_batch(std::size_t index, std::int32_t limit,
         commit();
         throw;
     }
+}
+
+void Program::event_extended(std::size_t index, const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    auto &target = state.actors.at(index);
+    auto actor = target.events();
+    field::EventDescriptor descriptor{word(target.descriptor, 0x58), &actor};
+    field::EventContext context{state.event_package.program(),
+                                &resident.variables,
+                                state.event_control,
+                                state.pass,
+                                &actor,
+                                &descriptor,
+                                static_cast<std::int32_t>(index)};
+    const auto commit = [&] {
+        store_events(target, actor);
+        state.event_control = context.control;
+        state.pass = context.pass;
+    };
+    const auto extended = context.program.byte(actor.pc);
+    if (actor.pc == 0 || context.program.byte(actor.pc - 1U) != 0xfe)
+        throw field::FieldFormatError("An extended event needs its FE prefix before the PC");
+    const SourcePoint point{"event_instruction", 0x800a1ec8, index, actor.pc - 1U, {}, {},
+                            std::uint8_t{0xfe}};
+    try {
+        dispatch_extended(context, extended, point, observe);
+    } catch (...) {
+        commit();
+        throw;
+    }
+    commit();
+    observed(observe, *this, point, true);
 }
 namespace {
 // A battle computation over battle memory, with the resident game data
