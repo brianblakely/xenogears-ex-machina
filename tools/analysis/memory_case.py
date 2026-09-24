@@ -21,6 +21,7 @@ from pathlib import Path
 from tools.analysis.field import field_components
 from tools.analysis.packed import decode_block
 from tools.analysis.party_sprites import sprite_sources
+from tools.reference.host_slots import slot as host_slot
 from tools.reference.instruction_trace import SnapshotReader, snapshot_path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -226,7 +227,14 @@ FIELD_GEOMETRY = 0x800AFB14  # Component 2: models, including collision models.
 # (qualified by the EVID-REF-040 return case) and the primitive routine table
 # 8004fe50 of the model renderer, 17 rows of 28 bytes, which contains the two
 # sprite tables at 8004ff30 and 80050070.
-RESIDENT_TABLES = ((0x800B1F78, 256), (0x8004FD40, 12), (0x8004FE50, 17 * 0x28))
+RESIDENT_TABLES = (
+    (0x800B1F78, 256),
+    (0x8004FD40, 12),
+    (0x8004FE50, 17 * 0x28),
+    (0x8004FAB8, 0x20),  # sprite texture origins (8001d53c)
+    (0x8004FAF8, 0x10),  # sprite group masks (8001e3d8)
+    (0x800ADF04, 0x28),  # field overlay: dialogue prompt cursor frames (8007e1c0)
+)
 
 
 class Sources:
@@ -691,7 +699,9 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=60)
     parser.add_argument("--max-divergences", type=int, default=5)
     parser.add_argument("--report", type=Path)
-    return run(parser.parse_args())
+    args = parser.parse_args()
+    with host_slot("compare"):
+        return run(args)
 
 
 if __name__ == "__main__":

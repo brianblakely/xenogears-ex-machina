@@ -236,7 +236,8 @@ struct ResidentState {
     GpuLibrary gpu;
     std::uint32_t video_mode{};     // 80058990: GetVideoMode (1 PAL)
     std::uint32_t w_4f378{};        // 8004f378: nonzero hides the field compass
-    std::uint32_t w_4f380{};        // 8004f380: nonzero skips 8007520c
+    std::uint32_t w_4f37c{};        // 8004f37c: nonzero skips actor billboards
+    std::uint32_t w_4f380{};        // 8004f380: nonzero skips 8007520c and party models
     std::uint32_t timed_releases{}; // 80059fcc: blocks released after a frame countdown
     std::uint32_t sprite_buffer{};  // 800592f8: draw buffer of the sprite system
     std::array<std::uint32_t, 2> sprite_uploads{}; // 800594c4: pending uploads per buffer
@@ -278,6 +279,7 @@ struct FieldState {
     std::uint32_t snapshot_cursor{}; // 800afc50: 800a3c8c's pointer into the snapshot
     std::uint32_t sprite_bundle_address{};
     std::int16_t sprite_gate{}; // 800b218e
+    std::uint8_t b_b2357{};     // 800b2357: nonzero disables billboard fog
     std::uint32_t initialized_sprites{};
     std::uint32_t party_reassignment{}; // 800b2268
     std::vector<field::SpriteAllocation> resources;
@@ -523,16 +525,55 @@ class Program {
 
   private:
     // Field frame steps (field_frame.cpp).
-    void frame_emitters(std::uint32_t listener); // 80086590
-    void frame_fade();                           // 80071cb4
-    void frame_compass(FrameServices &services); // 80074108
-    void frame_models();                         // 800748e8
+    void frame_emitters(std::uint32_t listener);                                    // 80086590
+    void frame_fade();                                                              // 80071cb4
+    void frame_compass(FrameServices &services);                                    // 80074108
+    void frame_models();                                                            // 800748e8
+    void frame_characters(FrameServices &services, const ProgramObserver &observe); // 800752c8
+    void sprite_buffer_begin(std::uint32_t buffer);                                 // 800250e0
+    void sprite_frames();                                                           // 8001d468
+    void build_sprite_frame(std::uint32_t sprite, std::uint32_t frame);             // 8001dae8
+    void build_sprite_cell_frame(std::uint32_t sprite, std::uint32_t frame);        // 8001d53c
+    [[nodiscard]] std::uint32_t sprite_part_controls(std::uint32_t sprite, std::uint32_t part,
+                                                     std::uint32_t stream, std::uint32_t &group);
+    [[nodiscard]] std::uint32_t sprite_part_offsets(std::uint32_t part, std::uint32_t stream,
+                                                    bool wide);
+    void sprite_frame_scale(std::uint32_t sprite, std::uint32_t record);
+    void sprite_upload(std::uint32_t source, std::int32_t x, std::int32_t y, std::uint32_t width,
+                       std::uint32_t height);         // 800251c8
+    void sprite_pending_tasks();                      // 8001c9f8
+    void draw_task_model(std::uint32_t node);         // 80025718
+    void refresh_sprite_matrix(std::uint32_t sprite); // 80022038
+    void frame_billboards(std::uint32_t table);       // 80075b44
+    void sprite_color(std::uint32_t sprite, std::uint32_t red, std::uint32_t green,
+                      std::uint32_t blue);                                     // 80021b98
+    void sprite_recolor_parts(std::uint32_t sprite);                           // 8001f6b0
+    void sprite_billboard(std::uint32_t sprite, std::uint32_t slot);           // 8001e298
+    void place_sprite(std::uint32_t sprite);                                   // 8001e148
+    void emit_sprite_parts(std::uint32_t sprite, std::uint32_t slot);          // 8001e3d8
+    [[nodiscard]] std::int32_t rot_trans_pers(const field::GteVector &vector); // 8004a64c
+    // Sprite sources over the owned field state; `actor` lends that actor
+    // to sprite callbacks that select it.
+    void with_sprite_sources(const std::function<void(const field::SpriteSources &)> &call,
+                             std::optional<std::uint32_t> actor = {});
+    [[nodiscard]] field::GteMatrix memory_matrix(std::uint32_t address) const;
+    void set_memory_matrix(std::uint32_t address, const field::GteMatrix &m);
+    // Owned record bytes (actor records, descriptors and sprites, and sprite
+    // task blocks) at an original address: `record_block` spans to the end
+    // of the owning record.
+    [[nodiscard]] std::span<std::uint8_t> record_block(std::uint32_t address) const;
+    [[nodiscard]] std::span<std::uint8_t> record_bytes(std::uint32_t address,
+                                                       std::size_t width) const;
     [[nodiscard]] std::span<std::uint8_t> descriptor_bytes(std::size_t index);
     [[nodiscard]] bool model_culled(std::uint32_t instance); // 800aaa74
     void draw_model(std::uint32_t model, std::uint32_t packets, std::uint32_t table,
                     std::int32_t mode); // 8002c700
     void draw_primitives(std::uint32_t routine, std::uint32_t record, std::int32_t count);
     // Field 8007ab6c/8007ac58: one compass quad (a letter when `label`).
+    [[nodiscard]] std::uint32_t rot_average4(std::uint32_t record,
+                                             std::uint32_t packet);           // 8004a7bc
+    [[nodiscard]] field::GteLong vector_normal(const field::GteLong &vector); // 80048d7c
+    void frame_shadows(std::uint32_t table, std::uint32_t buffer);            // 800764b4
     void compass_quad(std::uint32_t table, std::uint32_t record, const field::GteMatrix &m,
                       bool label);
     [[nodiscard]] std::uint16_t overlay_half(std::uint32_t address) const;
@@ -546,6 +587,19 @@ class Program {
     void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);
     void frame_dialogue_timers();             // 800805f4
     void frame_dialogue(std::uint32_t table); // 8008004c
+    void draw_dialogue_window(std::uint32_t table, std::uint32_t w, bool first);
+    void draw_dialogue_text(std::uint32_t window, std::uint32_t table,
+                            std::uint32_t buffer); // 80034888
+    void draw_dialogue_frame(std::uint32_t table, std::uint32_t buffer,
+                             std::uint32_t w); // 8007e1c0
+    void dialogue_quad(std::uint32_t packet, std::int32_t x, std::int32_t y, std::int32_t w,
+                       std::int32_t h, bool mirror);                    // 8007e16c
+    void dialogue_choice(std::uint32_t w);                              // 8007dcf8
+    [[nodiscard]] std::uint32_t dialogue_waiting(std::uint32_t window); // 80033cd0
+    [[nodiscard]] std::int32_t dialogue_line_y(std::uint32_t window);   // 800347c0
+    void link_text_packet(std::uint32_t table, std::uint32_t packet);   // 80031798
+    void set_draw_mode(std::uint32_t packet, std::uint32_t tpage,
+                       const std::array<std::int16_t, 4> &area); // 800454dc
     // Resident libgpu calls on their immediate path (gpu_calls.cpp).
     void gpu_alarm(FrameServices &services);       // 80046efc
     void gpu_check_rect(std::uint32_t rect) const; // 8004463c

@@ -90,11 +90,48 @@ std::uint32_t ram_address(std::uint32_t address) {
     return 0x80000000U | (address & 0x1fffffU);
 }
 
+std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
+    const auto from = [&](std::uint32_t base, const std::vector<std::uint8_t> &bytes) {
+        auto &owned = const_cast<std::vector<std::uint8_t> &>(bytes);
+        return address >= base && address - base < owned.size()
+                   ? std::span(owned).subspan(address - base)
+                   : std::span<std::uint8_t>{};
+    };
+    const auto array = [&](std::uint32_t base, const auto &bytes) {
+        auto &owned = const_cast<std::remove_cvref_t<decltype(bytes)> &>(bytes);
+        return address >= base && address - base < owned.size()
+                   ? std::span<std::uint8_t>(owned).subspan(address - base)
+                   : std::span<std::uint8_t>{};
+    };
+    if (field)
+        for (const auto &actor : field->actors) {
+            if (const auto bytes = from(actor.sprite.sprite.address, actor.sprite.sprite.bytes);
+                !bytes.empty())
+                return bytes;
+            if (const auto bytes = array(actor.address, actor.storage); !bytes.empty())
+                return bytes;
+            if (const auto bytes = array(actor.descriptor_address, actor.descriptor);
+                !bytes.empty())
+                return bytes;
+        }
+    for (const auto &node : resident.sprite_tasks.nodes)
+        if (const auto bytes = from(node.address, node.bytes); !bytes.empty())
+            return bytes;
+    return {};
+}
+
+std::span<std::uint8_t> Program::record_bytes(std::uint32_t address, std::size_t width) const {
+    const auto bytes = record_block(address);
+    return bytes.size() >= width ? bytes.first(width) : std::span<std::uint8_t>{};
+}
+
 std::uint32_t Program::memory(std::uint32_t address, std::size_t width) const {
     address = ram_address(address);
     if (field && field->regions.contains(address, width))
         return field->regions.word(address, width);
     if (const auto bytes = resource_bytes(address, width); !bytes.empty())
+        return word(bytes, 0, width);
+    if (const auto bytes = record_bytes(address, width); !bytes.empty())
         return word(bytes, 0, width);
     std::array<std::uint8_t, 4> bytes{};
     read_original(*this, address, std::span(bytes).first(width));
@@ -111,9 +148,35 @@ void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t
         put(bytes, 0, value, width);
         return;
     }
+    if (const auto bytes = record_bytes(address, width); !bytes.empty()) {
+        put(bytes, 0, value, width);
+        return;
+    }
     std::array<std::uint8_t, 4> bytes{};
     put(bytes, 0, value, width);
     write_original(*this, address, std::span(bytes).first(width));
+}
+
+// RotAverage4 (8004a7bc): the four SVECTOR corners at `record` projected
+// into the packet's vertices (RTPT on three, RTPS on the fourth); returns
+// the average depth OTZ.
+std::uint32_t Program::rot_average4(std::uint32_t record, std::uint32_t packet) {
+    auto &gte = resident.gte;
+    const auto vector = [&](std::uint32_t at) {
+        return field::GteVector{static_cast<std::int16_t>(s16(memory(at, 2))),
+                                static_cast<std::int16_t>(s16(memory(at + 2, 2))),
+                                static_cast<std::int16_t>(s16(memory(at + 4, 2)))};
+    };
+    for (std::uint32_t i = 0; i < 3; ++i)
+        gte.set_vector(i, vector(record + i * 8));
+    gte.rtpt();
+    for (std::uint32_t i = 0; i < 3; ++i)
+        set_memory(packet + 8 + i * 8, gte.sxy(i));
+    gte.set_vector(0, vector(record + 0x18));
+    gte.rtps();
+    set_memory(packet + 0x20, gte.sxy(2));
+    gte.avsz4();
+    return gte.otz();
 }
 
 // AddPrims (80043b84): link the packet list p0..p1 at the head of `table`.
@@ -279,21 +342,7 @@ void Program::compass_quad(std::uint32_t table, std::uint32_t record, const fiel
     const auto packet = record + 0x20 + field->draw_buffer * 0x28;
     field::push_matrix(resident.matrix_stack, gte.transform);
     gte.transform = m; // SetRotMatrix and SetTransMatrix
-    // RotAverage4 (8004a7bc): RTPT on three corners, RTPS on the fourth.
-    const auto vector = [&](std::uint32_t at) {
-        return field::GteVector{static_cast<std::int16_t>(s16(memory(at, 2))),
-                                static_cast<std::int16_t>(s16(memory(at + 2, 2))),
-                                static_cast<std::int16_t>(s16(memory(at + 4, 2)))};
-    };
-    for (std::uint32_t i = 0; i < 3; ++i)
-        gte.set_vector(i, vector(record + i * 8));
-    gte.rtpt();
-    for (std::uint32_t i = 0; i < 3; ++i)
-        set_memory(packet + 8 + i * 8, gte.sxy(i));
-    gte.set_vector(0, vector(record + 0x18));
-    gte.rtps();
-    set_memory(packet + 0x20, gte.sxy(2));
-    gte.avsz4();
+    static_cast<void>(rot_average4(record, packet));
     if (label) {
         // 8007ac58: a 16-pixel-wide letter centred on the lower edge.
         const auto sum = s16(memory(packet + 0x20, 2)) + s16(memory(packet + 0x18, 2));
@@ -398,69 +447,6 @@ void Program::frame_compass(FrameServices &services) {
     gte.screen.h = static_cast<std::uint16_t>(c.projection);
 }
 
-// Field 800805f4: per dialogue window, close it (8007f6f8) when its hold
-// timer (+3f0) ran out without a keep flag, or once it was cleared, then
-// count the timer down.
-void Program::frame_dialogue_timers() {
-    auto &state = *field;
-    for (std::size_t w = 0; w < state.dialogue.size(); ++w) {
-        auto &window = state.dialogue[w];
-        if (window.half(field::DialogueWindow::busy) != 0)
-            continue;
-        const bool expired = window.half(0x3f0) == 0 && (window.half(0x10) & 4) == 0;
-        if (expired || window.half(field::DialogueWindow::cleared) == 0)
-            throw MissingDependency({"field_frame_dialogue_timers", 0x8007f6f8, w, {}},
-                                    "symbol:dialogue-window-close", false,
-                                    "Closing a dialogue window from the frame is not recovered");
-        if (const auto hold = window.half(0x3f0); hold != 0)
-            window.set_half(0x3f0, static_cast<std::uint16_t>(hold - 1));
-    }
-}
-
-// Field 8008004c: the cursor animation counters, then every displayed window
-// (+3fa set) is drawn in its order (+3f8), then the order is renumbered and
-// the frame's text draw mode is linked into `table`.
-void Program::frame_dialogue(std::uint32_t table) {
-    auto &state = *field;
-    ++state.dialogue_ticks;
-    if ((state.dialogue_ticks & 3U) == 0)
-        ++state.dialogue_cursor;
-    if (s32(state.dialogue_cursor) > 4)
-        state.dialogue_cursor = 0;
-    const auto draw = [&](std::size_t w) {
-        throw MissingDependency({"field_frame_dialogue", 0x8008004c, w, {}},
-                                "symbol:dialogue-window-draw", false,
-                                "Drawing dialogue windows is not recovered");
-    };
-    // The last window with +3fa set is drawn first, the others by rank.
-    std::size_t selected = 0xff;
-    for (std::size_t w = 0; w < state.dialogue.size(); ++w)
-        if (state.dialogue[w].half(0x3fa) != 0)
-            selected = w;
-    for (std::size_t w = 0; w < state.dialogue.size(); ++w) {
-        const auto &window = state.dialogue[w];
-        if (window.half(field::DialogueWindow::busy) == 0 && window.half(0x3fa) != 0)
-            draw(w);
-    }
-    std::array<std::uint32_t, 4> order{0xffff, 0xffff, 0xffff, 0xffff};
-    std::uint32_t next = 0;
-    for (std::uint32_t rank = 0; rank < 4; ++rank)
-        for (std::size_t w = 0; w < state.dialogue.size(); ++w) {
-            const auto &window = state.dialogue[w];
-            const auto current = static_cast<std::uint16_t>(window.half(0x3f8));
-            if (current == rank) {
-                order[w] = next++;
-                if (window.half(field::DialogueWindow::busy) == 0 && w != selected)
-                    draw(w);
-            }
-            if (current == 0xffff)
-                order[w] = 0xffff;
-        }
-    for (std::size_t w = 0; w < state.dialogue.size(); ++w)
-        state.dialogue[w].set_half(0x3f8, static_cast<std::uint16_t>(order[w]));
-    add_primitive(table, 0x800b1df4 + state.draw_buffer * 0xc0);
-}
-
 // Field 8007554c, resumable at `from` (the call the frame makes next).
 void Program::field_frame(FrameServices &services, const ProgramObserver &observe, FrameStep from) {
     auto &state = loaded(*this);
@@ -503,8 +489,8 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
         done("field_frame_models", 0x800748e8);
         [[fallthrough]];
     case FrameStep::characters:
-        unrecovered("field_frame_characters", 0x800752c8, "symbol:field-frame-characters",
-                    "The character pass of 800752c8 is not connected");
+        frame_characters(services, observe);
+        done("field_frame_characters", 0x800752c8);
         [[fallthrough]];
     case FrameStep::particles:
         // 800a9688: particle emitters of the 64 slots (800b14b0).

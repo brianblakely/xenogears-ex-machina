@@ -498,6 +498,7 @@ std::vector<OriginalGlobal> build() {
             [i](Program &p) -> auto & { return f(p).pending_load_rect[i]; });
     add("w_adb4c", 0x800adb4c, 4, [](Program &p) -> auto & { return f(p).w_adb4c; });
     add("ot_depth", 0x800b21d4, 2, [](Program &p) -> auto & { return f(p).ot_depth; });
+    add_resident("w_4f37c", 0x8004f37c, 4, [](Program &p) -> auto & { return p.resident.w_4f37c; });
     add_resident("w_4f380", 0x8004f380, 4, [](Program &p) -> auto & { return p.resident.w_4f380; });
     add_resident("timed_releases", 0x80059fcc, 4,
                  [](Program &p) -> auto & { return p.resident.timed_releases; });
@@ -809,6 +810,7 @@ std::vector<OriginalGlobal> build() {
     add_resident("heap_last_caller", 0x80059340, 4,
                  [](Program &p) -> auto & { return p.resident.heap.last_caller; });
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
+    add("b_b2357", 0x800b2357, 1, [](Program &p) -> auto & { return f(p).b_b2357; });
     add("party_reassignment", 0x800b2268, 4,
         [](Program &p) -> auto & { return f(p).party_reassignment; });
     // Remaining bytes of the regions a field-return snapshot copies.

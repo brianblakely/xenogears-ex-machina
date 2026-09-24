@@ -189,9 +189,11 @@ src/reconstruction/disc_read.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
+src/reconstruction/field_characters.cpp
 src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp
 src/reconstruction/field_dialogue.cpp
+src/reconstruction/field_dialogue_draw.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_frame.cpp
 src/reconstruction/field_gte.cpp

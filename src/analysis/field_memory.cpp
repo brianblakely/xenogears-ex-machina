@@ -395,6 +395,48 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
                 }
             }
         }
+    // Each actor's ground shadow (descriptor +8): four corners and a packet
+    // per draw buffer (800764b4).
+    for (const auto &actor : state.actors)
+        if (const auto shadow = memory.word(actor.descriptor_address + 8); shadow != 0)
+            state.regions.add("shadow", shadow, copy_of(memory.range(shadow, 0x20 + 2 * 0x28)));
+    // Each sprite's parts (renderer +30), the heap block its frames are
+    // built into (8001dae8).
+    std::vector<std::uint32_t> sprites;
+    for (const auto &actor : state.actors)
+        if (actor.sprite.sprite.address != 0)
+            sprites.push_back(actor.sprite.sprite.address);
+    for (auto head : {tasks.head, tasks.pending_head})
+        for (auto node = head; node != 0; node = memory.word(node + 0x18))
+            sprites.push_back(memory.word(node + 4));
+    // The heap block holding `address`, unless already owned.
+    const auto own_block = [&](const char *name, std::uint32_t address) {
+        if (address == 0 || state.regions.contains(address, 1))
+            return;
+        const auto owned = std::ranges::any_of(tasks.nodes, [&](const auto &block) {
+            return address >= block.address && address - block.address < block.bytes.size();
+        });
+        if (owned)
+            return;
+        const auto block = std::ranges::find_if(resident.heap.headers, [&](const auto &entry) {
+            return address >= entry.first + 8 && address < entry.second[0] - 8;
+        });
+        if (block == resident.heap.headers.end())
+            throw field::FieldFormatError("Owned heap record is outside the heap");
+        const auto at = block->first + 8;
+        state.regions.add(name, at, copy_of(memory.range(at, block->second[0] - 8 - at)));
+    };
+    for (const auto sprite : sprites)
+        own_block("sprite_parts", memory.word(memory.word(sprite + 0x20) + 0x30));
+    // The first window's packet list per buffer precedes the windows
+    // (800c2698, 8008004c); later windows' lists end the window before.
+    state.regions.add("dialogue_lists", field::DialogueWindow::base - 0x18,
+                      copy_of(memory.range(field::DialogueWindow::base - 0x18, 0x18)));
+    // The text line records (+28) of each dialogue window in use (80034888).
+    for (std::uint32_t w = 0; w < state.dialogue.size(); ++w)
+        if (state.dialogue[w].half(field::DialogueWindow::busy) == 0)
+            own_block("dialogue_lines", memory.word(field::DialogueWindow::base +
+                                                    w * field::DialogueWindow::stride + 0x28));
     return program;
 }
 
