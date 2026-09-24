@@ -241,7 +241,7 @@ void move_phase_camera_and_facing() {
     state.camera.heading_blocks = {1, 2};
     state.heading_octants[0] = 1; // Octant 0 blocked for mask 1: turn right.
     const field::GteMatrix entry{{1, 2, 3, 4, 5, 6, 7, 8, 9}, {10, 11, 12}};
-    program.resident.gte = entry;
+    program.resident.gte.transform = entry;
     program.field_move();
     check(get(a, 0x108, 2) == 0x180, "80073930 turns facing by speed without passing the target");
     check(state.camera.heading == 0x200 && state.camera.heading_steps == 7 &&
@@ -252,8 +252,8 @@ void move_phase_camera_and_facing() {
           "Mode 0 settles follow divisors");
     check(state.camera.target[1] == -0x40000 && state.camera.eye[1] == -0x40000,
           "Follow divides the goal distance by the divisor");
-    check(program.resident.gte.r == state.camera.scaled_world.r &&
-              program.resident.gte.t == state.camera.scaled_world.t,
+    check(program.resident.gte.transform.r == state.camera.scaled_world.r &&
+              program.resident.gte.transform.t == state.camera.scaled_world.t,
           "The scaled world matrix is left loaded");
     const auto words = field::gte_words(entry);
     check(program.resident.matrix_stack.depth == 0 &&

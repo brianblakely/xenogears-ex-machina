@@ -277,13 +277,13 @@ void camera_and_fade() {
     check(f.pc() == 0, "A busy camera mode retries");
     f.fade.mode = 2;
     f.run({0xb4, 0x10, 0x80});
-    check(f.pc() == 3 && f.fade.started == 1 && f.fade.words[3] == 0xff00 / 16 &&
-              f.fade.halves == std::array<std::uint16_t, 3>{2, 1, 16},
+    check(f.pc() == 3 && f.fade.started == 1 && f.fade.channels[0].words[3] == 0xff00 / 16 &&
+              f.fade.channels[0].halves == std::array<std::uint16_t, 3>{2, 1, 16},
           "Fade-in starts once with its rate");
     f.run({0xb3, 0x08, 0x80});
-    check(f.fade.started == 0 && f.fade.words[0] == 0xff00 &&
-              f.fade.words[3] == static_cast<std::uint32_t>(-0x10000 / 8) &&
-              f.fade.packets[7] == 0x62 && f.fade.packets[16 + 7] == 0x62,
+    check(f.fade.started == 0 && f.fade.channels[0].words[0] == 0xff00 &&
+              f.fade.channels[0].words[3] == static_cast<std::uint32_t>(-0x10000 / 8) &&
+              f.fade.channels[0].packets[7] == 0x62 && f.fade.channels[0].packets[16 + 7] == 0x62,
           "Fade-out prepares a semi-transparent tile in both buffers");
     f.run({0xb3, 0x00, 0x80});
     check(f.pc() == 3, "A repeated fade-out after the latch clears only prepares the tile");

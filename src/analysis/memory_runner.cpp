@@ -79,9 +79,9 @@ int main(int argc, char **argv) {
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
     try {
-        if (argc != 12)
+        if (argc != 13)
             throw InputError("Usage: xem-memory-runner ENTRY BUDGET STOP RAM SCRATCHPAD "
-                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO");
+                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO SERVICES");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
         const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
@@ -92,7 +92,8 @@ int main(int argc, char **argv) {
                                   entry == "battle_atb" || entry == "battle_reload" ||
                                   entry == "battle_ai";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && !resident_entry && !battle_entry)
+            entry != "field_checkpoints" && entry != "field_frame" && !resident_entry &&
+            !battle_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -141,19 +142,50 @@ int main(int argc, char **argv) {
             program = analysis::import_field(memory, read_file(argv[6], analysis::ram_bytes),
                                              read_file(argv[7], analysis::ram_bytes), resources);
         }
-        // The 32 GTE control registers at entry.
-        const auto gte = hex_words(argv[9], 32, "GTE must be 32 comma-separated hex words");
-        std::array<std::uint32_t, 8> loaded{};
-        std::ranges::copy_n(gte.begin(), 8, loaded.begin());
-        program->resident.gte = game::field::gte_from_words(loaded);
+        // The 64 GTE registers at entry: data 0-31, then control 0-31. SXYP,
+        // IRGB/ORGB and LZCR mirror other registers and are not written.
+        const auto gte = hex_words(argv[9], 64, "GTE must be 64 comma-separated hex words");
+        for (std::uint32_t i = 0; i < 32; ++i)
+            if (i != 15 && i != 28 && i != 29 && i != 31)
+                program->resident.gte.set_data(i, gte[i]);
+        for (std::uint32_t i = 0; i < 32; ++i)
+            program->resident.gte.set_control(i, gte[32 + i]);
         // The hardware I/O page observed at entry (1f801000..1f801fff).
         const auto io = read_file(argv[11], program->resident.io.size());
         if (io.size() != program->resident.io.size())
             throw InputError("IO page must contain exactly 4 KiB");
         std::ranges::copy(io, program->resident.io.begin());
-        program->resident.gte_screen = {static_cast<std::int32_t>(gte[24]),
-                                        static_cast<std::int32_t>(gte[25]),
-                                        static_cast<std::uint16_t>(gte[26])};
+        // Platform results for a field frame, one "name value..." per line
+        // (hexadecimal), in the order the original consumed them.
+        game::FrameServices services;
+        {
+            std::ifstream lines(argv[12]);
+            if (!lines)
+                throw InputError("Cannot open services");
+            for (std::string line; std::getline(lines, line);) {
+                std::istringstream fields(line);
+                std::string name;
+                std::uint32_t first = 0, second = 0;
+                if (!(fields >> name >> std::hex >> first))
+                    throw InputError("Malformed service line");
+                if (name == "hblank")
+                    services.hblank_counts.push_back(first);
+                else if (name == "vblank_wait" && fields >> std::hex >> second)
+                    services.vblank_waits.push_back({first, second});
+                else if (name == "vblank")
+                    services.vblank_counts.push_back(first);
+                else if (name == "alarm_polls")
+                    services.alarm_polls.push_back(first);
+                else if (name == "gpu_status")
+                    services.gpu_status.push_back(first);
+                else if (name == "dma_busy")
+                    services.dma_busy.push_back(first);
+                else if (name == "interrupt_mask")
+                    services.interrupt_masks.push_back(first);
+                else
+                    throw InputError("Unknown service result " + name);
+            }
+        }
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -175,6 +207,8 @@ int main(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_update") {
             program->field_update(observer);
+        } else if (entry == "field_frame") {
+            program->field_frame(services, observer);
         } else if (entry == "field_checkpoints") {
             program->checkpoint_pass(observer);
         } else if (entry == "heap_allocate") {
@@ -298,6 +332,9 @@ int main(int argc, char **argv) {
     } catch (const InputError &error) {
         status = "invalid_input";
         reason = error.what();
+    } catch (const game::ServiceUnavailable &error) {
+        status = "invalid_input";
+        reason = std::string("Service result not supplied: ") + error.what();
     } catch (const std::exception &error) {
         status = executing ? "reconstruction_error" : "invalid_input";
         reason = error.what();
@@ -347,16 +384,10 @@ int main(int argc, char **argv) {
     std::cout << "},\"return_value\":";
     optional(std::cout, return_value);
     std::cout << ",\"gte\":[";
-    if (program && !owned.str().empty()) {
-        const auto gte = game::field::gte_words(program->resident.gte);
-        const auto &screen = program->resident.gte_screen;
-        for (std::size_t i = 0; i < gte.size(); ++i)
-            std::cout << (i ? "," : "") << gte[i];
-        std::cout << ',' << static_cast<std::uint32_t>(screen.offset_x) << ','
-                  << static_cast<std::uint32_t>(screen.offset_y) << ','
-                  << static_cast<std::uint32_t>(
-                         static_cast<std::int32_t>(static_cast<std::int16_t>(screen.h)));
-    }
+    // GTE control registers 0-30 at exit (FLAG is transient).
+    if (program && !owned.str().empty())
+        for (std::uint32_t i = 0; i < 31; ++i)
+            std::cout << (i ? "," : "") << program->resident.gte.control(i);
     std::cout << "],\"owned\":[" << owned.str() << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
 }

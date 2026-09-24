@@ -68,6 +68,9 @@ struct GteScreen {
     std::uint16_t h{};       // H: projection plane distance
     bool operator==(const GteScreen &) const = default;
 };
+// GTE unsigned division H / SZ3 by table-seeded Newton-Raphson; 1ffff when
+// H >= 2 * SZ3 (the divide-overflow case).
+[[nodiscard]] std::uint32_t gte_divide(std::uint32_t h, std::uint32_t sz3);
 // 8004a64c RotTransPers with loaded R/T: GTE RTPS (sf=1, lm=0), returning the
 // saturated screen X/Y (SXY2). The perspective quotient uses the hardware's
 // reciprocal-table division.

@@ -8,9 +8,12 @@
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
+#include "xem/reconstruction/gpu.hpp"
+#include "xem/reconstruction/gte.hpp"
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
+#include <deque>
 #include <map>
 #include <memory>
 #include <optional>
@@ -153,6 +156,35 @@ struct HardwareWrite {
     bool operator==(const HardwareWrite &) const = default;
 };
 
+// Platform results one field frame (8007554c) consumes, in call order. The
+// analysis host supplies the values observed at the original service returns;
+// a native host supplies its own platform's. A missing value stops the frame.
+struct FrameServices {
+    // VSync(1): horizontal blanks counted since the last VSync(0).
+    std::deque<std::uint32_t> hblank_counts;
+    // VSync(0) on return: root counter 1 (80057844) and the vertical-blank
+    // counter (80057848).
+    std::deque<std::array<std::uint32_t, 2>> vblank_waits;
+    // VSync(-1) read by each libgpu alarm (80046efc).
+    std::deque<std::uint32_t> vblank_counts;
+    // libgpu alarm polls counted while DrawSync or LoadImage waited (800569ec).
+    std::deque<std::uint32_t> alarm_polls;
+    // GPUSTAT as read by ClearImage's packet builder (80045e44).
+    std::deque<std::uint32_t> gpu_status;
+    // DMA channel 2 busy bit as read by libgpu's command queue (80046758).
+    std::deque<std::uint32_t> dma_busy;
+    // SetIntrMask(0) results: the interrupt mask replaced around a call.
+    std::deque<std::uint32_t> interrupt_masks;
+};
+
+// A platform result the host did not supply: invalid input, not a game result.
+class ServiceUnavailable : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+// Consumes the next result of one service queue.
+std::uint32_t take_service(std::deque<std::uint32_t> &results, const char *what);
+
 struct ResidentState {
     field::EventVariables variables;
     std::uint32_t random_seed{};
@@ -182,11 +214,10 @@ struct ResidentState {
     std::vector<std::uint32_t> party_sprite_resources;
     field::MathTables math;
     InputQueue input_queue;
-    // Loaded GTE rotation/translation (control registers 0-7). Machine state
-    // that survives calls: PushMatrix stores it to memory.
-    field::GteMatrix gte{};
-    field::GteScreen gte_screen{}; // GTE OFX/OFY/H (control 24-26)
-    std::uint8_t gpu_type{};       // 800568d0: libgpu draw-mode encoding
+    // Geometry coprocessor registers: machine state that survives calls
+    // (PushMatrix stores the loaded matrix to memory).
+    Gte gte{};
+    std::uint8_t gpu_type{}; // 800568d0: libgpu draw-mode encoding
     // Hardware I/O registers (1f801000..1f801fff) as observed; a platform input
     // that recovered code reads, never original RAM.
     std::array<std::uint8_t, 0x1000> io{};
@@ -198,12 +229,17 @@ struct ResidentState {
     CdState cd;
     std::vector<HardwareWrite> hardware_writes; // In program order
     std::uint32_t vsync_counter{};              // 80058960: VSync(-1)
-    std::uint32_t cd_sync_deadline{};           // 8005a228
-    std::uint32_t cd_sync_polls{};              // 8005a22c
-    std::uint32_t cd_sync_label{};              // 8005a230: diagnostic string for a timeout
-    std::uint32_t cd_dma_register{};            // 800567b4: address of DMA3 CHCR
-    std::array<std::uint16_t, 2> text_cluts{};  // 800595d4 (even rows), 80059414 (odd rows)
-    field::MatrixStack matrix_stack{};          // 80056d2c depth, 80056d30 records
+    std::uint32_t vsync_hcount{};               // 80057844: root counter 1 at the last VSync(0)
+    std::uint32_t vsync_previous{};             // 80057848: vertical blanks at the last VSync(0)
+    GpuLibrary gpu;
+    std::uint32_t video_mode{};                // 80058990: GetVideoMode (1 PAL)
+    std::uint32_t w_4f378{};                   // 8004f378: nonzero hides the field compass
+    std::uint32_t cd_sync_deadline{};          // 8005a228
+    std::uint32_t cd_sync_polls{};             // 8005a22c
+    std::uint32_t cd_sync_label{};             // 8005a230: diagnostic string for a timeout
+    std::uint32_t cd_dma_register{};           // 800567b4: address of DMA3 CHCR
+    std::array<std::uint16_t, 2> text_cluts{}; // 800595d4 (even rows), 80059414 (odd rows)
+    field::MatrixStack matrix_stack{};         // 80056d2c depth, 80056d30 records
 };
 
 struct FieldState {
@@ -299,6 +335,25 @@ struct FieldState {
     std::int16_t text_speed{};                    // 800b21d6: window slide steps
     std::uint32_t dialogue_gate_afd04{};          // 800afd04: nonzero defers FC
     std::uint32_t disc_idle_known{};              // 800adb70: zero requires a disc query
+    // Field frame 8007554c.
+    std::uint32_t frame_start_hcount{}; // 800adb9c: VSync(1) at frame start
+    std::uint32_t frame_drawn_hcount{}; // 800adba0: VSync(1) after drawing
+    std::uint32_t draw_buffer{};        // 800adb08: index of the buffer being built
+    std::uint32_t draw_block{};         // 800c426c: its 80f4-byte block (800b249c + 80f4 * index)
+    // Positional sound emitters (800afe88): actor, effect id and a word each.
+    std::array<std::array<std::uint16_t, 3>, 3> emitters{};
+    std::int16_t emitter_source{}; // 800b22e0: listener (0 controlled actor, 1 eye, 2 target)
+    std::array<std::array<std::int16_t, 4>, 2> fade_windows{}; // 800afe3c: fade texture windows
+    // Compass (80074108).
+    std::array<std::uint16_t, 16> compass_colors{};     // 800afc08
+    std::array<std::uint16_t, 128> compass_palette{};   // 800afd24: 8 rows, dark when blocked
+    std::array<std::int16_t, 4> compass_palette_rect{}; // 800b004c: its VRAM rectangle
+    std::int16_t compass_heading{};                     // 800adb48
+    std::int16_t compass_target{};                      // 800adb4a
+    field::GteMatrix matrix_afa84{}; // 800afa84: compass base times the camera rotation
+    // Packet memory: both draw buffer blocks (800b249c) and the packet
+    // buffers the frame's drawing code fills.
+    PacketMemory packets;
 };
 
 class Program;
@@ -346,6 +401,10 @@ class Program {
     // Field overlay 800739c0: the field update, then camera, view matrices,
     // actor facing and sprite orientation.
     void field_move(const ProgramObserver &observe = {});
+    // Field overlay 8007554c: one field frame (move phase, drawing, buffer
+    // presentation and the frame-rate wait). Services supply platform timing
+    // and GPU status results; see FrameServices.
+    void field_frame(FrameServices &services, const ProgramObserver &observe = {});
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -376,6 +435,30 @@ class Program {
     void add_battle_drops(std::uint32_t ids, std::uint32_t counts, std::uint32_t categories);
 
   private:
+    // Field frame steps (field_frame.cpp).
+    void frame_emitters(std::uint32_t listener); // 80086590
+    void frame_fade();                           // 80071cb4
+    void frame_compass(FrameServices &services); // 80074108
+    // Field 8007ab6c/8007ac58: one compass quad (a letter when `label`).
+    void compass_quad(std::uint32_t table, std::uint32_t record, const field::GteMatrix &m,
+                      bool label);
+    [[nodiscard]] std::uint16_t overlay_half(std::uint32_t address) const;
+    // Original addresses of Program-owned packets and globals, for the
+    // drawing code that links packets by address.
+    [[nodiscard]] std::uint32_t memory(std::uint32_t address, std::size_t width = 4) const;
+    void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
+    void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
+    // Resident libgpu calls on their immediate path (gpu_calls.cpp).
+    void gpu_alarm(FrameServices &services);       // 80046efc
+    void gpu_check_rect(std::uint32_t rect) const; // 8004463c
+    void gpu_call(FrameServices &services, std::uint32_t function, std::uint32_t parameter,
+                  std::uint32_t argument, const std::function<void()> &run); // 8004668c
+    void load_image(FrameServices &services, std::uint32_t rect, std::uint32_t source);
+    void clear_image(FrameServices &services, std::uint32_t rect, std::uint32_t color);
+    void draw_otag(FrameServices &services, std::uint32_t table);
+    void put_draw_env(FrameServices &services, std::uint32_t environment);
+    void put_disp_env(FrameServices &services, std::uint32_t environment);
+    void draw_sync(FrameServices &services);
     void dispatch(field::EventContext &context, std::uint8_t opcode,
                   const ProgramObserver &observe);
     void script(field::EventContext &context,
@@ -425,7 +508,7 @@ class Program {
         std::int32_t floor;
         field::FieldVector normal;
     };
-    // Leaves the composed model transform loaded in resident.gte, as the original.
+    // Leaves the composed model transform loaded in resident.gte.transform, as the original.
     [[nodiscard]] std::optional<PolygonHit> polygon_contact(std::size_t index, std::int32_t x,
                                                             std::int32_t z);
     // Resident sprite routines on an actor's descriptor sprite with the owned

@@ -4,6 +4,7 @@
 #include "xem/reconstruction/field_collision.hpp"
 #include "xem/reconstruction/field_gte.hpp"
 #include "xem/reconstruction/field_motion.hpp"
+#include "xem/reconstruction/field_view.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <bit>
@@ -82,21 +83,6 @@ field::FloorLocation camera_floor(const ResidentState &resident, const FieldStat
     const auto &layer = top_layer(state, slot);
     return field::locate_initial_floor(layer, state.triangle_counts[slot], s16(u32(x)), s16(u32(z)),
                                        resident.math.reciprocal);
-}
-
-// Field 80073930: turn toward a 12-bit target by speed without overshoot.
-std::uint32_t turn_toward(std::int32_t current, std::int32_t target, std::int32_t speed) {
-    auto value = current;
-    if ((u32(subtract(value, target)) & 0xfffU) < 0x800) {
-        value = subtract(value, speed);
-        if ((u32(subtract(value, target)) & 0xfffU) >= 0x800)
-            value = target;
-    } else {
-        value = add(value, speed);
-        if ((u32(subtract(value, target)) & 0xfffU) < 0x800)
-            value = target;
-    }
-    return u32(value) & 0xfffU;
 }
 
 // Field 8007234c/80072398: blocked octants counted upward or downward from
@@ -287,35 +273,9 @@ std::array<std::int16_t, 2> edge_intersection(const ResidentState &resident,
             static_cast<std::int16_t>(u32(segment[1]) + u32(product(k, b[2]) >> 12))};
 }
 
-// Field 80073750: a look-at matrix from eye to target with an up vector.
-void build_view(ResidentState &resident, field::GteMatrix &m, const field::GteLong &eye,
-                const field::GteLong &target, const field::GteLong &up) {
-    const auto &reciprocal = resident.math.reciprocal;
-    field::GteLong direction{}, above{};
-    for (std::size_t i = 0; i < 3; ++i) {
-        direction[i] = subtract(target[i], eye[i]) >> 16;
-        above[i] = up[i] >> 16;
-    }
-    const auto z = field::normalize_field_vector(direction, reciprocal);
-    const auto x = field::normalize_field_vector(field::outer_product12(above, z), reciprocal);
-    const auto y = field::normalize_field_vector(field::outer_product12(z, x), reciprocal);
-    for (std::size_t i = 0; i < 3; ++i) {
-        m.r[i] = static_cast<std::int16_t>(x[i]);
-        m.r[3 + i] = static_cast<std::int16_t>(y[i]);
-        m.r[6 + i] = static_cast<std::int16_t>(z[i]);
-    }
-    field::GteVector scaled{};
-    for (std::size_t i = 0; i < 3; ++i)
-        scaled[i] = static_cast<std::int16_t>(high(eye[i]) * 3);
-    const auto moved = field::apply_matrix(m, scaled);
-    resident.gte.r = m.r; // ApplyMatrix loads the rotation only.
-    for (std::size_t i = 0; i < 3; ++i)
-        m.t[i] = s32(0U - u32(moved[i]));
-}
-
 // Field 80073684: rotate the eye goal about the target goal by the heading.
 void orbit_eye(ResidentState &resident, field::FieldCamera &c) {
-    field::push_matrix(resident.matrix_stack, resident.gte);
+    field::push_matrix(resident.matrix_stack, resident.gte.transform);
     const auto rotation = field::rotation_matrix(
         {c.heading_x, static_cast<std::int16_t>(c.heading_half), c.heading_z},
         resident.math.trigonometry);
@@ -325,7 +285,7 @@ void orbit_eye(ResidentState &resident, field::FieldCamera &c) {
     const auto moved = field::apply_matrix_lv(rotation, offset);
     c.eye_goal[0] = add(moved[0], c.target_goal[0]);
     c.eye_goal[2] = add(moved[2], c.target_goal[2]);
-    resident.gte = field::pop_matrix(resident.matrix_stack);
+    resident.gte.transform = field::pop_matrix(resident.matrix_stack);
 }
 
 // Field 80072a38: eye and target goals around the followed point.
@@ -454,12 +414,12 @@ void view_setup(ResidentState &resident, FieldState &state) {
     state.world_matrix.t = {};
     c.scaled_world = field::rotation_matrix(c.world_angles, trig, c.scaled_world);
     field::multiply_rotation(c.previous_view, c.scaled_world);
-    resident.gte.r = c.previous_view.r;
-    resident.gte.t = c.previous_view.t;
-    c.scaled_world.t = field::rot_trans(resident.gte, c.anchor);
+    resident.gte.transform.r = c.previous_view.r;
+    resident.gte.transform.t = c.previous_view.t;
+    c.scaled_world.t = field::rot_trans(resident.gte.transform, c.anchor);
     field::scale_matrix(c.scaled_world, {c.scale, c.scale, c.scale});
-    resident.gte.r = c.scaled_world.r;
-    resident.gte.t = c.scaled_world.t;
+    resident.gte.transform.r = c.scaled_world.r;
+    resident.gte.transform.t = c.scaled_world.t;
 }
 } // namespace
 
@@ -552,9 +512,10 @@ void Program::field_move(const ProgramObserver &observe) {
     }
     if (state.camera_cut == 0) {
         c.previous_view = c.view;
-        build_view(resident, c.view, eye, target, c.up);
+        field::build_view(resident.gte, resident.math.reciprocal, c.view, eye, target, c.up);
     } else {
-        build_view(resident, c.previous_view, eye, target, c.up);
+        field::build_view(resident.gte, resident.math.reciprocal, c.previous_view, eye, target,
+                          c.up);
         c.view = c.previous_view;
     }
     view_setup(resident, state); // 800722f4 reloads the same matrix.
@@ -578,9 +539,9 @@ void Program::field_move(const ProgramObserver &observe) {
                 target_angle = s16(word(a, 0x106, 2));
             }
             // Field 80073988.
-            const auto facing = state.camera_cut != 0
-                                    ? u32(target_angle) & 0xfffU
-                                    : turn_toward(s16(word(a, 0x108, 2)), target_angle, speed);
+            const auto facing = state.camera_cut != 0 ? u32(target_angle) & 0xfffU
+                                                      : field::turn_toward(s16(word(a, 0x108, 2)),
+                                                                           target_angle, speed);
             put(a, 0x108, facing, 2);
         }
         if (state.orientation_hold != 0)

@@ -79,9 +79,74 @@ def gte_controls(row: dict) -> list[int]:
 
 
 def gte_words(row: dict) -> list[int]:
-    """Program-owned GTE state: rotation/translation (0-7) and OFX, OFY, H (24-26)."""
-    controls = gte_controls(row)
-    return controls[0:8] + controls[24:27]
+    """Program-owned GTE state: control registers 0-30 (FLAG is transient)."""
+    return gte_controls(row)[0:31]
+
+
+# Platform results a field frame consumes (see FrameServices). Each service
+# hook records the value at the original service's return: VSync(1) results,
+# the VSync(0) globals, each libgpu alarm's VSync(-1), the alarm polls counted
+# by DrawSync/LoadImage waits, ClearImage's GPUSTAT read, the queue's DMA busy
+# check and SetIntrMask(0)'s previous mask.
+def service_line(row: dict) -> str | None:
+    hook = row["hook"]
+    registers = visible_registers(row)
+
+    def range_words(name: str) -> list[int]:
+        data = bytes.fromhex(next(item["hex"] for item in row["ranges"] if item["name"] == name))
+        return list(struct.unpack(f"<{len(data) // 4}I", data))
+
+    if hook in ("vsync1-a", "vsync1-b"):
+        return f"hblank {registers[2]:x}"
+    if hook == "vsync0-return":
+        hcount, counter = range_words("vsync-state")
+        return f"vblank_wait {hcount:x} {counter:x}"
+    if hook == "alarm":
+        return f"vblank {registers[2]:x}"
+    if hook in ("sync-return", "dws-return"):
+        return f"alarm_polls {range_words('alarm-state')[1]:x}"
+    if hook in ("clear-status-a", "clear-status-b"):
+        return f"gpu_status {registers[4]:x}"
+    if hook == "queue-busy":
+        return f"dma_busy {registers[2]:x}"
+    if hook == "intr-mask":
+        return f"interrupt_mask {registers[2]:x}"
+    return None
+
+
+def frame_services(
+    capture: Path, entry_hook: str, exit_hook: str, interrupts: tuple[tuple[str, str], ...]
+) -> dict[str, str]:
+    """Service lines per call, keyed by the entry snapshot's RAM digest.
+
+    The key lets a capture of the identical execution with other hooks supply
+    the results; records inside interrupt brackets are not the call's.
+    """
+    starts = {entry for entry, _ in interrupts}
+    ends = {exit for _, exit in interrupts}
+    result, lines, key, depth = {}, None, None, 0
+    for line in (capture / "instruction-trace.jsonl").read_text().splitlines():
+        row = json.loads(line)
+        hook = row["hook"]
+        if hook in starts:
+            depth += 1
+        elif hook in ends:
+            depth -= 1
+        elif hook == entry_hook:
+            key, lines = row["snapshot"]["ram_sha256"], []
+        elif hook == exit_hook and lines is not None:
+            require(key not in result, "Two calls start from the same image")
+            result[key] = "".join(item + "\n" for item in lines)
+            lines = None
+        elif lines is not None and depth == 0:
+            item = service_line(row)
+            if item is not None:
+                lines.append(item)
+    # A frame the window cut short keeps the results it recorded; a later
+    # result it would need is reported as not supplied.
+    if lines is not None:
+        result[key] = "".join(item + "\n" for item in lines)
+    return result
 
 
 def visible_registers(row: dict) -> list[int]:
@@ -354,6 +419,9 @@ def run(args: argparse.Namespace) -> int:
     matched = 0
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
+    services = {}
+    if args.entry == "field_frame":
+        services = frame_services(args.services or capture, "frame-entry", "frame-exit", interrupts)
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     require(not trace.get("failed"), "Capture instruction trace failed")
     # The trace and snapshot files must be the ones the capture recorded.
@@ -378,6 +446,12 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
+            if args.entry == "field_frame":
+                key = entry_row["snapshot"]["ram_sha256"]
+                require(key in services, "No service results recorded for this frame")
+                (work / "services.txt").write_text(services[key])
+            else:
+                (work / "services.txt").write_text("")
             process = subprocess.run(
                 [
                     str(args.runner),
@@ -389,11 +463,12 @@ def run(args: argparse.Namespace) -> int:
                     str(work / "field.bin"),
                     str(work / "overlay.bin"),
                     str(work / "resources.txt"),
-                    # GTE rotation/translation control words at entry.
-                    ",".join(f"{value:x}" for value in gte_controls(entry_row)),
+                    # All 64 GTE registers at entry (data, then control).
+                    ",".join(f"{value:x}" for value in entry_row["cop2_u32"]),
                     # CPU registers at entry supply arguments (A0, A1, RA).
                     ",".join(f"{value:x}" for value in visible_registers(entry_row)),
                     str(work / "io.bin"),
+                    str(work / "services.txt"),
                 ],
                 capture_output=True,
                 timeout=args.timeout,
@@ -561,9 +636,15 @@ def main() -> int:
             "field_update",
             "field_move",
             "field_checkpoints",
+            "field_frame",
             *RESIDENT_ENTRIES,
         ),
         required=True,
+    )
+    parser.add_argument(
+        "--services",
+        type=Path,
+        help="Capture of the same execution whose service hooks supply field_frame results",
     )
     parser.add_argument("--entry-hook", default="update-entry")
     parser.add_argument("--exit-hook", default="update-return")

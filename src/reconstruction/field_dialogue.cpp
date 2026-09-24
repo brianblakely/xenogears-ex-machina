@@ -52,22 +52,6 @@ std::int32_t quotient(std::int32_t numerator, std::int32_t denominator) {
 std::uint32_t camera_octant(const FieldState &state) {
     return (7U - u32((s16(u32(state.control_inputs.camera_angle)) - 0x100) >> 9)) & 7U;
 }
-// Resident 80043a1c GetTPage(tp, abr, x, y).
-std::uint32_t texture_page(std::uint32_t tp, std::uint32_t abr, std::int32_t x, std::int32_t y) {
-    return (tp & 3U) << 7U | (abr & 3U) << 5U | (u32(y) & 0x100U) >> 4U | (u32(x) & 0x3ffU) >> 6U |
-           (u32(y) & 0x200U) << 2U;
-}
-// Resident 800459dc get_mode(dfe, dtd, tpage) for the libgpu type at 800568d0.
-std::uint32_t draw_mode(std::uint8_t gpu, bool dfe, bool dtd, std::uint32_t tpage) {
-    const auto low = static_cast<std::uint8_t>(gpu - 1U) < 2;
-    std::uint32_t high = 0xe1000000U;
-    if (dtd)
-        high |= low ? 0x800U : 0x200U;
-    auto mode = tpage & (low ? 0x27ffU : 0x9ffU);
-    if (dfe)
-        mode |= low ? 0x1000U : 0x400U;
-    return high | mode;
-}
 } // namespace
 
 // Resident 800286cc: nonzero while the disc is in error, reading or pending.
@@ -114,8 +98,9 @@ std::array<std::int32_t, 2> Program::project_actor(std::size_t index, std::int16
     model.pad = static_cast<std::int16_t>(word(descriptor, 0x1e, 2));
     for (std::size_t i = 0; i < 3; ++i)
         model.t[i] = s32(word(descriptor, 0x20 + i * 4));
-    resident.gte = field::compose_matrix(field->camera.scaled_world, model);
-    const auto screen = field::rot_trans_pers(resident.gte, resident.gte_screen, {0, height, 0});
+    resident.gte.transform = field::compose_matrix(field->camera.scaled_world, model);
+    const auto screen =
+        field::rot_trans_pers(resident.gte.transform, resident.gte.screen, {0, height, 0});
     return {screen[0], screen[1]};
 }
 
@@ -421,7 +406,8 @@ std::int32_t Program::open_dialogue(field::FieldWorld &world, field::FieldPassSt
          {std::pair{0x30U, s16(vram_x)}, std::pair{0x3cU, s16(vram_x) + 0x40}}) {
         text[offset + 3] = 2;
         put(text, offset + 4,
-            draw_mode(resident.gpu_type, false, false, texture_page(0, 0, page_x, s16(vram_y))));
+            gpu::draw_mode(resident.gpu_type, false, false,
+                           gpu::texture_page(0, 0, page_x, s16(vram_y))));
         put(text, offset + 8, 0);
     }
     state.dialogue_blocks.at(index) = {};

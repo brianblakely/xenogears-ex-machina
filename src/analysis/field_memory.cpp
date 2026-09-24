@@ -38,6 +38,10 @@ constexpr std::size_t field_snapshot_bytes = 0x3804;
 constexpr std::size_t disc_file_table_bytes = 0x8000;
 constexpr std::size_t disc_directory_table_bytes = 0x7a;
 
+// Field frame draw buffers: two 80f4-byte blocks (environments, ordering tables).
+constexpr std::uint32_t draw_blocks = 0x800b249c;
+constexpr std::size_t draw_block_bytes = 0x80f4;
+
 constexpr std::size_t actor_bytes = 0x138;
 constexpr std::size_t descriptor_bytes = 0x5c;
 constexpr std::size_t sprite_bytes = 0x164;
@@ -305,6 +309,15 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
             static_cast<std::uint16_t>(memory.word(variable_bank + i * 2, 2));
     for (const auto &[address, size] : resources)
         state.resources.push_back({address, copy_of(memory.range(address, size))});
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        const auto address = draw_blocks + i * static_cast<std::uint32_t>(draw_block_bytes);
+        state.packets.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
+    }
+    // Compass quads (19 records of four vectors and a packet per buffer) and
+    // the draw-mode packets (twelve bytes each, c0 bytes per buffer) that end
+    // where the resident sprite table at 800b1f78 begins.
+    state.packets.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
+    state.packets.add("draw_modes", 0x800b1e00, copy_of(memory.range(0x800b1e00, 0x174)));
     return program;
 }
 
@@ -470,6 +483,8 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
             out.bytes("dialogue_block", block.address, block.bytes);
     for (const auto &resource : state.resources)
         out.bytes("resource", resource.address, resource.bytes);
+    for (const auto &[address, region] : state.packets.regions())
+        out.bytes(region.name, address, region.bytes);
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
         memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));

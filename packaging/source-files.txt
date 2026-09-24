@@ -152,6 +152,9 @@ include/xem/reconstruction/field_script.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/field_sprite_model.hpp
+include/xem/reconstruction/field_view.hpp
+include/xem/reconstruction/gpu.hpp
+include/xem/reconstruction/gte.hpp
 include/xem/reconstruction/original_layout.hpp
 include/xem/reconstruction/packed_field.hpp
 include/xem/reconstruction/program.hpp
@@ -190,6 +193,7 @@ src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp
 src/reconstruction/field_dialogue.cpp
 src/reconstruction/field_events.cpp
+src/reconstruction/field_frame.cpp
 src/reconstruction/field_gte.cpp
 src/reconstruction/field_media.cpp
 src/reconstruction/field_motion.cpp
@@ -200,6 +204,10 @@ src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
 src/reconstruction/field_update.cpp
+src/reconstruction/field_view.cpp
+src/reconstruction/gpu.cpp
+src/reconstruction/gpu_calls.cpp
+src/reconstruction/gte.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp

@@ -255,16 +255,23 @@ std::vector<OriginalGlobal> build() {
     matrix("world_matrix", 0x800afaa4, [](Program &p) -> auto & { return f(p).world_matrix; });
     // Script-controlled fade, camera and flags.
     add("fade_mode", 0x800adc04, 4, [](Program &p) -> auto & { return f(p).fade.mode; });
-    for (std::uint32_t i = 0; i < 32; ++i)
-        add("fade_packets", 0x800b20dc + i, 1,
-            [i](Program &p) -> auto & { return f(p).fade.packets[i]; });
     add("fade_started", 0x800adc08, 2, [](Program &p) -> auto & { return f(p).fade.started; });
-    for (std::uint32_t i = 0; i < 6; ++i)
-        add("fade", 0x800b20fc + i * 4, 4,
-            [i](Program &p) -> auto & { return f(p).fade.words[i]; });
-    for (std::uint32_t i = 0; i < 3; ++i)
-        add("fade", 0x800b2114 + i * 2, 2,
-            [i](Program &p) -> auto & { return f(p).fade.halves[i]; });
+    for (std::uint32_t c = 0; c < 2; ++c) {
+        const auto base = field::FadeChannel::base + c * field::FadeChannel::stride;
+        const auto channel = [c](Program &p) -> auto & { return f(p).fade.channels[c]; };
+        for (std::uint32_t i = 0; i < 24; ++i)
+            add("fade_modes", base + i, 1,
+                [channel, i](Program &p) -> auto & { return channel(p).modes[i]; });
+        for (std::uint32_t i = 0; i < 32; ++i)
+            add("fade_packets", base + 0x18 + i, 1,
+                [channel, i](Program &p) -> auto & { return channel(p).packets[i]; });
+        for (std::uint32_t i = 0; i < 6; ++i)
+            add("fade", base + 0x38 + i * 4, 4,
+                [channel, i](Program &p) -> auto & { return channel(p).words[i]; });
+        for (std::uint32_t i = 0; i < 3; ++i)
+            add("fade", base + 0x50 + i * 2, 2,
+                [channel, i](Program &p) -> auto & { return channel(p).halves[i]; });
+    }
     add("camera_mode", 0x800af934, 2, [](Program &p) -> auto & { return f(p).camera.mode; });
     add("camera_target_a", 0x800af984, 4,
         [](Program &p) -> auto & { return f(p).camera.target_a; });
@@ -416,6 +423,36 @@ std::vector<OriginalGlobal> build() {
         [](Program &p) -> auto & { return f(p).dialogue_gate_afd04; });
     add("disc_idle_known", 0x800adb70, 4,
         [](Program &p) -> auto & { return f(p).disc_idle_known; });
+    // Field frame 8007554c.
+    add("frame_start_hcount", 0x800adb9c, 4,
+        [](Program &p) -> auto & { return f(p).frame_start_hcount; });
+    add("frame_drawn_hcount", 0x800adba0, 4,
+        [](Program &p) -> auto & { return f(p).frame_drawn_hcount; });
+    add("draw_buffer", 0x800adb08, 4, [](Program &p) -> auto & { return f(p).draw_buffer; });
+    add("draw_block", 0x800c426c, 4, [](Program &p) -> auto & { return f(p).draw_block; });
+    for (std::uint32_t i = 0; i < 2; ++i)
+        for (std::uint32_t j = 0; j < 4; ++j)
+            add("fade_windows", 0x800afe3c + i * 8 + j * 2, 2,
+                [i, j](Program &p) -> auto & { return f(p).fade_windows[i][j]; });
+    for (std::uint32_t i = 0; i < 16; ++i)
+        add("compass_colors", 0x800afc08 + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).compass_colors[i]; });
+    for (std::uint32_t i = 0; i < 128; ++i)
+        add("compass_palette", 0x800afd24 + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).compass_palette[i]; });
+    for (std::uint32_t i = 0; i < 4; ++i)
+        add("compass_palette_rect", 0x800b004c + i * 2, 2,
+            [i](Program &p) -> auto & { return f(p).compass_palette_rect[i]; });
+    add("compass_heading", 0x800adb48, 2,
+        [](Program &p) -> auto & { return f(p).compass_heading; });
+    add("compass_target", 0x800adb4a, 2, [](Program &p) -> auto & { return f(p).compass_target; });
+    matrix("matrix_afa84", 0x800afa84, [](Program &p) -> auto & { return f(p).matrix_afa84; });
+    add_resident("w_4f378", 0x8004f378, 4, [](Program &p) -> auto & { return p.resident.w_4f378; });
+    add("emitter_source", 0x800b22e0, 2, [](Program &p) -> auto & { return f(p).emitter_source; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        for (std::uint32_t j = 0; j < 3; ++j)
+            add("emitters", 0x800afe88 + i * 6 + j * 2, 2,
+                [i, j](Program &p) -> auto & { return f(p).emitters[i][j]; });
     add_resident("gpu_type", 0x800568d0, 1,
                  [](Program &p) -> auto & { return p.resident.gpu_type; });
     add_resident("disc_error", 0x8004fdfc, 4,
@@ -528,6 +565,42 @@ std::vector<OriginalGlobal> build() {
                      [i](Program &p) -> auto & { return p.resident.sound.voice_owners[i]; });
     add_resident("vsync_counter", 0x80058960, 4,
                  [](Program &p) -> auto & { return p.resident.vsync_counter; });
+    add_resident("vsync_hcount", 0x80057844, 4,
+                 [](Program &p) -> auto & { return p.resident.vsync_hcount; });
+    add_resident("vsync_previous", 0x80057848, 4,
+                 [](Program &p) -> auto & { return p.resident.vsync_previous; });
+    // Resident libgpu statics.
+    const auto gpu = [&](std::string name, std::uint32_t address, std::size_t width, auto member) {
+        add_resident(std::move(name), address, width,
+                     [member](Program &p) -> auto & { return p.resident.gpu.*member; });
+    };
+    gpu("gpu_queue_check", 0x800568d1, 1, &GpuLibrary::queue_check);
+    gpu("gpu_debug", 0x800568d2, 1, &GpuLibrary::debug);
+    gpu("gpu_interlace", 0x800568d3, 1, &GpuLibrary::interlace);
+    add_resident("video_mode", 0x80058990, 4,
+                 [](Program &p) -> auto & { return p.resident.video_mode; });
+    gpu("gpu_vram_width", 0x800568d4, 2, &GpuLibrary::vram_width);
+    gpu("gpu_vram_height", 0x800568d6, 2, &GpuLibrary::vram_height);
+    gpu("gpu_started", 0x800568d8, 4, &GpuLibrary::started);
+    gpu("gpu_force_queue", 0x800568dc, 4, &GpuLibrary::force_queue);
+    gpu("gpu_queue_in", 0x800569d4, 4, &GpuLibrary::queue_in);
+    gpu("gpu_queue_out", 0x800569d8, 4, &GpuLibrary::queue_out);
+    gpu("gpu_saved_mask", 0x800569dc, 4, &GpuLibrary::saved_mask);
+    gpu("gpu_alarm", 0x800569e8, 4, &GpuLibrary::alarm);
+    gpu("gpu_alarm_polls", 0x800569ec, 4, &GpuLibrary::alarm_polls);
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("gpu_last_call", 0x800569c4 + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.gpu.last_call[i]; });
+    const auto gpu_bytes = [&](std::string name, std::uint32_t address, auto member) {
+        const auto size = (GpuLibrary{}.*member).size();
+        for (std::uint32_t i = 0; i < size; ++i)
+            add_resident(name, address + i, 1,
+                         [member, i](Program &p) -> auto & { return (p.resident.gpu.*member)[i]; });
+    };
+    gpu_bytes("gpu_draw_environment", 0x800568e0, &GpuLibrary::draw_environment);
+    gpu_bytes("gpu_display_environment", 0x8005693c, &GpuLibrary::display_environment);
+    gpu_bytes("gpu_packet", 0x8005a238, &GpuLibrary::packet);
+    gpu_bytes("gpu_control", 0x8005a27c, &GpuLibrary::control);
     add_resident("cd_sync_deadline", 0x8005a228, 4,
                  [](Program &p) -> auto & { return p.resident.cd_sync_deadline; });
     add_resident("cd_sync_polls", 0x8005a22c, 4,

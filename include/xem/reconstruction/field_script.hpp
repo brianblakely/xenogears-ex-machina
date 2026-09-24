@@ -44,14 +44,23 @@ struct DialogueWindow {
     bool operator==(const DialogueWindow &) const = default;
 };
 
-// Screen fade parameters written by 80071dcc/80071e58 and the fade tile
-// packets built by 8007d93c (800adc04..800b2118 block).
+// One screen fade channel: a 58-byte record at 800b20c4 + 58 * channel.
+// 80071dcc/80071e58 start channel 0; 80071a8c advances and 8007da44 draws both.
+struct FadeChannel {
+    static constexpr std::uint32_t base = 0x800b20c4;
+    static constexpr std::uint32_t stride = 0x58;
+    std::array<std::uint8_t, 24> modes{};   // +00: DR_MODE packet per draw buffer
+    std::array<std::uint8_t, 32> packets{}; // +18: TILE packet per draw buffer
+    // +38: red, green, blue levels (8.8), then their per-frame steps.
+    std::array<std::uint32_t, 6> words{};
+    // +50: blend mode (GetTPage abr), active, remaining steps.
+    std::array<std::uint16_t, 3> halves{};
+    bool operator==(const FadeChannel &) const = default;
+};
 struct FieldFade {
-    std::array<std::uint8_t, 32> packets{}; // 800b20dc: two 16-byte GPU tile packets
-    std::uint32_t mode{};                   // 800adc04; a fade starts only in mode 2
-    std::int16_t started{};                 // 800adc08
-    std::array<std::uint32_t, 6> words{};   // 800b20fc, 2100, 2104, 2108, 210c, 2110
-    std::array<std::uint16_t, 3> halves{};  // 800b2114, 2116, 2118
+    std::uint32_t mode{};   // 800adc04; a fade starts only in mode 2
+    std::int16_t started{}; // 800adc08
+    std::array<FadeChannel, 2> channels{};
     bool operator==(const FieldFade &) const = default;
 };
 
