@@ -10,18 +10,46 @@ still a candidate.
 
 | Slice proof domain | Remaining required work on the frozen route |
 | --- | --- |
-| Source and loading | Connect original loading, resource identities and initialization to the shared program; heap/shadow services and lifetime remain external. |
+| Source and loading | The resident heap (EVID-REF-042) and file read chain (EVID-REF-045: 39 of 42 route reads exact, 3 explicit interrupt waits) are connected. Recover sector delivery and completion, resource decoding lifetimes after load, and loader initialization beyond per-call comparison. |
 | Field representation | Complete used geometry, material/texture, camera and sprite correlations with original source and state. |
-| Script execution | Cover every reachable route instruction, dialogue/control, triggers, transitions and resumed side effects in connected execution. |
-| Field behavior | Compare a complete `8008110c` update, contact, followers, camera, interaction, map transitions and control readiness. |
-| Encounter and return | Recover combat choices, formulas, enemy turns, failure and rewards; then checkpoint replay, cleanup and full return readiness. |
+| Script execution | Every event opcode executed on the frozen route runs in exactly matched calls (EVID-REF-042), including dialogue windows, music change and sound effects. Add alternative inputs that reach the source-only opcodes, dialogue text rendering and controls, transitions, and an independently authored full disassembler. |
+| Field behavior | The complete `8008110c` update and `800739c0` move phase (contact, followers, camera, facing) now match per call; connect the rest of the field frame, map transitions and control readiness, then run multiple frames without re-importing. |
+| Encounter and return | Party attacks, damage, knockouts, victory, reward totals, experience, level-ups and write-back now match per call (EVID-REF-043). Recover the turn scheduler and menu input, enemy AI and formulas, defeat/escape, the result screens, then checkpoint replay, cleanup and full return readiness. |
 | Menu and persistence | Recover ordinary menu/inventory/equipment and valid save/load, checksum, round trip and failure behavior. |
 | Required media | Recover used sound paths, Mono/Stereo/Wide and visual references, FMV framing/trigger and observable timing. |
-| Time and services | Distinguish original cadence and service intent from HLE observations; recover controller/disc/BIOS/GPU/audio/interrupt contracts. |
+| Time and services | A route census (EVID-REF-044, [service boundaries](../analysis/formats/service-boundaries.md)) maps the 34 hardware-facing resident functions the route uses to display, controller, disc, audio and interrupt/time services. Recover the disc command acknowledgement contract, interrupt handlers and cadence proof beyond HLE observation. |
 | Reproducibility and remainder | Extend immutable original comparisons and independent reviews to all required alternatives, agent-visible ownership/actions/setup/readiness and the explicit rest-of-game backlog. |
 
 The [frozen manifest](../analysis/slices/forest23.json) retains route extensions,
 alternatives and proof obligations. Every row above is still open.
+
+[EVID-REF-041](../analysis/findings/EVID-REF-041.json) moved connected comparison
+to complete memory images, and [EVID-REF-042](../analysis/findings/EVID-REF-042.json)
+completes the frozen route's field side. From each original entry image, the C++
+program reproduces the exact exit image, GTE state and return value of all 2,589
+route field updates and 2,589 move phases, all 2,836 control/ramp route calls,
+all 1,418 held-out calls, all 413 initialization and post-battle event passes,
+every resident heap allocation and release, all 11 music stops and the return
+checkpoint pass, with no stops. This includes dialogue windows, the sound-driver
+paths the field reaches and the complete music change of opcode `75`.
+[EVID-REF-045](../analysis/findings/EVID-REF-045.json) adds the resident disc
+read chain: 39 of the route's 42 file reads match exactly and the other three
+stop explicitly at the completion interrupt of the previous read. Evidence
+remains per call; free-running multi-frame execution still needs the sound
+tick, the stream consumer and drawing.
+
+[EVID-REF-043](../analysis/findings/EVID-REF-043.json) brings the encounter
+into the shared library. The [battle source](../analysis/formats/battle-actions.md)
+reproduces, from each original entry image, all four party attacks of the frozen
+encounter (commit, resolver, physical formula with hit roll, attack, defense,
+element and rand variance), all four knockouts, all six alive-mask updates
+including the victory, all 2,080 per-frame ATB ticks and 4 turn-timer
+reloads, the reward totals and the victory reward call:
+experience split, a level-up with rand stat growth and the write-back to all 11
+persistent character records in the resident game data (`8006d634`, `2358`
+bytes, now owned whole). Enemy AI, other formula types, defeat and escape, the
+turn scheduler, menu input, the result screens and the post-battle field return
+remain required work.
 
 The primary integration measure is the [connected C++ execution loop](executable-reconstruction.md),
 extended by [EVID-REF-040](../analysis/findings/EVID-REF-040.json). A shared program

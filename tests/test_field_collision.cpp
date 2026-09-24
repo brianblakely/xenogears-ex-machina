@@ -153,6 +153,43 @@ void queries() {
     v.actor.query.layer_flags = 8;
     check(v.query(bytes, 4, 4, t).attribute == 0, "disabled layer mask");
 }
+void layer_floors() {
+    Fixture v;
+    std::array<std::uint8_t, 0x138> actor{};
+    put(actor, 0x20, 4U << 16U);
+    put(actor, 0x24, 7U << 16U);
+    put(actor, 0x28, 4U << 16U);
+    auto bytes = mesh();
+    auto r = f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0);
+    check(r.value == 0 && r.floor == 7 && r.upper == 7 && r.triangle == 0, "layer floor height");
+    bytes[0x30 + 13] = 2;
+    check(f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0).upper == 15,
+          "nonnegative signed extent raises the upper bound");
+    bytes[0x30 + 13] = 0xfe;
+    check(f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0).upper == 7,
+          "negative extent contributes nothing");
+    put(actor, 0x30, 1);
+    put(actor, 0x72, 99, 2);
+    check(f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0).floor == 99,
+          "a moving actor keeps its selected floor on its own layer");
+    put(actor, 0x30, 0);
+    bytes = mesh(false, 0x800000);
+    put(bytes, 0x3c, 1, 2);
+    r = f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0);
+    check(r.value == 0 && r.floor == 0x7fffffff && r.upper == 0x7fffffff && r.triangle == 0,
+          "masked terrain opens the layer");
+    check(f::query_layer_floor(bytes, v.reciprocal, actor, 0, 1).floor == 7,
+          "attribute control disables the terrain mask");
+    put(actor, 8, 0xffff, 2);
+    r = f::query_layer_floor(mesh(), v.reciprocal, actor, 0, 0);
+    check(r.value == -1 && !r.floor && !r.triangle, "missing triangle leaves outputs untouched");
+    put(actor, 8, 0, 2);
+    put(actor, 0x30, 0xfff00000U);
+    check(f::query_layer_floor(mesh(), v.reciprocal, actor, 0, 0).value == -1,
+          "missing neighbor fails the layer");
+    rejects([&] { (void)f::query_layer_floor(mesh(), v.reciprocal, actor, 1, 0); },
+            "layer beyond the component's count");
+}
 void arithmetic() {
     Fixture v;
     check(f::pack_collision_xz(4, -1) == 0x3ffffU &&
@@ -254,6 +291,7 @@ void sweeps() {
 } // namespace
 int main() {
     try {
+        layer_floors();
         queries();
         arithmetic();
         sweeps();

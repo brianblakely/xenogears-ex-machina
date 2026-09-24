@@ -22,6 +22,7 @@ using MusicResource = std::uint32_t;
 struct MusicStreamState {
     MusicResource descriptor{}; // field 800adbb8
     MusicResource next_chunk{}; // field 800adbbc
+    std::uint32_t consumer{};   // field 800afea4: original address of the chunk callback
     // Original indirect callback at 800afea4 takes the chunk in A0. The caller
     // registers its actual consumer; missing callbacks fail explicitly.
     std::function<void(MusicResource)> consume_chunk;
@@ -29,6 +30,7 @@ struct MusicStreamState {
 
 struct MusicLoadState {
     std::uint32_t gate{};                   // 8004f308; committed by the caller
+    std::uint32_t requested{};              // 8004f324: music id last requested by 75
     std::uint32_t loaded_sequence{};        // 8004f338
     std::uint32_t loaded_wave_bank{};       // 8004f33c
     std::uint32_t start_parameter{};        // 8004f340
@@ -88,10 +90,11 @@ class UnrecoveredMusicCalls {
 };
 
 // Original 80085560 and 800854d0. The allocation mode is forwarded in A1
-// through 8002a260 into 80031bdc; the callback remains owned by stream state.
+// through 8002a260 into 80031bdc; the callback remains owned by stream state,
+// and `consumer` is its original address stored at 800afea4.
 // BattleRequestState owns the shared activity gate at 800adb2c.
 void start_music_stream(MusicStreamState &state, BattleRequestState &request, std::uint32_t file,
-                        std::uint32_t allocation_mode,
+                        std::uint32_t allocation_mode, std::uint32_t consumer,
                         std::function<void(MusicResource)> consume_chunk,
                         UnrecoveredMusicCalls &calls);
 [[nodiscard]] std::uint32_t poll_music_stream(MusicStreamState &state, BattleRequestState &request,

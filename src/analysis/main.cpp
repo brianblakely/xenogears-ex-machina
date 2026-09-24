@@ -1,3 +1,4 @@
+#include "xem/reconstruction/original_layout.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <bit>
@@ -108,9 +109,9 @@ std::array<std::uint32_t, 16> environment(const game::Program &program) {
             e.return_mode,
             static_cast<std::uint16_t>(e.field_gate),
             e.initialized_count,
-            e.heap.allocation_class,
+            program.resident.heap.tag,
             e.heap.class_eight_context,
-            e.heap.allocation_cursor,
+            program.resident.heap.quiet,
             e.tasks.wait_count,
             e.tasks.wait_flag,
             e.tasks.current,
@@ -135,12 +136,19 @@ void actor_storage(std::ostream &out, const game::FieldActor &actor) {
     out << "{\"actor\":" << quote(hex(actor.storage))
         << ",\"descriptor\":" << quote(hex(actor.descriptor)) << '}';
 }
-void globals(std::ostream &out, const field::original::ReturnGlobals &value) {
-    out << "{\"globals-007c\":" << quote(hex(value.object_state))
-        << ",\"globals-fa54\":" << quote(hex(value.transform_state))
-        << ",\"collision-attributes\":" << quote(hex(value.collision_attributes))
-        << ",\"globals-2078\":" << quote(hex(value.field_state))
-        << ",\"globals-f880\":" << quote(hex(value.camera_state)) << '}';
+void globals(std::ostream &out, const game::Program &program) {
+    const auto region = [&](std::size_t index) {
+        const auto [address, size] = game::snapshot_regions[index];
+        std::vector<std::uint8_t> bytes(size);
+        game::read_original(program, address, bytes);
+        return hex(bytes);
+    };
+    const auto &attributes = program.field->collision.attributes_raw;
+    out << "{\"globals-007c\":" << quote(region(0)) << ",\"globals-fa54\":" << quote(region(1))
+        << ",\"collision-attributes\":"
+        << quote(hex(std::span(attributes).first(std::min<std::size_t>(attributes.size(), 0x400))))
+        << ",\"globals-2078\":" << quote(region(2)) << ",\"globals-f880\":" << quote(region(3))
+        << '}';
 }
 std::string variables(const game::Program &program) {
     std::array<std::uint8_t, 2048> bytes;
@@ -168,7 +176,7 @@ void snapshot(std::ostream &out, const game::Program &program) {
     out << ",\"texture_page\":" << program.resident.sprite.texture_page
         << ",\"texture_mode\":" << program.resident.sprite.texture_mode;
     out << ",\"heap_class_five_context\":" << program.resident.sprite_heap.class_five_context
-        << ",\"heap_tag\":" << program.resident.sprite_heap.tag;
+        << ",\"heap_tag\":" << program.resident.heap.allocation_class;
     const auto &model = program.resident.sprite_models;
     out << ",\"model_state\":{\"material_page\":" << model.material_page
         << ",\"material_palette\":" << model.material_palette
@@ -337,9 +345,9 @@ int main(int argc, char **argv) {
         env.return_mode = in.word();
         env.field_gate = signed_half(in.count(65535));
         env.initialized_count = in.word();
-        env.heap.allocation_class = static_cast<std::uint16_t>(in.count(65535));
+        program.resident.heap.tag = static_cast<std::uint16_t>(in.count(65535));
         env.heap.class_eight_context = in.word();
-        env.heap.allocation_cursor = in.word();
+        program.resident.heap.quiet = in.word();
         env.tasks.wait_count = in.word();
         env.tasks.wait_flag = static_cast<std::uint16_t>(in.count(65535));
         env.tasks.current = in.word();
@@ -357,7 +365,7 @@ int main(int argc, char **argv) {
         env.sprite.texture_page = in.word();
         env.sprite.texture_mode = in.word();
         env.heap.class_five_context = in.word();
-        env.heap.tag = static_cast<std::uint16_t>(in.count(65535));
+        program.resident.heap.allocation_class = static_cast<std::uint16_t>(in.count(65535));
         auto &model = program.resident.sprite_models;
         model.material_page = static_cast<std::uint16_t>(in.count(65535));
         model.material_palette = static_cast<std::uint16_t>(in.count(65535));
@@ -383,7 +391,7 @@ int main(int argc, char **argv) {
             state.resources.push_back(in.resource());
         for (auto n = in.count(4096); n != 0; --n)
             state.frame_list.push_back(in.resource());
-        state.trigonometry = in.blob(0x4000);
+        program.resident.math.trigonometry = in.blob(0x4000);
         state.replay_widths = in.blob(256);
         const auto event_component = in.blob();
         if (!event_component.empty()) {
@@ -444,7 +452,7 @@ int main(int argc, char **argv) {
                     actor_storage(out, active.field->actors[i]);
                 }
                 out << "],\"globals\":";
-                globals(out, active.field->globals);
+                globals(out, active);
                 out << ",\"variables\":" << quote(variables(active))
                     << ",\"descriptor_count\":" << active.field->descriptor_count
                     << ",\"bytes_used\":" << active.field->snapshot_bytes_used;

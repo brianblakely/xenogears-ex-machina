@@ -1,5 +1,7 @@
 #include "xem/reconstruction/program.hpp"
+
 #include "xem/reconstruction/field_motion.hpp"
+#include "xem/reconstruction/original_layout.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -131,14 +133,28 @@ void Program::restore_field_data(const field::original::RestoreAllocation &alloc
     const auto restored = field::original::restore_field_return_data(snapshot, initial, allocate);
     state.descriptor_count = restored.descriptor_count;
     state.snapshot_bytes_used = restored.bytes_used;
-    state.globals = restored.globals;
-    // These globals are outputs of the snapshot copy, not prepared factory inputs.
-    state.sprite_gate = std::bit_cast<std::int16_t>(
-        static_cast<std::uint16_t>(word(state.globals.field_state, 0x116, 2)));
-    state.party_reassignment = word(state.globals.field_state, 0x1f0);
-    state.party_processing_mode =
-        static_cast<std::uint8_t>(word(state.globals.field_state, 0x154, 1));
-    state.battle_mode_source = static_cast<std::uint8_t>(word(state.globals.field_state, 0x2de, 1));
+    // 800a3474 leaves its read pointer after the consumed snapshot bytes.
+    state.snapshot_cursor = 0x8005a4e4U + static_cast<std::uint32_t>(restored.bytes_used);
+    // The snapshot's fixed regions land in the Program values that own those
+    // original addresses (including the sprite gate and battle/party modes).
+    const auto &globals = restored.globals;
+    write_original(*this, snapshot_regions[0].address, globals.object_state);
+    write_original(*this, snapshot_regions[1].address, globals.transform_state);
+    write_original(*this, snapshot_regions[2].address, globals.field_state);
+    write_original(*this, snapshot_regions[3].address, globals.camera_state);
+    // The attribute block goes to the live table (*800afb20); the parsed package
+    // owns it, and loaded component bytes hold the same table.
+    auto &attributes = state.collision.attributes_raw;
+    if (attributes.size() < globals.collision_attributes.size())
+        attributes.resize(globals.collision_attributes.size());
+    std::ranges::copy(globals.collision_attributes, attributes.begin());
+    if (!state.collision_component.empty()) {
+        const auto table = word(state.collision_component, 0x14);
+        if (table > state.collision_component.size() ||
+            state.collision_component.size() - table < globals.collision_attributes.size())
+            throw field::FieldFormatError("Collision attribute table exceeds the loaded component");
+        std::ranges::copy(globals.collision_attributes, state.collision_component.begin() + table);
+    }
     resident.variables.words = restored.variables;
     for (std::size_t i = 0; i < state.actors.size(); ++i) {
         auto &actor = state.actors[i];
@@ -151,6 +167,39 @@ void Program::restore_field_data(const field::original::RestoreAllocation &alloc
         actor.extension_114 = result.extension_114;
         actor.checkpoint = restored.pending_sprite_checkpoints[i];
     }
+    observed(observe, *this, point, true);
+}
+
+void Program::checkpoint_pass(const ProgramObserver &observe) {
+    constexpr std::uint32_t snapshot_address = 0x8005a4e4;
+    auto &state = loaded(*this);
+    auto &snapshot = resident.field_snapshot;
+    const SourcePoint point{"checkpoint_pass", 0x800a3c8c, {}, {}};
+    observed(observe, *this, point, false);
+    if (snapshot.size() < 0x95c)
+        throw field::FieldFormatError("Checkpoint pass requires the resident snapshot");
+    state.descriptor_count = snapshot[0];
+    write_original(*this, snapshot_regions[1].address, std::span(snapshot).subspan(0x3c, 0x74));
+    std::size_t cursor = 0x95c;
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        auto &actor = state.actors[i];
+        const auto at = cursor + 0xc;
+        if (at > snapshot.size() || snapshot.size() - at < 48)
+            throw field::FieldFormatError("Checkpoint pass walks past the resident snapshot");
+        const auto checkpoint = std::span(snapshot).subspan(at, 48);
+        const auto decision =
+            field::select_sprite_checkpoint(actor.storage, checkpoint, resident.saved_party_modes,
+                                            resident.party_modes(), state.party_reassignment);
+        // The saved animation update is a store into snapshot memory.
+        std::ranges::copy(decision.checkpoint, checkpoint.begin());
+        if (decision.decision == field::SpriteRestoreDecision::restore)
+            sprite_call(i, [&](field::SpriteWindow sprite, const field::SpriteSources &sources) {
+                static_cast<void>(
+                    field::restore_sprite_checkpoint(sprite, checkpoint, resident.sprite, sources));
+            });
+        cursor += decision.record_bytes;
+    }
+    state.snapshot_cursor = snapshot_address + static_cast<std::uint32_t>(cursor);
     observed(observe, *this, point, true);
 }
 
@@ -178,7 +227,7 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
         field::SpriteSources sources{
             resources,
             frame_list,
-            state.trigonometry,
+            resident.math.trigonometry,
             state.replay_widths,
             {},
             [&](field::SpriteExecutionPoint at) {
@@ -189,6 +238,7 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
             &services};
         sources.mutable_resources = mutable_resources;
         sources.models = &resident.sprite_models;
+        sources.allocator = &resident.heap;
         auto &actor = state.actors[i];
         SourcePoint point{"create_field_sprite", 0x80076ac0, i, {}};
         observed(observe, *this, point, false);
@@ -232,12 +282,54 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
                                 "Return caller requires party sprite reassignment");
 }
 
+void Program::script(field::EventContext &context,
+                     const std::function<void(field::FieldWorld &)> &handler) {
+    auto &state = loaded(*this);
+    const auto index = static_cast<std::size_t>(context.current_actor_index);
+    store_events(state.actors.at(index), *context.current_actor);
+    std::vector<field::FieldRecord> actors;
+    for (auto &actor : state.actors)
+        actors.push_back({actor.storage,
+                          actor.descriptor,
+                          {actor.sprite.sprite.address, actor.sprite.sprite.bytes}});
+    field::FieldWorld world{context.program,
+                            *context.variables,
+                            context.control,
+                            actors,
+                            index,
+                            index,
+                            state.party_indices,
+                            state.controlled_actor,
+                            state.zones,
+                            state.dialogue,
+                            state.script_flag_b236c,
+                            resident.math,
+                            state.collision,
+                            state.triangle_counts,
+                            state.layer_count,
+                            state.fade,
+                            state.camera,
+                            state.control_inputs.encounter.inhibition,
+                            state.script_flags_b21d0,
+                            resident.gte_screen,
+                            state.direction_tables};
+    try {
+        handler(world);
+    } catch (...) {
+        *context.current_actor = state.actors[index].events();
+        throw;
+    }
+    // Handlers act on original-layout records; refresh the semantic copy.
+    *context.current_actor = state.actors[index].events();
+}
+
 void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
                        const ProgramObserver &observe) {
     auto &state = loaded(*this);
     const auto index = static_cast<std::size_t>(context.current_actor_index);
     auto &actor = state.actors.at(index);
-    const SourcePoint point{"event_instruction", 0x800a1ec8, index, context.current_actor->pc};
+    const SourcePoint point{
+        "event_instruction", 0x800a1ec8, index, context.current_actor->pc, {}, {}, opcode};
     const auto commit = [&] {
         store_events(actor, *context.current_actor);
         state.event_control = context.control;
@@ -261,6 +353,9 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
             auto control = actor.control();
             auto inputs = state.control_inputs;
             inputs.encounter.music_result = resident.music.gate;
+            for (std::size_t w = 0; w < inputs.dialogue_status.size(); ++w)
+                inputs.dialogue_status[w] = state.dialogue[w].half(field::DialogueWindow::status);
+            inputs.jump_setting = state.history_indices[0]; // The same original word, 800b2360.
             try {
                 static_cast<void>(field::execute_control_event(context, opcode, control,
                                                                state.control_state, inputs,
@@ -291,18 +386,96 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
         case 0x86:
             field::branch_battle_continuation(context);
             break;
+        case 0xfc:
+            show_message(context);
+            break;
+        case 0x75:
+            change_music(context);
+            break;
+        case 0x19:   // 8009e4bc: place at X/Z operands.
+        case 0x1a:   // 8009e428: set the layer and re-place at the current position.
+        case 0x1b: { // 8009e35c: set the layer and place at X/Z operands.
+            script(context, [&](field::FieldWorld &world) {
+                auto &self = world.actors[world.current].actor;
+                const auto code = [&](std::uint32_t at) {
+                    return world.program.byte(word(self, 0xcc, 2) + at);
+                };
+                const auto pc_now = word(self, 0xcc, 2);
+                if (opcode == 0x1a) {
+                    put(self, 0x10, code(1), 2);
+                    snap_actor(world.current, static_cast<std::int16_t>(word(self, 0x22, 2)),
+                               static_cast<std::int16_t>(word(self, 0x2a, 2)));
+                    put(self, 0xcc, pc_now + 2, 2);
+                    return;
+                }
+                const auto flag_at = opcode == 0x19 ? 5U : 6U;
+                if (opcode == 0x1b)
+                    put(self, 0x10, code(5), 2);
+                const auto flags = code(flag_at);
+                const auto x = field::read_selected(world, 1, flags, 0x80);
+                const auto z = field::read_selected(world, 3, flags, 0x40);
+                snap_actor(world.current, x, z);
+                put(self, 4, word(self, 4) & 0xffdfffffU);
+                put(self, 0, word(self, 0) & 0xfffeffffU);
+                put(self, 0xcc, pc_now + (opcode == 0x19 ? 6U : 7U), 2);
+            });
+            break;
+        }
+        case 0xf5: // 8009c12c: a mode-3 message window for the current actor.
+            script(context, [&](field::FieldWorld &world) {
+                static_cast<void>(open_dialogue(world, context.pass,
+                                                static_cast<std::uint32_t>(world.current), 3));
+            });
+            break;
         case 0xfe:
             field::run_extended_event(context, [&](auto &active, auto extended) {
+                auto extended_point = point;
+                extended_point.event_opcode = static_cast<std::uint16_t>(0xfe00U | extended);
+                observed(observe, *this, extended_point, false);
                 if (extended == 0x7f)
                     field::wait_battle_request_extended(active, resident.battle_request);
                 else if (extended == 0xa2)
                     field::execute_music_extended_event(active, extended, resident.music);
+                else if (extended == 0x24)
+                    script(active, [&](auto &world) { party_gather(world); });
+                else if (extended == 0x62 || extended == 0x63) // 8008f444, 8008f4a0
+                    script(active, [&](field::FieldWorld &world) {
+                        auto &self = world.actors[world.current].actor;
+                        const auto channel = field::read_immediate15_or_variable(world, 3);
+                        const auto value = field::read_immediate15_or_variable(world, 1);
+                        resident::set_effect_pair(
+                            resident.sound, static_cast<std::uint32_t>(channel) << 1,
+                            extended == 0x62 ? 0x76U : 0x74U, static_cast<std::uint32_t>(value));
+                        put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
+                    });
+                else if (extended == 0x65) // 8008f4fc
+                    script(active, [&](field::FieldWorld &world) {
+                        auto &self = world.actors[world.current].actor;
+                        const auto id = field::read_immediate15_or_variable(world, 1);
+                        const auto channel = field::read_immediate15_or_variable(world, 3);
+                        play_sound_effect(static_cast<std::uint32_t>(id),
+                                          static_cast<std::uint32_t>(channel));
+                        put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
+                    });
                 else
-                    throw field::UnsupportedExtendedInstruction(active.current_actor->pc, extended);
+                    script(active,
+                           [&](auto &world) { field::execute_script_extended(world, extended); });
             });
             break;
-        default:
+        case 0:
+        case 1:
+        case 2:
+        case 4:
+        case 0x26:
+        case 0x35:
+        case 0x36:
+        case 0x37:
+        case 0x38:
+        case 0x39:
             field::execute_core_event(context, opcode);
+            break;
+        default:
+            script(context, [&](auto &world) { field::execute_script_instruction(world, opcode); });
         }
     } catch (...) {
         commit();
@@ -335,12 +508,17 @@ field::ScheduleResult Program::event_pass(const ProgramObserver &observe) {
             store_events(state.actors[i], actors[i]);
         state.event_control = context.control;
         state.pass = context.pass;
+        if (context.current_actor != nullptr)
+            state.published_actor = static_cast<std::size_t>(context.current_actor_index);
     };
     try {
         const auto result =
             field::schedule_actor_events(context, scheduler, [&](auto &active, auto opcode) {
                 commit();
                 dispatch(active, opcode, observe);
+                // Script handlers may change any actor's original-layout record.
+                for (std::size_t i = 0; i < actors.size(); ++i)
+                    actors[i] = state.actors[i].events();
             });
         commit();
         return result;
@@ -378,4 +556,77 @@ field::BatchResult Program::event_batch(std::size_t index, std::int32_t limit,
         throw;
     }
 }
+namespace {
+// A battle computation over battle memory, with the resident game data
+// addressable at its original address for the duration (moved, not copied).
+template <typename Body> void with_battle(Program &program, Body body) {
+    if (!program.battle)
+        throw field::FieldFormatError("A battle entry requires loaded battle memory");
+    auto &regions = program.battle->regions;
+    auto &resident = program.resident;
+    const bool data = resident.game_data.size() == game_data_bytes;
+    if (data) {
+        const auto start = resident.game_state;
+        const auto end = start + game_data_bytes;
+        for (const auto &[address, bytes] : regions)
+            if (address < end && start < address + bytes.size())
+                throw field::FieldFormatError("Game data overlaps battle memory");
+        regions.emplace(start, std::move(resident.game_data));
+    }
+    try {
+        battle::Battle context{*program.battle, resident.random_seed};
+        body(context);
+    } catch (...) {
+        if (data)
+            resident.game_data = std::move(regions.extract(resident.game_state).mapped());
+        throw;
+    }
+    if (data)
+        resident.game_data = std::move(regions.extract(resident.game_state).mapped());
+}
+} // namespace
+
+void Program::commit_battle_action(std::uint32_t attacker, std::uint32_t targets,
+                                   std::uint32_t animation) {
+    with_battle(*this, [&](battle::Battle &context) {
+        battle::commit_action(context, attacker, targets, animation);
+    });
+}
+
+void Program::apply_battle_results(std::uint32_t queue) {
+    with_battle(*this, [&](battle::Battle &context) { battle::apply_results(context, queue); });
+}
+
+void Program::update_battle_alive() {
+    with_battle(*this, [](battle::Battle &context) { battle::update_alive(context); });
+}
+
+void Program::tick_battle_timers() {
+    with_battle(*this, [](battle::Battle &context) { battle::atb_tick(context); });
+}
+
+void Program::reload_battle_timer() {
+    with_battle(*this, [](battle::Battle &context) { battle::reload_turn_timer(context); });
+}
+
+void Program::grant_battle_rewards() {
+    with_battle(*this, [](battle::Battle &context) { battle::grant_rewards(context); });
+}
+
+void Program::total_battle_rewards() {
+    with_battle(*this, [](battle::Battle &context) { battle::total_rewards(context); });
+}
+
+void Program::add_battle_drops(std::uint32_t ids, std::uint32_t counts, std::uint32_t categories) {
+    with_battle(*this, [&](battle::Battle &context) {
+        battle::add_drops(context, ids, counts, categories);
+    });
+}
+
+std::array<std::uint8_t, 3> ResidentState::party_modes() const {
+    if (game_data.size() != game_data_bytes)
+        throw field::FieldFormatError("Party modes require loaded game data");
+    return {game_data[0x22b1], game_data[0x22b2], game_data[0x22b3]};
+}
+
 } // namespace xem::reconstruction

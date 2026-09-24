@@ -163,10 +163,12 @@ void sprite_stores_and_speed_order() {
 
 void field_velocity_boundaries() {
     Fixture f;
+    std::array<std::uint8_t, 0x138> actor{};
+    put(actor, 0x76, 4, 2);
     auto expected = f.bytes;
     put(expected, 0x0c, 0xfffff000U);
     put(expected, 0x14, 0xfffff000U);
-    const auto effect = field::update_field_party_velocity(f.sprite(), 7, 0x40, 0, f.table);
+    const auto effect = field::update_field_velocity(f.sprite(), 7, 0x40, actor, f.table);
     check(effect ==
                   field::FieldPlanarVector{7, -4096, -4096, field::SpritePlanarVector{1, -1, -1}} &&
               f.bytes == expected,
@@ -174,7 +176,7 @@ void field_velocity_boundaries() {
     f = Fixture{};
     put(f.bytes, 0x18, 8192);
     f.pair(7, -32768, 32767);
-    const auto positive = field::update_field_party_velocity(f.sprite(), 7, 0x40, 0, f.table);
+    const auto positive = field::update_field_velocity(f.sprite(), 7, 0x40, actor, f.table);
     check(positive.x == 61440 && positive.z == 65536,
           "Positive field components retain their source quantization");
 
@@ -184,25 +186,41 @@ void field_velocity_boundaries() {
     expected = f.bytes;
     put(expected, 0x0c, 0);
     put(expected, 0x14, 0);
-    check(field::update_field_party_velocity(f.sprite(), 0x8001, 0x40, std::nullopt, {}) ==
-                  field::FieldPlanarVector{-1, 0, 0, std::nullopt} &&
-              f.bytes == expected,
-          "Stop sentinel precedes actor flags, divisor and trig while preserving angle");
-    for (auto flags : {0x2000U, 0x80000U, 0x82000U})
-        rejects(
-            [&] {
-                static_cast<void>(
-                    field::update_field_party_velocity(f.sprite(), 1, 0x40, flags, {}));
-            },
-            "Alternate actor paths must fail explicitly");
+    std::array<std::uint8_t, 0x138> zero{};
+    for (const std::uint16_t descriptor : {std::uint16_t{0x40}, std::uint16_t{0}})
+        check(field::update_field_velocity(f.sprite(), 0x8001, descriptor, zero, {}) ==
+                      field::FieldPlanarVector{-1, 0, 0, std::nullopt} &&
+                  f.bytes == expected,
+              "Stop sentinel ignores divisor and trig while preserving the angle");
+
+    // Ratio path: 0x40000/4 = 0x10000 -> speed (0x100 << 5); cosine 4, sine -4.
+    f = Fixture{};
+    put(actor, 0xf4, 3, 2);
+    put(actor, 0xf8, 0xfffe, 2);
+    const auto ratio = field::update_field_velocity(f.sprite(), 7, 0, actor, f.table);
+    // speed 0x2000: x = ((-4 * speed) >> 12) * 3 = -24, z = ((-4 * speed) >> 12) * -2 = 16.
+    check(ratio.x == -4096 && ratio.z == 0 && !ratio.sprite,
+          "Descriptor ratio path scales cosine and negated sine by the actor ratios");
+    put(actor, 4, 0x80000);
+    f = Fixture{};
+    static_cast<void>(field::update_field_velocity(f.sprite(), 7, 0x40, actor, f.table));
+    check(get(f.bytes, 0x18) == 0x4000000U / 4, "Alternate flag 80000 also stores a new speed");
+    put(actor, 4, 0x22000);
     rejects(
         [&] {
-            static_cast<void>(field::update_field_party_velocity(f.sprite(), 0x8000, 0, 0, {}));
+            static_cast<void>(field::update_field_velocity(f.sprite(), 7, 0x40, actor, f.table));
         },
-        "Descriptor ratio path precedes sentinel and remains unsupported");
-    check(f.bytes == expected, "Unsupported branch selection must not mutate the sprite");
+        "Object-table velocity must fail explicitly");
+    put(actor, 4, 0);
+    put(actor, 0x76, 0, 2);
     rejects(
-        [&] { static_cast<void>(field::update_field_party_velocity(f.sprite(), 13, 0x40, 0, {})); },
+        [&] { static_cast<void>(field::update_field_velocity(f.sprite(), 7, 0, actor, f.table)); },
+        "A used zero-divisor ratio is not a recovered result");
+    f = Fixture{};
+    put(f.bytes, 0xac, 0);
+    expected = f.bytes;
+    rejects(
+        [&] { static_cast<void>(field::update_field_velocity(f.sprite(), 13, 0x40, zero, {})); },
         "Direction store does not complete an unresolved vector call");
     put(expected, 0x32, 13, 2);
     check(f.bytes == expected, "Direction is stored before the nested vector error");

@@ -4,16 +4,25 @@ import copy
 import ctypes as ct
 import hashlib
 import json
+import struct
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
 from tools.reference.instruction_trace import (
+    SNAPSHOT_BYTES,
+    SNAPSHOT_HEADER,
+    SNAPSHOT_KEY_INTERVAL,
+    SNAPSHOT_PAGE,
     InstructionTrace,
     ScratchpadCallback,
+    SnapshotReader,
+    SnapshotWriter,
     guarded_record,
+    snapshot_path,
     validate_instruction_trace,
 )
 from tools.reference.scenario_program import MEMORY_LIMIT
@@ -73,11 +82,19 @@ class InstructionTraceTests(unittest.TestCase):
                 enable.assert_not_called()
                 self.assertFalse(output.exists())
 
+    @staticmethod
+    def cop2():
+        return (ct.c_uint32 * 64)(*range(0x100, 0x140))
+
+    @staticmethod
+    def load_delay():
+        return (ct.c_uint32 * 5)(1, 0, 4, 0, 0x800AFC98)
+
     def test_versionless_callback_records_ram_and_scratchpad_without_mutation(self):
         core = self.trace_core()
         ram = (ct.c_uint8 * MEMORY_LIMIT)()
         ram[: len(self.memory)] = self.memory
-        scratchpad = (ct.c_uint8 * 1024)()
+        scratchpad = (ct.c_uint8 * 0x2000)()
         scratchpad[130:134] = bytes.fromhex("deadbeef")
         registers = (ct.c_uint32 * 34)(*self.gpr)
         registers[2] = 0x1F800080
@@ -96,12 +113,29 @@ class InstructionTraceTests(unittest.TestCase):
                 self.assertIsInstance(callback, ScratchpadCallback)
                 trace.start_run(2)
                 core.retro_xem_trace_enable.assert_called_with(True)
-                callback(0, self.hook["pc"], 0x90420000, 123, 4, 0, registers, ram, scratchpad)
+                callback(
+                    0,
+                    self.hook["pc"],
+                    0x90420000,
+                    123,
+                    4,
+                    0,
+                    registers,
+                    ram,
+                    scratchpad,
+                    self.cop2(),
+                    self.load_delay(),
+                )
             finally:
                 status = trace.finish()
             record = json.loads(output.read_text())
             self.assertEqual(record["frontend_run"], 2)
             self.assertEqual(record["gpr_u32"], list(registers))
+            self.assertEqual(record["cop2_u32"], list(range(0x100, 0x140)))
+            self.assertEqual(
+                record["load_delay"],
+                {"select": 1, "registers": [0, 4], "values": [0, 0x800AFC98]},
+            )
             self.assertEqual(
                 [item["hex"] for item in record["ranges"]],
                 ["01020304", "01020304", "deadbeef"],
@@ -116,6 +150,137 @@ class InstructionTraceTests(unittest.TestCase):
         self.assertFalse(status["failed"])
         self.assertEqual(errors, [])
 
+    def test_snapshot_hooks_store_exact_complete_memory_within_budget(self):
+        core = self.trace_core()
+        spec = copy.deepcopy(self.spec)
+        spec["hooks"][0]["snapshot"] = True
+        spec["max_snapshots"] = 1
+        ram = (ct.c_uint8 * MEMORY_LIMIT)()
+        ram[: len(self.memory)] = self.memory
+        ram[MEMORY_LIMIT - 1] = 0x5A
+        # Hardware backing: scratchpad, then the I/O page at +1000.
+        scratchpad = (ct.c_uint8 * 0x2000)()
+        scratchpad[1023] = 0xA5
+        scratchpad[0x10B8] = 0x5C  # A DMA register byte.
+        registers = (ct.c_uint32 * 34)(*self.gpr)
+        before = bytes(ram), bytes(scratchpad[:1024]), bytes(scratchpad[0x1000:])
+        errors = []
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "trace.jsonl"
+            trace = InstructionTrace(core, spec, output, errors)
+            trace.start_run(2)
+            callback = core.retro_xem_trace_configure.call_args.args[3]
+            for _ in range(2):
+                callback(
+                    0,
+                    self.hook["pc"],
+                    0x90420000,
+                    1,
+                    0,
+                    0,
+                    registers,
+                    ram,
+                    scratchpad,
+                    self.cop2(),
+                    self.load_delay(),
+                )
+            status = trace.finish()
+            record = json.loads(output.read_text().splitlines()[0])
+            self.assertEqual(SnapshotReader(snapshot_path(output)).read(record), before)
+            self.assertEqual(
+                status["snapshot_file_sha256"],
+                hashlib.sha256(snapshot_path(output).read_bytes()).hexdigest(),
+            )
+            corrupt = copy.deepcopy(record)
+            corrupt["snapshot"]["ram_sha256"] = "0" * 64
+            with self.assertRaisesRegex(ValueError, "digests"):
+                SnapshotReader(snapshot_path(output)).read(corrupt)
+        self.assertEqual((bytes(ram), bytes(scratchpad[:1024]), bytes(scratchpad[0x1000:])), before)
+        self.assertEqual((status["snapshots"], status["records"]), (1, 1))
+        self.assertTrue(status["failed"])
+        self.assertIn("snapshot budget", errors[0])
+
+    def test_snapshot_deltas_reconstruct_any_order_across_keyframes(self):
+        images, records = [], []
+        image = bytearray(SNAPSHOT_BYTES)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "snapshots.bin"
+            with path.open("xb") as stream:
+                writer = SnapshotWriter(stream)
+                for step in range(SNAPSHOT_KEY_INTERVAL + 3):
+                    # Scattered writes: a page edge, the scratchpad and the last byte.
+                    image[(step * 7919) % SNAPSHOT_BYTES] = step & 0xFF
+                    image[SNAPSHOT_PAGE - 1] = step & 0x7F
+                    image[MEMORY_LIMIT + step % 1024] ^= 0x11
+                    image[-1] = (step * 3) & 0xFF
+                    images.append(bytes(image))
+                    records.append({"snapshot": self.digests(image, writer.write(bytes(image)))})
+            self.assertEqual(
+                writer.digest.hexdigest(), hashlib.sha256(path.read_bytes()).hexdigest()
+            )
+            # Far smaller than complete images: one keyframe of mostly zeros plus deltas.
+            self.assertLess(path.stat().st_size, 64 * 1024)
+            reader = SnapshotReader(path)
+            order = [
+                5,
+                6,
+                SNAPSHOT_KEY_INTERVAL + 2,
+                3,
+                SNAPSHOT_KEY_INTERVAL,
+                0,
+                SNAPSHOT_KEY_INTERVAL - 1,
+            ]
+            for index in order:
+                ram, scratchpad, io = reader.read(records[index])
+                self.assertEqual(ram + scratchpad + io, images[index], index)
+            with self.assertRaisesRegex(ValueError, "outside the file"):
+                reader.read({"snapshot": {**records[0]["snapshot"], "sequence": len(records)}})
+            data = path.read_bytes()
+            for broken, message in (
+                (b"XEMSNAP1" + data[8:], "header"),
+                (data[:-1], "ends inside a chunk"),
+                (data + b"\x01", "ends inside a chunk length"),
+            ):
+                path.write_bytes(broken)
+                with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                    SnapshotReader(path)
+            self.assertEqual(SNAPSHOT_HEADER, data[: len(SNAPSHOT_HEADER)])
+            # A keyframe followed by a delta naming a page beyond the image, and
+            # a keyframe chunk with bytes after its compressed stream.
+            key = zlib.compress(images[0], 6)
+            bad_page = zlib.compress(struct.pack("<II", 1, SNAPSHOT_BYTES) + bytes(SNAPSHOT_PAGE))
+            for chunks, sequence, message in (
+                ((key, bad_page), 1, "outside the image"),
+                ((key + b"\x00",), 0, "exactly one compressed stream"),
+            ):
+                path.write_bytes(
+                    SNAPSHOT_HEADER + b"".join(struct.pack("<I", len(c)) + c for c in chunks)
+                )
+                reader = SnapshotReader(path)
+                with self.subTest(message=message), self.assertRaisesRegex(ValueError, message):
+                    reader.read({"snapshot": {**records[sequence]["snapshot"]}})
+
+    @staticmethod
+    def digests(image: bytes, sequence: int) -> dict:
+        return {
+            "sequence": sequence,
+            "ram_sha256": hashlib.sha256(image[:MEMORY_LIMIT]).hexdigest(),
+            "scratchpad_sha256": hashlib.sha256(
+                image[MEMORY_LIMIT : MEMORY_LIMIT + 1024]
+            ).hexdigest(),
+            "io_sha256": hashlib.sha256(image[MEMORY_LIMIT + 1024 :]).hexdigest(),
+        }
+
+    def test_snapshot_declarations_must_be_paired_and_bounded(self):
+        for hook_value, budget in ((True, None), (None, 4), (False, 4), (True, 0), (True, 8193)):
+            spec = copy.deepcopy(self.spec)
+            if hook_value is not None:
+                spec["hooks"][0]["snapshot"] = hook_value
+            if budget is not None:
+                spec["max_snapshots"] = budget
+            with self.subTest(hook=hook_value, budget=budget), self.assertRaises(ValueError):
+                validate_instruction_trace(spec)
+
     def test_null_scratchpad_stops_even_a_ram_only_capture(self):
         core = self.trace_core()
         ram = (ct.c_uint8 * MEMORY_LIMIT)()
@@ -125,7 +290,19 @@ class InstructionTraceTests(unittest.TestCase):
             output = Path(directory) / "trace.jsonl"
             trace = InstructionTrace(core, self.spec, output, errors)
             try:
-                trace.callback(0, self.hook["pc"], 0x90420000, 0, 0, 0, registers, ram, None)
+                trace.callback(
+                    0,
+                    self.hook["pc"],
+                    0x90420000,
+                    0,
+                    0,
+                    0,
+                    registers,
+                    ram,
+                    None,
+                    self.cop2(),
+                    self.load_delay(),
+                )
                 core.retro_xem_trace_enable.assert_called_with(0)
             finally:
                 status = trace.finish()

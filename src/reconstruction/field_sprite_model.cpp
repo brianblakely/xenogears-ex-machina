@@ -159,12 +159,13 @@ void relocate_sprite_model(std::uint32_t model, const SpriteSources &sources) {
 
 void construct_sprite_model(SpriteWindow sprite, std::uint32_t model,
                             SpriteEnvironment &environment, const SpriteSources &sources) {
-    recovered(sources.models && sources.heap && sources.services,
+    recovered(sources.models && sources.heap && sources.allocator && sources.services,
               "Sprite model ownership and heap services are not connected");
     auto &heap = *sources.heap;
-    heap.allocation_class = 5;
+    auto &allocator = *sources.allocator;
+    allocator.tag = 5;
     heap.class_five_context = 0;
-    heap.allocation_cursor = 0;
+    allocator.quiet = 0;
     relocate_sprite_model(model, sources);
     const auto renderer = get(sprite.bytes, 0x20);
     input(renderer >= sprite.address, "Model renderer precedes owned sprite");
@@ -180,7 +181,7 @@ void construct_sprite_model(SpriteWindow sprite, std::uint32_t model,
         state.buffers.erase(old);
     }
     observe(sources, "sprite_model_allocation", 0x8002cb54);
-    heap.tag = 0x25;
+    allocator.allocation_class = 0x25;
     const auto size = read(sources, model + 0x34);
     input(size <= 0x100000, "Original model packet allocation exceeds resource bounds");
     recovered(static_cast<bool>(sources.services->allocate), "Model allocation service is absent");

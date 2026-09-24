@@ -25,12 +25,30 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_motion.cpp
   src/reconstruction/field_collision.cpp
   src/reconstruction/field_media.cpp
-  src/reconstruction/disc_stream.cpp)
+  src/reconstruction/field_script.cpp
+  src/reconstruction/field_update.cpp
+  src/reconstruction/field_move.cpp
+  src/reconstruction/field_dialogue.cpp
+  src/reconstruction/original_layout.cpp
+  src/reconstruction/battle.cpp
+  src/reconstruction/battle_formula.cpp
+  src/reconstruction/battle_levels.cpp
+  src/reconstruction/battle_rewards.cpp
+  src/reconstruction/battle_rules.cpp
+  src/reconstruction/battle_steps.cpp
+  src/reconstruction/battle_turns.cpp
+  src/reconstruction/resident_heap.cpp
+  src/reconstruction/sound_driver.cpp
+  src/reconstruction/field_gte.cpp
+  src/reconstruction/disc_stream.cpp
+  src/reconstruction/disc_read.cpp)
 target_include_directories(xem-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-reconstruction PUBLIC xem_project_options)
 
 add_executable(xem-analysis-runner src/analysis/main.cpp)
 target_link_libraries(xem-analysis-runner PRIVATE xem-reconstruction)
+add_executable(xem-memory-runner src/analysis/memory_runner.cpp src/analysis/field_memory.cpp)
+target_link_libraries(xem-memory-runner PRIVATE xem-reconstruction)
 
 find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
 add_custom_target(check-repository
@@ -85,6 +103,24 @@ if(BUILD_TESTING)
   add_executable(test-field-collision tests/test_field_collision.cpp)
   target_link_libraries(test-field-collision PRIVATE xem-reconstruction)
   add_test(NAME field-collision-reconstruction COMMAND test-field-collision)
+  add_executable(test-field-gte tests/test_field_gte.cpp)
+  target_link_libraries(test-field-gte PRIVATE xem-reconstruction)
+  add_test(NAME field-gte-reconstruction COMMAND test-field-gte)
+  add_executable(test-resident-heap tests/test_resident_heap.cpp)
+  target_link_libraries(test-resident-heap PRIVATE xem-reconstruction)
+  add_test(NAME resident-heap-reconstruction COMMAND test-resident-heap)
+  add_executable(test-disc-read tests/test_disc_read.cpp)
+  target_link_libraries(test-disc-read PRIVATE xem-reconstruction)
+  add_test(NAME disc-read-reconstruction COMMAND test-disc-read)
+  add_executable(test-battle tests/test_battle.cpp)
+  target_link_libraries(test-battle PRIVATE xem-reconstruction)
+  add_test(NAME battle-reconstruction COMMAND test-battle)
+  add_executable(test-sound-driver tests/test_sound_driver.cpp)
+  target_link_libraries(test-sound-driver PRIVATE xem-reconstruction)
+  add_test(NAME sound-driver-reconstruction COMMAND test-sound-driver)
+  add_executable(test-field-script tests/test_field_script.cpp)
+  target_link_libraries(test-field-script PRIVATE xem-reconstruction)
+  add_test(NAME field-script-reconstruction COMMAND test-field-script)
   add_executable(test-field-media tests/test_field_media.cpp)
   target_link_libraries(test-field-media PRIVATE xem-reconstruction)
   add_test(NAME field-media-reconstruction COMMAND test-field-media)

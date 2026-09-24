@@ -7,7 +7,7 @@ namespace xem::reconstruction::field {
 
 // EVID-REF-018; qualified field overlay identity is event_source_overlay_sha256.
 void start_music_stream(MusicStreamState &state, BattleRequestState &request, std::uint32_t file,
-                        std::uint32_t allocation_mode,
+                        std::uint32_t allocation_mode, std::uint32_t consumer,
                         std::function<void(MusicResource)> consume_chunk,
                         UnrecoveredMusicCalls &calls) {
     if (!consume_chunk)
@@ -15,6 +15,7 @@ void start_music_stream(MusicStreamState &state, BattleRequestState &request, st
     request.menu_gate = 1;
     state.descriptor = calls.allocate_stream_buffer(8, allocation_mode);
     calls.read_file(file, state.descriptor, 0, 0x100);
+    state.consumer = consumer;
     state.consume_chunk = std::move(consume_chunk);
 }
 

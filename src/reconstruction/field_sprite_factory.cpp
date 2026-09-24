@@ -262,10 +262,11 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
                       "Field sprite creation requires unreconstructed existing-sprite destruction");
     require_recovered(arguments.mode != 0 || arguments.part_variant == 0,
                       "Alternate field sprite part constructor 80024294 is unreconstructed");
+    require_recovered(sources.allocator != nullptr, "Field sprite creation requires the heap");
     const auto select_allocation_class = [&] {
-        environment.heap.allocation_class = 8;
+        sources.allocator->tag = 8;
         environment.heap.class_eight_context = 0;
-        environment.heap.allocation_cursor = 0;
+        sources.allocator->quiet = 0;
     };
     select_allocation_class();
     put(actor, 0x127, arguments.resource_slot, 1);

@@ -140,6 +140,20 @@ struct CollisionSweepResult {
     FieldVector velocity;
     CollisionEdge edge;
 };
+struct LayerFloor {
+    std::int32_t value{-1}; // Zero on success; the original leaves outputs untouched otherwise.
+    std::optional<std::int32_t> floor, upper;
+    std::optional<std::int16_t> triangle;
+    std::optional<FieldVector> normal;
+};
+// Field 8007d3d4 (with 8007c670) for one layer of a position update: walks from
+// the actor's current triangle to its X/Z plus velocity. A moving actor on its
+// current layer keeps its selected floor (+72). Masked terrain yields an open floor.
+[[nodiscard]] LayerFloor query_layer_floor(std::span<const std::uint8_t> component,
+                                           std::span<const std::int16_t> reciprocal,
+                                           std::span<const std::uint8_t> actor, std::int32_t layer,
+                                           std::uint8_t attribute_control);
+
 [[nodiscard]] bool uses_ordinary_collision_sweep(const SweepActor &actor,
                                                  std::uint32_t collision_mode) noexcept;
 // Field 8007bac0/8007b814. Failure preserves velocity and actor, but retains

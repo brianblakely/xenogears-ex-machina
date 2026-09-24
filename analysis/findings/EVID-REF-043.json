@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-043",
+  "kind": "connected_cpp_battle_actions_and_rewards_memory_image",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80085ccc",
+      "address_space": "PS1 KSEG0 battle overlay; action commit and resolver 800941a4",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80094ee4",
+      "address_space": "PS1 KSEG0 battle overlay; physical formula (type 0) with hit 80096ab8, attack 80096fbc, defense 80097610, element 80096494",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80085618",
+      "address_space": "PS1 KSEG0 battle overlay; result application (HP, EP, knockouts)",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x8007252c",
+      "address_space": "PS1 KSEG0 battle overlay; alive mask and victory/defeat outcome",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 239322,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 2596,
+        "decoded_sha256": "f474fd482506b89eaff9601d5958a1c867d35a4ad11c1f58f0ecef630008a0c8",
+        "decoded_bytes": 25856,
+        "decoded_destination": "0x801de000"
+      },
+      "address": "0x801e2794",
+      "address_space": "PS1 KSEG0 post-battle module (directory 10 file 4); victory rewards, experience split 801e2acc, level-ups 801e308c, reward totals 801e2280",
+      "not_applicable": "Sector is the unpacked file start (Disc 1 LBA 239322; Disc 2 LBA 226551 holds the identical file). The file is byte-identical to RAM after victory. Original bytes remain private."
+    }
+  ],
+  "observation": "In the frozen field 23 encounter, the shared C++ battle reconstruction reproduces the exact exit memory image and resident rand state from each original entry image for every captured call: all four party attacks (80085ccc, each dealing 15 damage), all four result applications that knock out the four enemies (80085618), all six alive-mask updates (8007252c) including the victory, all 2,080 per-frame ATB ticks (8007171c) and 4 turn-timer reloads (800718bc), the victory reward totals (801e2280 up to its UI call) and the reward call 801e2794, whose experience split, level-up with rand stat growth, skill checks and write-back change all 11 persistent character records. No comparison diverged.",
+  "interpretation": "Command commit, target iteration, formula dispatch, the physical damage formula, result application with knockout bookkeeping, victory detection, reward totals, the experience split and level-ups, and the write-back of battle results to persistent party state run as recovered source over battle memory and the resident game data, both owned by original address. The route exercises party physical attacks only and its enemies carry no gold or drops; enemy AI, other formula types, defeat, escape, gold addition and drop addition are source-reconstructed or source-mapped without route observation.",
+  "confidence": "confirmed",
+  "author": "Claude Opus 5.5, integration owner",
+  "reviewers": [
+    "Independent instruction-level review of every reconstructed battle function, jump table and ownership boundary against the overlay listing and a route RAM dump (review-battle-actions.md): no blocking defects; the unguarded divide at 800972b0 now reproduces the R3000A quotient, and the resident table read at 80096b5c fails by name.",
+    "Independent instruction-level review of result application, victory detection, reward totals, experience split, level-ups, stat growth, skills, write-back, drop rolls and drop addition, and of the battle and game-data ownership (review-battle-rewards.md): no blocking defects; the game-data overlap check now rejects partial overlaps.",
+    "Independent instruction-level review of the ATB tick, turn-timer reload, timer value and party flag balance (review-battle-turns.md): no defects."
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; frozen route input tests/reference-inputs/field23-encounter-observation.json.",
+      "Observation core parity 1.7.1; captures phase1-field23-battle-actions{,-b}, battle-rules-{a,b,c}, battle-results, battle-rewards and battle-turns (20260923-v5) hook every action commit, result application, alive update, reward total and reward call with bracketed interrupts. The post-battle module is extracted from directory 10 file 4 of both discs and verified byte-identical to RAM after victory.",
+      "Runner xem-memory-runner frozen at sha256 a76e4878c028ba91937f9b1fd50c83f89ff56f6f9464071320f3d6c2b9678f2f with source archive sha256 6331b328a4ebcc0a8d64eaa048a74fe0389b8520d5b0b81fc0e02a2ff5d139b4; comparison tool sha256 66f6cd1f44b8d673ebd62d52a5b774086937099de24357e3e75a667b1c64c811, which verifies each capture's trace and snapshot digests. Expected exit images come only from the original capture."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace -c python3 tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/phase1-field23-NAME-20260923-v5 --trace-instructions .local/execution/field-update/NAME.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c python3 -m tools.analysis.memory_case --capture CAPTURE --runner RUNNER --entry {battle_commit|battle_apply|battle_alive|battle_reward_totals|battle_rewards|battle_atb|battle_reload} --entry-hook ENTRY --exit-hook EXIT --interrupt tick-entry:tick-exit --interrupt dispatch-entry:dispatch-exit --report REPORT",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c bash -c 'ctest --test-dir build/debug && ctest --test-dir build/sanitize && python3 tools/repository/check.py'"
+    ],
+    "expected": "Exact original exit memory image for every owned byte and every original-changed byte outside the callee stack window and interrupt-only bytes; exact GTE state and return value; explicit stops for unrecovered behavior.",
+    "actual": "11 comparison reports, 2,100 calls, 0 divergences, 0 stops. All 26 C++ and repository tests pass in debug and sanitize presets; repository checks pass.",
+    "result": "passed",
+    "tolerance": "None beyond the documented exclusions: callee stack window 0x800 bytes below the entry stack pointer, the scratchpad, and bytes changed only by bracketed interrupt handlers (plus BIOS exception save areas while they ran).",
+    "artifacts": [
+      {
+        "path": ".local/execution/connected/reports-final/battle-alive-a.json",
+        "sha256": "f5f4b41d49a167af534c20bea54126512768efa2c2797cff59dc287688cad5f8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-alive-b.json",
+        "sha256": "5608eddd30e36301aa6562b78c62d87e41c51e27617572c2dce58408f8c48207",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-alive-c.json",
+        "sha256": "38bfc272726f9ab85e3afae6f6512558b421a801bf077b351986fec3bd298440",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-apply-a.json",
+        "sha256": "3d6a39c9fbe7c37635db691cfb88a6100f7d7890f842c5b26cf5583813f9c42a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-apply-b.json",
+        "sha256": "21170294c4f7d7417c8ee0dd1c52231abc5b9a2d41e6a6381ca4525fbab176c0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-atb.json",
+        "sha256": "5afc58a50176d9e94197b7f29c68bf4d70eaa586dd2a56f31b35a7c54198628c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-commit-a.json",
+        "sha256": "9bf042773529f7c1dd02673d8c690a1ce301e0ae761844d5157df6d8afd55487",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-commit-b.json",
+        "sha256": "da0d2da900bf2f22b39347dac92875a40ad2716242b0d210b4623bdbe492b7cb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-reload.json",
+        "sha256": "ca0c801642f007c97be9256480795f42ca1d7c444b4c56262cf259966bae1992",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-reward-totals.json",
+        "sha256": "d3433c4923e23749552a35d73e4e9cb11746801afae6c38123aeaf6441bf323d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/battle-rewards.json",
+        "sha256": "859c010e63d786abc38a061de2c05882622937acf2ca1752788cf9d65bed9185",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "src/analysis/field_memory.cpp",
+    "src/analysis/memory_runner.cpp",
+    "src/reconstruction/battle.cpp",
+    "src/reconstruction/battle_formula.cpp",
+    "src/reconstruction/battle_levels.cpp",
+    "src/reconstruction/battle_rewards.cpp",
+    "src/reconstruction/battle_rules.cpp",
+    "src/reconstruction/battle_steps.cpp",
+    "src/reconstruction/battle_turns.cpp",
+    "src/reconstruction/program.cpp"
+  ],
+  "limitations": [
+    "Per-call equivalence from original entry images; the turn scheduler, ATB timers, menu input, the frame loop and the result screens are not reconstructed.",
+    "Only formula type 0 is reconstructed; the gear resolver 8009c198 and character 4 item bookkeeping 8009afd8 fail explicitly.",
+    "Enemies never act on this route and carry no gold or drops: enemy AI 800799c8, enemy formulas, defeat, escape, gold addition and drop addition are not observed. The field return after battle remains required work."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored code only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures, reports and runner archives remain private."
+  }
+}

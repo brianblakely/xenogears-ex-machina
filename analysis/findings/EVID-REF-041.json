@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-041",
+  "kind": "connected_cpp_field_update_move_memory_image",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8008110c",
+      "address_space": "PS1 KSEG0 field overlay; complete field update",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800739c0",
+      "address_space": "PS1 KSEG0 field overlay; move phase: update, camera 80073230, view 80072150, facing and orientation",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a3c8c",
+      "address_space": "PS1 KSEG0 field overlay; return checkpoint pass",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    }
+  ],
+  "observation": "Starting from complete original entry memory images, the shared C++ Program computes the complete field update 8008110c and the move phase 800739c0 for every captured call on the qualified field-23 encounter route and two held-out routes. On the route 2,585 of 2,589 calls of each entry match the original exit memory image exactly, including every byte the original changed and the GTE rotation/translation registers; the remaining four stop explicitly at unrecovered opcodes FC (once) and 75 (three times). All 1,418 held-out control and ramp calls of each entry match. The return checkpoint pass 800a3c8c matches exactly. ASan/UBSan runs of 60 movement calls and the checkpoint pass match without findings.",
+  "interpretation": "Events, party and NPC motion, collision, contact, positions, interactions, followers, camera follow and heading, look-at and world matrices, facing and sprite orientation, and sprite checkpoint restoration run as one recovered program with one ownership model of original globals. Each call starts from the original image, so the evidence establishes per-call equivalence along these routes, not multi-frame free-running execution: the rest of the field frame (sound, messages, drawing) is not reconstructed.",
+  "confidence": "confirmed",
+  "author": "Claude Opus 5.5, integration owner",
+  "reviewers": [
+    "Independent bounded source review of the field update 8008110c against the original assembly (review-field-update.md)",
+    "Independent methodology review of the memory-image comparison, interrupt attribution and capture non-perturbation (review-methodology.md)",
+    "Independent bounded source review of the move phase, GTE helpers, GTE-state tracking and correlations (review-field-move.md)",
+    "Independent bounded source review of the checkpoint pass 800a3c8c, the original-layout table and the snapshot restore (review-checkpoints-layout.md); its one discrepancy, the restore's final 800afc50 cursor, is outside the compared boundaries and is now fixed with a regression test"
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; frozen route inputs tests/reference-inputs/field23-{encounter,control,ramp}-observation.json.",
+      "Observation core with read-only snapshot and GTE register hooks (parity 1.4.0); every capture's final RAM, save state, audio and frame images are byte-identical to captures previously matched with an uninstrumented control.",
+      "Runner xem-memory-runner frozen at sha256 40a26f6b952d9c6793c38ab180a2fa79db6750a9c4c7f41fb7d1244f2af2bb50 with its archived source state; expected exit images come only from the original capture."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace -c python3 tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/phase1-field23-combined-NN-20260923-v1 --trace-instructions .local/execution/field-update/combined-NN.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c python3 -m tools.analysis.memory_case --capture CAPTURE --runner RUNNER --entry {field_update|field_move|field_checkpoints} --entry-hook ENTRY --exit-hook EXIT --interrupt tick-entry:tick-exit --interrupt dispatch-entry:dispatch-exit --hash-snapshots --report REPORT",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c bash -c 'cmake --preset sanitize && cmake --build --preset sanitize && ctest --preset sanitize'"
+    ],
+    "expected": "Exact original exit memory image for every owned byte and every original-changed byte outside the callee stack window and bracketed interrupt-only bytes; exact GTE rotation/translation at exit; explicit stops for unrecovered behavior.",
+    "actual": "Route: field_update 2,585/2,589 and field_move 2,585/2,589 exact, 0 divergences, 4 explicit dependency stops each (FC x1, 75 x3). Held-out: 1,418/1,418 exact for each entry. Checkpoint pass 1/1 exact. Sanitized: 60/60 move calls and the checkpoint pass exact. All 23 C++ and repository tests pass in debug and sanitize presets.",
+    "result": "passed",
+    "tolerance": "None beyond the documented exclusions: callee stack window 0x800 bytes below the entry stack pointer, the scratchpad, and bytes changed only by bracketed interrupt handlers (plus BIOS exception save areas while they ran).",
+    "artifacts": [
+      {
+        "path": ".local/execution/connected/reports/checkpoints.json",
+        "sha256": "1c5e05fbd70b7346b2e2ce678e183ac8c475370713e5092f8e92506d2039aed1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-00.json",
+        "sha256": "73898ab18b85f160228eb4b103ffc2395f555c32d522eeb0151db7002d2d93a6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-01.json",
+        "sha256": "245c5b704f9d4e6749dad9551f2870bc1d4b280817f3b5652b36ec0e72d82d7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-02.json",
+        "sha256": "cd6d1ae9765a09257a056b57d180e3cdd3a64cc4760a5d558f24847969dfe7e8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-03.json",
+        "sha256": "1281a78586b6e79658fe12cab867c0e63171344594bf1e0c87fcf30fb4fc22c9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-04.json",
+        "sha256": "50d1f672b801c683a19073b5ce6339bc4d125c279d4f721c1d7bb01be34259db",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-05.json",
+        "sha256": "a14ddab40eb68b88364125074c862cbe4e9cb457d088e9b64db4d49fa5fa7eee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-06.json",
+        "sha256": "7aa21958f2792ebec460982737bcb0e6c0f00bc84d588044b427afa5f2ee933c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-07.json",
+        "sha256": "515475a26a23234a50d8bd3c50163bcaa95c23bd0ec6a4ec1d1ebd402db77daf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-08.json",
+        "sha256": "08d02768a754748fc90ede27e4a64ee71c51bd98ede69e7f7847ae06791876e9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-09.json",
+        "sha256": "740e8a01fa0f690c9143bde03eaf20b62bb8394dfb06282ffa1c26fdc8756706",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-10.json",
+        "sha256": "d5f991a0290849e546f0328a54820d85270438bd5e9a967b6e406aac00511cb1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-control-00.json",
+        "sha256": "b42a8533e6b0b759b0190cb1fe3781bc333882b9d62fd6d3b7a0e09481547670",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-control-01.json",
+        "sha256": "ecfd789308c376d54eefd03f34c576c321c4a702360de785f521077d48789f38",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-ramp-00.json",
+        "sha256": "f72c225c3c1907e9293abef3591ace9cf16d987bff5ccb8c148135e224ee72a3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-ramp-01.json",
+        "sha256": "555232991767bf15503ed7ad17251b332396fd99520cb4b3be839126de8173c7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-ramp-02.json",
+        "sha256": "cf729c05c87e006fd8780ea6633e0b617e1c23fdde5122f5af133d5499134c23",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/move-ramp-03.json",
+        "sha256": "cb6daa304fe4af2f6e7619808c491a396fb4a9055eea03e93de6b507a0af11b6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/sanitize-checkpoints.json",
+        "sha256": "d8dd91df168dbbaa70bd9749acd770befcedc856ee4d708fbf81c9dad6d38084",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/sanitize-move-03.json",
+        "sha256": "f34c77cdb563910ed179fcd06281ed4c465d3205942b141603062fdfb1bb50d6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-00.json",
+        "sha256": "258419cb152f3a30303a4fa2c8bbb557377e2921ded23aaad4edd90b50c6fca5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-01.json",
+        "sha256": "c6848fdb7b96bf47b9a480903d702f15b054c4392e89d55b815370c786e96c3e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-02.json",
+        "sha256": "a72ae2220dcd39b262e5ee63db2052dc2072343a996869cd6dfb2e18e17f1cf8",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-03.json",
+        "sha256": "57cebe655dace5a29fa528b90ae1f09afff86e08c107fb8b0306a8e5738d3da0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-04.json",
+        "sha256": "7bb177595ad6423a7af43b57aabaa9eadf8df4404cba56d5063a33c29d68a336",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-05.json",
+        "sha256": "cabb65813fb0a3222f0818666f87e82f5d2047c772b114fc284a8eb272bae9a1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-06.json",
+        "sha256": "fa2fe309afe32b607695419c2b1e2c4dee8d1a58cb9b6cf98c8253fb5ac66a7f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-07.json",
+        "sha256": "620d6ebb6957c81d4b7204a32774579bcb3bb4c6ce369678b527f6348bd3dd86",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-08.json",
+        "sha256": "495572fa261a78290693acb9fc6213954746ea51141b849bcfb21bbd0dc13a13",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-09.json",
+        "sha256": "b0414149546e453c991916eb00b561ea5e0716dfc00276fd780644cd1d02823c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-10.json",
+        "sha256": "1ebdb1675ae148ecd032641db0211b55e9dae66278d5f8f94d8bcdfe82729089",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-control-00.json",
+        "sha256": "410d830fe35d9e41af6d66fa987b1fd5aa9032b2824a53bf21efc3dadc0cb1c5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-control-01.json",
+        "sha256": "75435fdd2975101f7d423d862b62bfa9f81ee5ec5d5cd45ed2d5d71841b45579",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-ramp-00.json",
+        "sha256": "1de59be058d2beda16ea6578ce4351db33878f3086e6f3cd430b3ba99fcde9ec",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-ramp-01.json",
+        "sha256": "e1f18397796fc4b61cc827f208f7759298ff844f16789a7f729505255a9bb0aa",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-ramp-02.json",
+        "sha256": "c58f250426efd8e8b0a74e10338a797e7f4a49d06bdf9a62186f2f8dda05db07",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports/update-ramp-03.json",
+        "sha256": "ad27769b60f2cf8db3532c23e737ac05413c1edaf0b1e5ea84e9123e615dbabd",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/field-move/frozen/xem-memory-runner-40a26f6b952d9c67",
+        "sha256": "40a26f6b952d9c6793c38ab180a2fa79db6750a9c4c7f41fb7d1244f2af2bb50",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/field-move/frozen/source-40a26f6b952d9c67.tar",
+        "sha256": "3337a51a80c218a295a045bfc1cf592c7cc3aba168655fec6aacf9e37067e49e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/field-move/frozen/source-40a26f6b952d9c67.diff",
+        "sha256": "289ffc75812958132105676f61dcc01b1d61e8b3aff8c34b3bd7fb4b5dcbe17f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reviews/review-field-update.md",
+        "sha256": "0eda5488742555a97399d53b415f2346c1aed442a3cf6cf8a840af86bf8d0d9c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reviews/review-methodology.md",
+        "sha256": "3441310365bed04e789e0185e117160560258d80f0490eb25a4439a1dacf9be9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reviews/review-field-move.md",
+        "sha256": "2c5093970be153ae128740af8f2bfff61b3e841883fbb85a66ab7c787d7ba655",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reviews/review-checkpoints-layout.md",
+        "sha256": "397e18e116f390fc812b52dcde3f2793241da0f36b61b3ddfa6c9ed15b629d33",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "src/reconstruction/field_update.cpp",
+    "src/reconstruction/field_move.cpp",
+    "src/reconstruction/field_script.cpp",
+    "src/reconstruction/field_gte.cpp",
+    "src/reconstruction/original_layout.cpp",
+    "src/reconstruction/program.cpp",
+    "src/analysis/field_memory.cpp",
+    "src/analysis/memory_runner.cpp",
+    "tools/analysis/memory_case.py",
+    "tools/reference/instruction_trace.py",
+    "nix/reference-trace.h"
+  ],
+  "limitations": [
+    "Per-call equivalence from original entry images; no free-running multi-frame execution because the rest of the field frame is not reconstructed.",
+    "Opcodes FC (dialogue) and 75 (music) and the resident sound driver, heap-using callers, message and drawing code remain unrecovered.",
+    "Primary 29, 9D and extended 53 are source-reconstructed but not reached on the compared routes.",
+    "Interrupt handlers are bracketed, not reconstructed; the scratchpad is not compared."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored code only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures, reports and runner archives remain private."
+  }
+}

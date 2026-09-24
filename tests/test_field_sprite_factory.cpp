@@ -95,8 +95,12 @@ void field_factory_and_task_boundaries() {
     put(actor, 0x24, 0xfffd0000);
     put(actor, 0x28, 0xfffe8000);
     put(actor, 0x1a, 0x7777, 2);
-    field::FieldSpriteEnvironment environment{fixture.environment,     1, 1, 7, {5, 99, 88},
+    field::FieldSpriteEnvironment environment{fixture.environment,     1, 1, 7, {99},
                                               {0, 7, 0x11112222, 0, 9}};
+    xem::reconstruction::resident::Heap heap;
+    heap.tag = 5;
+    heap.quiet = 88;
+    sources.allocator = &heap;
     field::FieldSpriteArguments arguments{18, 2, Fixture::resource, 0, 0, 130, 1};
     std::vector<std::uint32_t> allocations, releases;
     const auto allocate = [&](std::uint32_t size, std::uint32_t mode) {
@@ -129,8 +133,8 @@ void field_factory_and_task_boundaries() {
               get(descriptor, 0x28) == 0xfffffffe && get(descriptor, 0x48) == 0xfffffffe &&
               get(result.sprite.bytes, 0) == 0x12348000 &&
               get(result.sprite.bytes, 0x84, 2) == 65533 && get(actor, 0x1a, 2) == 0x7777 &&
-              environment.initialized_count == 8 && environment.heap.allocation_class == 8 &&
-              environment.heap.class_eight_context == 0 && environment.heap.allocation_cursor == 0,
+              environment.initialized_count == 8 && heap.tag == 8 &&
+              environment.heap.class_eight_context == 0 && heap.quiet == 0,
           "Return-mode factory retains actor bounds and publishes signed coarse/fixed positions");
     check(field::initial_sprite_bounds({result.sprite.address, result.sprite.bytes}, sources) ==
               std::array<std::int32_t, 3>{16, 24, 8},
@@ -195,8 +199,11 @@ void interrupted_factory_retains_ownership() {
     fixture.data[0x172] = 22;
     fixture.data[0x173] = 33;
     fixture.data[0xc0] = 0x97;
-    const field::FieldSpriteEnvironment initial{{0, 0, 19, 31, 0x80009900}, 1, 1, 7, {5, 99, 88},
+    const field::FieldSpriteEnvironment initial{{0, 0, 19, 31, 0x80009900}, 1, 1, 7, {99},
                                                 {0, 7, 0x11112222, 0, 9}};
+    xem::reconstruction::resident::Heap heap;
+    auto sources = fixture.sources();
+    sources.allocator = &heap;
     const field::FieldSpriteArguments arguments{2, 2, Fixture::resource, 1, 0, 2, 0};
     std::array<std::uint8_t, 312> actor{};
     std::array<std::uint8_t, 92> descriptor{};
@@ -216,8 +223,8 @@ void interrupted_factory_retains_ownership() {
     const auto release = [&](std::uint32_t address) { releases.push_back(address); };
     bool missing_command = false;
     try {
-        field::create_field_sprite(result, actor, descriptor, arguments, environment,
-                                   fixture.sources(), allocate, release);
+        field::create_field_sprite(result, actor, descriptor, arguments, environment, sources,
+                                   allocate, release);
     } catch (const field::UnrecoveredSpriteCommand &error) {
         missing_command = error.command_pc == Fixture::resource + 0xc0 && error.opcode == 0x97 &&
                           error.machine_address == 0x800248d4;
@@ -234,8 +241,8 @@ void interrupted_factory_retains_ownership() {
           "Missing command retains published sprite, replacement parts, timer and environment");
     const auto retained = result.sprite;
     rejects([&] {
-        field::create_field_sprite(result, actor, descriptor, arguments, environment,
-                                   fixture.sources(), allocate, release);
+        field::create_field_sprite(result, actor, descriptor, arguments, environment, sources,
+                                   allocate, release);
     });
     check(result.sprite == retained && releases.size() == 1,
           "Interrupted construction cannot silently overwrite its owned allocation");
@@ -247,8 +254,8 @@ void interrupted_factory_retains_ownership() {
     releases.clear();
     reject_replacement = true;
     rejects([&] {
-        field::create_field_sprite(result, actor, descriptor, arguments, environment,
-                                   fixture.sources(), allocate, release);
+        field::create_field_sprite(result, actor, descriptor, arguments, environment, sources,
+                                   allocate, release);
     });
     check(result.sprite.address == Fixture::address && get(descriptor, 4) == Fixture::address &&
               result.parts.address == 0 && result.parts.bytes.empty() &&
@@ -370,7 +377,7 @@ struct Transport {
         word(value.address);
         blob(value.bytes);
     }
-    field::FieldSpriteEnvironment environment() {
+    field::FieldSpriteEnvironment environment(xem::reconstruction::resident::Heap &heap) {
         field::FieldSpriteEnvironment result;
         result.sprite.rate_control = std::bit_cast<std::int32_t>(word());
         result.sprite.platform_mode = static_cast<std::uint8_t>(word());
@@ -380,9 +387,9 @@ struct Transport {
         result.return_mode = word();
         result.field_gate = std::bit_cast<std::int16_t>(static_cast<std::uint16_t>(word()));
         result.initialized_count = word();
-        result.heap.allocation_class = static_cast<std::uint16_t>(word());
+        heap.tag = static_cast<std::uint16_t>(word());
         result.heap.class_eight_context = word();
-        result.heap.allocation_cursor = word();
+        heap.quiet = word();
         result.tasks.wait_count = word();
         result.tasks.wait_flag = static_cast<std::uint16_t>(word());
         result.tasks.current = word();
@@ -390,7 +397,8 @@ struct Transport {
         result.tasks.next = word();
         return result;
     }
-    void environment(const field::FieldSpriteEnvironment &value) {
+    void environment(const field::FieldSpriteEnvironment &value,
+                     const xem::reconstruction::resident::Heap &heap) {
         word(static_cast<std::uint32_t>(value.sprite.rate_control));
         word(value.sprite.platform_mode);
         word(value.sprite.variant);
@@ -399,9 +407,9 @@ struct Transport {
         word(value.return_mode);
         word(static_cast<std::uint16_t>(value.field_gate));
         word(value.initialized_count);
-        word(value.heap.allocation_class);
+        word(heap.tag);
         word(value.heap.class_eight_context);
-        word(value.heap.allocation_cursor);
+        word(heap.quiet);
         word(value.tasks.wait_count);
         word(value.tasks.wait_flag);
         word(value.tasks.current);
@@ -424,7 +432,8 @@ void original_transport(const char *input_path, const char *output_path) {
     arguments.part_variant = input.word();
     arguments.tag = static_cast<std::uint8_t>(input.word());
     arguments.defer_initial_step = input.word();
-    auto environment = input.environment();
+    xem::reconstruction::resident::Heap heap;
+    auto environment = input.environment(heap);
     auto actor = input.blob(), descriptor = input.blob();
     std::vector<field::SpriteAllocation> allocations, resource_storage, list_storage;
     const auto blocks = [&](auto &storage) {
@@ -444,6 +453,7 @@ void original_transport(const char *input_path, const char *output_path) {
     const auto trig = input.blob(), widths = input.blob();
     check(input.cursor == input.data.size(), "Trailing original factory inputs");
     field::SpriteSources sources{resources, list, trig, widths, {}};
+    sources.allocator = &heap;
     std::vector<std::uint32_t> requests, released;
     std::size_t next = 0;
     const auto allocate = [&](std::uint32_t size, std::uint32_t mode) {
@@ -458,7 +468,7 @@ void original_transport(const char *input_path, const char *output_path) {
         field::create_field_sprite(result, actor, descriptor, arguments, environment, sources,
                                    allocate, release);
         check(next == allocations.size(), "Original factory omitted an allocation");
-        output.environment(environment);
+        output.environment(environment, heap);
         output.blob(actor);
         output.blob(descriptor);
         output.block(result.sprite);
@@ -477,7 +487,7 @@ void original_transport(const char *input_path, const char *output_path) {
             output.word(static_cast<std::uint32_t>(value));
     } else if (operation == 2) {
         field::advance_sprite_tasks(environment.tasks, environment.sprite, sources);
-        output.environment(environment);
+        output.environment(environment, heap);
     } else {
         throw std::runtime_error("Unknown factory transport operation");
     }

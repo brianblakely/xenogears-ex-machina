@@ -1,0 +1,215 @@
+"""Synthetic memory images exercise pairing and exact full-memory comparison."""
+
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from tools.analysis.memory_case import (
+    RAM,
+    STACK_BELOW_ENTRY,
+    compare,
+    pairs,
+    superseded_bytes,
+    visible_registers,
+)
+
+
+class MemoryCaseTests(unittest.TestCase):
+    def test_pairs_follow_entry_exit_order_and_reject_nesting(self):
+        rows = [
+            {"hook": "entry", "event": 0},
+            {"hook": "middle", "event": 1},
+            {"hook": "exit", "event": 2},
+            {"hook": "exit", "event": 3},
+            {"hook": "entry", "event": 4},
+            {"hook": "exit", "event": 5},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            capture = Path(directory)
+            (capture / "instruction-trace.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows)
+            )
+            result = pairs(capture, "entry", "exit")
+            self.assertEqual([(a["event"], b["event"]) for a, b, _ in result], [(0, 2), (4, 5)])
+            (capture / "instruction-trace.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows[:1] * 2)
+            )
+            with self.assertRaisesRegex(ValueError, "Nested"):
+                pairs(capture, "entry", "exit")
+
+    def test_interrupt_invocations_are_bracketed_per_call(self):
+        rows = [
+            {"hook": "entry", "event": 0},
+            {"hook": "tick", "event": 1},
+            {"hook": "tick-return", "event": 2},
+            {"hook": "dispatch", "event": 3},
+            {"hook": "dispatch-return", "event": 4},
+            {"hook": "exit", "event": 5},
+            {"hook": "tick", "event": 6},
+            {"hook": "tick-return", "event": 7},
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            capture = Path(directory)
+            (capture / "instruction-trace.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows)
+            )
+            interrupts = (("tick", "tick-return"), ("dispatch", "dispatch-return"))
+            [(entry, exit, handlers)] = pairs(capture, "entry", "exit", interrupts)
+            self.assertEqual((entry["event"], exit["event"]), (0, 5))
+            self.assertEqual([(a["event"], b["event"]) for a, b in handlers], [(1, 2), (3, 4)])
+            (capture / "instruction-trace.jsonl").write_text(
+                "".join(json.dumps(row) + "\n" for row in rows[:2] + rows[1:2])
+            )
+            with self.assertRaisesRegex(ValueError, "Nested"):
+                pairs(capture, "entry", "exit", interrupts)
+
+    def test_owned_bytes_and_unowned_writes_are_exact(self):
+        entry = bytearray(RAM)
+        exit = bytearray(RAM)
+        exit[0x100] = 7  # Owned and computed correctly.
+        exit[0x200] = 9  # Owned but computed wrongly.
+        exit[0x300] = 1  # Changed by the original, not owned.
+        sp = 0x80100000
+        exit[(sp & 0x1FFFFF) - 4] = 3  # Transient callee stack below the entry SP.
+        exit[(sp & 0x1FFFFF) - STACK_BELOW_ENTRY - 1] = 5  # Beyond the stack exclusion.
+        exit[0x859C] = 4  # Kernel save area: excused only with observed interrupts.
+        owned = [
+            {"name": "a", "address": 0x80000100, "hex": "07"},
+            {"name": "b", "address": 0x80000200, "hex": "08"},
+        ]
+        result = compare(bytes(entry), bytes(exit), owned, sp)
+        self.assertEqual(result["owned_bytes"], 2)
+        self.assertEqual(result["mismatch_count"], 1)
+        self.assertEqual(result["mismatches"][0]["address"], "0x80000200")
+        self.assertEqual(result["unowned_count"], 3)
+        self.assertEqual(
+            result["unowned_writes"],
+            ["0x80000300", "0x8000859c", hex(0x80000000 + (sp & 0x1FFFFF) - STACK_BELOW_ENTRY - 1)],
+        )
+
+    def test_interrupt_attribution_excuses_only_interrupt_only_bytes(self):
+        entry, exit = bytearray(RAM), bytearray(RAM)
+        for offset in (0x400, 0x500, 0x859C, 0x600):
+            exit[offset] = 1
+        owned = [{"name": "a", "address": 0x80000600, "hex": "01"}]
+        # 0x400 changed only in interrupt code; 0x500 in both call and interrupt.
+        result = compare(bytes(entry), bytes(exit), owned, 0x80100000, {0x500}, {0x400, 0x500})
+        self.assertEqual(result["unowned_writes"], ["0x80000500"])
+        self.assertEqual(result["interrupt_conflicts"], ["0x80000500"])
+        self.assertEqual(result["interrupt_attributed"], 2)  # 0x400 and the kernel byte
+        # The BIOS save area changes before the dispatch hook and inside it.
+        result = compare(bytes(entry), bytes(exit), owned, 0x80100000, {0x500, 0x859C}, {0x859C})
+        self.assertEqual(result["interrupt_conflicts"], [])
+        # Also when the save-area byte's net change is zero.
+        result = compare(bytes(entry), bytes(exit), owned, 0x80100000, {0x500, 0x85A0}, {0x85A0})
+        self.assertEqual(result["interrupt_conflicts"], [])
+        self.assertEqual(result["unowned_writes"], ["0x80000400", "0x80000500"])
+        # An owned byte changed only by interrupt code, left unchanged by the call.
+        result = compare(
+            bytes(entry),
+            bytes(exit),
+            [{"name": "queue", "address": 0x80000400, "hex": "00"}],
+            0x80100000,
+            set(),
+            {0x400},
+        )
+        self.assertEqual((result["mismatch_count"], result["interrupt_conflicts"]), (0, []))
+        # The same byte also changed by the C++ is a conflict and a mismatch.
+        result = compare(
+            bytes(entry),
+            bytes(exit),
+            [{"name": "queue", "address": 0x80000400, "hex": "02"}],
+            0x80100000,
+            set(),
+            {0x400},
+        )
+        self.assertEqual(result["mismatch_count"], 1)
+        self.assertEqual(result["interrupt_conflicts"], ["0x80000400"])
+        owned.append({"name": "b", "address": 0x80000600, "hex": "01"})
+        with self.assertRaisesRegex(ValueError, "Overlapping"):
+            compare(bytes(entry), bytes(exit), owned, 0x80100000)
+
+    def test_interrupt_superseded_bytes_keep_the_call_value(self):
+        entry, before, after, exit = (bytearray(RAM) for _ in range(4))
+        # 0x700: the call writes 1, then interrupt code writes 2.
+        before[0x700], after[0x700], exit[0x700] = 1, 2, 2
+        # 0x710: interrupt code writes 2, then the call writes 3.
+        after[0x710], exit[0x710] = 2, 3
+        images = [bytes(image) for image in (entry, before, after, exit)]
+        superseded = superseded_bytes(images)
+        self.assertEqual(superseded, {0x700: (1, 0)})
+        changed = ({0x700, 0x710}, {0x700, 0x710})
+        owned = [{"name": "a", "address": 0x80000700, "hex": "01"}]
+        result = compare(images[0], images[3], owned, 0x80100000, *changed, superseded)
+        self.assertEqual(result["mismatch_count"], 0)
+        self.assertEqual(result["interrupt_conflicts"], ["0x80000710"])
+        self.assertEqual(
+            result["interrupt_superseded"],
+            [{"address": "0x80000700", "value": 1, "interrupt": 0, "exit": 2}],
+        )
+        # A different call value is still a mismatch and a conflict.
+        owned = [{"name": "a", "address": 0x80000700, "hex": "03"}]
+        result = compare(images[0], images[3], owned, 0x80100000, *changed, superseded)
+        self.assertEqual(result["mismatch_count"], 1)
+        self.assertIn("0x80000700", result["interrupt_conflicts"])
+
+    def test_superseded_bytes_follow_segments_across_several_interrupts(self):
+        # Images: entry, [before, after] x 3, exit.
+        images = [bytearray(RAM) for _ in range(8)]
+
+        def value(offset, *values):
+            for image, byte in zip(images, values, strict=True):
+                image[offset] = byte
+
+        # 0x800: call 1, interrupt 0 keeps it, call 2 in segment 1, interrupt 1 writes 9.
+        value(0x800, 0, 1, 1, 2, 9, 9, 9, 9)
+        # 0x810: the call writes after the last interrupt changed it: not superseded.
+        value(0x810, 0, 1, 5, 5, 5, 5, 5, 6)
+        # 0x820: never changed by the call; interrupt 2 changes it.
+        value(0x820, 0, 0, 0, 0, 0, 0, 4, 4)
+        # 0x830: the call writes 1, interrupt 0 restores the entry value 0.
+        value(0x830, 0, 1, 0, 0, 0, 0, 0, 0)
+        superseded = superseded_bytes([bytes(image) for image in images])
+        self.assertEqual(superseded, {0x800: (2, 1), 0x820: (0, 2), 0x830: (1, 0)})
+        entry, exit = bytes(images[0]), bytes(images[-1])
+        own = {0x800, 0x810, 0x830}
+        interrupt = {0x800, 0x810, 0x820, 0x830}
+        owned = [
+            {"name": "a", "address": 0x80000800, "hex": "02"},
+            {"name": "b", "address": 0x80000830, "hex": "00"},
+        ]
+        result = compare(entry, exit, owned, 0x80100000, own, interrupt, superseded)
+        # 0x830 left at its entry value by the C++ is still a conflict, as is the
+        # unowned 0x810, which the call and interrupts both changed.
+        self.assertEqual(result["interrupt_conflicts"], ["0x80000810", "0x80000830"])
+        self.assertEqual(
+            [item["address"] for item in result["interrupt_superseded"]], ["0x80000800"]
+        )
+        with self.assertRaisesRegex(ValueError, "alternate"):
+            superseded_bytes([bytes(image) for image in images[:3]])
+
+    def test_pending_loads_commit_in_slot_order(self):
+        row = {
+            "gpr_u32": list(range(34)),
+            "code": 0x27BDFFE8,  # addiu sp, sp, -0x18
+            "load_delay": {"select": 1, "registers": [0, 4], "values": [0, 0x44]},
+        }
+        registers = visible_registers(row)
+        self.assertEqual((registers[4], registers[5]), (0x44, 5))
+        row["load_delay"] = {"select": 1, "registers": [5, 4], "values": [0x55, 0x44]}
+        with self.assertRaisesRegex(ValueError, "More than one"):
+            visible_registers(row)
+        row["load_delay"] = {"select": 0, "registers": [4, 0], "values": [0x44, 0]}
+        row["code"] = 0x00852021  # addu a0, a0, a1 names the pending A0
+        with self.assertRaisesRegex(ValueError, "names a register"):
+            visible_registers(row)
+        row["load_delay"] = {"select": 0, "registers": [0, 0], "values": [0, 0]}
+        self.assertEqual(visible_registers(row), list(range(34)))
+        del row["load_delay"]
+        with self.assertRaisesRegex(ValueError, "recapture"):
+            visible_registers(row)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,451 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-042",
+  "kind": "connected_cpp_field_passes_resident_heap_and_sound_driver_memory_image",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8008110c",
+      "address_space": "PS1 KSEG0 field overlay; complete field update",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800739c0",
+      "address_space": "PS1 KSEG0 field overlay; move phase",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800a2030",
+      "address_space": "PS1 KSEG0 field overlay; event pass, including initialization passes",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x8009bf8c",
+      "address_space": "PS1 KSEG0 field overlay; primary FC and F5 dialogue windows (8009c12c)",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 140252,
+      "track_lba": 108674,
+      "sector_bytes": 2352,
+      "user_data_offset": 1012,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80031bdc",
+      "address_space": "PS1 KSEG0 resident; heap allocate, release 800320e8, coalesce 80031ff8",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 174916,
+      "track_lba": 108691,
+      "sector_bytes": 2352,
+      "user_data_offset": 860,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8003a344",
+      "address_space": "PS1 KSEG0 resident; sound driver: effect pairs 8003a344/8003a55c, effect start 80039f9c/8003b644, sequence stop/release 80039c4c/800399d4, wave release 80038310, pool free 80039144",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 48748,
+      "track_lba": 108629,
+      "sector_bytes": 2352,
+      "user_data_offset": 1668,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8001b66c",
+      "address_space": "PS1 KSEG0 resident; field music stop 8001b66c (8001b5e8 sequence, 8001b5a8 wave)",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    }
+  ],
+  "observation": "From complete original entry memory images recaptured with interpreter load-delay state, the shared C++ Program reproduces the exact exit image, GTE state and return value of every compared call on the frozen route: all 2,589 field updates and 2,589 move phases, all 2,836 control and ramp route calls, all 1,418 held-out calls, all 413 initialization and post-battle event passes, every resident heap allocation (543) and release (263), all 11 resident music stops and the checkpoint pass. No comparison diverged or stopped. In the three calls whose music load starts a CD stream, 41 owned libcd and disc bytes written by the call and then rewritten by interrupt code before it returned equal the original values at the start of that interrupt (interrupt_superseded).",
+  "interpretation": "The field update now includes dialogue windows (FC/F5), message placement, disc status, GTE projection, scripted cameras, initialization-time actor and flag opcodes, the resident sound-driver paths the field reaches, and the complete music change of opcode 75: sequence and wave-bank release, directory selection, stream buffer allocation, and the resident read setup with its libcd control and DMA callback registration. Heap, dialogue, sound-driver, disc and game-data state are imported from and exported to original memory through the single original-layout table and whole owned objects; the field overlay music table is read from the qualified decoded overlay source and verified against the loaded copy. Evidence is per-call equivalence from original images, not free-running multi-frame execution.",
+  "confidence": "confirmed",
+  "author": "Claude Opus 5.5, integration owner",
+  "reviewers": [
+    "Independent bounded source review of dialogue windows, the resident heap and disc status against the original assembly (review-dialogue-heap.md)",
+    "Independent review of load-delay capture, the BIOS save-area conflict rule, stale-pointer release and sound-effect voice pairs (review-load-delay-sound.md); its four non-blocking findings are fixed with tests. The review inherited a wrong opcode mapping (0x65 for handler 8008f4a0); the memory-image comparison exposed it, and the handler is now extended 0x63 with 0x65 explicit.",
+    "Independent review of the resident sound driver against the original assembly and of the keyframe/page-delta snapshot format (review-sound-snapshots.md): no blocking defects; its findings on error codes, the cached-sequence release, table-walk bounds, an unused global and reader hardening are fixed with tests.",
+    "Independent methodology review of the interrupt-superseded comparison rule (review-superseded-rule.md): accepted with changes; the rule is documented with its snapshot-granularity limits, brackets must be disjoint and ordered, reports list each byte with its accepted value and interrupt, and multi-interrupt edge cases are tested."
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; frozen route inputs tests/reference-inputs/field23-{encounter,control,ramp}-observation.json.",
+      "Observation core with read-only snapshot, GTE and load-delay hooks (parity 1.7.1: keyframe plus 256-byte page-delta snapshot files with per-record digests); every recapture's final RAM and audio are byte-identical to the previous qualified captures.",
+      "Runner xem-memory-runner frozen at sha256 a76e4878c028ba91937f9b1fd50c83f89ff56f6f9464071320f3d6c2b9678f2f with source archive sha256 6331b328a4ebcc0a8d64eaa048a74fe0389b8520d5b0b81fc0e02a2ff5d139b4; comparison tool sha256 66f6cd1f44b8d673ebd62d52a5b774086937099de24357e3e75a667b1c64c811, which verifies each capture's trace and snapshot digests. Expected exit images come only from the original capture."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace -c python3 tools/reference/scenario.py tests/reference-inputs/field23-ROUTE-observation.json --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/phase1-field23-NAME-20260923-v5 --trace-instructions .local/execution/field-update/NAME.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c python3 -m tools.analysis.memory_case --capture CAPTURE --runner RUNNER --entry {field_update|field_move|field_event_pass|field_checkpoints|heap_allocate|heap_release|music_stop} --entry-hook ENTRY --exit-hook EXIT --interrupt tick-entry:tick-exit --interrupt dispatch-entry:dispatch-exit --report REPORT",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c bash -c 'ctest --test-dir build/debug && ctest --test-dir build/sanitize && python3 tools/repository/check.py'"
+    ],
+    "expected": "Exact original exit memory image for every owned byte and every original-changed byte outside the callee stack window and interrupt-only bytes; exact GTE state and return value; explicit stops for unrecovered behavior.",
+    "actual": "56 comparison reports, 0 divergences, 0 stops. All 26 C++ and repository tests pass in debug and sanitize presets; repository checks pass.",
+    "result": "passed",
+    "tolerance": "None beyond the documented exclusions: callee stack window 0x800 bytes below the entry stack pointer, the scratchpad, and bytes changed only by bracketed interrupt handlers (plus BIOS exception save areas while they ran).",
+    "artifacts": [
+      {
+        "path": ".local/execution/connected/reports-final/alloc-fc.json",
+        "sha256": "66952ab5629e58cd69090f4e431fee2baa9f9b28e4ec6b8057a10997413bda24",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/alloc-load-a.json",
+        "sha256": "bcd6a3ac8e2d0a3e57b35d95285797777c3464d6df808e7d6ec75a69da57a0de",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/alloc-load-b.json",
+        "sha256": "84e7c74b9fceb205e7fdd6a46b7c8da96a8a32b2c80318e6736f75bc0a5b5ce5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/alloc-return-a.json",
+        "sha256": "fc1b1d3b8d321e2c16830b7d70d7e937f25f060ae96f9d9c87774168f0324332",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/checkpoints.json",
+        "sha256": "77fa95e9e87b2d20df1b83a16aed8eaedfd053f32e26da96a6cc98e78756a114",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/heldout-control-00.json",
+        "sha256": "a82efdb64a1c18b25af36dbef79dd1c12141b350e9d9ed5139a6a03e41d1a884",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/heldout-control-01.json",
+        "sha256": "3c8c88f18853d7d3d588e8995fa1e7243c7ae611f27e7ea167a85a9cfb6d119e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/heldout-ramp-00.json",
+        "sha256": "4d87a6db87f6f2a53515ed55bc9d6f90459e57f8abe12e5cd38ff51ddad91b34",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/heldout-ramp-01.json",
+        "sha256": "8e61a2ded58d5efb67604ae522793698c70171d866acbfaa17b16f22cfa4957e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/heldout-ramp-02.json",
+        "sha256": "47a2c7c1dcc88cb1d63632778449541fb096e2cc793326955189fd9388e65cae",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/heldout-ramp-03.json",
+        "sha256": "ec1d21c9f2dba99eb0658fb642a860c2b25f535133d55fc5abc5505759ca552c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/init-a.json",
+        "sha256": "c055cdc542795a7eba4cdfa3c7027c00c6256ff0a9b28e2e272330d0189c918c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/init-b.json",
+        "sha256": "6cb8b52fc2d2c99cf2e4950466eb2a537105e2cb66ae5029df44918a66019442",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/init-return.json",
+        "sha256": "5c709165e82c9a4dbb03e94fcb55e07b0a4aca31e7b15e51339513d189239eea",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-00.json",
+        "sha256": "4651c0fd45942b6704111efd8659da5172637d3458fddade9d2b9ee5f60a013a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-01.json",
+        "sha256": "7330236c97bed8b27798d66748e0e2678e8e61379d1844d04768bab42fc73834",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-02.json",
+        "sha256": "d73cb5035197441af17f3c78a2d8072e13e7e194a26c2d80e9a023ad4dfd84fb",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-03.json",
+        "sha256": "a4b52459f66da17acdd2ecfda0645627b411b18e23d694516c629605d7ff8f56",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-04.json",
+        "sha256": "3f1df5e8d6a4c4c670b61554d1879f12f68293def254a33902252648394ab6e6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-05.json",
+        "sha256": "d76297e6fae0eef8bb7efd83e73da7156b7d6188b4fdefb90869de30f72e56f9",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-06.json",
+        "sha256": "afd108d915cfea4bdf20cd821f8c77af5c5c474846c60ca0f81239659cf4ba7a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-07.json",
+        "sha256": "391dd63a27c17215aa15c1a1ffe41aa9b9cf327cd5d3583f69e754e47d16074a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-08.json",
+        "sha256": "943050223f6ed19988502dcb5885afa556f71ca05221c036aff041cdd77fcf7c",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-09.json",
+        "sha256": "3a38ecb3df79d754cdb024d554cbd45e1892c1857e9f26736dc96683dcd7ff92",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-10.json",
+        "sha256": "f62efa94ef0e4102e33ee4f98d99b4697d200eb071305dcf8a840c6c0f37ac49",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-control-00.json",
+        "sha256": "45786bd4151f8249931b7a7179a3698845a5f57d894c0c1294bb8b54ec799da1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-control-01.json",
+        "sha256": "c5defb4b6db45042022ce2b1da1ed3bb5913ebba40476d8a662f01a964392db6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-ramp-00.json",
+        "sha256": "8199481b1939a0afd3abb583033f5972a25ed0bbaaf554ba50a6375d650b342f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-ramp-01.json",
+        "sha256": "a9b19fadfcec661f8de6f3fccc4139b86f392e9a32c8f5341f07a67cf029d75e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-ramp-02.json",
+        "sha256": "c5468e267698b328a2aeb71db400deb8b61b0a6c210eab684bcd1dd6a4e4652e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/move-ramp-03.json",
+        "sha256": "61b6d2f750796e64489d530f0c3cdc54f20d4d2758f93b59f95d54dd1e55fa43",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/music-stop-a.json",
+        "sha256": "a2b1c3238fdabe5371d50df5f3fccb04c1ae334b622f4544766220e385c8b908",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/music-stop-b.json",
+        "sha256": "3cb40f59078d87d982b840f741790d9e16cb232972b4989226aedde51f9d80c3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/music-stop-c.json",
+        "sha256": "6b0e602403f24bccaddf33080ec1ac8a1f93077fdc3b965629070a75d59a2823",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/music-stop.json",
+        "sha256": "bb286226e63bb325fa28a340594f374c44e98c5f60d6accea977f474f47349ff",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/release-fc.json",
+        "sha256": "5ee651e4fdeaf3fd184d337a84333cc62eace8144a0b1a9000c04297fb8d3f40",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/release-load-a.json",
+        "sha256": "70b1e2413a6d21ea0aac6214fca9cf38335dc07532722c805cabeaf79ade9ede",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/release-load-b.json",
+        "sha256": "04f04e20cba1849dae13690afc143f01d139200c3e2595539ae769345b5c4280",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/release-return-a.json",
+        "sha256": "b6f31cd27968b65f6565f3ac309f580e4023146ffed8d90fbb4c01999e59406f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-00.json",
+        "sha256": "7e546f64880d84a2d8de97b0d3095d70ce375588192415f8d55a8731c04744b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-01.json",
+        "sha256": "9689ea8e1809a8850442377be020bac527d028e5d6c74436f4b23b3d7fa61cee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-02.json",
+        "sha256": "d9b52627b0087e556d9c2fbf465beb5a3a59d3fe17d29fe1e5b15ad2509cde98",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-03.json",
+        "sha256": "e3bca930f72375c12eb4aac8ca7dbf1d508a9edc4cb378eb93c5b0b1abcbf8e7",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-04.json",
+        "sha256": "0de55c52c740f4669295bd3dd0f5bc811515bfe2cc6e1212299d26bf312aec39",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-05.json",
+        "sha256": "b6da3d5fd74684883c8e761c4e1bb4154e01467879c19afe54df7e36d8b2dfcf",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-06.json",
+        "sha256": "f34b440dbb4f9a465fd1a6a7c534a7b067c731dc7122539e8146ee7c7757d06d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-07.json",
+        "sha256": "3e2e18a2a8ca472a6a55e6eb1353a36215e49fbb89b3b8bbb5e1fbbfbc25bbbe",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-08.json",
+        "sha256": "88c48d9e4784532deae294c739eca044fce51204a58cb20d3765bbd33acb746d",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-09.json",
+        "sha256": "d4ba570235b67aa2d5654c1e63b3d3b931c83026a66ae155e68532b7055553f5",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-10.json",
+        "sha256": "cb0eeb103e1540cbcb921277057bc99acd43f027842ddaca82d2eaf3f5e90f0e",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-control-00.json",
+        "sha256": "33bf29728030e76ddf9ad8547075b1221b77693f89bde89ffaceff70e76782c4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-control-01.json",
+        "sha256": "e1c7e3d11d8591753950842e3378462edb7229d4a8bdf736ee284b340d6fb4bc",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-ramp-00.json",
+        "sha256": "058d4f19f53170774735b52e2517230ee9d50d9c3eb77eecf66ef32a4b8c7a29",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-ramp-01.json",
+        "sha256": "476fce6b83f4a376c082243eca2460ee997d5ced39c61f20e42c7aa9fcc82518",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-ramp-02.json",
+        "sha256": "fdfd9a1e8001c166085f7a77b37524c6f3721dc1401a9f51134192304694ea6f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/update-ramp-03.json",
+        "sha256": "89d56e69d346d968ec13eea7a3cd33b099e52bcfdc860cd54a061d0c8ec7f6f7",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "nix/reference-trace.h",
+    "src/analysis/field_memory.cpp",
+    "src/analysis/memory_runner.cpp",
+    "src/reconstruction/disc_read.cpp",
+    "src/reconstruction/field_dialogue.cpp",
+    "src/reconstruction/field_gte.cpp",
+    "src/reconstruction/field_media.cpp",
+    "src/reconstruction/field_script.cpp",
+    "src/reconstruction/original_layout.cpp",
+    "src/reconstruction/program.cpp",
+    "src/reconstruction/resident_heap.cpp",
+    "src/reconstruction/sound_driver.cpp",
+    "tools/analysis/memory_case.py",
+    "tools/reference/instruction_trace.py"
+  ],
+  "limitations": [
+    "Per-call equivalence from original entry images; no free-running multi-frame execution. The music stream consumer 800859dc and stream polling are not yet connected to the Program.",
+    "Initialization opcodes 18, 19, 1a, 1b, 1e, 1f, 20, 2a, 5f, 61, 62, 65, 66, 84, f8, fb and extended 63 are source-reconstructed with synthetic tests but are not executed by the compared passes. Sound-driver error-handler paths (8003f6b0) are explicit failures.",
+    "Interrupt handlers are bracketed, not reconstructed; the scratchpad is not compared. Kernel save-area ranges are specific to the pinned HLE BIOS. The superseded rule cannot see a call store that repeats a value an interrupt left, and does not model the call reading interrupt-written values.",
+    "Recorded CD and DMA register writes are checked only by synthetic tests, not against original register traffic."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored code only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures, reports and runner archives remain private."
+  }
+}

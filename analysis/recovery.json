@@ -124,8 +124,14 @@
         {
           "opcode": "0x07",
           "handler": "0x8009eb78",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "request_event",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x08",
@@ -242,26 +248,50 @@
         {
           "opcode": "0x18",
           "handler": "0x8009e83c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_bounds",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x19",
           "handler": "0x8009e4bc",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "place_actor",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/program.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x1a",
           "handler": "0x8009e428",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_layer_and_replace",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/program.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x1b",
           "handler": "0x8009e35c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_layer_and_place",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/program.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x1c",
@@ -278,20 +308,38 @@
         {
           "opcode": "0x1e",
           "handler": "0x8009e208",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "floor_from_actor_height",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x1f",
           "handler": "0x8009e1a0",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_layer_flags",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x20",
           "handler": "0x8009e10c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_flags",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x21",
@@ -358,14 +406,26 @@
         {
           "opcode": "0x29",
           "handler": "0x8009dac4",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "hide_actor",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not reached on the compared routes."
         },
         {
           "opcode": "0x2a",
           "handler": "0x8009da1c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_field_2a",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x2b",
@@ -376,8 +436,14 @@
         {
           "opcode": "0x2c",
           "handler": "0x8009a130",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "override_animation",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x2d",
@@ -507,8 +573,14 @@
         {
           "opcode": "0x3c",
           "handler": "0x8009d340",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "increment_variable",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 10 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x3d",
@@ -669,8 +741,14 @@
         {
           "opcode": "0x57",
           "handler": "0x80099214",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "scripted_arc",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 200 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x58",
@@ -687,8 +765,14 @@
         {
           "opcode": "0x5a",
           "handler": "0x8009524c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "stop_actor",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 310 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x5b",
@@ -717,50 +801,98 @@
         {
           "opcode": "0x5f",
           "handler": "0x8009ad6c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "face_table_direction",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x60",
           "handler": "0x8008fdd0",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "save_camera_target_goal",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 1 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0x61",
           "handler": "0x8008fe2c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_camera_target",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x62",
           "handler": "0x8008ff04",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "actor_point_a_from_actor",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x63",
           "handler": "0x8008ff90",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_point_a",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 1 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0x64",
           "handler": "0x80090068",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "save_camera_eye_goal",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 1 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0x65",
           "handler": "0x800900c4",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_camera_eye",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x66",
           "handler": "0x8009019c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "actor_point_b_from_actor",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x67",
@@ -859,8 +991,15 @@
         {
           "opcode": "0x75",
           "handler": "0x8008f76c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "change_music",
+          "evidence": [
+            "EVID-REF-042",
+            "EVID-REF-045"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_dialogue.cpp",
+          "scope": "Entered 9 times inside exactly matched calls, including both music loads that start a CD stream (field 80085b20 through resident read setup)."
         },
         {
           "opcode": "0x76",
@@ -949,8 +1088,14 @@
         {
           "opcode": "0x84",
           "handler": "0x80096644",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "jump_unless_variable_below",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x85",
@@ -973,8 +1118,14 @@
         {
           "opcode": "0x87",
           "handler": "0x80096790",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_variable_zero",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x88",
@@ -985,8 +1136,14 @@
         {
           "opcode": "0x89",
           "handler": "0x80095e48",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "proximity_branch",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 31528 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x8a",
@@ -1081,14 +1238,26 @@
         {
           "opcode": "0x99",
           "handler": "0x8008fb98",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "enter_scripted_camera",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 1 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0x9a",
           "handler": "0x8008fc4c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "camera_mode",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x9b",
@@ -1099,14 +1268,26 @@
         {
           "opcode": "0x9c",
           "handler": "0x8009bb0c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "wait_dialogue",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 192 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x9d",
           "handler": "0x8009a34c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "camera_transition",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not reached on the compared routes."
         },
         {
           "opcode": "0x9e",
@@ -1123,8 +1304,14 @@
         {
           "opcode": "0xa0",
           "handler": "0x8009ba7c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "camera_setup",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0xa1",
@@ -1141,8 +1328,14 @@
         {
           "opcode": "0xa3",
           "handler": "0x80090228",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_point_b",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 1 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xa4",
@@ -1204,8 +1397,14 @@
         {
           "opcode": "0xac",
           "handler": "0x800903bc",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "scripted_camera_move",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xad",
@@ -1246,14 +1445,26 @@
         {
           "opcode": "0xb3",
           "handler": "0x8009731c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "start_fade_out",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0xb4",
           "handler": "0x80097364",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "start_fade",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0xb5",
@@ -1378,8 +1589,14 @@
         {
           "opcode": "0xc9",
           "handler": "0x80095734",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "zone_test",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 23880 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0xca",
@@ -1474,8 +1691,14 @@
         {
           "opcode": "0xd9",
           "handler": "0x80094764",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_12c_bits",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 21 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xda",
@@ -1504,14 +1727,26 @@
         {
           "opcode": "0xde",
           "handler": "0x8009d6d8",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "multiply_variable",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 3876 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0xdf",
           "handler": "0x8009d768",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "divide_variable",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 3876 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0xe0",
@@ -1606,8 +1841,14 @@
         {
           "opcode": "0xef",
           "handler": "0x8008fa38",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "wait_scripted_camera",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xf0",
@@ -1624,8 +1865,14 @@
         {
           "opcode": "0xf2",
           "handler": "0x8008f90c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "camera_shake",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 2 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xf3",
@@ -1642,8 +1889,14 @@
         {
           "opcode": "0xf5",
           "handler": "0x8009c12c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "open_actor_dialogue_window",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_dialogue.cpp",
+          "scope": "Entered 10 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xf6",
@@ -1660,8 +1913,14 @@
         {
           "opcode": "0xf8",
           "handler": "0x8008e59c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_actor_halves",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0xf9",
@@ -1678,14 +1937,26 @@
         {
           "opcode": "0xfb",
           "handler": "0x8008d780",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "jump_unless_variable_bit",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0xfc",
           "handler": "0x8009bf8c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "open_dialogue_window",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_dialogue.cpp",
+          "scope": "Entered 2 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0xfd",
@@ -1938,8 +2209,14 @@
         {
           "opcode": "0x24",
           "handler": "0x8009b210",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "party_gather",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_update.cpp",
+          "scope": "Entered 2 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x25",
@@ -2220,8 +2497,14 @@
         {
           "opcode": "0x53",
           "handler": "0x80093ac8",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "clear_encounter_and_camera_flags",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Original source and synthetic tests only; not reached on the compared routes."
         },
         {
           "opcode": "0x54",
@@ -2310,14 +2593,26 @@
         {
           "opcode": "0x62",
           "handler": "0x8008f444",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_sound_effect_pair_76",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_media.cpp",
+          "scope": "Entered 44 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0x63",
           "handler": "0x8008f4a0",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "source_reconstructed_unobserved",
+          "native_status": "authored_cpp_library",
+          "name": "set_sound_effect_pair_74",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_media.cpp",
+          "scope": "Original source and synthetic tests only; not executed by the compared passes."
         },
         {
           "opcode": "0x64",
@@ -2328,8 +2623,14 @@
         {
           "opcode": "0x65",
           "handler": "0x8008f4fc",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "play_sound_effect",
+          "evidence": [
+            "EVID-REF-042"
+          ],
+          "cpp_reconstruction": "src/reconstruction/sound_driver.cpp",
+          "scope": "Entered 4 times inside exactly matched calls (field updates, moves and event passes) on the qualified routes."
         },
         {
           "opcode": "0x66",
@@ -2646,8 +2947,14 @@
         {
           "opcode": "0x99",
           "handler": "0x8008848c",
-          "analysis_status": "unresolved",
-          "native_status": "unimplemented"
+          "analysis_status": "observed_subset",
+          "native_status": "authored_cpp_library",
+          "name": "set_flag_b236c",
+          "evidence": [
+            "EVID-REF-041"
+          ],
+          "cpp_reconstruction": "src/reconstruction/field_script.cpp",
+          "scope": "Entered 8062 times across exactly matched field-update and move-phase calls (each move call contains one update) on the qualified and held-out routes."
         },
         {
           "opcode": "0x9a",

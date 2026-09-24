@@ -65,13 +65,15 @@ struct FieldPlanarVector {
     std::optional<SpritePlanarVector> sprite;
     bool operator==(const FieldPlanarVector &) const = default;
 };
-// Ordinary party path of field 80081f80. actor_flags is actor+04, whereas
-// begin_field_motion uses actor+00. The stop sentinel precedes actor
-// flags/table/divisor reads. Ratio, alternate actor and Gear paths throw.
-// Updates sprite direction/X/Z only; final collision displacement is separate.
-[[nodiscard]] FieldPlanarVector update_field_party_velocity(
-    SpriteWindow sprite, std::uint16_t direction, std::uint16_t descriptor_flags,
-    std::optional<std::uint32_t> actor_flags, std::span<const std::uint8_t> table);
+// Field 80081f80. actor is the descriptor's 312-byte record: divisor +76,
+// layer flags +04 and ratio scales +f4/+f8. The stop sentinel clears X/Z; the
+// ordinary party path rebuilds the sprite vector; ratio paths use the resident
+// cosine/sine pair. The 801e8670 object-table path fails explicitly.
+// Updates sprite direction/X/Z (and +18 on one path) only.
+[[nodiscard]] FieldPlanarVector update_field_velocity(SpriteWindow sprite, std::uint16_t direction,
+                                                      std::uint16_t descriptor_flags,
+                                                      std::span<const std::uint8_t> actor,
+                                                      std::span<const std::uint8_t> table);
 
 // Resident 80024edc..80024efc: add a source width to the post-handler PC.
 // This neither executes a command nor claims that every VM path stores a PC.

@@ -48,6 +48,7 @@ struct Fixture {
     std::array<field::SpriteWindow, 1> owned;
     field::SpriteModelState state{};
     field::SpriteHeapControls heap{};
+    xem::reconstruction::resident::Heap allocator;
     field::SpriteEnvironment environment{};
     field::SpriteServices services{};
     std::vector<std::uint8_t> incoming = std::vector<std::uint8_t>(144);
@@ -99,23 +100,22 @@ struct Fixture {
         state.buffers.push_back({old_address, std::vector<std::uint8_t>(32, 0x71)});
         environment.texture_page = 0xcafe0014;
         environment.texture_mode = 1;
-        heap.allocation_class = 8;
+        allocator.tag = 8;
         heap.class_eight_context = 0x34567890;
         heap.class_five_context = 0x12345678;
-        heap.allocation_cursor = 9;
-        heap.tag = 0xabba;
+        allocator.quiet = 9;
+        allocator.allocation_class = 0xabba;
         for (std::size_t i = 0; i < incoming.size(); ++i)
             incoming[i] = static_cast<std::uint8_t>(17 * i + 5);
         services.release = [&](std::uint32_t address) {
-            check(heap.allocation_class == 5 && heap.class_five_context == 0 &&
-                      heap.allocation_cursor == 0,
+            check(allocator.tag == 5 && heap.class_five_context == 0 && allocator.quiet == 0,
                   "F5 selects its heap class before releasing packet ownership");
             check((get(model, 0, 2) & 0x20) != 0,
                   "Original relocation precedes releasing the old allocation");
             released.push_back(address);
         };
         services.allocate = [&](std::uint32_t size, std::uint32_t mode) {
-            check(size == 144 && mode == 0 && heap.tag == 0x25,
+            check(size == 144 && mode == 0 && allocator.allocation_class == 0x25,
                   "Double-buffer request uses original size, mode and tag");
             check(released.size() == allocation_count + 1,
                   "Release precedes each new packet allocation");
@@ -128,6 +128,7 @@ struct Fixture {
         result.mutable_resources = owned;
         result.models = &state;
         result.heap = &heap;
+        result.allocator = &allocator;
         result.services = &services;
         return result;
     }

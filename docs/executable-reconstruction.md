@@ -28,17 +28,15 @@ subsets, battle requests/continuation, return data, music callers and the reside
 CD ring. Scheduling and control share the input-update word; sprite commands
 invoke the existing motion arithmetic; music streaming invokes the resident ring.
 
-Complete party motion and position integration still have useful Python
-references and original captures. They are candidates for lowering into this
-library, not alternative executable game logic. The existing compiled collision
-queries/sweeps should be connected, not reimplemented. Their four tracked source,
-test and format-note files were absent from the source allowlist; this integration
-adds them so isolated builds include the existing dependency. Full initialization, ordinary
-NPC motion, contact/followers, combat, menus/card state, media services and mode
-dispatch remain incomplete. The loader, initializer, scheduler, field update and
-mode dispatcher are distinct boundaries. In particular, `8008110c` runs events
-before motion, controlled contact/position, other position updates, encounters
-and followers; an event pass does not stand in for this update.
+The complete field update `8008110c` (events, party and NPC motion, contact,
+positions, interactions and followers), the move phase `800739c0` (camera follow,
+view matrices, facing and sprite orientation) and the return checkpoint pass
+`800a3c8c` now run in this library. The resident heap (`80031bdc`, `800320e8`,
+`80031ff8`) is reconstructed with synthetic coverage; its original comparisons
+and use by callers are in progress. Initialization, dialogue/message, sound,
+drawing, combat, menus/card state, media services and mode dispatch remain
+incomplete. The loader, initializer, scheduler, field update and mode dispatcher
+are distinct boundaries; an event pass does not stand in for a field update.
 
 ## First connected original case
 
@@ -82,6 +80,69 @@ Six correlated captures of one route supply this evidence; they are not six
 independent scenarios. Source/live differences in field sprite resources remain
 unavailable ranges. No tolerance, replacement bytes or unexplained mask is used.
 See [EVID-REF-040](../analysis/findings/EVID-REF-040.json).
+
+## Memory-image comparison
+
+Connected entries are compared against complete original memory, not selected
+projections. A qualified capture stores the full 2 MiB RAM, the scratchpad and
+the CPU and GTE registers at an entry PC and at its return. The snapshot file
+stores a complete image every 256 snapshots and otherwise only the 256-byte
+pages changed since the previous snapshot; per-record digests verify every
+reconstructed image. The analysis import builds a `Program` from the entry
+image and the separately decoded field source. The runner executes the C++
+entry and exports every Program-owned value to its original address. The
+comparison then requires:
+
+- every owned byte to equal the original exit image;
+- every byte the original changed to be owned, except the callee stack window
+  below the entry stack pointer and bytes changed only inside bracketed
+  interrupt handlers (`8003c028` sound tick, `8004b9b4` dispatcher, and the BIOS
+  exception save areas while such a handler ran);
+- the GTE rotation and translation registers at exit to match exactly.
+
+An owned byte that only interrupt code changed is attributed to the
+interrupt when the C++ left it at its entry value. An owned byte the call
+wrote and interrupt code then rewrote before the call returned is matched only
+when the C++ value equals the byte's value in the snapshot at the start of the
+first interrupt after the call's last change to it; such bytes are listed with
+that value and interrupt as `interrupt_superseded`. Brackets must be disjoint
+and in time order. Overlapping ownership, any other write by both the call and
+an interrupt, or an unowned change is a divergence. The BIOS save areas are the
+exception: exception entry writes them before the dispatch hook, so they are
+never Program state and never a conflict.
+
+Two limits follow from snapshot granularity. A call store that repeats the
+value an interrupt left is invisible, so both interrupt rules then expect the
+older value. The comparison also does not model the call reading a value that
+interrupt code wrote; carrying Program state from one call into the next would
+need the interrupt's effects (for example the libcd callback pointer at
+`800564a8`, which the Program leaves set where the machine has cleared it).
+Captures also record the interpreter's load-delay slots. A load issued in a
+caller's delay slot is still pending at the callee's entry hook; the tool
+commits pending loads before passing entry registers (arguments, stack
+pointer) and before reading the exit return value, which is what the code
+observes one instruction later.
+They also record all 64 GTE registers and the 4 KiB hardware I/O page;
+the runner imports the GTE control registers (rotation, translation, screen
+offset and H are compared at exit) and receives the I/O page as a read-only
+platform input, for example the CD DMA status that libcd polls. The scratchpad
+is not compared. Original
+globals are correlated once, in `src/reconstruction/original_layout.cpp`; the
+field-return snapshot restore writes through the same table, so no region has a
+second representation. Resident entries (heap allocate and release) import only
+resident state and need no loaded field; globals that live in overlay data
+belong to field state, because at boot the heap holds that memory.
+
+```sh
+python3 -m tools.analysis.memory_case --capture CAPTURE --entry field_move \
+  --entry-hook move-entry --exit-hook move-return \
+  --interrupt tick-entry:tick-exit --interrupt dispatch-entry:dispatch-exit \
+  --report .local/execution/connected/reports/move-NN.json
+```
+
+See [EVID-REF-041](../analysis/findings/EVID-REF-041.json) and
+[EVID-REF-042](../analysis/findings/EVID-REF-042.json) for the qualified
+captures, runners and results.
 
 ## Focused commands
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "xem/reconstruction/resident_heap.hpp"
+
 #include <array>
 #include <cstdint>
 #include <functional>
@@ -53,12 +55,11 @@ struct SpriteTaskState;
 struct SpriteServices;
 struct SpriteWindow;
 struct SpriteModelState;
+// Allocation contexts the sprite code clears before selecting a heap tag. The
+// heap's own tag, class and quiet flag belong to resident::Heap.
 struct SpriteHeapControls {
-    std::uint16_t allocation_class{};    // 8005931c
     std::uint32_t class_eight_context{}; // 80059fc4
-    std::uint32_t allocation_cursor{};   // 80059330
     std::uint32_t class_five_context{};  // 80059fb8
-    std::uint16_t tag{};                 // 80059318
 };
 // The current field factory lends its actual actor for callback 80076a74.
 // A callback selecting another actor requires that actor's owned context.
@@ -82,6 +83,7 @@ struct SpriteSources {
     std::span<SpriteWindow> mutable_resources{};
     SpriteModelState *models{};
     SpriteHeapControls *heap{};
+    resident::Heap *allocator{}; // Tag, class and quiet flag of the next allocation.
 };
 struct SpriteEnvironment {
     std::int32_t rate_control{};

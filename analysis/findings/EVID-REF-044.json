@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-044",
+  "kind": "hardware_service_call_census",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 206984,
+      "track_lba": 108707,
+      "sector_bytes": 2352,
+      "user_data_offset": 160,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80042088",
+      "address_space": "PS1 KSEG0 resident; CD controller command exchange",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 201188,
+      "track_lba": 108704,
+      "sector_bytes": 2352,
+      "user_data_offset": 508,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800409e4",
+      "address_space": "PS1 KSEG0 resident; serial/pad transaction",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 245068,
+      "track_lba": 108725,
+      "sector_bytes": 2352,
+      "user_data_offset": 1380,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004b54c",
+      "address_space": "PS1 KSEG0 resident; GPU and root-counter wait",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 246196,
+      "track_lba": 108726,
+      "sector_bytes": 2352,
+      "user_data_offset": 460,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004b9b4",
+      "address_space": "PS1 KSEG0 resident; interrupt dispatch",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    }
+  ],
+  "observation": "86 resident export entries of the qualified export reference hardware registers directly. Hooking all of them in six route windows (field with a music load, field walking, combat, post-battle, field return and the closing menu entry) shows 34 entries hit: a serial/pad transaction once per frame, root-counter reads eight times per frame, interrupt acknowledge and dispatch several times per frame, ordering-table clear and GPU DMA every frame, a VSync wait (overlay 800758d0) polling a resident entry about 1,100-3,000 times per field frame, no-wait CD command writes with interrupt-driven acknowledgement during loads, and SPU register writes while music loads. All 72 final RAM and audio artifacts of the 36 census captures equal the uninstrumented route.",
+  "interpretation": "The route's hardware-facing intent falls into five native services: display submission, controller state, asynchronous disc reads with completion status, audio voice updates, and interrupt/time callbacks. The reconstruction keeps game logic above these boundaries; the disc command acknowledgement and interrupt handlers are the explicit remaining boundaries on the compared paths.",
+  "confidence": "confirmed",
+  "author": "Claude Opus 5.5, integration owner",
+  "reviewers": [
+    "Independent evidence review recomputing every count and call site from the 36 traces, checking hook derivation, guards, classification, the disc and DMA callback claims against snapshots, and non-perturbation (review-hw-census.md). Its corrections are applied: counts are entry-address hits (some entries are fragments or loop heads), the command writer is no-wait on the route with interrupt-driven acknowledgement, the VSync wait rate and location are corrected, budget-limited cells are marked, and no library names are claimed."
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; frozen route input tests/reference-inputs/field23-encounter-observation.json; observation core parity 1.7.1.",
+      "Hook lists derived from the qualified resident export data references; no library identity is claimed."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace -c python3 tools/reference/scenario.py tests/reference-inputs/field23-encounter-observation.json --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/phase1-field23-hw-WINDOW-GROUP-20260923-v5 --trace-instructions .local/execution/field-update/hw-WINDOW-GROUP.json"
+    ],
+    "expected": "Every directly hardware-referencing resident function either appears with counts and call sites or is absent from all windows; captures do not perturb the route.",
+    "actual": "34 of 86 export entries hit; per-group entry-hit counts in analysis/formats/service-boundaries.md; 72 of 72 final artifacts identical to the uninstrumented route; hook group 2 reached its callback budget in the two field windows (lower bounds, marked).",
+    "result": "passed",
+    "tolerance": "None; counts are exact within each window except the two budget-limited group-2 windows.",
+    "artifacts": [
+      {
+        "path": ".local/execution/connected/hw-census.json",
+        "sha256": "85ef56499b16b4b0d8f56746519cc458a30b072909ad8db01c14817b386b4e97",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "analysis/formats/service-boundaries.md"
+  ],
+  "limitations": [
+    "Sampled windows, not the whole route; counts are hits on export entry addresses, some of which are fragments or loop heads of larger routines; code reaching hardware only through unresolved pointers is not listed.",
+    "Cadence is observed on an HLE-BIOS interpreter and is not a hardware timing proof.",
+    "Display, controller, disc and audio services are not implemented natively; this records intent and boundaries only."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored code only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures and reports remain private."
+  }
+}

@@ -108,26 +108,65 @@ SpritePlanarVector apply_animation_speed(SpriteWindow sprite, std::uint8_t opera
     return rebuild_sprite_velocity(sprite, table);
 }
 
-FieldPlanarVector update_field_party_velocity(SpriteWindow sprite, std::uint16_t direction,
-                                              std::uint16_t descriptor_flags,
-                                              std::optional<std::uint32_t> actor_flags,
-                                              std::span<const std::uint8_t> table) {
-    require((descriptor_flags & 0x40U) != 0, "Unreconstructed field velocity ratio path");
+FieldPlanarVector update_field_velocity(SpriteWindow sprite, std::uint16_t direction,
+                                        std::uint16_t descriptor_flags,
+                                        std::span<const std::uint8_t> actor,
+                                        std::span<const std::uint8_t> table) {
     check_sprite(sprite);
-    if ((direction & 0x8000U) != 0) {
+    require(actor.size() == 0x138, "Field velocity requires the descriptor's actor record");
+    const auto divisor = read(actor, 0x76, 2);
+    const auto stop = [&] {
         store(sprite.bytes, 0x0c, 0);
         store(sprite.bytes, 0x14, 0);
-        return {signed_half(read(sprite.bytes, 0x32, 2)), 0, 0, std::nullopt};
+        return FieldPlanarVector{signed_half(read(sprite.bytes, 0x32, 2)), 0, 0, std::nullopt};
+    };
+    const auto quotient = [&](std::uint32_t numerator) {
+        require(divisor != 0, "Original field velocity zero-divisor result is unrecovered");
+        return static_cast<std::int32_t>(numerator / divisor);
+    };
+    // Resident 8003f8cc/8003f8b0 cosine and sine; scaled by actor +f4/+f8.
+    const auto scaled = [&](std::int32_t ratio) {
+        const auto speed = (ratio >> 8) << 5;
+        const auto trig = planar_trigonometry(table, direction);
+        store(sprite.bytes, 0x0c,
+              static_cast<std::uint32_t>(
+                  product(product(trig.cosine, speed) >> 12, signed_half(read(actor, 0xf4, 2)))));
+        store(sprite.bytes, 0x14,
+              static_cast<std::uint32_t>(product(
+                  signed_word(0U - static_cast<std::uint32_t>(product(trig.sine, speed))) >> 12,
+                  signed_half(read(actor, 0xf8, 2)))));
+    };
+    std::optional<SpritePlanarVector> vector;
+    if ((descriptor_flags & 0x40U) == 0) {
+        // The ratio path divides before testing the stop sentinel; an unused
+        // zero-divisor quotient therefore has no observable effect.
+        if ((direction & 0x8000U) != 0)
+            return stop();
+        scaled(quotient(0x40000U));
+    } else {
+        if ((direction & 0x8000U) != 0)
+            return stop();
+        const auto layer_flags = read(actor, 4);
+        if ((layer_flags & 0x2000U) != 0) {
+            if ((layer_flags & 0x20000U) != 0)
+                throw UnrecoveredSpriteBehavior(
+                    "Field velocity 80081f80 reads the unrecovered 801e8670 object table");
+            scaled(quotient(0x80000U));
+        } else if ((layer_flags & 0x80000U) != 0) {
+            scaled(quotient(0x40000U));
+            store(sprite.bytes, 0x18, static_cast<std::uint32_t>(quotient(0x4000000U)));
+        } else {
+            store(sprite.bytes, 0x32, direction, 2);
+            vector = rebuild_sprite_velocity(sprite, table);
+            store(sprite.bytes, 0x0c, static_cast<std::uint32_t>(vector->x));
+            store(sprite.bytes, 0x14, static_cast<std::uint32_t>(vector->z));
+        }
     }
-    require(actor_flags.has_value() && (*actor_flags & 0x82000U) == 0,
-            "Unreconstructed alternate actor velocity path");
-    store(sprite.bytes, 0x32, direction, 2);
-    const auto vector = rebuild_sprite_velocity(sprite, table);
-    const auto x = static_cast<std::uint32_t>(vector.x) & 0xfffff000U;
-    const auto z = static_cast<std::uint32_t>(vector.z) & 0xfffff000U;
+    const auto x = read(sprite.bytes, 0x0c) & 0xfffff000U;
+    const auto z = read(sprite.bytes, 0x14) & 0xfffff000U;
     store(sprite.bytes, 0x0c, x);
     store(sprite.bytes, 0x14, z);
-    return {signed_half(direction), signed_word(x), signed_word(z), vector};
+    return {signed_half(read(sprite.bytes, 0x32, 2)), signed_word(x), signed_word(z), vector};
 }
 
 std::uint32_t store_sprite_command_pc(SpriteWindow sprite, std::uint8_t opcode,

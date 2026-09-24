@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "parity_version": "1.2.1",
+  "parity_version": "1.7.1",
   "protocol_version": "0.1",
-  "review_date": "2026-09-19",
+  "review_date": "2026-09-23",
   "status_semantics": {
     "observed_original": "Original finding establishes only the named observed paths; tools tests additionally verify rejection/bounds.",
     "tooling_tested": "Inspected implementation and public synthetic tests; no original gameplay capability promotion.",
@@ -36,11 +36,11 @@
     },
     {
       "path": "nix/reference-trace.h",
-      "sha256": "cda96440769901897e207596246ab8d6434f95c3b474fdad891ae9a30297bd33"
+      "sha256": "6f60b410c6ec15d6bc5cda1cec1938342cb7c49cf93e9ccc087dc8422d0fa7f7"
     },
     {
       "path": "tests/test_instruction_trace.py",
-      "sha256": "42c2ffd74229208d91ed4a58923e51c4e4d65309ba711e32209ee95697de7648"
+      "sha256": "314a567160ced1c18e4476234402c2665e85c722f0843065bd7973f91d7c4436"
     },
     {
       "path": "tests/test_memory_sampler.py",
@@ -60,7 +60,7 @@
     },
     {
       "path": "tools/reference/instruction_trace.py",
-      "sha256": "f45e1a5ef41ad23d9cd31fe25d555093af8257075f6b2b0ede788bb29d57ef58"
+      "sha256": "6788e61d1b764df1d0c31ac506c4366b12061aae95580a6f6a30f197adf30758"
     },
     {
       "path": "tools/reference/memory_sampler.py",
@@ -447,7 +447,7 @@
       "id": "PARITY-INSTRUCTION-TRACE",
       "emulator": {
         "status": "observed_original",
-        "scope": "--trace-instructions optionally observes guarded interpreter PCs, registers and bounded RAM ranges without writes. Optional region digests use explicit bounds, rejecting invalid pointers, alias wrapping and excessive hashing work. Limits: 16 hooks, one million candidate callbacks, 64 MiB per-hook emitted payload bound and separate 64 MiB hashing-work bound. No complete instruction coverage, interactive debugger or hardware timing claim. The versionless trace interface also exposes read-only 1 KiB scratchpad backing for register-relative ranges at physical, KSEG0 and KSEG1 aliases. Cross-boundary ranges and hardware-register addresses are rejected. Direct ranges, pointer_offset ranges and digests remain RAM-only. The collector and extension share one callback signature without version discovery or version metadata.",
+        "scope": "--trace-instructions optionally observes guarded interpreter PCs, registers and bounded RAM ranges without writes. Optional region digests use explicit bounds, rejecting invalid pointers, alias wrapping and excessive hashing work. Limits: 16 hooks, one million candidate callbacks, 64 MiB per-hook emitted payload bound and separate 64 MiB hashing-work bound. No complete instruction coverage, interactive debugger or hardware timing claim. The versionless trace interface also exposes read-only 1 KiB scratchpad backing for register-relative ranges at physical, KSEG0 and KSEG1 aliases. Cross-boundary ranges and hardware-register addresses are rejected. Direct ranges, pointer_offset ranges and digests remain RAM-only. The collector and extension share one callback signature without version discovery or version metadata. Optional snapshot hooks (paired with max_snapshots, at most 8192) store the complete 2 MiB RAM and 1 KiB scratchpad backing at a guarded PC in a file beside the trace, as a full keyframe every 256 snapshots and otherwise only the 256-byte pages changed since the previous snapshot; per-record digests verify every reconstructed image; they remain read-only observations and do not attribute writes made by interrupt handlers. Each record also carries the 64 raw GTE words (32 data, then 32 control) as the pinned interpreter stores them; the hook reads them without writing emulated state. Snapshots also store the 4 KiB hardware I/O register page (1f801000) read through the same read-only hardware backing pointer; register state is an observation, not emulated memory.",
         "sources": [
           "tools/reference/scenario.py",
           "tools/reference/observe.py",
@@ -721,8 +721,8 @@
   ],
   "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation.",
   "change_review": {
-    "version": "1.2.1",
-    "author": "ChatGPT",
-    "scope": "Reviewed removal of trace version discovery, collector version state, observation version metadata and consumer version checks. Thirteen focused instruction-trace tests and a compiled C-to-Python callback smoke test pass; callback bounds, read-only RAM/scratchpad behavior and required-export rejection remain covered. Refreshed the four affected live baseline hashes. JSON schema and libretro ABI versions are unchanged. No original-game capture/replay was rerun; original findings and historical Phase 0 audits retain their hashes, and native methods remain unimplemented."
+    "version": "1.7.1",
+    "author": "Claude Opus 5.5",
+    "scope": "Applied an independent format review (review-sound-snapshots.md): the snapshot reader validates a delta's page indexes before applying any, invalidates its cached image before replay, and rejects chunks that are not exactly one compressed stream. Tests cover each rejection. Host-side reading only; the core extension, hooks and file format are unchanged. Refreshed live baseline hashes; native methods remain unimplemented."
   }
 }

@@ -160,13 +160,13 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(report["partial_state"]["event_control"][1], 1)
 
     def test_computed_variable_then_actual_dependency(self):
-        source = case(bytes((0x35, 0, 0, 5, 0, 0x40, 0x75)))
+        source = case(bytes((0x35, 0, 0, 5, 0, 0x40, 0x03)))
         unchanged = copy.deepcopy(source)
         report = run(source, RUNNER)
         self.assertEqual(source, unchanged)
         self.assertEqual(report["status"], "dependency_needs_recovery")
         self.assertEqual(report["location"]["event_pc"], 6)
-        self.assertEqual(report["opcode"], 0x75)
+        self.assertEqual(report["opcode"], 0x03)
         self.assertEqual(report["partial_state"]["variables"], "0500" + "00" * 2046)
         expected = {
             "schema_version": 1,
@@ -181,14 +181,14 @@ class RunnerTests(unittest.TestCase):
                     "state": {"variables": "0500" + "00" * 2046},
                 }
             ],
-            "stop": {"actor_index": 0, "opcode": 0x75},
+            "stop": {"actor_index": 0, "opcode": 0x03},
         }
         self.assertEqual(compare(report, expected)["status"], "matched")
         expected["checkpoints"][0]["state"]["variables"] = "0600" + "00" * 2046
         self.assertEqual(compare(report, expected)["status"], "behavioral_divergence")
 
     def test_limits_retain_partial_state_and_restart_is_explicit(self):
-        source = case(bytes((0x35, 0, 0, 5, 0, 0x40, 0x75)))
+        source = case(bytes((0x35, 0, 0, 5, 0, 0x40, 0x03)))
         limited = run(source, RUNNER, budget=1)
         self.assertEqual(limited["status"], "host_budget_exhausted")
         self.assertEqual(limited["dependency"], "")

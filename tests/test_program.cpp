@@ -1,3 +1,4 @@
+#include "xem/reconstruction/original_layout.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <algorithm>
@@ -14,6 +15,12 @@ void put(std::span<std::uint8_t> bytes, std::size_t at, std::uint32_t value,
          std::size_t width = 4) {
     for (std::size_t i = 0; i < width; ++i)
         bytes[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+}
+std::uint32_t get(std::span<const std::uint8_t> bytes, std::size_t at, std::size_t width) {
+    std::uint32_t value = 0;
+    for (std::size_t i = 0; i < width; ++i)
+        value |= static_cast<std::uint32_t>(bytes[at + i]) << (8U * i);
+    return value;
 }
 
 game::Program events(std::vector<std::uint8_t> code, std::size_t count = 1) {
@@ -53,7 +60,7 @@ void state_continuity_and_moves() {
 }
 
 void connected_handlers_and_partial_state() {
-    auto program = events({0x71, 0, 0x80, 0xfe, 0x7f, 0x86, 32, 0x80, 11, 0, 0, 0x75});
+    auto program = events({0x71, 0, 0x80, 0xfe, 0x7f, 0x86, 32, 0x80, 11, 0, 0, 0x03});
     program.field->battle_mode_source = 5;
     program.resident.battle_request.field_active = 0xffffffffU;
     program.resident.variables.words[0] = 27;
@@ -77,7 +84,7 @@ void connected_handlers_and_partial_state() {
         static_cast<void>(program.event_pass());
         check(false, "Unknown music handler must stop");
     } catch (const field::UnsupportedInstruction &error) {
-        check(error.pc == 11 && error.opcode == 0x75,
+        check(error.pc == 11 && error.opcode == 0x03,
               "Computed battle branch encounters its actual next instruction");
     }
     check(program.field->actors[0].events().pc == 11 &&
@@ -110,6 +117,35 @@ void extended_error_retains_prefix() {
           "FE's already-issued increment remains committed after interruption");
 }
 
+void sound_effect_dispatch() {
+    // FE 62 value 0x40, channel 5; FE 63 value 0x20, channel 5; FE 65 effect 0,
+    // channel 5 (a stop); then an unknown FE.
+    auto program = events({0xfe, 0x62, 0x40, 0x80, 0x05, 0x80, 0xfe, 0x63, 0x20, 0x80,
+                           0x05, 0x80, 0xfe, 0x65, 0x00, 0x80, 0x05, 0x80, 0xfe, 0xff});
+    auto &sound = program.resident.sound;
+    sound.effect_block = 0x80100000;
+    auto &block = sound.objects[sound.effect_block];
+    block.resize(game::resident::voice_records + 4 * game::resident::voice_stride);
+    const auto voice = [](std::size_t index) {
+        return game::resident::voice_records + index * game::resident::voice_stride;
+    };
+    block[voice(2)] = 1; // Pair (10 & fe) ^ 8 = voices 2, 3
+    try {
+        static_cast<void>(program.event_pass());
+        check(false, "The trailing unknown extended handler must stop");
+    } catch (const field::UnsupportedExtendedInstruction &error) {
+        check(error.pc == 19, "Each sound-effect handler advances the PC by five");
+    }
+    check(get(block, voice(2) + 0x76, 2) == 0x4000 && get(block, voice(2) + 0x74, 2) == 0x2000 &&
+              get(block, voice(2) + 2, 2) == 0x100,
+          "62 targets +76 and 63 targets +74 of the doubled channel's pair");
+    check(get(block, voice(3) + 0x76, 2) == 0 && get(block, voice(3) + 2, 2) == 0,
+          "An idle voice is untouched");
+    // 65 reads the effect at +1 and the channel at +3; channel 5 stops pair (10 & fe) ^ 8.
+    check(get(block, voice(2), 2) == 0 && program.field->last_sound_effect == 0,
+          "Effect zero only stops the channel's pair");
+}
+
 void original_snapshot_ownership() {
     game::Program program;
     program.field = std::make_unique<game::FieldState>();
@@ -138,6 +174,9 @@ void original_snapshot_ownership() {
               program.resident.variables.unsigned_bitmap[0] == 3 &&
               program.resident.random_seed == 93,
           "Snapshot restores variable values, preserves loaded types and unrelated RNG owner");
+    check(program.field->snapshot_cursor ==
+              0x8005a4e4U + static_cast<std::uint32_t>(program.field->snapshot_bytes_used),
+          "Restore leaves 800afc50 after the consumed snapshot bytes");
     check(program.resident.field_snapshot == immutable,
           "Original snapshot stays immutable and is not a native persistence image");
     program.resident.field_snapshot.resize(10);
@@ -154,11 +193,260 @@ void control_shares_pass_and_owner() {
     auto program = events({0x0c});
     put(program.field->actors[0].storage, 0, 0x4000);
     program.field->control_inputs.held_buttons = 0x40;
-    program.field->control_inputs.dialogue_status.fill(-1);
+    for (auto &window : program.field->dialogue)
+        window.set_half(field::DialogueWindow::status, 0xffff); // No window displayed.
     // Source early encounter return is computed from inactive field, not a fake service result.
     static_cast<void>(program.event_pass());
     check(program.field->pass.input_updated == 1 && program.field->actors[0].events().pc == 0,
           "Control handler and scheduler share input_updated and preserve wrapper PC");
+}
+
+// Invented one-actor field with a single walkable triangle and a constant
+// trig table (cosine 4096). Values are chosen so each result follows by hand.
+game::Program move_field() {
+    auto program = events({0x00});
+    auto &state = *program.field;
+    state.event_control.diagnostic_suppression = 1;
+    auto &actor = state.actors[0];
+    actor.sprite.sprite.address = 0x80100000;
+    actor.sprite.sprite.bytes.assign(0x164, 0);
+    put(actor.sprite.sprite.bytes, 0x7c, 0x80110000);
+    put(actor.descriptor, 0x58, 0x100); // Facing applies (f40); motion (f80 == 200) does not.
+    state.resources.push_back({0x80110000, std::vector<std::uint8_t>(64)});
+    state.layer_count = 1;
+    state.collision.layers.resize(1);
+    state.collision.layers[0].triangles.push_back({{0, 2, 1}, {0xffff, 0xffff, 0xffff}, 0});
+    state.collision.layers[0].vertices = {
+        {-1000, 0, -1000, 0}, {1000, 0, -1000, 0}, {0, 0, 1000, 0}};
+    state.collision.attributes_raw = {0, 0, 0x80, 0}; // Walkable (bit 800000).
+    state.triangle_counts[0] = 1;
+    auto &math = program.resident.math;
+    math.trigonometry.assign(0x4000, 0);
+    for (std::size_t angle = 0; angle < 4096; ++angle)
+        put(math.trigonometry, angle * 4 + 2, 4096, 2);
+    math.angle.assign(1025, 0);
+    math.square_root.assign(192, 0);
+    math.reciprocal.assign(192, 0x1000);
+    state.orientation_hold = 1;
+    return program;
+}
+
+void move_phase_camera_and_facing() {
+    auto program = move_field();
+    auto &state = *program.field;
+    auto &a = state.actors[0].storage;
+    put(a, 0x108, 0x100, 2); // Facing 100 toward 300 at speed 80: 180, no snap.
+    put(a, 0x106, 0x300, 2);
+    put(a, 0x11e, 0x80, 2);
+    state.camera.heading_blocks = {1, 2};
+    state.heading_octants[0] = 1; // Octant 0 blocked for mask 1: turn right.
+    const field::GteMatrix entry{{1, 2, 3, 4, 5, 6, 7, 8, 9}, {10, 11, 12}};
+    program.resident.gte = entry;
+    program.field_move();
+    check(get(a, 0x108, 2) == 0x180, "80073930 turns facing by speed without passing the target");
+    check(state.camera.heading == 0x200 && state.camera.heading_steps == 7 &&
+              state.camera.heading_half == 0x40,
+          "A blocked octant starts a right turn and the first step advances it");
+    // Mode 0 sets both divisors to 8; eye and target move 1/8 toward y -0x200000.
+    check(state.camera.target_a == 8 && state.camera.target_b == 8 && state.camera_settle == 1,
+          "Mode 0 settles follow divisors");
+    check(state.camera.target[1] == -0x40000 && state.camera.eye[1] == -0x40000,
+          "Follow divides the goal distance by the divisor");
+    check(program.resident.gte.r == state.camera.scaled_world.r &&
+              program.resident.gte.t == state.camera.scaled_world.t,
+          "The scaled world matrix is left loaded");
+    const auto words = field::gte_words(entry);
+    check(program.resident.matrix_stack.depth == 0 &&
+              program.resident.matrix_stack.records[0] == 1 &&
+              program.resident.matrix_stack.records[28] == words[7],
+          "PushMatrix records the registers loaded at the orbit rotation");
+
+    auto snapped = move_field();
+    snapped.field->camera_cut = 1;
+    put(snapped.field->actors[0].storage, 0x106, 0x1300, 2);
+    snapped.field_move();
+    check(get(snapped.field->actors[0].storage, 0x108, 2) == 0x300,
+          "A camera cut snaps facing to the masked target");
+
+    auto malformed = move_field();
+    malformed.field->layer_count = 0;
+    bool rejected = false;
+    try {
+        malformed.field_move();
+    } catch (const field::FieldFormatError &) {
+        rejected = true;
+    }
+    check(rejected, "A camera floor query without a loaded layer is rejected");
+}
+
+void original_layout_round_trip() {
+    auto program = events({0x00});
+    // Every snapshot region byte has exactly one owner and survives a round trip.
+    for (const auto [address, size] : game::snapshot_regions) {
+        std::vector<std::uint8_t> bytes(size), back(size);
+        for (std::size_t i = 0; i < size; ++i)
+            bytes[i] = static_cast<std::uint8_t>(i * 7 + (address & 0xff));
+        game::write_original(program, address, bytes);
+        game::read_original(program, address, back);
+        check(bytes == back, "Snapshot region bytes round-trip through Program values");
+    }
+    // Semantic owners receive the bytes at their original addresses.
+    const std::array<std::uint8_t, 4> eye{0x78, 0x56, 0x34, 0x12};
+    game::write_original(program, 0x800af880, eye);
+    check(program.field->camera.eye[0] == 0x12345678, "Camera eye X owns 800af880");
+    const std::array<std::uint8_t, 2> gate{0xfc, 0xff};
+    game::write_original(program, 0x800b218e, gate);
+    check(program.field->sprite_gate == -4, "The sprite gate owns 800b218e");
+    bool rejected = false;
+    try {
+        const std::array<std::uint8_t, 2> half{};
+        game::write_original(program, 0x800af880, half); // Straddles the eye word.
+    } catch (const field::FieldFormatError &) {
+        rejected = true;
+    }
+    check(rejected, "A range that splits an owned value is rejected");
+    rejected = false;
+    try {
+        const std::array<std::uint8_t, 1> byte{};
+        game::write_original(program, 0x80010000, byte);
+    } catch (const field::FieldFormatError &) {
+        rejected = true;
+    }
+    check(rejected, "An unowned original byte is rejected");
+}
+
+// Invented tables for field 80085b20 (primary 75): row 3 of 800adfcc names
+// wave bank 2 with the shared-wave flag; directory 1c starts after file 10.
+game::Program music_program(std::uint8_t id) {
+    auto program = events({0x75, id, 0x80, 0xfe, 0xff});
+    auto &resident = program.resident;
+    resident.battle_request.field_active = 1;
+    resident.cd_dma_register = 0x1f8010b8;
+    resident.vsync_counter = 100;
+    auto &read = resident.disc_read;
+    read.files.assign(0x8000, 0);
+    read.directories.assign(0x7a, 0);
+    put(read.directories, 0x1c * 2, 11, 2);
+    put(read.directories, 4 * 2, 5, 2);
+    put(read.files, (0x17 + 10 - 1) * 7, 0x12345, 3); // File 2 * 2 + 13.
+    put(read.files, (0x17 + 10 - 1) * 7 + 3, 0x4000, 4);
+    auto &cd = resident.cd;
+    cd.sync_status = 2;
+    cd.parameter_counts[2] = 3;
+    cd.registers = {0x1f801800, 0x1f801801, 0x1f801802};
+    cd.dma_set_callback = 0x8004c21c;
+    cd.dma_interrupt_register = 0x1f8010f4;
+    // One free heap block 80100008..80110000, then the end block.
+    auto &heap = resident.heap;
+    heap.head = 0x80100008;
+    heap.tag = 2;
+    heap.headers[0x80100000] = {0x80110008, 0};
+    heap.headers[0x80110000] = {0, game::resident::heap_end_tag};
+    heap.held[0x80100008].assign(0xfff8, 0xcc);
+    auto &overlay = program.field->overlay;
+    const auto row = 0x800adfccU - game::field_overlay_base + 6;
+    overlay.assign(row + 2, 0);
+    overlay[row] = 2;
+    overlay[row + 1] = 1;
+    program.field->overlay_verified.assign(overlay.size(), true);
+    auto &music = resident.music;
+    music.requested = 9;
+    music.loaded_wave_bank = 7;
+    music.shared_release_started = 1;
+    music.shared_wave_state = 1;
+    return program;
+}
+
+void music_load() {
+    auto program = music_program(3);
+    try {
+        static_cast<void>(program.event_pass());
+        check(false, "The trailing unknown extended handler must stop");
+    } catch (const field::UnsupportedExtendedInstruction &error) {
+        check(error.pc == 4, "Primary 75 advances the PC by three after the load");
+    }
+    const auto &resident = program.resident;
+    const auto &music = resident.music;
+    const auto &read = resident.disc_read;
+    const auto ring = music.stream.descriptor;
+    check(music.requested == 3 && music.gate == 0xffffffffU && music.deferred_sequence_read == 1 &&
+              music.shared_wave_state == 0 && music.loaded_wave_bank == 0xffffffffU,
+          "The load stops the music, clears the shared wave and defers the sequence read");
+    check(ring != 0 && music.stream.consumer == 0x800859dc && music.stream.consume_chunk &&
+              resident.battle_request.menu_gate == 1 && music.wave_pending == 1 &&
+              music.wave_chunk_index == 0,
+          "80085560 starts the wave stream with the 800859dc consumer");
+    check(read.ring.address == ring && read.ring.bytes.size() == 0x64 &&
+              get(read.ring.bytes, 0, 4) == 8 && get(read.ring.bytes, 8, 2) == 8 &&
+              resident.disc_stream.ring_buffer == ring,
+          "8002a260 allocates eight blocks and selects their ring header");
+    check(resident.music_blocks.size() == 2 && resident.music_blocks[0].address == ring + 0x64 &&
+              resident.music_blocks[0].bytes.size() == 0x4000 &&
+              resident.music_blocks[1].address == music.wave_staging &&
+              resident.music_blocks[1].bytes.size() == 0x2000 &&
+              resident.heap.last_caller == 0x80085be8,
+          "The stream payload and the 800c3a1c staging stay owned heap blocks");
+    check(read.file == 0x17 && read.sector == 0x12345 && read.destination == ring + 0x64 &&
+              resident.disc_pending == 1 && resident.cd.command == 2 &&
+              resident.cd.sync_callback == 0x8002b2f0,
+          "The ring read of file bank * 2 + 13 is issued in directory 1c");
+    check(read.directory == 4, "The load restores directory 4");
+}
+
+void music_load_without_stream() {
+    // Id ff only stops: gate zero, no directory change.
+    auto stop = music_program(0xff);
+    stop.resident.disc_read.directory = 77;
+    try {
+        static_cast<void>(stop.event_pass());
+    } catch (const field::UnsupportedExtendedInstruction &) {
+    }
+    check(stop.resident.music.gate == 0 && stop.resident.disc_read.directory == 77 &&
+              stop.resident.music.shared_wave_state == 1,
+          "Music ff stops and clears the gate without reading the table");
+    // The loaded bank starts no stream.
+    auto same = music_program(3);
+    same.resident.music.loaded_wave_bank = 2;
+    try {
+        static_cast<void>(same.event_pass());
+    } catch (const field::UnsupportedExtendedInstruction &) {
+    }
+    // stop_music forgets the loaded bank before the comparison.
+    check(same.resident.music.stream.descriptor != 0,
+          "8001b66c resets the loaded bank, so the stream still starts");
+    // 80086024 releases the shared wave only once.
+    auto release = music_program(3);
+    release.resident.music.shared_release_started = 0;
+    release.resident.music.active_shared_wave = 0x80120000;
+    bool released = false;
+    try {
+        static_cast<void>(release.event_pass());
+    } catch (const game::resident::SoundError &) {
+        released = true;
+    }
+    check(released && release.resident.music.shared_release_flag == 1 &&
+              release.resident.music.shared_release_started == 0,
+          "80086024 sets 8004f384 and then releases *8006251c through 80038310");
+    // An unverified row fails instead of reading the source.
+    auto unverified = music_program(3);
+    unverified.field->overlay_verified.assign(unverified.field->overlay.size(), false);
+    bool rejected = false;
+    try {
+        static_cast<void>(unverified.event_pass());
+    } catch (const field::FieldFormatError &) {
+        rejected = true;
+    }
+    check(rejected && unverified.resident.music.stream.descriptor == 0,
+          "A row whose loaded copy differs from the source is not read");
+}
+
+void input_queue_reset() {
+    xem::reconstruction::InputQueue queue{3, 4, 5, 1, 0, {1, 2, 3, 4, 5, 6}, {7, 8, 9, 10, 11, 12}};
+    queue.reset();
+    check(queue.count == 0 && queue.write == 0 && queue.read == 0 && queue.overflow == 0 &&
+              queue.w50200 == 1 && queue.current == std::array<std::uint16_t, 6>{} &&
+              queue.other == std::array<std::uint16_t, 6>{},
+          "80035db0 clears the queue and input halfwords and sets 80050200");
 }
 } // namespace
 
@@ -168,9 +456,15 @@ int main() {
         connected_handlers_and_partial_state();
         scheduler_observation_continuity();
         extended_error_retains_prefix();
+        sound_effect_dispatch();
         original_snapshot_ownership();
         control_shares_pass_and_owner();
-        std::cout << "6 connected program regression groups passed\n";
+        input_queue_reset();
+        move_phase_camera_and_facing();
+        original_layout_round_trip();
+        music_load();
+        music_load_without_stream();
+        std::cout << "12 connected program regression groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

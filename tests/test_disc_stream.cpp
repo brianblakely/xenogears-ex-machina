@@ -185,7 +185,7 @@ void connected_ring_stream_wave() {
     field::BattleRequestState request;
     std::array<std::uint8_t, 8192> staging{};
     field::start_music_stream(
-        music.stream, request, 31, 1,
+        music.stream, request, 31, 1, 0x800859dc,
         [&](field::MusicResource chunk) {
             const auto offset = chunk - Calls::ring_token;
             const std::span<const std::uint8_t, 2048> input(calls.ring.data() + offset, 2048);

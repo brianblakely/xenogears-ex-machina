@@ -2,6 +2,7 @@
 
 #include "xem/reconstruction/field_motion.hpp"
 
+#include <algorithm>
 #include <bit>
 #include <limits>
 
@@ -407,6 +408,119 @@ sweep_field_collision(std::span<const std::uint8_t> component, const CollisionTa
     actor.floor = s16(u32(s32(u32(actor_y) + u32(working[1])) >> 16));
     return {0, actor, working, edge};
 }
+LayerFloor query_layer_floor(std::span<const std::uint8_t> component,
+                             std::span<const std::int16_t> reciprocal,
+                             std::span<const std::uint8_t> actor, std::int32_t layer,
+                             std::uint8_t attribute_control) {
+    if (actor.size() != 0x138)
+        throw CollisionError("Incomplete original layer-query actor");
+    if (layer < 0 || layer >= 4 || u32(layer) >= read(component, 0))
+        throw CollisionError("Unqualified original layer query index");
+    LayerFloor result;
+    auto triangle =
+        static_cast<std::int32_t>(s16(read(actor, 8 + 2 * static_cast<std::size_t>(layer), 2)));
+    if (triangle == -1)
+        return result;
+    const auto slot = static_cast<std::size_t>(layer);
+    const auto package = parse_collision_package(component);
+    const auto &mesh = package.layers.at(slot);
+    const auto triangle_base = static_cast<std::size_t>(read(component, 0x18U + 8U * slot));
+    const auto raw = [&](std::int32_t index) {
+        // Reconstruction bound: indices stay inside their own layer's tables.
+        if (index < 0 || static_cast<std::size_t>(index) >= mesh.triangles.size())
+            throw CollisionError("Original layer-query triangle exceeds its layer");
+        return component.subspan(triangle_base + static_cast<std::size_t>(index) * 14U, 14);
+    };
+    const auto points = [&](std::int32_t index) {
+        std::array<FieldVector, 3> values{};
+        for (std::size_t i = 0; i < 3; ++i) {
+            const auto vertex = mesh.triangles[static_cast<std::size_t>(index)].vertices[i];
+            if (vertex < 0 || static_cast<std::size_t>(vertex) >= mesh.vertices.size())
+                throw CollisionError("Original layer-query vertex exceeds its layer");
+            const auto &v = mesh.vertices[static_cast<std::size_t>(vertex)];
+            values[i] = {v[0], v[1], v[2]};
+        }
+        return values;
+    };
+    const auto x = s32(read(actor, 0x20) + read(actor, 0x30)) >> 16;
+    const auto z = s32(read(actor, 0x28) + read(actor, 0x38)) >> 16;
+    const auto candidate = pack_collision_xz(x, z);
+    const auto origin =
+        pack_collision_xz(s32(read(actor, 0x20)) >> 16, s32(read(actor, 0x28)) >> 16);
+    const auto mask =
+        ((read(actor, 4) >> ((u32(layer) + 3U) & 31U)) & 1U) == 0 && attribute_control == 0
+            ? 0xffffffffU
+            : 0U;
+    std::uint32_t counter = 0;
+    while (true) {
+        const auto record = raw(triangle);
+        const auto v = points(triangle);
+        std::array<std::uint32_t, 3> packed{};
+        for (std::size_t i = 0; i < 3; ++i)
+            packed[i] = pack_collision_xz(v[i][0], v[i][2]);
+        std::uint32_t outside = 0;
+        for (std::size_t i = 0; i < 3; ++i)
+            if (field_packed_area({packed[i], packed[(i + 1) % 3], candidate}) < 0)
+                outside |= 1U << i;
+        const auto neighbor = [&](std::size_t offset) {
+            return static_cast<std::int32_t>(s16(read(record, offset, 2)));
+        };
+        switch (outside) {
+        case 0:
+            counter = 255;
+            break;
+        case 1:
+            triangle = neighbor(6);
+            break;
+        case 2:
+            triangle = neighbor(8);
+            break;
+        case 4:
+            triangle = neighbor(10);
+            break;
+        case 3:
+            triangle = neighbor(field_packed_area({packed[1], candidate, origin}) >= 0 ? 8 : 6);
+            break;
+        case 5:
+            triangle = neighbor(field_packed_area({packed[0], candidate, origin}) < 0 ? 10 : 6);
+            break;
+        case 6:
+            triangle = neighbor(field_packed_area({packed[2], candidate, origin}) >= 0 ? 10 : 8);
+            break;
+        default:
+            triangle = -1;
+        }
+        ++counter;
+        if (triangle == -1)
+            return result;
+        if (counter >= 32)
+            break;
+    }
+    if (counter == 32)
+        return result;
+    const auto record = raw(triangle);
+    const auto [height, normal] = field_height_and_normal(points(triangle), x, z, reciprocal);
+    result.value = 0;
+    result.triangle = static_cast<std::int16_t>(triangle);
+    result.normal = normal;
+    const auto attribute =
+        read(component, read(component, 0x14) + 4U * static_cast<std::uint32_t>(record[12]));
+    if ((attribute & mask & 0x800000U) != 0) {
+        result.floor = 0x7fffffff;
+        result.upper = 0x7fffffff;
+        return result;
+    }
+    // Field 8007c670: the floor plus only a nonnegative signed byte extent.
+    const auto extent =
+        std::max(static_cast<std::int32_t>(static_cast<std::int8_t>(record[13])) * 4, 0);
+    const bool moving = read(actor, 0x30) != 0 || read(actor, 0x34) != 0 || read(actor, 0x38) != 0;
+    const std::int32_t floor =
+        s16(read(actor, 0x10, 2)) == layer && moving ? s16(read(actor, 0x72, 2)) : s16(u32(height));
+    result.floor = floor;
+    result.upper = s32(u32(floor) + u32(extent));
+    return result;
+}
+
 std::int32_t apply_field_collision_sweep(
     std::span<std::uint8_t> bytes, std::span<std::uint8_t> velocity, std::span<std::uint8_t> edge,
     std::int16_t direction, std::span<const std::uint8_t> component, const CollisionTables &tables,

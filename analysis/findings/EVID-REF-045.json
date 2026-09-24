@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-045",
+  "kind": "connected_cpp_disc_read_memory_image",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 105944,
+      "track_lba": 108657,
+      "sector_bytes": 2352,
+      "user_data_offset": 1520,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x800295d8",
+      "address_space": "PS1 KSEG0 resident; file read entry",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 106128,
+      "track_lba": 108657,
+      "sector_bytes": 2352,
+      "user_data_offset": 1704,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x80029690",
+      "address_space": "PS1 KSEG0 resident; read setup (modes 0, 80, 100)",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": "/SLUS_006.64;1",
+      "file_offset": 203036,
+      "track_lba": 108705,
+      "sector_bytes": 2352,
+      "user_data_offset": 308,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": null,
+      "address": "0x8004111c",
+      "address_space": "PS1 KSEG0 resident; CD control entry with sync wait 80041b3c and no-wait command writer 80042088",
+      "not_applicable": "Resident boot program; no dynamic overlay. Original bytes remain private."
+    }
+  ],
+  "observation": "A capture hooks all 42 calls of the resident file read entry 800295d8 on the frozen route (field, battle, post-battle and return loads in modes 0, 80 and 100). From each original entry image the shared C++ Program reproduces the exact exit image and return value of 39 calls; three calls made while the previous read is still in progress stop explicitly at the idle wait 80028a60, which only an interrupt can end. Three of the 39 changed interrupt-owned bytes in the unbracketed capture; each matches exactly in a recapture with interrupt brackets.",
+  "interpretation": "File-table lookup, size rounding, directory selection, stream-ring selection and reset, read-request state, CD position conversion, DMA and ready callbacks, the CD control entry and its no-wait command writer run as recovered source. Register writes are recorded as ordered disc-service commands; reads of controller state come only from the observed I/O page. This covers every disc read issued on the frozen route up to the controller boundary; sector delivery and completion interrupts remain service-side.",
+  "confidence": "confirmed",
+  "author": "Claude Opus 5.5, integration owner",
+  "reviewers": [
+    "Independent instruction-level review of the read chain, libcd-level control and command writer, ownership extents and the disc idle wait (review-disc-read.md): no blocking defects; the harness now attaches a stream ring only when its header lies in RAM."
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; frozen route input tests/reference-inputs/field23-encounter-observation.json; observation core parity 1.7.1.",
+      "Runner xem-memory-runner frozen at sha256 a76e4878c028ba91937f9b1fd50c83f89ff56f6f9464071320f3d6c2b9678f2f with source archive sha256 6331b328a4ebcc0a8d64eaa048a74fe0389b8520d5b0b81fc0e02a2ff5d139b4; comparison tool sha256 66f6cd1f44b8d673ebd62d52a5b774086937099de24357e3e75a667b1c64c811, which verifies each capture's trace and snapshot digests. Expected exit images come only from the original capture."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c python3 -m tools.analysis.memory_case --capture .local/scenarios/phase1-field23-disc-reads{,-a,-b,-c}-20260923-v5/capture --runner RUNNER --entry disc_read_file --entry-hook read-entry --exit-hook read-exit [--interrupt tick-entry:tick-exit --interrupt dispatch-entry:dispatch-exit] --report REPORT"
+    ],
+    "expected": "Exact exit image and return value, or an explicit stop at an interrupt-dependent wait.",
+    "actual": "Full route: 36 exact, 3 interrupt-attributable divergences in the unbracketed capture, 3 explicit waits; the three divergent calls each match exactly with interrupt brackets. Unit tests cover modes 0, 80, 100 and 200, the -3/-4 returns and every explicit failure.",
+    "result": "passed",
+    "tolerance": "None beyond the documented interrupt attribution.",
+    "artifacts": [
+      {
+        "path": ".local/execution/connected/reports-final/disc-reads-a.json",
+        "sha256": "6ffcab2665eacc02933621576cda35a74689c233e5c1211cc13d10e27506e54b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/disc-reads-b.json",
+        "sha256": "aee23151d541bf88cfe42b7458a5675c9a285550d1a579d98265ebcb45473dc6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/disc-reads-c.json",
+        "sha256": "d9cb1cc24f63daa25db1c91fa2f131ac34721e33976792d08c2fa5546e2feab3",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-final/disc-reads.json",
+        "sha256": "9b8c6a1f6a4d7927918caf18a460f6c4cabe8fa8808ef8be700cbf7784b0ceb5",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "src/reconstruction/disc_read.cpp",
+    "src/analysis/field_memory.cpp",
+    "src/analysis/memory_runner.cpp"
+  ],
+  "limitations": [
+    "Recorded controller and DMA register writes are verified by synthetic tests only.",
+    "Waits that need a completion interrupt, the host-file branch, debug prints and timeouts fail explicitly.",
+    "Per-call equivalence; sector delivery and CD interrupts are not reconstructed."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored code only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures, reports and runner archives remain private."
+  }
+}

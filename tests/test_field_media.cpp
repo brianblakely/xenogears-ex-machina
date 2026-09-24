@@ -319,13 +319,13 @@ void stream_start_and_chunk_ownership() {
     MusicCalls calls;
     unsigned consumed = 0;
     field::start_music_stream(
-        state, request, 31, 2,
+        state, request, 31, 2, 0x800859dc,
         [&](field::MusicResource chunk) {
             check(chunk == 17, "Consumer receives the original A0 chunk");
             ++consumed;
         },
         calls);
-    check(request.menu_gate == 1 && state.descriptor == 11 &&
+    check(request.menu_gate == 1 && state.descriptor == 11 && state.consumer == 0x800859dc &&
               calls.operations ==
                   std::vector<std::string>{"stream_allocate 8 2", "read 31 11 0 256"},
           "Stream start allocates its descriptor and reads before installing the consumer");
@@ -368,8 +368,9 @@ void stream_start_and_chunk_ownership() {
               calls.operations == std::vector<std::string>{"stream", "busy"},
           "The post-disc shared chunk recheck prevents premature descriptor release");
     calls.operations.clear();
-    rejects<field::EventError>([&] { field::start_music_stream(state, request, 31, 1, {}, calls); },
-                               "Stream startup requires a real consumer implementation");
+    rejects<field::EventError>(
+        [&] { field::start_music_stream(state, request, 31, 1, 0x800859dc, {}, calls); },
+        "Stream startup requires a real consumer implementation");
     check(calls.operations.empty(), "Invalid stream setup fails before allocating resources");
 }
 
@@ -383,7 +384,7 @@ void wave_chunk_staging_and_transfer_order() {
         chunks[i].fill(static_cast<std::uint8_t>(i + 1));
     std::array<std::uint8_t, 8192> staging{};
     field::start_music_stream(
-        state.stream, request, 31, 1,
+        state.stream, request, 31, 1, 0x800859dc,
         [&](field::MusicResource chunk) {
             check(chunk >= 101 && chunk <= 106, "Expected authored chunk token");
             field::consume_music_wave_chunk(state, chunk, chunks[chunk - 101], staging, calls);

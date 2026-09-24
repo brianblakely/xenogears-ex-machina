@@ -4,8 +4,13 @@
  */
 #include <stdint.h>
 
+/* Arguments: hook, pc, code, cycle, subcycle, path, 34 CPU registers, RAM,
+ * scratchpad, the 64 raw GTE words (32 data, then 32 control), and the
+ * interpreter's load-delay state: selected slot, two target registers, two
+ * values. A pending load is not yet visible in the CPU registers. */
 typedef void (*xem_trace_callback)(uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t,
-                                   const uint32_t *, const uint8_t *, const uint8_t *);
+                                   const uint32_t *, const uint8_t *, const uint8_t *,
+                                   const uint32_t *, const uint32_t *);
 
 static uint32_t xem_trace_pcs[16];
 static uint32_t xem_trace_pc_count;
@@ -50,9 +55,12 @@ static inline void xem_trace_instruction(const psxRegisters *regs, uint32_t pc, 
         return;
     for (i = 0; i < xem_trace_pc_count; i++) {
         if (pc == xem_trace_pcs[i]) {
+            const uint32_t load_delay[5] = {regs->dloadSel, regs->dloadReg[0], regs->dloadReg[1],
+                                            regs->dloadVal[0], regs->dloadVal[1]};
             xem_trace_seen++;
             xem_trace_sink(i, pc, code, regs->cycle, regs->subCycle, path, regs->GPR.r,
-                           regs->ptrs.psxM, regs->ptrs.psxH);
+                           regs->ptrs.psxM, regs->ptrs.psxH, (const uint32_t *)&regs->CP2,
+                           load_delay);
             return;
         }
     }
