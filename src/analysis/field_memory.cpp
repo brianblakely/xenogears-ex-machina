@@ -415,6 +415,9 @@ Program import_battle(const OriginalMemory &memory) {
     for (const auto pointer : {0x800c3ea4U, 0x800d2d28U, 0x800c3eacU})
         if (!own_block(memory.word(pointer)))
             throw field::FieldFormatError("Battle state pointer does not name a heap block");
+    // The enemy data file holding the enemy AI scripts (pointer 800c3dd0, set
+    // by aux4 801e4958).
+    static_cast<void>(own_block(memory.word(0x800c3dd0)));
     // After combat: the growth table file (pointer 800d2c08) and the
     // post-battle module loaded at 801de000.
     static_cast<void>(own_block(memory.word(0x800d2c08)));

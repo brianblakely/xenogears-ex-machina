@@ -89,7 +89,8 @@ int main(int argc, char **argv) {
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
-                                  entry == "battle_atb" || entry == "battle_reload";
+                                  entry == "battle_atb" || entry == "battle_reload" ||
+                                  entry == "battle_ai";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !resident_entry && !battle_entry)
             throw InputError("Unsupported memory-image entry");
@@ -183,18 +184,29 @@ int main(int argc, char **argv) {
             return_value = block ? block->address : 0;
         } else if (entry == "heap_release") {
             // 800320e8: A0 block. A block on the imported list that the heap does
-            // not hold is the caller's; its bytes are its extent in the image.
+            // not hold is the caller's; its bytes are its extent in the image. A
+            // block holding a sound-driver object (battle 80071288 frees the
+            // effect bank) passes the object's bytes; the driver keeps only its
+            // now stale address.
             game::resident::HeapBlock block{registers[4], {}};
             const auto &headers = program->resident.heap.headers;
-            if (const auto found = headers.find(block.address - 8);
-                block.address != 0 && found != headers.end() &&
-                (found->second[1] & game::resident::heap_tag_mask) != 0) {
+            auto &objects = program->resident.sound.objects;
+            const auto object = objects.find(block.address);
+            const bool sound_object = object != objects.end();
+            if (sound_object) {
+                block.bytes = std::move(objects.extract(object).mapped());
+            } else if (const auto found = headers.find(block.address - 8);
+                       block.address != 0 && found != headers.end() &&
+                       (found->second[1] & game::resident::heap_tag_mask) != 0) {
                 const auto extent =
                     memory.range(block.address, found->second[0] - block.address - 8);
                 block.bytes.assign(extent.begin(), extent.end());
             }
             return_value = static_cast<std::uint32_t>(
                 game::resident::heap_release(program->resident.heap, block, registers[31] - 8));
+            // A kept block (-1) is not released; the object stays the driver's.
+            if (sound_object && !block.bytes.empty())
+                objects.emplace(block.address, std::move(block.bytes));
         } else if (entry == "battle_commit") {
             // 80085ccc: A0 attacker slot, A1 target mask, A2 animation.
             program->commit_battle_action(registers[4], registers[5] & 0xffff,
@@ -203,6 +215,9 @@ int main(int argc, char **argv) {
             program->apply_battle_results(registers[4]); // 80085618: A0 queue slot
         } else if (entry == "battle_alive") {
             program->update_battle_alive(); // 8007252c
+        } else if (entry == "battle_ai") {
+            // 800799c8: A0 enemy slot, A1 flag.
+            program->run_battle_enemy_script(registers[4] & 0xff, registers[5] & 0xff);
         } else if (entry == "battle_atb") {
             program->tick_battle_timers(); // 8007171c
         } else if (entry == "battle_reload") {

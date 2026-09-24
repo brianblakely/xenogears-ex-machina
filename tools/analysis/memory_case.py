@@ -63,6 +63,7 @@ RESIDENT_ENTRIES = (
     "battle_atb",
     "battle_reload",
     "disc_read_file",
+    "battle_ai",
 )
 
 

@@ -64,8 +64,8 @@ def validate_program(value: object) -> dict:
     if program["kind"] not in ("analysis_probe", "recovered_scenario"):
         raise ValueError("Unknown scenario-program kind")
     steps = program["steps"]
-    if not isinstance(steps, list) or not 1 <= len(steps) <= 256:
-        raise ValueError("Scenario program needs 1..256 ordered steps")
+    if not isinstance(steps, list) or not 1 <= len(steps) <= 1024:
+        raise ValueError("Scenario program needs 1..1024 ordered steps")
     names = set()
     for step in steps:
         keys(

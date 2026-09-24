@@ -4,6 +4,7 @@
 
 #include <array>
 #include <iostream>
+#include <string_view>
 
 namespace battle = xem::reconstruction::battle;
 namespace {
@@ -11,12 +12,13 @@ void check(bool value, const char *message) {
     if (!value)
         throw std::runtime_error(message);
 }
-template <typename Call> void rejects(Call call, const char *message) {
+template <typename Call>
+void rejects(Call call, const char *message, std::string_view reason = {}) {
     bool rejected = false;
     try {
         call();
-    } catch (const battle::BattleError &) {
-        rejected = true;
+    } catch (const battle::BattleError &error) {
+        rejected = std::string_view(error.what()).find(reason) != std::string_view::npos;
     }
     check(rejected, message);
 }
@@ -184,6 +186,47 @@ void timers() {
     battle::atb_tick(context);
     check(memory.u16(0x800d2e06) == 5, "Timers hold while a turn runs (800d3298 clear)");
 }
+
+// Enemy 0 (slot 3, bit 8) runs an invented script: a rule whose condition
+// fails, then an always-true rule that queues action 7 with the enemy's own
+// bit as the second word.
+void enemy_script() {
+    auto memory = sample();
+    memory.put16(0x800c3448 + 3 * 2, 8);
+    memory.put8(0x800d2e5c + 0x10, 0x55); // Stale action list byte
+    constexpr std::uint32_t script = 0x800d1000;
+    memory.put32(0x800d3400, script);
+    const std::array<std::uint8_t, 28> code{
+        0x82, 0, 5, 0, // var[0] == 5 (false)
+        0x01, 0, 9, 0, // list byte 0 = 9 (skipped)
+        0x80, 0, 0, 0, // always
+        0x64, 1, 0, 0, // var[1] = own bit
+        0x52, 2, 1, 0, // list word 2 = var[1]
+        0x01, 0, 7, 0, // list byte 0 = 7, next entry
+        0xfd, 0, 0, 0,
+    };
+    for (std::uint32_t i = 0; i < code.size(); ++i)
+        memory.put8(script + i, code[i]);
+    std::uint32_t seed = 1;
+    battle::Battle context{memory, seed};
+    battle::run_enemy_script(context, 3, 0);
+    check(memory.u8(0x800d2e5c) == 7 && memory.u16(0x800d2e5c + 2) == 8,
+          "The true rule queues the action and the enemy's own bit");
+    check(memory.u8(0x800d2e5c + 0x10) == 0 && memory.u8(0x800c402f) == 0xff &&
+              memory.u8(0x800c402f + 0x8b8) == 0xff,
+          "The list is cleared and every event type reset before the script runs");
+    memory.put8(script + 12, 0x02);
+    rejects([&] { battle::run_enemy_script(context, 3, 0); },
+            "Untranslated script actions are explicit dependencies",
+            "action 0x02 (handler 8007a874) at 800d100c");
+    memory.put8(script + 12, 0x00);
+    rejects([&] { battle::run_enemy_script(context, 3, 0); },
+            "Action 00 takes the dispatcher default", "action 0x00 (default 8007a7bc)");
+    memory.put8(script + 8, 0x81);
+    rejects([&] { battle::run_enemy_script(context, 3, 0); },
+            "Untranslated conditions are explicit dependencies",
+            "condition 0x81 (handler 8007e954)");
+}
 } // namespace
 
 int main() {
@@ -192,7 +235,8 @@ int main() {
         knockout_and_victory();
         rewards();
         timers();
-        std::cout << "Battle actions: four source-boundary groups passed\n";
+        enemy_script();
+        std::cout << "Battle actions: five source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

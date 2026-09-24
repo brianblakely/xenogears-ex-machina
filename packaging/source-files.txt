@@ -63,6 +63,7 @@ analysis/findings/EVID-REF-042.json
 analysis/findings/EVID-REF-043.json
 analysis/findings/EVID-REF-044.json
 analysis/findings/EVID-REF-045.json
+analysis/findings/EVID-REF-046.json
 analysis/formats/active-motion.md
 analysis/formats/actor-defaults.md
 analysis/formats/battle-actions.md
@@ -174,6 +175,7 @@ src/analysis/field_memory.hpp
 src/analysis/main.cpp
 src/analysis/memory_runner.cpp
 src/reconstruction/battle.cpp
+src/reconstruction/battle_ai.cpp
 src/reconstruction/battle_formula.cpp
 src/reconstruction/battle_levels.cpp
 src/reconstruction/battle_rewards.cpp
@@ -209,7 +211,9 @@ tests/packed_field_probe.cpp
 tests/reference-inputs/battle-gate-probe-route.json
 tests/reference-inputs/field23-control-observation.json
 tests/reference-inputs/field23-encounter-observation.json
+tests/reference-inputs/field23-enemy-turns-observation.json
 tests/reference-inputs/field23-entry-dialogue.json
+tests/reference-inputs/field23-escape-observation.json
 tests/reference-inputs/field23-ramp-observation.json
 tests/reference-inputs/kernel-mode-observation-route.json
 tests/reference-inputs/menu-observation-route.json

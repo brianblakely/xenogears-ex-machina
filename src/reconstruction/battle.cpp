@@ -153,10 +153,13 @@ void resolve(Battle &battle) {
                 counter_check(battle);
             const auto type = memory.u8(memory.u32(descriptor_pointer) + 0x16);
             const auto formula = memory.u32(formula_table + type * 4);
-            if (formula != 0x80094ee4)
-                throw BattleError("Only the physical formula 80094ee4 of table 800c348c is "
+            if (formula == 0x80094ee4)
+                physical_formula(battle);
+            else if (formula == 0x80095d4c)
+                formula_type3(battle);
+            else
+                throw BattleError("Only formulas 80094ee4 and 80095d4c of table 800c348c are "
                                   "reconstructed");
-            physical_formula(battle);
             post_adjust(battle);
             const auto current = battle.record_base();
             if (memory.u8(current + result_code + memory.u8(target_slot)) == 0) {

@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-046",
+  "kind": "connected_cpp_battle_enemy_turns_and_escape_memory_image",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x800799c8",
+      "address_space": "PS1 KSEG0 battle overlay; enemy AI script interpreter with action dispatcher 8007ef6c (table 8006fc3c) and condition dispatcher 8007f8c0 (table 8006fe0c)",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80095d4c",
+      "address_space": "PS1 KSEG0 battle overlay; formula type 3 (jump table 80070388), dispatched through 800c348c",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 109041,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 38,
+        "packed_source_sha256": "b9c3a15bf5f3eb06bcb3824ef62793b9a500fe1dcb3717fe8963e23e9f27628b",
+        "decoded_sha256": "1830b4ef1fe37129972fc310dfad534f8161d6c0b123e74254c3711334a3e291",
+        "decoded_bytes": 343936,
+        "decoded_destination": "0x8006faf0",
+        "decoded_offset": 5200
+      },
+      "address": "0x80085ccc",
+      "address_space": "PS1 KSEG0 battle overlay; action commit for enemy and party actions",
+      "not_applicable": "Sector identifies the packed mode 2 source start, not a direct instruction offset. Original bytes remain private."
+    }
+  ],
+  "observation": "On an alternative field 23 encounter input where the party defends and the enemies act (tests/reference-inputs/field23-enemy-turns-observation.json), the shared C++ battle reconstruction reproduces the exact exit memory image and resident rand state from each original entry image for all 20 enemy AI script runs (800799c8) and all 24 action commits (80085ccc: 20 enemy actions by slots 3-6, 9 of them through formula type 3 (80095d4c) and 11 through type 0, and 4 party actions; attacker from each entry a0, formula type from the published descriptor 800c3dfc +16 in each original exit image). On a second alternative input where both party members choose Escape (tests/reference-inputs/field23-escape-observation.json), the battle ends and play returns to field 23; every captured call on that route matches: 619 ATB ticks, 2 turn-timer reloads, 1 alive-mask update, 342 heap allocations and 516 releases across battle teardown and field reload (including call 477, where battle code 80071288 releases 801e3970, the block the sound driver's effect-bank list head 80059440 still names), then the field return: 234 event passes, the return checkpoint pass, 234 move phases and 234 field updates. No comparison diverged.",
+  "interpretation": "The enemy AI interpreter, the script actions and conditions this encounter uses, enemy targeting of party slots with rand, and formula type 3 run as recovered source over battle memory, which now also owns the enemy data file (pointer 800c3dd0) holding the scripts. The escape route shows that battle teardown and the field return after an escape run through the same reconstructed resident, heap and field code as after victory. Untranslated script actions and conditions, formula types 1, 2 and 4-7 and formula type 3 with descriptor +18 of 2 or more fail explicitly.",
+  "confidence": "confirmed",
+  "author": "Claude Opus 5.5, integration owner",
+  "reviewers": [
+    "Independent instruction-level review of the enemy AI interpreter, both dispatch tables, every translated action, condition and helper, and formula type 3 with its jump table and call site (review-enemy-ai-formula3.md): no behavior defects; one comment corrected.",
+    "Independent review of the enemy-data and sound-object ownership changes, this finding and the synthetic test (review-enemy-turns-escape.md): overstated call count, hook wording and an unverified attacker split corrected from the trace; a kept (-1) release now leaves the object with the driver; test rejections now check their reason."
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix environment and original Disc 1 profile; route input tests/reference-inputs/field23-enemy-turns-observation.json (the frozen route to the encounter, then 75 Defense commands).",
+      "Observation core parity 1.7.2; capture phase1-field23-enemy-commits-20260924-v5 hooks every action commit and AI script run. It carries no interrupt brackets, so every byte the original changed during a call must be reproduced or excluded by the stack window.",
+      "Route input tests/reference-inputs/field23-escape-observation.json (the frozen route to the encounter, then Escape chosen by both party members); captures phase1-field23-escape-{turns,battle,return}-20260924-v5 hook the ATB tick and reload (turns capture, no interrupt brackets), action commit, AI, result application, alive update and heap calls in battle (commit, AI and result application are hooked but never called), and event passes, checkpoints, moves, updates and heap calls after the return (both with bracketed interrupts).",
+      "Runner xem-memory-runner frozen at sha256 79d155dcb0438d963284e1d3c432d6a9a0bd428ebe9cb36561c7dfe1668ffce7 with source archive sha256 b6151941a2a211dd6dbc12dcdfed6093a1f965f9e5e8c20ecee5d2fdf95604ef; comparison tool sha256 9f14f6c51f28665e9c389925d3eea7b887c9e3487dcf8041fb7782b541ce71e2, which verifies the capture's trace and snapshot digests. Expected exit images come only from the original capture."
+    ],
+    "commands": [
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix#observation-trace -c python3 tools/reference/scenario.py tests/reference-inputs/field23-{enemy-turns,escape}-observation.json --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/phase1-field23-enemy-commits-20260924-v5 --trace-instructions SPEC",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c python3 -m tools.analysis.memory_case --capture CAPTURE --runner RUNNER --entry ENTRY --entry-hook ENTRY_HOOK --exit-hook EXIT_HOOK [--interrupt tick-entry:tick-exit --interrupt dispatch-entry:dispatch-exit] --report REPORT",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix -c bash -c 'ctest --test-dir build/debug && ctest --test-dir build/sanitize && python3 tools/repository/check.py'"
+    ],
+    "expected": "Exact original exit memory image for every owned byte and every original-changed byte outside the callee stack window and interrupt-only bytes; exact GTE state and return value; explicit stops for unrecovered behavior.",
+    "actual": "13 comparison reports, 2,227 calls, 0 divergences, 0 stops; 27 owned bytes in 3 calls accepted under the documented interrupt_superseded rule. The frozen runner also reproduces every earlier connected report (EVID-REF-042, -043, -045) with the same results. All 26 C++ and repository tests pass in debug and sanitize presets; repository checks pass.",
+    "result": "passed",
+    "tolerance": "None beyond the documented exclusions: callee stack window 0x800 bytes below the entry stack pointer, the scratchpad, and bytes changed only by bracketed interrupt handlers (plus BIOS exception save areas while they ran).",
+    "artifacts": [
+      {
+        "path": ".local/execution/connected/reports-13/enemy-turns-commit.json",
+        "sha256": "3022db8a774c9817cca121740cfdead8cb5036cccc4734ad104f04c3ed97e160",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/enemy-turns-ai.json",
+        "sha256": "fc627c20cc46615ccc8970f02fa1669c7a9604003fbf962e017ca8f1712bdafa",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-atb.json",
+        "sha256": "ea24605a7e1d06c96ca5adc2c8f0e7c18a15273afec853a007c58fd1c92a66ee",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-reload.json",
+        "sha256": "6b90fd909aa6c9e8ce95cda934972d9f48981154dc0114419262f161d5c92024",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-alive.json",
+        "sha256": "721ced5b41c589fec784345a8a01efc5c6b825beba3300c2d0c134910a228008",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-alloc-battle.json",
+        "sha256": "e00f4f67e05ae3b2e30a1354a9c85624ce27c388653575ee4663ce0e52a340a2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-release-battle.json",
+        "sha256": "b332be7677bfdcd3975b4aea975968d40a07d1b64935c28eb6f19e2ddb8b0fc6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-pass.json",
+        "sha256": "106852ea9d765a3b4c24a60cfe9ca72e899c6bc3e5f9ffbf3d02906e111446ac",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-checkpoints.json",
+        "sha256": "6ec8ad26e0c10f8f4015ebb5365a24b7f393ed628fa09c925003b5d2e8da63b4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-move.json",
+        "sha256": "38462774c0e4c8ad854aa5cc1c715b101e82a9e721b59ddb38928cba703fb5d0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-update.json",
+        "sha256": "37880ac16f79a44a141f4616d8367609b6fca71d66f7deafe2d9cc5ac3b6a4f6",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-alloc-return.json",
+        "sha256": "615784bc5b3a073134aab34345b3d630485164431fd7f3f7f3f11b5b41de1b8f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/connected/reports-13/escape-release-return.json",
+        "sha256": "90cee994332a5cf692bde06de9289d2fbdfde43c7e34bdcac12d61a0e5623bd0",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "src/analysis/field_memory.cpp",
+    "src/analysis/memory_runner.cpp",
+    "src/reconstruction/battle.cpp",
+    "src/reconstruction/resident_heap.cpp",
+    "src/reconstruction/battle_ai.cpp",
+    "src/reconstruction/battle_formula.cpp",
+    "src/reconstruction/program.cpp"
+  ],
+  "limitations": [
+    "Per-call equivalence from original entry images; the turn scheduler, command menu input, the frame loop and the result screens are not reconstructed.",
+    "The encounter uses one enemy script: actions 01, 0c, 3e, 41, 50, 52, 62 and 64 and conditions 82 and 83. Other actions and conditions fail explicitly by handler address.",
+    "The escape decision itself (command selection and the escape outcome) is not reconstructed: the escape route hooks action commit, AI and result application but calls none of them, so no captured call covers it. Defeat remains unobserved."
+  ],
+  "provenance": {
+    "consulted_sources": "Supplied original game binaries/execution, qualified Ghidra exports and project-authored code only.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, captures, reports and runner archives remain private."
+  }
+}

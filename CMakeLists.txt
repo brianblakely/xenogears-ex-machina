@@ -31,6 +31,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_dialogue.cpp
   src/reconstruction/original_layout.cpp
   src/reconstruction/battle.cpp
+  src/reconstruction/battle_ai.cpp
   src/reconstruction/battle_formula.cpp
   src/reconstruction/battle_levels.cpp
   src/reconstruction/battle_rewards.cpp

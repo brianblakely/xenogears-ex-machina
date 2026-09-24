@@ -3,7 +3,7 @@
 #include <array>
 #include <cstdint>
 
-// Formula type 0 (80094ee4) and its helpers. Every compiler reciprocal in
+// Formula types 0 (80094ee4) and 3 (80095d4c) and their helpers. Every compiler reciprocal in
 // these functions is exact over the whole 32-bit domain, so plain C++ division
 // reproduces it: multu 0xcccccccd + srl 2/3 is u32 x/5 and x/10; mult
 // 0x66666667 + sra 2/3 minus the sign is int32 x/10 and x/20; mult 0x55555556
@@ -558,6 +558,83 @@ void physical_formula(Battle &battle) {
     }
     m.put32(battle.record_base() + m.u8(target_slot) * 4 + damage_offset,
             static_cast<std::uint32_t>(amount));
+}
+
+// 80095d4c: formula type 3, a chance roll then an HP or EP transfer between
+// attacker and target (both slots receive the same amount).
+void formula_type3(Battle &battle) {
+    auto &m = battle.memory;
+    const auto descriptor = m.u32(descriptor_pointer);
+    std::int32_t chance; // s0
+    switch (m.u8(descriptor + 0x18)) {
+    case 0:
+        chance = static_cast<std::int32_t>(m.u8(m.u32(attacker_pointer) + 0x60));
+        break;
+    case 1:
+        chance = static_cast<std::int32_t>(m.u8(descriptor + 0x1c));
+        break;
+    default:
+        throw BattleError("formula type 3 compares the caller's s0 for descriptor +18 >= 2 at "
+                          "80095ddc");
+    }
+    const auto missed = [&] {
+        m.put8(battle.record_base() + m.u8(target_slot) + result_offset, 6); // 80095f6c
+    };
+    if (chance < rand_percent(battle)) {
+        missed();
+        return;
+    }
+    // 80095e14: kinds 4 and above leave s1 unset, but no reachable path reads it.
+    const auto kind = m.u8(m.u32(descriptor_pointer) + 0x1a);
+    std::uint32_t base = 0; // s1
+    switch (kind) {
+    case 0:
+        base = m.u16(m.u32(attacker_pointer) + 0x4e);
+        break;
+    case 1:
+        base = m.u16(m.u32(target_pointer) + 0x4e);
+        break;
+    case 2:
+        base = m.u16(m.u32(attacker_pointer) + 0x52);
+        break;
+    case 3:
+        base = m.u16(m.u32(target_pointer) + 0x52);
+        break;
+    default:
+        break;
+    }
+    // 80095e9c: the product is below 2^24, so mult 0x66666667 + srl 3 is /20.
+    auto amount = base * m.u8(m.u32(descriptor_pointer) + 0x11) / 20; // a2
+    if (kind == 5) {
+        amount = m.u16(m.u32(target_pointer) + 0x4c) - 1U; // 80095edc
+    }
+    // 80095ee4: jump table 80070388 on kind < 6.
+    std::uint8_t attacker_result;
+    std::uint8_t target_result;
+    switch (kind) {
+    case 0:
+    case 1:
+    case 5:
+        attacker_result = 2; // 80095f04
+        target_result = 0;
+        break;
+    case 2:
+    case 3:
+        if ((status_pair(m, m.u32(target_pointer) + 0x88) & 0x200) != 0) {
+            missed();
+            return;
+        }
+        attacker_result = 3; // 80095f90
+        target_result = 1;
+        break;
+    default:
+        return; // kind 4 and kinds >= 6 exit at 80096000 without writing
+    }
+    m.put8(battle.record_base() + m.u8(attacker_slot) + result_offset, attacker_result);
+    m.put8(battle.record_base() + m.u8(target_slot) + result_offset, target_result);
+    const auto value = amount & 0xffff; // 80095fd0
+    m.put32(battle.record_base() + m.u8(attacker_slot) * 4 + damage_offset, value);
+    m.put32(battle.record_base() + m.u8(target_slot) * 4 + damage_offset, value);
 }
 
 } // namespace xem::reconstruction::battle

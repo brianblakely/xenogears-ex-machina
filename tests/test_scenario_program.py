@@ -159,9 +159,20 @@ class ScenarioProgramTests(unittest.TestCase):
             {"offset": 0, "expected": "00", "value": "01", "reason": "fixture"}
         ]
         examples.append(value)
+
+        def steps(count):
+            return [{**base["steps"][0], "name": f"step{i}"} for i in range(count)]
+
+        value = copy.deepcopy(base)
+        value["steps"] = steps(1025)
+        examples.append(value)
         for value in examples:
             with self.subTest(value=value), self.assertRaises(ValueError):
                 validate_program(value)
+        # The bound itself is accepted.
+        value = copy.deepcopy(base)
+        value["steps"] = steps(1024)
+        validate_program(value)
 
     def test_actual_memory_bounds_and_frame_order_are_enforced(self):
         executor = ScenarioProgram(

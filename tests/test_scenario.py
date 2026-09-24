@@ -112,7 +112,8 @@ class ScenarioCompilerTests(unittest.TestCase):
             compile_scenario(self.scenario, self.catalog)
 
     def test_invalid_inputs_and_unbounded_scenarios_fail_during_compilation(self):
-        for steps in ([{"buttons": ["typo"]}], [{"wait_frames": 30000}] * 2):
+        too_many = [{"buttons": ["cross"], "hold_frames": 1, "after_frames": 1}] * 401
+        for steps in ([{"buttons": ["typo"]}], [{"wait_frames": 30000}] * 2, too_many):
             self.scenario["steps"] = steps
             with self.subTest(steps=steps), self.assertRaises(ValueError):
                 compile_scenario(self.scenario, self.catalog)

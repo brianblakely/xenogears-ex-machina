@@ -363,6 +363,8 @@ class Program {
     void apply_battle_results(std::uint32_t queue);
     // Battle 8007252c: rebuild the alive mask and outcome.
     void update_battle_alive();
+    // Battle 800799c8: an enemy's AI script.
+    void run_battle_enemy_script(std::uint32_t slot, std::uint32_t flag);
     // Battle 8007171c / 800718bc: ATB tick and turn-timer reload.
     void tick_battle_timers();
     void reload_battle_timer();

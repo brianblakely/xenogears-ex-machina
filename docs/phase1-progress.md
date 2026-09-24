@@ -14,7 +14,7 @@ still a candidate.
 | Field representation | Complete used geometry, material/texture, camera and sprite correlations with original source and state. |
 | Script execution | Every event opcode executed on the frozen route runs in exactly matched calls (EVID-REF-042), including dialogue windows, music change and sound effects. Add alternative inputs that reach the source-only opcodes, dialogue text rendering and controls, transitions, and an independently authored full disassembler. |
 | Field behavior | The complete `8008110c` update and `800739c0` move phase (contact, followers, camera, facing) now match per call; connect the rest of the field frame, map transitions and control readiness, then run multiple frames without re-importing. |
-| Encounter and return | Party attacks, damage, knockouts, victory, reward totals, experience, level-ups and write-back now match per call (EVID-REF-043). Recover the turn scheduler and menu input, enemy AI and formulas, defeat/escape, the result screens, then checkpoint replay, cleanup and full return readiness. |
+| Encounter and return | Party attacks, damage, knockouts, victory, reward totals, experience, level-ups and write-back now match per call (EVID-REF-043), as do enemy AI script runs, enemy actions and formula type 3 on an alternative input where enemies act, and the escape route's battle teardown and field return (EVID-REF-046). Recover the turn scheduler and menu input, remaining script operations and formulas, the escape decision and defeat, the result screens, then checkpoint replay, cleanup and full return readiness. |
 | Menu and persistence | Recover ordinary menu/inventory/equipment and valid save/load, checksum, round trip and failure behavior. |
 | Required media | Recover used sound paths, Mono/Stereo/Wide and visual references, FMV framing/trigger and observable timing. |
 | Time and services | A route census (EVID-REF-044, [service boundaries](../analysis/formats/service-boundaries.md)) maps the 34 hardware-facing resident functions the route uses to display, controller, disc, audio and interrupt/time services. Recover the disc command acknowledgement contract, interrupt handlers and cadence proof beyond HLE observation. |
@@ -47,9 +47,14 @@ including the victory, all 2,080 per-frame ATB ticks and 4 turn-timer
 reloads, the reward totals and the victory reward call:
 experience split, a level-up with rand stat growth and the write-back to all 11
 persistent character records in the resident game data (`8006d634`, `2358`
-bytes, now owned whole). Enemy AI, other formula types, defeat and escape, the
-turn scheduler, menu input, the result screens and the post-battle field return
-remain required work.
+bytes, now owned whole).
+[EVID-REF-046](../analysis/findings/EVID-REF-046.json) adds enemy turns: on an
+alternative input where the party defends, all 20 enemy AI script runs
+(`800799c8`) and all 24 action commits (20 enemy, 9 of them through formula
+type 3, and 4 party) match exactly. On an input that escapes, every hooked battle, teardown
+and field-return call also matches. Remaining script operations and formula
+types, the escape decision, defeat, the turn scheduler, menu input, the result screens and full return
+readiness remain required work.
 
 The primary integration measure is the [connected C++ execution loop](executable-reconstruction.md),
 extended by [EVID-REF-040](../analysis/findings/EVID-REF-040.json). A shared program

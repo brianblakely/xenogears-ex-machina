@@ -72,6 +72,7 @@ void commit_action(Battle &battle, std::uint32_t attacker, std::uint32_t targets
 // Formula functions of the table at 800c348c, called with the resolver
 // globals set for one target.
 void physical_formula(Battle &battle); // 80094ee4 (type 0)
+void formula_type3(Battle &battle);    // 80095d4c (type 3)
 
 // Per-target steps the resolver calls around the formula.
 void post_adjust(Battle &battle);         // 800946f4
@@ -88,6 +89,10 @@ void apply_results(Battle &battle, std::uint32_t queue);
 // 8007252c: rebuild the alive mask (800d39dc) and set the battle outcome
 // (800c48ea) when either side is defeated.
 void update_alive(Battle &battle);
+
+// 800799c8: run enemy `slot`'s AI script (the 0x40-byte block at
+// 800d3400 + (slot - 3) * 0x40), filling the action list at 800d2e5c.
+void run_enemy_script(Battle &battle, std::uint32_t slot, std::uint32_t flag);
 
 // 8007171c: one ATB tick for every present slot that is not ready.
 void atb_tick(Battle &battle);

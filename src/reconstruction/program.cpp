@@ -601,6 +601,11 @@ void Program::update_battle_alive() {
     with_battle(*this, [](battle::Battle &context) { battle::update_alive(context); });
 }
 
+void Program::run_battle_enemy_script(std::uint32_t slot, std::uint32_t flag) {
+    with_battle(*this,
+                [&](battle::Battle &context) { battle::run_enemy_script(context, slot, flag); });
+}
+
 void Program::tick_battle_timers() {
     with_battle(*this, [](battle::Battle &context) { battle::atb_tick(context); });
 }

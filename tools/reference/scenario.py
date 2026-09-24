@@ -195,8 +195,8 @@ def compile_scenario(scenario: object, availability: dict) -> tuple[dict, int]:
     elif value.get("state_writes"):
         raise ValueError("State setup is available only before field entry")
     runtime_steps = value.get("steps", [])
-    if not isinstance(runtime_steps, list) or len(runtime_steps) > 100:
-        raise ValueError("Runtime steps must be a list of at most 100 steps")
+    if not isinstance(runtime_steps, list) or len(runtime_steps) > 400:
+        raise ValueError("Runtime steps must be a list of at most 400 steps")
     for index, item in enumerate(runtime_steps):
         if not isinstance(item, dict):
             raise ValueError("Runtime steps must be objects")

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "parity_version": "1.7.1",
+  "parity_version": "1.7.2",
   "protocol_version": "0.1",
   "review_date": "2026-09-23",
   "status_semantics": {
@@ -52,11 +52,11 @@
     },
     {
       "path": "tests/test_scenario.py",
-      "sha256": "604925e561cb511885dacc46a31edb5e93eda8a4c7f89f96680645c602822c04"
+      "sha256": "b3acb962efe3987f1d5401efef0908a0c33736fe1a946e5e3f29d9c180ffd059"
     },
     {
       "path": "tests/test_scenario_program.py",
-      "sha256": "1cf5c7f39193243d71e26a9a7ca4dbdc8a03b2c4e95def43cdcdd28f44b50d4e"
+      "sha256": "79354e600c7a47a7db5710b2e5f84f6a5e1b33e0f3cb25f5661e208d7c3b35c0"
     },
     {
       "path": "tools/reference/instruction_trace.py",
@@ -72,11 +72,11 @@
     },
     {
       "path": "tools/reference/scenario.py",
-      "sha256": "165312f7f0ed9b37bcd7d5edc4571b7f79f0a6fbc67ee1d9ba526c0f4cade20d"
+      "sha256": "750d60ec751d76f41a2b2f8acaeac62fab6c324d7e9e0ca0ffda6899083fffe8"
     },
     {
       "path": "tools/reference/scenario_program.py",
-      "sha256": "39e9ee56fbb2f5ee8d062d449d9abfc3c641ea454c52633b3eca3a34896acd59"
+      "sha256": "85ef4805e8a5b7b9755736195adced1c804982f0fbf5a32fc0ae0be3e27d9f46"
     }
   ],
   "rows": [
@@ -721,8 +721,8 @@
   ],
   "maintenance": "Any baseline source drift fails repository validation. Inspect changes, extend rows/tests, update source hashes and bump parity_version. Native passes require their own platform evidence; no emulator backlog promotion from native implementation.",
   "change_review": {
-    "version": "1.7.1",
+    "version": "1.7.2",
     "author": "Claude Opus 5.5",
-    "scope": "Applied an independent format review (review-sound-snapshots.md): the snapshot reader validates a delta's page indexes before applying any, invalidates its cached image before replay, and rejects chunks that are not exactly one compressed stream. Tests cover each rejection. Host-side reading only; the core extension, hooks and file format are unchanged. Refreshed live baseline hashes; native methods remain unimplemented."
+    "scope": "Raised the scenario bounds from 100 runtime steps and 256 program steps to 400 and 1024 so ordinary alternative routes (repeated battle commands) fit; the 36000-frame execution budget is unchanged. Tests cover both new bounds. Core, hooks and capture semantics are unchanged; refreshed live baseline hashes; native methods remain unimplemented."
   }
 }
