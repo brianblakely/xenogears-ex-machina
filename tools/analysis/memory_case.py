@@ -75,9 +75,10 @@ RESIDENT_ENTRIES = (
     "sound_set_cd",
     "sound_update_voices",
     "set_next_mode",
+    "field_exit",
 )
 # Field entries besides the update and move phases.
-FIELD_ENTRIES = ("field_event_extended", "movie_decision", "field_exit")
+FIELD_ENTRIES = ("field_event_extended", "movie_decision")
 
 
 def file_sha256(path: Path) -> str:

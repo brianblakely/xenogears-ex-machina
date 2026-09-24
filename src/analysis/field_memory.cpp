@@ -6,6 +6,7 @@
 #include <bit>
 #include <functional>
 #include <map>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -331,8 +332,15 @@ struct Claims {
         const bool overlaps =
             (next != claimed.end() && next->first < address + size) ||
             (next != claimed.begin() && std::prev(next)->first + std::prev(next)->second > address);
-        if (overlaps)
-            throw field::FieldFormatError("Owned original ranges overlap at " + std::string(name));
+        if (overlaps) {
+            const auto other = std::ranges::find_if(owned, [&](const OwnedRange &range) {
+                return range.address < address + size && address < range.address + range.size;
+            });
+            std::ostringstream message;
+            message << "Owned original ranges overlap at " << name << ' ' << std::hex << address
+                    << " (" << other->name << ' ' << other->address << ')';
+            throw field::FieldFormatError(message.str());
+        }
         claimed.emplace(address, size);
         owned.push_back({name, address, size});
     }

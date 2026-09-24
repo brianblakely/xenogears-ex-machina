@@ -84,14 +84,14 @@ int main(int argc, char **argv) {
                              "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
-        const bool resident_entry =
-            entry == "heap_allocate" || entry == "heap_release" || entry == "music_stop" ||
-            entry == "disc_read_file" || entry == "sound_set_mode" || entry == "sound_set_master" ||
-            entry == "sound_set_cd" || entry == "sound_update_voices" || entry == "set_next_mode";
+        const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
+                                    entry == "music_stop" || entry == "disc_read_file" ||
+                                    entry == "sound_set_mode" || entry == "sound_set_master" ||
+                                    entry == "sound_set_cd" || entry == "sound_update_voices" ||
+                                    entry == "set_next_mode" || entry == "field_exit";
         // Field entries beyond the update: one extended event handler, the
-        // movie loop's decision and the field exit.
-        const bool field_entry =
-            entry == "field_event_extended" || entry == "movie_decision" || entry == "field_exit";
+        // movie loop's decision.
+        const bool field_entry = entry == "field_event_extended" || entry == "movie_decision";
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
@@ -295,7 +295,19 @@ int main(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_exit") {
             // 8007954c: A0 kind; 1 where it calls the mode dispatcher 80019acc.
-            return_value = program->exit_field(registers[4]) ? 1U : 0U;
+            // The exit follows the field's teardown (its actors' storage is
+            // already free heap memory), so only the exit mode 800b0064 is
+            // imported as field state; the exit reads it and writes no field
+            // state, and the export is the resident state alone.
+            program->field = std::make_unique<game::FieldState>();
+            program->field->exit_mode = memory.word(0x800b0064);
+            try {
+                return_value = program->exit_field(registers[4]) ? 1U : 0U;
+            } catch (...) {
+                program->field.reset();
+                throw;
+            }
+            program->field.reset();
         } else if (entry == "music_stop") {
             program->stop_music(); // 8001b66c
         } else {
