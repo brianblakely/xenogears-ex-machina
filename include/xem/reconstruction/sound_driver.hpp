@@ -48,7 +48,52 @@ struct SoundDriver {
     // SPU memory allocation table: 12 linked 16-byte entries (in-use bytes +0
     // and +1, next entry index +2, SPU address +4, size +8); entry 0 heads it.
     std::array<std::uint8_t, 0xc0> spu_blocks{};
+    // Driver statics the per-tick update (8003c028) and the SPU transfer
+    // callback (8003bb64) change, whole original ranges keyed by address
+    // (see sound_statics), and constant tables they read (sound_constants).
+    // Constants are read-only inputs; statics are owned state.
+    std::map<std::uint32_t, std::vector<std::uint8_t>> statics;
+    std::map<std::uint32_t, std::vector<std::uint8_t>> constants;
 };
+
+struct SoundRange {
+    std::uint32_t address;
+    std::uint32_t size;
+};
+// Mutable driver statics: tick counter and time (80059540, 800595c4), the
+// key-off request mask (80059550), the pending-request flags (8005955c), the
+// noise generator (800594e4), the common-attribute block with its master
+// volume slides (8005a3c0..8005a407) and the SPU transfer queue state
+// (800594f4, 80059510).
+inline constexpr std::array<SoundRange, 8> sound_statics{{{0x80059540, 4},
+                                                          {0x800595c4, 4},
+                                                          {0x80059550, 4},
+                                                          {0x8005955c, 2},
+                                                          {0x800594e4, 4},
+                                                          {0x8005a3c0, 0x48},
+                                                          {0x800594f4, 2},
+                                                          {0x80059510, 2}}};
+// Constant tables of the resident executable: the music opcode handlers
+// (80050624), opcode operand lengths (80050824), modulation shapes
+// (800508a4), the SPU register base (800508e4), note duration and velocity
+// tables (800509b0, 80050a94), the pitch octave and fraction tables
+// (80050b78, 80050bf0) and library register bases (80056400 root counters,
+// 80058e08 SPU) and the SPU transfer queue (80059458).
+inline constexpr std::array<SoundRange, 8> sound_constants{{{0x80050624, 0x200},
+                                                            {0x80050824, 0x80},
+                                                            {0x800508a4, 0x44},
+                                                            {0x800509b0, 0x1c8},
+                                                            {0x80050b78, 0x1878},
+                                                            {0x80056400, 4},
+                                                            {0x80058e08, 4},
+                                                            {0x80059458, 4}}};
+
+// Helpers shared by the effect paths and the tick.
+void release_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel); // 8003e83c
+void claim_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel);   // 8003e724
+void load_instrument(SoundDriver &driver, std::uint32_t instrument,
+                     std::uint32_t record);                          // 8003e5bc
+std::uint32_t find_wave_bank(SoundDriver &driver, std::uint32_t id); // 800383ec
 
 inline constexpr std::uint32_t spu_block_table = 0x8006f9fc;
 

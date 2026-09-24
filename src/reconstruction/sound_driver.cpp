@@ -41,6 +41,8 @@ std::uint32_t voice(SoundDriver &driver, std::uint32_t index) {
     return driver.effect_block + voice_records + index * voice_stride;
 }
 
+} // namespace
+
 // 8003e83c: release hardware voice `channel` if `owner` holds it.
 void release_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel) {
     if (channel >= driver.voice_owners.size() || driver.voice_owners[channel] != owner)
@@ -100,6 +102,8 @@ std::uint32_t find_wave_bank(SoundDriver &driver, std::uint32_t id) {
         bank = u32(driver, bank + 0x2c);
     return bank;
 }
+
+namespace {
 
 // 8003b644: initialize `effect_run` voices from voice (code & ff) with effect
 // `id`. The original brackets the setup with BIOS DisableEvent/EnableEvent on

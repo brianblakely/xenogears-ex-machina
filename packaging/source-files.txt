@@ -207,6 +207,7 @@ src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
 src/reconstruction/resident_heap.cpp
 src/reconstruction/sound_driver.cpp
+src/reconstruction/sound_tick.cpp
 src/runtime/main.cpp
 tests/fixtures/README.md
 tests/packed_field_probe.cpp

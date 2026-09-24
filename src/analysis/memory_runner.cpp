@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
         // disc drive service delivers sectors from (may be empty).
         const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
                                     entry == "music_stop" || entry == "disc_read_file" ||
-                                    entry == "interrupt_dispatch";
+                                    entry == "interrupt_dispatch" || entry == "sound_tick";
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
@@ -254,6 +254,8 @@ int main(int argc, char **argv) {
             }
             return_value = static_cast<std::uint32_t>(program->read_file(
                 static_cast<std::int32_t>(registers[4]), registers[5], registers[6], registers[7]));
+        } else if (entry == "sound_tick") {
+            return_value = program->sound_tick(registers[2]); // 8003c028: V0 at entry
         } else if (entry == "interrupt_dispatch") {
             program->interrupt_dispatch(); // 8004b9b4
         } else if (entry == "music_stop") {

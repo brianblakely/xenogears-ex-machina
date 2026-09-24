@@ -224,6 +224,25 @@ Program import_resident(const OriginalMemory &memory) {
     sound_list(sound.effect_banks, 0x1c);
     sound_list(sound.wave_banks, 0x2c);
     sound_list(sound.sequences, 0);
+    for (const auto &[address, size] : reconstruction::resident::sound_statics)
+        sound.statics.emplace(address, copy_of(memory.range(address, size)));
+    for (const auto &[address, size] : reconstruction::resident::sound_constants)
+        sound.constants.emplace(address, copy_of(memory.range(address, size)));
+    // Each sequence's event data (+8), a block whose third word is its byte
+    // length; the tick only reads it. Every voice's event pointer must lie
+    // inside it.
+    for (auto sequence = sound.sequences; sequence != 0; sequence = memory.word(sequence)) {
+        const auto data = memory.word(sequence + 8);
+        if (data == 0)
+            continue;
+        const auto size = memory.word(data + 8);
+        for (std::uint32_t voice = 0; voice < memory.word(sequence + 0x14, 1); ++voice) {
+            const auto at = memory.word(sequence + 0x94 + voice * 0x158 + 0x14);
+            if (at != 0 && (at < data || at - data >= size))
+                throw field::FieldFormatError("A sequence voice reads outside its event data");
+        }
+        sound.constants.emplace(data, copy_of(memory.range(data, size)));
+    }
     copy_into(sound.spu_blocks,
               memory.range(reconstruction::resident::spu_block_table, sound.spu_blocks.size()));
     // Child blocks of each sequence (next +4) and the sound-pool header list.
@@ -367,6 +386,8 @@ void export_resident_into(const Program &program, Claims &out) {
     }
     for (const auto &[address, bytes] : resident.sound.objects)
         out.bytes("sound_object", address, bytes);
+    for (const auto &[address, bytes] : resident.sound.statics)
+        out.bytes("sound_static", address, bytes);
     out.bytes("sound_spu_blocks", reconstruction::resident::spu_block_table,
               resident.sound.spu_blocks);
     for (const auto &[address, header] : resident.sound.pool_headers) {
