@@ -503,6 +503,7 @@ class Program {
     void dma_interrupt();                          // 8004c098
     void dma_completed(std::uint32_t address);     // A 8005896c entry
     void spu_interrupt();                          // 8003bfa0
+    void spu_transfer_completed();                 // 8004cb3c (sound_tick.cpp)
     void cd_interrupt();                           // 80042ca8
     std::uint32_t cd_getintr();                    // 800415b4
     void cd_poll();                                // 80041c80..80041d24

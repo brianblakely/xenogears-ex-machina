@@ -207,6 +207,35 @@ class Tick {
         return 0;
     }
 
+    // 8004cb3c, the SPU DMA completion callback: leave transfer mode, then
+    // run the library's completion callback, the driver's queue step
+    // 8003bb64.
+    void transfer_completed() {
+        // 8004d208 (a busy delay when 80058e58 is zero) keeps no state.
+        const auto control = m.u32(0x80058e08) + 0x1aa;
+        spu_write(control, spu_read(0x8004cb64, 2) & 0xffcfU);
+        if ((spu_read(0x8004cb74, 2) & 0x30U) != 0)
+            for (std::uint32_t tries = 1; tries < 0xf01; ++tries)
+                if ((spu_read(0x8004cb98, 2) & 0x30U) == 0)
+                    break;
+        const auto callback = m.u32(0x80058e40);
+        if (callback == 0)
+            missing("spu_transfer_event", 0x80040e18);
+        if (callback != 0x8003bb64)
+            missing("spu_transfer_callback", callback);
+        // 8003bb64: the finished queue entry's own callback, then the next
+        // queued transfer.
+        const auto index = m.u16(0x80059510);
+        const auto entry = m.u32(0x80059458) + index * 20;
+        m.d.flags |= 4U;
+        if (const auto done = m.u32(entry + 16); done != 0)
+            missing("spu_transfer_entry_callback", done);
+        m.d.flags &= 0xffefU;
+        if (m.u16(0x80059510) != m.u16(0x800594f4))
+            missing("spu_transfer_next", 0x8003be68);
+        m.d.flags &= 0xfffbU;
+    }
+
   private:
     ResidentState &resident;
     Memory m;
@@ -265,8 +294,54 @@ class Tick {
         }
     }
 
-    // 8004d988 SpuSetCommonAttr.
-    void common_attributes() { missing("sound_common_attributes", 0x8004d988); }
+    // 8004d988 SpuSetCommonAttr(common): master volumes and modes, CD and
+    // external input volumes, and the CD/external reverb and mix enables of
+    // the control register, each when its mask bit is set (a zero mask sets
+    // them all).
+    void common_attributes() {
+        const auto mask = m.u32(common);
+        const bool all = mask == 0;
+        const auto base = m.u32(0x80058e08);
+        const auto master = [&](std::uint32_t enable, std::uint32_t mode_bit, std::uint32_t mode_at,
+                                std::uint32_t volume_at, std::uint32_t reg) {
+            if (!all && (mask & enable) == 0)
+                return;
+            std::uint32_t mode = 0;
+            if (all || (mask & mode_bit) != 0) {
+                const auto selected = m.u16(common + mode_at);
+                if (selected < 8 && selected != 0)
+                    mode = 0x8000U + (selected - 1U) * 0x1000U;
+            }
+            auto volume = m.u16(common + volume_at);
+            if (mode != 0) {
+                const auto level = s16(volume);
+                volume = level >= 128 ? 127U : level < 0 ? 0U : u(level);
+            }
+            spu_write(base + reg, (volume & 0x7fffU) | mode);
+        };
+        master(1, 4, 8, 4, 0x180);
+        master(2, 8, 10, 6, 0x182);
+        const auto copy = [&](std::uint32_t bit, std::uint32_t at, std::uint32_t reg) {
+            if (all || (mask & bit) != 0)
+                spu_write(base + reg, m.u16(common + at));
+        };
+        copy(0x40, 16, 0x1b0);
+        copy(0x80, 18, 0x1b2);
+        copy(0x400, 28, 0x1b4);
+        copy(0x800, 30, 0x1b6);
+        const auto control = [&](std::uint32_t bit, std::uint32_t at, std::uint32_t flag,
+                                 std::uint32_t clear_site, std::uint32_t set_site) {
+            if (!all && (mask & bit) == 0)
+                return;
+            const bool on = m.u32(common + at) != 0;
+            const auto value = spu_read(on ? set_site : clear_site, 2);
+            spu_write(base + 0x1aa, on ? value | flag : value & ~flag & 0xffffU);
+        };
+        control(0x100, 20, 4, 0x8004dbec, 0x8004dc04);
+        control(0x200, 24, 1, 0x8004dc40, 0x8004dc58);
+        control(0x1000, 32, 8, 0x8004dc94, 0x8004dcac);
+        control(0x2000, 36, 2, 0x8004dce8, 0x8004dd00);
+    }
 
     // 8004d600 SpuSetIRQ(1): enable the SPU interrupt and wait until the
     // control register shows it.
@@ -1258,5 +1333,7 @@ class Tick {
 } // namespace
 
 std::uint32_t Program::sound_tick(std::uint32_t event) { return Tick(resident).run(event); }
+
+void Program::spu_transfer_completed() { Tick(resident).transfer_completed(); }
 
 } // namespace xem::reconstruction

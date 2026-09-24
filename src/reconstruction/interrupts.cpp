@@ -374,6 +374,9 @@ void Program::dma_completed(std::uint32_t address) {
     case 0x8002ba58:
         disc_ring_transferred();
         break;
+    case 0x8004cb3c:
+        spu_transfer_completed();
+        break;
     default:
         unknown("dma_callback", 0x8004c138, address);
     }

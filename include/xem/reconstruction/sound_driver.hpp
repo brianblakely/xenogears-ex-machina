@@ -78,15 +78,21 @@ inline constexpr std::array<SoundRange, 8> sound_statics{{{0x80059540, 4},
 // (800508a4), the SPU register base (800508e4), note duration and velocity
 // tables (800509b0, 80050a94), the pitch octave and fraction tables
 // (80050b78, 80050bf0) and library register bases (80056400 root counters,
-// 80058e08 SPU) and the SPU transfer queue (80059458).
-inline constexpr std::array<SoundRange, 8> sound_constants{{{0x80050624, 0x200},
-                                                            {0x80050824, 0x80},
-                                                            {0x800508a4, 0x44},
-                                                            {0x800509b0, 0x1c8},
-                                                            {0x80050b78, 0x1878},
-                                                            {0x80056400, 4},
-                                                            {0x80058e08, 4},
-                                                            {0x80059458, 4}}};
+// 80058e08 SPU), the SPU library's transfer callback and wait flag
+// (80058e40, 80058e58) and the SPU transfer queue pointer (80059458).
+inline constexpr std::array<SoundRange, 10> sound_constants{{{0x80050624, 0x200},
+                                                             {0x80050824, 0x80},
+                                                             {0x800508a4, 0x44},
+                                                             {0x800509b0, 0x1c8},
+                                                             {0x80050b78, 0x1878},
+                                                             {0x80056400, 4},
+                                                             {0x80058e08, 4},
+                                                             {0x80058e40, 4},
+                                                             {0x80058e58, 4},
+                                                             {0x80059458, 4}}};
+// The SPU transfer queue at *80059458: eight 20-byte entries (type, RAM
+// address, SPU address, size, completion callback).
+inline constexpr std::uint32_t transfer_queue_bytes = 8 * 20;
 
 // Helpers shared by the effect paths and the tick.
 void release_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel); // 8003e83c
