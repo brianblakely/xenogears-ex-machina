@@ -32,7 +32,11 @@ RAM = 0x200000
 # interrupt (the field code never accesses BIOS RAM). Attributed only there.
 # The ranges are the pinned core's HLE BIOS layout (its TCB and exception
 # stack); a capture with another BIOS reports them as unowned writes.
-KERNEL_SAVE = ((0x859C, 0x85D0), (0xE0CC, 0xE15A))
+# The last range is the two 0x22-byte controller buffers resident 80036288
+# registers with InitPAD (80040828: 800625fc, 8006261e); general PS1 BIOS
+# documentation: the BIOS vertical-blank handler fills them before the
+# observed event dispatch.
+KERNEL_SAVE = ((0x859C, 0x85D0), (0xE0CC, 0xE15A), (0x625FC, 0x62640))
 # The entry frame's caller stack below the entry SP is transient callee
 # storage; observed field-update frames reach 0x250 bytes below it.
 STACK_BELOW_ENTRY = 0x800
@@ -404,6 +408,70 @@ def superseded_bytes(images: list[bytes]) -> dict[int, tuple[int, int]]:
     return result
 
 
+def segments(
+    entry_row: dict, exit_row: dict, handlers: list, entry: bytes, exit: bytes, brackets: list
+) -> tuple[set[int] | None, set[int], dict[int, tuple[int, int]]]:
+    """The call's own changed bytes, interrupt-changed bytes and superseded bytes."""
+    if not handlers:
+        return None, set(), {}
+    # Brackets must be disjoint and in time order to alternate.
+    events = [entry_row["event"]]
+    for before_row, after_row in handlers:
+        events += [before_row["event"], after_row["event"]]
+    events.append(exit_row["event"])
+    require(events == sorted(events), "Interrupt brackets overlap or are out of order")
+    superseded = superseded_bytes([entry, *(image for pair in brackets for image in pair), exit])
+    # Alternate call segments and interrupt segments in order.
+    update_changed, interrupt_changed, previous = set(), set(), entry
+    for before, after in brackets:
+        update_changed.update(unowned_offsets(previous, before))
+        interrupt_changed.update(unowned_offsets(before, after))
+        previous = after
+    update_changed.update(unowned_offsets(previous, exit))
+    return update_changed, interrupt_changed, superseded
+
+
+def supplied_lines(
+    previous_exit: bytes,
+    entry: bytes,
+    interrupt_changed: set[int],
+    own: set[int] | None,
+    superseded: dict[int, tuple[int, int]],
+    sp: int,
+    previous_cop2: list[int],
+    cop2: list[int],
+) -> tuple[list[str], int]:
+    """Effects of code outside a frame, as observed before the next frame.
+
+    The field main loop between two frames and the interrupt handlers inside
+    the previous frame are not the frame's code: every byte they changed is
+    supplied at its value at the next frame's entry, except bytes the frame's
+    own segments changed (unless an interrupt superseded them), the stack
+    below the next entry SP and the BIOS exception save areas. GTE registers
+    are supplied where the next entry differs from the previous exit.
+    """
+    low, high = (sp & 0x1FFFFF) - STACK_BELOW_ENTRY, sp & 0x1FFFFF
+    own = set() if own is None else own
+    offsets = set(unowned_offsets(previous_exit, entry))
+    offsets |= {o for o in interrupt_changed if o not in own} | set(superseded)
+    offsets = sorted(
+        o for o in offsets if not low <= o < high and not any(a <= o < b for a, b in KERNEL_SAVE)
+    )
+    runs = []
+    for o in offsets:
+        if runs and o == runs[-1][1]:
+            runs[-1][1] = o + 1
+        else:
+            runs.append([o, o + 1])
+    lines = [f"bytes {0x80000000 + a:x} {entry[a:b].hex()}" for a, b in runs]
+    lines += [
+        f"gte {i:x} {v:x}"
+        for i, (u, v) in enumerate(zip(previous_cop2, cop2, strict=True))
+        if u != v
+    ]
+    return lines, len(offsets)
+
+
 def unowned_offsets(entry: bytes, exit: bytes) -> list[int]:
     # Fast path: compare 4 KiB pages first.
     result = []
@@ -429,6 +497,7 @@ def run(args: argparse.Namespace) -> int:
     dependencies = collections.defaultdict(list)
     divergences = []
     superseded_calls = []  # Matched calls with interrupt-superseded owned bytes.
+    chain_reports = [] if args.frames > 1 else None
     matched = 0
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
@@ -447,6 +516,13 @@ def run(args: argparse.Namespace) -> int:
         # A call in a frame that began before the capture window has no
         # recorded services; it is not comparable.
         selected = [call for call in selected if frame_keys.get(id(call[0])) is not None]
+    chains = [[call] for call in selected]
+    if args.frames > 1:
+        require(
+            args.entry == "field_frame" and not args.frame_from and not args.stop,
+            "Multi-frame runs compare whole field frames",
+        )
+        chains = [selected[i : i + args.frames] for i in range(0, len(selected), args.frames)]
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     require(not trace.get("failed"), "Capture instruction trace failed")
     # The trace and snapshot files must be the ones the capture recorded.
@@ -459,38 +535,77 @@ def run(args: argparse.Namespace) -> int:
         work = Path(directory)
         (work / "field.bin").write_bytes(b"" if resident else sources.field)
         (work / "overlay.bin").write_bytes(b"" if resident else sources.overlay)
-        for index, (entry_row, exit_row, handlers) in enumerate(selected, args.start):
+        index = args.start
+        for chain in chains:
             # Read in capture order: entry, interrupt brackets, exit.
-            entry, scratch, io = snapshots.read(entry_row)
-            brackets = [
-                (snapshots.read(before_row)[0], snapshots.read(after_row)[0])
-                for before_row, after_row in handlers
-            ]
-            exit, _, _ = snapshots.read(exit_row)
+            frames = []
+            for entry_row, exit_row, handlers in chain:
+                entry, scratch, io = snapshots.read(entry_row)
+                brackets = [
+                    (snapshots.read(before_row)[0], snapshots.read(after_row)[0])
+                    for before_row, after_row in handlers
+                ]
+                exit, _, _ = snapshots.read(exit_row)
+                frames.append(
+                    {
+                        "entry_row": entry_row,
+                        "exit_row": exit_row,
+                        "handlers": handlers,
+                        "entry": entry,
+                        "brackets": brackets,
+                        "exit": exit,
+                    }
+                )
+            first = frames[0]
+            entry, scratch, io = snapshots.read(first["entry_row"])
             (work / "ram.bin").write_bytes(entry)
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
-            if args.entry == "field_frame":
-                # Results of the frame containing the entry, from the entry on:
-                # captures of one execution share cycle counts.
-                key = frame_keys[id(entry_row)]
-                require(key in services, "No service results recorded for this frame")
-                start = services[key][0]
-                (work / "services.txt").write_text(
-                    "".join(
-                        line + "\n"
-                        for cycle, line in services[key][1]
-                        if (cycle - start) % (1 << 32)
-                        >= (entry_row["cycle_u32"] - start) % (1 << 32)
+            lines, supplied = [], []
+            for k, item in enumerate(frames):
+                row = item["entry_row"]
+                if k:
+                    before = frames[k - 1]
+                    own, by_interrupts, superseded = segments(
+                        before["entry_row"],
+                        before["exit_row"],
+                        before["handlers"],
+                        before["entry"],
+                        before["exit"],
+                        before["brackets"],
                     )
-                )
-            else:
-                (work / "services.txt").write_text("")
+                    extra, count = supplied_lines(
+                        before["exit"],
+                        item["entry"],
+                        by_interrupts,
+                        own,
+                        superseded,
+                        visible_registers(row)[29],
+                        before["exit_row"]["cop2_u32"],
+                        row["cop2_u32"],
+                    )
+                    supplied.append(count)
+                    lines += ["frame", *extra]
+                if args.entry == "field_frame":
+                    # Results of the frame containing the entry, from the entry
+                    # on: captures of one execution share cycle counts.
+                    key = frame_keys[id(row)]
+                    require(key in services, "No service results recorded for this frame")
+                    start = services[key][0]
+                    lines += [
+                        line
+                        for cycle, line in services[key][1]
+                        if (cycle - start) % (1 << 32) >= (row["cycle_u32"] - start) % (1 << 32)
+                    ]
+            (work / "services.txt").write_text("".join(line + "\n" for line in lines))
+            entry_row = first["entry_row"]
             process = subprocess.run(
                 [
                     str(args.runner),
-                    args.entry + (f":{args.frame_from}" if args.frame_from else ""),
+                    "field_frames"
+                    if len(frames) > 1
+                    else args.entry + (f":{args.frame_from}" if args.frame_from else ""),
                     str(args.budget),
                     args.stop,
                     str(work / "ram.bin"),
@@ -506,7 +621,7 @@ def run(args: argparse.Namespace) -> int:
                     str(work / "services.txt"),
                 ],
                 capture_output=True,
-                timeout=args.timeout,
+                timeout=args.timeout * len(frames),
                 check=False,
             )
             try:
@@ -521,75 +636,98 @@ def run(args: argparse.Namespace) -> int:
             if process.returncode not in (0, 1):
                 report["status"] = "runner_failure"
                 report["reason"] = f"runner exit {process.returncode}: " + report.get("reason", "")
-            status = report["status"]
-            statuses[status] += 1
-            frame = entry_row["frontend_run"]
-            if status != "completed_boundary":
-                key = report["dependency"] or report["reason"]
-                dependencies[key].append(
-                    {"call": index, "frontend_run": frame, "location": report["location"]}
-                )
-                continue
-            update_changed, interrupt_changed, superseded = None, set(), {}
-            if handlers:
-                # Brackets must be disjoint and in time order to alternate.
-                events = [entry_row["event"]]
-                for before_row, after_row in handlers:
-                    events += [before_row["event"], after_row["event"]]
-                events.append(exit_row["event"])
-                require(events == sorted(events), "Interrupt brackets overlap or are out of order")
-                superseded = superseded_bytes(
-                    [entry, *(image for pair in brackets for image in pair), exit]
-                )
-                # Alternate call segments and interrupt segments in order.
-                update_changed, previous = set(), entry
-                for before, after in brackets:
-                    update_changed.update(unowned_offsets(previous, before))
-                    interrupt_changed.update(unowned_offsets(before, after))
-                    previous = after
-                update_changed.update(unowned_offsets(previous, exit))
-            result = compare(
-                entry,
-                exit,
-                report["owned"],
-                visible_registers(entry_row)[29],
-                update_changed,
-                interrupt_changed,
-                superseded,
-            )
-            # Exact GTE rotation/translation at exit. Interrupt handlers are not
-            # modeled; one that changed these registers would surface here.
-            expected_gte = gte_words(exit_row)
-            # A returned value must equal the original V0 at the exit hook.
-            if (
-                report["return_value"] is not None
-                and report["return_value"] != visible_registers(exit_row)[2]
-            ):
-                result["return_mismatch"] = {
-                    "computed": report["return_value"],
-                    "original": visible_registers(exit_row)[2],
-                }
-                result["mismatch_count"] += 1
-            if report["gte"] != expected_gte:
-                result["gte_mismatch"] = {"computed": report["gte"], "original": expected_gte}
-                result["mismatch_count"] += 1
-            result["interrupts"] = len(handlers)
-            if result["mismatch_count"] or result["unowned_count"] or result["interrupt_conflicts"]:
-                divergences.append({"call": index, "frontend_run": frame, **result})
-                if len(divergences) >= args.max_divergences:
-                    break
-            else:
-                matched += 1
-                if result["interrupt_superseded"]:
-                    superseded_calls.append(
+            # A multi-frame run reports each completed frame; the first frame it
+            # did not complete carries the run's status.
+            if len(frames) > 1:
+                outputs = report.get("frames", [])
+                if chain_reports is not None:
+                    chain_reports.append(
                         {
-                            "call": index,
-                            "frontend_run": frame,
-                            "bytes": result["interrupt_superseded"],
+                            "first_call": index,
+                            "frames": len(frames),
+                            "completed": len(outputs),
+                            "supplied_bytes": supplied,
+                            # Supplied bytes that are no Program state.
+                            "unowned_supplied": [
+                                [hex(address) for address in output["unowned_supplied"]]
+                                for output in outputs[1:]
+                            ],
                         }
                     )
-                behaviours[tuple(result["changed_ranges"])] += 1
-                opcodes.update(report["executed_opcodes"])
+            elif report["status"] == "completed_boundary":
+                outputs = [report]
+            else:
+                outputs = []
+            stop = False
+            for k, item in enumerate(frames):
+                entry_row, exit_row = item["entry_row"], item["exit_row"]
+                entry, exit = item["entry"], item["exit"]
+                frame = entry_row["frontend_run"]
+                call = index + k
+                if k >= len(outputs):
+                    status = report["status"]
+                    if status == "completed_boundary":
+                        status = "runner_failure"
+                    statuses[status] += 1
+                    key = report["dependency"] or report["reason"]
+                    dependencies[key].append(
+                        {"call": call, "frontend_run": frame, "location": report["location"]}
+                    )
+                    break
+                statuses["completed_boundary"] += 1
+                output = outputs[k]
+                update_changed, interrupt_changed, superseded = segments(
+                    entry_row, exit_row, item["handlers"], entry, exit, item["brackets"]
+                )
+                result = compare(
+                    entry,
+                    exit,
+                    output["owned"],
+                    visible_registers(entry_row)[29],
+                    update_changed,
+                    interrupt_changed,
+                    superseded,
+                )
+                # Exact GTE rotation/translation at exit. Interrupt handlers are
+                # not modeled; one that changed these registers would surface here.
+                expected_gte = gte_words(exit_row)
+                # A returned value must equal the original V0 at the exit hook.
+                returned = output.get("return_value")
+                if returned is not None and returned != visible_registers(exit_row)[2]:
+                    result["return_mismatch"] = {
+                        "computed": returned,
+                        "original": visible_registers(exit_row)[2],
+                    }
+                    result["mismatch_count"] += 1
+                if output["gte"] != expected_gte:
+                    result["gte_mismatch"] = {"computed": output["gte"], "original": expected_gte}
+                    result["mismatch_count"] += 1
+                result["interrupts"] = len(item["handlers"])
+                if (
+                    result["mismatch_count"]
+                    or result["unowned_count"]
+                    or result["interrupt_conflicts"]
+                ):
+                    divergences.append({"call": call, "frontend_run": frame, **result})
+                    if len(divergences) >= args.max_divergences:
+                        stop = True
+                        break
+                else:
+                    matched += 1
+                    if result["interrupt_superseded"]:
+                        superseded_calls.append(
+                            {
+                                "call": call,
+                                "frontend_run": frame,
+                                "bytes": result["interrupt_superseded"],
+                            }
+                        )
+                    behaviours[tuple(result["changed_ranges"])] += 1
+                    if k == 0:
+                        opcodes.update(report["executed_opcodes"])
+            index += len(frames)
+            if stop:
+                break
     trace_status = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     summary = {
         "capture": str(capture),
@@ -620,6 +758,7 @@ def run(args: argparse.Namespace) -> int:
         },
         "divergences": divergences,
         "interrupt_superseded": superseded_calls,
+        "multi_frame": chain_reports,
         "tolerance": "exact; owned bytes and every unowned original write",
         "exclusions": {
             "stack_below_entry_sp": STACK_BELOW_ENTRY,
@@ -692,6 +831,13 @@ def main() -> int:
         action="append",
         default=[],
         help="ENTRY:EXIT hook names bracketing interrupt-context code (repeatable)",
+    )
+    parser.add_argument(
+        "--frames",
+        type=int,
+        default=1,
+        help="Run this many consecutive field frames from one import; code outside the "
+        "frames supplies its observed changes between them",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

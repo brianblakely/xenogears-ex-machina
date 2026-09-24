@@ -494,6 +494,10 @@ class Program {
     // and GPU status results; see FrameServices.
     void field_frame(FrameServices &services, const ProgramObserver &observe = {},
                      FrameStep from = FrameStep::start);
+    // Original bytes that code outside a field frame (the field main loop and
+    // interrupt handlers between frames) changed, supplied as observed by a
+    // host running consecutive frames. Each byte must be owned state.
+    void supply_bytes(std::uint32_t address, std::span<const std::uint8_t> bytes);
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -558,9 +562,9 @@ class Program {
                              std::optional<std::uint32_t> actor = {});
     [[nodiscard]] field::GteMatrix memory_matrix(std::uint32_t address) const;
     void set_memory_matrix(std::uint32_t address, const field::GteMatrix &m);
-    // Owned record bytes (actor records, descriptors and sprites, and sprite
-    // task blocks) at an original address: `record_block` spans to the end
-    // of the owning record.
+    // Owned record bytes (actor records, descriptors and sprites, sprite task
+    // blocks, game data and sound driver objects) at an original address: `record_block`
+    // spans to the end of the owning record.
     [[nodiscard]] std::span<std::uint8_t> record_block(std::uint32_t address) const;
     [[nodiscard]] std::span<std::uint8_t> record_bytes(std::uint32_t address,
                                                        std::size_t width) const;

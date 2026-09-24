@@ -257,6 +257,7 @@ tests/test_field_collision.cpp
 tests/test_field_control.cpp
 tests/test_field_control.py
 tests/test_field_events.cpp
+tests/test_field_frame.cpp
 tests/test_field_gte.cpp
 tests/test_field_media.cpp
 tests/test_field_motion.cpp
@@ -368,6 +369,7 @@ tools/extraction/README.md
 tools/reference/README.md
 tools/reference/capture.py
 tools/reference/fingerprint_survey.py
+tools/reference/host_slots.py
 tools/reference/index_survey.py
 tools/reference/inspect_disc.py
 tools/reference/instruction_trace.py
@@ -379,6 +381,7 @@ tools/reference/scenario_program.py
 tools/reference/sector_survey.py
 tools/repository/agent_contract.py
 tools/repository/authoring_contract.py
+tools/repository/build.py
 tools/repository/check.py
 tools/repository/format.py
 tools/repository/matrix.py

@@ -58,6 +58,45 @@ std::string quote(std::string_view text) {
     out << '"';
     return out.str();
 }
+// One field frame's platform results, and before a later frame of a
+// multi-frame run, the bytes and GTE registers code outside the frame changed.
+struct FrameSection {
+    game::FrameServices services;
+    std::vector<std::pair<std::uint32_t, std::vector<std::uint8_t>>> bytes;
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> gte;
+};
+std::vector<std::uint8_t> unhex(std::string_view text) {
+    if (text.size() % 2 != 0)
+        throw InputError("Odd hexadecimal byte string");
+    std::vector<std::uint8_t> bytes;
+    for (std::size_t i = 0; i < text.size(); i += 2)
+        bytes.push_back(
+            static_cast<std::uint8_t>(std::stoul(std::string(text.substr(i, 2)), nullptr, 16)));
+    return bytes;
+}
+// The owned ranges of the exported state, as JSON objects.
+std::string owned_ranges(const game::Program &program) {
+    analysis::OriginalMemory image;
+    image.ram.assign(analysis::ram_bytes, 0);
+    const auto ranges = program.field    ? analysis::export_field(program, image)
+                        : program.battle ? analysis::export_battle(program, image)
+                                         : analysis::export_resident(program, image);
+    std::ostringstream owned;
+    for (std::size_t i = 0; i < ranges.size(); ++i) {
+        const auto &range = ranges[i];
+        owned << (i ? "," : "") << "{\"name\":" << quote(range.name)
+              << ",\"address\":" << range.address
+              << ",\"hex\":" << quote(hex(image.range(range.address, range.size))) << '}';
+    }
+    return owned.str();
+}
+// GTE control registers 0-30 (FLAG is transient).
+std::string gte_controls(const game::Program &program) {
+    std::ostringstream out;
+    for (std::uint32_t i = 0; i < 31; ++i)
+        out << (i ? "," : "") << program.resident.gte.control(i);
+    return out.str();
+}
 void optional(std::ostream &out, const auto &value) {
     if (value)
         out << +*value;
@@ -76,6 +115,7 @@ int main(int argc, char **argv) {
     std::uint32_t work = 0;
     bool executing = false;
     std::optional<game::Program> program;
+    std::ostringstream frames; // Completed frames of "field_frames".
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
     try {
@@ -157,7 +197,9 @@ int main(int argc, char **argv) {
         std::ranges::copy(io, program->resident.io.begin());
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them.
-        game::FrameServices services;
+        // A "frame" line starts the next frame of "field_frames"; before it
+        // runs, "bytes ADDRESS HEX" and "gte INDEX VALUE" lines are applied.
+        std::vector<FrameSection> sections(1);
         {
             std::ifstream lines(argv[12]);
             if (!lines)
@@ -166,9 +208,21 @@ int main(int argc, char **argv) {
                 std::istringstream fields(line);
                 std::string name;
                 std::uint32_t first = 0, second = 0;
+                if (line == "frame") {
+                    sections.emplace_back();
+                    continue;
+                }
                 if (!(fields >> name >> std::hex >> first))
                     throw InputError("Malformed service line");
-                if (name == "hblank")
+                auto &services = sections.back().services;
+                if (name == "bytes") {
+                    std::string text;
+                    if (!(fields >> text))
+                        throw InputError("Malformed supplied bytes");
+                    sections.back().bytes.emplace_back(first, unhex(text));
+                } else if (name == "gte" && fields >> std::hex >> second)
+                    sections.back().gte.emplace_back(first, second);
+                else if (name == "hblank")
                     services.hblank_counts.push_back(first);
                 else if (name == "vblank_wait" && fields >> std::hex >> second)
                     services.vblank_waits.push_back({first, second});
@@ -188,6 +242,9 @@ int main(int argc, char **argv) {
                     throw InputError("Unknown service result " + name);
             }
         }
+        if (sections.size() != 1 && entry != "field_frames")
+            throw InputError("Only field_frames takes several frame sections");
+        auto &services = sections.front().services;
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -209,6 +266,38 @@ int main(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_update") {
             program->field_update(observer);
+        } else if (entry == "field_frames") {
+            // Consecutive frames from one import: each frame's exported state
+            // is reported, then the next section's supplied bytes apply.
+            std::vector<std::string> supplied;
+            for (std::size_t k = 0; k < sections.size(); ++k) {
+                auto &section = sections[k];
+                // A byte the Program does not own is not its state: reported,
+                // never applied.
+                std::ostringstream unowned;
+                for (const auto &[address, bytes] : section.bytes)
+                    for (std::size_t i = 0; i < bytes.size(); ++i) {
+                        const auto at = address + static_cast<std::uint32_t>(i);
+                        try {
+                            program->supply_bytes(at, std::span(bytes).subspan(i, 1));
+                        } catch (const std::exception &) {
+                            unowned << (unowned.tellp() > 0 ? "," : "") << at;
+                        }
+                    }
+                supplied.push_back(unowned.str());
+                for (const auto &[index, value] : section.gte) {
+                    if (index >= 64)
+                        throw InputError("GTE register index out of range");
+                    if (index < 32)
+                        program->resident.gte.set_data(index, value);
+                    else
+                        program->resident.gte.set_control(index - 32, value);
+                }
+                program->field_frame(section.services, observer);
+                frames << (k ? "," : "") << "{\"unowned_supplied\":[" << supplied.back()
+                       << "],\"gte\":[" << gte_controls(*program) << "],\"owned\":["
+                       << owned_ranges(*program) << "]}";
+            }
         } else if (entry.starts_with("field_frame")) {
             // "field_frame" or "field_frame:STEP" resumes at a frame step.
             static const std::map<std::string_view, game::FrameStep> steps{
@@ -380,24 +469,14 @@ int main(int argc, char **argv) {
     }
     // Committed state is exported even after a stop: it is partial, never a
     // result. Export happens before reporting so its failure changes the status.
-    std::ostringstream owned;
+    std::string owned;
     if (program && executing) {
-        analysis::OriginalMemory image;
-        image.ram.assign(analysis::ram_bytes, 0);
         try {
-            const auto ranges = program->field    ? analysis::export_field(*program, image)
-                                : program->battle ? analysis::export_battle(*program, image)
-                                                  : analysis::export_resident(*program, image);
-            for (std::size_t i = 0; i < ranges.size(); ++i) {
-                const auto &range = ranges[i];
-                owned << (i ? "," : "") << "{\"name\":" << quote(range.name)
-                      << ",\"address\":" << range.address
-                      << ",\"hex\":" << quote(hex(image.range(range.address, range.size))) << '}';
-            }
+            owned = owned_ranges(*program);
         } catch (const std::exception &error) {
             status = "reconstruction_error";
             reason = std::string("Export failed: ") + error.what();
-            owned.str("");
+            owned.clear();
         }
     }
     std::cout << "{\"entry\":" << quote(entry) << ",\"status\":" << quote(status)
@@ -423,10 +502,8 @@ int main(int argc, char **argv) {
     std::cout << "},\"return_value\":";
     optional(std::cout, return_value);
     std::cout << ",\"gte\":[";
-    // GTE control registers 0-30 at exit (FLAG is transient).
-    if (program && !owned.str().empty())
-        for (std::uint32_t i = 0; i < 31; ++i)
-            std::cout << (i ? "," : "") << program->resident.gte.control(i);
-    std::cout << "],\"owned\":[" << owned.str() << "]}\n";
+    if (program && !owned.empty())
+        std::cout << gte_controls(*program);
+    std::cout << "],\"owned\":[" << owned << "],\"frames\":[" << frames.str() << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
 }

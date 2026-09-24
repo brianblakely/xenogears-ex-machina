@@ -6,6 +6,7 @@
 #include "xem/reconstruction/original_layout.hpp"
 #include "xem/reconstruction/program.hpp"
 
+#include <algorithm>
 #include <bit>
 
 namespace xem::reconstruction {
@@ -117,6 +118,15 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
     for (const auto &node : resident.sprite_tasks.nodes)
         if (const auto bytes = from(node.address, node.bytes); !bytes.empty())
             return bytes;
+    // Persistent game data (*8005a39c).
+    if (const auto bytes = from(resident.game_state, resident.game_data); !bytes.empty())
+        return bytes;
+    // Sound driver objects (80065b0c pool).
+    if (const auto after = resident.sound.objects.upper_bound(address);
+        after != resident.sound.objects.begin())
+        if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
+            !bytes.empty())
+            return bytes;
     return {};
 }
 
@@ -155,6 +165,35 @@ void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t
     std::array<std::uint8_t, 4> bytes{};
     put(bytes, 0, value, width);
     write_original(*this, address, std::span(bytes).first(width));
+}
+
+// A supplied byte of a wider original global replaces that byte of its value.
+void Program::supply_bytes(std::uint32_t address, std::span<const std::uint8_t> bytes) {
+    const auto &globals = original_globals();
+    for (std::size_t i = 0; i < bytes.size(); ++i) {
+        const auto at = ram_address(address + static_cast<std::uint32_t>(i));
+        const bool record = (field && field->regions.contains(at, 1)) ||
+                            !resource_bytes(at, 1).empty() || !record_bytes(at, 1).empty();
+        const auto global = std::ranges::find_if(globals, [&](const OriginalGlobal &item) {
+            return at >= item.address && at - item.address < item.width;
+        });
+        // Event variables (800c3a68): halfword values.
+        if (constexpr std::uint32_t bank = 0x800c3a68;
+            at >= bank && at - bank < resident.variables.words.size() * 2) {
+            auto &word = resident.variables.words[(at - bank) / 2];
+            const auto shift = 8U * ((at - bank) & 1U);
+            word = static_cast<std::uint16_t>((word & ~(0xffU << shift)) |
+                                              static_cast<std::uint32_t>(bytes[i]) << shift);
+            continue;
+        }
+        if (record || global == globals.end() || (!global->resident && !field)) {
+            set_memory(at, bytes[i], 1);
+            continue;
+        }
+        const auto shift = 8U * (at - global->address);
+        global->set(*this, (global->get(*this) & ~(0xffU << shift)) |
+                               static_cast<std::uint32_t>(bytes[i]) << shift);
+    }
 }
 
 // RotAverage4 (8004a7bc): the four SVECTOR corners at `record` projected
