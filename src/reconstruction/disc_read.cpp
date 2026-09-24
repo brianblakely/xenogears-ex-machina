@@ -200,23 +200,27 @@ std::int32_t Program::read_setup(std::uint32_t file, std::uint32_t destination,
 
 // 800413ec: DMA channel 3 callback through 8004b7a0, which calls the service
 // at *8005892c + 4; only 8004c21c is recovered.
-void Program::cd_dma_callback(std::uint32_t function) {
+void Program::cd_dma_callback(std::uint32_t function) { set_dma_callback(3, function); }
+
+// 8004b7a0(channel, function) calls the service at *8005892c + 4; only
+// 8004c21c is recovered: store the callback, then set or clear the channel's
+// interrupt enable (bit 16 + channel) with the master enable (bit 23) in the
+// software-controlled low bits of DICR.
+void Program::set_dma_callback(std::uint32_t channel, std::uint32_t function) {
     auto &cd = resident.cd;
     if (!cd.dma_set_callback || *cd.dma_set_callback != 0x8004c21c)
         throw MissingDependency({"dma_service", 0x8004b7b8, {}, {}}, "symbol:dma-service-table",
                                 false, "The DMA service at *8005892c + 4 is not 8004c21c");
-    // 8004c21c(3, function): store the callback, then set or clear the
-    // channel's interrupt enable (bit 19) with the master enable (bit 23).
-    if (function == cd.dma_callback)
+    if (channel >= resident.interrupts.dma_callbacks.size())
+        throw field::FieldFormatError("DMA callback channel outside the callback table");
+    auto &slot = channel == 3 ? cd.dma_callback : resident.interrupts.dma_callbacks[channel];
+    if (function == slot)
         return;
-    cd.dma_callback = function;
+    slot = function;
     const auto address = cd.dma_interrupt_register;
-    const auto offset = address - 0x1f801000U;
-    if (offset > resident.io.size() - 4 || (address & 3U) != 0)
-        throw field::FieldFormatError("DMA interrupt register outside the observed I/O page");
-    const auto control = (bytes(resident.io, offset, 4, "I/O page") & 0xffffffU) | 0x800000U;
-    const auto value = function != 0 ? control | 0x80000U : control & ~0x80000U;
-    resident.hardware_writes.push_back({address, value, 4});
+    const auto control = (io_latch(address, 4) & 0xffffffU) | 0x800000U;
+    const auto enable = 1U << (channel + 16U);
+    io_write(address, function != 0 ? control | enable : control & ~enable, 4);
 }
 
 // 8004111c CdControl(command, parameter, 0): up to four attempts.
@@ -442,6 +446,7 @@ void Program::cd_callback(std::uint32_t address, std::uint8_t status,
         disc_data(status);
         break;
     case 0x8002b2f0:
+    case 0x8002b5d0: // An instruction-for-instruction copy of 8002b2f0.
         disc_ring_data(status);
         break;
     case 0x8002ac24:
@@ -793,6 +798,131 @@ void Program::disc_ring_transferred() {
     resident.disc_error = 0;
 }
 
+// 8002bb50: DMA callback of image-stream ring reads. The oldest filled slot
+// (state 1 with the expected sequence) is taken (2). A first sector starts an
+// image: record 1200 or 1201 with a position, the strip width, the image
+// count, the strip count and the strip heights. Each later sector is one
+// strip that LoadImage sends to VRAM. After the last strip of the last image
+// the read continues or ends.
+void Program::disc_image_transferred() {
+    auto &read = resident.disc_read;
+    // Words at 80059f24..80059f50; halfword stores keep the upper halves.
+    auto &image = read.image;
+    enum : std::size_t {
+        mode_1200,
+        x_1200,
+        y_1200,
+        mode_1201,
+        x_1201,
+        y_1201,
+        images,
+        x,
+        y,
+        width,
+        heights,
+        strips
+    };
+    const auto blocks = resident.disc_stream.active_block_count;
+    if (blocks < 0)
+        throw MissingDependency({"disc_image_transferred", 0x8002bbcc, {}, {}},
+                                "symbol:ring-without-blocks", false,
+                                "A ring without blocks marks an unset slot");
+    const auto slot_at = [&](std::int32_t slot) {
+        return read.ring_slots - read.ring.address + static_cast<std::uint32_t>(slot) * 8U;
+    };
+    const auto field16 = [&](std::int32_t slot, std::uint32_t offset) -> std::uint32_t {
+        return bytes(read.ring.bytes, slot_at(slot) + offset, 2, "Disc ring");
+    };
+    const auto set16 = [&](std::int32_t slot, std::uint32_t offset, std::uint32_t value) {
+        const auto at = slot_at(slot) + offset;
+        if (at + 2 > read.ring.bytes.size())
+            throw field::FieldFormatError("Disc ring slot outside its owned header");
+        read.ring.bytes[at] = static_cast<std::uint8_t>(value);
+        read.ring.bytes[at + 1] = static_cast<std::uint8_t>(value >> 8U);
+    };
+    const auto store16 = [&](std::size_t index, std::uint32_t value) {
+        image[index] = (image[index] & 0xffff0000U) | (value & 0xffffU);
+    };
+    const auto half = [&](std::uint32_t address) {
+        return (ram_word(address & ~3U) >> ((address & 2U) * 8U)) & 0xffffU;
+    };
+    std::int32_t slot = 0;
+    while (slot < blocks && !(field16(slot, 0) == 1 && field16(slot, 2) == read.h_fe28))
+        slot = static_cast<std::int16_t>(slot + 1);
+    if (slot == blocks)
+        return;
+    set16(slot, 0, 2);
+    const auto finish = [&] {
+        read.size = 0;
+        cd_dma_callback(0);
+        disc_continue(read.offset);
+        resident.disc_error = 0;
+    };
+    auto data = (static_cast<std::uint32_t>(slot) << 11U) + read.destination;
+    if (image[strips] == 0) {
+        // A first sector: its record.
+        const auto type = ram_word(data);
+        data += 4;
+        if (type - 0x1200U >= 2) {
+            finish();
+            return;
+        }
+        const bool first = type == 0x1200;
+        const auto mode = static_cast<std::int16_t>(image[first ? mode_1200 : mode_1201]);
+        const auto base_x = image[first ? x_1200 : x_1201] & 0xffffU;
+        const auto base_y = image[first ? y_1200 : y_1201] & 0xffffU;
+        if (mode == 1) {
+            store16(x, base_x + half(data + 4));
+            store16(y, base_y + half(data + 6));
+        } else if (mode == 2) {
+            store16(x, base_x + half(data) + half(data + 4));
+            store16(y, base_y + half(data + 2) + half(data + 6));
+        } else {
+            store16(x, half(data) + half(data + 4));
+            store16(y, half(data + 2) + half(data + 6));
+        }
+        data += 8;
+        store16(width, half(data));
+        data += 8;
+        if (image[images] == 0)
+            image[images] = ram_word(data);
+        data += 4;
+        const auto count = ram_word(data);
+        data += 4;
+        image[heights] = data;
+        image[strips] = count;
+        ++read.h_fe28;
+        return;
+    }
+    // A strip at the current position. Its rectangle is a local of 8002bb50
+    // (frame 20h, at +10h) under the DMA handler (frame 30h) and the
+    // dispatcher (frame 28h) on the exception hook's stack.
+    const auto list = image[heights];
+    std::array<std::int16_t, 4> rect{
+        static_cast<std::int16_t>(image[x]), static_cast<std::int16_t>(image[y]),
+        static_cast<std::int16_t>(image[width]), static_cast<std::int16_t>(half(list))};
+    const auto address = resident.interrupts.hook_stack - 0x28U - 0x30U - 0x20U + 0x10U;
+    static_cast<void>(load_image(rect, address, data));
+    image[heights] = list + 2U;
+    const auto left = image[strips] - 1U;
+    store16(y, (image[y] & 0xffffU) + half(list));
+    image[strips] = left;
+    if (static_cast<std::int32_t>(left) <= 0) {
+        image[strips] = 0;
+        --image[images];
+        for (std::int32_t each = 0; each < blocks; each = static_cast<std::int16_t>(each + 1)) {
+            set16(each, 0, 0);
+            set16(each, 2, 0);
+        }
+        if (static_cast<std::int32_t>(image[images]) <= 0) {
+            finish();
+            return;
+        }
+    }
+    set16(slot, 0, 0);
+    ++read.h_fe28;
+}
+
 // 8002ac24: data callback of list reads: files from the list at 8004fe0c
 // (halfword file, word destination per eight bytes; 8004fe10 is the current
 // entry) are read in one pass, skipping sectors between them.
@@ -925,7 +1055,7 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
         std::ranges::copy(data, block.bytes.begin() + (address - block.address));
         return true;
     };
-    if (inside(resident.disc_read.ring))
+    if (inside(resident.disc_read.ring) || inside(resident.disc_read.ring_payload))
         return;
     for (auto &block : resident.music_blocks)
         if (inside(block))

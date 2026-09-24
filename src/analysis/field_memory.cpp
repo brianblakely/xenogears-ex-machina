@@ -359,6 +359,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_directories", read.directory_table, read.directories);
     if (!read.ring.bytes.empty())
         out.bytes("disc_ring_header", read.ring.address, read.ring.bytes);
+    if (!read.ring_payload.bytes.empty())
+        out.bytes("disc_ring_payload", read.ring_payload.address, read.ring_payload.bytes);
     for (const auto &block : resident.music_blocks)
         out.bytes("music_block", block.address, block.bytes);
     if (resident.cd.dma_set_callback) {
@@ -441,12 +443,17 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
     auto &read = resident.disc_read;
     const auto &cd = resident.cd;
     const auto ring = resident.disc_stream.ring_buffer;
-    if ((cd.sync_callback == 0x8002b2f0 || cd.dma_callback == 0x8002ba58) && ring != 0) {
+    const bool ring_active = cd.sync_callback == 0x8002b2f0 || cd.sync_callback == 0x8002b5d0 ||
+                             cd.dma_callback == 0x8002ba58 || cd.dma_callback == 0x8002bb50;
+    if (ring_active && ring != 0) {
         const auto count = memory.word(ring);
         if (count > 0x1000)
             throw field::FieldFormatError("Active disc ring has an implausible block count");
-        const auto header = memory.range(ring, 0x24 + std::size_t{count} * 8);
-        read.ring = {ring, copy_of(header)};
+        const auto header_bytes = 0x24U + count * 8U;
+        read.ring = {ring, copy_of(memory.range(ring, header_bytes))};
+        read.ring_payload = {
+            ring + header_bytes,
+            copy_of(memory.range(ring + header_bytes, std::size_t{count} * 0x800))};
     }
     if (cd.sync_callback == 0x8002ac24 && read.w_fe0c != 0) {
         // Entries up to and including the terminating one (file or

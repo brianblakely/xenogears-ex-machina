@@ -374,6 +374,12 @@ void Program::dma_completed(std::uint32_t address) {
     case 0x8002ba58:
         disc_ring_transferred();
         break;
+    case 0x8002bb50:
+        disc_image_transferred();
+        break;
+    case 0x8004696c: // The libgpu queue runner.
+        static_cast<void>(gpu_execute());
+        break;
     default:
         unknown("dma_callback", 0x8004c138, address);
     }
@@ -432,6 +438,9 @@ void add_interrupt_globals(std::vector<OriginalGlobal> &table) {
         if (i != 3) // 80058978 is CdState::dma_callback.
             add("dma_callbacks", 0x8005896c + 4 * i, 4,
                 [i](Program &p) -> auto & { return p.resident.interrupts.dma_callbacks[i]; });
+    add("irq_hook_stack", 0x800578e0, 4,
+        [](Program &p) -> auto & { return p.resident.interrupts.hook_stack; });
+    add_gpu_globals(table);
     add("spu_callback", 0x8005950c, 4,
         [](Program &p) -> auto & { return p.resident.interrupts.spu_callback; });
     add("spu_count", 0x80059514, 4,

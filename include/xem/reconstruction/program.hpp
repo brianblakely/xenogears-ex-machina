@@ -113,6 +113,33 @@ struct PadState {
     std::array<std::array<std::uint8_t, 8>, 2> actuators{}; // 8005a1bc
 };
 
+// libgpu request queue (enqueue 8004668c, execute 8004696c) and the image
+// operations the interrupt side reaches (LoadImage 80044894 / 800460a0,
+// StoreImage 800462dc, DrawOTag 800465ec).
+struct GpuState {
+    std::uint32_t services{};                  // 800568c8: service table address
+    std::array<std::uint32_t, 12> functions{}; // 80056888: the service table
+    std::uint8_t queued{};                     // 800568d1: zero runs requests at once
+    std::uint8_t debug{};                      // 800568d2: request checking level
+    std::int16_t width{};                      // 800568d4: VRAM width
+    std::int16_t height{};                     // 800568d6: VRAM height
+    std::uint32_t sync_pending{};              // 800568d8
+    std::uint32_t sync_callback{};             // 800568dc: DrawSync callback
+    // 800569a0 GP0, 800569a4 GP1/GPUSTAT, 800569a8 DMA2 address, 800569ac
+    // DMA2 block, 800569b0 DMA2 control.
+    std::array<std::uint32_t, 5> registers{};
+    std::array<std::uint32_t, 3> current{}; // 800569c4: last operation, parameter, argument
+    std::uint32_t head{};                   // 800569d4
+    std::uint32_t tail{};                   // 800569d8
+    std::uint32_t enqueue_mask{};           // 800569dc: interrupt mask saved by 8004668c
+    std::uint32_t execute_mask{};           // 800569e0: interrupt mask saved by 8004696c
+    std::uint32_t deadline{};               // 800569e8
+    std::uint32_t polls{};                  // 800569ec
+    // 8006be34: 64 requests of 60h bytes: operation, parameter pointer,
+    // argument, then the copied parameter.
+    std::array<std::uint8_t, 64 * 0x60> queue{};
+};
+
 // Interrupt environment of the dispatcher 8004b9b4 and its handlers.
 struct InterruptState {
     std::uint16_t initialized{};              // 800578a4
@@ -123,6 +150,9 @@ struct InterruptState {
     std::array<std::uint32_t, 8> vsync_callbacks{}; // 80058940
     // 8005896c: DMA completion callbacks; channel 3 is CdState::dma_callback.
     std::array<std::uint32_t, 7> dma_callbacks{};
+    // 800578e0: stack pointer of the exception hook's context (the setjmp
+    // buffer at 800578dc that the hook resumes, then calls 8004b9b4).
+    std::uint32_t hook_stack{};
     std::uint32_t spu_callback{}; // 8005950c: SPU interrupt callback
     std::uint32_t spu_count{};    // 80059514: SPU interrupts served
 };
@@ -168,6 +198,14 @@ struct DiscReadState {
     // The list a list read walks (8004fe0c): halfword file, word destination
     // per eight-byte entry. Read-only input; empty unless attached.
     resident::HeapBlock list;
+    // Payload of the active stream ring (after its header): count sectors of
+    // 800h bytes. Attached with the ring header.
+    resident::HeapBlock ring_payload;
+    // Image stream state (8002bb50), words at 80059f24..80059f50: record
+    // 1200 mode, x, y; record 1201 mode, x, y; records left; current x, y,
+    // width; next height pointer; strips left. Halfword fields keep their
+    // upper halves.
+    std::array<std::uint32_t, 12> image{};
     // The tables at 8004fdf0 (8000 bytes) and 8004fdf4 (7a bytes), the sizes
     // 80028230 reads them with; empty before they are loaded.
     std::vector<std::uint8_t> files;
@@ -283,6 +321,7 @@ struct ResidentState {
     field::MatrixStack matrix_stack{};          // 80056d2c depth, 80056d30 records
     InterruptState interrupts;
     PadState pad;
+    GpuState gpu;
     // RAM that disc DMA filled and no other Program value owns (file
     // destinations, the sector tail buffer 800596f8), by address.
     std::vector<resident::HeapBlock> disc_transfers;
@@ -513,7 +552,24 @@ class Program {
     void disc_data_failed(bool counted);                               // 8002b204 and its copies
     void disc_ring_transferred();                                      // 8002ba58
     void disc_continue(std::uint32_t file);                            // 8002a394
-    void cd_get_sector(std::uint32_t buffer, std::uint32_t words);     // 800413ac / 80042aa8
+    void disc_image_transferred();                                     // 8002bb50
+    // 8004c21c through 8004b7a0: set the DMA completion callback of `channel`.
+    void set_dma_callback(std::uint32_t channel, std::uint32_t function);
+    // libgpu (gpu_queue.cpp). A rectangle is x, y, width, height.
+    // `address` is the rectangle's original (stack) address.
+    std::int32_t load_image(std::array<std::int16_t, 4> &rect, std::uint32_t address,
+                            std::uint32_t data); // 80044894
+    std::int32_t gpu_enqueue(std::uint32_t operation, std::array<std::int16_t, 4> &rect,
+                             std::uint32_t address, std::uint32_t size,
+                             std::uint32_t argument); // 8004668c
+    std::uint32_t gpu_execute();                      // 8004696c
+    // Run a queued or immediate operation; `rect` is the rectangle parameter
+    // when the caller owns it, else it lives in the queue at `parameter`.
+    std::int32_t gpu_operation(std::uint32_t operation, std::uint32_t parameter,
+                               std::array<std::int16_t, 4> *rect, std::uint32_t argument);
+    void gpu_wait_ready(std::uint32_t first, std::uint32_t again); // GPUSTAT bit 26 poll
+    [[nodiscard]] std::uint32_t ram_word(std::uint32_t address) const;
+    void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);
     // A register only software changes: its last recorded write, else the

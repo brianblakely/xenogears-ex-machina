@@ -26,6 +26,7 @@ struct OriginalGlobal {
 [[nodiscard]] const std::vector<OriginalGlobal> &original_globals();
 // Entries of the interrupt-context state (interrupts.cpp), part of the table.
 void add_interrupt_globals(std::vector<OriginalGlobal> &table);
+void add_gpu_globals(std::vector<OriginalGlobal> &table); // gpu_queue.cpp
 
 struct OriginalRegion {
     std::uint32_t address;

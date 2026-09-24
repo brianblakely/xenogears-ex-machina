@@ -43,7 +43,8 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_gte.cpp
   src/reconstruction/disc_stream.cpp
   src/reconstruction/disc_read.cpp
-  src/reconstruction/interrupts.cpp)
+  src/reconstruction/interrupts.cpp
+  src/reconstruction/gpu_queue.cpp)
 target_include_directories(xem-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-reconstruction PUBLIC xem_project_options)
 

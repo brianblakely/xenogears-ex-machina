@@ -201,6 +201,7 @@ src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
 src/reconstruction/field_update.cpp
+src/reconstruction/gpu_queue.cpp
 src/reconstruction/interrupts.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
