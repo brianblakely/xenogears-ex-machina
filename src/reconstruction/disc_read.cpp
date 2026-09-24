@@ -906,10 +906,17 @@ void Program::cd_get_sector(std::uint32_t buffer, std::uint32_t words) {
 void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> data) {
     const auto end = std::uint64_t{address} + data.size();
     const bool global = std::ranges::any_of(original_globals(), [&](const OriginalGlobal &item) {
-        return item.address < end && address < std::uint64_t{item.address} + item.width;
+        return (item.resident || field) && item.address < end &&
+               address < std::uint64_t{item.address} + item.width;
     });
     if (global) {
-        write_original(*this, address, data);
+        try {
+            write_original(*this, address, data);
+        } catch (const field::FieldFormatError &) {
+            throw field::FieldFormatError("Disc DMA to " + hex(address) + " (" +
+                                          std::to_string(data.size()) +
+                                          " bytes) partly covers Program globals");
+        }
         return;
     }
     const auto inside = [&](resident::HeapBlock &block) {

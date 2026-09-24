@@ -267,6 +267,7 @@ def compare(
     update_changed: set[int] | None = None,
     interrupt_changed: set[int] = frozenset(),
     superseded: dict[int, tuple[int, int]] | None = None,
+    arrival_stacks: tuple[int, ...] = (),
 ) -> dict:
     """Exact comparison of owned bytes plus attribution of every other change.
 
@@ -288,13 +289,22 @@ def compare(
             require(base + i not in computed, "Overlapping owned ranges")
             computed[base + i] = value
             names[base + i] = (item["name"], item["address"], i)
-    low, high = (sp & 0x1FFFFF) - STACK_BELOW_ENTRY, sp & 0x1FFFFF
+    # Callee stack windows: the call's, and each arrived interrupt's (its
+    # handler runs on the stack the exception hook selects).
+    windows = [
+        ((stack & 0x1FFFFF) - STACK_BELOW_ENTRY, stack & 0x1FFFFF)
+        for stack in sorted({sp, *arrival_stacks})
+    ]
+
+    def stacked(offset: int) -> bool:
+        return any(low <= offset < high for low, high in windows)
+
     changed = unowned_offsets(entry, exit)
     own = update_changed if update_changed is not None else set(changed)
     kernel = {
         o
         for o in set(changed) | own | set(interrupt_changed)
-        if interrupt_changed and any(a <= o < b for a, b in KERNEL_SAVE)
+        if (interrupt_changed or arrival_stacks) and any(a <= o < b for a, b in KERNEL_SAVE)
     }
     excused = {o for o in interrupt_changed if o not in own} | kernel
     # An owned byte that only interrupt code changed belongs to the interrupt
@@ -310,7 +320,7 @@ def compare(
     unowned = [
         offset
         for offset in changed
-        if offset not in computed and not low <= offset < high and offset not in excused
+        if offset not in computed and not stacked(offset) and offset not in excused
     ]
     # BIOS save-area bytes also change on exception entry, before the observed
     # dispatch hook; they are machine state, never Program state.
@@ -322,7 +332,7 @@ def compare(
     )
     return {
         "owned_bytes": len(computed),
-        "changed_bytes": len([o for o in changed if not low <= o < high]),
+        "changed_bytes": len([o for o in changed if not stacked(o)]),
         "changed_ranges": sorted({names[o][0] for o in changed if o in names}),
         "mismatches": [
             {
@@ -505,6 +515,7 @@ def run(args: argparse.Namespace) -> int:
                 update_changed,
                 interrupt_changed,
                 superseded,
+                tuple(visible_registers(row)[29] for row in inputs if row["hook"] == args.arrival),
             )
             # Exact GTE rotation/translation at exit. Interrupt handlers are not
             # modeled; one that changed these registers would surface here.
