@@ -45,7 +45,11 @@ std::uint32_t platform_read(std::deque<PlatformInput> &inputs, std::uint32_t sit
     if (inputs.empty() || inputs.front().kind != PlatformInput::Kind::read ||
         inputs.front().site != site)
         throw PlatformInputError("Platform input does not supply the hardware read at " +
-                                 hex(site));
+                                 hex(site) + "; next is " +
+                                 (inputs.empty() ? std::string("none")
+                                  : inputs.front().kind == PlatformInput::Kind::interrupt
+                                      ? std::string("an interrupt arrival")
+                                      : "the read at " + hex(inputs.front().site)));
     const auto value = inputs.front().value;
     if (width < 4) {
         const auto bits = 8U * width;

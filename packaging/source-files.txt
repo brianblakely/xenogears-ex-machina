@@ -259,6 +259,7 @@ tests/test_field_sprite_factory.cpp
 tests/test_fingerprint_survey.py
 tests/test_index_survey.py
 tests/test_instruction_trace.py
+tests/test_interrupts.cpp
 tests/test_inventory_records.py
 tests/test_jump_physics.py
 tests/test_media_survey.py
