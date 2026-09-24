@@ -340,14 +340,8 @@ void Program::request_map_change(field::FieldWorld &world) {
         // 80092f44: record the departure in variables 4, 6, 8 and count it in 12.
         auto &variables = world.variables;
         variables.write(4, static_cast<std::int32_t>(resident.field_map & 0x3fffU));
-        const auto controlled = static_cast<std::size_t>(world.controlled);
-        if (controlled >= world.actors.size())
-            throw field::EventError("Map change requires the controlled actor's record");
-        // 8009744c: the controlled actor's facing octant; 8009a514: the camera's.
-        const auto facing =
-            static_cast<std::int16_t>(word(world.actors[controlled].actor, 0x106, 2));
-        variables.write(6, (((facing + 0x100) >> 9) + 2) & 7);
-        variables.write(8, (7 - ((state.control_inputs.camera_angle - 0x100) >> 9)) & 7);
+        variables.write(6, facing_octant());
+        variables.write(8, camera_heading_octant());
         variables.write(0x12, variables.read(0x12) + 1);
         world.control.gate_values[2] = 0;
         variables.write(2, entry);

@@ -206,6 +206,7 @@ src/reconstruction/field_script.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
+src/reconstruction/field_transition.cpp
 src/reconstruction/field_update.cpp
 src/reconstruction/media.cpp
 src/reconstruction/menu_equipment.cpp

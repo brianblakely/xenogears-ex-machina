@@ -152,6 +152,19 @@ std::vector<OriginalGlobal> build() {
     }
     add_resident("field_map", 0x8004f34c, 4,
                  [](Program &p) -> auto & { return p.resident.field_map; });
+    add_resident("preload_id", 0x8004f330, 4,
+                 [](Program &p) -> auto & { return p.resident.preload_id; });
+    add_resident("preload_slot", 0x8004f334, 4,
+                 [](Program &p) -> auto & { return p.resident.preload_slot; });
+    add_resident("preload_size", 0x8005a4c0, 4,
+                 [](Program &p) -> auto & { return p.resident.preload_size; });
+    add_resident("preload_block", 0x8005a4e0, 4,
+                 [](Program &p) -> auto & { return p.resident.preload_block.address; });
+    add_resident("departure_5941c", 0x8005941c, 2,
+                 [](Program &p) -> auto & { return p.resident.departure_5941c; });
+    add_resident("departure_594d0", 0x800594d0, 1,
+                 [](Program &p) -> auto & { return p.resident.departure_594d0; });
+    add("gate_adbc4", 0x800adbc4, 4, [](Program &p) -> auto & { return f(p).gate_adbc4; });
     add_resident("music_result", 0x8004f308, 4,
                  [](Program &p) -> auto & { return p.resident.music.gate; });
     add_resident("music_requested", 0x8004f324, 4,

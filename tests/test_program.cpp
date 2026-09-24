@@ -130,6 +130,44 @@ void map_change_request() {
           "5b stops the actor and stays on its own PC");
 }
 
+void departure_record() {
+    auto program = events({0});
+    auto &state = *program.field;
+    auto &resident = program.resident;
+    auto &data = resident.game_data;
+    data.assign(game::game_data_bytes, 0);
+    put(data, 0x1932, 3, 2); // The previous save's variables 2 and 8.
+    put(data, 0x1938, 5, 2);
+    resident.field_map = 22;
+    resident.music.requested = 0x41;
+    resident.departure_5941c = 0x1234;
+    resident.departure_594d0 = 0x56;
+    put(state.actors[0].storage, 0x106, 0x0e00, 2);
+    state.control_inputs.camera_angle = 0x100;
+    state.camera.elevation = 0xfff0;
+    state.party_characters = {0, 2, 0xff};
+    auto &variables = resident.variables.words;
+    variables[0x1ff] = 0x7777;
+    variables[0x200] = 0x8888;
+    program.save_field_departure();
+    check(get(data, 0x231a, 2) == 22 && get(data, 0x2322, 2) == 0x41 && get(data, 0x2320, 2) == 3 &&
+              get(data, 0x231c, 2) == 0xa00,
+          "800a30fc records map, music, entry and heading from the previous save");
+    check(variables[0x22] == 0x1234 && variables[0x23] == 0x56 && variables[3] == 1 &&
+              variables[4] == 7 && variables[0x12] == 0xfff0 && variables[0x1e] == 22 &&
+              variables[0x1f] == 0 && variables[0x20] == 2 && variables[0x21] == 0xff,
+          "800a30fc stores the departure variables and the party");
+    check(get(data, 0x1930 + 0x44, 2) == 0x1234 && get(data, 0x1930 + 0x3fe, 2) == 0x7777 &&
+              get(data, 0x1930 + 0x400, 2) == 0,
+          "The first 200 variables, after the stores, are copied to +1930");
+    state.event_control.gate_values[2] = 1;
+    check(!program.start_map_change(), "Without a requested map the step does nothing");
+    state.event_control.gate_values[2] = 0;
+    state.gate_adbc4 = 0;
+    check(!program.start_map_change() && resident.preload_slot == 0xffffffffU,
+          "A requested map waits while ADBC4 is not ff, before any read-ahead");
+}
+
 void collision_attribute_lane() {
     // 80 attribute 1 lane 2 = 0x134; 80 attribute 1 lane 4 (ignored).
     auto program = events({0x80, 1, 2, 0x34, 0x81, 0x80, 1, 4, 0, 0x80, 0x03});
@@ -513,6 +551,7 @@ int main() {
         connected_handlers_and_partial_state();
         map_change_request();
         collision_attribute_lane();
+        departure_record();
         scheduler_observation_continuity();
         extended_error_retains_prefix();
         sound_effect_dispatch();
@@ -523,7 +562,7 @@ int main() {
         original_layout_round_trip();
         music_load();
         music_load_without_stream();
-        std::cout << "14 connected program regression groups passed\n";
+        std::cout << "15 connected program regression groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

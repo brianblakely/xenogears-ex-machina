@@ -186,6 +186,16 @@ Program import_resident(const OriginalMemory &memory) {
         if (tag != 0 && tag != reconstruction::resident::heap_end_tag)
             resident.mode_block.bytes = copy_of(memory.range(block, found->second[0] - block - 8));
     }
+    // The map data read ahead (8001b484) owns its allocated block while a slot
+    // is selected.
+    if (resident.preload_slot != 0xffffffffU) {
+        const auto &block = resident.preload_block.address;
+        const auto found = resident.heap.headers.find(block - 8);
+        if (found == resident.heap.headers.end() ||
+            (found->second[1] & reconstruction::resident::heap_tag_mask) == 0)
+            throw field::FieldFormatError("The read-ahead block is not an allocated heap block");
+        resident.preload_block.bytes = copy_of(memory.range(block, found->second[0] - block - 8));
+    }
     // Sound driver objects, each owned whole. Objects in the sound pool (the
     // 6300 bytes at 80065b0c the driver initializes with 80038ec0) end at the
     // word 8 bytes before them (their pool header). Objects loaded into the
@@ -378,6 +388,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("music_block", block.address, block.bytes);
     if (!resident.mode_block.bytes.empty())
         out.bytes("mode_block", resident.mode_block.address, resident.mode_block.bytes);
+    if (!resident.preload_block.bytes.empty())
+        out.bytes("preload_block", resident.preload_block.address, resident.preload_block.bytes);
     if (resident.cd.dma_set_callback) {
         out.memory.put(resident.cd.dma_services + 4, *resident.cd.dma_set_callback);
         out.claim("dma_set_callback", resident.cd.dma_services + 4, 4);

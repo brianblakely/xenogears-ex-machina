@@ -325,8 +325,37 @@ void stream_read() {
           "Missing or empty files are rejected before any command");
 }
 
+// File b8 of directory 1 (record c1) holds 1001 bytes; the heap has one free
+// 1ff8-byte block. Map data 0 reads ahead into slot 0.
+void preload() {
+    auto program = sample();
+    auto &resident = program.resident;
+    put(resident.disc_read.files, 0xc1 * 7, 0x2000, 3);
+    put(resident.disc_read.files, 0xc1 * 7 + 3, 0x1001, 4);
+    auto &heap = resident.heap;
+    heap.head = 0x80100008;
+    heap.headers = {{0x80100000, {0x80102008, 0x84000000}},
+                    {0x80102000, {0, xem::reconstruction::resident::heap_end_tag}}};
+    heap.held = {{0x80100008, std::vector<std::uint8_t>(0x1ff8, 0x5a)}};
+    check(program.select_directory(0, 1) == 10, "Directory 1 is selected");
+    check(program.preload_field(0, 0) == -1, "Starting a read-ahead returns -1");
+    const auto block = resident.preload_block.address;
+    check(resident.preload_slot == 0 && resident.preload_id == 0 &&
+              resident.preload_size == 0x1004 && resident.preload_block.bytes.size() == 0x1004,
+          "8001b53c sizes the block from the rounded file size and records the slot");
+    check((heap.headers.at(block - 8)[1] & xem::reconstruction::resident::heap_keep) != 0,
+          "The read-ahead block is kept");
+    check(resident.disc_read.destination == block && resident.disc_read.file == 0xb8 &&
+              resident.disc_read.sector == 0x2000,
+          "File id + b8 is read into the block");
+    check(program.preload_field(0, 0) == 0, "The same data in the same slot is ready");
+    check(program.preload_field(2, 0) == -1 && resident.preload_id == 0,
+          "Other data waits while the disc is busy");
+}
+
 int main() {
     try {
+        preload();
         cd_read();
         ring_read();
         rejected();

@@ -111,9 +111,12 @@ int main(int argc, char **argv) {
         const bool menu_entry = entry == "menu_item_effect" || entry == "menu_item_use" ||
                                 entry == "menu_equip_swap" || entry == "menu_equip_bonus" ||
                                 entry == "menu_equip_stats" || menu_save_entry;
+        const bool transition_entry = entry == "field_save" || entry == "field_preload" ||
+                                      entry == "field_map_change_step" ||
+                                      entry == "field_map_change_start";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !resident_entry && !battle_entry && !menu_entry &&
-            !field_entry)
+            !field_entry && !transition_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -209,6 +212,18 @@ int main(int argc, char **argv) {
             program->field_update(observer);
         } else if (entry == "field_checkpoints") {
             program->checkpoint_pass(observer);
+        } else if (entry == "field_save") {
+            program->save_field_departure(); // 800a30fc
+        } else if (entry == "field_preload") {
+            // 8001b484: A0 map data id, A1 slot.
+            return_value =
+                static_cast<std::uint32_t>(program->preload_field(registers[4], registers[5]));
+        } else if (entry == "field_map_change_step") {
+            program->field_map_change_step(); // 80078494..80078558 of 80077e88
+        } else if (entry == "field_map_change_start") {
+            // 80078494 up to the reload call: the reload is due.
+            if (!program->start_map_change())
+                throw std::runtime_error("The recovered step does not reach the original reload");
         } else if (entry == "heap_allocate") {
             // 80031bdc: A0 size, A1 mode; the header records the JAL at RA - 8.
             const auto block = game::resident::heap_allocate(program->resident.heap, registers[4],

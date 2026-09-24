@@ -193,6 +193,15 @@ struct ResidentState {
     std::uint32_t game_state{};                       // 8005a39c: resident game-state pointer
     // 8004f34c: the field map; primary 98 stores the requested one.
     std::uint32_t field_map{};
+    // Map data read ahead of a map change (8001b484): file id + b8 of the
+    // selected directory, kept in its own heap block.
+    std::uint32_t preload_id{0xffffffffU};   // 8004f330
+    std::uint32_t preload_slot{0xffffffffU}; // 8004f334; -1 while nothing is read ahead
+    std::uint32_t preload_size{};            // 8005a4c0
+    resident::HeapBlock preload_block;       // Address at 8005a4e0; bytes while allocated
+    // Saved to variables 44 and 46 by 800a30fc; their producers are not recovered.
+    std::uint16_t departure_5941c{}; // 8005941c
+    std::uint8_t departure_594d0{};  // 800594d0
     // Persistent game data at *8005a39c: the 2358-byte block resident 8001b9d8
     // initializes for a new game (empty before boot allocates it).
     std::vector<std::uint8_t> game_data;
@@ -331,7 +340,8 @@ struct FieldState {
     // 800adb70 is also the movie request: extended 60 sets it and the field
     // loop plays the movie (800a7c58) and clears it.
     field::MovieState movie{};
-    std::uint32_t exit_mode{}; // 800b0064: bits 0-6 the next game mode, bit 80 calls 8001bb50
+    std::uint32_t exit_mode{};  // 800b0064: bits 0-6 the next game mode, bit 80 calls 8001bb50
+    std::uint32_t gate_adbc4{}; // 800adbc4: a requested map change waits unless ff
 };
 
 class Program;
@@ -423,6 +433,19 @@ class Program {
     // 80019acc(0), which the caller runs next; false when 8004f370 keeps the
     // field. Other kinds stop with MissingDependency.
     bool exit_field(std::uint32_t kind);
+    // Resident 8001b484: read map data `id` ahead into slot `slot`. 0 once that
+    // data is the one read ahead; -1 while the disc is busy or after starting
+    // the read.
+    std::int32_t preload_field(std::uint32_t id, std::uint32_t slot);
+    // Field 800a30fc: record the departure in the game data and variables,
+    // then copy the first 400 bytes of the variable bank to game data +1930.
+    void save_field_departure();
+    // Field 80078494..80078558 in the main loop 80077e88: once a requested
+    // map's data is read ahead and the disc and fade are idle, save the
+    // departure and reload (800a5c40, not reconstructed: MissingDependency).
+    void field_map_change_step();
+    // The same step up to the reload call (80078540): true when it is due.
+    bool start_map_change();
     // Battle 80085ccc: commit and resolve an action.
     void commit_battle_action(std::uint32_t attacker, std::uint32_t targets,
                               std::uint32_t animation);
@@ -496,14 +519,17 @@ class Program {
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
     std::int32_t cd_control(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter);
     std::int32_t cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                            bool nowait);              // 80042088
-    std::int32_t cd_sync();                            // 80041b3c(0, 0)
-    void cd_dma_callback(std::uint32_t function);      // 800413ec
-    std::int32_t disc_idle_query();                    // Field 8008a558
-    void change_music(field::EventContext &context);   // Field 8008f76c (primary 75)
-    void request_map_change(field::FieldWorld &world); // Field 800932d0 (primary 98)
-    void load_music(std::uint32_t id);                 // Field 80085b20
-    void release_shared_wave();                        // Field 80086024
+                            bool nowait);            // 80042088
+    std::int32_t cd_sync();                          // 80041b3c(0, 0)
+    void cd_dma_callback(std::uint32_t function);    // 800413ec
+    std::int32_t disc_idle_query();                  // Field 8008a558
+    void change_music(field::EventContext &context); // Field 8008f76c (primary 75)
+    void load_music(std::uint32_t id);               // Field 80085b20
+    void release_shared_wave();                      // Field 80086024
+    // Map changes: field 800932d0 (primary 98), 8009744c and 8009a514.
+    void request_map_change(field::FieldWorld &world);
+    [[nodiscard]] std::int32_t facing_octant() const;
+    [[nodiscard]] std::int32_t camera_heading_octant() const;
     [[nodiscard]] std::uint8_t overlay_byte(std::uint32_t address) const;
     // Field 80085634 (extended 65): stop the effect voice pair of `channel`
     // and, for a nonzero id, start that effect at full volume, centered.
