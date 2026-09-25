@@ -415,6 +415,92 @@ def validate_baseline_inventory(
                 raise ValueError("Unknown baseline inventory anchor kind")
 
 
+COVERAGE_STATUSES = {"reconstructed", "reconstructed_partial", "not_reconstructed"}
+
+
+def coverage_totals(rows: list[dict]) -> dict:
+    return {
+        "executed_functions": len(rows),
+        "reconstructed": sum(row["status"] == "reconstructed" for row in rows),
+        "reconstructed_partial": sum(row["status"] == "reconstructed_partial" for row in rows),
+        "not_reconstructed": sum(row["status"] == "not_reconstructed" for row in rows),
+        "executed_instructions": sum(row["executed_instructions"] for row in rows),
+        "not_reconstructed_executed_instructions": sum(
+            row["executed_instructions"] for row in rows if row["status"] == "not_reconstructed"
+        ),
+    }
+
+
+def validate_execution_coverage(data: dict, profiles: set[str]) -> None:
+    """Per-route executed original functions: addresses, counts and hashes only."""
+    address = re.compile(r"[0-9a-f]{8}")
+    require(data["source_profile"] in profiles, "Execution coverage names an unknown profile")
+    images = unique(data["code_images"], "execution coverage images")
+    for image in images.values():
+        require(bool(address.fullmatch(image["load_address"])), "Invalid image load address")
+        digest(image["image_sha256"], "execution coverage image")
+        require(bool(image["function_boundaries"]), "Image lacks function boundary sources")
+    recon = {}
+    for row in data["reconstruction_set"]["functions"]:
+        require(bool(address.fullmatch(row["entry"])), "Invalid reconstructed entry")
+        require(
+            row["basis"] in {"definition", "declaration", "reviewed"} and bool(row["evidence"]),
+            "Reconstructed entry lacks its source evidence",
+        )
+        require(set(row["images"]) <= images.keys(), "Reconstructed entry names an unknown image")
+        recon.update({(image, row["entry"]): row for image in row["images"]})
+    require(
+        data["reconstruction_set"]["count"] == len(data["reconstruction_set"]["functions"]),
+        "Reconstruction set count disagrees with its entries",
+    )
+    routes = unique(data["routes"], "execution coverage routes")
+    union = {}
+    for route in routes.values():
+        digest(route["input"]["sha256"], "execution coverage input")
+        for key in ("observation_sha256", "final_ram_sha256"):
+            digest(route["capture"][key], "execution coverage capture")
+        require(
+            bool(route["capture"]["identical_final_ram"]),
+            "A coverage capture must reproduce an earlier capture's final RAM",
+        )
+        rows = []
+        for entry in route["images"]:
+            require(entry["image"] in images, "Route names an unknown code image")
+            for value in entry["code_range_sha256"]:
+                digest(value, "code range")
+            for row in entry["functions"]:
+                key = (entry["image"], row["entry"])
+                require(bool(address.fullmatch(row["entry"])), "Invalid executed entry")
+                require(row["status"] in COVERAGE_STATUSES, "Unknown coverage status")
+                require(
+                    (row["status"] != "not_reconstructed") == (key in recon),
+                    "Coverage status disagrees with the reconstruction set",
+                )
+                require(
+                    ("missing_paths" in row) == (row["status"] == "reconstructed_partial"),
+                    "Only partial reconstructions list missing paths",
+                )
+                require(
+                    0 < row["executed_instructions"] <= row["size_instructions"],
+                    "Executed instructions exceed the function size",
+                )
+                union.setdefault(key, row)
+            require(entry["totals"] == coverage_totals(entry["functions"]), "Image totals disagree")
+            rows += entry["functions"]
+        require(route["totals"] == coverage_totals(rows), "Route totals disagree")
+        for span in route["outside_known_functions"]:
+            require(
+                bool(address.fullmatch(span["begin"]) and address.fullmatch(span["end"]))
+                and span["image"] in images.keys() | {None},
+                "Invalid out-of-function span",
+            )
+    require(
+        data["summary"]["routes"] == len(routes)
+        and data["summary"]["totals"]["executed_functions"] == len(union),
+        "Execution coverage summary disagrees with its routes",
+    )
+
+
 def validate_physical_inventory(root: Path, profiles: dict, findings: dict) -> None:
     for name in ("sector-survey", "source-index"):
         data = load(root, f"analysis/coverage/{name}.json")
@@ -845,6 +931,9 @@ def validate(root: Path = ROOT) -> dict:
     inventory = load(root, "analysis/coverage/inventory.json")
     validate_inventory(inventory, set(profiles))
     validate_physical_inventory(root, profiles, findings)
+    validate_execution_coverage(
+        load(root, "analysis/coverage/forest23-execution.json"), set(profiles)
+    )
     validate_projections(root, profiles, findings)
     validate_observed_entrypoints(
         load(root, "analysis/coverage/observed-entrypoints.json"),

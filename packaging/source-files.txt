@@ -11,6 +11,7 @@ analysis/README.md
 analysis/coverage/README.md
 analysis/coverage/checkpoints.json
 analysis/coverage/field-pairs.json
+analysis/coverage/forest23-execution.json
 analysis/coverage/inventory.json
 analysis/coverage/media.json
 analysis/coverage/observed-entrypoints.json

@@ -54,6 +54,39 @@ Unsuccessful Battle startup remains recorded separately. File grids and initiali
 RAM headers establish no actual save/load or card write. Story access, additional
 optional activities, complete encounters and semantic content names remain open.
 
+## Phase 1 execution coverage
+
+`forest23-execution.json` is the execution census of the frozen
+[forest23 slice](../slices/forest23.json): for each of its 18 required routes,
+which original functions run and whether the shared reconstruction library
+(`src/reconstruction`, `include/xem/reconstruction`) reconstructs them. It holds
+addresses, instruction counts and hashes only; no original bytes.
+
+- Each route is one cold-boot capture with the trace extension's coverage mode
+  (see [the reference tools](../../tools/reference/README.md)): every executed
+  RAM word with its fetched instruction, per 600-frame window, and SHA-256 of the
+  resident, field, battle, menu, post-battle and battle-auxiliary code ranges at
+  each window's start and end. Every capture reproduces the final RAM of an
+  earlier capture of its route; `identical_final_ram` names them.
+- An executed word belongs to the code image whose instruction it fetched;
+  functions are the private Ghidra function bodies listed per image. Images
+  identified only from executed code (the movie library, a mode-6 overlay and
+  two further modules) keep their disc slot and hash. Words that are still
+  outside every surveyed function are listed as spans, with their image or
+  `null`; words shared by two images loaded in one window are counted as
+  ambiguous.
+- `reconstruction_set` lists the original entries the C++ names: automatically
+  when an address leads the comment of a definition or declaration, otherwise
+  by hand review of each mention of an executed function. Each carries its
+  source lines.
+- `reconstructed_partial` means a C++ throw that stops on an unreconstructed
+  path names an address this route executes, or the source says only part of
+  the function is reconstructed. That is a necessary condition for the throw,
+  not proof that it fires; basic-block agreement is not determined.
+
+The census is a worklist, not a completion claim. Reconstructed status says the
+library contains the function, not that it was compared with this route.
+
 The [Phase 1 handoff](../../docs/phase1-handoff.md) identifies the measured starting
 points and the format, event, battle and persistence work still required. This
 baseline inventory does not advance any subsystem to decompiled, implemented or
