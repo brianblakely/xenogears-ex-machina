@@ -1,10 +1,11 @@
 # Resident disc stream ring source
 
 `disc_stream.hpp` / `disc_stream.cpp` recover the resident ring allocator wrapper,
-selection/reset, retail chunk lookup and chunk release. `DiscStreamMusicCalls`
-connects these real methods to the existing field stream, wave staging callback
-and five-step poll. The focused `test-disc-stream` harness executes that chain;
-its heap, CD-delivery and audio doubles remain explicit test dependencies.
+selection/reset, retail chunk lookup and chunk release. `Program::Music`
+(`field_music.cpp`) connects them, over the Program-owned ring header, to the
+field stream, wave staging callback and five-step poll. The focused
+`test-disc-stream` harness executes that chain with heap, CD-delivery and audio
+doubles.
 
 The source is independently authored from this project's qualified original
 Disc 1 executable, connected Ghidra exports and original captures. It uses no
@@ -16,7 +17,7 @@ The private correction/export is
 
 | Original entry | Recovered source | Behavior |
 | --- | --- | --- |
-| `8002a260` | `DiscStreamMusicCalls::allocate_stream_buffer` | Reject nonpositive counts, request `count * 808 + 24` bytes using the forwarded allocation mode, store count, select and reset ring |
+| `8002a260` | `Program::Music::allocate_stream_buffer` | Reject nonpositive counts, request `count * 808 + 24` bytes using the forwarded allocation mode, store count, select and reset ring |
 | `80028a94` | `select_disc_stream_ring` | Replace the shared ring resource, return its previous value |
 | `80028aac` | `reset_disc_stream_ring` | Clear four halfwords per slot, then write the low count halfword at ring offset 8 |
 | `80028b14`, retail branch | `next_disc_stream_chunk` | Find state 3 and the expected sequence, compare against the separate active count, advance the u16 sequence, return the selected 2,048-byte chunk |

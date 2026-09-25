@@ -675,7 +675,12 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
     const auto ring = resident.disc_stream.ring_buffer;
     const bool ring_active = cd.sync_callback == 0x8002b2f0 || cd.sync_callback == 0x8002b5d0 ||
                              cd.dma_callback == 0x8002ba58 || cd.dma_callback == 0x8002bb50;
-    if (ring_active && ring != 0) {
+    // The music stream buffer holds chunks until 800854d0 releases it (and
+    // clears 800adb2c).
+    const auto &music = resident.music;
+    const bool music_stream = music.wave_pending == 1 && music.stream.descriptor == ring &&
+                              resident.battle_request.menu_gate != 0;
+    if ((ring_active || music_stream) && ring != 0) {
         const auto count = memory.word(ring);
         if (count > 0x1000)
             throw field::FieldFormatError("Active disc ring has an implausible block count");
@@ -684,6 +689,15 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
         read.ring_payload = {
             ring + header_bytes,
             copy_of(memory.range(ring + header_bytes, std::size_t{count} * 0x800))};
+    }
+    if (music.wave_pending == 1 && music.wave_staging != 0) {
+        const auto block = music.wave_staging;
+        const auto found = resident.heap.headers.find(block - 8);
+        if (found == resident.heap.headers.end() ||
+            (found->second[1] & reconstruction::resident::heap_tag_mask) == 0)
+            throw field::FieldFormatError("The wave staging is not an allocated heap block");
+        resident.music_blocks.push_back(
+            {block, copy_of(memory.range(block, found->second[0] - block - 8))});
     }
     if (cd.sync_callback == 0x8002ac24 && read.w_fe0c != 0) {
         // Entries up to and including the terminating one (file or
@@ -697,6 +711,11 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
         }
         read.list = {read.w_fe0c, copy_of(memory.range(read.w_fe0c, entries * 8))};
     }
+}
+
+void import_disc_data(Program &program, const OriginalMemory &memory, std::uint32_t address,
+                      std::uint32_t size) {
+    program.resident.disc_transfers.push_back({address, copy_of(memory.range(address, size))});
 }
 
 std::vector<OwnedRange> export_resident(const Program &program, OriginalMemory &memory) {

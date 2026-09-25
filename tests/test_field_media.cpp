@@ -171,8 +171,10 @@ void real_dispatch_and_failures() {
 
 // Authored call doubles. These check control flow and resource ownership, never
 // stand in for original evidence of the unrecovered streaming/audio routines.
-struct MusicCalls final : field::UnrecoveredMusicCalls {
+struct MusicCalls final : field::MusicCalls {
     std::vector<std::string> operations;
+    // The callback at the address the stream stored (800859dc).
+    std::function<void(field::MusicResource)> consume;
     std::vector<std::uint32_t> stream_results;
     std::size_t stream_index{};
     std::uint32_t busy{};
@@ -183,6 +185,11 @@ struct MusicCalls final : field::UnrecoveredMusicCalls {
         for (auto value : args)
             line += " " + std::to_string(value);
         operations.push_back(line);
+    }
+    void consume_stream_chunk(std::uint32_t consumer, field::MusicResource chunk) override {
+        if (consumer != 0x800859dc || !consume)
+            throw field::EventError("No chunk callback at the stored address");
+        consume(chunk);
     }
     field::MusicResource next_stream_chunk() override {
         record("stream");
@@ -258,14 +265,12 @@ void wave_and_shared_resource_lifetime() {
     state.deferred_sequence_read = 1;
     state.loaded_sequence = field::music_pending;
     state.wave_staging = 22;
-    state.sequence_input = 55;
     MusicCalls calls;
     calls.stream_results = {1, 2, 3, 4, 5};
     state.stream.descriptor = 11;
     request.menu_gate = 1;
-    state.stream.consume_chunk = [&](field::MusicResource chunk) {
-        calls.record("consume", {chunk});
-    };
+    state.stream.consumer = 0x800859dc;
+    calls.consume = [&](field::MusicResource chunk) { calls.record("consume", {chunk}); };
     check(field::poll_music_load(state, request, selection, calls) == field::music_pending &&
               calls.stream_index == 5 && state.wave_pending == 1 &&
               state.deferred_sequence_read == 1,
@@ -276,7 +281,7 @@ void wave_and_shared_resource_lifetime() {
           "Wave completion and deferred read still yield this poll");
     check(calls.operations == std::vector<std::string>{"stream", "busy", "free 11", "wait 16",
                                                        "free 22", "directory 28 0",
-                                                       "read 34 55 0 128", "directory 4 0"},
+                                                       "read 34 2147886664 0 128", "directory 4 0"},
           "Wave completion waits before freeing, then issues the selected sequence read");
     check(state.wave_pending == 0 && state.wave_loaded_now == 1 && state.loaded_wave_bank == 3 &&
               state.sequence_pending == 1 && state.deferred_sequence_read == 0 &&
@@ -318,13 +323,11 @@ void stream_start_and_chunk_ownership() {
     field::BattleRequestState request;
     MusicCalls calls;
     unsigned consumed = 0;
-    field::start_music_stream(
-        state, request, 31, 2, 0x800859dc,
-        [&](field::MusicResource chunk) {
-            check(chunk == 17, "Consumer receives the original A0 chunk");
-            ++consumed;
-        },
-        calls);
+    calls.consume = [&](field::MusicResource chunk) {
+        check(chunk == 17, "Consumer receives the original A0 chunk");
+        ++consumed;
+    };
+    field::start_music_stream(state, request, 31, 2, 0x800859dc, calls);
     check(request.menu_gate == 1 && state.descriptor == 11 && state.consumer == 0x800859dc &&
               calls.operations ==
                   std::vector<std::string>{"stream_allocate 8 2", "read 31 11 0 256"},
@@ -349,16 +352,16 @@ void stream_start_and_chunk_ownership() {
           "An empty stream remains active while disc loading is busy");
     calls.busy = 0;
     check(field::poll_music_stream(state, request, calls) == field::music_pending &&
-              request.menu_gate == 0 && state.descriptor == 11 &&
-              static_cast<bool>(state.consume_chunk),
+              request.menu_gate == 0 && state.descriptor == 11 && state.consumer == 0x800859dc,
           "Stream completion frees descriptor but retains the original stored token and callback");
     check(field::execute_battle_request(context, request, 0, 0).accepted() && actor.pc == 3,
           "Stream completion releases that same battle gate without copying state");
-    state.consume_chunk = {};
+    state.consumer = 0x80012345;
     calls.stream_results.push_back(19);
     rejects<field::EventError>([&] { (void)field::poll_music_stream(state, request, calls); },
-                               "An unrecovered chunk consumer must not silently succeed");
-    check(state.next_chunk == 19, "Missing consumer preserves the already-issued stream query");
+                               "A chunk callback at another address must not silently succeed");
+    check(state.next_chunk == 19, "A failed callback preserves the already-issued stream query");
+    state.consumer = 0x800859dc;
     request.menu_gate = 1;
     calls.stream_results.push_back(0);
     calls.on_disc_query = [&] { state.next_chunk = 77; };
@@ -367,11 +370,6 @@ void stream_start_and_chunk_ownership() {
               state.next_chunk == 77 &&
               calls.operations == std::vector<std::string>{"stream", "busy"},
           "The post-disc shared chunk recheck prevents premature descriptor release");
-    calls.operations.clear();
-    rejects<field::EventError>(
-        [&] { field::start_music_stream(state, request, 31, 1, 0x800859dc, {}, calls); },
-        "Stream startup requires a real consumer implementation");
-    check(calls.operations.empty(), "Invalid stream setup fails before allocating resources");
 }
 
 void wave_chunk_staging_and_transfer_order() {
@@ -383,13 +381,11 @@ void wave_chunk_staging_and_transfer_order() {
     for (std::size_t i = 0; i < chunks.size(); ++i)
         chunks[i].fill(static_cast<std::uint8_t>(i + 1));
     std::array<std::uint8_t, 8192> staging{};
-    field::start_music_stream(
-        state.stream, request, 31, 1, 0x800859dc,
-        [&](field::MusicResource chunk) {
-            check(chunk >= 101 && chunk <= 106, "Expected authored chunk token");
-            field::consume_music_wave_chunk(state, chunk, chunks[chunk - 101], staging, calls);
-        },
-        calls);
+    calls.consume = [&](field::MusicResource chunk) {
+        check(chunk >= 101 && chunk <= 106, "Expected authored chunk token");
+        field::consume_music_wave_chunk(state, chunk, chunks[chunk - 101], staging, calls);
+    };
+    field::start_music_stream(state.stream, request, 31, 1, 0x800859dc, calls);
     calls.operations.clear();
     calls.stream_results = {101, 102, 103, 104, 105, 106, 0};
     check(field::finish_music_wave_chunks(state.stream, request, calls) == field::music_pending &&
@@ -433,7 +429,6 @@ void poll_gate_and_event_connection() {
     auto &state = scenario.music;
     state.loaded_sequence = field::music_pending;
     state.deferred_sequence_read = 1;
-    state.sequence_input = 55;
     state.start_parameter = field::music_pending;
     const field::MusicSelection selection{7, 255, 1};
     MusicCalls calls;
@@ -451,7 +446,8 @@ void poll_gate_and_event_connection() {
     calls.operations.clear();
     calls.busy = 0;
     field::update_music_load_gate(state, request, selection, calls);
-    check(calls.operations == std::vector<std::string>{"busy", "create 55", "start 123 127 0"} &&
+    check(calls.operations ==
+                  std::vector<std::string>{"busy", "create 2147886664", "start 123 127 0"} &&
               state.current_sequence == 123 && state.sequence_pending == 0 &&
               state.sequence_active == 1 && state.loaded_sequence == 7 && state.completed == 1 &&
               state.start_parameter == field::music_pending && state.gate == 0,
@@ -482,12 +478,11 @@ void exact_flags_reuse_and_failures() {
           "Nonzero reuse transfers the cached owner and poll itself preserves gate");
     state.sequence_pending = 1;
     state.start_parameter = 0;
-    state.sequence_input = 55;
     calls.operations.clear();
     calls.created = 0;
     (void)field::poll_music_load(state, request, selection, calls);
-    check(calls.operations ==
-              std::vector<std::string>{"busy", "create 55", "start 0 0 0", "configure 0 0 0"},
+    check(calls.operations == std::vector<std::string>{"busy", "create 2147886664", "start 0 0 0",
+                                                       "configure 0 0 0"},
           "Alternate start configures even a zero creation result as the original does");
     state.wave_pending = 2;
     state.sequence_pending = 2;

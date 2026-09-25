@@ -123,9 +123,11 @@ RESIDENT_ENTRIES = (
     "battle_turn_view_resume",
     "battle_turn_combo_resume",
     "battle_turn_confirm_resume",
+    "sequence_open",
+    "sequence_start",
 )
 # Field entries besides the update and move phases.
-FIELD_ENTRIES = ("field_event_extended", "movie_decision")
+FIELD_ENTRIES = ("field_event_extended", "movie_decision", "music_poll", "music_chunk")
 
 # Platform inputs. A hook named `load-SITE` sits on the instruction after the
 # original hardware load at SITE (hex); the loaded value is that load's target
@@ -1155,10 +1157,26 @@ ARRIVAL_POINTS = {
     "drain-call": 0x80074700,  # the pad drain (ordering unknown; delivered after it)
     "drain-return": 0x800A31E8,
     "loop-31e8": 0x80077DAC,  # 800a31e8
+    # The music load between frames (captures with these hooks record no
+    # frame-exit): up to the poll call; the poll 80085c90; each stream step
+    # 800854d0; a sequence's creation 80039850 up to its voices; the voice
+    # setup 8003b424; a sequence's start 80039a80 up to its voices; the rest
+    # of the loop from 80078b98.
+    "loop-return": 0x80078B88,
+    "music-poll": 0x80085C90,
+    "stream-step": 0x800854D0,
+    "sequence-open": 0x80039850,
+    "sequence-voices": 0x8003B424,
+    "sequence-start": 0x80039A80,
+    "loop-tail": 0x80077DB4,
 }
 # Hardware reads the code between frames consumes: ClearOTagR's DMA6 busy
 # polls. The frame's own results come from its services.
 LOOP_READS = (0x80045DE4, 0x80045E18)
+# The SPU control register read that starts an SPU DMA write (8004cd8c).
+# Outside interrupt code it is also a position: arrivals recorded before it
+# precede it (Program::spu_transfer delivers them first).
+SPU_TRANSFER_READS = (0x8004CD8C,)
 # CD_datasync's DMA3 busy read; the recovered disc status (800286cc) takes it
 # from the imported I/O page, so every recording must agree with that page.
 DATASYNC_READ = 0x80042A6C
@@ -1231,6 +1249,11 @@ def loop_inputs(
             elif site in LOOP_READS:
                 lines.append(f"read {site:08x} {value:08x}")
                 counts["loop_reads"] += 1
+            elif site in SPU_TRANSFER_READS:
+                lines += [line for item in pending for line in item]
+                pending = []
+                lines.append(f"read {site:08x} {value:08x}")
+                counts["spu_transfer_reads"] += 1
             elif site == DATASYNC_READ:
                 require(value & 0x1000000 == idle, "DMA3 busy differs from the imported I/O page")
                 counts["datasync_reads_checked"] += 1

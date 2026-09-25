@@ -152,6 +152,24 @@ void between_frames() {
     next.field_between_frames(more);
     check(next.field->control_inputs.jump_contact == 0x80 && next.resident.b_59171 == 0x42,
           "Triangle records a menu request");
+
+    // A requested music load (8004f308 -1) whose sequence is already ready:
+    // with the disc idle the poll 80085c90 finishes and 0 is committed.
+    auto music = sample();
+    auto &load = music.resident.music;
+    load.gate = 0xffffffffU;
+    load.requested = 3;
+    auto &overlay = music.field->overlay;
+    const auto row = 0x800adfccU - game::field_overlay_base + 6;
+    overlay.assign(row + 2, 0);
+    overlay[row] = 2;
+    overlay[row + 1] = 1; // No shared wave bank
+    music.field->overlay_verified.assign(overlay.size(), true);
+    game::FrameServices once;
+    once.hblank_counts = {1};
+    music.field_between_frames(once);
+    check(load.gate == 0 && load.completed == 1 && load.start_parameter == 0xffffffffU,
+          "The main loop commits the finished music poll");
 }
 
 void stops() {
@@ -161,10 +179,6 @@ void stops() {
     check(stop([&] { transition.field_between_frames(none); }) ==
               "symbol:field-transition-800a5924",
           "A transition stops at 800a5924");
-    auto music = sample();
-    music.resident.music.gate = 0xffffffff;
-    check(stop([&] { music.field_between_frames(none); }) == "symbol:field-80085c90",
-          "A music request stops at 80085c90");
     auto menu = sample();
     menu.field->control_inputs.jump_contact = 0x80;
     menu.field->draw_buffer = 0;

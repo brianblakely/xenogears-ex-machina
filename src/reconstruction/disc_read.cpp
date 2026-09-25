@@ -1228,6 +1228,11 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
     for (auto &[at, bytes] : resident.heap.held)
         if (address < at + bytes.size() && at < end)
             throw field::FieldFormatError("Disc DMA writes into a free heap block");
+    // Sequence event data the sound driver read at import (a read-only copy)
+    // is replaced by what the disc now delivers there.
+    std::erase_if(resident.sound.constants, [&](const auto &item) {
+        return address < item.first + item.second.size() && item.first < end;
+    });
     // Extend an adjacent or overlapping transfer block, else start one.
     for (auto &block : resident.disc_transfers) {
         const auto block_end = std::uint64_t{block.address} + block.bytes.size();

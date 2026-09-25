@@ -185,6 +185,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.music.start_parameter; });
     add_resident("music_wave_pending", 0x8004f354, 4,
                  [](Program &p) -> auto & { return p.resident.music.wave_pending; });
+    add_resident("music_sequence_pending", 0x8004f358, 4,
+                 [](Program &p) -> auto & { return p.resident.music.sequence_pending; });
     add_resident("music_completed", 0x8004f36c, 4,
                  [](Program &p) -> auto & { return p.resident.music.completed; });
     add_resident("music_sequence_active", 0x8004f35c, 4,
@@ -210,6 +212,8 @@ std::vector<OriginalGlobal> build() {
     // Field-overlay music globals.
     add("music_stream_descriptor", 0x800adbb8, 4,
         [](Program &p) -> auto & { return p.resident.music.stream.descriptor; });
+    add("music_stream_next_chunk", 0x800adbbc, 4,
+        [](Program &p) -> auto & { return p.resident.music.stream.next_chunk; });
     add("music_stream_consumer", 0x800afea4, 4,
         [](Program &p) -> auto & { return p.resident.music.stream.consumer; });
     add("music_deferred_sequence_read", 0x800afc54, 4,

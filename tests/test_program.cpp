@@ -478,7 +478,7 @@ void music_load() {
     check(music.requested == 3 && music.gate == 0xffffffffU && music.deferred_sequence_read == 1 &&
               music.shared_wave_state == 0 && music.loaded_wave_bank == 0xffffffffU,
           "The load stops the music, clears the shared wave and defers the sequence read");
-    check(ring != 0 && music.stream.consumer == 0x800859dc && music.stream.consume_chunk &&
+    check(ring != 0 && music.stream.consumer == 0x800859dc &&
               resident.battle_request.menu_gate == 1 && music.wave_pending == 1 &&
               music.wave_chunk_index == 0,
           "80085560 starts the wave stream with the 800859dc consumer");
@@ -486,10 +486,10 @@ void music_load() {
               get(read.ring.bytes, 0, 4) == 8 && get(read.ring.bytes, 8, 2) == 8 &&
               resident.disc_stream.ring_buffer == ring,
           "8002a260 allocates eight blocks and selects their ring header");
-    check(resident.music_blocks.size() == 2 && resident.music_blocks[0].address == ring + 0x64 &&
-              resident.music_blocks[0].bytes.size() == 0x4000 &&
-              resident.music_blocks[1].address == music.wave_staging &&
-              resident.music_blocks[1].bytes.size() == 0x2000 &&
+    check(read.ring_payload.address == ring + 0x64 && read.ring_payload.bytes.size() == 0x4000 &&
+              resident.music_blocks.size() == 1 &&
+              resident.music_blocks[0].address == music.wave_staging &&
+              resident.music_blocks[0].bytes.size() == 0x2000 &&
               resident.heap.last_caller == 0x80085be8,
           "The stream payload and the 800c3a1c staging stay owned heap blocks");
     check(read.file == 0x17 && read.sector == 0x12345 && read.destination == ring + 0x64 &&
@@ -497,6 +497,24 @@ void music_load() {
               resident.cd.sync_callback == 0x8002b2f0,
           "The ring read of file bank * 2 + 13 is issued in directory 1c");
     check(read.directory == 4, "The load restores directory 4");
+
+    // The read ends with no chunk delivered: the poll's stream step finds
+    // the ring empty and the disc idle, returns the stream buffer and the
+    // staging to the heap, then issues the deferred sequence read.
+    program.resident.disc_pending = 0;
+    program.resident.disc_error = 0;
+    const auto staging = music.wave_staging;
+    check(program.poll_music(3) == 0xffffffffU, "The poll stays pending for the sequence read");
+    check(read.ring.bytes.empty() && read.ring_payload.bytes.empty() &&
+              resident.music_blocks.empty() && resident.battle_request.menu_gate == 0,
+          "800854d0 and 80085c90 release the stream buffer and the staging");
+    check(resident.heap.headers.at(ring - 8)[1] == 0x84000000U &&
+              resident.heap.headers.at(staging - 8)[1] == 0x84000000U &&
+              resident.heap.held.contains(ring) && resident.heap.held.contains(staging),
+          "Both blocks are free heap blocks again");
+    check(music.wave_pending == 0 && music.wave_loaded_now == 1 && music.loaded_wave_bank == 2 &&
+              music.sequence_pending == 1 && music.deferred_sequence_read == 0,
+          "The wave bank counts as loaded and the sequence read is pending");
 }
 
 void music_load_without_stream() {

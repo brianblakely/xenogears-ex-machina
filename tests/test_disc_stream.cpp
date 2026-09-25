@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <functional>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -20,22 +21,52 @@ std::uint16_t half(std::span<const std::uint8_t> data, std::size_t offset) {
     return static_cast<std::uint16_t>(data[offset] |
                                       (static_cast<std::uint32_t>(data[offset + 1]) << 8U));
 }
-// Authored unresolved-call doubles. Actual ring operations are inherited final
-// implementations, so the connected source test cannot substitute their results.
-struct Calls final : field::DiscStreamMusicCalls {
+// Authored call doubles around the actual ring operations (the resident
+// 8002a260 allocation shape, 80028b14 and 8002945c), so the connected source
+// test cannot substitute their results.
+struct Calls final : field::MusicCalls {
     static constexpr field::MusicResource ring_token = 0x1000;
     std::array<std::uint8_t, 8 * 0x808 + 0x24> ring;
     std::vector<std::string> operations;
     field::MusicResource allocated{ring_token};
-    explicit Calls(field::DiscStreamState &state) : DiscStreamMusicCalls(state) { ring.fill(0xaa); }
+    field::DiscStreamState &disc_stream;
+    std::function<void(field::MusicResource)> consume;
+    explicit Calls(field::DiscStreamState &state) : disc_stream(state) { ring.fill(0xaa); }
     static void unsupported() { throw std::runtime_error("Unexpected unresolved test dependency"); }
-    std::span<std::uint8_t> stream_buffer_storage(field::MusicResource resource) override {
+    std::span<std::uint8_t> storage(field::MusicResource resource) {
         check(resource == ring_token, "Host lookup requires the allocated token");
         return ring;
     }
-    field::MusicResource allocate_buffer(std::uint32_t bytes, std::uint32_t mode) override {
-        operations.push_back("allocate " + std::to_string(bytes) + " " + std::to_string(mode));
+    field::MusicResource allocate_stream_buffer(std::uint32_t blocks, std::uint32_t mode) override {
+        if (static_cast<std::int32_t>(blocks) < 1)
+            return 0;
+        operations.push_back("allocate " + std::to_string(blocks * 0x808U + 0x24U) + " " +
+                             std::to_string(mode));
+        if (allocated == 0)
+            return 0;
+        const auto bytes = storage(allocated);
+        std::fill_n(bytes.begin(), 4, 0);
+        bytes[0] = static_cast<std::uint8_t>(blocks);
+        (void)field::select_disc_stream_ring(disc_stream, allocated);
+        (void)field::reset_disc_stream_ring(disc_stream, bytes);
         return allocated;
+    }
+    field::MusicResource next_stream_chunk() override {
+        return field::next_disc_stream_chunk(disc_stream, disc_stream.ring_buffer == 0
+                                                              ? std::span<std::uint8_t>{}
+                                                              : storage(disc_stream.ring_buffer));
+    }
+    void release_stream_chunk(field::MusicResource chunk) override {
+        (void)field::release_disc_stream_chunk(disc_stream, storage(disc_stream.ring_buffer),
+                                               chunk);
+    }
+    void consume_stream_chunk(std::uint32_t consumer, field::MusicResource chunk) override {
+        check(consumer == 0x800859dc && consume, "Chunk callback address");
+        consume(chunk);
+    }
+    field::MusicResource allocate_buffer(std::uint32_t, std::uint32_t) override {
+        unsupported();
+        return 0;
     }
     void read_file(std::uint32_t file, field::MusicResource destination, std::uint32_t offset,
                    std::uint32_t mode) override {
@@ -163,10 +194,9 @@ void selection_release_and_boundaries() {
     check(field::release_disc_stream_chunk(state, {}, 0) == 0,
           "Null chunk release succeeds without reading storage");
     state.active_block_count = 7;
-    rejects([&] { (void)calls.next_stream_chunk(); },
-            "Mismatched active/header counts cannot address outside host storage");
-    check(state.expected_sequence == 1,
-          "The original sequence store precedes the invalid returned data address");
+    check(calls.next_stream_chunk() == Calls::ring_token + 100 + 8 * 2048 &&
+              state.expected_sequence == 1,
+          "Mismatched active/header counts return the original address past the payload");
     state.host_file_table = 1;
     rejects([&] { (void)calls.next_stream_chunk(); },
             "Unrecovered debugger-file path must fail explicitly");
@@ -184,14 +214,12 @@ void connected_ring_stream_wave() {
     music.wave_staging = 0x8000;
     field::BattleRequestState request;
     std::array<std::uint8_t, 8192> staging{};
-    field::start_music_stream(
-        music.stream, request, 31, 1, 0x800859dc,
-        [&](field::MusicResource chunk) {
-            const auto offset = chunk - Calls::ring_token;
-            const std::span<const std::uint8_t, 2048> input(calls.ring.data() + offset, 2048);
-            field::consume_music_wave_chunk(music, chunk, input, staging, calls);
-        },
-        calls);
+    calls.consume = [&](field::MusicResource chunk) {
+        const auto offset = chunk - Calls::ring_token;
+        const std::span<const std::uint8_t, 2048> input(calls.ring.data() + offset, 2048);
+        field::consume_music_wave_chunk(music, chunk, input, staging, calls);
+    };
+    field::start_music_stream(music.stream, request, 31, 1, 0x800859dc, calls);
     check(field::finish_music_wave_chunks(music.stream, request, calls) == field::music_pending &&
               disc.expected_sequence == 15 && music.wave_transfer == 77 && request.menu_gate == 1,
           "Actual ring selection and release feed the recovered five-step wave callback");

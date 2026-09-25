@@ -25,6 +25,8 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_motion.cpp
   src/reconstruction/field_collision.cpp
   src/reconstruction/field_media.cpp
+  src/reconstruction/field_music.cpp
+  src/reconstruction/sound_load.cpp
   src/reconstruction/field_script.cpp
   src/reconstruction/field_disassembler.cpp
   src/reconstruction/field_update.cpp
@@ -153,6 +155,9 @@ if(BUILD_TESTING)
   add_executable(test-sound-driver tests/test_sound_driver.cpp)
   target_link_libraries(test-sound-driver PRIVATE xem-reconstruction)
   add_test(NAME sound-driver-reconstruction COMMAND test-sound-driver)
+  add_executable(test-music-load tests/test_music_load.cpp)
+  target_link_libraries(test-music-load PRIVATE xem-reconstruction)
+  add_test(NAME music-load-reconstruction COMMAND test-music-load)
   add_executable(test-sound-output tests/test_sound_output.cpp)
   target_link_libraries(test-sound-output PRIVATE xem-reconstruction)
   add_test(NAME sound-output-reconstruction COMMAND test-sound-output)
