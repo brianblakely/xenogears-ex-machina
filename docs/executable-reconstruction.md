@@ -150,6 +150,16 @@ an interrupt, or an unowned change is a divergence. The BIOS save areas are the
 exception: exception entry writes them before the dispatch hook, so they are
 never Program state and never a conflict.
 
+Presentation brackets (`--presentation ENTRY:EXIT`) name original calls that do
+only drawing or camera work inside a compared step, such as the battle camera
+`800bc404` or model setup. Their byte changes are attributed to them the same
+way as interrupt changes. The GTE registers must be unchanged across each
+bracket, and owned state they touch still has to match. A bracket asserts that
+the call is presentation. That assertion is part of the reviewed boundary, never
+a mask for unexplained bytes. `--entry-repeats` selects later passes of an entry
+hook placed on a loop head. Stack bytes below the entry stack pointer are
+excluded from interrupt attribution as they are from ownership.
+
 Two limits follow from snapshot granularity. A call store that repeats the
 value an interrupt left is invisible, so both interrupt rules then expect the
 older value. The comparison also does not model the call reading a value that
