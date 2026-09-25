@@ -24,12 +24,22 @@ from pathlib import Path
 
 if __package__:
     from .host_slots import slot
-    from .instruction_trace import InstructionTrace, load_instruction_trace
+    from .instruction_trace import (
+        CoverageTrace,
+        InstructionTrace,
+        load_coverage,
+        load_instruction_trace,
+    )
     from .memory_sampler import load_sampling
     from .scenario_program import ScenarioProgram
 else:
     from host_slots import slot
-    from instruction_trace import InstructionTrace, load_instruction_trace
+    from instruction_trace import (
+        CoverageTrace,
+        InstructionTrace,
+        load_coverage,
+        load_instruction_trace,
+    )
     from memory_sampler import load_sampling
     from scenario_program import ScenarioProgram
 
@@ -220,6 +230,9 @@ def observe() -> None:
     parser.add_argument(
         "--trace-instructions", type=Path, help="Guarded instruction-address trace JSON"
     )
+    parser.add_argument(
+        "--coverage", type=Path, help="Executed-instruction bitmap windows JSON (trace shell)"
+    )
     parser.add_argument("--bios", type=Path, help="Optional user-supplied 512 KiB PS1 BIOS dump")
     parser.add_argument("--card", type=Path, help="Raw 128 KiB image inserted as card 1")
     args = parser.parse_args()
@@ -273,6 +286,16 @@ def observe() -> None:
             parser.error(str(error))
         if instruction_spec["source_profile"] != profile["id"]:
             parser.error("Instruction tracing targets a different source profile")
+    coverage_spec, coverage_bytes = None, None
+    if args.coverage:
+        if not program:
+            parser.error("Coverage requires a cold-boot scenario program")
+        try:
+            coverage_spec, coverage_bytes = load_coverage(args.coverage)
+        except (ValueError, OSError) as error:
+            parser.error(str(error))
+        if coverage_spec["source_profile"] != profile["id"]:
+            parser.error("Coverage targets a different source profile")
     card = None
     if args.card:
         try:
@@ -293,6 +316,8 @@ def observe() -> None:
         (out / "memory-sampling.json").write_bytes(sampling_bytes)
     if instruction_spec:
         (out / "instruction-trace-spec.json").write_bytes(instruction_bytes)
+    if coverage_spec:
+        (out / "coverage-spec.json").write_bytes(coverage_bytes)
     system = out / "system"
     saves = out / "saves"
     system.mkdir()
@@ -583,6 +608,28 @@ def observe() -> None:
                 "No CPU registers, RAM or emulated cycles are modified by the trace extension.",
             ],
         }
+    coverage = None
+    if coverage_spec:
+        coverage = CoverageTrace(core, coverage_spec, out)
+        report["coverage"] = {
+            "schema_version": 1,
+            "kind": "external_interpreter_executed_ram_words",
+            "specification": "coverage-spec.json",
+            "specification_sha256": hashlib.sha256(coverage_bytes).hexdigest(),
+            "spec": coverage_spec,
+            "tool_sha256": sha256_file(Path(__file__).with_name("instruction_trace.py")),
+            "core_extension_inputs": {
+                name: sha256_file(ROOT / "nix" / name)
+                for name in ("flake.nix", "reference-trace.h", "reference-trace-patch.py")
+            },
+            "point": "after_original_fetch_and_before_instruction_dispatch",
+            "limitations": [
+                "One entry per aligned RAM word; KUSEG/KSEG0/KSEG1 mirrors share an entry.",
+                "Only the first and last fetched instruction word of each executed word are kept.",
+                "Code ranges are hashed at each window's first and last frontend boundary only.",
+                "No CPU registers, RAM or emulated cycles are modified by the trace extension.",
+            ],
+        }
     if sampler:
         trace = (out / "memory-trace.jsonl").open("xb")
         report["memory_sampling"] = {
@@ -613,6 +660,8 @@ def observe() -> None:
         return pointer, ct.string_at(pointer, size)
 
     def finish_sampling():
+        if coverage and "windows" not in report["coverage"]:
+            report["coverage"].update(coverage.finish(memory_snapshot()[1]))
         if trace and not trace.closed:
             trace.close()
             report["memory_sampling"].update(sampler.status())
@@ -685,6 +734,9 @@ def observe() -> None:
                     ct.memmove(ram_pointer + offset, data, len(data))
 
                 labels = program.tick(boundary, memory, write_memory)
+            if coverage:
+                # After the tick's guarded writes, which precede the next run.
+                coverage.boundary(boundary, memory_snapshot()[1] if coverage.due(boundary) else None)
             final = boundary == args.frames or (program is not None and program.complete)
             if boundary and (labels or boundary % args.capture_every == 0 or final):
                 capture_frame(boundary, labels, final)

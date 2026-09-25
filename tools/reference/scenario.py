@@ -10,12 +10,12 @@ import sys
 from pathlib import Path
 
 if __package__:
-    from .instruction_trace import load_instruction_trace
+    from .instruction_trace import load_coverage, load_instruction_trace
     from .memory_sampler import load_sampling
     from .observe import read_card_image, sha256_file
     from .scenario_program import integer, keys, validate_program
 else:
-    from instruction_trace import load_instruction_trace
+    from instruction_trace import load_coverage, load_instruction_trace
     from memory_sampler import load_sampling
     from observe import read_card_image, sha256_file
     from scenario_program import integer, keys, validate_program
@@ -284,6 +284,9 @@ def main() -> None:
     parser.add_argument(
         "--trace-instructions", type=Path, help="Guarded instruction-address trace JSON"
     )
+    parser.add_argument(
+        "--coverage", type=Path, help="Executed-instruction bitmap windows JSON (trace shell)"
+    )
     parser.add_argument("--card", type=Path, help="Raw 128 KiB image inserted as card 1")
     parser.add_argument("--list", action="store_true")
     parser.add_argument(
@@ -308,6 +311,7 @@ def main() -> None:
         return
     sampler, sampling_bytes = None, None
     instruction_spec, instruction_bytes = None, None
+    coverage_spec, coverage_bytes = None, None
     card = None
     try:
         if args.scenario:
@@ -340,6 +344,10 @@ def main() -> None:
             instruction_spec, instruction_bytes = load_instruction_trace(args.trace_instructions)
             if instruction_spec["source_profile"] != scenario["source_profile"]:
                 raise ValueError("Instruction tracing targets a different source profile")
+        if args.coverage:
+            coverage_spec, coverage_bytes = load_coverage(args.coverage)
+            if coverage_spec["source_profile"] != scenario["source_profile"]:
+                raise ValueError("Coverage targets a different source profile")
         if args.card:
             card = read_card_image(args.card)
     except (ValueError, OSError, KeyError) as error:
@@ -353,6 +361,7 @@ def main() -> None:
                     "frame_budget": budget,
                     **({"memory_sampling": sampler.spec} if sampler else {}),
                     **({"instruction_trace": instruction_spec} if instruction_spec else {}),
+                    **({"coverage": coverage_spec} if coverage_spec else {}),
                 },
                 indent=2,
             )
@@ -395,6 +404,12 @@ def main() -> None:
             "specification": "instruction-trace-spec.json",
             "specification_sha256": hashlib.sha256(instruction_bytes).hexdigest(),
         }
+    if coverage_spec:
+        (out / "coverage-spec.json").write_bytes(coverage_bytes)
+        provenance["coverage"] = {
+            "specification": "coverage-spec.json",
+            "specification_sha256": hashlib.sha256(coverage_bytes).hexdigest(),
+        }
     if card is not None:
         (out / "input-card1.mcd").write_bytes(card)
         provenance["input_card"] = {
@@ -422,6 +437,8 @@ def main() -> None:
         command += ["--sample-memory", str(out / "memory-sampling.json")]
     if instruction_spec:
         command += ["--trace-instructions", str(out / "instruction-trace-spec.json")]
+    if coverage_spec:
+        command += ["--coverage", str(out / "coverage-spec.json")]
     if card is not None:
         command += ["--card", str(out / "input-card1.mcd")]
     result = subprocess.run(command, cwd=ROOT, check=False)

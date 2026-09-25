@@ -81,7 +81,8 @@ aliases are bounded independently from RAM. Such records include
 registers and ranges crossing the boundary are unavailable; no emulated bus
 read occurs. Direct ranges, pointer-offset ranges and digests remain RAM-only.
 The collector and extension use one versionless interface:
-`retro_xem_trace_configure`, `retro_xem_trace_enable`, and `retro_xem_trace_count`.
+`retro_xem_trace_configure`, `retro_xem_trace_enable`, and `retro_xem_trace_count`
+(plus the coverage exports below).
 The callback always supplies both RAM and scratchpad. Build the collector and
 core from the same repository revision; missing trace exports fail before trace
 configuration. The JSON trace specification's schema version is independent of
@@ -104,6 +105,28 @@ report. Payload and range-record limits apply before execution. The exact spec,
 core/tool/extension-input hashes, rejection counts and trace hash accompany the
 capture. After-handler effects can be sampled by specifying the independently
 recovered return address as another hook.
+
+Coverage mode (`--coverage <spec.json>` on either launcher, observation-trace
+shell, cold-boot program required) records which RAM instructions execute. The
+specification has `schema_version: 1`, `name`, exact `source_profile`, 1..1024
+ordered, disjoint `windows` (`name`, inclusive `start_frame`, exclusive
+`end_frame`) and 1..16 word-aligned `code_ranges` (`name`, RAM `offset`, `size`).
+For each window the extension keeps, per aligned RAM word (KUSEG/KSEG0/KSEG1
+mirrors share an entry), whether it was dispatched, the first and last fetched
+instruction word, and whether a later dispatch fetched a different word. The
+fetched words attribute an address to an exact code image even when an overlay
+is replaced inside the window; only the first and last are kept. At each
+window's first and last frame boundary the collector hashes every code range and
+keeps each distinct range content privately in `coverage-ranges/<sha256>.bin`.
+Each window's record (executed and changed bitmaps, then first and last words as
+little-endian u32) is one zlib chunk of the private `coverage.bin`; the
+observation lists every window with its word counts, record hash and range
+hashes, and marks a window that the capture ended inside as incomplete. Words
+executed outside every window are discarded. The coverage exports
+`retro_xem_coverage_enable` and `retro_xem_coverage_take` are separate from the
+hook interface; neither changes RAM, registers or cycles. The first coverage
+captures (`p1cov-*-v1`) reproduced the final RAM of earlier captures of all 18
+routes, 11 of them from the uninstrumented core.
 
 The source is identified
 by its selected CHD hash, not by its filename. A different CHD container requires

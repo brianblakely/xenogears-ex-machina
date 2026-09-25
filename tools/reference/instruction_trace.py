@@ -569,3 +569,223 @@ class InstructionTrace:
             "failed": self.failed,
             "trace_sha256": self.digest.hexdigest(),
         }
+
+
+# Coverage per declared frame window, one entry per aligned RAM word: the
+# executed bitmap, the changed bitmap (a later dispatch fetched a different
+# instruction word), then the first and last fetched words (little-endian u32).
+COVERAGE_WORDS = MEMORY_LIMIT // 4
+COVERAGE_BITMAP = COVERAGE_WORDS // 8
+COVERAGE_BYTES = 2 * COVERAGE_BITMAP + 8 * COVERAGE_WORDS
+COVERAGE_MAGIC = b"XEMCOV01"
+MAX_COVERAGE_WINDOWS = 1024
+MAX_COVERAGE_RANGES = 16
+IDENTIFIER = r"[a-z0-9][a-z0-9_-]{0,79}"
+
+
+def load_coverage(path: Path) -> tuple[dict, bytes]:
+    with path.open("rb") as stream:
+        data = stream.read(MAX_SPEC_BYTES + 1)
+    if len(data) > MAX_SPEC_BYTES:
+        raise ValueError("Coverage specification exceeds 64 KiB")
+    return validate_coverage(json.loads(data)), data
+
+
+def validate_coverage(value: object) -> dict:
+    """Frame windows and the RAM ranges hashed at each window's start and end.
+
+    Windows are ordered, disjoint and use frontend frame indices (start
+    inclusive, end exclusive). Ranges identify loaded code; they are hashed,
+    never interpreted.
+    """
+    spec = keys(
+        value,
+        {"schema_version", "name", "source_profile", "windows", "code_ranges"},
+        set(),
+        "Coverage",
+    )
+    if type(spec["schema_version"]) is not int or spec["schema_version"] != 1:
+        raise ValueError("Unsupported coverage schema")
+    if not isinstance(spec["name"], str) or not re.fullmatch(IDENTIFIER, spec["name"]):
+        raise ValueError("Invalid coverage name")
+    if not isinstance(spec["source_profile"], str) or not spec["source_profile"]:
+        raise ValueError("Coverage needs an exact source profile")
+    for field, label, required, limit in (
+        ("windows", "window", {"name", "start_frame", "end_frame"}, MAX_COVERAGE_WINDOWS),
+        ("code_ranges", "code range", {"name", "offset", "size"}, MAX_COVERAGE_RANGES),
+    ):
+        items = spec[field]
+        if not isinstance(items, list) or not 1 <= len(items) <= limit:
+            raise ValueError(f"Coverage needs 1..{limit} {label}s")
+        names = set()
+        for item in items:
+            keys(item, required, set(), f"Coverage {label}")
+            if not isinstance(item["name"], str) or not re.fullmatch(IDENTIFIER, item["name"]):
+                raise ValueError(f"Coverage {label} names must be identifiers")
+            if item["name"] in names:
+                raise ValueError(f"Coverage {label} names must be unique")
+            names.add(item["name"])
+    end = 0
+    for window in spec["windows"]:
+        start = integer(window["start_frame"], "Coverage window start", end, 35999)
+        end = integer(window["end_frame"], "Coverage window end", start + 1, 36000)
+    for item in spec["code_ranges"]:
+        offset = integer(item["offset"], "Coverage range offset", 0, MEMORY_LIMIT - 4)
+        integer(item["size"], "Coverage range size", 4, MEMORY_LIMIT - offset)
+        if offset % 4 or item["size"] % 4:
+            raise ValueError("Coverage code ranges must be word aligned")
+    return spec
+
+
+def coverage_path(output: Path) -> Path:
+    return output / "coverage.bin"
+
+
+def read_coverage_records(path: Path) -> list[bytes]:
+    """Return each recorded window's coverage record in window order."""
+    data = path.read_bytes()
+    if not data.startswith(COVERAGE_MAGIC):
+        raise ValueError("Coverage file has an unsupported header")
+    records, at = [], len(COVERAGE_MAGIC)
+    while at < len(data):
+        if at + 4 > len(data):
+            raise ValueError("Coverage file ends inside a chunk length")
+        (size,) = struct.unpack_from("<I", data, at)
+        if at + 4 + size > len(data):
+            raise ValueError("Coverage file ends inside a chunk")
+        stream = zlib.decompressobj()
+        record = stream.decompress(data[at + 4 : at + 4 + size])
+        if not stream.eof or stream.unused_data or len(record) != COVERAGE_BYTES:
+            raise ValueError("Coverage chunk is not one complete record")
+        records.append(record)
+        at += 4 + size
+    return records
+
+
+def split_coverage(record: bytes) -> tuple[bytes, bytes, memoryview, memoryview]:
+    """Executed bitmap, changed bitmap, first and last instruction words."""
+    words = memoryview(record)[2 * COVERAGE_BITMAP :].cast("I")
+    return (
+        record[:COVERAGE_BITMAP],
+        record[COVERAGE_BITMAP : 2 * COVERAGE_BITMAP],
+        words[:COVERAGE_WORDS],
+        words[COVERAGE_WORDS:],
+    )
+
+
+def executed_offsets(bitmap: bytes) -> list[int]:
+    """RAM byte offsets of the words set in one coverage bitmap."""
+    result = []
+    for index, byte in enumerate(bitmap[:COVERAGE_BITMAP]):
+        while byte:
+            low = byte & -byte
+            result.append((index * 8 + low.bit_length() - 1) * 4)
+            byte ^= low
+    return result
+
+
+class CoverageTrace:
+    """Executed RAM words and their fetched instructions at the interpreter's dispatch point.
+
+    The fetched words attribute each executed address to an exact code image
+    even when an overlay is replaced inside a window. The declared code ranges
+    are hashed at each window's first and last frame boundary and each distinct
+    range content is kept privately. Nothing here writes emulated state.
+    """
+
+    def __init__(self, core, spec: dict, output: Path):
+        self.spec = validate_coverage(spec)
+        self.core = core
+        prototypes = {
+            "retro_xem_coverage_enable": (None, [ct.c_uint32]),
+            "retro_xem_coverage_take": (ct.c_int, [ct.POINTER(ct.c_uint8), ct.c_uint32]),
+        }
+        for name, (restype, argtypes) in prototypes.items():
+            function = getattr(core, name, None)
+            if function is None:
+                raise ValueError("Coverage requires the pinned observation-trace shell")
+            function.restype, function.argtypes = restype, argtypes
+        self.buffer = (ct.c_uint8 * COVERAGE_BYTES)()
+        self.ranges = output / "coverage-ranges"
+        self.ranges.mkdir()
+        self.stream = coverage_path(output).open("xb")
+        self.digest = hashlib.sha256()
+        self.emit(COVERAGE_MAGIC)
+        self.index = 0
+        self.active = None
+        self.records = []
+        self.core.retro_xem_coverage_enable(0)
+
+    def emit(self, data: bytes) -> None:
+        self.stream.write(data)
+        self.digest.update(data)
+
+    def hash_ranges(self, memory: bytes) -> dict:
+        result = {}
+        for item in self.spec["code_ranges"]:
+            data = memory[item["offset"] : item["offset"] + item["size"]]
+            digest = hashlib.sha256(data).hexdigest()
+            path = self.ranges / f"{digest}.bin"
+            if not path.exists():
+                path.write_bytes(data)
+            result[item["name"]] = digest
+        return result
+
+    def take(self) -> bytes:
+        if self.core.retro_xem_coverage_take(self.buffer, COVERAGE_BYTES) != 1:
+            raise ValueError("External core rejected the coverage transfer")
+        return bytes(self.buffer)
+
+    def due(self, frame: int) -> bool:
+        """Whether `frame` is a window boundary, which needs a RAM view."""
+        windows = self.spec["windows"]
+        return (self.active is not None and frame == self.active["end_frame"]) or (
+            self.index < len(windows) and frame == windows[self.index]["start_frame"]
+        )
+
+    def boundary(self, frame: int, memory: bytes | None) -> None:
+        """Called after the previous retro_run and before the next one."""
+        windows = self.spec["windows"]
+        closed = self.active is not None and frame == self.active["end_frame"]
+        if closed:
+            self.close(self.take(), memory, complete=True)
+        if (
+            self.active is None
+            and self.index < len(windows)
+            and frame == windows[self.index]["start_frame"]
+        ):
+            if not closed:
+                self.take()  # Discard words executed outside every window.
+            self.active = {**windows[self.index], "start_ranges": self.hash_ranges(memory)}
+        self.core.retro_xem_coverage_enable(self.active is not None)
+
+    def close(self, coverage: bytes, memory: bytes | None, complete: bool) -> None:
+        data = zlib.compress(coverage, 6)
+        self.emit(struct.pack("<I", len(data)) + data)
+        executed, changed, _, _ = split_coverage(coverage)
+        record = {
+            **self.active,
+            "executed_words": int.from_bytes(executed, "little").bit_count(),
+            "changed_words": int.from_bytes(changed, "little").bit_count(),
+            "coverage_sha256": hashlib.sha256(coverage).hexdigest(),
+            "complete": complete,
+        }
+        if memory is not None:
+            record["end_ranges"] = self.hash_ranges(memory)
+        self.records.append(record)
+        self.active = None
+        self.index += 1
+
+    def finish(self, memory: bytes | None = None) -> dict:
+        """Close an interrupted window as incomplete and report every window."""
+        self.core.retro_xem_coverage_enable(0)
+        if self.active is not None:
+            self.close(self.take(), memory, complete=False)
+        if not self.stream.closed:
+            self.stream.close()
+        return {
+            "records": coverage_path(Path(self.stream.name).parent).name,
+            "records_sha256": self.digest.hexdigest(),
+            "ranges_directory": self.ranges.name,
+            "windows": self.records,
+        }

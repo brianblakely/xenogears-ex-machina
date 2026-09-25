@@ -13,16 +13,25 @@ from types import SimpleNamespace
 from unittest.mock import Mock
 
 from tools.reference.instruction_trace import (
+    COVERAGE_BITMAP,
+    COVERAGE_BYTES,
+    COVERAGE_MAGIC,
     SNAPSHOT_BYTES,
     SNAPSHOT_HEADER,
     SNAPSHOT_KEY_INTERVAL,
+    COVERAGE_WORDS,
     SNAPSHOT_PAGE,
+    CoverageTrace,
     InstructionTrace,
     ScratchpadCallback,
     SnapshotReader,
     SnapshotWriter,
+    executed_offsets,
     guarded_record,
+    read_coverage_records,
     snapshot_path,
+    split_coverage,
+    validate_coverage,
     validate_instruction_trace,
 )
 from tools.reference.scenario_program import MEMORY_LIMIT
@@ -497,6 +506,159 @@ class InstructionTraceTests(unittest.TestCase):
             self.hook["digests"] = digests
             with self.subTest(digests=digests), self.assertRaises(ValueError):
                 validate_instruction_trace(self.spec)
+
+
+class CoverageTests(unittest.TestCase):
+    """An invented core hands out bitmaps; the collector only reads and hashes RAM."""
+
+    def setUp(self):
+        self.spec = {
+            "schema_version": 1,
+            "name": "synthetic-coverage",
+            "source_profile": "synthetic",
+            "windows": [
+                {"name": "first", "start_frame": 1, "end_frame": 3},
+                {"name": "second", "start_frame": 3, "end_frame": 5},
+                {"name": "late", "start_frame": 8, "end_frame": 12},
+            ],
+            "code_ranges": [
+                {"name": "low", "offset": 0x100, "size": 8},
+                {"name": "high", "offset": MEMORY_LIMIT - 8, "size": 8},
+            ],
+        }
+
+    def coverage_core(self, bitmaps):
+        pending = list(bitmaps)
+
+        def take(buffer, size):
+            data = pending.pop(0) if pending else bytes(COVERAGE_BYTES)
+            ct.memmove(buffer, data, size)
+            return 1
+
+        return SimpleNamespace(
+            retro_xem_coverage_enable=Mock(), retro_xem_coverage_take=Mock(side_effect=take)
+        )
+
+    @staticmethod
+    def bitmap(*offsets, changed=()):
+        """A coverage record whose executed words fetched `offset + 1`."""
+        data = bytearray(COVERAGE_BYTES)
+        words = memoryview(data)[2 * COVERAGE_BITMAP :].cast("I")
+        for offset in offsets:
+            word = offset // 4
+            data[word // 8] |= 1 << (word % 8)
+            words[word] = words[COVERAGE_WORDS + word] = offset + 1
+        for offset in changed:
+            word = offset // 4
+            data[COVERAGE_BITMAP + word // 8] |= 1 << (word % 8)
+            words[COVERAGE_WORDS + word] = 0xFFFFFFFF
+        return bytes(data)
+
+    def test_windows_record_words_and_code_hashes_without_mutation(self):
+        first = self.bitmap(0, 0x100, MEMORY_LIMIT - 4)
+        second = self.bitmap(0x104, changed=[0x104])
+        # Window openings discard stale bits; closings return the window's bits.
+        core = self.coverage_core([self.bitmap(8), first, second, self.bitmap(12)])
+        memory = bytearray(MEMORY_LIMIT)
+        memory[0x100:0x108] = b"codecode"
+        before = bytes(memory)
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            coverage = CoverageTrace(core, self.spec, output)
+            enabled = []
+            for frame in range(10):
+                if frame == 3:
+                    memory[0x100:0x108] = b"overlay!"
+                view = bytes(memory) if coverage.due(frame) else None
+                self.assertEqual(coverage.due(frame), frame in (1, 3, 5, 8))
+                coverage.boundary(frame, view)
+                enabled.append(core.retro_xem_coverage_enable.call_args.args[0])
+            status = coverage.finish(bytes(memory))
+            self.assertEqual(enabled, [0, 1, 1, 1, 1, 0, 0, 0, 1, 1])
+            bitmaps = read_coverage_records(output / status["records"])
+            self.assertEqual(
+                status["records_sha256"],
+                hashlib.sha256((output / status["records"]).read_bytes()).hexdigest(),
+            )
+            stored = {path.name for path in (output / "coverage-ranges").iterdir()}
+            self.assertEqual(
+                (output / "coverage-ranges" / f"{hashlib.sha256(b'overlay!').hexdigest()}.bin")
+                .read_bytes(),
+                b"overlay!",
+            )
+        self.assertEqual(bytes(memory[:0x100]), before[:0x100])
+        self.assertEqual(bitmaps, [first, second, bytes(COVERAGE_BYTES)])
+        self.assertEqual(executed_offsets(first), [0, 0x100, MEMORY_LIMIT - 4])
+        executed, changed, first_words, last_words = split_coverage(second)
+        self.assertEqual(executed_offsets(changed), [0x104])
+        self.assertEqual((first_words[0x41], last_words[0x41]), (0x105, 0xFFFFFFFF))
+        windows = status["windows"]
+        self.assertEqual([w["name"] for w in windows], ["first", "second", "late"])
+        self.assertEqual([w["executed_words"] for w in windows], [3, 1, 0])
+        self.assertEqual([w["changed_words"] for w in windows], [0, 1, 0])
+        self.assertEqual([w["complete"] for w in windows], [True, True, False])
+        code, overlay = (hashlib.sha256(v).hexdigest() for v in (b"codecode", b"overlay!"))
+        self.assertEqual(windows[0]["start_ranges"]["low"], code)
+        self.assertEqual(windows[0]["end_ranges"]["low"], overlay)
+        self.assertEqual(windows[1]["start_ranges"]["low"], overlay)
+        self.assertEqual(len(stored), 3)
+        core.retro_xem_coverage_enable.assert_called_with(0)
+
+    def test_missing_coverage_exports_fail_before_output(self):
+        for name in ("retro_xem_coverage_enable", "retro_xem_coverage_take"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                core = self.coverage_core([])
+                delattr(core, name)
+                with self.assertRaises(ValueError):
+                    CoverageTrace(core, self.spec, Path(directory))
+                self.assertEqual(list(Path(directory).iterdir()), [])
+
+    def test_rejected_bitmap_transfer_fails(self):
+        core = self.coverage_core([])
+        core.retro_xem_coverage_take = Mock(return_value=0)
+        with tempfile.TemporaryDirectory() as directory:
+            coverage = CoverageTrace(core, self.spec, Path(directory))
+            with self.assertRaises(ValueError):
+                coverage.boundary(1, bytes(MEMORY_LIMIT))
+
+    def test_windows_and_ranges_are_ordered_bounded_and_aligned(self):
+        validate_coverage(self.spec)
+        for mutate in (
+            lambda s: s["windows"][1].update(start_frame=2),
+            lambda s: s["windows"][0].update(end_frame=1),
+            lambda s: s["windows"][2].update(end_frame=36001),
+            lambda s: s["windows"][1].update(name="first"),
+            lambda s: s["windows"].clear(),
+            lambda s: s["windows"].extend(
+                {"name": f"w{i}", "start_frame": 20 + i, "end_frame": 21 + i} for i in range(1022)
+            ),
+            lambda s: s["code_ranges"][0].update(offset=0x102),
+            lambda s: s["code_ranges"][0].update(size=6),
+            lambda s: s["code_ranges"][1].update(size=12),
+            lambda s: s["code_ranges"][1].update(name="low"),
+            lambda s: s["code_ranges"].clear(),
+            lambda s: s.update(schema_version=2),
+            lambda s: s.update(extra=True),
+            lambda s: s["windows"][0].update(extra=True),
+        ):
+            spec = copy.deepcopy(self.spec)
+            mutate(spec)
+            with self.subTest(spec=spec), self.assertRaises(ValueError):
+                validate_coverage(spec)
+
+    def test_corrupt_bitmap_files_are_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "coverage.bin"
+            chunk = zlib.compress(bytes(COVERAGE_BYTES - 1))
+            for data in (
+                b"XEMCOV00",
+                COVERAGE_MAGIC + b"\x01",
+                COVERAGE_MAGIC + struct.pack("<I", 100),
+                COVERAGE_MAGIC + struct.pack("<I", len(chunk)) + chunk,
+            ):
+                path.write_bytes(data)
+                with self.subTest(data=data[:12]), self.assertRaises(ValueError):
+                    read_coverage_records(path)
 
 
 if __name__ == "__main__":
