@@ -169,6 +169,7 @@ int run_case(int argc, char **argv) {
                                   entry == "battle_setup_phase" || entry == "battle_prologue" ||
                                   entry == "battle_after_load" || entry == "battle_after_scene" ||
                                   entry == "battle_adjust_party" || entry == "battle_place_party" ||
+                                  entry == "battle_scene_files" || entry == "battle_setup_files" ||
                                   entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
@@ -597,10 +598,17 @@ int run_case(int argc, char **argv) {
             });
         } else if (entry == "battle_prologue") {
             program->battle_prologue(); // 80070f40 up to 800b8098
+            program->deliver_pending_arrivals();
         } else if (entry == "battle_after_load") {
             program->battle_after_load(); // 800b8098's return up to 800b81bc
         } else if (entry == "battle_after_scene") {
             program->battle_after_scene(registers[2]); // 801e7210's return: V0
+        } else if (entry == "battle_setup_files") {
+            program->battle_setup_files(); // 8001bbac
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_scene_files") {
+            program->battle_scene_files(); // 8001bb0c
+            program->deliver_pending_arrivals();
         } else if (entry == "battle_adjust_party") {
             program->battle_adjust_party(); // 8009892c
         } else if (entry == "battle_place_party") {

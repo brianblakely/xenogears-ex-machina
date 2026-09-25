@@ -178,6 +178,11 @@ void stop_effect_pair(SoundDriver &driver, std::uint32_t channel);
 void start_effect(SoundDriver &driver, std::uint32_t id, std::uint32_t channel,
                   std::uint32_t volume, std::uint32_t pan);
 
+// 80038428: link effect bank object `bank` last on the effect bank list after
+// its checks: no linked bank with its id (+14) unless driver flag 80, the
+// signature "seds", a zero word sum over its size (+8, 8003f684) and version
+// 101 (+c). A failed check reaches the error handler 8003f6b0 (SoundError).
+void link_effect_bank(SoundDriver &driver, std::uint32_t bank);
 // 80039db8 with the argument 801c8574 builds: when effects are enabled, start
 // effect `effect` of effect bank object `bank` (its id at +14) on two voices
 // from voice_limit - 2 (code 8000 | voice) at volume 6000, pan 4000.

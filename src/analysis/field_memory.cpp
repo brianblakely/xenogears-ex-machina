@@ -859,7 +859,10 @@ Program import_battle(const OriginalMemory &memory) {
     // 801e4000 and its files: the formation data (8005949c), the archive
     // (800595a8) and the effect header (800595d0).
     for (const auto [address, size] :
-         {std::pair{reconstruction::battle::formation_record, 0x20U},
+         {// The record and the zero word 8001bbac stores after its list.
+          std::pair{reconstruction::battle::formation_record - 4, 0x24U},
+          // 8001bbac's party effects per mode (3 bytes each, modes 0-5).
+          std::pair{0x8004f388U, 0x12U},
           std::pair{reconstruction::battle::formation_table,
                     reconstruction::battle::formation_table_bytes},
           std::pair{reconstruction::battle::battle_party_ids, 3U},

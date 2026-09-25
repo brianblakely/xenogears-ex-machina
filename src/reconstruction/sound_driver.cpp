@@ -310,6 +310,32 @@ void start_effect(SoundDriver &driver, std::uint32_t id, std::uint32_t channel,
     start_effect_voices(driver, ((channel & 0xfe) ^ 8) | 0x2000, id, widen(volume), widen(pan));
 }
 
+void link_effect_bank(SoundDriver &driver, std::uint32_t bank) {
+    if ((driver.flags & 0x80) == 0)
+        for (auto at = driver.effect_banks; at != 0; at = u32(driver, at + 0x1c))
+            if (u16(driver, bank + 0x14) == u16(driver, at + 0x14))
+                throw SoundError("A linked effect bank id reaches the driver error handler "
+                                 "8003f6b0 (15)");
+    // 8003f614(bank, "seds", 101): signature, word sum (8003f684) over the
+    // size at +8, version at +c.
+    std::uint32_t sum = 0;
+    for (std::uint32_t word = 0; word < (u32(driver, bank + 8) + 3) >> 2; ++word)
+        sum += u32(driver, bank + word * 4);
+    if (u32(driver, bank) != 0x73646573 || sum != 0 || s16(u16(driver, bank + 0xc)) != 0x101)
+        throw SoundError("An effect bank failing its checks reaches the driver error handler "
+                         "8003f6b0");
+    // Between BIOS DisableEvent/EnableEvent: link last.
+    if (driver.effect_banks == 0) {
+        driver.effect_banks = bank;
+    } else {
+        auto last = driver.effect_banks;
+        while (u32(driver, last + 0x1c) != 0)
+            last = u32(driver, last + 0x1c);
+        put32(driver, last + 0x1c, bank);
+    }
+    put32(driver, bank + 0x1c, 0);
+}
+
 void start_bank_effect(SoundDriver &driver, std::uint32_t bank, std::uint32_t effect) {
     if ((driver.flags & 0x800) == 0)
         return;

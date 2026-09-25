@@ -450,6 +450,14 @@ struct ResidentState {
     std::uint32_t battle_marker{};  // 80059480
     std::uint32_t battle_spacer{};  // 800594ac
     std::uint8_t b_5959c{};         // 8005959c: 8001b6c4 sets it, 80070f40 clears it
+    // The scene files 800379d8 reads (directory 15 files 2n+6 and 2n+7): the
+    // stage file (80059470), a word it clears (80059520), and the scene data
+    // after the second file's first word (800658c8 and 8005949c); the list
+    // read's zero destination word after its terminator (8005a1f0).
+    std::uint32_t battle_stage{};      // 80059470
+    std::uint32_t battle_stage_b{};    // 80059520
+    std::uint32_t battle_scene_data{}; // 800658c8
+    std::uint32_t scene_list_tail{};   // 8005a1f0
     // Field main loop (field_loop.cpp) globals whose meaning is not recovered.
     std::uint32_t w_4f2f4{}; // 8004f2f4: cleared by 800a31e8
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
@@ -822,6 +830,9 @@ class Program {
     // platform input: a call's code about to make a recorded hardware read
     // that the original made after them.
     void deliver_leading_arrivals();
+    // The same for leading arrivals that serve the vertical blank alone: a
+    // call-level VSync(-1) read counts them.
+    void deliver_leading_vblanks();
     // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
     // driver flags the event handler loaded). Returns 0.
     std::uint32_t sound_tick(std::uint32_t event);
@@ -958,6 +969,12 @@ class Program {
     void battle_after_scene(std::uint32_t result);
     // 8009892c: the party adjustments (battle.hpp).
     void battle_adjust_party();
+    // 8001bb0c (800379d8): allocate the formation scene's stage and scene
+    // data files and start their list read.
+    void battle_scene_files();
+    // 8001bbac: the setup files (directory 12 files 2-4) by a list read, the
+    // effect bank once its file has arrived, and the members' effects.
+    void battle_setup_files();
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
     // Post-battle 801e2794: victory rewards and write-back.

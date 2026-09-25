@@ -583,6 +583,8 @@ void copy(battle::BattleMemory &memory, const resident::Heap &heap, std::uint32_
 std::uint32_t Program::unpack_battle_item(battle::Battle &context, std::uint32_t item,
                                           std::uint32_t mode) {
     auto &memory = context.memory;
+    // Interrupts recorded before the decode began.
+    deliver_leading_arrivals();
     const auto size = memory.u32(item);
     auto block = resident::heap_allocate(resident.heap, size, mode, 0x80032e94);
     if (!block)
@@ -600,6 +602,7 @@ std::uint32_t Program::unpack_battle_item(battle::Battle &context, std::uint32_t
     std::ranges::copy(decoded.data, block->bytes.begin());
     const auto address = block->address;
     memory.regions.emplace(address, std::move(block->bytes));
+    deliver_arrivals(0x80032f4c); // interrupts that arrived while it decoded
     return address;
 }
 
@@ -834,6 +837,140 @@ void Program::battle_after_scene(std::uint32_t result) {
         context.memory.put8(0x800c4a38, result);
         context.memory.put32(0x800d2d40, 0x800c4a39); // 800a5e9c
         context.memory.put32(0x800d2d48, 0x800c8aa9);
+    });
+}
+
+// 8001bbac: in directory 12, the 4-byte marker block and a spacer block that
+// ends at it (both from the top) place the setup module at 801e4000; the
+// effect header (file 2) and the archive (file 3) get blocks; one list read
+// brings files 2, 3 and 4 (801e4000). Once the first file has arrived (the
+// status leaves 3), the effect header becomes the driver's effect bank
+// (80038428) and each member's effect of the battle mode starts (80039db8)
+// unless the mode is 4.
+void Program::battle_setup_files() {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        auto &heap = resident.heap;
+        heap.tag = 2; // 80032498(2, 0)
+        heap.tag_words[2] = 0;
+        heap.quiet = 0;
+        static_cast<void>(select_directory(0xc, 0));
+        const auto allocate = [&](std::uint32_t size, std::uint32_t site) {
+            auto block = resident::heap_allocate(heap, size, 1, site);
+            if (!block)
+                throw battle::BattleError("A quiet null allocation in 8001bbac");
+            const auto address = block->address;
+            memory.regions.emplace(address, std::move(block->bytes));
+            return address;
+        };
+        resident.battle_marker = allocate(4, 0x8001bbdc);
+        resident.battle_spacer = allocate(resident.battle_marker + 0x7fe1c000U, 0x8001bbf4);
+        resident.battle_effects = allocate(word_size(file_size(2)), 0x8001bc14);
+        resident.battle_archive = allocate(word_size(file_size(3)), 0x8001bc2c);
+        auto &read = resident.disc_read;
+        std::vector<std::uint8_t> list(0x1a);
+        if (read.list.address == 0x8006f9bc && read.list.bytes.size() >= 0x1a)
+            list.assign(read.list.bytes.begin(), read.list.bytes.begin() + 0x1a);
+        const auto put = [&](std::uint32_t at, std::uint32_t value, std::uint32_t width) {
+            for (std::uint32_t i = 0; i < width; ++i)
+                list[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+        };
+        put(0, 2, 2);
+        put(4, resident.battle_effects, 4);
+        put(8, 3, 2);
+        put(0xc, resident.battle_archive, 4);
+        put(0x10, 4, 2);
+        put(0x14, battle::setup_module_base, 4);
+        put(0x18, 0, 2);
+        memory.put32(battle::formation_record - 4, 0);
+        read.list = {0x8006f9bc, std::move(list)};
+        static_cast<void>(read_files(0));
+        while (disc_busy() == 3)
+            if (!deliver_interrupt())
+                throw MissingDependency({"battle_setup_files", 0x8001bc9c, {}, {}},
+                                        "interrupt:disc-read-completion", false,
+                                        "Waiting for the first setup file needs its arrivals");
+        // 80038428: the effect header becomes a driver object.
+        const auto effects = resident.battle_effects;
+        auto bytes = std::move(memory.regions.at(effects));
+        memory.regions.erase(effects);
+        resident.sound.objects.emplace(effects, std::move(bytes));
+        resident::link_effect_bank(resident.sound, effects);
+        const auto mode = resident.battle_request.mode;
+        if (mode != 4)
+            for (std::uint32_t member = 0; member < 3; ++member)
+                if (const auto effect = memory.u8(0x8004f388 + mode * 3 + member); effect != 0xff)
+                    resident::start_bank_effect(resident.sound, effects, effect);
+    });
+}
+
+// 8001bb0c: 800379d8(scene, 0, 80059470, 80059520, 8005949c) for the
+// formation's scene (8006f9de): in directory 15, when the scene is below half
+// the count file 5 records, allocate the stage file (2n+6) and the scene data
+// file (2n+7) from the top as kept blocks (tag 4) and start their list read;
+// the scene data is the second file after its first word. The directory of
+// the caller is restored (800284b4, 80028470).
+void Program::battle_scene_files() {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        auto &read = resident.disc_read;
+        const auto scene = memory.u8(battle::formation_record + 2);
+        // 800284b4: the caller's directory as a table row and column.
+        std::uint32_t row = 0;
+        std::uint32_t column = 0;
+        for (std::uint32_t i = 0; i < 0x40; ++i)
+            if (read.directories.size() >= 2 * i + 2 &&
+                static_cast<std::uint32_t>(read.directories[2 * i] | read.directories[2 * i + 1] << 8U) ==
+                    read.directory + 1U) {
+                row = i / 4 * 4;
+                column = i % 4;
+                break;
+            }
+        static_cast<void>(select_directory(0xc, 3));
+        auto &heap = resident.heap;
+        heap.tag = 4; // 80032498(4, 0)
+        heap.tag_words[4] = 0;
+        heap.quiet = 0;
+        // 80028928(5): a negative record size is a count (its negated low
+        // halfword).
+        const auto record = static_cast<std::int32_t>(file_size(5));
+        const auto count =
+            record < 0 ? static_cast<std::int32_t>(static_cast<std::int16_t>(-record)) : 0;
+        if (static_cast<std::int32_t>(scene) >= count / 2)
+            throw MissingDependency({"battle_scene_files", 0x80037a68, {}, {}},
+                                    "symbol:battle-scene-missing", false,
+                                    "A scene past the scene count is not reconstructed");
+        const auto allocate = [&](std::int32_t file, std::uint32_t site) {
+            auto block = resident::heap_allocate(heap, word_size(file_size(file)), 1, site);
+            if (!block)
+                throw battle::BattleError("A quiet null allocation in 800379d8");
+            const auto address = block->address;
+            heap.headers.at(address - 8)[1] |= resident::heap_keep; // 800320a4
+            memory.regions.emplace(address, std::move(block->bytes));
+            return address;
+        };
+        const auto data = allocate(static_cast<std::int32_t>(scene * 2 + 7), 0x80037a8c);
+        const auto stage = allocate(static_cast<std::int32_t>(scene * 2 + 6), 0x80037ab0);
+        std::vector<std::uint8_t> list(0x12);
+        const auto put = [&](std::uint32_t at, std::uint32_t value, std::uint32_t width) {
+            for (std::uint32_t i = 0; i < width; ++i)
+                list[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+        };
+        if (read.list.address == 0x8005a1dc && read.list.bytes.size() >= 0x12)
+            list.assign(read.list.bytes.begin(), read.list.bytes.begin() + 0x12);
+        put(0, scene * 2 + 6, 2);
+        put(4, stage, 4);
+        put(8, scene * 2 + 7, 2);
+        put(0xc, data, 4);
+        put(0x10, 0, 2);
+        resident.scene_list_tail = 0;
+        read.list = {0x8005a1dc, std::move(list)};
+        static_cast<void>(read_files(0));
+        resident.battle_stage = stage;
+        resident.battle_stage_b = 0;
+        resident.battle_scene = data + 4;
+        resident.battle_scene_data = data + 4;
+        static_cast<void>(select_directory(row, column));
     });
 }
 

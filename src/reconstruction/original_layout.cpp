@@ -827,6 +827,14 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.battle_spacer; });
     add_resident("battle_5959c", 0x8005959c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5959c; });
+    add_resident("battle_stage", 0x80059470, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_stage; });
+    add_resident("battle_stage_b", 0x80059520, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_stage_b; });
+    add_resident("battle_scene_data", 0x800658c8, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_scene_data; });
+    add_resident("scene_list_tail", 0x8005a1f0, 4,
+                 [](Program &p) -> auto & { return p.resident.scene_list_tail; });
     add_resident("vsync_counter", 0x80058960, 4,
                  [](Program &p) -> auto & { return p.resident.vsync_counter; });
     add_resident("vsync_hcount", 0x80057844, 4,
