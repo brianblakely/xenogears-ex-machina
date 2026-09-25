@@ -736,7 +736,9 @@ def observe() -> None:
                 labels = program.tick(boundary, memory, write_memory)
             if coverage:
                 # After the tick's guarded writes, which precede the next run.
-                coverage.boundary(boundary, memory_snapshot()[1] if coverage.due(boundary) else None)
+                coverage.boundary(
+                    boundary, memory_snapshot()[1] if coverage.due(boundary) else None
+                )
             final = boundary == args.frames or (program is not None and program.complete)
             if boundary and (labels or boundary % args.capture_every == 0 or final):
                 capture_frame(boundary, labels, final)

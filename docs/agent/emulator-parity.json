@@ -40,7 +40,7 @@
     },
     {
       "path": "tests/test_instruction_trace.py",
-      "sha256": "1588639aabc751d1273db5a71847a5f01cda58e69007157da4b6992f3bbcc94b"
+      "sha256": "ee9e351b8cc1824bb5868c39500fb44befe611f3c61520ecbc412514f12ff1e6"
     },
     {
       "path": "tests/test_memory_sampler.py",
@@ -68,7 +68,7 @@
     },
     {
       "path": "tools/reference/observe.py",
-      "sha256": "8060b1e2b87c2037afe7c97b51380569bc2575f32b928b3d804d9f095ac71ff8"
+      "sha256": "3133c48c3a92ceae0c1a1e78817270650dbcd2cc1aceaeef4221c69ca752de21"
     },
     {
       "path": "tools/reference/scenario.py",

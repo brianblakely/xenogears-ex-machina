@@ -16,10 +16,10 @@ from tools.reference.instruction_trace import (
     COVERAGE_BITMAP,
     COVERAGE_BYTES,
     COVERAGE_MAGIC,
+    COVERAGE_WORDS,
     SNAPSHOT_BYTES,
     SNAPSHOT_HEADER,
     SNAPSHOT_KEY_INTERVAL,
-    COVERAGE_WORDS,
     SNAPSHOT_PAGE,
     CoverageTrace,
     InstructionTrace,
@@ -582,8 +582,9 @@ class CoverageTests(unittest.TestCase):
             )
             stored = {path.name for path in (output / "coverage-ranges").iterdir()}
             self.assertEqual(
-                (output / "coverage-ranges" / f"{hashlib.sha256(b'overlay!').hexdigest()}.bin")
-                .read_bytes(),
+                (
+                    output / "coverage-ranges" / f"{hashlib.sha256(b'overlay!').hexdigest()}.bin"
+                ).read_bytes(),
                 b"overlay!",
             )
         self.assertEqual(bytes(memory[:0x100]), before[:0x100])
