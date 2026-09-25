@@ -983,6 +983,21 @@ void add_reload_globals(std::vector<OriginalGlobal> &table) {
     add("geometry_address", 0x800afb14, 4,
         [](ReloadState &r) -> auto & { return r.geometry_address; });
     add("w_adb24", 0x800adb24, 4, [](ReloadState &r) -> auto & { return r.w_adb24; });
+    add("event_bytecode", 0x800adc00, 4,
+        [](ReloadState &r) -> auto & { return r.event_bytecode; });
+    add("collision_attributes", 0x800afb20, 4,
+        [](ReloadState &r) -> auto & { return r.collision_attributes; });
+    for (std::uint32_t i = 0; i < 4; ++i) {
+        add("collision_triangles", 0x800afb24 + 4 * i, 4,
+            [i](ReloadState &r) -> auto & { return r.collision_triangles[i]; });
+        add("collision_vertices", 0x800afb34 + 4 * i, 4,
+            [i](ReloadState &r) -> auto & { return r.collision_vertices[i]; });
+    }
+    add("attribute_words", 0x800afd10, 4,
+        [](ReloadState &r) -> auto & { return r.attribute_words; });
+    for (std::uint32_t i = 0; i < 10; ++i)
+        resident("light_colors", 0x80059f84 + 2 * i, 2,
+                 [i](Program &p) -> auto & { return p.resident.light_colors[i]; });
     entry("collision_address", 0x800afb18, 4, false,
           [](Program &p) -> auto & { return loaded(p).collision_address; });
     entry("sprite_bundle_address", 0x800afb1c, 4, false,
@@ -998,6 +1013,11 @@ void add_reload_globals(std::vector<OriginalGlobal> &table) {
              [](Program &p) -> auto & { return p.resident.party_sprite_load.loaded; });
     resident("party_sprites_needed", 0x8004f320, 4,
              [](Program &p) -> auto & { return p.resident.party_sprite_load.needed; });
+    resident("gpu_tim_cursor", 0x8005a37c, 4,
+             [](Program &p) -> auto & { return p.resident.gpu.tim_cursor; });
+    for (std::uint32_t i = 0; i < 2; ++i)
+        resident("image_upload", 0x800592f0 + 4 * i, 4,
+                 [i](Program &p) -> auto & { return p.resident.image_upload[i]; });
 }
 
 } // namespace xem::reconstruction

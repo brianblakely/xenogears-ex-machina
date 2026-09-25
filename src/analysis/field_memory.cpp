@@ -301,13 +301,15 @@ Program import_resident(const OriginalMemory &memory) {
 namespace {
 // Field words and records the field load (80070cc8) and the reload write
 // whose meaning is not recovered, owned as raw regions: address and size.
-constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 13> field_raw{{
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 15> field_raw{{
     {0x8006f990, 12},  // party slots of a field return (800a28d4)
     {0x800adb0c, 4},   {0x800adb18, 4}, {0x800adb3c, 4}, {0x800adb44, 4},
     {0x800adb6c, 4},   {0x800adb7c, 4}, {0x800adb8c, 4}, {0x800adbd4, 4},
     {0x800afe84, 4},   {0x800b14a4, 4},
     {0x800b0188, 0x140}, // 800abd18: five sprites and their draw modes per buffer
     {0x800b06a4, 18},    // 80070c84: three records of six bytes
+    {0x800658dc, 0x220}, // component 6 of the loaded field (80070cc8)
+    {0x800afac8, 0x3c},  // 8006fdec: three light records
 }};
 // The fixed rows of memory_case's resource manifest (RESIDENT_TABLES).
 constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 6> fixed_resources{{

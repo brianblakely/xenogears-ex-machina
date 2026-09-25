@@ -2,8 +2,11 @@
 // loaded field: the field state reset (800705dc), the decoded components,
 // descriptors, model instances, actors, sprites and the camera. Original
 // addresses name correlations only; owned records are Program state.
+#include "xem/reconstruction/field_actor.hpp"
 #include "xem/reconstruction/field_gte.hpp"
+#include "xem/reconstruction/field_view.hpp"
 #include "xem/reconstruction/original_layout.hpp"
+#include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <algorithm>
@@ -16,6 +19,8 @@ FieldState &loaded(Program &program) {
         throw field::FieldFormatError("The field load requires field state");
     return *program.field;
 }
+std::int32_t s32_of(std::uint32_t value) { return std::bit_cast<std::int32_t>(value); }
+std::uint32_t u32_of(std::int32_t value) { return std::bit_cast<std::uint32_t>(value); }
 void observed(const ProgramObserver &observe, const Program &program, SourcePoint point) {
     if (observe)
         observe(program, point, true);
@@ -419,15 +424,227 @@ void Program::compass_letters() {
     }
 }
 
-void Program::load_field(FrameServices &, const ProgramObserver &observe) {
+// A new heap block the field load fills (80031bdc at `site`): its bytes are
+// raw heap contents until a record adopts them.
+std::uint32_t Program::load_block(std::uint32_t size, std::uint32_t mode, std::uint32_t site) {
+    auto block = resident::heap_allocate(resident.heap, size, mode, site);
+    if (!block)
+        throw field::FieldFormatError("A field load allocation failed");
+    resident.heap_contents[block->address] = std::move(block->bytes);
+    return block->address;
+}
+
+// A RAM byte through whatever Program state holds it: owned records,
+// heap headers and heap-held bytes, then globals.
+std::uint8_t Program::ram_byte(std::uint32_t address) {
+    address = 0x80000000U | (address & 0x1fffffU);
+    if (const auto bytes = owned_span(address); !bytes.empty())
+        return bytes[0];
+    const auto &heap = resident.heap;
+    if (const auto after = heap.headers.upper_bound(address); after != heap.headers.begin()) {
+        const auto &[at, words] = *std::prev(after);
+        if (address - at < 8)
+            return static_cast<std::uint8_t>(words[(address - at) / 4] >> (8U * (address % 4)));
+    }
+    if (const auto after = heap.held.upper_bound(address); after != heap.held.begin()) {
+        const auto &[at, bytes] = *std::prev(after);
+        if (address - at < bytes.size())
+            return bytes[address - at];
+    }
+    return static_cast<std::uint8_t>(memory(address, 1));
+}
+
+// 8007008c: decode component `index` of the bundle (8005a4e0) into owned
+// memory at `destination` (80032eb4). A stream may read past the bundle's
+// end into the memory after it.
+void Program::decode_component(std::uint32_t index, std::uint32_t destination) {
+    const auto &bundle = resident.preload_block;
+    const auto offset = memory(bundle.address + 0x130 + 4 * index);
+    if (offset >= bundle.bytes.size())
+        throw field::FieldFormatError("A component lies outside the read-ahead bundle");
+    std::vector<std::uint8_t> source(bundle.bytes.begin() + offset, bundle.bytes.end());
+    const auto end = bundle.address + static_cast<std::uint32_t>(bundle.bytes.size());
+    for (std::uint32_t i = 0; i < 0x40; ++i)
+        source.push_back(ram_byte(end + i));
+    const auto decoded = field::decode_packed_block(source, 0x200000);
+    const auto target = owned_span(destination);
+    if (decoded.data.size() > target.size())
+        throw field::FieldFormatError("A decoded component overruns its destination");
+    std::ranges::copy(decoded.data, target.begin());
+}
+
+// 800771f8: load each TIM image of a list into VRAM: OpenTIM (800471b4),
+// then ReadTIM (800471c4, 80047518) until a word other than 10h; the CLUT
+// and pixel rectangles are loaded where they lie.
+void Program::load_tim_images(FrameServices &services, std::uint32_t tim) {
+    auto &gpu = resident.gpu;
+    auto &cursor = gpu.tim_cursor;
+    cursor = tim;
+    for (;;) {
+        auto at = cursor;
+        if (memory(at) != 0x10)
+            return;
+        at += 4;
+        const auto flags = memory(at);
+        at += 4;
+        if (gpu.debug == 2)
+            throw MissingDependency({"load_tim_images", 0x80047570, {}, {}},
+                                    "symbol:printf-80019964", false,
+                                    "libgpu TIM messages are not reconstructed");
+        std::uint32_t clut_rect = 0, clut_words = 0;
+        if ((flags & 8U) != 0) {
+            clut_rect = at + 4;
+            clut_words = memory(at) >> 2U;
+            at += clut_words * 4U;
+        }
+        const auto image_rect = at + 4;
+        cursor += (clut_words + (memory(at) >> 2U) + 2U) * 4U;
+        if (clut_rect != 0)
+            load_image_at(services, clut_rect, clut_rect + 8);
+        load_image_at(services, image_rect, image_rect + 8);
+    }
+}
+
+// 80022a70(data, x, y): load each image of a list side by side from
+// (x, y), 40h apart, through 80022a0c, which runs LoadImage on a stack in a
+// 2000h heap block. `frame` is 80022a70's stack frame (its rectangle at +10).
+void Program::load_images_across(FrameServices &services, std::uint32_t data, std::uint32_t x,
+                                 std::uint32_t y, std::uint32_t frame) {
+    const auto count = memory(data);
+    for (std::uint32_t k = 0; s32_of(k) < s32_of(count); ++k) {
+        const auto entry = data + memory(data + 4 + 4 * k);
+        std::array<std::int16_t, 4> rect{static_cast<std::int16_t>(x + 0x40U * k),
+                                         static_cast<std::int16_t>(y),
+                                         static_cast<std::int16_t>(memory(entry, 2)),
+                                         static_cast<std::int16_t>(memory(entry + 2, 2))};
+        resident.image_upload = {frame + 0x10, entry + 4};
+        const auto stack = load_block(0x2000, 1, 0x80022a1c);
+        resident.switched_stacks.push_back({stack + 0x1f00 - 0x800, 0x804});
+        static_cast<void>(load_image(rect, frame + 0x10, entry + 4, &services));
+        static_cast<void>(release_owned_block(stack, 0x80022a54));
+    }
+}
+
+// 8002c3e8: relocate a model group's offsets to addresses, once (+4 bit 0):
+// each 38h-byte model's four table offsets and its optional list at +2c,
+// whose entries' two offsets are relocated from the last (index +0) down.
+void Program::relocate_model_group(std::uint32_t group) {
+    const auto flags = memory(group + 4);
+    const auto count = memory(group);
+    if ((flags & 1U) != 0)
+        return;
+    set_memory(group + 4, flags | 1U);
+    for (std::uint32_t k = 0; s32_of(k) < s32_of(count); ++k) {
+        const auto model = group + 0x18 + 0x38 * k;
+        for (const auto at : {0U, 8U, 4U, 0xcU})
+            set_memory(model + at, memory(model + at) + group);
+        const auto list = memory(model + 0x14);
+        if (list == 0)
+            continue;
+        set_memory(model + 0x14, list + group);
+        const auto entries = memory(list + group);
+        if (entries == 0xffffffffU)
+            continue;
+        for (auto i = s32_of(entries); i >= 0; --i) {
+            const auto entry = list + group + 4 + 0xcU * static_cast<std::uint32_t>(i);
+            set_memory(entry + 4, memory(entry + 4) + group);
+            set_memory(entry + 8, memory(entry + 8) + group);
+        }
+    }
+}
+
+// 80030a30(index, light): light `index` of the light matrix (80059f64) is
+// the normalized reverse of its direction (80048d68), its colors a column
+// of the color matrix (80059f84), loaded into the GTE.
+void Program::set_field_light(std::uint32_t index, std::uint32_t light) {
+    const field::FieldVector reverse{-s32_of(memory(light)), -s32_of(memory(light + 4)),
+                                     -s32_of(memory(light + 8))};
+    const auto normal = field::normalize_field_vector(reverse, resident.math.reciprocal);
+    for (std::uint32_t i = 0; i < 3; ++i)
+        set_memory(0x80059f64 + 6 * index + 2 * i, static_cast<std::uint16_t>(normal[i]), 2);
+    for (std::uint32_t c = 0; c < 3; ++c)
+        set_memory(0x80059f84 + 6 * c + 2 * index, memory(light + 0xc + 2 * c, 2), 2);
+    for (std::uint32_t k = 0; k < 5; ++k)
+        resident.gte.set_control(16 + k, memory(0x80059f84 + 4 * k));
+}
+
+// 8006fdec(view): the camera matrix (800af990) from the eye, target and up
+// (80073750), the field rotation (800afa54 -> 800afa64) under it, the three
+// lights and background color from the bundle, then the model light matrix
+// (80030b14) under the field rotation.
+void Program::setup_field_view(std::uint32_t view) {
+    auto &gte = resident.gte;
+    const auto matrix = [&](std::uint32_t address) { return memory_matrix(address); };
+    const auto words = [&](std::uint32_t address) {
+        return field::GteLong{s32_of(memory(address)), s32_of(memory(address + 4)),
+                              s32_of(memory(address + 8))};
+    };
+    auto camera = matrix(0x800af990);
+    field::build_view(gte, resident.math.reciprocal, camera, words(0x800af880), words(0x800af890),
+                      words(0x800af8a0));
+    set_memory_matrix(0x800af990, camera);
+    const auto angles = field::GteVector{static_cast<std::int16_t>(memory(0x800afa54, 2)),
+                                         static_cast<std::int16_t>(memory(0x800afa56, 2)),
+                                         static_cast<std::int16_t>(memory(0x800afa58, 2))};
+    auto field_turn =
+        field::rotation_matrix(angles, resident.math.trigonometry, matrix(0x800afa64));
+    set_memory_matrix(0x800afa64, field_turn);
+    gte.transform.r = camera.r; // MulMatrix2 (80049bdc)
+    field::multiply_rotation(camera, field_turn);
+    set_memory_matrix(0x800afa64, field_turn);
+    auto source = view;
+    const auto next_half = [&](std::uint32_t step) {
+        const auto value = memory(source, 2);
+        source += step;
+        return value;
+    };
+    for (std::uint32_t n = 0; n < 3; ++n) {
+        const auto light = 0x800afac8 + 0x14 * n;
+        set_memory(light, u32_of(static_cast<std::int16_t>(next_half(2))));
+        set_memory(light + 4, u32_of(static_cast<std::int16_t>(next_half(2))));
+        set_memory(light + 8, u32_of(static_cast<std::int16_t>(next_half(4))));
+        set_memory(light + 0xc, (next_half(2) << 3U) & 0xffffU, 2);
+        set_memory(light + 0xe, (next_half(2) << 3U) & 0xffffU, 2);
+        set_memory(light + 0x10, (memory(source, 2) << 3U) & 0xffffU, 2);
+        source += 4;
+        if (n == 2)
+            for (const auto copy : {0x800afadcU, 0x800afaf0U})
+                for (std::uint32_t at = 0; at < 0x14; at += 4)
+                    set_memory(copy + at, memory(0x800afac8 + at));
+        set_field_light(n, light);
+    }
+    for (std::uint32_t c = 0; c < 3; ++c)
+        set_memory(0x800afb04 + 2 * c, (memory(source + 2 * c, 2) << 4U) & 0xffffU, 2);
+    gte.transform = matrix(0x800af990); // SetRotMatrix, SetTransMatrix
+    // RotTrans (8004a6dc) of the vector at 800afa5c into 800afa78.
+    const auto moved = field::rot_trans(
+        gte.transform, {static_cast<std::int16_t>(memory(0x800afa5c, 2)),
+                        static_cast<std::int16_t>(memory(0x800afa5e, 2)),
+                        static_cast<std::int16_t>(memory(0x800afa60, 2))});
+    for (std::uint32_t i = 0; i < 3; ++i)
+        set_memory(0x800afa78 + 4 * i, u32_of(moved[i]));
+    // 80030b14: the light matrix under the field rotation.
+    const auto &light_source = resident.sprite_models.light_source;
+    gte.transform.r = light_source.r;
+    auto lit = matrix(0x800afa64);
+    field::multiply_rotation(light_source, lit);
+    for (std::uint32_t k = 0; k < 4; ++k)
+        gte.set_control(8 + k, u32_of(static_cast<std::uint16_t>(lit.r[k * 2])) |
+                                   u32_of(static_cast<std::uint16_t>(lit.r[k * 2 + 1])) << 16U);
+    gte.set_control(12, u32_of(lit.r[8]));
+    gte.transform = matrix(0x800afa64); // SetRotMatrix, SetTransMatrix
+}
+
+void Program::load_field(FrameServices &services, std::uint32_t frame,
+                         const ProgramObserver &observe) {
     reset_field_state();
     observed(observe, *this, {"load_reset", 0x80070d1c, {}, {}});
     // The bundle's first 100h bytes (its header) to 800b1f78.
-    const auto &bundle = resident.preload_block;
-    if (bundle.bytes.size() < 0x100)
+    const auto bundle = resident.preload_block.address;
+    if (resident.preload_block.bytes.size() < 0x100)
         throw field::FieldFormatError("The field load requires the read-ahead map data");
     for (std::uint32_t at = 0; at < 0x100; at += 4)
-        set_memory(0x800b1f78 + at, memory(bundle.address + at));
+        set_memory(0x800b1f78 + at, memory(bundle + at));
     // The compass: 4 x 4 ring quads, five marks, then the letters.
     for (std::uint32_t row = 0; row < 4; ++row)
         for (std::uint32_t column = 0; column < 4; ++column)
@@ -436,8 +653,68 @@ void Program::load_field(FrameServices &, const ProgramObserver &observe) {
         compass_record(0x800b0dbc + 0x70U * (mark - 4), mark, mark, 1);
     compass_letters();
     observed(observe, *this, {"load_compass", 0x80070e88, {}, {}});
-    throw MissingDependency({"load_field", 0x80070e88, {}, {}}, "symbol:field-load-80070cc8",
-                            false, "The field load after its compass is not reconstructed");
+    const auto size = [&](std::uint32_t index) { return memory(bundle + 0x10c + 4 * index); };
+    // Component 0: TIM image lists, loaded into VRAM.
+    const auto images = load_block(size(0) + 0x10, 1, 0x80070ea0);
+    decode_component(0, images);
+    for (std::uint32_t k = 0; s32_of(k) < s32_of(memory(images)); ++k)
+        load_tim_images(services, images + memory(images + 4 + 4 * k));
+    // Component 4: image lists placed at their header entry's position,
+    // unless the entry's +6 is set.
+    const auto placed = load_block(size(4) + 0x10, 0, 0x80070f10);
+    decode_component(4, placed);
+    for (std::uint32_t k = 0; s32_of(k) < s32_of(memory(placed)); ++k)
+        if (memory(0x800b1f7e + 8 * k, 2) == 0)
+            load_images_across(services, placed + memory(placed + 4 + 4 * k),
+                               memory(0x800b1f78 + 8 * k, 2), memory(0x800b1f7a + 8 * k, 2),
+                               frame - 0x38);
+    draw_sync(services);
+    static_cast<void>(release_owned_block(images, 0x80070fa0));
+    static_cast<void>(release_owned_block(placed, 0x80070fa8));
+    observed(observe, *this, {"load_images", 0x80070fb0, {}, {}});
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    // Component 2: the model groups, relocated in place.
+    reload.geometry_address = load_block(size(2) + 0x10, 0, 0x80070fc8);
+    const auto geometry = reload.geometry_address;
+    decode_component(2, geometry);
+    for (std::uint32_t k = 0; s32_of(k) < s32_of(memory(geometry)); ++k)
+        relocate_model_group(geometry + memory(geometry + 4 + 4 * k));
+    // Component 6 at 800658dc.
+    decode_component(6, 0x800658dc);
+    // Component 5: the event package, its actor count and bytecode.
+    reload.events_address = load_block(size(5) + 0x10, 0, 0x80071088);
+    decode_component(5, reload.events_address);
+    reload.event_actors = memory(reload.events_address + 0x80);
+    reload.event_bytecode = reload.events_address + 0x84 + reload.event_actors * 0x40;
+    // Components 8 (trigger zones) and 7 (messages).
+    reload.zones_address = load_block(size(8) + 0x10, 0, 0x800710f0);
+    decode_component(8, reload.zones_address);
+    state.messages_address = load_block(size(7) + 0x10, 0, 0x80071134);
+    decode_component(7, state.messages_address);
+    // Component 1: collision; its layer count, active triangles per layer
+    // and the attribute, triangle and vertex tables.
+    const auto collision = load_block(size(1) + 0x10, 0, 0x80071178);
+    state.collision_address = collision;
+    decode_component(1, collision);
+    state.layer_count = static_cast<std::int16_t>(memory(collision));
+    for (std::uint32_t i = 0; i < 4; ++i)
+        state.triangle_counts[i] = s32_of(memory(collision + 4 + 4 * i) / 14U);
+    set_memory(0x800afb20, collision + memory(collision + 0x14));
+    for (std::uint32_t i = 0; s32_of(i) < state.layer_count; ++i) {
+        set_memory(0x800afb24 + 4 * i, collision + memory(collision + 0x18 + 8 * i));
+        set_memory(0x800afb34 + 4 * i, collision + memory(collision + 0x1c + 8 * i));
+    }
+    set_memory(0x800afd10, u32_of(s32_of(memory(0x800afb24) - memory(0x800afb20)) >> 2));
+    // Component 3: the sprite bundle.
+    state.sprite_bundle_address = load_block(size(3) + 0x10, 0, 0x800712b8);
+    decode_component(3, state.sprite_bundle_address);
+    for (const auto address : {0x800af9dcU, 0x800af9deU, 0x800af9e0U, 0x800af9e2U})
+        set_memory(address, 1, 2);
+    setup_field_view(bundle + 0x154);
+    observed(observe, *this, {"load_components", 0x80071318, {}, {}});
+    throw MissingDependency({"load_field", 0x80071318, {}, {}}, "symbol:field-load-80070cc8",
+                            false, "The field load after its components is not reconstructed");
 }
 
 } // namespace xem::reconstruction

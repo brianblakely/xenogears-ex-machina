@@ -741,6 +741,7 @@ def compare(
     interrupt_changed: set[int] = frozenset(),
     superseded: dict[int, tuple[int, int]] | None = None,
     arrival_stacks: tuple[int, ...] = (),
+    stack_windows: tuple[tuple[int, int], ...] = (),
 ) -> dict:
     """Exact comparison of owned bytes plus attribution of every other change.
 
@@ -762,6 +763,14 @@ def compare(
         (((stack - 1) & 0x1FFFFF) + 1 - STACK_BELOW_ENTRY, ((stack - 1) & 0x1FFFFF) + 1)
         for stack in sorted({sp, *arrival_stacks})
     ]
+    # Stacks the code switched to inside heap blocks (80022a0c): their frames
+    # are transient like the entry stack, and the heap's copy of those bytes
+    # holds whatever the frames left.
+    switched = [(address & 0x1FFFFF, (address & 0x1FFFFF) + size) for address, size in stack_windows]
+    windows += switched
+
+    def switched_stack(offset: int) -> bool:
+        return any(low <= offset < high for low, high in switched)
 
     def stacked(offset: int) -> bool:
         return any(low <= offset < high for low, high in windows)
@@ -777,10 +786,13 @@ def compare(
     # An owned byte that only interrupt code changed belongs to the interrupt
     # when the C++ left it at its entry value; the Program does not run handlers.
     verified = {o for o, (value, _) in superseded.items() if computed.get(o) == value}
+    differing = list(computed.differing(exit))
     mismatches = [
         (offset, value, exit[offset])
-        for offset, value in computed.differing(exit)
-        if not (offset in excused and value == entry[offset]) and offset not in verified
+        for offset, value in differing
+        if not (offset in excused and value == entry[offset])
+        and offset not in verified
+        and not switched_stack(offset)
     ]
     unowned = [
         offset
@@ -813,6 +825,7 @@ def compare(
             for offset, computed_value, original in mismatches[:64]
         ],
         "mismatch_count": len(mismatches),
+        "switched_stack_bytes": len([offset for offset, _ in differing if switched_stack(offset)]),
         "unowned_writes": [hex(0x80000000 + o) for o in unowned[:64]],
         "unowned_count": len(unowned),
         "interrupt_attributed": len([o for o in changed if o in excused]),
@@ -1096,6 +1109,7 @@ def run(args: argparse.Namespace) -> int:
                         for row in item["inputs"]
                         if row["hook"] == args.arrival
                     ),
+                    tuple(tuple(window) for window in output.get("stack_windows", [])),
                 )
                 # Exact GTE control registers at exit. Interrupt handlers are
                 # not modeled; one that changed these registers would surface here.

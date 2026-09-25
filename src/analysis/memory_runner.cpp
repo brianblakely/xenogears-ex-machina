@@ -430,7 +430,7 @@ int run_case(int argc, char **argv) {
             return_value = static_cast<std::uint32_t>(program->field_reload_fade_frame(
                 services, static_cast<std::int32_t>(registers[17]), observer));
         } else if (entry == "field_load") {
-            program->load_field(services, observer); // 80070cc8
+            program->load_field(services, registers[29] - 0xa0, observer); // 80070cc8
         } else if (entry == "field_reload") {
             // From the reload's entry 800a5c40: its frame is SP - 48h.
             program->field_reload(services, registers[29] - 0x48, observer);
@@ -933,6 +933,13 @@ int run_case(int argc, char **argv) {
     std::cout << "],\"owned\":[" << owned << "],\"hardware_writes\":[";
     if (program && executing)
         std::cout << hardware_writes(*program, 0);
+    // Stack windows the code ran on inside heap blocks: callee frames.
+    std::cout << "],\"stack_windows\":[";
+    if (program)
+        for (std::size_t i = 0; i < program->resident.switched_stacks.size(); ++i) {
+            const auto &[address, size] = program->resident.switched_stacks[i];
+            std::cout << (i ? "," : "") << '[' << address << ',' << size << ']';
+        }
     std::cout << "],\"frames\":[" << frames.str() << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
 }

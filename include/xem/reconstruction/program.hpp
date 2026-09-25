@@ -163,6 +163,7 @@ struct GpuState {
     resident::HeapBlock readback;
     std::array<std::uint8_t, 0x14> move_packet{}; // 80056978: MoveImage's packet
     std::uint32_t reset_mask{}; // 800569e4: interrupt mask saved by _reset (80046c58)
+    std::uint32_t tim_cursor{}; // 8005a37c: the next TIM of OpenTIM/ReadTIM
 };
 
 // Interrupt environment of the dispatcher 8004b9b4 and its handlers.
@@ -457,6 +458,14 @@ struct ResidentState {
     std::uint32_t w_59394{};
     std::uint32_t w_593a0{};
     PartySpriteLoad party_sprite_load;
+    // 80059f84: the GTE light color matrix (LR1..LB3) 80030a30 builds, with
+    // the halfword after it.
+    std::array<std::uint16_t, 10> light_colors{};
+    // 80022a0c's rectangle and pixels (800592f0, 800592f4).
+    std::array<std::uint32_t, 2> image_upload{};
+    // Stack windows code ran on inside heap blocks (80022a0c): address and
+    // size. Their bytes are callee frames, like the stack below an entry.
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> switched_stacks;
     // Bytes of allocated heap blocks that no other Program value interprets,
     // by address; a field teardown releases them with their blocks.
     std::map<std::uint32_t, std::vector<std::uint8_t>> heap_contents;
@@ -487,6 +496,14 @@ struct ReloadState {
     std::uint32_t zones_address{};
     std::uint32_t events_address{};
     std::uint32_t geometry_address{};
+    std::uint32_t event_bytecode{}; // 800adc00: the events' bytecode
+    // Collision tables of the loaded component 1: attributes (800afb20),
+    // triangles (800afb24) and vertices (800afb34) per layer, and the
+    // attribute table's words (800afd10).
+    std::uint32_t collision_attributes{};
+    std::array<std::uint32_t, 4> collision_triangles{};
+    std::array<std::uint32_t, 4> collision_vertices{};
+    std::uint32_t attribute_words{};
     std::uint32_t w_adb24{}; // 800adb24: the distortion buffers 800b20b4..800b20c0 are held
 };
 
@@ -863,7 +880,9 @@ class Program {
     void field_reload(FrameServices &services, std::uint32_t frame,
                       const ProgramObserver &observe = {});
     // Field 80070cc8: load the map data read ahead (8005a4e0) as the field.
-    void load_field(FrameServices &services, const ProgramObserver &observe = {});
+    // `frame` is its stack frame (its entry SP - a0h).
+    void load_field(FrameServices &services, std::uint32_t frame,
+                    const ProgramObserver &observe = {});
     // Battle 80085ccc: commit and resolve an action.
     void commit_battle_action(std::uint32_t attacker, std::uint32_t targets,
                               std::uint32_t animation);
@@ -1113,6 +1132,15 @@ class Program {
     void compass_record(std::uint32_t record, std::uint32_t column, std::uint32_t row,
                         std::uint32_t style); // 8007a7f4
     void compass_letters();                   // 8007a5c4
+    std::uint32_t load_block(std::uint32_t size, std::uint32_t mode, std::uint32_t site);
+    [[nodiscard]] std::uint8_t ram_byte(std::uint32_t address);
+    void decode_component(std::uint32_t index, std::uint32_t destination); // 8007008c
+    void load_tim_images(FrameServices &services, std::uint32_t tim);     // 800771f8
+    void load_images_across(FrameServices &services, std::uint32_t data, std::uint32_t x,
+                            std::uint32_t y, std::uint32_t frame); // 80022a70
+    void relocate_model_group(std::uint32_t group);                   // 8002c3e8
+    void set_field_light(std::uint32_t index, std::uint32_t light);   // 80030a30
+    void setup_field_view(std::uint32_t view);                        // 8006fdec
     void reset_graph(std::uint32_t mode);         // 80044110 ResetGraph
     void destroy_sprite_tasks();                  // 8001c8dc
     void flush_sprite_uploads(FrameServices &services); // 80025044
