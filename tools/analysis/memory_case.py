@@ -1352,10 +1352,65 @@ ARRIVAL_POINTS = {
     "sequence-voices": 0x8003B424,
     "sequence-start": 0x80039A80,
     "loop-tail": 0x80077DB4,
+    # The field reload 800a5c40 between frames. Its stages and VSync(0)
+    # waits deliver the arrivals since the previous one of them
+    # (Program::deliver_stage_arrivals, Program::vertical_sync); its fade-in
+    # frames, the code after it and the frames' own steps as above.
+    **{
+        hook: 0x8004B674
+        for hook in (
+            "reload-entry",
+            "t-a",
+            "t-b",
+            "t-c",
+            "t-d",
+            "t-e",
+            "r-case",
+            "r-5884",
+            "r-b044",
+            "r-b3a8",
+            "l-entry",
+            "l-a",
+            "l-b",
+            "l-c",
+            "l-d",
+            "l-e",
+            "l-f",
+            "l-g",
+            "l-h",
+            "l-i",
+            "l-j",
+            "l-k",
+            "l-l",
+            "l-m",
+            "l-n",
+            "l-exit",
+            "r-loader",
+            "r-stream",
+            "x-a",
+        )
+    },
+    "r-fadein": 0x80077DB4,
+    "reload-exit": 0x80077DB4,
 }
-# Hardware reads the code between frames consumes: ClearOTagR's DMA6 busy
-# polls. The frame's own results come from its services.
-LOOP_READS = (0x80045DE4, 0x80045E18)
+# VSync(0) (8004b674) after its wait: inside a field frame the frame's own
+# VSync(0) step (as vsync0-return); elsewhere, like a reload stage.
+VSYNC0_WAIT = "vsync0-wait"
+VSYNC0_POINTS = (0x8007554C, 0x8004B674)
+# Hardware reads code outside interrupts consumes: ClearOTagR's DMA6 busy
+# polls and the libgpu queue runner's (8004696c) DMA2 busy and GPU ready
+# polls when a DrawSync or a request runs queued requests. A frame's other
+# results come from its services.
+LOOP_READS = (
+    0x80045DE4,
+    0x80045E18,
+    0x80046980,
+    0x800469C8,
+    0x80046A2C,
+    0x80046A44,
+    0x80046B90,
+    0x80046BDC,
+)
 # The SPU control register read that starts an SPU DMA write (8004cd8c).
 # Outside interrupt code it is also a position: arrivals recorded before it
 # precede it (Program::spu_transfer delivers them first).
@@ -1390,18 +1445,25 @@ def loop_inputs(
     )
     dma3 = u32(ram, 0x800567B4) - IO_BASE
     idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000
-    lines, pending, block, last = [], [], None, None
+    lines, pending, block, last, point = [], [], None, None, None
     counts = collections.Counter()
     sectors, stacks = [], set()
+    in_frame = False
     for row in merged:
         hook = row["hook"]
-        if hook in ARRIVAL_POINTS:
+        if hook in ARRIVAL_POINTS or hook == VSYNC0_WAIT:
             require(block is None, "A position hook inside interrupt code")
             lines += [line for item in pending for line in item]
             pending, last = [], hook
+            if hook == "frame-entry":
+                in_frame = True
+            elif hook == "frame-exit":
+                in_frame = False
+            point = (
+                VSYNC0_POINTS[0 if in_frame else 1] if hook == VSYNC0_WAIT else ARRIVAL_POINTS[hook]
+            )
         elif hook in ("dispatch-entry", "tick-entry"):
             require(block is None and last is not None, "Arrival outside the chain's positions")
-            point = ARRIVAL_POINTS[last]
             stacks.add(visible_registers(row)[29])
             if hook == "tick-entry":
                 block = [f"tick {point:x} {visible_registers(row)[2]:x}"]
@@ -1420,6 +1482,18 @@ def loop_inputs(
         elif hook == SECTOR_HOOK:
             require(block is not None, "Sector delivered outside interrupt code")
             sectors.append(header_sector(row))
+        elif block is not None and hook == "queue-busy":
+            # libgpu's enqueue inside interrupt code: its DMA2 busy load
+            # (8004674c), masked by the hooked instruction.
+            block.append(f"read 8004674c {visible_registers(row)[2]:08x}")
+        elif block is not None and hook == "dws-return":
+            # LoadImage's GPUSTAT wait inside interrupt code: the recorded
+            # alarm poll count is the number of polls after the first.
+            polls = struct.unpack("<2I", bytes.fromhex(row["ranges"][0]["hex"]))[1]
+            first, again, ready = 0x8004618C, 0x800461C0, 0x04000000
+            reads = [(first, ready)] if polls == 0 else [(first, 0)]
+            reads += [(again, 0)] * max(polls - 1, 0) + ([(again, ready)] if polls else [])
+            block += [f"read {site:08x} {value:08x}" for site, value in reads]
         elif hook.startswith(LOAD_PREFIX):
             site = int(hook[len(LOAD_PREFIX) :], 16)
             require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
@@ -1430,6 +1504,10 @@ def loop_inputs(
                 block.append(f"read {site:08x} {value:08x}")
                 counts["interrupt_reads"] += 1
             elif site in LOOP_READS:
+                # Interrupts recorded before a read outside interrupt code
+                # precede it (Program::deliver_due_arrivals).
+                lines += [line for item in pending for line in item]
+                pending = []
                 lines.append(f"read {site:08x} {value:08x}")
                 counts["loop_reads"] += 1
             elif site in SPU_TRANSFER_READS:
@@ -1447,20 +1525,63 @@ def loop_inputs(
     return lines, dict(counts), sectors, stacks
 
 
+def chain_services(
+    rows: list[dict], exits: list[dict], inside, interrupts: tuple[tuple[str, str], ...]
+) -> tuple[list[str], collections.Counter]:
+    """Service results of a chain, in order: each field frame's, the VSync(1)
+    of each 80077dac (vsync1-loop) and everything code between main-loop
+    frames consumed (the field reload's), outside interrupt code. A "frame"
+    line follows each main-loop frame's exit except the last. ClearOTagR's
+    alarms read VSync(-1) themselves (otc_alarms)."""
+    starts = {entry for entry, _ in interrupts}
+    ends = {exit for _, exit in interrupts}
+    ordered = sorted(
+        (row for row in rows if inside(row)),
+        key=lambda row: (
+            (row["cycle_u32"] - rows[0]["cycle_u32"]) % (1 << 32),
+            row["subcycle_u32"],
+        ),
+    )
+    clears = otc_alarms(ordered, ordered[0], ordered[-1], interrupts) if ordered else set()
+    separators = {row["cycle_u32"] for row in exits[:-1]}
+    lines, counts, depth = [], collections.Counter(), 0
+    for row in ordered:
+        hook = row["hook"]
+        if (item := vram_line(row)) is not None:
+            lines.append(item)
+        elif hook in starts:
+            depth += 1
+        elif hook in ends:
+            depth -= 1
+        elif depth == 0:
+            item = f"hblank {visible_registers(row)[2]:x}" if hook == "vsync1-loop" else None
+            if item is None and row["event"] not in clears:
+                item = service_line(row)
+            if item is not None:
+                lines.append(item)
+            if hook == "frame-exit" and row["cycle_u32"] in separators:
+                lines.append("frame")
+    for line in lines:
+        counts[line.split()[0]] += 1
+    return lines, counts
+
+
 def run_frames(args: argparse.Namespace) -> int:
     """Consecutive field main-loop iterations from one imported frame entry.
 
     The image capture (--capture) holds frame-entry and frame-exit snapshots
-    plus the frame-step, dispatch and tick hooks; --services the frames'
-    service results; --platform the loop hooks, arrivals and hardware reads.
-    All three record one execution. Every frame boundary is compared exactly;
-    nothing observed enters the run except the declared platform inputs.
+    plus the frame-step, dispatch and tick hooks; --services the service
+    results; --platform the loop hooks, arrivals and hardware reads. All
+    three record one execution and default to the image capture. Code
+    between main-loop frames (a map change's reload with its own frames)
+    runs inside the chain. Every main-loop frame boundary is compared
+    exactly; nothing observed enters the run except the declared platform
+    inputs and service results.
     """
     capture = args.capture
-    require(
-        args.entry == "field_frame" and args.platform and args.services,
-        "Multi-frame runs are field_frame chains with --platform and --services",
-    )
+    args.platform = args.platform or capture
+    args.services = args.services or capture
+    require(args.entry == "field_frame", "Multi-frame runs are field_frame chains")
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
     for path in (capture, args.platform, args.services):
         trace = json.loads((path / "observation.json").read_text())["instruction_trace"]
@@ -1474,25 +1595,23 @@ def run_frames(args: argparse.Namespace) -> int:
         )
     calls = pairs(capture, "frame-entry", "frame-exit")
     image_rows = trace_rows(capture)
-    loop_rows = trace_rows(args.platform)
-    services = frame_services(args.services, "frame-entry", "frame-exit", ())
+    loop_rows = image_rows if args.platform == capture else trace_rows(args.platform)
+    service_rows = image_rows if args.services == capture else trace_rows(args.services)
     positions = {hook for hook in ARRIVAL_POINTS if hook not in ("frame-entry", "frame-exit")}
+    positions.add(VSYNC0_WAIT)
     # A main-loop iteration's frame returns to 800782e4. Frames other code
-    # calls (the entry fade-in 80078d44 returns to 80079178) split chains.
-    selected = calls[args.start : args.start + args.limit]
+    # between them calls (the reload's fade-in) run inside the chain.
+    main = [call for call in calls if visible_registers(call[0])[31] == MAIN_LOOP_RETURN]
     callers = collections.Counter(
         hex(visible_registers(entry)[31])
-        for entry, *_ in selected
+        for entry, *_ in calls
         if visible_registers(entry)[31] != MAIN_LOOP_RETURN
     )
-    runs, chains, results = [[]], [], []
-    for call in selected:
-        if visible_registers(call[0])[31] == MAIN_LOOP_RETURN:
-            runs[-1].append(call)
-        elif runs[-1]:
-            runs.append([])
-    for run in runs:
-        chains += [run[i : i + args.frames] for i in range(0, len(run), args.frames)]
+    selected = main[args.start : args.start + args.limit]
+    chains, results = (
+        [selected[i : i + args.frames] for i in range(0, len(selected), args.frames)],
+        [],
+    )
     loaded_sources: dict[int, Sources] = {}
     with (
         tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
@@ -1513,7 +1632,11 @@ def run_frames(args: argparse.Namespace) -> int:
                 ) <= (end - start) % (1 << 32)
 
             chain_loop = [row for row in loop_rows if inside(row)]
-            chain_image = [row for row in image_rows if inside(row) and row["hook"] in positions]
+            chain_image = (
+                []
+                if loop_rows is image_rows
+                else [row for row in image_rows if inside(row) and row["hook"] in positions]
+            )
             pads = {
                 row["cycle_u32"]: snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)]
                 for row in image_rows
@@ -1522,22 +1645,13 @@ def run_frames(args: argparse.Namespace) -> int:
             platform, counts, sectors, stacks = loop_inputs(
                 chain_image, chain_loop, pads, entry, io
             )
-            # Services: each frame's results; before each later frame, the
-            # VSync(1) of 80077dac.
-            loop_vsyncs = [
-                visible_registers(row)[2] for row in chain_loop if row["hook"] == "vsync1-loop"
-            ]
-            lines, service_counts = [], collections.Counter()
-            for k, (frame_entry, _, _, _) in enumerate(chain):
-                key = frame_entry["snapshot"]["ram_sha256"]
-                require(key in services, "No service results recorded for a chain frame")
-                if k:
-                    require(len(loop_vsyncs) >= k, "No VSync(1) recorded between frames")
-                    lines += ["frame", f"hblank {loop_vsyncs[k - 1]:x}"]
-                    service_counts["hblank"] += 1
-                for _, line in services[key][1]:
-                    lines.append(line)
-                    service_counts[line.split()[0]] += 1
+            lines, service_counts = chain_services(
+                service_rows,
+                [exit for _, exit, _, _ in chain],
+                inside,
+                (("dispatch-entry", "dispatch-exit"), ("tick-entry", "tick-exit")),
+            )
+            service_counts["frame"] = 0
             map_id = image_map(entry) if args.map is None else args.map
             if map_id not in loaded_sources:
                 loaded_sources[map_id] = Sources(args.raw, map_id, args.field_slot)
@@ -1579,7 +1693,14 @@ def run_frames(args: argparse.Namespace) -> int:
             for (kind, row), output in zip(boundaries, outputs, strict=False):
                 require(output["boundary"] == kind, "Runner boundaries out of order")
                 image = snapshots.read(row)[0]
-                result = compare(entry, image, output["owned"], sp, arrival_stacks=tuple(stacks))
+                result = compare(
+                    entry,
+                    image,
+                    output["owned"],
+                    sp,
+                    arrival_stacks=tuple(stacks),
+                    stack_windows=tuple(tuple(window) for window in output["stack_windows"]),
+                )
                 if output["gte"] != gte_words(row):
                     result["gte_mismatch"] = {"computed": output["gte"], "original": gte_words(row)}
                     result["mismatch_count"] += 1

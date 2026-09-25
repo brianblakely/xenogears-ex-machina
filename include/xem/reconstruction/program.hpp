@@ -162,8 +162,9 @@ struct GpuState {
     std::array<std::uint8_t, 0x44> packet{};   // 8005a238: packet built by _clr
     std::array<std::uint8_t, 0x100> control{}; // 8005a27c: last GP1 value per command
     std::vector<GpuCommand> commands;          // In program order
-    // The last StoreImage's words, until its caller stores them.
-    resident::HeapBlock readback;
+    // Platform input: the VRAM words each StoreImage transfer (_drs
+    // 800462dc) delivers, in transfer order, however the queue runs it.
+    std::deque<std::vector<std::uint8_t>> vram_reads;
     std::array<std::uint8_t, 0x14> move_packet{}; // 80056978: MoveImage's packet
     std::uint32_t reset_mask{}; // 800569e4: interrupt mask saved by _reset (80046c58)
     std::uint32_t tim_cursor{}; // 8005a37c: the next TIM of OpenTIM/ReadTIM
@@ -320,8 +321,6 @@ struct FrameServices {
     std::deque<std::uint32_t> interrupt_masks;
     // GPU information reads (GP1 10h, then GPUREAD) by libgpu _param (80046638).
     std::deque<std::uint32_t> gpu_info;
-    // StoreImage (_drs 800462dc): the VRAM words each read-back delivers.
-    std::deque<std::vector<std::uint8_t>> vram_reads;
 };
 
 // A platform result the host did not supply: invalid input, not a game result.
@@ -806,6 +805,9 @@ class Program {
     // pending interrupt the dispatcher enables, until none is pending.
     // Asynchronous register reads come from resident.platform.
     void interrupt_dispatch();
+    // The end of a field reload or load stage, or a VSync(0) outside a
+    // frame: the arrivals recorded since the previous one (site 8004b674).
+    void deliver_stage_arrivals() { deliver_arrivals(0x8004b674); }
     // Deliver the interrupt arrivals at the front of the platform input: a
     // host ending an imported call whose remaining arrivals all came before
     // its return.
@@ -964,6 +966,11 @@ class Program {
     // Platform services of the call now running events (the field load's
     // initialization); event instructions that reach libgpu use them.
     FrameServices *event_services_{};
+    // Interrupt handlers now running (host bookkeeping, not original RAM).
+    std::uint32_t interrupt_depth_{};
+    // Outside interrupt code, the arrivals recorded before the next
+    // hardware read: code that polls hardware observes them first.
+    void deliver_due_arrivals();
     // Field frame steps (field_frame.cpp).
     void frame_emitters(std::uint32_t listener);                                    // 80086590
     void frame_fade();                                                              // 80071cb4
@@ -1080,6 +1087,7 @@ class Program {
     std::uint32_t file_size(std::int32_t file);                          // Resident 80028738
     std::uint32_t read_size(std::int32_t file);                          // Resident 80028808
     std::uint32_t file_bytes(std::int32_t file);                         // Resident 800288ec
+    std::uint32_t allocate_disc_ring(std::uint32_t blocks, std::uint32_t mode); // Resident 8002a260
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
@@ -1141,20 +1149,24 @@ class Program {
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
     void draw_sync(FrameServices &services);                                            // 800445d0
     // Reload steps (field_reload.cpp).
-    void party_record(std::uint32_t slot);       // 8009fee4
-    void vertical_sync(FrameServices &services); // VSync(0) (8004b54c)
-    // StoreImage (800448f8) into owned bytes at `destination`.
+    void party_record(std::uint32_t slot); // 8009fee4
+    // VSync(0) (8004b54c), then the arrivals since the previous stage.
+    void vertical_sync(FrameServices &services);
+    // StoreImage (800448f8) into owned bytes at `destination`, now or when
+    // the request queue runs it.
     void store_image(FrameServices &services, std::array<std::int16_t, 4> &rect,
-                     std::uint32_t address, std::uint32_t destination,
-                     std::span<std::uint8_t> bytes);
+                     std::uint32_t address, std::uint32_t destination);
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
                     std::int32_t x, std::int32_t y);                       // 8004495c
     void field_teardown(FrameServices &services);                          // 800700b0
     void reload_transition_setup();                                        // 800a663c(1, 1)
     void reload_present(FrameServices &services);                          // 800a6924
     void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
-    void prepare_party_sprites();                                          // 8001b044
-    void decode_party_sprites();                                           // 8001b3a8
+    void start_field_stream();                                             // 80070488
+    // 80078c5c; `frame` is its stack frame (its entry SP - 20h).
+    void brighten_text_strip(FrameServices &services, std::uint32_t frame);
+    void prepare_party_sprites(); // 8001b044
+    void decode_party_sprites();  // 8001b3a8
     // Field load steps (field_load.cpp).
     void store_original(std::uint32_t address, std::uint32_t value, std::size_t width);
     void identity_matrix(std::uint32_t address);                                   // 80070594
@@ -1185,6 +1197,9 @@ class Program {
     std::vector<std::uint8_t> take_contents(std::uint32_t address, std::uint32_t size);
     void adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes);
     void init_field_events(const ProgramObserver &observe); // 800a28d4 (no return)
+    void finish_field_load(const ProgramObserver &observe); // 80071770..80071a5c
+    void prepare_model_instances();                         // 80073e38
+    void place_party_at_leader();                           // 80077268
     // Event initialization and actor setup (field_init.cpp).
     void create_actor_sprite(std::size_t index,
                              const field::FieldSpriteArguments &arguments); // 80076ac0

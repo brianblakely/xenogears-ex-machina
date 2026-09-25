@@ -174,25 +174,18 @@ void Program::vertical_sync(FrameServices &services) {
     services.vblank_waits.pop_front();
     resident.vsync_hcount = wait[0];
     resident.vsync_previous = wait[1];
+    deliver_stage_arrivals();
 }
 
 void Program::store_image(FrameServices &services, std::array<std::int16_t, 4> &rect,
-                          std::uint32_t address, std::uint32_t destination,
-                          std::span<std::uint8_t> bytes) {
+                          std::uint32_t address, std::uint32_t destination) {
     auto &gpu = resident.gpu;
     gpu_check_rect();
     if (gpu.services != 0x80056888 || gpu.functions[2] != 0x8004668c ||
         gpu.functions[7] != 0x800462dc)
         throw MissingDependency({"gpu_services", 0x80044930, {}, {}}, "symbol:gpu-services", false,
                                 "Only the observed libgpu StoreImage service is recovered");
-    gpu.readback = {};
     static_cast<void>(gpu_enqueue(0x800462dc, address, &rect, 8, destination, &services));
-    if (gpu.readback.address != destination || gpu.readback.bytes.size() > bytes.size())
-        throw MissingDependency({"gpu_store_image", 0x800462dc, {}, {}},
-                                "symbol:libgpu-queued-call", false,
-                                "A queued StoreImage is not recovered");
-    std::ranges::copy(gpu.readback.bytes, bytes.begin());
-    gpu.readback = {};
 }
 
 // MoveImage (8004495c): the VRAM copy packet at 80056978 (source corner,
@@ -225,6 +218,7 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
     auto &reload = state.reload;
     auto &heap = resident.heap;
     const auto done = [&](std::string_view operation, std::uint32_t address) {
+        deliver_stage_arrivals();
         observed(observe, *this, {operation, address, {}, {}}, true);
     };
     const auto release = [&](resident::HeapBlock &block, std::uint32_t site) {
@@ -283,8 +277,7 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
             reload.vram_save_address = reload.vram_save.address;
             reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
             auto rect = reload.vram_rect;
-            store_image(services, rect, 0x800afc28, reload.vram_save.address,
-                        reload.vram_save.bytes);
+            store_image(services, rect, 0x800afc28, reload.vram_save.address);
             reload.vram_rect = rect;
             draw_sync(services);
         }
@@ -863,19 +856,17 @@ void Program::reload_screen_fade(FrameServices &services, std::uint32_t frame) {
         const auto rect_address = frame - 0x20U - 0x30U + 0x10U;
         std::array<std::int16_t, 4> rect{static_cast<std::int16_t>(0x2c0 + 0x40 * i), 0x100, 0x40,
                                          0xe0};
-        auto block = resident::heap_allocate(resident.heap, 0xe0U << 7U, 1, 0x800a57a0);
-        if (!block)
-            throw field::FieldFormatError("The screen column allocation failed");
-        store_image(services, rect, rect_address, block->address, block->bytes);
+        const auto block = load_block(0xe0U << 7U, 1, 0x800a57a0);
+        store_image(services, rect, rect_address, block);
         draw_sync(services);
+        auto &pixels = resident.heap_contents.at(block);
         for (std::uint32_t at = 0; at < (0xe0U << 5U) * 4U; at += 4) {
-            block->bytes[at + 1] |= 0x80;
-            block->bytes[at + 3] |= 0x80;
+            pixels[at + 1] |= 0x80;
+            pixels[at + 3] |= 0x80;
         }
-        static_cast<void>(load_image(rect, rect_address, block->address, &services));
+        static_cast<void>(load_image(rect, rect_address, block, &services));
         draw_sync(services);
-        if (resident::heap_release(resident.heap, *block, 0x800a5864) != 0)
-            throw field::FieldFormatError("The screen column block was not released");
+        static_cast<void>(release_owned_block(block, 0x800a5864));
     }
     show();
 }
@@ -916,11 +907,60 @@ void Program::decode_party_sprites() {
                                 "Decoding read-ahead party sprites is not recovered");
 }
 
+// 80070488: start streaming the map's image file (map * 2 + b9 of the
+// selected directory 4) into a four-block ring, once.
+void Program::start_field_stream() {
+    auto &reload = loaded(*this).reload;
+    if (reload.stream_pending != 0)
+        return;
+    reload.stream_pending = 1;
+    reload.stream_ring = allocate_disc_ring(4, 1);
+    static_cast<void>(
+        read_stream(s32(((resident.field_map & 0xfffU) << 1U) + 0xb9U), reload.stream_ring, 0, {}));
+}
+
+// 80078c5c: with 800b2344 set, the 100h x 20h VRAM strip at (0, 1e0) gets
+// 0c63 added to each nonzero pixel's bits (a StoreImage, LoadImage round
+// trip through a 4000h block).
+void Program::brighten_text_strip(FrameServices &services, std::uint32_t frame) {
+    auto &state = loaded(*this);
+    if (state.control_inputs.jump_mode == 0)
+        return;
+    set_memory(0x800b24b2, 0, 1);
+    set_memory(0x800ba5a6, 0, 1);
+    const auto block = load_block(0x4000, 0, 0x80078c88);
+    std::array<std::int16_t, 4> rect{0, 0x1e0, 0x100, 0x20};
+    const auto rect_address = frame + 0x10;
+    store_image(services, rect, rect_address, block);
+    draw_sync(services);
+    auto &bytes = resident.heap_contents.at(block);
+    for (std::uint32_t at = 0; at < 0x4000; at += 4) {
+        auto pixels = static_cast<std::uint32_t>(bytes[at]) |
+                      static_cast<std::uint32_t>(bytes[at + 1]) << 8U |
+                      static_cast<std::uint32_t>(bytes[at + 2]) << 16U |
+                      static_cast<std::uint32_t>(bytes[at + 3]) << 24U;
+        if ((pixels & 0xffffU) != 0)
+            pixels |= 0xc63U;
+        if ((pixels & 0xffff0000U) != 0)
+            pixels |= 0x0c630000U;
+        for (std::uint32_t i = 0; i < 4; ++i)
+            bytes[at + i] = static_cast<std::uint8_t>(pixels >> (8U * i));
+    }
+    static_cast<void>(load_image(rect, rect_address, block, &services));
+    draw_sync(services);
+    static_cast<void>(release_owned_block(block, 0x80078d28));
+}
+
 void Program::field_reload(FrameServices &services, std::uint32_t frame,
                            const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
     const auto done = [&](std::string_view operation, std::uint32_t address) {
+        deliver_stage_arrivals();
         observed(observe, *this, {operation, address, {}, {}}, true);
     };
+    // Arrivals since the last frame's exit precede the reload.
+    deliver_arrivals(0x80077db4);
     field_reload_teardown(services, observe);
     reload_screen_fade(services, frame);
     done("reload_screen_fade", 0x800a602c);
@@ -928,7 +968,39 @@ void Program::field_reload(FrameServices &services, std::uint32_t frame,
     done("reload_party_sprites", 0x800a6034);
     decode_party_sprites();
     done("reload_party_decode", 0x800a603c);
+    // The reload type and fade length survive the load's reset.
+    const auto kept_mode = state.background_mode;
+    const auto kept_fade = reload.fade_frames;
     load_field(services, frame - 0xa0, observe); // 80070cc8
+    done("reload_load", 0x800a6054);
+    start_field_stream(); // 80070488
+    done("reload_stream", 0x800a605c);
+    if (reload.stream_pending == 1) {
+        // Show the transition quads, zooming in, until the stream is read.
+        for (;;) {
+            if (disc_busy() == 0)
+                break;
+            swap_draw_buffer();
+            reload_transition_draw();
+            reload_present(services);
+            if (reload.zoom < 0x22c0)
+                reload.zoom += 0x20;
+        }
+        release_music_buffer(reload.stream_ring, 0x800a60c8);
+        reload.stream_pending = 0;
+        brighten_text_strip(services, frame - 0x20); // 80078c5c
+    }
+    state.dialogue_gate_afd04 = 1;
+    state.background_mode = kept_mode;
+    reload.fade_frames = kept_fade;
+    if (s32(resident.music.gate) == -1)
+        load_music(resident.music.requested); // 80085b20
+    done("reload_resume", 0x800a6120);
+    field_reload_fade_in(services, observe);
+    deliver_arrivals(0x80077db4); // Since the last fade frame's exit.
+    done("reload_fade_in", 0x800a63a0);
+    field_reload_finish(services, frame);
+    done("reload", 0x800a6400);
 }
 
 void add_reload_globals(std::vector<OriginalGlobal> &table) {

@@ -278,8 +278,10 @@ int run_case(int argc, char **argv) {
         std::ranges::copy(io, program->resident.io.begin());
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
-        // A field teardown releases whole heap blocks: own all their bytes.
-        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load")
+        // A field teardown releases whole heap blocks: own all their bytes
+        // (main-loop chains may reach one through a map change).
+        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load" ||
+            entry == "field_frames")
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
@@ -322,7 +324,7 @@ int run_case(int argc, char **argv) {
                     std::string text;
                     if (!(fields >> text) || text.size() != std::size_t{first} * 8U)
                         throw InputError("Malformed VRAM read-back");
-                    services.vram_reads.push_back(unhex(text));
+                    program->resident.gpu.vram_reads.push_back(unhex(text));
                 } else
                     throw InputError("Unknown service result " + name);
             }
@@ -364,7 +366,12 @@ int run_case(int argc, char **argv) {
                 frames << (frames.tellp() > 0 ? "," : "") << "{\"boundary\":" << quote(boundary)
                        << ",\"gte\":[" << gte_controls(*program) << "],\"owned\":["
                        << owned_ranges(*program) << "],\"hardware_writes\":["
-                       << hardware_writes(*program, written) << "]}";
+                       << hardware_writes(*program, written) << "],\"stack_windows\":[";
+                const auto &stacks = program->resident.switched_stacks;
+                for (std::size_t i = 0; i < stacks.size(); ++i)
+                    frames << (i ? "," : "") << '[' << stacks[i].first << ',' << stacks[i].second
+                           << ']';
+                frames << "]}";
             };
             for (std::size_t k = 0; k < sections.size(); ++k) {
                 auto written = program->resident.hardware_writes.size();

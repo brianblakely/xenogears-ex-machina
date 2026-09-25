@@ -137,9 +137,8 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
         return (control & busy) != 0;
     };
     if (gpu.queued == 0 || (gpu.head == gpu.tail && !dma_busy() && gpu.sync_callback == 0)) {
-        if (services == nullptr)
-            while ((platform_read(resident.platform, 0x80046780, 4) & ready) == 0) {
-            }
+        // The GPUSTAT wait (80046780) has no recorded result; the GPU is
+        // taken as ready at once.
         static_cast<void>(gpu_operation(operation, parameter, rect, argument, services));
         gpu.current = {operation, parameter, argument};
         io_write(mask_register, gpu.enqueue_mask, 2);
@@ -175,6 +174,7 @@ void Program::gpu_wait_ready(std::uint32_t first, std::uint32_t again) {
 std::uint32_t Program::gpu_execute() {
     auto &gpu = resident.gpu;
     const auto chcr = [&](std::uint32_t site) {
+        deliver_due_arrivals();
         return (platform_read(resident.platform, site, 4) & busy) != 0;
     };
     if (chcr(0x80046980))
@@ -251,20 +251,23 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
         return -1;
     const bool load = operation == load_op;
     if (!load) {
-        // StoreImage (_drs) reads VRAM back through GPUREAD and DMA2: the
-        // words are a platform input, stored by the caller that owns the
-        // destination. Its GPUSTAT waits have no recorded result; the GPU is
-        // taken as ready at once, leaving the alarm's poll count.
-        if (services == nullptr || services->vram_reads.empty())
+        // StoreImage (_drs) reads VRAM back through GPUREAD and DMA2 into the
+        // owned destination; the words are a platform input. Its GPUSTAT
+        // waits have no recorded result; the GPU is taken as ready at once,
+        // leaving the alarm's poll count.
+        if (gpu.vram_reads.empty())
             throw MissingDependency({"gpu_store_image", 0x800464d8, {}, {}},
                                     "platform:vram-readback", false,
                                     "VRAM read-back data is not a recorded platform input");
-        auto data = std::move(services->vram_reads.front());
-        services->vram_reads.pop_front();
+        auto data = std::move(gpu.vram_reads.front());
+        gpu.vram_reads.pop_front();
         if (data.size() != static_cast<std::size_t>(words) * 4U)
             throw field::FieldFormatError("VRAM read-back size differs from its rectangle");
+        const auto destination = owned_span(argument);
+        if (destination.size() < data.size())
+            throw field::FieldFormatError("A VRAM read-back's destination is not owned");
+        std::ranges::copy(data, destination.begin());
         gpu.commands.push_back({GpuCommand::Kind::store_image, r, argument, 0});
-        gpu.readback = {argument, std::move(data)};
         return 0;
     }
     // Wait for GPUSTAT bit 26, polling the alarm.
@@ -459,9 +462,15 @@ void Program::draw_sync(FrameServices &services) {
     if (gpu.debug >= 2)
         gpu_print(0x800445f0);
     gpu_alarm(&services);
-    if (gpu.head != gpu.tail)
-        throw MissingDependency({"draw_sync", 0x80046dd4, {}, {}}, "symbol:libgpu-queued-call",
-                                false, "Draining queued libgpu calls is not recovered");
+    // 80046dd4: run queued requests until the queue empties; each pass
+    // polls the alarm (80046f30), whose count the recorded result covers.
+    // Interrupts that arrived before the next pass (a DMA completion runs
+    // the queue too) come first.
+    while (gpu.head != gpu.tail) {
+        deliver_due_arrivals();
+        if (gpu.head != gpu.tail)
+            static_cast<void>(gpu_execute());
+    }
     gpu.polls = take_service(services.alarm_polls, "DrawSync alarm polls");
 }
 

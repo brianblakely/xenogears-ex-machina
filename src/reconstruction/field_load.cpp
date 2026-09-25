@@ -4,6 +4,7 @@
 // addresses name correlations only; owned records are Program state.
 #include "xem/reconstruction/field_actor.hpp"
 #include "xem/reconstruction/field_gte.hpp"
+#include "xem/reconstruction/field_motion.hpp"
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
 #include "xem/reconstruction/field_view.hpp"
@@ -26,6 +27,13 @@ std::uint32_t u32_of(std::int32_t value) { return std::bit_cast<std::uint32_t>(v
 void observed(const ProgramObserver &observe, const Program &program, SourcePoint point) {
     if (observe)
         observe(program, point, true);
+}
+// A completed load stage: the arrivals since the previous one, then the
+// observer.
+void stage(Program &program, const ProgramObserver &observe, std::string_view operation,
+           std::uint32_t address) {
+    program.deliver_stage_arrivals();
+    observed(observe, program, {operation, address, {}, {}});
 }
 // Constant stores of the field reset 800705dc, in program order.
 struct Store {
@@ -1015,8 +1023,9 @@ void Program::init_field_events(const ProgramObserver &observe) {
 
 void Program::load_field(FrameServices &services, std::uint32_t frame,
                          const ProgramObserver &observe) {
+    deliver_stage_arrivals();
     reset_field_state();
-    observed(observe, *this, {"load_reset", 0x80070d1c, {}, {}});
+    stage(*this, observe, "load_reset", 0x80070d1c);
     // The bundle's first 100h bytes (its header) to 800b1f78.
     const auto bundle = resident.preload_block.address;
     if (resident.preload_block.bytes.size() < 0x100)
@@ -1030,7 +1039,7 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     for (std::uint32_t mark = 4; mark < 9; ++mark)
         compass_record(0x800b0dbc + 0x70U * (mark - 4), mark, mark, 1);
     compass_letters();
-    observed(observe, *this, {"load_compass", 0x80070e88, {}, {}});
+    stage(*this, observe, "load_compass", 0x80070e88);
     std::array<std::uint32_t, 9> sizes{};
     for (std::uint32_t i = 0; i < 9; ++i)
         sizes[i] = memory(bundle + 0x10c + 4 * i);
@@ -1052,7 +1061,7 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     draw_sync(services);
     static_cast<void>(release_owned_block(images, 0x80070fa0));
     static_cast<void>(release_owned_block(placed, 0x80070fa8));
-    observed(observe, *this, {"load_images", 0x80070fb0, {}, {}});
+    stage(*this, observe, "load_images", 0x80070fb0);
     auto &state = loaded(*this);
     auto &reload = state.reload;
     // Component 2: the model groups, relocated in place.
@@ -1095,18 +1104,18 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     for (const auto address : {0x800af9dcU, 0x800af9deU, 0x800af9e0U, 0x800af9e2U})
         set_memory(address, 1, 2);
     setup_field_view(bundle + 0x154);
-    observed(observe, *this, {"load_components", 0x80071318, {}, {}});
+    stage(*this, observe, "load_components", 0x80071318);
     load_descriptors();
-    observed(observe, *this, {"load_descriptors", 0x800715a0, {}, {}});
+    stage(*this, observe, "load_descriptors", 0x800715a0);
     if (state.event_control.diagnostic_suppression == 0)
         throw MissingDependency({"load_field", 0x800715b4, {}, {}}, "symbol:field-debug-802812a4",
                                 false, "The diagnostic overlay call 802812a4 is not recovered");
     init_dialogue(); // 8007decc
-    observed(observe, *this, {"load_dialogue", 0x800715c4, {}, {}});
+    stage(*this, observe, "load_dialogue", 0x800715c4);
     // 80071a64: both fade channels' tiles (8007d93c).
     for (auto &channel : state.fade.channels)
         field::prepare_fade_channel(channel);
-    observed(observe, *this, {"load_fades", 0x800715cc, {}, {}});
+    stage(*this, observe, "load_fades", 0x800715cc);
     // The bundle is no longer needed: keep cleared, released.
     auto &heap = resident.heap;
     auto &preload = resident.preload_block;
@@ -1137,7 +1146,7 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     tasks.primary_count = 0;
     tasks.auxiliary_count = 0;
     tasks.wait_count = 0;
-    observed(observe, *this, {"load_sprite_system", 0x8007160c, {}, {}});
+    stage(*this, observe, "load_sprite_system", 0x8007160c);
     heap.tag = 8; // 80032498(8, 0)
     heap.tag_words[8] = 0;
     heap.quiet = 0;
@@ -1150,17 +1159,193 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     }
     for (const auto &store : resets_d)
         store_original(store.address, store.value, store.width);
-    observed(observe, *this, {"load_view_reset", 0x80071768, {}, {}});
+    stage(*this, observe, "load_view_reset", 0x80071768);
     adopt_loaded_field(sizes);
     struct Lend {
         FrameServices *&slot;
         ~Lend() { slot = nullptr; }
     } lend{event_services_ = &services};
     init_field_events(observe); // 800a28d4
-    observed(observe, *this, {"load_events", 0x80071770, {}, {}});
+    stage(*this, observe, "load_events", 0x80071770);
+    finish_field_load(observe);
+}
+
+// 80073e38: each model instance's bounding centre and radius (800aa9dc: the
+// model's box +20..+2c) and its drawing mode (+12) from its descriptor flags.
+void Program::prepare_model_instances() {
+    auto &state = loaded(*this);
+    const auto table = state.reload.descriptor_table;
+    for (std::uint32_t i = 0; s32_of(i) < s32_of(state.descriptor_count); ++i) {
+        const auto descriptor = table + 0x5c * i;
+        const auto flags = memory(descriptor + 0x58, 2);
+        if ((flags & 0x40U) != 0)
+            continue;
+        const auto instance = memory(descriptor);
+        const auto model = memory(instance + 4);
+        const auto half = [&](std::uint32_t at) {
+            return static_cast<std::int32_t>(static_cast<std::int16_t>(memory(model + at, 2)));
+        };
+        const auto low_x = half(0x20), low_y = half(0x22), low_z = half(0x24);
+        const auto dx = half(0x28) - low_x, dy = half(0x2a) - low_y, dz = half(0x2c) - low_z;
+        auto extent = dx < dy ? dy : dx;
+        if (extent < dz)
+            extent = dz;
+        set_memory(instance + 0x18, u32_of(dx / 2 + low_x) & 0xffffU, 2);
+        set_memory(instance + 0x1a, u32_of(dy / 2 + low_y) & 0xffffU, 2);
+        set_memory(instance + 0x1c, u32_of(dz / 2 + low_z) & 0xffffU, 2);
+        set_memory(instance + 0x20, u32_of(extent * 2 + 1) & 0xffffU, 2);
+        std::uint32_t mode = 0;
+        if (state.sprite_gate != 0)
+            mode = (flags & 0x10U) != 0 ? 5 : 4;
+        else if ((flags & 0xcU) != 0)
+            mode = 1;
+        else if ((flags & 0x4000U) != 0)
+            mode = 3;
+        else if ((flags & 0x10U) != 0)
+            mode = 2;
+        set_memory(instance + 0x12, mode, 2);
+    }
+}
+
+// 80077268: the party at the controlled actor: its position pass (80084a40),
+// then each other party member's (slot 1, 2) with the leader's sprite
+// position and descriptor origin, and 32 history records.
+void Program::place_party_at_leader() {
+    auto &state = loaded(*this);
+    // 80084a40's fifth argument is a stack word 80077268 never stores: the
+    // return address 80077ab4's prologue (under 80077c60) saved there.
+    constexpr std::uint32_t stale_link_status = 0x80077c78;
+    const auto leader = static_cast<std::size_t>(state.controlled_actor);
+    const auto height = [&](std::size_t index) {
+        return static_cast<std::int32_t>(
+            static_cast<std::int16_t>(memory(state.actors.at(index).address + 0x26, 2)));
+    };
+    static_cast<void>(field_position(leader, height(leader), stale_link_status));
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        auto &actor = state.actors[i];
+        const auto flags = memory(actor.descriptor_address + 0x58, 2);
+        if ((flags & 0xf80U) != 0x200U)
+            continue;
+        const auto character = static_cast<std::int16_t>(memory(actor.address + 0xe4, 2));
+        std::int32_t slot = -1; // 8009fa00
+        if (character != 0xff)
+            for (std::int32_t k = 0; k < 3; ++k) {
+                const auto present = state.party_characters[static_cast<std::size_t>(k)];
+                if (present == 0xff)
+                    break;
+                if (present == character) {
+                    slot = k;
+                    break;
+                }
+            }
+        if (slot <= 0)
+            continue;
+        static_cast<void>(field_position(i, height(i), stale_link_status));
+        const auto &from = state.actors.at(static_cast<std::size_t>(state.controlled_actor));
+        auto &sprite = actor.sprite.sprite.bytes;
+        const auto &source = from.sprite.sprite.bytes;
+        if (sprite.size() < 0xc || source.size() < 0xc)
+            throw field::FieldFormatError("Placing the party needs the members' sprites");
+        std::copy_n(source.begin(), 0xc, sprite.begin());
+        for (const std::uint32_t at : {0x20U, 0x24U, 0x28U})
+            set_memory(actor.descriptor_address + at, memory(from.descriptor_address + at));
+    }
+    state.history_indices = {0, 0, 0};
+    for (std::uint32_t n = 0; n < 32; ++n)
+        field_history(static_cast<std::size_t>(state.controlled_actor));
+}
+
+// 80071770..80071a5c: after the events: the sprite view, the camera target
+// at the followed actor, each descriptor's rotation, the model instances,
+// the party at its leader, the model-table join and each placed actor's
+// sprite orientation.
+void Program::finish_field_load(const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
     state.event_control.post_initialization = 1;
-    throw MissingDependency({"load_field", 0x80071770, {}, {}}, "symbol:field-load-80070cc8", false,
-                            "The field load after its events is not reconstructed");
+    // 8003f738 into 800afc30; its translation is cleared.
+    state.sprite_view = field::rotation_matrix(state.sprite_view_angles, resident.math.trigonometry,
+                                               state.sprite_view);
+    state.sprite_view.t = {0, 0, 0};
+    if (state.h_b00b2 != 0)
+        throw MissingDependency({"finish_field_load", 0x80071828, {}, {}}, "symbol:field-8002709c",
+                                false, "The 800b0080 object (8002709c) is not recovered");
+    auto &heap = resident.heap;
+    heap.tag = 8; // 80032498(8, 0)
+    heap.tag_words[8] = 0;
+    heap.quiet = 0;
+    const auto followed = reload.descriptor_table + 0x5cU * state.followed_actor;
+    for (std::uint32_t axis = 0; axis < 3; ++axis)
+        set_memory(0x800af8c0 + 4 * axis, memory(followed + 0x20 + 4 * axis) << 16U);
+    // Each descriptor's rotation (8003f738 of +50 into +0c); the matrix and
+    // position are copied to +2c.
+    for (std::uint32_t i = 0; s32_of(i) < s32_of(state.descriptor_count); ++i) {
+        const auto descriptor = reload.descriptor_table + 0x5c * i;
+        const auto angles =
+            field::GteVector{static_cast<std::int16_t>(memory(descriptor + 0x50, 2)),
+                             static_cast<std::int16_t>(memory(descriptor + 0x52, 2)),
+                             static_cast<std::int16_t>(memory(descriptor + 0x54, 2))};
+        const auto m = field::rotation_matrix(angles, resident.math.trigonometry);
+        for (std::uint32_t k = 0; k < 9; ++k)
+            set_memory(descriptor + 0xc + 2 * k, static_cast<std::uint16_t>(m.r[k]), 2);
+        for (std::uint32_t at = 0; at < 0x20; at += 4)
+            set_memory(descriptor + 0x2c + at, memory(descriptor + 0xc + at));
+    }
+    stage(*this, observe, "load_rotations", 0x8007193c);
+    // 80077c60: 80077884 and 80077ab4 act only with the 801e7fd4 module.
+    if (state.w_b2264 != 0)
+        throw MissingDependency({"finish_field_load", 0x80077884, {}, {}}, "symbol:field-801e7fd4",
+                                false, "The 801e7fd4 module's resources are not recovered");
+    stage(*this, observe, "load_module", 0x80071944);
+    // 800a2714 acts only on a return.
+    if (resident.w_4f30c != 0)
+        throw MissingDependency({"finish_field_load", 0x800a2734, {}, {}},
+                                "symbol:field-return-800a2714", false,
+                                "The return's actor data reload is not connected here");
+    stage(*this, observe, "load_return_data", 0x8007194c);
+    resident.preload_slot = 0xffffffffU;
+    resident.preload_id = 0xffffffffU;
+    prepare_model_instances(); // 80073e38
+    stage(*this, observe, "load_models", 0x80071968);
+    place_party_at_leader(); // 80077268
+    stage(*this, observe, "load_party", 0x80071970);
+    // 8007469c: the second model table is joined when a placed descriptor
+    // has flag 8000.
+    std::uint32_t join = 1;
+    if (state.h_b00b2 == 0) {
+        join = 0;
+        for (std::uint32_t i = 0; s32_of(i) < s32_of(state.descriptor_count); ++i) {
+            const auto flags = memory(reload.descriptor_table + 0x5c * i + 0x58, 2);
+            if ((flags & 0x40U) == 0 && (flags & 0x8000U) != 0) {
+                join = 1;
+                break;
+            }
+        }
+    }
+    state.w_adb4c = join;
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        auto &actor = state.actors[i];
+        if ((memory(actor.descriptor_address + 0x58, 2) & 0x40U) == 0)
+            continue;
+        const auto facing = memory(actor.address + 0x108, 2);
+        if ((memory(actor.address + 4) & 0x1000000U) == 0) {
+            const auto angle = static_cast<std::int16_t>(memory(0x800af98e, 2) + facing);
+            sprite_call(i, [&](field::SpriteWindow sprite, const field::SpriteSources &sources) {
+                field::select_sprite_orientation(sprite, angle, resident.sprite, sources);
+            });
+        } else {
+            // 80021fe0: store the angle, then 80022974 rebuilds velocity.
+            auto &bytes = actor.sprite.sprite.bytes;
+            if (bytes.size() < 0x34)
+                throw field::FieldFormatError("Sprite velocity requires the descriptor sprite");
+            bytes[0x32] = static_cast<std::uint8_t>(facing);
+            bytes[0x33] = static_cast<std::uint8_t>(facing >> 8U);
+            static_cast<void>(field::rebuild_sprite_velocity(
+                {actor.sprite.sprite.address, actor.sprite.sprite.bytes},
+                resident.math.trigonometry));
+        }
+    }
+    stage(*this, observe, "load_field", 0x80071a5c);
 }
 
 } // namespace xem::reconstruction

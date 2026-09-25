@@ -123,7 +123,15 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
             if (const auto bytes = array(actor.descriptor_address, actor.descriptor);
                 !bytes.empty())
                 return bytes;
+            if (const auto bytes = from(actor.sprite.parts.address, actor.sprite.parts.bytes);
+                !bytes.empty())
+                return bytes;
         }
+    // Descriptors of the map pieces after the event actors'.
+    if (field)
+        for (const auto &piece : field->pieces)
+            if (const auto bytes = array(piece.address, piece.descriptor); !bytes.empty())
+                return bytes;
     for (const auto &node : resident.sprite_tasks.nodes)
         if (const auto bytes = from(node.address, node.bytes); !bytes.empty())
             return bytes;

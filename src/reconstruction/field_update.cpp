@@ -249,31 +249,10 @@ void Program::select_animation(std::size_t index, std::int32_t animation) {
 void Program::sprite_call(
     std::size_t index,
     const std::function<void(field::SpriteWindow, const field::SpriteSources &)> &call) {
-    auto &state = *field;
-    auto &actor = state.actors.at(index);
-    std::vector<field::SpriteResource> resources;
-    for (const auto &item : state.resources)
-        resources.push_back({item.address, item.bytes});
-    std::vector<field::SpriteResource> frames;
-    for (const auto &item : state.frame_list)
-        frames.push_back({item.address, item.bytes});
-    for (const auto &owned : state.actors)
-        if (!owned.sprite.sprite.bytes.empty())
-            frames.push_back({owned.sprite.sprite.address, owned.sprite.sprite.bytes});
-    field::SpriteSources sources{};
-    sources.resources = resources;
-    sources.frame_list = frames;
-    sources.trigonometry = resident.math.trigonometry;
-    sources.replay_widths = state.replay_widths;
-    std::vector<field::SpriteWindow> mutable_resources;
-    for (auto &resource : state.resources)
-        mutable_resources.push_back({resource.address, resource.bytes});
-    sources.mutable_resources = mutable_resources;
-    sources.tasks = &resident.sprite_tasks;
-    sources.models = &resident.sprite_models;
-    sources.heap = &resident.sprite_heap;
-    sources.allocator = &resident.heap;
-    call({actor.sprite.sprite.address, actor.sprite.sprite.bytes}, sources);
+    auto &actor = field->actors.at(index);
+    with_sprite_sources([&](const field::SpriteSources &sources) {
+        call({actor.sprite.sprite.address, actor.sprite.sprite.bytes}, sources);
+    });
 }
 
 // Field 80082bb8.

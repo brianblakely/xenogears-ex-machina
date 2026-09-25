@@ -95,6 +95,11 @@ bool Program::deliver_interrupt() {
         return false;
     const auto arrival = inputs.front();
     inputs.pop_front();
+    struct Inside {
+        std::uint32_t &depth;
+        explicit Inside(std::uint32_t &value) : depth(++value) {}
+        ~Inside() { --depth; }
+    } inside{interrupt_depth_};
     if (arrival.kind == Kind::tick) {
         static_cast<void>(sound_tick(arrival.value));
         return true;
@@ -109,6 +114,12 @@ bool Program::deliver_interrupt() {
     }
     interrupt_dispatch();
     return true;
+}
+
+void Program::deliver_due_arrivals() {
+    if (interrupt_depth_ == 0)
+        while (deliver_interrupt()) {
+        }
 }
 
 void Program::deliver_pending_arrivals() {
@@ -157,6 +168,30 @@ std::int32_t Program::read_file(std::int32_t file, std::uint32_t destination, st
     const auto rounded = s32(u32(size) + 3U);
     read.size = u32((rounded >= 0 ? rounded : s32(u32(size) + 6U)) >> 2) << 2U;
     return read_setup(u32(file), destination, offset, mode);
+}
+
+// Resident 8002a260: allocate count * 808 + 24 bytes, store the count,
+// then select (80028a94) and reset (80028aac) the ring. The header is the
+// ring the disc reads fill; the payload after it holds the chunks.
+std::uint32_t Program::allocate_disc_ring(std::uint32_t blocks, std::uint32_t mode) {
+    if (s32(blocks) < 1)
+        return 0;
+    auto block = resident::heap_allocate(resident.heap, blocks * 0x808U + 0x24U, mode, 0x8002a284);
+    if (!block)
+        return 0;
+    auto &read = resident.disc_read;
+    if (!read.ring.bytes.empty())
+        throw MissingDependency({"disc_ring", 0x8002a29c, {}, {}}, "state:disc-ring-replacement",
+                                false, "Replacing a Program-owned disc ring is not connected");
+    for (std::uint32_t i = 0; i < 4; ++i)
+        block->bytes.at(i) = static_cast<std::uint8_t>(blocks >> (8U * i));
+    const auto header = static_cast<std::ptrdiff_t>(blocks * 8U + 0x24U);
+    read.ring = {block->address, {block->bytes.begin(), block->bytes.begin() + header}};
+    read.ring_payload = {block->address + static_cast<std::uint32_t>(header),
+                         {block->bytes.begin() + header, block->bytes.end()}};
+    static_cast<void>(field::select_disc_stream_ring(resident.disc_stream, block->address));
+    static_cast<void>(field::reset_disc_stream_ring(resident.disc_stream, read.ring.bytes));
+    return block->address;
 }
 
 // Resident 800288ec: the file's byte size rounded up to words, as a signed

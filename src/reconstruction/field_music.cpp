@@ -28,12 +28,6 @@ std::string hex(std::uint32_t value) {
     throw MissingDependency({"music_call", address, {}, {}}, "symbol:music-call-" + hex(address),
                             false, "This music call is not reconstructed");
 }
-void put(std::span<std::uint8_t> data, std::size_t offset, std::uint32_t value) {
-    if (offset + 4 > data.size())
-        throw field::FieldFormatError("Music block write exceeds owned storage");
-    for (std::size_t i = 0; i < 4; ++i)
-        data[offset + i] = static_cast<std::uint8_t>(value >> (8U * i));
-}
 constexpr std::uint32_t chunk_callback = 0x800859dc;
 } // namespace
 
@@ -50,25 +44,7 @@ class Program::Music final : public field::MusicCalls {
     // then select (80028a94) and reset (80028aac) the ring. The header is
     // the ring the disc reads fill; the payload after it holds the chunks.
     field::MusicResource allocate_stream_buffer(std::uint32_t blocks, std::uint32_t mode) override {
-        auto &state = program.resident;
-        if (static_cast<std::int32_t>(blocks) < 1)
-            return 0;
-        auto block = resident::heap_allocate(state.heap, blocks * 0x808U + 0x24U, mode, 0x8002a284);
-        if (!block)
-            return 0;
-        auto &read = state.disc_read;
-        if (!read.ring.bytes.empty())
-            throw MissingDependency({"music_stream_ring", 0x8002a29c, {}, {}},
-                                    "state:disc-ring-replacement", false,
-                                    "Replacing a Program-owned disc ring is not connected");
-        put(block->bytes, 0, blocks);
-        const auto header = static_cast<std::ptrdiff_t>(blocks * 8U + 0x24U);
-        read.ring = {block->address, {block->bytes.begin(), block->bytes.begin() + header}};
-        read.ring_payload = {block->address + static_cast<std::uint32_t>(header),
-                             {block->bytes.begin() + header, block->bytes.end()}};
-        static_cast<void>(field::select_disc_stream_ring(state.disc_stream, block->address));
-        static_cast<void>(field::reset_disc_stream_ring(state.disc_stream, read.ring.bytes));
-        return block->address;
+        return program.allocate_disc_ring(blocks, mode);
     }
     // Resident 80028b14 and 8002945c on the owned ring header. A stream
     // step (800854d0) starts with 80028b14: arrivals recorded since the poll

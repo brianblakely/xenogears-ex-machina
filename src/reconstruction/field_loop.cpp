@@ -80,6 +80,7 @@ void Program::clear_ordering_table(std::uint32_t table, std::uint32_t count) {
     set_memory(table, 0x00ffffffU);
     gpu_alarm(nullptr);
     constexpr std::uint32_t busy = 0x01000000U;
+    deliver_due_arrivals();
     if ((platform_read(resident.platform, 0x80045de4, 4) & busy) != 0)
         do {
             // 80046f30: the timeout prints and resets the GPU.
