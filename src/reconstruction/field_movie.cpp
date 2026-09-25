@@ -56,6 +56,8 @@ void request_movie(FieldWorld &world, MovieState &movie, std::uint32_t field_act
     set_pc(world, pc(world) + 9);
 }
 
+// 8008e9f8 (extended 61): wait on the prefix until the player has started
+// the requested movie (800adb7c), then clear that flag and move on.
 void wait_movie_started(FieldWorld &world, std::uint32_t &started) {
     world.control.break_requested = 1;
     if (started == 0) {

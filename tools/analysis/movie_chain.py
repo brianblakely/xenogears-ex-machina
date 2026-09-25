@@ -344,6 +344,35 @@ def services_of(rows: list[dict], snapshots: SnapshotReader) -> tuple[list[str],
     return lines, dict(counts)
 
 
+RING_SLOTS, RING_COUNT, WRITE_SLOT = 0x801E8A14, 0x801E8A18, 0x801E89F8
+
+
+def drive_after_ring(ram: bytes, raw: Path) -> int:
+    """The drive's next sector at an import inside a stream: the sector
+    after the one whose STR header fills the ring slot written last (bytes
+    2-27: the slot state replaces 0-1 and the handler 28-31), found on the
+    disc."""
+    count = u32(ram, RING_COUNT)
+    index = (u32(ram, WRITE_SLOT) - 1) % count
+    at = (u32(ram, RING_SLOTS) & 0x1FFFFF) + 32 * index
+    require(int.from_bytes(ram[at : at + 2], "little") != 0, "The last ring slot is empty")
+    header = ram[at + 2 : at + 28]
+    found = []
+    chunk = 4096 * 2352
+    with raw.open("rb") as disc:
+        base = 0
+        while block := disc.read(chunk + 2352):
+            start = 0
+            while (hit := block.find(header, start)) >= 0:
+                if hit % 2352 == 26 and hit < chunk:
+                    found.append((base + hit) // 2352)
+                start = hit + 1
+            base += chunk
+            disc.seek(base)
+    require(len(found) == 1, f"The ring's last header matches {len(found)} disc sectors")
+    return found[0] + 1
+
+
 def stopped_transfer_lines(rows: list[dict], snapshots: SnapshotReader) -> list[str]:
     """The slice buffers after the chain's last library stop (801d4318),
     read at the first snapshot after it: an MDEC output transfer that the
@@ -442,6 +471,11 @@ def main() -> int:
     ])[0]
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
     platform, counts, sectors = platform_lines(chain_rows, entry, io, library)
+    if args.from_end:
+        # Inside the stream the drive's position is the ring's, not a
+        # recorded Setloc's.
+        platform = [line for line in platform if not line.startswith("drive ")]
+        platform.insert(0, f"drive {drive_after_ring(entry, args.raw)}")
     stopped = stopped_transfer_lines(chain_rows, snapshots)
     platform += stopped
     counts["stopped_transfer_buffers"] = len(stopped)
@@ -496,13 +530,18 @@ def main() -> int:
         visible_registers(row)[29] for row in chain_rows if row["hook"] == "dispatch-entry"
     )
     sp = registers[29]
+    # Imported inside the player (800a80b4), its own frame (28h bytes from
+    # SP) holds locals the recovered code keeps as values: transient.
+    player_frame = ((sp, 0x28),) if args.from_end else ()
     compared, divergence = [], None
     slices = slice_records(rows)
     for (kind, index), output in zip(boundaries, outputs, strict=False):
         row = rows[index]
         require(output["boundary"] == kind, f"Runner boundary {output['boundary']} is not {kind}")
         image, in_flight = without_in_flight_slice(rows, slices, index, snapshots.read(row)[0])
-        result = compare(entry, image, output["owned"], sp, arrival_stacks=stacks)
+        result = compare(
+            entry, image, output["owned"], sp, arrival_stacks=stacks, stack_windows=player_frame
+        )
         result["mdec_in_flight_bytes"] = in_flight
         if output["gte"] != gte_words(row):
             result["gte_mismatch"] = True
@@ -555,6 +594,7 @@ def main() -> int:
         "exclusions": {
             "stack_below_entry_sp": STACK_BELOW_ENTRY,
             "stack_below_arrival_sp": STACK_BELOW_ENTRY,
+            "player_frame_from_sp": [hex(sp), 0x28] if args.from_end else None,
             "bios_save_areas_and_pad_buffers": [[hex(a), hex(b)] for a, b in KERNEL_SAVE],
             "scratchpad": "not compared",
         },

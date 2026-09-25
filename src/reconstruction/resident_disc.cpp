@@ -180,7 +180,7 @@ std::int32_t Program::cd_command_wait(std::array<std::uint8_t, 8> *result) {
     return cd.sync_status == 5 ? -1 : 0;
 }
 
-// 80041dbc CdReady(1, result) as a data callback calls it: one pass that
+// 80040f94 / 80041dbc CdReady(1, result) as a data callback calls it: one pass that
 // serves the controller when polling, then takes a pending end (8005678a)
 // or data (80056789) status with its response; 0 when neither is pending.
 std::uint32_t Program::cd_ready(std::array<std::uint8_t, 8> &result) {

@@ -61,6 +61,8 @@ constexpr std::uint32_t request = 0x8004fe44;
 constexpr std::uint32_t frame_callback = 0x800768d8;
 } // namespace
 
+// 800737ec: load the library, set up the display, play the request's movie
+// (800763bc), release the library and select the next mode.
 void Program::movie_mode(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
                          const ProgramObserver &observe) {
     deliver_arrivals(0x80073834);
