@@ -440,6 +440,15 @@ struct ResidentState {
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
+    // Battle setup files (8001bbac, 800379d8): the formation data the scene
+    // file holds (8005949c), the setup archive (directory 12 file 3,
+    // 800595a8), the effect header (file 2, 800595d0) and the two blocks that
+    // place the setup module at 801e4000 (80059480, 800594ac).
+    std::uint32_t battle_scene{};   // 8005949c
+    std::uint32_t battle_archive{}; // 800595a8
+    std::uint32_t battle_effects{}; // 800595d0
+    std::uint32_t battle_marker{};  // 80059480
+    std::uint32_t battle_spacer{};  // 800594ac
     // Field main loop (field_loop.cpp) globals whose meaning is not recovered.
     std::uint32_t w_4f2f4{}; // 8004f2f4: cleared by 800a31e8
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
@@ -924,6 +933,9 @@ class Program {
     // A battle step over battle memory with the resident game data and rand
     // state (the turn procedure's steps in battle.hpp).
     void run_battle(const std::function<void(battle::Battle &)> &step);
+    // Setup module 801e5840: one phase of the setup the intro swirl 800b7870
+    // runs (battle.hpp): 1 participants and formation, 2 items and turns.
+    void setup_battle_phase(std::uint32_t phase);
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.

@@ -853,6 +853,20 @@ Program import_battle(const OriginalMemory &memory) {
     // The enemy data file holding the enemy AI scripts (pointer 800c3dd0, set
     // by aux4 801e4958).
     static_cast<void>(own_block(memory.word(0x800c3dd0)));
+    // Battle setup: the formation record 80070f40 selects, the field's
+    // formation table it selects from and the party ids 801e4048 publishes
+    // (resident bytes only battle code addresses), the setup module at
+    // 801e4000 and its files: the formation data (8005949c), the archive
+    // (800595a8) and the effect header (800595d0).
+    for (const auto [address, size] :
+         {std::pair{reconstruction::battle::formation_record, 0x20U},
+          std::pair{reconstruction::battle::formation_table,
+                    reconstruction::battle::formation_table_bytes},
+          std::pair{reconstruction::battle::battle_party_ids, 3U}})
+        battle.regions.emplace(address, copy_of(memory.range(address, size)));
+    static_cast<void>(own_block(reconstruction::battle::setup_module_base));
+    for (const auto pointer : {0x8005949cU, 0x800595a8U, 0x800595d0U})
+        static_cast<void>(own_block(memory.word(pointer)));
     // The battle scene's formation data (pointer 800d3364, copied from
     // resident 8005949c): positions and the slot-relation table at +140.
     static_cast<void>(own_block(memory.word(0x800d3364)));

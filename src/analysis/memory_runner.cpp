@@ -166,6 +166,7 @@ int run_case(int argc, char **argv) {
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
                                   entry == "battle_atb" || entry == "battle_reload" ||
                                   entry == "battle_ai" || entry == "battle_results_step" ||
+                                  entry == "battle_setup_phase" ||
                                   entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
@@ -592,6 +593,8 @@ int run_case(int argc, char **argv) {
                 else
                     throw InputError("Unsupported turn step");
             });
+        } else if (entry == "battle_setup_phase") {
+            program->setup_battle_phase(registers[4]); // 801e5840: A0 phase
         } else if (entry == "battle_atb") {
             program->tick_battle_timers(); // 8007171c
         } else if (entry == "battle_reload") {

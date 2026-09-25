@@ -75,6 +75,7 @@ RESIDENT_ENTRIES = (
     "battle_reward_totals",
     "battle_drops",
     "battle_results_step",
+    "battle_setup_phase",
     "battle_atb",
     "battle_reload",
     "disc_read_file",

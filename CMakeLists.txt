@@ -46,6 +46,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/battle_results.cpp
   src/reconstruction/battle_rewards.cpp
   src/reconstruction/battle_rules.cpp
+  src/reconstruction/battle_setup.cpp
   src/reconstruction/battle_steps.cpp
   src/reconstruction/battle_turns.cpp
   src/reconstruction/menu_equipment.cpp

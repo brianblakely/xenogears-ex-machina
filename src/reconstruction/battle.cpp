@@ -2,6 +2,8 @@
 
 #include "xem/reconstruction/field_actor.hpp"
 
+#include <format>
+
 namespace xem::reconstruction::battle {
 namespace {
 
@@ -207,7 +209,7 @@ std::uint8_t *byte_at(std::map<std::uint32_t, std::vector<std::uint8_t>> &region
         if (address - found->first + std::uint64_t{size} <= found->second.size())
             return found->second.data() + (address - found->first);
     }
-    throw BattleError("Battle code reaches memory outside its owned regions");
+    throw BattleError(std::format("Battle code reaches memory outside its owned regions at {:08x}", address));
 }
 
 } // namespace
