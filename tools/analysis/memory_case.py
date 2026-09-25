@@ -128,7 +128,17 @@ RESIDENT_ENTRIES = (
     "sequence_start",
 )
 # Field entries besides the update and move phases.
-FIELD_ENTRIES = ("field_event_extended", "movie_decision", "music_poll", "music_chunk")
+FIELD_ENTRIES = (
+    "field_event_extended",
+    "movie_decision",
+    "music_poll",
+    "music_chunk",
+    "field_battle_start",
+    "field_battle_leave",
+    "field_teardown",
+    "field_battle_release",
+    "field_battle_exit",
+)
 # The field reload 800a5c40 and the steps around each field frame. Their
 # platform results are the service records inside the call (see
 # `call_services`).

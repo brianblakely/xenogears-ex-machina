@@ -807,6 +807,14 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.mode_loaded; });
     add_resident("field_exit_5942c", 0x8005942c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5942c; });
+    add_resident("battle_entry_flag", 0x80059179, 1,
+                 [](Program &p) -> auto & { return p.resident.b_59179; });
+    add_resident("field_effect_bank", 0x8006259c, 4,
+                 [](Program &p) -> auto & { return p.resident.field_effect_bank; });
+    add_resident("w_4f32c", 0x8004f32c, 4, [](Program &p) -> auto & { return p.resident.w_4f32c; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("party_sprite_blocks", 0x8005a414 + 4 * i, 4,
+                     [i](Program &p) -> auto & { return p.resident.party_sprite_blocks[i]; });
     add_resident("field_exit_4f30c", 0x8004f30c, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f30c; });
     add_resident("field_exit_4f310", 0x8004f310, 4,
@@ -911,6 +919,8 @@ std::vector<OriginalGlobal> build() {
     // Field main loop between frames (field_loop.cpp).
     add("transition", 0x800adb38, 4, [](Program &p) -> auto & { return f(p).transition; });
     add("w_adbd0", 0x800adbd0, 4, [](Program &p) -> auto & { return f(p).w_adbd0; });
+    add("saved_music", 0x800afc78, 4, [](Program &p) -> auto & { return f(p).saved_music; });
+    add("w_adb30", 0x800adb30, 4, [](Program &p) -> auto & { return f(p).w_adb30; });
     add("gate_adbd8", 0x800adbd8, 4, [](Program &p) -> auto & { return f(p).gate_adbd8; });
     add("gate_adbe8", 0x800adbe8, 4, [](Program &p) -> auto & { return f(p).gate_adbe8; });
     add("input_mask", 0x800b217a, 2, [](Program &p) -> auto & { return f(p).input_mask; });

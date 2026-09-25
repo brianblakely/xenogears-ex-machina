@@ -202,6 +202,7 @@ src/reconstruction/disc_read.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
+src/reconstruction/field_battle_exit.cpp
 src/reconstruction/field_characters.cpp
 src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp

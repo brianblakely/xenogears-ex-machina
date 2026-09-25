@@ -188,9 +188,15 @@ int run_case(int argc, char **argv) {
             entry == "field_reload_fade_in" || entry == "field_reload_fade_frame" ||
             entry == "field_reload_finish" || entry == "field_reload_teardown" ||
             entry == "field_reload" || entry == "field_load";
+        // The field main loop leaving for battle (80078334..8007954c).
+        const bool battle_exit_entry =
+            entry == "field_battle_start" || entry == "field_battle_leave" ||
+            entry == "field_teardown" || entry == "field_battle_release" ||
+            entry == "field_battle_exit";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
+            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry &&
+            !battle_exit_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -238,7 +244,8 @@ int run_case(int argc, char **argv) {
                 analysis::import_menu_block(*program, memory, registers[4]);
             else if (entry == "menu_save_seal" || entry == "menu_load_check")
                 analysis::import_menu_block(*program, memory, registers[20]);
-        } else if (entry == "field_load") {
+        } else if (entry == "field_load" || entry == "field_battle_release" ||
+                   entry == "field_battle_exit") {
             // Between the reload's teardown and the load: no field is loaded.
             program =
                 analysis::import_unloaded_field(memory, read_file(argv[7], analysis::ram_bytes));
@@ -280,7 +287,8 @@ int run_case(int argc, char **argv) {
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
         // A field teardown releases whole heap blocks: own all their bytes.
-        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load")
+        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load" ||
+            entry == "field_teardown" || entry == "field_battle_release")
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
@@ -823,6 +831,20 @@ int run_case(int argc, char **argv) {
                                                     : "\"next_frame\"")
                 << ",\"vertical_blank_waits\":" << waits.count << '}';
             result = out.str();
+        } else if (entry == "field_battle_start") {
+            // 80078334: S5 records that 800afc78 was saved.
+            program->field->music_saved = registers[21] != 0;
+            program->field_battle_start();
+        } else if (entry == "field_battle_leave") {
+            program->field_battle_leave(services); // 80078abc up to 800700b0
+        } else if (entry == "field_teardown") {
+            program->field_teardown(services); // 800700b0
+        } else if (entry == "field_battle_release") {
+            program->field_battle_release(program->field->w_adb30); // 80078b04..80078b2c
+        } else if (entry == "field_battle_exit") {
+            // 8007954c(0), up to its call of the mode dispatcher 80019acc.
+            if (!program->exit_field(0))
+                throw std::runtime_error("8004f370 keeps the field; the dispatcher is not called");
         } else if (entry == "field_exit") {
             // 8007954c: A0 kind; 1 where it calls the mode dispatcher 80019acc.
             // The exit follows the field's teardown (its actors' storage is

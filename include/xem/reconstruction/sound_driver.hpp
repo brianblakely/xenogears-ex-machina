@@ -171,6 +171,15 @@ inline constexpr std::uint32_t voice_stride = 0x158;
 // 100 in its halfword +2.
 void set_effect_pair(SoundDriver &driver, std::uint32_t channel, std::uint32_t field,
                      std::uint32_t value);
+// 8003a094: stop every effect voice playing from `bank` (its id +14) and
+// release its hardware voice.
+void stop_bank_voices(SoundDriver &driver, std::uint32_t bank);
+// 8003852c: stop `bank`'s voices and unlink it from the effect bank list
+// (next +1c), then check its header (magic 73646573, zero word sum, version
+// 101 at +c). The BIOS DisableEvent/EnableEvent around the unlink keep no
+// Program state. A missing bank or a bad header reaches the driver's error
+// handler 8003f6b0 (SoundError).
+void unlink_effect_bank(SoundDriver &driver, std::uint32_t bank);
 // 8003a20c: stop the effect voice pair and release its hardware voices.
 void stop_effect_pair(SoundDriver &driver, std::uint32_t channel);
 // 80039f9c: when effects are enabled, start effect `id` on the voice pair of

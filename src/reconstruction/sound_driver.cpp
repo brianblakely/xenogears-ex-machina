@@ -285,6 +285,47 @@ void set_effect_pair(SoundDriver &driver, std::uint32_t channel, std::uint32_t f
     }
 }
 
+void stop_bank_voices(SoundDriver &driver, std::uint32_t bank) {
+    const auto id = s16(u16(driver, bank + 0x14));
+    auto count = driver.voice_limit;
+    for (std::uint32_t index = 0;; ++index) {
+        const auto record = voice(driver, index);
+        --count;
+        if ((u16(driver, record) & 1) != 0 && s16(u16(driver, record + 0xa)) == id) {
+            put16(driver, record, 0);
+            const auto effects = driver.effect_block;
+            put32(driver, effects + 0x48,
+                  u32(driver, effects + 0x48) & ~bit(u8(driver, record + 6)));
+            release_voice(driver, record + 0x30, u8(driver, record + 0x27));
+        }
+        if (count == 0)
+            break;
+    }
+}
+
+void unlink_effect_bank(SoundDriver &driver, std::uint32_t bank) {
+    std::uint32_t previous = 0;
+    auto at = driver.effect_banks;
+    while (at != 0 && at != bank) {
+        previous = at;
+        at = u32(driver, at + 0x1c);
+    }
+    if (at == 0)
+        throw SoundError("Unlinking an effect bank that is not listed reaches 8003f6b0(10)");
+    stop_bank_voices(driver, bank);
+    if (previous != 0)
+        put32(driver, previous + 0x1c, u32(driver, bank + 0x1c));
+    else
+        driver.effect_banks = u32(driver, bank + 0x1c);
+    put32(driver, bank + 0x1c, 0);
+    // 8003f614(bank, 73646573, 101) with the word sum 8003f684.
+    std::uint32_t sum = 0;
+    for (std::uint32_t i = 0, words = (u32(driver, bank + 8) + 3) >> 2; i < words; ++i)
+        sum += u32(driver, bank + i * 4);
+    if (u32(driver, bank) != 0x73646573U || sum != 0 || u16(driver, bank + 0xc) != 0x101)
+        throw SoundError("An unlinked effect bank with a bad header reaches 8003f6b0(b)");
+}
+
 void stop_effect_pair(SoundDriver &driver, std::uint32_t channel) {
     const auto first = (channel & 0xfe) ^ 8;
     for (auto index = first; index < first + 2; ++index) {

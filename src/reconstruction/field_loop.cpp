@@ -196,7 +196,7 @@ void Program::record_play_state() {
     variables.write(0x22, s16(word(actor, 0x26, 2)));
 }
 
-void Program::field_between_frames(FrameServices &services, const ProgramObserver &observe) {
+bool Program::field_between_frames(FrameServices &services, const ProgramObserver &observe) {
     auto &state = loaded(*this);
     auto &request = resident.battle_request;
     auto &inputs = state.control_inputs;
@@ -213,9 +213,14 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
         // 80077e10: -1 while 800adbd0 is 1, 800b2344 is zero and the
         // controlled actor has flag 800.
         const bool waiting = state.w_adbd0 == 1 && inputs.jump_mode == 0 && (flags() & 0x800U) != 0;
-        if (!waiting)
-            unrecovered("field_battle_start", 0x80078334, "symbol:field-battle-start",
-                        "Starting a battle from the field main loop is not recovered");
+        if (!waiting && field_battle_start()) {
+            observed(observe, *this, {"field_battle_start", 0x80078abc, {}, {}});
+            // 80078abc: the loop ends; 8007954c calls the mode dispatcher.
+            if (!leave_field_for_battle(services, observe))
+                unrecovered("field_battle_exit", 0x800796e4, "symbol:field-exit-4f370",
+                            "8004f370 keeping the field after a battle exit is not recovered");
+            return false;
+        }
     }
     field_map_change_step(services, observe); // 80078494..80078558
     // 80078558: leaving the field (exit kinds 1, 2 and 3) with draw buffer 1.
@@ -278,6 +283,7 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
                     "The soft reset (80019cd0) is not recovered");
     field_pre_frame(services); // 80077dac
     observed(observe, *this, {"field_between_frames", 0x800782dc, {}, {}});
+    return true;
 }
 
 // 80078b5c: advance rand (8003fa38); 8004f308 at -1 takes the music
@@ -323,9 +329,11 @@ void Program::field_pre_frame(FrameServices &services) {
     deliver_arrivals(0x80077dac);
 }
 
-void Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {
-    field_between_frames(services, observe);
+bool Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {
+    if (!field_between_frames(services, observe))
+        return false;
     field_frame(services, observe);
+    return true;
 }
 
 } // namespace xem::reconstruction
