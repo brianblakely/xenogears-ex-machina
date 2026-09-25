@@ -786,6 +786,61 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
     static_cast<void>(read_files(0));
 }
 
+void Program::battle_prologue() {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        for (const auto [pointer, size] : {std::pair{0x800c3ea4U, 0xa2b4U},
+                                           std::pair{0x800d2d28U, 0x10cU},
+                                           std::pair{0x800c3eacU, 0x2f8U}})
+            memory.put32(pointer, battle::allocate_block(context, resident, size, 0));
+        for (const auto [pointer, size] : {std::pair{0x800c3ea4U, 0xa2b4U},
+                                           std::pair{0x800d2d28U, 0x10cU},
+                                           std::pair{0x800c3eacU, 0x2f8U}})
+            for (std::uint32_t i = 0; i < size; ++i) // 8003f8e8 bzero
+                memory.put8(memory.u32(pointer) + i, 0);
+        resident.b_5959c = 0;
+        memory.put8(0x800c3e29, 0xff);
+        memory.put8(0x800c3e28, 0xff);
+        memory.put8(0x800d366c, 0);
+        memory.put32(0x800c3e54, resident.music.current_sequence);
+        if (resident.b_5947c != 0)
+            throw MissingDependency({"battle_prologue", 0x8007100c, {}, {}},
+                                    "symbol:battle-event-8005947c", false,
+                                    "The event battle path of 80070f40 is not reconstructed");
+        if (resident.battle_request.resident_flag != 0)
+            throw MissingDependency({"battle_prologue", 0x80071064, {}, {}},
+                                    "symbol:battle-module-801e0a34", false,
+                                    "The 801e0000 module path of 80070f40 is not reconstructed");
+        if (resident.debug_word != 0xffffffffU)
+            throw MissingDependency({"battle_prologue", 0x8007110c, {}, {}},
+                                    "symbol:battle-debug-80280000", false,
+                                    "The debug module load of 80070f40 is not reconstructed");
+        // 8003f99c(8006f9dc, 800658dc + selector * 20, 20).
+        const auto source = battle::formation_table + resident.battle_request.selector * 0x20U;
+        for (std::uint32_t i = 0; i < 0x20; ++i)
+            memory.put8(battle::formation_record + i, memory.u8(source + i));
+    });
+}
+
+void Program::battle_after_load() {
+    run_battle([](battle::Battle &context) {
+        battle::update_alive(context);
+        context.memory.put8(0x800c3e4c, 2);
+    });
+}
+
+void Program::battle_after_scene(std::uint32_t result) {
+    run_battle([&](battle::Battle &context) {
+        context.memory.put8(0x800c4a38, result);
+        context.memory.put32(0x800d2d40, 0x800c4a39); // 800a5e9c
+        context.memory.put32(0x800d2d48, 0x800c8aa9);
+    });
+}
+
+void Program::battle_adjust_party() { run_battle(battle::adjust_party); }
+
+void Program::battle_place_party() { run_battle(battle::place_party); }
+
 void Program::setup_battle_phase(std::uint32_t phase, FrameServices &services,
                                  std::uint32_t stack) {
     switch (phase & 0xff) {
@@ -809,6 +864,49 @@ void Program::setup_battle_phase(std::uint32_t phase, FrameServices &services,
 } // namespace xem::reconstruction
 
 namespace xem::reconstruction::battle {
+
+void adjust_party(Battle &battle) {
+    auto &memory = battle.memory;
+    for (std::uint32_t member = 0; member < 3; ++member) {
+        if (memory.u8(party_ids + member) == 0x7f)
+            continue;
+        const auto rec = battle.record(member);
+        const auto gear = rec + 0xa4;
+        memory.put32(attacker_pointer, rec);
+        memory.put32(attacker_block_pointer, gear);
+        memory.put16(0x800c3aa4 + member * 2, memory.u16(rec + 0x7a));
+        for (std::uint32_t part = 0; part < 4; ++part) {
+            const auto removed = memory.u8(0x800d2d10 + part);
+            if (removed == 0)
+                continue;
+            memory.put8(gear + 0x98, memory.u8(gear + 0x98) - removed);
+            memory.put8(gear + 0x98, memory.u8(gear + 0x98) + memory.u8(gear + 0x50 + part));
+        }
+        if (memory.u8(gear + 0x98) >= 17)
+            memory.put8(gear + 0x98, 0x10);
+    }
+    memory.put8(0x8006de1a, 7);
+    if ((memory.u16(0x8006ee0e) & 0x2000) != 0)
+        memory.put16(0x8006edf6, memory.u16(0x8006edf6) | 0x800);
+    if (memory.u16(0x8006ef64) < 0xbb) {
+        for (const auto [address, value] :
+             {std::pair{0x8006e020U, 10U}, {0x8006e0c4U, 10U}, {0x8006e72cU, 9U},
+              {0x8006e7d0U, 9U}, {0x8006e874U, 8U}, {0x8006e918U, 0xcU}, {0x8006e9bcU, 0xcU},
+              {0x8006e802U, 0x58U}, {0x8006e42bU, 0U}, {0x8006e950U, 0x28U}})
+            memory.put8(address, value);
+    }
+}
+
+void place_party(Battle &battle) {
+    auto &memory = battle.memory;
+    for (std::uint32_t member = 0; member < 3; ++member) {
+        const auto id = memory.u8(party_ids + member);
+        if (id == 0x7f)
+            continue;
+        memory.put16(0x800c3e0c + member * 4, memory.u16(0x8006ecf4 + id * 0x20));
+        memory.put16(0x800c3e0e + member * 4, memory.u16(0x8006ecf6 + id * 0x20));
+    }
+}
 
 std::uint32_t allocate_block(Battle &battle, ResidentState &resident, std::uint32_t size,
                              std::uint32_t mode) {

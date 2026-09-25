@@ -76,6 +76,11 @@ RESIDENT_ENTRIES = (
     "battle_drops",
     "battle_results_step",
     "battle_setup_phase",
+    "battle_prologue",
+    "battle_after_load",
+    "battle_after_scene",
+    "battle_adjust_party",
+    "battle_place_party",
     "battle_atb",
     "battle_reload",
     "disc_read_file",
@@ -167,6 +172,17 @@ COLUMN_READS = ("r-5884", 5, 0x7000)
 LOAD_PREFIX = "load-"
 SECTOR_HOOK = "sector"
 LOADS = {0x20: 1, 0x21: 2, 0x23: 4, 0x24: 1, 0x25: 2}
+
+
+def is_load_hook(hook: str) -> bool:
+    """`load-` and the eight hexadecimal digits of the load's address (other
+    hook names may start with `load-` too)."""
+    site = hook[len(LOAD_PREFIX) :]
+    return (
+        hook.startswith(LOAD_PREFIX)
+        and len(site) == 8
+        and all(c in "0123456789abcdef" for c in site)
+    )
 
 
 def file_sha256(path: Path) -> str:
@@ -424,7 +440,7 @@ def pairs(
     result, pending, handlers, open_handlers, platform = [], None, [], {}, []
     for row in rows:
         platform_row = row["hook"] != entry_hook and (
-            row["hook"].startswith(LOAD_PREFIX) or row["hook"] in (SECTOR_HOOK, arrival)
+            is_load_hook(row["hook"]) or row["hook"] in (SECTOR_HOOK, arrival)
         )
         if platform_row:
             if pending is not None and not open_handlers:
@@ -537,7 +553,7 @@ def call_platform_rows(
             depth -= 1
         elif (
             depth == 0
-            and hook.startswith(LOAD_PREFIX)
+            and is_load_hook(hook)
             and hook not in hooked
             and (handling > 0 or int(hook[len(LOAD_PREFIX) :], 16) not in SERVICE_READS)
         ):
@@ -1511,7 +1527,7 @@ def loop_inputs(
         elif hook == SECTOR_HOOK:
             require(block is not None, "Sector delivered outside interrupt code")
             sectors.append(header_sector(row))
-        elif hook.startswith(LOAD_PREFIX):
+        elif is_load_hook(hook):
             site = int(hook[len(LOAD_PREFIX) :], 16)
             require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
             code = u32(ram, site)

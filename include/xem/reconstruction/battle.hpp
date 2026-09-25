@@ -270,6 +270,14 @@ void setup_participants(Battle &battle, ResidentState &resident);
 // and default targets (801e5014) and the direction-arrow block (800c3e24,
 // 0xec bytes through 8008abb8).
 void setup_turns(Battle &battle, ResidentState &resident);
+// 8009892c: each member's saved command flags (800c3aa4), its gear's shield
+// adjustment (800d2d10 against +50, capped at 10), then game-data fixes
+// (8006de1a = 7, 8006edf6 bit 800 with 8006ee0e bit 2000, and the early-game
+// values while 8006ef64 < bb).
+void adjust_party(Battle &battle);
+// 80071310..800713ac: each member's position pair (800c3e0c) from its
+// character record (8006ecf4, 8006ecf6).
+void place_party(Battle &battle);
 // 80098af8: a slot's turn timer from its speed, with rand spread.
 std::uint32_t turn_timer(Battle &battle, std::uint32_t slot);
 // 8008abb8(size, mode): 80032498(2, 0), then 80031bdc; the block becomes

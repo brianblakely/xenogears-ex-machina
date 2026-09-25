@@ -449,6 +449,7 @@ struct ResidentState {
     std::uint32_t battle_effects{}; // 800595d0
     std::uint32_t battle_marker{};  // 80059480
     std::uint32_t battle_spacer{};  // 800594ac
+    std::uint8_t b_5959c{};         // 8005959c: 8001b6c4 sets it, 80070f40 clears it
     // Field main loop (field_loop.cpp) globals whose meaning is not recovered.
     std::uint32_t w_4f2f4{}; // 8004f2f4: cleared by 800a31e8
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
@@ -944,6 +945,21 @@ class Program {
     // `stack` is the stack pointer at 801e5840, below which the original's
     // callees keep the rectangles they pass to LoadImage.
     void setup_battle_phase(std::uint32_t phase, FrameServices &services, std::uint32_t stack);
+    // Battle 80070f40 up to its call of 800b8098: the turn, UI and graphics
+    // state blocks (800c3eac, 800d2d28, 800c3ea4, through 8008abb8), the menu
+    // input and music globals, then the formation record 8006f9dc from the
+    // field's formation table (800658dc) at the selector 80059508. The event
+    // battle (8005947c), the post-battle module (800594f8) and debug paths
+    // stop with MissingDependency.
+    void battle_prologue();
+    // 80071168..80071184: the alive mask (8007252c), then 800c3e4c = 2.
+    void battle_after_load();
+    // 800b8190..800b81b4: 801e7210's result into 800c4a38 and 800a5e9c.
+    void battle_after_scene(std::uint32_t result);
+    // 8009892c: the party adjustments (battle.hpp).
+    void battle_adjust_party();
+    // 80071310 up to the main loop's first 800723e0: the party positions.
+    void battle_place_party();
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.

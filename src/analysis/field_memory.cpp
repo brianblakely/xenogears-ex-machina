@@ -846,9 +846,9 @@ Program import_battle(const OriginalMemory &memory) {
         return false;
     };
     // Battle setup (80070f40) allocates UI and graphics state, UI state and
-    // turn/menu state.
+    // turn/menu state; before it runs the cleared pointers name nothing.
     for (const auto pointer : {0x800c3ea4U, 0x800d2d28U, 0x800c3eacU})
-        if (!own_block(memory.word(pointer)))
+        if (memory.word(pointer) != 0 && !own_block(memory.word(pointer)))
             throw field::FieldFormatError("Battle state pointer does not name a heap block");
     // The enemy data file holding the enemy AI scripts (pointer 800c3dd0, set
     // by aux4 801e4958).
