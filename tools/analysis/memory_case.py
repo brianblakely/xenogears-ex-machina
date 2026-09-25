@@ -1720,8 +1720,19 @@ MENU_STACK_BELOW = 0x1800
 # the thread control block's 32 register words (80008550..800085cf; general
 # PS1 BIOS layout, the field's KERNEL_SAVE covers the last 13), since menu
 # code interrupted in more registers; and the BIOS words libcard's kernel
-# patches (8004e8d8, 8004e990 inside InitCARD) exchange with the game.
-MENU_KERNEL_SAVE = ((0x4D98, 0x4DA4), (0x8550, 0x85D0), (0xE028, 0xE0A4)) + KERNEL_SAVE[1:]
+# patches (8004e8d8, 8004e990 inside InitCARD) exchange with the game; and
+# the four kernel bytes the card BIOS services change on the card routes
+# (the only kernel bytes outside these ranges that change between menu frames
+# of the p1shared save and load captures), BIOS state behind the CardBios
+# contract.
+MENU_KERNEL_SAVE = (
+    (0x4D98, 0x4DA4),
+    (0x7264, 0x7265),
+    (0x7500, 0x7501),
+    (0x7528, 0x752A),
+    (0x8550, 0x85D0),
+    (0xE028, 0xE0A4),
+) + KERNEL_SAVE[1:]
 
 
 def menu_otc_alarms(rows: list[dict], entry_row: dict, exit_row: dict) -> set[int]:
@@ -1784,6 +1795,10 @@ def menu_inputs(
         elif hook == SECTOR_HOOK:
             require(block is not None, "Sector delivered outside interrupt code")
             sectors.append(header_sector(row))
+        elif hook == "clear-status-b" and block is not None:
+            # A queued ClearImage the DMA2 interrupt runs: its GPUSTAT load.
+            block.append(f"read {QUEUED_CLEAR_STATUS:08x} {visible_registers(row)[4]:08x}")
+            counts["interrupt_reads"] += 1
         elif hook.startswith(LOAD_PREFIX):
             site = int(hook[len(LOAD_PREFIX) :], 16)
             require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
@@ -1821,6 +1836,9 @@ CARD_READ_BUFFERS = {"bios-read-801c9068": 17, "bios-read-801cb680": 16}
 # The five words libcard's kernel patch (8004e990, inside InitCARD) leaves at
 # 8004e960, from the same snapshot.
 CARD_PATCH = 0x8004E960
+# ClearImage's GPUSTAT load (80046030, _clr's aligned path); the clear-status-b
+# hook after it records the value.
+QUEUED_CLEAR_STATUS = 0x80046030
 
 
 def card_lines(rows: list[dict], snapshots) -> list[str]:

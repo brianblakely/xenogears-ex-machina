@@ -257,15 +257,9 @@ std::uint32_t copy_name_codes(Overlay &overlay, std::uint32_t name, std::uint32_
     return at / 2;
 }
 
-// 80039e60(code): start effect `code` when effects are enabled; the voice
-// search it starts with (8003a65c) is not recovered.
-void menu_effect(Overlay &overlay, std::uint32_t code, std::uint32_t site) {
-    static_cast<void>(code);
-    if ((overlay.program.resident.sound.flags & 0x800U) == 0)
-        return;
-    Overlay::missing("menu_effect", site, "symbol:sound-effect-voice-8003a65c",
-                     "80039e60 starts an effect on voices 8003a65c searches; that search is "
-                     "not recovered");
+// 80039e60(code): start effect `code` on a free voice pair.
+void menu_effect(Overlay &overlay, std::uint32_t code) {
+    resident::start_effect_on_free_pair(overlay.program.resident.sound, code);
 }
 
 } // namespace
@@ -934,10 +928,8 @@ void Overlay::card_access_indicator(std::uint32_t a0) {
         put8(u32(at(access_sprite)) + 0x7b8, u8(at(buffer_index)));
         put8(u32(at(state_party)) + access_state, 1);
         put32(u32(at(access_sprite)) + 0x7b4, 8);
-        for (const auto [effect, site] :
-             {std::pair{0xe0U, 0x801cb038U}, std::pair{0xe1U, 0x801cb060U},
-              std::pair{0x8fU, 0x801cb088U}})
-            menu_effect(*this, (u16(u32(at(effect_bank)) + 0x14) << 16) | effect, site);
+        for (const auto effect : {0xe0U, 0xe1U, 0x8fU}) // 801cb038, 801cb060, 801cb088
+            menu_effect(*this, (u16(u32(at(effect_bank)) + 0x14) << 16) | effect);
         return;
     }
     case 2:

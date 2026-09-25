@@ -303,18 +303,24 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
 // _clr (80045e44): send a fill packet built in libgpu's packet buffer
 // (8005a238) for the rectangle at `rect` in owned memory, clamped in place.
 void Program::clear_operation(std::uint32_t rect, std::uint32_t color, FrameServices *services) {
-    if (services == nullptr)
-        throw MissingDependency({"gpu_clear_image", 0x80045e44, {}, {}}, "symbol:gpu-clear-image",
-                                false, "ClearImage outside a field frame is not recovered");
     auto &gpu = resident.gpu;
     const auto w = clamp_extent(s16(memory(rect + 4, 2)), gpu.width, true);
     set_memory(rect + 4, static_cast<std::uint16_t>(w), 2);
     const auto h = clamp_extent(s16(memory(rect + 6, 2)), gpu.height, true);
     set_memory(rect + 6, static_cast<std::uint16_t>(h), 2);
-    const auto status = take_service(services->gpu_status, "GPUSTAT read by ClearImage");
+    const bool aligned =
+        (memory(rect, 2) & 0x3fU) == 0 && (static_cast<std::uint32_t>(w) & 0x3fU) == 0;
+    // A clear the queue runs from the DMA2 interrupt reads GPUSTAT as a
+    // platform read at its load (80046030, the aligned path).
+    if (services == nullptr && !aligned)
+        throw MissingDependency({"gpu_clear_image", 0x80045e44, {}, {}}, "symbol:gpu-clear-image",
+                                false, "An unaligned ClearImage outside a frame is not recovered");
+    const auto status = services != nullptr
+                            ? take_service(services->gpu_status, "GPUSTAT read by ClearImage")
+                            : platform_read(resident.platform, 0x80046030, 4);
     const auto mode = 0xe1000000U | (color >> 31U) << 10U | (status & 0x7ffU);
     std::vector<std::uint32_t> packet;
-    if ((memory(rect, 2) & 0x3fU) == 0 && (static_cast<std::uint32_t>(w) & 0x3fU) == 0) {
+    if (aligned) {
         // Aligned: a VRAM fill.
         packet = {0x05ffffffU,  0xe6000000U,     mode, 0x02000000U | (color & 0xffffffU),
                   memory(rect), memory(rect + 4)};

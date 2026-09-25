@@ -1137,6 +1137,19 @@ class Tick {
             m.w16(voice + 0x74, m.u8(at) << 8U);
             m.w16(voice + 2, m.u16(voice + 2) | 0x100U);
             return at + 1;
+        case 0x8003dee4: { // ea pan slide: over `steps` ticks toward a signed pan byte
+            const auto steps = m.u8(at);
+            const auto current = u(s8(static_cast<std::uint8_t>(m.u16(voice + 0x74) >> 8U)));
+            const auto change = u(s8(m.u8(at + 1))) - current;
+            if (steps != 0 && change != 0) {
+                const auto distance = change << 8U;
+                m.w16(voice + 0x92, distance);
+                m.w16(voice + 0x98, steps);
+                m.w16(voice + 4, m.u16(voice + 4) | 0x10U);
+                m.w16(voice + 0x90, quotient(distance, steps));
+            }
+            return at + 2;
+        }
         case 0x8003df3c: // eb pan modulation fade
             return lfo_fade(at, voice, 2);
         case 0x8003e04c: // ed pan modulation

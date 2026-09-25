@@ -750,6 +750,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sound.start_stamp; });
     add_resident("sound_voice_limit", 0x80059478, 4,
                  [](Program &p) -> auto & { return p.resident.sound.voice_limit; });
+    add_resident("sound_effect_reserve", 0x80059544, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.effect_reserve; });
     add_resident("sound_system_bank", 0x8005919c, 4,
                  [](Program &p) -> auto & { return p.resident.sound.system_bank; });
     add_resident("sound_voice_changes", 0x80059554, 4,
