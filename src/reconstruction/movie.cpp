@@ -388,6 +388,17 @@ void Program::movie_slice_decoded() {
     if (memory(split_display) != 0)
         unrecovered("movie_slice_split", 0x801d3188, "symbol:movie-split-display",
                     "Loading slices into a split display (801d68b4 set) is not reconstructed");
+    // The MDEC's output for this slice arrived by DMA1 before its completion
+    // interrupt: a hardware result the platform supplies.
+    const auto size =
+        static_cast<std::size_t>(s16(memory(rect + 4, 2)) * s16(memory(rect + 6, 2)) * 2);
+    auto &outputs = resident.mdec_output;
+    if (outputs.empty())
+        throw PlatformInputError("No MDEC output is supplied for a decoded slice");
+    if (outputs.front().size() != size)
+        throw PlatformInputError("The supplied MDEC output differs from the slice's size");
+    dma_store(memory(slice_buffers + 4 * memory(slice_buffer_index)), outputs.front());
+    outputs.pop_front();
     if (memory(load_enabled) != 0) {
         std::array<std::int16_t, 4> area{
             static_cast<std::int16_t>(memory(rect, 2)), static_cast<std::int16_t>(memory(rect + 2, 2)),
@@ -400,9 +411,9 @@ void Program::movie_slice_decoded() {
     const auto next = 1U - memory(slice_buffer_index);
     set_memory(slice_buffer_index, next);
     if (s16(memory(rect, 2)) < s16(memory(display_buffers + 8 * k + 4, 2))) {
-        const auto size = s16(memory(rect + 4, 2)) * s16(memory(rect + 6, 2));
+        const auto words = s16(memory(rect + 4, 2)) * s16(memory(rect + 6, 2));
         mdec_out(memory(slice_buffers + 4 * next),
-                 static_cast<std::uint32_t>((size + (size < 0 ? 1 : 0)) >> 1));
+                 static_cast<std::uint32_t>((words + (words < 0 ? 1 : 0)) >> 1));
         return;
     }
     if (const auto callback = memory(frame_callback); callback != 0) {

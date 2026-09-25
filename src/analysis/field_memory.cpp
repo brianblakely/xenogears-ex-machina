@@ -730,8 +730,23 @@ void load_platform(Program &program, const char *platform, const char *disc) {
                 throw field::FieldFormatError("Malformed platform read");
             resident.platform.push_back(
                 {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
+        } else if (kind == "mdec") {
+            // mdec HEX: one MDEC output transfer's bytes.
+            std::string text;
+            if (!(lines >> text) || text.size() % 2 != 0)
+                throw field::FieldFormatError("Malformed MDEC output input");
+            std::vector<std::uint8_t> bytes(text.size() / 2);
+            for (std::size_t i = 0; i < bytes.size(); ++i)
+                bytes[i] = static_cast<std::uint8_t>(number(text.substr(2 * i, 2), 16));
+            resident.mdec_output.push_back(std::move(bytes));
         } else if (kind == "interrupt") {
             resident.platform.push_back({reconstruction::PlatformInput::Kind::interrupt, 0, 0});
+        } else if (kind == "pass") {
+            // pass POINT: the end of one visit of a delivery point.
+            std::string point;
+            if (!(lines >> point))
+                throw field::FieldFormatError("Malformed platform pass");
+            resident.platform.push_back({reconstruction::PlatformInput::Kind::pass, number(point, 16), 0});
         } else if (kind == "arrival" || kind == "tick" || kind == "pad") {
             // arrival POINT; tick POINT EVENT; pad INDEX BYTE (hexadecimal).
             std::string first, second = "0";

@@ -337,7 +337,11 @@ field::MovieStep Program::movie_pass(FrameServices &services, movie::MdecCodec &
             deliver_arrivals(at[2]);
             put_disp_env(state.draw_block + 0xb8);
             deliver_arrivals(at[3]);
-            put_draw_env(services, state.draw_block);
+            // PutDrawEnv's argument is read at its call; arrivals inside
+            // the call before its first queue step come after (at + 4).
+            const auto draw = state.draw_block;
+            deliver_arrivals(at[3] + 4);
+            put_draw_env(services, draw);
             deliver_arrivals(at[4]);
             movie_decode_steps(3, codec);
         }
@@ -382,6 +386,7 @@ void Program::movie_finish(FrameServices &services, std::uint32_t frame,
         deliver_arrivals(display_site);
         put_disp_env(environment + 0xb8);
         deliver_arrivals(draw_site);
+        deliver_arrivals(draw_site + 4);
         put_draw_env(services, environment);
     };
     const auto wait = [&](std::uint32_t site) {
@@ -451,6 +456,7 @@ void Program::movie_finish(FrameServices &services, std::uint32_t frame,
     state.movie.request.start_select = 0xff;
     state.single_actor_mode = 0;
     set_memory(start_failed, 0xffffffffU);
+    deliver_arrivals(0x800a8308); // The return.
 }
 
 // The whole player 800a7c58: the stages above until the loop ends.
@@ -554,13 +560,32 @@ void Program::movie_overlay_load() {
 // 80070488: start the field's own stream (the map's file 185 + 2 * map in
 // directory 4) into a four-sector ring (8002a260), unless one runs.
 void Program::start_field_stream() {
-    unrecovered("start_field_stream", 0x800704ac, "symbol:field-stream-80070488",
-                "Starting the field stream after a movie (8002a260, 80029eb0) is not "
-                "reconstructed");
+    auto &reload = loaded(*this).reload;
+    if (reload.stream_pending != 0)
+        return;
+    reload.stream_pending = 1;
+    reload.stream_ring = allocate_stream_ring(4, 1);
+    const auto file = static_cast<std::int32_t>((resident.field_map & 0xfffU) * 2U + 0xb9U);
+    static_cast<void>(read_stream(file, reload.stream_ring, 0, {}));
 }
-void Program::finish_field_stream(FrameServices &) {
-    unrecovered("finish_field_stream", 0x80070520, "symbol:field-stream-80070508",
-                "Ending the field stream (80070508, 80078c5c) is not reconstructed");
+
+// 80070508: wait for the field stream's read, release its ring, then
+// 80078c5c.
+void Program::finish_field_stream(FrameServices &services) {
+    auto &state = loaded(*this);
+    if (state.reload.stream_pending == 1) {
+        deliver_arrivals(0x80070520);
+        disc_wait(0); // 80028a60
+        deliver_arrivals(0x80070528);
+        draw_sync(services);
+        release_music_buffer(state.reload.stream_ring, 0x8007053c); // 800320e8
+        state.reload.stream_pending = 0;
+    }
+    // 80078c5c: with 800b2344 set, brighten the 1e0h x 20h area at (0,
+    // 100h) through a StoreImage block.
+    if (state.control_inputs.jump_mode != 0)
+        unrecovered("finish_field_stream", 0x80078c74, "symbol:field-80078c5c",
+                    "Brightening the area at (0, 100h) with 800b2344 set is not reconstructed");
 }
 
 void add_movie_globals(std::vector<OriginalGlobal> &table) {

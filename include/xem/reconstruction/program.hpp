@@ -474,6 +474,10 @@ struct ResidentState {
     std::vector<resident::HeapBlock> disc_transfers;
     // Platform inputs, consumed in order; see interrupts.hpp.
     std::deque<PlatformInput> platform;
+    // The MDEC's decoded output that DMA1 delivers into RAM, one transfer
+    // each, in order: a hardware result (movie.hpp), consumed by the
+    // transfer's completion callback.
+    std::deque<std::vector<std::uint8_t>> mdec_output;
     DiscDrive drive;
     // 8003748c releases the block 80059394 names unless 800593a0 is set;
     // their producers are not recovered.
@@ -829,6 +833,9 @@ class Program {
     // callbacks deliver it. Returns 0, -4 (no ring) or -3 (no such file).
     std::int32_t read_stream(std::int32_t file, std::uint32_t ring, std::uint32_t offset,
                              const std::array<std::uint16_t, 6> &parameters);
+    // Resident 8002a260: a heap block of `blocks` stream sectors that becomes
+    // the owned disc ring (disc_read.ring and ring_payload); 0 when none.
+    std::uint32_t allocate_stream_ring(std::uint32_t blocks, std::uint32_t mode);
     // Resident 8004b9b4, entered from the BIOS exception hook: serve every
     // pending interrupt the dispatcher enables, until none is pending.
     // Asynchronous register reads come from resident.platform.

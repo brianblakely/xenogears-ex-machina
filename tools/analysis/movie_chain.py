@@ -76,7 +76,11 @@ MOVIE_POSITION_PCS = (
     0x801D4324, 0x801D4370, 0x801D4380, 0x801D4390, 0x801D4398, 0x801D43B8, 0x801D3930,
     0x801D3AC4, 0x801D5888, 0x801D58E4,
 )
-MOVIE_POSITIONS = {f"mv-{pc:08x}": pc for pc in MOVIE_POSITION_PCS}
+MOVIE_POSITIONS = {f"mv-{pc:08x}": pc for pc in MOVIE_POSITION_PCS} | {"mv-exit": 0x800A8308}
+# The player's PutDrawEnv calls (positions at their jal).
+DRAW_ENVIRONMENT_CALLS = {
+    0x800A7F04, 0x800A7F3C, 0x800A80EC, 0x800A8184, 0x800A81DC, 0x800A823C
+}
 # The 800a7394 frame loop's call of 80077dac: arrivals after it (during its
 # VSync(1)) follow the field chain's convention.
 FIELD_ENTRY_POINTS = {"mv-800a739c": 0x80077DB4}
@@ -102,6 +106,11 @@ VRAM_READBACKS = {
 }
 PARKED = {"sv-800a76f8": 0x8005A418, "sv-800a7720": 0x8005A41C}
 PAD_BUFFERS = 0x625FC
+# The MDEC output a slice's completion loads (the callback's LoadImage call,
+# 801d3350, A1 the slice buffer): the DMA1-delivered bytes.
+MDEC_HOOK = "mdec-slice"
+# Its last 2.5 KiB, at LoadImage's entry (80044894) right after it.
+MDEC_TAIL_HOOK = "mdec-slice-tail"
 # Load opcodes: memory_case's, plus lwr (26h), whose hook follows the lwr
 # completing an unaligned word (801d600c).
 CHAIN_LOADS = {**LOADS, 0x26: 4}
@@ -121,14 +130,25 @@ def platform_lines(
     idle = int.from_bytes(io[dma3 : dma3 + 4], "little") & 0x1000000
     lines, pending, block = [], [], None
     last = None
+    slice_head = None
     counts = collections.Counter()
     sectors = []
+
+    # Visits of each movie position since the last line: arrivals at a point
+    # that such a visit passed without taking them are separated from it by
+    # `pass` lines, one per visit.
+    visits = collections.Counter()
+    visits_at = -1
 
     def emit(point_of):
         nonlocal pending
         for previous, kind, head, reads in pending:
             point = point_of(previous)
             require(point >= 0, f"An arrival after {previous} has no delivery point")
+            if visits_at == len(lines) and visits[point]:
+                lines.extend([f"pass {point:x}"] * visits[point])
+                counts["passes"] += visits[point]
+                visits.clear()
             if kind == "tick":
                 lines.append(f"tick {point:x} {head:x}")
             else:
@@ -153,7 +173,15 @@ def platform_lines(
             pending.append((last, *block))
             block = None
         elif block is not None:
-            if hook == SECTOR_HOOK:
+            if hook == MDEC_HOOK:
+                slice_head = row
+            elif hook == MDEC_TAIL_HOOK and slice_head is not None:
+                parts = sorted(slice_head["ranges"] + row["ranges"], key=lambda r: r["name"])
+                data = "".join(r["hex"] for r in parts if r["name"].startswith("slice-"))
+                block[2].append(f"mdec {data}")
+                counts["mdec_outputs"] += 1
+                slice_head = None
+            elif hook == SECTOR_HOOK:
                 sectors.append(header_sector(row))
             elif hook.startswith(LOAD_PREFIX):
                 site = int(hook[len(LOAD_PREFIX) :], 16)
@@ -169,9 +197,25 @@ def platform_lines(
         elif hook in MOVIE_POSITIONS or hook in ARRIVAL_POINTS:
             if hook in MOVIE_POSITIONS:
                 emit(lambda previous, point=MOVIE_POSITIONS[hook]: point)
+                if visits_at != len(lines):
+                    visits.clear()
+                    visits_at = len(lines)
+                visits[MOVIE_POSITIONS[hook]] += 1
+                if MOVIE_POSITIONS[hook] in DRAW_ENVIRONMENT_CALLS:
+                    visits[MOVIE_POSITIONS[hook] + 4] += 1
             else:
                 emit(lambda previous: ARRIVAL_POINTS.get(previous, FIELD_ENTRY_POINTS.get(previous, -1)))
             last = hook
+        elif hook == "alarm" and pending and MOVIE_POSITIONS.get(last) in DRAW_ENVIRONMENT_CALLS:
+            # Arrivals inside PutDrawEnv before its first queue step (its
+            # alarm) precede that step: the reconstruction delivers them at
+            # the call's delay slot, after reading the argument.
+            point = MOVIE_POSITIONS[last] + 4
+            visits[point] -= 1
+            emit(lambda previous: point)
+            visits.clear()
+            visits_at = len(lines)
+            visits[point] = 1
         elif hook.startswith(LOAD_PREFIX):
             site = int(hook[len(LOAD_PREFIX) :], 16)
             code = u32(library if site >= 0x801D3000 else ram, site)
@@ -194,6 +238,48 @@ def platform_lines(
     if sectors:
         lines.insert(0, f"drive {sectors[0]}")
     return lines, dict(counts), sectors
+
+
+def slice_records(rows: list[dict]) -> list[tuple[int, int, bytes]]:
+    """(row index, buffer, bytes) of each recorded MDEC output slice."""
+    records, head = [], None
+    for index, row in enumerate(rows):
+        if row["hook"] == MDEC_HOOK:
+            head = row
+        elif row["hook"] == MDEC_TAIL_HOOK and head is not None:
+            parts = sorted(head["ranges"] + row["ranges"], key=lambda r: r["name"])
+            data = bytes.fromhex("".join(r["hex"] for r in parts if r["name"].startswith("slice-")))
+            records.append((index, visible_registers(head)[5], data))
+            head = None
+    return records
+
+
+def without_in_flight_slice(
+    rows: list[dict], records: list[tuple[int, int, bytes]], index: int, image: bytes
+) -> tuple[bytes, int]:
+    """The boundary image with an MDEC output transfer that was in flight at
+    row `index` undone. The reconstruction stores a transfer's bytes when it
+    completes; DMA1 had already written part of them. A transfer is in
+    flight when the slice completing next was started by the previous
+    slice's completion (not by the next frame's first MDEC_out, 801d3e54).
+    Only bytes equal to the transfer's own data are restored, to the
+    buffer's previous slice, and their count is reported."""
+    following = next((r for r in records if r[0] > index), None)
+    if following is None:
+        return image, 0
+    if any(rows[i]["hook"] == "mv-801d3e54" for i in range(index, following[0])):
+        return image, 0
+    previous = next((r for r in reversed(records) if r[0] < index and r[1] == following[1]), None)
+    if previous is None:
+        return image, 0
+    at = following[1] & 0x1FFFFF
+    patched = bytearray(image)
+    restored = 0
+    for i, (new, old) in enumerate(zip(following[2], previous[2], strict=True)):
+        if patched[at + i] == new and new != old:
+            patched[at + i] = old
+            restored += 1
+    return bytes(patched), restored
 
 
 def services_of(rows: list[dict], snapshots: SnapshotReader) -> tuple[list[str], dict]:
@@ -337,11 +423,13 @@ def main() -> int:
     )
     sp = registers[29]
     compared, divergence = [], None
+    slices = slice_records(rows)
     for (kind, index), output in zip(boundaries, outputs, strict=False):
         row = rows[index]
         require(output["boundary"] == kind, f"Runner boundary {output['boundary']} is not {kind}")
-        image = snapshots.read(row)[0]
+        image, in_flight = without_in_flight_slice(rows, slices, index, snapshots.read(row)[0])
         result = compare(entry, image, output["owned"], sp, arrival_stacks=stacks)
+        result["mdec_in_flight_bytes"] = in_flight
         if output["gte"] != gte_words(row):
             result["gte_mismatch"] = True
             result["mismatch_count"] += 1
@@ -355,6 +443,7 @@ def main() -> int:
                 "owned_bytes": result["owned_bytes"],
                 "mismatch_count": result["mismatch_count"],
                 "unowned_count": result["unowned_count"],
+                "mdec_in_flight_bytes": in_flight,
             }
         )
         if not ok:

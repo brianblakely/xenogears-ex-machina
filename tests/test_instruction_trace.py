@@ -382,6 +382,9 @@ class InstructionTraceTests(unittest.TestCase):
         variants.append(duplicate)
         excessive = copy.deepcopy(self.spec)
         excessive["max_callbacks"] = 1_000_000
+        excessive["hooks"][0]["ranges"] = [
+            {"name": f"direct-{i}", "offset": 130, "size": 4} for i in range(17)
+        ]
         variants.append(excessive)
         for variant in variants:
             with self.subTest(variant=variant), self.assertRaises(ValueError):

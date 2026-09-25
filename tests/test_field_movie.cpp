@@ -1,6 +1,9 @@
 // Invented bytecode and field state exercise the movie request (extended 60,
-// 8008ec30), the movie loop's decisions (800a7f78..800a80b0) and the map-change
-// field exit (8007954c). They describe no original content or observation.
+// 8008ec30), the start wait (extended 61, 8008e9f8), the movie loop's
+// decisions (800a7f78..800a80b0), the map-change field exit (8007954c) and
+// the movie library's slice completion (801d30c4) with a supplied MDEC
+// output. They describe no original content or observation.
+#include "xem/reconstruction/movie.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <array>
@@ -96,6 +99,73 @@ void request() {
           "An inactive field waits on the FE prefix");
 }
 
+void start_wait() {
+    Fixture f;
+    f.actor[0xcc] = 5;
+    std::uint32_t started = 0;
+    field::wait_movie_started(f.world, started);
+    check(f.pc() == 4 && f.control.break_requested == 1,
+          "Before the player starts, FE 61 waits on its prefix");
+    started = 1;
+    f.control.break_requested = 0;
+    f.actor[0xcc] = 5;
+    field::wait_movie_started(f.world, started);
+    check(f.pc() == 6 && started == 0 && f.control.break_requested == 1,
+          "After the start FE 61 clears the flag and moves on");
+}
+
+// The library image (801d3000) and a four by two slice into buffer 80100000
+// that ends its frame, with loading into VRAM disabled.
+game::Program slice_program() {
+    namespace movie = game::movie;
+    game::Program program;
+    auto &library = program.resident.heap_contents[movie::library_address];
+    library.assign(movie::library_bytes, 0);
+    const auto put = [&](std::uint32_t address, std::uint32_t value, std::size_t width) {
+        for (std::size_t i = 0; i < width; ++i)
+            library[address - movie::library_address + i] =
+                static_cast<std::uint8_t>(value >> (8 * i));
+    };
+    put(movie::slice_rects + 4, 4, 2); // width
+    put(movie::slice_rects + 6, 2, 2); // rows
+    put(movie::row_limit, 0xffff, 2);
+    put(movie::slice_buffers, 0x80100000, 4);
+    put(movie::display_buffers + 4, 4, 2); // the frame's last column
+    put(movie::loaded_frame, 7, 4);
+    program.resident.heap_contents[0x80100000] = std::vector<std::uint8_t>(16, 0xee);
+    return program;
+}
+
+void slice_output() {
+    namespace movie = game::movie;
+    auto program = slice_program();
+    std::vector<std::uint8_t> output(16);
+    for (std::size_t i = 0; i < output.size(); ++i)
+        output[i] = static_cast<std::uint8_t>(i + 1);
+    program.resident.mdec_output.push_back(output);
+    program.movie_slice_decoded();
+    const auto &library = program.resident.heap_contents.at(movie::library_address);
+    const auto at = [&](std::uint32_t address) { return library[address - movie::library_address]; };
+    check(program.resident.heap_contents.at(0x80100000) == output &&
+              program.resident.mdec_output.empty(),
+          "The supplied MDEC output lands in the slice buffer");
+    check(at(movie::mdec_idle) == 1 && at(movie::shown_frame) == 7 &&
+              at(movie::load_display) == 1 && at(movie::slice_rects) == 4,
+          "The frame's last slice marks the MDEC idle and the frame shown");
+    for (const auto size : {std::size_t{0}, std::size_t{12}}) {
+        auto missing = slice_program();
+        if (size != 0)
+            missing.resident.mdec_output.emplace_back(size);
+        bool refused = false;
+        try {
+            missing.movie_slice_decoded();
+        } catch (const game::PlatformInputError &) {
+            refused = true;
+        }
+        check(refused, "A missing or mis-sized MDEC output is refused");
+    }
+}
+
 void decisions() {
     field::MovieState movie;
     movie.request.end_frame = 100;
@@ -176,6 +246,8 @@ void program_paths() {
 int main() {
     try {
         request();
+        start_wait();
+        slice_output();
         decisions();
         program_paths();
     } catch (const std::exception &error) {

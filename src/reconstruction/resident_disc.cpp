@@ -244,6 +244,30 @@ void Program::seek_file(std::int32_t file) {
     }
 }
 
+// Resident 8002a260: allocate count * 808 + 24 bytes, store the count,
+// then select (80028a94) and reset (80028aac) the ring. The header is the
+// ring the disc reads fill; the payload after it holds the chunks.
+std::uint32_t Program::allocate_stream_ring(std::uint32_t blocks, std::uint32_t mode) {
+    if (s32(blocks) < 1)
+        return 0;
+    auto block = resident::heap_allocate(resident.heap, blocks * 0x808U + 0x24U, mode, 0x8002a284);
+    if (!block)
+        return 0;
+    auto &read = resident.disc_read;
+    if (!read.ring.bytes.empty())
+        throw MissingDependency({"stream_ring", 0x8002a29c, {}, {}}, "state:disc-ring-replacement",
+                                false, "Replacing a Program-owned disc ring is not connected");
+    for (std::size_t i = 0; i < 4; ++i)
+        block->bytes[i] = static_cast<std::uint8_t>(blocks >> (8U * i));
+    const auto header = static_cast<std::ptrdiff_t>(blocks * 8U + 0x24U);
+    read.ring = {block->address, {block->bytes.begin(), block->bytes.begin() + header}};
+    read.ring_payload = {block->address + static_cast<std::uint32_t>(header),
+                         {block->bytes.begin() + header, block->bytes.end()}};
+    static_cast<void>(field::select_disc_stream_ring(resident.disc_stream, block->address));
+    static_cast<void>(field::reset_disc_stream_ring(resident.disc_stream, read.ring.bytes));
+    return block->address;
+}
+
 // 8004293c CD_datasync(0): wait until the CD DMA (channel 3) is idle. Its
 // busy bit comes from the observed I/O page, which a completed read leaves
 // idle; a busy channel would need the polls' platform timing.

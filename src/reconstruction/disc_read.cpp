@@ -116,6 +116,8 @@ void Program::deliver_arrivals(std::uint32_t point) {
     while (!inputs.empty() && inputs.front().site == point &&
            (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick))
         static_cast<void>(deliver_interrupt());
+    if (!inputs.empty() && inputs.front().site == point && inputs.front().kind == Kind::pass)
+        resident.platform.pop_front();
 }
 
 // Resident 80028738: the file's byte size (record bytes 3-6).
@@ -440,9 +442,9 @@ std::int32_t Program::cd_sync(std::array<std::uint8_t, 8> *result) {
         const bool arrived = cd.interrupt_poll == 0 && deliver_pending_front();
         const auto status = cd.sync_status;
         const auto &inputs = resident.platform;
-        if (!inputs.empty() && inputs.front().kind == PlatformInput::Kind::read &&
-            inputs.front().site == 0x80041d28 &&
-            platform_read(resident.platform, 0x80041d28, 1) != status)
+        const bool polled = !inputs.empty() && inputs.front().kind == PlatformInput::Kind::read &&
+                            inputs.front().site == 0x80041d28;
+        if (polled && platform_read(resident.platform, 0x80041d28, 1) != status)
             throw PlatformInputError("The recorded CD sync status differs from the handler's");
         if (status == 2 || status == 5) {
             cd.sync_status = 2;
@@ -450,7 +452,8 @@ std::int32_t Program::cd_sync(std::array<std::uint8_t, 8> *result) {
                 *result = cd.sync_result;
             return status;
         }
-        if (cd.interrupt_poll == 0 && !arrived)
+        // Another pass needs an arrival or a recorded poll of the status.
+        if (cd.interrupt_poll == 0 && !arrived && !polled)
             cd_interrupt_wait(0x80041d88);
     }
 }

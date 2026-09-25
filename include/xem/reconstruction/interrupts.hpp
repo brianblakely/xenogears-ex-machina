@@ -32,8 +32,10 @@ class PlatformInputError : public std::runtime_error {
 // after an interrupt are the controller receive buffers (800625fc, two of
 // 22h bytes) the BIOS filled before the dispatch: site is the byte index,
 // value the byte.
+// `pass` closes one visit of a delivery point: the arrivals that follow it
+// at the same point belong to a later visit.
 struct PlatformInput {
-    enum class Kind : std::uint8_t { read, interrupt, tick, pad };
+    enum class Kind : std::uint8_t { read, interrupt, tick, pad, pass };
     Kind kind{Kind::read};
     std::uint32_t site{};
     std::uint32_t value{};

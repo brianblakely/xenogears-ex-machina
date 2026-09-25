@@ -59,7 +59,8 @@ MAX_SNAPSHOTS = 8192
 # Hooks the trace extension watches (nix/reference-trace.h XEM_TRACE_HOOKS)
 # and the bound on one hook's record payload times the callback budget.
 MAX_HOOKS = 256
-MAX_PAYLOAD_BYTES = 1024 * 1024 * 1024
+MAX_PAYLOAD_BYTES = 16 * 1024 * 1024 * 1024
+MAX_RANGE_RECORDS = 16_000_000
 # The 4 KiB hardware I/O register page (1f801000) stored with each snapshot.
 IO_PAGE = 0x1000
 # A snapshot image is RAM, then the 1 KiB scratchpad, then the I/O page.
@@ -282,7 +283,7 @@ def validate_instruction_trace(value: object) -> dict:
             raise ValueError("Trace hook names must be unique")
         names.add(hook["name"])
         payload = 34 * 4 + 32 + sum(item["size"] for item in ranges)
-        if payload * budget > MAX_PAYLOAD_BYTES or len(ranges) * budget > 1_000_000:
+        if payload * budget > MAX_PAYLOAD_BYTES or len(ranges) * budget > MAX_RANGE_RECORDS:
             raise ValueError("Instruction trace exceeds payload or range-record budget")
         if "digests" in hook:
             validate_digests(hook["digests"], budget)
