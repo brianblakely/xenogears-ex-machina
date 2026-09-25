@@ -1132,6 +1132,7 @@ def run(args: argparse.Namespace) -> int:
     )
     return 0 if matched == len(selected) else 1
 
+
 # Multi-frame runs: the field main loop 80077e88 between frames. Each
 # interrupt arrival is delivered where the recovered code reaches the point
 # that follows the last position hook before it (Program::deliver_arrivals):
@@ -1250,27 +1251,32 @@ def run_frames(args: argparse.Namespace) -> int:
     nothing observed enters the run except the declared platform inputs.
     """
     capture = args.capture
-    require(args.entry == "field_frame" and args.platform and args.services,
-            "Multi-frame runs are field_frame chains with --platform and --services")
+    require(
+        args.entry == "field_frame" and args.platform and args.services,
+        "Multi-frame runs are field_frame chains with --platform and --services",
+    )
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
     for path in (capture, args.platform, args.services):
         trace = json.loads((path / "observation.json").read_text())["instruction_trace"]
-        require(not trace.get("failed") and not trace.get("budget_reached"),
-                f"Capture trace of {path} failed or reached its budget")
-        require(file_sha256(path / "instruction-trace.jsonl") == trace.get("trace_sha256"),
-                f"Capture trace of {path} does not match its recorded digest")
+        require(
+            not trace.get("failed") and not trace.get("budget_reached"),
+            f"Capture trace of {path} failed or reached its budget",
+        )
+        require(
+            file_sha256(path / "instruction-trace.jsonl") == trace.get("trace_sha256"),
+            f"Capture trace of {path} does not match its recorded digest",
+        )
     calls = pairs(capture, "frame-entry", "frame-exit")
     image_rows = trace_rows(capture)
     loop_rows = trace_rows(args.platform)
     services = frame_services(args.services, "frame-entry", "frame-exit", ())
     positions = {hook for hook in ARRIVAL_POINTS if hook not in ("frame-entry", "frame-exit")}
-    loop_hooks = {"frame-entry", "frame-exit", "vsync1-loop", "drain-call", "drain-return",
-                  "loop-31e8"}
     # A main-loop iteration's frame returns to 800782e4. Frames other code
     # calls (the entry fade-in 80078d44 returns to 80079178) split chains.
     selected = calls[args.start : args.start + args.limit]
     callers = collections.Counter(
-        hex(visible_registers(entry)[31]) for entry, *_ in selected
+        hex(visible_registers(entry)[31])
+        for entry, *_ in selected
         if visible_registers(entry)[31] != MAIN_LOOP_RETURN
     )
     runs, chains, results = [[]], [], []
@@ -1296,10 +1302,9 @@ def run_frames(args: argparse.Namespace) -> int:
 
             # Cycle counts wrap; frontend frames place a row in the chain's span.
             def inside(row: dict, start=start, end=end, runs=(first_run, last_run)) -> bool:
-                return (
-                    runs[0] <= row["frontend_run"] <= runs[1]
-                    and (row["cycle_u32"] - start) % (1 << 32) <= (end - start) % (1 << 32)
-                )
+                return runs[0] <= row["frontend_run"] <= runs[1] and (row["cycle_u32"] - start) % (
+                    1 << 32
+                ) <= (end - start) % (1 << 32)
 
             chain_loop = [row for row in loop_rows if inside(row)]
             chain_image = [row for row in image_rows if inside(row) and row["hook"] in positions]
@@ -1374,16 +1379,23 @@ def run_frames(args: argparse.Namespace) -> int:
                     result["mismatch_count"] += 1
                 ok = not (result["mismatch_count"] or result["unowned_count"])
                 compared.append(
-                    {"boundary": kind, "frontend_run": row["frontend_run"], "matched": ok,
-                     "changed_bytes": result["changed_bytes"],
-                     "owned_bytes": result["owned_bytes"],
-                     "interrupt_attributed": result["interrupt_attributed"],
-                     "mismatch_count": result["mismatch_count"],
-                     "unowned_count": result["unowned_count"]}
+                    {
+                        "boundary": kind,
+                        "frontend_run": row["frontend_run"],
+                        "matched": ok,
+                        "changed_bytes": result["changed_bytes"],
+                        "owned_bytes": result["owned_bytes"],
+                        "interrupt_attributed": result["interrupt_attributed"],
+                        "mismatch_count": result["mismatch_count"],
+                        "unowned_count": result["unowned_count"],
+                    }
                 )
                 if not ok:
-                    first_divergence = {"boundary": kind, "frontend_run": row["frontend_run"],
-                                        **result}
+                    first_divergence = {
+                        "boundary": kind,
+                        "frontend_run": row["frontend_run"],
+                        **result,
+                    }
                     break
             matched = 0
             for item in compared:
@@ -1395,8 +1407,12 @@ def run_frames(args: argparse.Namespace) -> int:
                 if report.get("platform_unconsumed"):
                     first_divergence = {"platform_unconsumed": report["platform_unconsumed"]}
                 elif sectors and report.get("delivered_sectors") != sectors:
-                    first_divergence = {"sector_mismatch": {
-                        "computed": report.get("delivered_sectors"), "recorded": sectors}}
+                    first_divergence = {
+                        "sector_mismatch": {
+                            "computed": report.get("delivered_sectors"),
+                            "recorded": sectors,
+                        }
+                    }
             # Frames whose exit matched with every earlier boundary.
             frames_matched = sum(1 for item in compared[:matched] if item["boundary"] == "exit")
             results.append(
@@ -1408,7 +1424,9 @@ def run_frames(args: argparse.Namespace) -> int:
                     "boundaries_matched": matched,
                     "frames_matched": frames_matched,
                     "status": report["status"],
-                    "stopped_at": None if complete else {
+                    "stopped_at": None
+                    if complete
+                    else {
                         "dependency": report.get("dependency"),
                         "reason": report.get("reason"),
                         "location": report.get("location"),
@@ -1425,10 +1443,14 @@ def run_frames(args: argparse.Namespace) -> int:
             name: {
                 "path": str(path),
                 "trace_sha256": json.loads((path / "observation.json").read_text())[
-                    "instruction_trace"]["trace_sha256"],
+                    "instruction_trace"
+                ]["trace_sha256"],
             }
-            for name, path in (("images", capture), ("platform", args.platform),
-                               ("services", args.services))
+            for name, path in (
+                ("images", capture),
+                ("platform", args.platform),
+                ("services", args.services),
+            )
         },
         "runner_sha256": file_sha256(args.runner),
         "tool_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
@@ -1451,14 +1473,27 @@ def run_frames(args: argparse.Namespace) -> int:
     if args.report:
         require(not args.report.exists(), "Reports are never overwritten")
         args.report.write_text(text + "\n")
-    print(json.dumps([
-        [c["first_frame"], c["frames"], c["frames_matched"], c["boundaries_matched"],
-         c["status"], (c["stopped_at"] or {}).get("dependency"),
-         bool(c["first_divergence"])]
-        for c in results
-    ]))
-    return 0 if all(c["frames_matched"] == c["frames"] and not c["first_divergence"]
-                    for c in results) else 1
+    print(
+        json.dumps(
+            [
+                [
+                    c["first_frame"],
+                    c["frames"],
+                    c["frames_matched"],
+                    c["boundaries_matched"],
+                    c["status"],
+                    (c["stopped_at"] or {}).get("dependency"),
+                    bool(c["first_divergence"]),
+                ]
+                for c in results
+            ]
+        )
+    )
+    return (
+        0
+        if all(c["frames_matched"] == c["frames"] and not c["first_divergence"] for c in results)
+        else 1
+    )
 
 
 def main() -> int:

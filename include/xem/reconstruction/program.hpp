@@ -594,15 +594,15 @@ struct FieldState {
     std::uint32_t w_adb4c{};                         // 800adb4c: joins the second model table
     std::int16_t ot_depth{};                         // 800b21d4: model table entries joined
     // Field main loop 80077e88 between frames (field_loop.cpp).
-    std::uint32_t transition{};         // 800adb38: nonzero runs the 800a5924 transition
-    std::uint32_t w_adbd0{};            // 800adbd0: read by the branch after a battle request
-    std::uint32_t gate_adbd8{};         // 800adbd8: zero leaves the field (exit kind 3)
-    std::uint32_t gate_adbe8{};         // 800adbe8: zero leaves the field (exit kind 2)
-    std::uint16_t input_mask{};         // 800b217a: buttons of port 1 the drain keeps
-    std::uint16_t held_buttons_2{};     // 800afea0: port 2 buttons held
-    std::uint16_t held_history{};       // 800afc6c: port 1 buttons held since cleared
-    std::uint8_t b_b02c8{};             // 800b02c8: 1 skips 800a31e8
-    std::uint8_t pause_inhibited{};     // 800b2358: nonzero ignores Start (800c3900 800)
+    std::uint32_t transition{};     // 800adb38: nonzero runs the 800a5924 transition
+    std::uint32_t w_adbd0{};        // 800adbd0: read by the branch after a battle request
+    std::uint32_t gate_adbd8{};     // 800adbd8: zero leaves the field (exit kind 3)
+    std::uint32_t gate_adbe8{};     // 800adbe8: zero leaves the field (exit kind 2)
+    std::uint16_t input_mask{};     // 800b217a: buttons of port 1 the drain keeps
+    std::uint16_t held_buttons_2{}; // 800afea0: port 2 buttons held
+    std::uint16_t held_history{};   // 800afc6c: port 1 buttons held since cleared
+    std::uint8_t b_b02c8{};         // 800b02c8: 1 skips 800a31e8
+    std::uint8_t pause_inhibited{}; // 800b2358: nonzero ignores Start (800c3900 800)
     // 8007ae78: pad buffer per port (800b0054), divisors (800b005c, 800b0060)
     // and positions per port (800b0068 x, 800b0070 y).
     std::array<std::uint32_t, 2> pointer_pads{};
@@ -935,13 +935,13 @@ class Program {
     // they followed (see PlatformInput).
     void deliver_arrivals(std::uint32_t point);
     // Field main-loop steps (field_loop.cpp).
-    std::int32_t loop_disc_busy();                                // 80078bc8
+    std::int32_t loop_disc_busy();                                       // 80078bc8
     void clear_ordering_table(std::uint32_t table, std::uint32_t count); // 80044ad8
-    void drain_pad();                                             // 80074700
-    void pointer_state();                                         // 8007ae78(1, 80065848)
-    void record_play_state();                                     // 800a31e8
-    std::uint32_t file_size(std::int32_t file); // Resident 80028738
-    std::uint32_t read_size(std::int32_t file); // Resident 80028808
+    void drain_pad();                                                    // 80074700
+    void pointer_state();                                                // 8007ae78(1, 80065848)
+    void record_play_state();                                            // 800a31e8
+    std::uint32_t file_size(std::int32_t file);                          // Resident 80028738
+    std::uint32_t read_size(std::int32_t file);                          // Resident 80028808
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4

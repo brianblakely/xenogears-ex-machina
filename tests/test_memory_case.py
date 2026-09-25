@@ -254,7 +254,9 @@ class MemoryCaseTests(unittest.TestCase):
             row("load-80045de4", 70, pc=0x80045DE8),
             row("drain-call", 80),
         ]
-        lines, counts, sectors, stacks = loop_inputs(image, loop, {50: b"\x00\x41"}, bytes(ram), bytes(io))
+        lines, counts, sectors, stacks = loop_inputs(
+            image, loop, {50: b"\x00\x41"}, bytes(ram), bytes(io)
+        )
         self.assertEqual(
             lines,
             [

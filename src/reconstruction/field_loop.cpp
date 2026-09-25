@@ -213,8 +213,7 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
     if (state.draw_buffer == 1 && request.field_active == 0 && loop_disc_busy() == 0) {
         // 80077e10: -1 while 800adbd0 is 1, 800b2344 is zero and the
         // controlled actor has flag 800.
-        const bool waiting =
-            state.w_adbd0 == 1 && inputs.jump_mode == 0 && (flags() & 0x800U) != 0;
+        const bool waiting = state.w_adbd0 == 1 && inputs.jump_mode == 0 && (flags() & 0x800U) != 0;
         if (!waiting)
             unrecovered("field_battle_start", 0x80078334, "symbol:field-battle-start",
                         "Starting a battle from the field main loop is not recovered");

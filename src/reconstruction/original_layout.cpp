@@ -900,8 +900,7 @@ std::vector<OriginalGlobal> build() {
     add("gate_adbd8", 0x800adbd8, 4, [](Program &p) -> auto & { return f(p).gate_adbd8; });
     add("gate_adbe8", 0x800adbe8, 4, [](Program &p) -> auto & { return f(p).gate_adbe8; });
     add("input_mask", 0x800b217a, 2, [](Program &p) -> auto & { return f(p).input_mask; });
-    add("held_buttons_2", 0x800afea0, 2,
-        [](Program &p) -> auto & { return f(p).held_buttons_2; });
+    add("held_buttons_2", 0x800afea0, 2, [](Program &p) -> auto & { return f(p).held_buttons_2; });
     add("held_history", 0x800afc6c, 2, [](Program &p) -> auto & { return f(p).held_history; });
     add("b_b02c8", 0x800b02c8, 1, [](Program &p) -> auto & { return f(p).b_b02c8; });
     add("pause_inhibited", 0x800b2358, 1,
