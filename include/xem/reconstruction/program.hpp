@@ -445,6 +445,12 @@ struct ResidentState {
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
     std::uint32_t w_4f328{}; // 8004f328: bit 80 stops variable 10, bit 4 counts it down
     std::uint8_t b_59171{};  // 80059171: 800b236c when triangle opens the menu
+    // Menu overlay (menu_overlay.hpp) globals.
+    std::uint8_t menu_mode{};           // 80059460: 0 field menu, 2 title file screen, 6 other
+    std::uint8_t menu_cursor{};         // 800594cc: field menu cursor kept between openings
+    std::uint8_t menu_effects{};        // 80059178: nonzero loads the menu's effect bank
+    std::uint32_t menu_resources{};     // 8005945c: resource block the menu unpacks and frees
+    std::uint32_t menu_effect_bank{};   // 8006259c: the menu's effect bank block
     // 80065848: 8007ae78's pointer record for port 2 (x, y, buttons, dx, dy).
     std::array<std::int32_t, 5> pointer{};
     InterruptState interrupts;
@@ -721,6 +727,9 @@ enum class FrameStep : std::uint8_t {
 };
 
 class Program;
+namespace menu {
+class Overlay;
+}
 // Read-only observation. Hosts may interrupt at a boundary; no callback supplies
 // a computed game result. References expire when the callback returns.
 using ProgramObserver = std::function<void(const Program &, SourcePoint, bool completed)>;
@@ -959,6 +968,8 @@ class Program {
     [[nodiscard]] std::uint32_t current_disc() const;
 
   private:
+    // The menu overlay (menu_overlay.hpp) runs on the Program's services.
+    friend class menu::Overlay;
     // Field frame steps (field_frame.cpp).
     void frame_emitters(std::uint32_t listener);                                    // 80086590
     void frame_fade();                                                              // 80071cb4

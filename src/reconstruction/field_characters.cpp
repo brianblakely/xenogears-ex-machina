@@ -5,6 +5,7 @@
 // shadows. Original addresses name correlations only.
 #include "xem/reconstruction/gpu.hpp"
 #include "xem/reconstruction/program.hpp"
+#include "xem/reconstruction/resident_gte.hpp"
 
 #include <bit>
 
@@ -600,20 +601,17 @@ void Program::emit_sprite_parts(std::uint32_t sprite, std::uint32_t slot) {
         quad[1][1] = half(top - origin_y);
         quad[2][1] = half(bottom - origin_y);
         quad[3][1] = half(bottom - origin_y);
-        // RotTransPers4 (8004a73c): corners 0-2 by RTPT, corner 3 by RTPS;
-        // corners 2 and 3 fill the packet's third and fourth vertices crosswise.
-        const auto corner = [&](std::size_t i) {
-            return field::GteVector{quad[i][0], quad[i][1], quad[i][2]};
-        };
-        for (std::size_t k = 0; k < 3; ++k)
-            gte.set_vector(k, corner(k));
-        gte.rtpt();
-        set_memory(packet + 8, gte.sxy(0));
-        set_memory(packet + 0x10, gte.sxy(1));
-        set_memory(packet + 0x20, gte.sxy(2));
-        gte.set_vector(0, corner(3));
-        gte.rtps();
-        set_memory(packet + 0x18, gte.sxy(2));
+        // RotTransPers4 (8004a73c): corners 2 and 3 fill the packet's third
+        // and fourth vertices crosswise. The depth cue and flag go to this
+        // function's stack locals, which nothing reads.
+        static constexpr std::array<std::uint32_t, 4> vertex{8, 0x10, 0x20, 0x18};
+        static_cast<void>(resident::rot_trans_pers4(
+            gte,
+            [&](std::uint32_t i) { return field::GteVector{quad[i][0], quad[i][1], quad[i][2]}; },
+            [&](std::uint32_t i, std::uint32_t value) {
+                if (i < vertex.size())
+                    set_memory(packet + vertex[i], value);
+            }));
         // Texture corners; a mirrored quad samples one texel to the left.
         auto u = memory(part + 4, 1);
         const auto v = memory(part + 5, 1);

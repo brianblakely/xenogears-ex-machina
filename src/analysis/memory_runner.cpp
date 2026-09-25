@@ -2,6 +2,7 @@
 // only game-state input; expected exit images never reach this process.
 #include "field_memory.hpp"
 
+#include "xem/reconstruction/menu_overlay.hpp"
 #include "xem/reconstruction/resident_heap.hpp"
 
 #include <fstream>
@@ -177,6 +178,9 @@ int run_case(int argc, char **argv) {
         const bool menu_entry = entry == "menu_item_effect" || entry == "menu_item_use" ||
                                 entry == "menu_equip_swap" || entry == "menu_equip_bonus" ||
                                 entry == "menu_equip_stats" || menu_save_entry;
+        // "menu_call:ADDR": the menu overlay function at ADDR (menu::Overlay),
+        // entered with the recorded argument registers and caller stack words.
+        const bool overlay_entry = entry.starts_with("menu_call:");
         const bool transition_entry = entry == "field_save" || entry == "field_preload" ||
                                       entry == "field_map_change_step" ||
                                       entry == "field_map_change_start";
@@ -189,7 +193,8 @@ int run_case(int argc, char **argv) {
             entry == "field_reload" || entry == "field_load";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
+            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry &&
+            !overlay_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -226,6 +231,8 @@ int run_case(int argc, char **argv) {
                                            memory.word(registers[4] + 8));
         } else if (battle_entry) {
             program = analysis::import_battle(memory);
+        } else if (overlay_entry) {
+            program = analysis::import_menu_mode(memory);
         } else if (menu_entry) {
             program = analysis::import_menu(memory);
             // The save payload (A0; S4 at the seal) and the load buffer (S4
@@ -610,6 +617,36 @@ int run_case(int argc, char **argv) {
         } else if (entry == "battle_drops") {
             // 801e1444: A0 ids, A1 counts, A2 categories.
             program->add_battle_drops(registers[4], registers[5], registers[6]);
+        } else if (overlay_entry) {
+            std::size_t used = 0;
+            // "menu_call:ADDR:sound": the capture hooks the menu sound 801c8574.
+            auto text = std::string(entry.substr(10));
+            const bool sound_positions = text.ends_with(":sound");
+            if (sound_positions)
+                text.resize(text.size() - 6);
+            const auto address = static_cast<std::uint32_t>(std::stoul(text, &used, 16));
+            if (used != text.size())
+                throw InputError("menu_call needs a hexadecimal entry address");
+            const auto sp = registers[29];
+            // A0..A3, then the caller's stack words from SP + 10.
+            std::vector<std::uint32_t> arguments{registers[4], registers[5], registers[6],
+                                                 registers[7]};
+            for (std::uint32_t k = 0; k < 8; ++k)
+                arguments.push_back(memory.word(sp + 0x10 + 4 * k));
+            game::menu::Overlay overlay(*program, services, sp);
+            overlay.sound_positions = sound_positions;
+            // Each frame entry's exported state (menu memory holds the game
+            // data while the overlay runs).
+            overlay.boundary = [&](std::string_view boundary) {
+                const auto owned_now = owned_ranges(*program);
+                frames << (frames.tellp() > 0 ? "," : "") << "{\"boundary\":" << quote(boundary)
+                       << ",\"events\":" << overlay.events() << ",\"gte\":["
+                       << gte_controls(*program) << "],\"owned\":[" << owned_now
+                       << "],\"hardware_writes\":[]}";
+            };
+            overlay.set_stack_image(
+                memory.range(sp - game::menu::Overlay::stack_bytes, game::menu::Overlay::stack_bytes));
+            return_value = overlay.call(address, arguments);
         } else if (entry == "menu_item_effect") {
             // 801e31c0: A0 table directory, A1 character, A2 item.
             return_value =
@@ -919,7 +956,7 @@ int run_case(int argc, char **argv) {
             owned = owned_ranges(*program, service_output);
         } catch (const std::exception &error) {
             status = "reconstruction_error";
-            reason = std::string("Export failed: ") + error.what();
+            reason = std::string("Export failed: ") + error.what() + " (after: " + reason + ')';
             owned.clear();
         }
     }

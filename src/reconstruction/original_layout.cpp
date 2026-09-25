@@ -891,7 +891,9 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.heap.last_size; });
     add_resident("heap_last_caller", 0x80059340, 4,
                  [](Program &p) -> auto & { return p.resident.heap.last_caller; });
-    for (std::size_t tag = 0; tag < 16; ++tag)
+    // Owner tags 0..12: the resident text layout window 80059fd8 (80034eac)
+    // follows the thirteenth word, and no caller selects a higher tag.
+    for (std::size_t tag = 0; tag < 13; ++tag)
         add_resident("heap_tag_word", static_cast<std::uint32_t>(0x80059fa4 + 4 * tag), 4,
                      [tag](Program &p) -> auto & { return p.resident.heap.tag_words[tag]; });
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
@@ -923,6 +925,15 @@ std::vector<OriginalGlobal> build() {
     add_resident("w_4f318", 0x8004f318, 4, [](Program &p) -> auto & { return p.resident.w_4f318; });
     add_resident("w_4f328", 0x8004f328, 4, [](Program &p) -> auto & { return p.resident.w_4f328; });
     add_resident("b_59171", 0x80059171, 1, [](Program &p) -> auto & { return p.resident.b_59171; });
+    add_resident("menu_mode", 0x80059460, 1, [](Program &p) -> auto & { return p.resident.menu_mode; });
+    add_resident("menu_cursor", 0x800594cc, 1,
+                 [](Program &p) -> auto & { return p.resident.menu_cursor; });
+    add_resident("menu_effects", 0x80059178, 1,
+                 [](Program &p) -> auto & { return p.resident.menu_effects; });
+    add_resident("menu_resources", 0x8005945c, 4,
+                 [](Program &p) -> auto & { return p.resident.menu_resources; });
+    add_resident("menu_effect_bank", 0x8006259c, 4,
+                 [](Program &p) -> auto & { return p.resident.menu_effect_bank; });
     for (std::uint32_t i = 0; i < 5; ++i)
         add_resident("pointer", 0x80065848 + 4 * i, 4,
                      [i](Program &p) -> auto & { return p.resident.pointer[i]; });

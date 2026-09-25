@@ -65,6 +65,11 @@ void import_menu_block(reconstruction::Program &program, const OriginalMemory &m
                        std::uint32_t address);
 [[nodiscard]] std::vector<OwnedRange> export_menu(const reconstruction::Program &program,
                                                   OriginalMemory &memory);
+// Menu-mode Program state for an overlay entry (menu::Overlay): resident
+// state, the menu state pointer word 800625a0, the menu's copies of the
+// resident words of the save and load (as import_menu), and every allocated
+// heap block no resident value owns, each as one menu memory region.
+[[nodiscard]] reconstruction::Program import_menu_mode(const OriginalMemory &memory);
 
 // Builds field-mode Program state from the entry image. Field components are
 // decoded from the separately qualified original source and must equal the

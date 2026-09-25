@@ -108,11 +108,7 @@ PackedBlock decode_packed_in_memory(std::span<std::uint8_t> memory, std::uint32_
             throw PackedError(std::string(what) + " outside the supplied memory");
         return memory[static_cast<std::size_t>(offset)];
     };
-    std::uint32_t size = 0;
-    for (std::uint32_t i = 0; i < 4; ++i)
-        size |= static_cast<std::uint32_t>(at(source + i, "Packed length")) << (8U * i);
-    auto result = decode(
-        size,
+    return decode_packed_through(
         [&](std::size_t position) {
             return at(source + static_cast<std::uint32_t>(position), "Packed source");
         },
@@ -122,7 +118,15 @@ PackedBlock decode_packed_in_memory(std::span<std::uint8_t> memory, std::uint32_
         [&](std::size_t index) {
             return at(destination + static_cast<std::uint32_t>(index), "Decoder output");
         });
-    return result;
+}
+
+PackedBlock decode_packed_through(const std::function<std::uint8_t(std::size_t)> &source,
+                                  const std::function<void(std::size_t, std::uint8_t)> &put,
+                                  const std::function<std::uint8_t(std::size_t)> &output) {
+    std::uint32_t size = 0;
+    for (std::size_t i = 0; i < 4; ++i)
+        size |= static_cast<std::uint32_t>(source(i)) << (8U * i);
+    return decode(size, source, put, output);
 }
 
 std::span<const std::uint8_t> FieldComponent::logical_data() const {

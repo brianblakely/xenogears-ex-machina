@@ -147,6 +147,18 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
         return bytes;
     if (const auto bytes = from(read.directory_table, read.directories); !bytes.empty())
         return bytes;
+    // Menu-mode memory: the menu's heap blocks and globals, and the stack
+    // callee frames of a running overlay (menu_overlay.hpp).
+    if (menu) {
+        auto &stack = const_cast<menu::MenuMemory &>(*menu).stack;
+        if (const auto bytes = from(menu->stack_base, stack); !bytes.empty())
+            return bytes;
+        auto &regions = const_cast<menu::MenuMemory &>(*menu).regions;
+        if (auto after = regions.upper_bound(address); after != regions.begin())
+            if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
+                !bytes.empty())
+                return bytes;
+    }
     // Persistent game data (*8005a39c) and the resident field snapshot.
     if (const auto bytes = from(resident.game_state, resident.game_data); !bytes.empty())
         return bytes;

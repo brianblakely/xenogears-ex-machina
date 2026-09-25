@@ -1230,6 +1230,17 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
     for (auto &block : resident.music_blocks)
         if (inside(block))
             return;
+    // A menu-mode heap block (menu memory regions).
+    if (menu) {
+        auto &regions = menu->regions;
+        if (auto after = regions.upper_bound(address); after != regions.begin()) {
+            auto &[at, bytes] = *std::prev(after);
+            if (end <= std::uint64_t{at} + bytes.size()) {
+                std::ranges::copy(data, bytes.begin() + (address - at));
+                return;
+            }
+        }
+    }
     for (auto &[at, bytes] : resident.heap.held)
         if (address < at + bytes.size() && at < end)
             throw field::FieldFormatError("Disc DMA writes into a free heap block");

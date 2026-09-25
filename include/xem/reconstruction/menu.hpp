@@ -3,6 +3,7 @@
 #include "xem/reconstruction/sound_driver.hpp"
 
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <span>
 #include <stdexcept>
@@ -26,6 +27,11 @@ class MenuError : public std::runtime_error {
 // original code addresses it.
 struct MenuMemory {
     std::map<std::uint32_t, std::vector<std::uint8_t>> regions;
+    // While the overlay runs (menu_overlay.hpp): the stack below its entry
+    // SP, [stack_base, stack_base + stack.size()), where callee frames keep
+    // their locals. Transient machine memory, never exported as state.
+    std::uint32_t stack_base{};
+    std::vector<std::uint8_t> stack;
 
     [[nodiscard]] std::uint32_t u8(std::uint32_t address) const;
     [[nodiscard]] std::uint32_t u16(std::uint32_t address) const;
@@ -69,6 +75,9 @@ inline constexpr std::uint32_t item_ids = 0x8006f65a;
 struct Menu {
     MenuMemory &memory;
     resident::SoundDriver &sound;
+    // Called as 801c8574 (the menu sound) is entered; hosts that order
+    // interrupt arrivals by it (menu::Overlay) set it.
+    std::function<void()> entering_sound{};
 
     [[nodiscard]] std::uint32_t state() const { return memory.u32(state_pointer); }
     [[nodiscard]] std::uint32_t tables() const { return memory.u32(state() + state_tables); }
