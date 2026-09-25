@@ -422,7 +422,8 @@ std::int32_t Program::open_dialogue(field::FieldWorld &world, field::FieldPassSt
     class ProgramMemory final : public resident::Memory {
       public:
         explicit ProgramMemory(Program &owner) : owner_(owner) {}
-        [[nodiscard]] std::uint32_t read(std::uint32_t address, std::uint32_t width) const override {
+        [[nodiscard]] std::uint32_t read(std::uint32_t address,
+                                         std::uint32_t width) const override {
             return owner_.memory(address, width);
         }
         void write(std::uint32_t address, std::uint32_t value, std::uint32_t width) override {

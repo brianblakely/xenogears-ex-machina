@@ -30,26 +30,26 @@ constexpr std::uint32_t view_motion = 0x329; // 0 still, 1/2 moving, 3/4 start a
 constexpr std::uint32_t sounds = 0x32a;      // nonzero plays menu effects
 constexpr std::uint32_t party_count = 0x32b;
 constexpr std::uint32_t card_state = 0x32c; // card state block (5034 bytes)
-constexpr std::uint32_t tables = 0x330; // data table directory (cc bytes)
+constexpr std::uint32_t tables = 0x330;     // data table directory (cc bytes)
 constexpr std::uint32_t cards_present = 0x334;
 constexpr std::uint32_t b_335 = 0x335;
-constexpr std::uint32_t cursor = 0x336;        // top command cursor
-constexpr std::uint32_t cursor_shown = 0x337;  // cursor the labels were last drawn for
-constexpr std::uint32_t choice = 0x338;        // screen choice
-constexpr std::uint32_t choice_shown = 0x339;  // choice the labels were last drawn for
+constexpr std::uint32_t cursor = 0x336;       // top command cursor
+constexpr std::uint32_t cursor_shown = 0x337; // cursor the labels were last drawn for
+constexpr std::uint32_t choice = 0x338;       // screen choice
+constexpr std::uint32_t choice_shown = 0x339; // choice the labels were last drawn for
 constexpr std::uint32_t choice_count = 0x33a;
-constexpr std::uint32_t fighters = 0x33b;       // party members with a gear (+a0 not ff)
-constexpr std::uint32_t party = 0x33c;          // party block (6c bytes)
-constexpr std::uint32_t block_340 = 0x340;      // field-menu block (328 bytes)
-constexpr std::uint32_t block_344 = 0x344;      // field-menu block (374 bytes)
-constexpr std::uint32_t primitives = 0x348;     // shared primitive block (15c bytes)
-constexpr std::uint32_t screen_images = 0x350;  // block with the screen copy rectangle (+1180)
-constexpr std::uint32_t block_354 = 0x354;      // 140c bytes
-constexpr std::uint32_t portraits = 0x364;      // two 720-byte blocks
-constexpr std::uint32_t portrait_marks = 0x380; // two 18-byte blocks
-constexpr std::uint32_t field_block_slots = 0x39c;   // three 127c-byte blocks
-constexpr std::uint32_t markers = 0x428;        // 14c bytes
-constexpr std::uint32_t sheet_entries = 0x46c;  // four records of six words (80026338)
+constexpr std::uint32_t fighters = 0x33b;          // party members with a gear (+a0 not ff)
+constexpr std::uint32_t party = 0x33c;             // party block (6c bytes)
+constexpr std::uint32_t block_340 = 0x340;         // field-menu block (328 bytes)
+constexpr std::uint32_t block_344 = 0x344;         // field-menu block (374 bytes)
+constexpr std::uint32_t primitives = 0x348;        // shared primitive block (15c bytes)
+constexpr std::uint32_t screen_images = 0x350;     // block with the screen copy rectangle (+1180)
+constexpr std::uint32_t block_354 = 0x354;         // 140c bytes
+constexpr std::uint32_t portraits = 0x364;         // two 720-byte blocks
+constexpr std::uint32_t portrait_marks = 0x380;    // two 18-byte blocks
+constexpr std::uint32_t field_block_slots = 0x39c; // three 127c-byte blocks
+constexpr std::uint32_t markers = 0x428;           // 14c bytes
+constexpr std::uint32_t sheet_entries = 0x46c;     // four records of six words (80026338)
 constexpr std::uint32_t load_state = 0x4d8;
 constexpr std::uint32_t first_member = 0x4dc; // first occupied party slot
 constexpr std::uint32_t label_images = 0x4e0; // label image records (801e7e68)
@@ -81,11 +81,11 @@ constexpr std::uint32_t menu_effects = 0x80059178;
 constexpr std::uint32_t menu_resources = 0x8005945c;
 constexpr std::uint32_t menu_effect_bank = 0x8006259c;
 constexpr std::uint32_t load_resume = 0x800594d0; // 0, 1 (title timeout) or 2 (loaded)
-constexpr std::uint32_t character_gear = 0xa0; // character record + a0: gear, ff none
+constexpr std::uint32_t character_gear = 0xa0;    // character record + a0: gear, ff none
 constexpr std::uint32_t party_order = 0x8006f368; // 3 character ids of the game data
 constexpr std::uint32_t members_joined = 0x8006f364;
 constexpr std::uint32_t members_active = 0x8006f366;
-constexpr std::uint32_t save_count = 0x8006ef64; // game data halfword: line of the label text
+constexpr std::uint32_t save_count = 0x8006ef64;  // game data halfword: line of the label text
 constexpr std::uint32_t loaded_disc = 0x8006f008; // game data: disc of the loaded file
 // Overlay statics.
 constexpr std::uint32_t reset_enabled = 0x801e9784; // 1 checks the reset combination
@@ -357,7 +357,7 @@ void Overlay::set_up_party() {
 void Overlay::load_resources() {
     const auto stack_frame = enter(0xa8);
     const auto resources = u32(menu_resources);
-    static_cast<void>(resident::relocate_offsets(*this, resources)); // 8003342c
+    static_cast<void>(resident::relocate_offsets(*this, resources));    // 8003342c
     const auto unpack = [&](std::uint32_t source, std::uint32_t mode) { // 80032e88
         return resident::unpack_to_new_block(
             *this, source, mode, [&](std::uint32_t size, std::uint32_t kind) {
@@ -394,9 +394,10 @@ void Overlay::load_resources() {
     // then 14b at +38, 14c at +50, 14d at +68. The portrait positions of
     // party slot k are the CLUT x/y and image x/y words at +40 + 18 * k.
     const auto entry = [&](std::uint32_t index, std::uint32_t record) {
-        resident::sheet_part_texture(*this, u32(at(sheet)), index, locals[record], locals[record + 4],
-                              locals[record + 8], locals[record + 0xc], locals[record + 0x10],
-                              locals[record + 0x14]); // 80026338
+        resident::sheet_part_texture(*this, u32(at(sheet)), index, locals[record],
+                                     locals[record + 4], locals[record + 8], locals[record + 0xc],
+                                     locals[record + 0x10],
+                                     locals[record + 0x14]); // 80026338
     };
     entry(0xe0, 0x38);
     entry(0x14b, 0x38);
@@ -475,8 +476,8 @@ void Overlay::read_sheet_entries() {
     const std::array<std::uint32_t, 4> indices{0xfe, 0x103, 0x100, 0x101};
     for (std::uint32_t i = 0; i < 4; ++i) {
         const auto record = at(sheet_entries) + 0x18 * i;
-        resident::sheet_part_texture(*this, u32(at(sheet)), indices[i], record, record + 4, record + 8,
-                              record + 0xc, record + 0x10, record + 0x14);
+        resident::sheet_part_texture(*this, u32(at(sheet)), indices[i], record, record + 4,
+                                     record + 8, record + 0xc, record + 0x10, record + 0x14);
     }
 }
 
@@ -522,7 +523,8 @@ void Overlay::set_up_frame_primitives() {
 
 // 801c8164: a POLY_G4 at `a0` whose top corners have color (a1, a2, a3) and
 // whose bottom corners are black.
-void Overlay::set_gradient_quad(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::set_gradient_quad(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                std::uint32_t a3) {
     const auto stack_frame = enter(0x28);
     set_poly_g4(a0);
     for (const auto offset : {4U, 0xcU}) {
@@ -600,9 +602,11 @@ void Overlay::reset_load_state() {
 // and poll the memory cards (801c8bec, 801c8ee8).
 void Overlay::menu_frame() {
     const auto stack_frame = enter(0x18);
-    pass_position();
+    // Arrivals before the frame entry, the boundary, then the entry itself.
+    catch_up();
     if (boundary)
         boundary("frame_entry");
+    pass_position(false);
     if (u32(u32(0x8005917c)) != 0xffffffffU)
         missing("menu_frame", 0x801c7c18, "symbol:menu-debug-break",
                 "The diagnostic build's break is not a recovered result");
@@ -851,10 +855,9 @@ void Overlay::set_markers(std::uint32_t a0) {
         put8(u32(at(markers)) + 0x145, 1);
     }
     for (std::uint32_t i = 0; i < 4; ++i) {
-        static_cast<void>(resident::sheet_quads(*this, u32(at(sheet)), 0x108,
-                                                u32(at(markers)) + 0x50 * i, u32(at(buffer_index)),
-                                                u32(0x801e9a58 + 4 * i), u32(0x801e9a68 + 4 * i),
-                                                0x800));
+        static_cast<void>(resident::sheet_quads(
+            *this, u32(at(sheet)), 0x108, u32(at(markers)) + 0x50 * i, u32(at(buffer_index)),
+            u32(0x801e9a58 + 4 * i), u32(0x801e9a68 + 4 * i), 0x800));
         put8(u32(at(markers)) + 0x148 + i, u8(at(buffer_index)));
     }
 }
@@ -888,8 +891,8 @@ void Overlay::open_field_menu() {
         if (id == 0xff)
             continue;
         load_character_name(id, (slot * 2) & 0xfeU);
-        const auto gear = u8(character_records + u8(u32(at(party)) + party_ids + slot) * 0xa4 +
-                             character_gear);
+        const auto gear =
+            u8(character_records + u8(u32(at(party)) + party_ids + slot) * 0xa4 + character_gear);
         load_character_name(gear == 0xff ? 0xffU : low8(gear + 0xb), row & 0xffU);
     }
     reveal_sprite_columns(8, 0x801ea19c);
@@ -931,7 +934,7 @@ void Overlay::field_menu_loop() {
         if (u8(at(cursor)) != u8(at(cursor_shown))) {
             build_sprite_columns(7, u8(at(cursor)), 0x801ea19c);
             place_label(8, at(command_labels), 0x801ea528, 0x801e9e64, u32(at(party)) + 0xc,
-                      u8(at(cursor)), 0, 0);
+                        u8(at(cursor)), 0, 0);
             put8(at(cursor_shown), u8(at(cursor)));
         }
     }
@@ -970,7 +973,7 @@ void Overlay::title_file_loop() {
         if (u8(at(cursor)) != u8(at(cursor_shown))) {
             build_sprite_columns(3, u8(at(cursor)), 0x801ea1d4);
             place_label(8, at(command_labels), 0x801ea530, 0x801e9e84, u32(at(party)) + 0xc,
-                      u8(at(cursor)), 0, 0);
+                        u8(at(cursor)), 0, 0);
             put8(at(cursor_shown), u8(at(cursor)));
         }
         if (current_disc() == 1 && u32(at(frame_counter)) > 600) {
@@ -1029,8 +1032,8 @@ std::uint32_t Overlay::run_command(std::uint32_t a0) {
             }
             break;
         case 9:
-            missing("menu_command", 0x801c5440, "symbol:new-game-data-8001b970",
-                    "Loading the new-game data (8001b970) is not recovered");
+            load_new_game_data(); // 8001b970
+            [[fallthrough]];
         default: // 0
             result = 0;
             keep_menu = 0;
@@ -1058,6 +1061,54 @@ std::uint32_t Overlay::run_command(std::uint32_t a0) {
     put8(u32(at(party)) + 10, 0);
     put8(reset_enabled, 1);
     return keep_menu;
+}
+
+// Resident 8001b970, the menu's New Game: read the new-game data (file 3 of
+// directory 10) over the game data (8006d634, 2358 bytes) through a block
+// allocated with owner tag 2 (80032498(2, 0)), turn each of the 31 stored
+// names (20 bytes of two-byte codes, ending at code 000f) back into text
+// (80033b34) and store the 20 bytes the decoder's buffer holds, then clear
+// 20 halfwords from 8005a3c6 down to the saved globals (8005a3a0), set the
+// field menu cursor (800594cc) to 6 and clear 8005947c.
+void Overlay::load_new_game_data() {
+    const auto stack_frame = enter(0x58);
+    const auto locals = frame(0x58);
+    const auto codes = locals[0x10];
+    const auto text = locals[0x28];
+    static_cast<void>(select_directory(0x10, 0));
+    auto &heap = program.resident.heap;
+    heap.tag = 2; // 80032498(2, 0)
+    heap.tag_words[2] = 0;
+    heap.quiet = 0;
+    const auto block = allocate(file_words(3), 1, 0x8001b9ac);
+    static_cast<void>(read_file(3, block, 0, 0x80));
+    disc_wait(0);
+    constexpr std::uint32_t game = 0x8006d634;
+    static_cast<void>(memmove(game, block, 0x2358));
+    release(block, 0x8001b9ec);
+    for (std::uint32_t name = 0; name < 0x26c; name += 0x14) {
+        const auto stored = game + name;
+        std::uint32_t length = 0;
+        for (; length < 0x14; length += 2) {
+            put8(codes + length, u8(stored + length));
+            put8(codes + length + 1, u8(stored + length + 1));
+            if (u8(stored + length) == 0x0f && u8(stored + length + 1) == 0)
+                break;
+        }
+        decode_text(codes, text, length / 2); // 80033b34
+        for (std::uint32_t i = 0; i < 0x14; ++i)
+            put8(stored + i, u8(text + i));
+    }
+    // Twenty halfwords downward from 8005a3c6: the sound driver's master
+    // volume pair (8005a3c4) and commit word (8005a3c0, both halves), then
+    // the saved globals 8005a3a0..8005a3bf.
+    put16(0x8005a3c6, 0);
+    put16(0x8005a3c4, 0);
+    put32(0x8005a3c0, 0);
+    for (std::uint32_t i = 16; i-- > 0;)
+        put16(0x8005a3a0 + 2 * i, 0);
+    put8(0x800594cc, 6);
+    put8(0x8005947c, 0);
 }
 
 // 801c8694(disc): after the zoom (801d1e80) settles, the markers (801d22f4(0));
@@ -1105,7 +1156,7 @@ std::uint32_t Overlay::sound_mode_screen() {
         }
         if (u8(at(choice)) != u8(at(choice_shown))) {
             place_label(6, at(sound_labels), 0x801ea578, 0x801e9f88, u32(at(party)) + 0x5c,
-                      u8(at(choice)), 7, 0);
+                        u8(at(choice)), 7, 0);
             build_row_list(0);
             put8(at(choice_shown), u8(at(choice)));
         }
@@ -1115,8 +1166,8 @@ std::uint32_t Overlay::sound_mode_screen() {
             if (u8(at(choice)) >= u8(at(choice_count)))
                 put8(at(choice), 0);
         } else if (code == 1) {
-            put8(at(choice), u8(at(choice)) == 0 ? u8(at(choice_count)) + 0xffU
-                                                 : u8(at(choice)) - 1U);
+            put8(at(choice),
+                 u8(at(choice)) == 0 ? u8(at(choice_count)) + 0xffU : u8(at(choice)) - 1U);
         } else if (code == 4) {
             apply = true;
             running = false;
@@ -1205,7 +1256,7 @@ std::uint32_t Overlay::file_screen(std::uint32_t a0, std::uint32_t a1) {
             break;
         if (u8(at(choice)) != u8(at(choice_shown))) {
             place_label(6, at(file_labels), 0x801ea542, 0x801e9ea0, u32(at(party)) + 0x1a,
-                      u8(at(choice)), 7, 0);
+                        u8(at(choice)), 7, 0);
             build_row_list(u8(menu_mode) == 2 ? 7U : 0U);
             put8(at(choice_shown), u8(at(choice)));
         }
@@ -1215,8 +1266,8 @@ std::uint32_t Overlay::file_screen(std::uint32_t a0, std::uint32_t a1) {
             if (u8(at(choice)) >= u8(at(choice_count)))
                 put8(at(choice), 0);
         } else if (code == 1) {
-            put8(at(choice), u8(at(choice)) == 0 ? u8(at(choice_count)) + 0xffU
-                                                 : u8(at(choice)) - 1U);
+            put8(at(choice),
+                 u8(at(choice)) == 0 ? u8(at(choice_count)) + 0xffU : u8(at(choice)) - 1U);
         } else if (code == 4 || code == 5) {
             bool leave = true;
             if (code == 4) {

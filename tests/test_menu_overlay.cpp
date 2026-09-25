@@ -53,8 +53,7 @@ game::Program sample() {
     auto &heap = resident.heap;
     heap.head = 0x80180008;
     heap.tag = 10;
-    heap.headers = {{0x80180000, {0x80181008, 0}},
-                    {0x80181000, {0, game::resident::heap_end_tag}}};
+    heap.headers = {{0x80180000, {0x80181008, 0}}, {0x80181000, {0, game::resident::heap_end_tag}}};
     heap.held = {{0x80180008, std::vector<std::uint8_t>(0xff8, 0xee)}};
     return program;
 }

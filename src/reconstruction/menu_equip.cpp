@@ -113,8 +113,9 @@ void place_quad(Overlay &o, std::uint32_t target, std::uint32_t packet, std::uin
                 std::uint32_t dy = 0) {
     const auto x = o.u16(packet + 8);
     const auto y = o.u16(packet + 10);
-    o.set_screen_quad_vectors(target, (x + dx) & 0xffffU, (y + dy) & 0xffffU, (o.u16(packet + 16) - x) & 0xffffU,
-                (o.u16(packet + 34) - y) & 0xffffU);
+    o.set_screen_quad_vectors(target, (x + dx) & 0xffffU, (y + dy) & 0xffffU,
+                              (o.u16(packet + 16) - x) & 0xffffU,
+                              (o.u16(packet + 34) - y) & 0xffffU);
 }
 
 // A 40 x 13 texture image of the text buffer at VRAM (x, y).
@@ -298,7 +299,8 @@ void Overlay::draw_screen_title(std::uint32_t a0, std::uint32_t a1, std::uint32_
         bzero(block, 0x74);
     }
     static_cast<void>(build_sprite(*this, 0x107, u32(at(title_block)), a0, a1));
-    set_screen_quad_vectors(u32(at(title_block)) + 0x50, a0 & 0xffffU, a1 & 0xffffU, 8, a2 & 0xffffU);
+    set_screen_quad_vectors(u32(at(title_block)) + 0x50, a0 & 0xffffU, a1 & 0xffffU, 8,
+                            a2 & 0xffffU);
     put8(u32(at(title_block)) + 0x70, u8(at(buffer_index)));
     put8(party(*this) + 0x49, 1);
 }
@@ -342,7 +344,8 @@ void Overlay::draw_party_window_sprites(std::uint32_t a0, std::uint32_t a1) {
 // character ids, else 800595d4; with a2, odd gear index + b), then 801e920c
 // with the slot's image position (801ea578 / 801ea584 and 801ea5c4 /
 // 801ea5d0 per slot) at the row of mode a3 (801ea17c, 801ea18c).
-void Overlay::draw_portrait_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_portrait_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto slot = a1 & 0xffU;
     const auto mode = a3 & 0xffU;
@@ -359,7 +362,7 @@ void Overlay::draw_portrait_panel(std::uint32_t a0, std::uint32_t a1, std::uint3
     const auto image = u32((gear ? 0x801ea584U : 0x801ea578U) + slot * 4);
     const auto image_y = u8((gear ? 0x801ea5d0U : 0x801ea5c4U) + slot * 4);
     set_quad_rect(a0 + buffer(*this) * 40, x & 0xffffU, u16(0x801ea18c + mode * 4),
-              (image << 2) & 0xfcU, image_y, height, 0xd);
+                  (image << 2) & 0xfcU, image_y, height, 0xd);
     set_screen_quad_vectors(a0 + 0x50, x & 0xffffU, u16(0x801ea18c + mode * 4), height, 0xd);
     put8(a0 + 0x7d, u8(at(buffer_index)));
 }
@@ -449,7 +452,8 @@ void Overlay::make_stat_bar(std::uint32_t a0, std::uint32_t a1) {
 // 801d83ac: tint `a2` sprite parts of base `a0` from part a3 (every other
 // quad: this buffer's) unshaded in colour a1: 0 (80, 40, 40), 1 (40, 40,
 // 80), 2 (40, 40, 40).
-void Overlay::tint_sprite_parts(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::tint_sprite_parts(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     std::array<std::uint32_t, 3> colour{};
     switch (a1 & 0xffU) {
@@ -502,7 +506,8 @@ void Overlay::measure_stat_bar(std::uint32_t a0, std::uint32_t a1, std::uint32_t
 
 // 801d85dc: the largest of the seven halfwords at `a1` and at `a2`
 // (unsigned; starts from 0).
-std::uint32_t Overlay::largest_stat(std::uint32_t /*a0: unused*/, std::uint32_t a1, std::uint32_t a2) {
+std::uint32_t Overlay::largest_stat(std::uint32_t /*a0: unused*/, std::uint32_t a1,
+                                    std::uint32_t a2) {
     const auto stack_frame = enter(0x18);
     std::uint32_t largest = 0;
     for (const auto values : {a1, a2})
@@ -521,7 +526,7 @@ std::uint32_t Overlay::largest_stat(std::uint32_t /*a0: unused*/, std::uint32_t 
 // bar (+2228, +31e0) and its signed digits (+1770, quads +2d80) follow and
 // are tinted by the change colour (801d83ac).
 void Overlay::draw_stat_bars(std::uint32_t /*a0: unused*/, std::uint32_t a1, std::uint32_t a2,
-                        std::uint32_t a3, std::uint32_t a4) {
+                             std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0xa8);
     const bool compare = (a3 & 0xffU) != 0;
     const auto first = a4 & 0xffU;
@@ -539,7 +544,7 @@ void Overlay::draw_stat_bars(std::uint32_t /*a0: unused*/, std::uint32_t a1, std
         measure_stat_bar(u16(before + row * 2), u16(shown + row * 2), largest);
         make_stat_bar(stats(*this) + 0x2030 + row * 72, 0);
         set_screen_quad_vectors(stats(*this) + 0x3100 + row * 32, (u16(0x801e9d78) + a1) & 0xffffU,
-                  (a2 + u16(0x801e9d7c) + dy) & 0xffffU, u16(bar_width), 6);
+                                (a2 + u16(0x801e9d7c) + dy) & 0xffffU, u16(bar_width), 6);
         put8(stats(*this) + 0x32dc + row, u8(at(buffer_index)));
         split_decimal_digits(u32(bar_value));
         for (std::uint32_t digit = 0; digit < 4; ++digit) {
@@ -558,7 +563,7 @@ void Overlay::draw_stat_bars(std::uint32_t /*a0: unused*/, std::uint32_t a1, std
                        quad(*this, stats(*this) + row * 320, part) + 0xeb0);
         if ((row & 1U) != 0)
             tint_sprite_parts(stats(*this) + digits_base, 2, u8(stats(*this) + 0x32c0 + row),
-                      u8(at(buffer_index)));
+                              u8(at(buffer_index)));
         put8(stats(*this) + 0x32c7 + row, u8(at(buffer_index)));
         if (compare) {
             make_stat_bar(stats(*this) + 0x2228 + row * 72, u8(bar_colour));
@@ -567,7 +572,8 @@ void Overlay::draw_stat_bars(std::uint32_t /*a0: unused*/, std::uint32_t a1, std
             if (u8(bar_colour) != 2)
                 start -= u32(bar_change_width);
             set_screen_quad_vectors(stats(*this) + 0x31e0 + row * 32, start & 0xffffU,
-                      (a2 + u16(0x801e9d7c) + dy) & 0xffffU, u16(bar_change_width), 6);
+                                    (a2 + u16(0x801e9d7c) + dy) & 0xffffU, u16(bar_change_width),
+                                    6);
             put8(stats(*this) + 0x32e3 + row, u8(at(buffer_index)));
             if (u32(bar_change) != 0) {
                 const auto sign = build_sprite(*this, u8(bar_sign), stats(*this) + change_base,
@@ -591,7 +597,7 @@ void Overlay::draw_stat_bars(std::uint32_t /*a0: unused*/, std::uint32_t a1, std
                     place_quad(*this, stats(*this) + 0x2d80 + row * 128 + part * 32,
                                quad(*this, stats(*this) + row * 320, part) + 0x1770);
                 tint_sprite_parts(stats(*this) + change_base, (u8(bar_colour) - 2) & 0xffU,
-                          u8(stats(*this) + 0x32ce + row), u8(at(buffer_index)));
+                                  u8(stats(*this) + 0x32ce + row), u8(at(buffer_index)));
                 put8(stats(*this) + 0x32d5 + row, u8(at(buffer_index)));
                 put8(stats(*this) + 0x32f2, 1);
             }
@@ -603,7 +609,8 @@ void Overlay::draw_stat_bars(std::uint32_t /*a0: unused*/, std::uint32_t a1, std
 // 801d8de4: the stat panel of party slot `a0` (80, 90 with a1, else 98,
 // 26): stat names (801d7f50) and bars (801d8644, comparing when a2) from
 // row a3; marks it shown (party + 8) with this buffer (stat block + 32f1).
-void Overlay::draw_stat_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_stat_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                              std::uint32_t a3) {
     const auto stack_frame = enter(0x30);
     const bool lower = (a1 & 0xffU) != 0;
     const auto x = lower ? 0x80U : 0x98U;
@@ -623,7 +630,8 @@ void Overlay::draw_stat_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t 
 // the rows of 801e9d88). Mode a1: 0 weapon and accessories, 1 and 2 other
 // part groups (four rows). a2 shows the kept parts (screen + 29c..);
 // a3 the gear record's parts. Row 4 of a character's panel is its portrait.
-void Overlay::draw_part_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_part_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                              std::uint32_t a3) {
     const auto stack_frame = enter(0x88);
     const auto slot = a0 & 0xffU;
     const auto mode = a1 & 0xffU;
@@ -724,7 +732,8 @@ void Overlay::draw_part_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t 
             put8(screen(*this) + base + 0x7e, 0x60);
         }
         set_screen_quad_vectors(screen(*this) + base + 0x50, column & 0xffffU,
-                  u16(0x801e9d88 + (row + row_base) * 4), u8(screen(*this) + base + 0x7e), 0xd);
+                                u16(0x801e9d88 + (row + row_base) * 4),
+                                u8(screen(*this) + base + 0x7e), 0xd);
         put8(screen(*this) + row + 0x294, 1);
     }
     put8(screen(*this) + 0x299, u8(at(buffer_index)));
@@ -765,7 +774,8 @@ void Overlay::open_cursor_sprite(std::uint32_t a0) {
 // 136 per column, y 11 + 16 per row), 1 the same from row a1 * 2 (hidden
 // outside 16 entries), 2 two columns at y 14, 3 one column (x a0, y 14 + 13
 // per row). Shown state at party + 50 + a3.
-void Overlay::draw_cursor_sprite(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_cursor_sprite(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                 std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto index = a3 & 0xffU;
     const auto block = u32(at(cursor_blocks) + index * 4);
@@ -858,7 +868,7 @@ void Overlay::draw_equipment_frames(std::uint32_t a0, std::uint32_t a1) {
     const auto layout = 0x801ea558 + (a1 & 0xffU) * 6;
     for (auto window = first; window < end; ++window)
         place_label(6, at(0x14e0), layout, 0x801e9ea0, party(*this) + shown_flags, window & 0xffU,
-                  window & 0xffU, 3);
+                    window & 0xffU, 3);
     if (u8(party(*this) + 0x24) != 0)
         release_text_blocks(4);
     open_window(4, 0x10, 0xc, 0x80, height, 0, 1, 4, 0);
@@ -875,7 +885,7 @@ void Overlay::draw_equipment_frames(std::uint32_t a0, std::uint32_t a1) {
 // removing). Each shown row renders its name and count ("nn", c3 for a
 // leading zero; 80033b34) into VRAM rows 180 / 198 and its windows.
 std::uint32_t Overlay::build_candidate_list(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
-                                 std::uint32_t a3, std::uint32_t a4) {
+                                            std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0xd0);
     const auto slot = a0 & 0xffU;
     const auto part = a2;
@@ -994,8 +1004,10 @@ std::uint32_t Overlay::build_candidate_list(std::uint32_t a0, std::uint32_t a1, 
         set_label_packets(list(*this) + base, row, 0x80, 0x81);
         set_label_packets(list(*this) + 0x400 + base, row, 0x80, 0x82);
         const auto y = (0x12 + row * 13) & 0xffffU;
-        set_screen_quad_vectors(list(*this) + base + 0x50, 0xa8, y, u8(list(*this) + base + 0x7e), 13);
-        set_screen_quad_vectors(list(*this) + 0x400 + base + 0x50, 0x10c, y, u8(list(*this) + base + 0x47e), 13);
+        set_screen_quad_vectors(list(*this) + base + 0x50, 0xa8, y, u8(list(*this) + base + 0x7e),
+                                13);
+        set_screen_quad_vectors(list(*this) + 0x400 + base + 0x50, 0x10c, y,
+                                u8(list(*this) + base + 0x47e), 13);
         put8(list(*this) + base + 0x7d, u8(at(buffer_index)));
         put8(list(*this) + base + 0x47d, u8(at(buffer_index)));
         put8(list(*this) + row + 0xa10, 1);
@@ -1009,7 +1021,7 @@ std::uint32_t Overlay::build_candidate_list(std::uint32_t a0, std::uint32_t a1, 
 
 // 801df0d4: commit the previewed part (menu::swap_equipment).
 std::uint32_t Overlay::commit_equipment(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
-                                 std::uint32_t a3) {
+                                        std::uint32_t a3) {
     const auto stack_frame = enter(0x28);
     Menu ctx{*program.menu, program.resident.sound};
     return swap_equipment(ctx, a0, a1, a2, a3);
@@ -1037,8 +1049,8 @@ void Overlay::keep_equipped_parts(std::uint32_t a0, std::uint32_t a1) {
 // 801dfb68: preview list entry a3 + a2 in part a1 of party slot a0: weapon
 // (+6a) or accessory a1 (+73 + a1, parts 1..3), or with a4 special part a1
 // (+6f + a1); with a5 in the gear record (+4, + a1, -4 + a1).
-void Overlay::preview_candidate(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5) {
+void Overlay::preview_candidate(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                std::uint32_t a3, std::uint32_t a4, std::uint32_t a5) {
     const auto id = u8(candidate_ids + a3 + a2);
     const auto character = member(*this, a0 & 0xffU);
     const bool gear = (a5 & 0xffU) != 0;
@@ -1059,8 +1071,9 @@ void Overlay::preview_candidate(std::uint32_t a0, std::uint32_t a1, std::uint32_
 // text entries id * 3 + line of the list's text tables (list + a00..a0c by
 // weapon/accessory and gear) rendered at VRAM rows 8..10 into windows +880..
 // (801e7c50, 801c851c at 10, 96 + 16 * line); list + a18 marks it shown.
-void Overlay::draw_part_description(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5, std::uint32_t a6) {
+void Overlay::draw_part_description(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                    std::uint32_t a3, std::uint32_t a4, std::uint32_t a5,
+                                    std::uint32_t a6) {
     const auto stack_frame = enter(0x40);
     auto id = u8(candidate_ids + a1 + a2);
     const bool current = (a5 & 0xffU) != 0;
@@ -1112,8 +1125,8 @@ void Overlay::draw_part_description(std::uint32_t a0, std::uint32_t a1, std::uin
         const auto row = line + 8;
         load_text_image(*this, (row & 1U) * 24 + 384, (row / 2) * 13 + 128, text);
         set_label_packets(list(*this) + 0x880 + base, row, 0x80, 0x81);
-        set_screen_quad_vectors(list(*this) + 0x880 + base + 0x50, 0x10, (line * 16 + 150) & 0xfffeU,
-                  u8(list(*this) + base + 0x8fe), 13);
+        set_screen_quad_vectors(list(*this) + 0x880 + base + 0x50, 0x10,
+                                (line * 16 + 150) & 0xfffeU, u8(list(*this) + base + 0x8fe), 13);
         put8(list(*this) + base + 0x8fd, u8(at(buffer_index)));
     }
     put8(list(*this) + 0xa18, 1);
@@ -1300,7 +1313,8 @@ void Overlay::equipment_screen_loop(std::uint32_t a0, std::uint32_t a1, std::uin
                 }
                 break;
             case 4: {
-                const auto result = commit_equipment(slot & 0xffU, part & 0xffU, special & 0xffU, gear);
+                const auto result =
+                    commit_equipment(slot & 0xffU, part & 0xffU, special & 0xffU, gear);
                 drawn_slot = 0xff;
                 if ((result & 0xffU) != 0) {
                     special ^= 1U;

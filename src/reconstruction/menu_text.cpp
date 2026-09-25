@@ -20,10 +20,10 @@ constexpr std::uint32_t row_set = 0x336;        // u8: selects the row table's s
 constexpr std::uint32_t row_cursor = 0x338;     // u8: the highlighted row
 constexpr std::uint32_t row_count = 0x33a;      // u8: rows drawn by 801e86c8
 constexpr std::uint32_t highlight_block = 0x348;
-constexpr std::uint32_t screen_images = 0x350;  // sprite rows (+1188.. counts)
-constexpr std::uint32_t row_block = 0x354;      // sprite rows (+1400.. counts)
-constexpr std::uint32_t windows = 0x364;        // window records, one word each
-constexpr std::uint32_t text_image = 0x558;     // the label text image buffer
+constexpr std::uint32_t screen_images = 0x350; // sprite rows (+1188.. counts)
+constexpr std::uint32_t row_block = 0x354;     // sprite rows (+1400.. counts)
+constexpr std::uint32_t windows = 0x364;       // window records, one word each
+constexpr std::uint32_t text_image = 0x558;    // the label text image buffer
 
 // Overlay tables (read at their original addresses).
 constexpr std::uint32_t highlight_x = 0x801e9a00; // words: x of each position
@@ -79,8 +79,8 @@ void Overlay::split_decimal_digits(std::uint32_t a0) {
 // 801c851c(quad, x, y, w, h): four SVECTORs (x, y, 0) of a screen rectangle,
 // centred on the screen (x - a0, y - 70): top left, top right, bottom left,
 // bottom right.
-void Overlay::set_screen_quad_vectors(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4) {
+void Overlay::set_screen_quad_vectors(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                      std::uint32_t a3, std::uint32_t a4) {
     const auto left = a1 - 0xa0;
     const auto top = a2 - 0x70;
     const auto right = a1 + a3 - 0xa0;
@@ -196,9 +196,8 @@ void Overlay::prepare_window_packets(std::uint32_t a0) {
             set_shade_tex(base + packet, 1);
             for (std::uint32_t c = 4; c < 7; ++c)
                 put8(base + packet + c, 0xff);
-            put16(base + packet + 0x16,
-                  get_tpage(u32(at(descriptor)), 0, s32(at(descriptor + 0xc)),
-                            s32(at(descriptor + 0x10))));
+            put16(base + packet + 0x16, get_tpage(u32(at(descriptor)), 0, s32(at(descriptor + 0xc)),
+                                                  s32(at(descriptor + 0x10))));
             put16(base + packet + 0xe, get_clut(s32(at(descriptor + 4)), s32(at(descriptor + 8))));
         }
     }
@@ -211,7 +210,8 @@ void Overlay::prepare_window_packets(std::uint32_t a0) {
 // plane (mode & 7f) - 1; without mode bit 80 the quad is also
 // semi-transparent (page abr 1) and dark (20). The quad is 13 high and as
 // wide as the text (+7e); the CLUT follows the plane.
-void Overlay::set_label_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::set_label_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                std::uint32_t a3) {
     const auto stack_frame = enter(0x40);
     const auto label = a0;
     const auto slot = static_cast<std::int32_t>(a1);
@@ -267,7 +267,8 @@ void Overlay::set_label_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_
 // bit 1 of i, (i + row) / 4 * 13) in the text image buffer (state +558),
 // the first in plane 0 and the second in plane 1; set up both labels'
 // packets (801e7c50) and load the cell into VRAM.
-void Overlay::layout_label_pairs(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::layout_label_pairs(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                 std::uint32_t a3) {
     const auto stack_frame = enter(0x40);
     const auto count = static_cast<std::int32_t>(a3);
     auto label = a0;
@@ -329,7 +330,7 @@ void Overlay::clear_bytes(std::uint32_t a0, std::uint32_t a1) {
 // 801e9f68[index], 801e9f70[index]). Other modes place nothing. Then the
 // label's drawn buffer and shown[index] = 1.
 void Overlay::place_label(std::uint32_t a0, std::uint32_t a1, std::uint32_t, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7) {
+                          std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7) {
     const auto stack_frame = enter(0x30);
     const auto labels = a1;
     const auto shown = a4;
@@ -633,7 +634,7 @@ void Overlay::set_quad_translucent(std::uint32_t a0) {
 // 801e920c(packet, x, y, u, v, w, h): a quad's corners at x, y of size w, h
 // and its texture from u, v of the same size.
 void Overlay::set_quad_rect(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5, std::uint32_t a6) {
+                            std::uint32_t a4, std::uint32_t a5, std::uint32_t a6) {
     put16(a0 + 0x8, a1);
     put16(a0 + 0xa, a2);
     put16(a0 + 0x12, a2);

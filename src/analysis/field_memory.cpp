@@ -942,10 +942,12 @@ Program import_menu_mode(const OriginalMemory &memory) {
     auto &regions = program.menu.emplace().regions;
     // The save's globals, the menu state pointer, the text font parameters
     // (8005934c..80059367, including the text state pointer 80059360) and
-    // the text layout window 80059fd8..8005a0c7 that 80034eac fills.
+    // the text layout window 80059fd8..8005a0c7 that 80034eac fills and the
+    // five words libcard's kernel patch exchanges at 8004e960.
     for (const auto [address, size] :
          {std::pair{menu::saved_globals, 0x20U}, std::pair{menu::state_pointer, 4U},
-          std::pair{text_font_globals, 0x1cU}, std::pair{0x80059fd8U, 0xf0U}})
+          std::pair{text_font_globals, 0x1cU}, std::pair{0x80059fd8U, 0xf0U},
+          std::pair{0x8004e960U, 0x14U}})
         regions.emplace(address, copy_of(memory.range(address, size)));
     // Ranges resident values already own.
     auto scratch = memory;

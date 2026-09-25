@@ -72,9 +72,9 @@ void load_tim_list(Memory &memory, std::uint32_t list, const std::function<void(
 // cleared) plus u (signed) >> 4 at depth 0, >> 2 otherwise; the page y (low
 // 8 bits cleared) plus v.
 void sheet_part_texture(Memory &memory, std::uint32_t sheet, std::uint32_t id,
-                        std::uint32_t count_out, std::uint32_t depth_out,
-                        std::uint32_t clut_x_out, std::uint32_t clut_y_out,
-                        std::uint32_t vram_x_out, std::uint32_t vram_y_out);
+                        std::uint32_t count_out, std::uint32_t depth_out, std::uint32_t clut_x_out,
+                        std::uint32_t clut_y_out, std::uint32_t vram_x_out,
+                        std::uint32_t vram_y_out);
 // 8002675c(sheet, id, packets, buffer, x, y, scale): sprite `id` as POLY_FT4
 // packets from `packets` (+ buffer * 28 in each part's 50 bytes) at x, y,
 // offsets and sizes scaled by scale / 1000h. Returns the part count.

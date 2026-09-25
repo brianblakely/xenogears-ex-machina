@@ -253,6 +253,7 @@ struct DiscReadState {
 struct CdState {
     std::uint32_t ready_callback{};         // 800564a8
     std::uint32_t sync_callback{};          // 800564ac
+    std::uint32_t read_callback{};          // 80056844: CdReadCallback (8004373c)
     std::int32_t debug{};                   // 800564b4: nonzero levels print
     std::uint32_t status{};                 // 800564b8: last drive status (first response byte)
     std::uint32_t status2{};                // 800564bc: second response byte
@@ -446,11 +447,11 @@ struct ResidentState {
     std::uint32_t w_4f328{}; // 8004f328: bit 80 stops variable 10, bit 4 counts it down
     std::uint8_t b_59171{};  // 80059171: 800b236c when triangle opens the menu
     // Menu overlay (menu_overlay.hpp) globals.
-    std::uint8_t menu_mode{};           // 80059460: 0 field menu, 2 title file screen, 6 other
-    std::uint8_t menu_cursor{};         // 800594cc: field menu cursor kept between openings
-    std::uint8_t menu_effects{};        // 80059178: nonzero loads the menu's effect bank
-    std::uint32_t menu_resources{};     // 8005945c: resource block the menu unpacks and frees
-    std::uint32_t menu_effect_bank{};   // 8006259c: the menu's effect bank block
+    std::uint8_t menu_mode{};         // 80059460: 0 field menu, 2 title file screen, 6 other
+    std::uint8_t menu_cursor{};       // 800594cc: field menu cursor kept between openings
+    std::uint8_t menu_effects{};      // 80059178: nonzero loads the menu's effect bank
+    std::uint32_t menu_resources{};   // 8005945c: resource block the menu unpacks and frees
+    std::uint32_t menu_effect_bank{}; // 8006259c: the menu's effect bank block
     // 80065848: 8007ae78's pointer record for port 2 (x, y, buttons, dx, dy).
     std::array<std::int32_t, 5> pointer{};
     InterruptState interrupts;

@@ -40,9 +40,8 @@ Overlay::Overlay(Program &owner, FrameServices &frame_services, std::uint32_t st
 std::size_t Overlay::services_left() const {
     return services.hblank_counts.size() + services.vblank_waits.size() +
            services.vblank_counts.size() + services.alarm_polls.size() +
-           services.gpu_status.size() + services.dma_busy.size() +
-           services.interrupt_masks.size() + services.gpu_info.size() +
-           services.vram_reads.size();
+           services.gpu_status.size() + services.dma_busy.size() + services.interrupt_masks.size() +
+           services.gpu_info.size() + services.vram_reads.size();
 }
 
 std::uint32_t Overlay::events() const {
@@ -59,9 +58,10 @@ void Overlay::catch_up() {
         static_cast<void>(program.deliver_interrupt());
 }
 
-void Overlay::pass_position() {
+void Overlay::pass_position(bool deliver) {
     ++positions_;
-    catch_up();
+    if (deliver)
+        catch_up();
 }
 
 void Overlay::entering_sound() {
@@ -294,8 +294,8 @@ std::uint32_t Overlay::random_range(std::uint32_t low, std::uint32_t high) {
         return value;
     // Signed division; a zero divisor leaves the dividend in HI.
     const auto divisor = span + 1;
-    const auto remainder =
-        divisor == 0 ? static_cast<std::int32_t>(value) : static_cast<std::int32_t>(value) % divisor;
+    const auto remainder = divisor == 0 ? static_cast<std::int32_t>(value)
+                                        : static_cast<std::int32_t>(value) % divisor;
     return (low + static_cast<std::uint32_t>(remainder)) & 0xffU;
 }
 
@@ -307,7 +307,8 @@ std::uint32_t Overlay::get_tpage(std::uint32_t tp, std::uint32_t abr, std::int32
 }
 
 std::uint32_t Overlay::get_clut(std::int32_t x, std::int32_t y) {
-    return ((static_cast<std::uint32_t>(y) << 6U) | ((static_cast<std::uint32_t>(x >> 4)) & 0x3fU)) &
+    return ((static_cast<std::uint32_t>(y) << 6U) |
+            ((static_cast<std::uint32_t>(x >> 4)) & 0x3fU)) &
            0xffffU;
 }
 
@@ -382,6 +383,7 @@ void Overlay::draw_otag(std::uint32_t table) {
     program.draw_otag(services, table);
 }
 void Overlay::clear_otag_r(std::uint32_t table, std::uint32_t count) {
+    catch_up(); // its DMA busy reads are platform inputs after earlier arrivals
     const auto stack_frame = enter(0x20);
     program.clear_ordering_table(table, count);
 }
@@ -440,13 +442,14 @@ std::uint32_t Overlay::file_words(std::uint32_t file) {
     const auto size = static_cast<std::int32_t>(program.file_size(static_cast<std::int32_t>(file)));
     const auto rounded = static_cast<std::int32_t>(static_cast<std::uint32_t>(size) + 3U);
     const auto quotient =
-        (rounded >= 0 ? rounded : static_cast<std::int32_t>(static_cast<std::uint32_t>(size) + 6U)) >>
+        (rounded >= 0 ? rounded
+                      : static_cast<std::int32_t>(static_cast<std::uint32_t>(size) + 6U)) >>
         2;
     return static_cast<std::uint32_t>(quotient) << 2U;
 }
 
-std::int32_t Overlay::read_file(std::uint32_t file, std::uint32_t destination,
-                                std::uint32_t offset, std::uint32_t mode) {
+std::int32_t Overlay::read_file(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
+                                std::uint32_t mode) {
     return program.read_file(static_cast<std::int32_t>(file), destination, offset, mode);
 }
 
@@ -467,15 +470,17 @@ void Overlay::load_text_palette(std::uint32_t x, std::uint32_t y) {
     put16(area + 6, 1);
     load_image(area, 0x80050190);
     program.resident.text_cluts = {
-        static_cast<std::uint16_t>(get_clut(static_cast<std::int16_t>(x), static_cast<std::int16_t>(y))),
+        static_cast<std::uint16_t>(
+            get_clut(static_cast<std::int16_t>(x), static_cast<std::int16_t>(y))),
         static_cast<std::uint16_t>(
             get_clut(static_cast<std::int16_t>(x + 0x10U), static_cast<std::int16_t>(y)))};
 }
 
 std::uint32_t Overlay::layout_text(std::uint32_t text, std::uint32_t image, std::uint32_t width,
                                    std::uint32_t plane) {
-    return resident::layout_text_line(*this, text, image, width, plane,
-                                      [&](std::uint32_t window) { program.dialogue_glyphs(window); });
+    return resident::layout_text_line(*this, text, image, width, plane, [&](std::uint32_t window) {
+        program.dialogue_glyphs(window);
+    });
 }
 
 void Overlay::decode_text(std::uint32_t codes, std::uint32_t text, std::uint32_t count) {

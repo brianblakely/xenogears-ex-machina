@@ -61,8 +61,8 @@ constexpr std::uint32_t item_count_limit = 150;
 // page (0,0,180,0), a colour chosen by the character's parity (layout 0) or
 // its gear flag (+a0 bit 0), placed by 801e920c at x/y halfwords +40 with
 // its size and texture from tables 801ea578 / 801ea5c4.
-void Overlay::status_panel_layout_sprites(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5) {
+void Overlay::status_panel_layout_sprites(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                          std::uint32_t a3, std::uint32_t a4, std::uint32_t a5) {
     const auto stack_frame = enter(0x58);
     const auto panel = a0;
     const auto character = a1 & 0xffU;
@@ -83,7 +83,7 @@ void Overlay::status_panel_layout_sprites(std::uint32_t a0, std::uint32_t a1, st
         put8(panel + sprites, u8(panel + sprites) + built);
     }
     resident::sheet_quads(*this, u32(at(sprite_sheet)), row + 0x14b, panel + 0x460,
-                           u32(at(buffer_index)), u32(xs + 0x24), row_y + u32(ys + 0x24), 0x1000);
+                          u32(at(buffer_index)), u32(xs + 0x24), row_y + u32(ys + 0x24), 0x1000);
     const auto label = [&] { return panel + u32(at(buffer_index)) * 0x28 + 0x4b0; };
     init_text_quad(label());
     put16(label() + 0x16, get_tpage(0, 0, 0x180, 0));
@@ -93,16 +93,16 @@ void Overlay::status_panel_layout_sprites(std::uint32_t a0, std::uint32_t a1, st
     put16(label() + 0xe, u16(first_colour ? 0x80059414U : 0x800595d4U));
     const auto entry = (layout * 3 + row) * 4;
     set_quad_rect(label(), u16(xs + 0x40), (u16(ys + 0x40) + row_y) & 0xffffU,
-              (u32(0x801ea578 + entry) << 2U) & 0xfcU, u8(0x801ea5c4 + entry), layout * 24 + 72,
-              0xd);
+                  (u32(0x801ea578 + entry) << 2U) & 0xfcU, u8(0x801ea5c4 + entry), layout * 24 + 72,
+                  0xd);
 }
 
 // 801cdb1c: the record +62 digits of status panel `a0`: character `a1`'s +62
 // byte through 801c80b8, then a sprite per non-blank digit of the last three
 // (state + 322..324) at x word +28 (+8 per digit) and y word +28 of row `a2`.
 // The +63 byte is converted too; its count +be1 is cleared.
-void Overlay::status_panel_byte62_digits(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4) {
+void Overlay::status_panel_byte62_digits(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                         std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0x40);
     const auto panel = a0;
     const auto record = character_record(a1);
@@ -132,8 +132,8 @@ void Overlay::status_panel_byte62_digits(std::uint32_t a0, std::uint32_t a1, std
 // value is placed by digit position, the maximum packed left (x + 8 per
 // shown digit). Ghidra splits the function at 801ce024 (inside the last
 // loop); that tail is status_panel_values_tail.
-void Overlay::status_panel_values(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5) {
+void Overlay::status_panel_values(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3, std::uint32_t a4, std::uint32_t a5) {
     const auto stack_frame = enter(0x68);
     const auto panel = a0;
     const auto record = character_record(a1);
@@ -182,7 +182,8 @@ void Overlay::status_panel_values(std::uint32_t a0, std::uint32_t a1, std::uint3
 // the loop head 801ce014): the maximum EP digits (state + 323..324) of panel
 // `a0` into the packets at +af0 (count +be5), packed left from x word `a1` +
 // 3c, at y word `a2` + 3c plus the row offset `a3`.
-void Overlay::status_panel_values_tail(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::status_panel_values_tail(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                       std::uint32_t a3) {
     const auto panel = a0;
     std::uint32_t shown = 0;
     for (std::uint32_t i = 0; i < 2; ++i) {
@@ -201,8 +202,8 @@ void Overlay::status_panel_values_tail(std::uint32_t a0, std::uint32_t a1, std::
 // layout `a5` (x words `a3`, y words `a4`): layout sprites and label
 // (801cd81c), +62 digits (801cdb1c) and values (801cdc6c); mark it shown
 // (+be7) for the current buffer (+be6).
-void Overlay::build_status_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5) {
+void Overlay::build_status_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                 std::uint32_t a3, std::uint32_t a4, std::uint32_t a5) {
     const auto stack_frame = enter(0x38);
     const auto character = a1 & 0xffU;
     const auto row = a2 & 0xffU;
@@ -276,8 +277,7 @@ void Overlay::build_item_list(std::uint32_t a0) {
         }
         if (u8(held) >= 100)
             put8(held, 99);
-        put8(list() + name + 0x7e,
-             layout_text(resident::item_name(*this, u8(id)), image, 0x24, 0));
+        put8(list() + name + 0x7e, layout_text(resident::item_name(*this, u8(id)), image, 0x24, 0));
         const auto tens = u8(held) / 10;
         put8(codes, (tens & 0xffU) == 0 ? 0xc3U : tens + 16);
         put8(codes + 2, u8(held) % 10 + 16);
@@ -297,10 +297,10 @@ void Overlay::build_item_list(std::uint32_t a0) {
         set_label_packets(list() + count, entry, 0x80, greyed | 2U);
         const auto column = entry & 1U;
         const auto y = (entry / 2 << 4U | 0xeU) & 0xffffU;
-        set_screen_quad_vectors(list() + name + 0x50, (column * 0x88 + 40) & 0xfff8U, y, u8(list() + name + 0x7e),
-                  13);
+        set_screen_quad_vectors(list() + name + 0x50, (column * 0x88 + 40) & 0xfff8U, y,
+                                u8(list() + name + 0x7e), 13);
         set_screen_quad_vectors(list() + count + 0x50, (column * 0x88 + 0x90) & 0xfff8U, y,
-                  u8(list() + name + 0x87e), 13);
+                                u8(list() + name + 0x87e), 13);
         put8(list() + name + 0x7d, u8(at(buffer_index)));
         put8(list() + name + 0x87d, u8(at(buffer_index)));
         put8(list() + entry + entry_built, 1);
@@ -344,15 +344,17 @@ void Overlay::show_item_description(std::uint32_t a0, std::uint32_t a1) {
     draw_sync();
     set_label_packets(list() + description, 0, 0, 0);
     set_quad_rect(list() + u32(at(buffer_index)) * 0x28 + description, 0x1c, 0xa1, 0, 0x4e,
-              u8(list() + 0x117e), 13);
+                  u8(list() + 0x117e), 13);
     set_screen_quad_vectors(list() + description + 0x50, 0x1c, 0xa1, u8(list() + 0x117e), 13);
     release(image, 0x801dab0c);
     const auto name = entry << 7U;
     const auto count_x = u8(list() + name + 0x87e) == 0x10 ? 4U : 0U;
     memmove(list() + selected_name, list() + name, 0x80);
     memmove(list() + selected_count, list() + name + count_texts, 0x80);
-    set_screen_quad_vectors(list() + selected_name + 0x50, 0x10, 0x93, u8(list() + name + 0x7e), 13);
-    set_screen_quad_vectors(list() + selected_count + 0x50, count_x | 0x78U, 0x93, u8(list() + name + 0x87e), 13);
+    set_screen_quad_vectors(list() + selected_name + 0x50, 0x10, 0x93, u8(list() + name + 0x7e),
+                            13);
+    set_screen_quad_vectors(list() + selected_count + 0x50, count_x | 0x78U, 0x93,
+                            u8(list() + name + 0x87e), 13);
     // An opaque packet of this buffer at 80 grey.
     const auto opaque = [&](std::uint32_t packet) {
         for (std::uint32_t i = 0; i < 3; ++i)
@@ -369,10 +371,10 @@ void Overlay::show_item_description(std::uint32_t a0, std::uint32_t a1) {
         if ((targets & 0x4000U) == 0)
             kind = (targets & 0x1000U) == 0 ? 1U : 0U;
         place_label(8, at(help_lines), 0x801ea550, 0x801e9ea0, u32(at(state_party)) + party_text,
-                  kind, 0, 1);
+                    kind, 0, 1);
         const auto range = ((u8(item + 4) & 3U) + 3) & 0xffU;
         place_label(8, at(help_lines), 0x801ea550, 0x801e9ea0, u32(at(state_party)) + party_text,
-                  range, 0, 1);
+                    range, 0, 1);
         opaque(state() + (kind << 7U) + help_lines + u32(at(buffer_index)) * 0x28);
         opaque(state() + (range << 7U) + help_lines + u32(at(buffer_index)) * 0x28);
     }
@@ -415,8 +417,8 @@ void Overlay::show_item_screen_texts(std::uint32_t a0) {
     for (std::uint32_t line = 0; line < 8; ++line) {
         const auto base = state();
         shade_quad(base + help_lines + line * 0x80 +
-                      u8(base + help_lines + line * 0x80 + 0x7d) * 0x28,
-                  shown);
+                       u8(base + help_lines + line * 0x80 + 0x7d) * 0x28,
+                   shown);
     }
 }
 
@@ -617,9 +619,11 @@ std::uint32_t Overlay::item_screen() {
                 static_cast<std::int32_t>(u16(scroll_step) * static_cast<std::uint32_t>(scroll));
             draw_screen_title(0xc, static_cast<std::uint32_t>(step / 100 + 18), u16(list_row_y));
         }
-        draw_cursor_sprite(static_cast<std::uint32_t>(cursor), static_cast<std::uint32_t>(scroll), 0, 0);
+        draw_cursor_sprite(static_cast<std::uint32_t>(cursor), static_cast<std::uint32_t>(scroll),
+                           0, 0);
         if (static_cast<std::uint32_t>(cursor) != shown_cursor) {
-            show_item_description(static_cast<std::uint32_t>(cursor), static_cast<std::uint32_t>(scroll));
+            show_item_description(static_cast<std::uint32_t>(cursor),
+                                  static_cast<std::uint32_t>(scroll));
             shown_cursor = static_cast<std::uint32_t>(cursor);
         }
         if (windows) {
@@ -670,7 +674,7 @@ std::uint32_t Overlay::item_screen() {
                 selected = position();
             } else if (position() == selected) {
                 const auto used = use_item_on_targets(static_cast<std::uint32_t>(scroll),
-                                            static_cast<std::uint32_t>(cursor));
+                                                      static_cast<std::uint32_t>(cursor));
                 selected = none;
                 if ((used & 0xffU) != 0) {
                     shown_scroll = none;

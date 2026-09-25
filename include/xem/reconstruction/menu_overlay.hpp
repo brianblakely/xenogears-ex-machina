@@ -6,7 +6,6 @@
 #include <array>
 #include <cstdint>
 #include <functional>
-#include <span>
 #include <map>
 #include <optional>
 #include <span>
@@ -103,7 +102,11 @@ class CardBios {
     // 8004e794 InitCARD(pad_enable) (libcard: ChangeClearPAD(0), B(4Ah)
     // InitCARD2, the kernel card patches) and 8004e7e8 StartCARD() (B(4Bh)
     // StartCARD2, ChangeClearPAD(0)).
-    virtual void init_card(std::uint32_t pad_enable) = 0;
+    // InitCARD's kernel patch (8004e990) exchanges five words between
+    // 8004e960 and the BIOS: the service returns the 20 bytes it leaves at
+    // 8004e960, which the caller stores.
+    using CardPatch = std::array<std::uint8_t, 20>;
+    virtual CardPatch init_card(std::uint32_t pad_enable) = 0;
     virtual void start_card() = 0;
 };
 
@@ -133,10 +136,13 @@ class Overlay : public resident::Memory {
     // and each platform service result the overlay consumes, counted from
     // the Overlay's construction. An arrival's platform site is the number of
     // those events that preceded it; it is delivered at the first point the
-    // overlay has passed that many (before each service-consuming call and
-    // at the frame positions). Waits deliver arrivals themselves.
+    // overlay has passed that many (before each call that consumes service
+    // results or platform reads, and at the frame positions). Waits deliver
+    // arrivals themselves.
     void catch_up();
-    void pass_position();
+    // Pass a position event; with `deliver` false the arrivals after it wait
+    // for the next delivery point (a position reported as a boundary).
+    void pass_position(bool deliver = true);
     // With `sound_positions` each entry of the menu sound 801c8574 is an
     // event (a capture that hooks it); otherwise the sound only catches up.
     bool sound_positions = false;
@@ -159,7 +165,9 @@ class Overlay : public resident::Memory {
     [[nodiscard]] std::uint32_t u32(std::uint32_t address) const;
     [[nodiscard]] std::int32_t s8(std::uint32_t address) const;
     [[nodiscard]] std::int32_t s16(std::uint32_t address) const;
-    [[nodiscard]] std::int32_t s32(std::uint32_t address) const { return static_cast<std::int32_t>(u32(address)); }
+    [[nodiscard]] std::int32_t s32(std::uint32_t address) const {
+        return static_cast<std::int32_t>(u32(address));
+    }
     void put8(std::uint32_t address, std::uint32_t value);
     void put16(std::uint32_t address, std::uint32_t value);
     void put32(std::uint32_t address, std::uint32_t value);
@@ -274,6 +282,8 @@ class Overlay : public resident::Memory {
     std::uint32_t layout_text(std::uint32_t text, std::uint32_t image, std::uint32_t width,
                               std::uint32_t plane);
     void decode_text(std::uint32_t codes, std::uint32_t text, std::uint32_t count);
+    // Resident 8001b970: the New Game command's data (menu_core.cpp).
+    void load_new_game_data();
 
     // Sound: 801c8574 (a menu effect when the menu plays sounds).
     void play_sound(std::uint32_t id);
@@ -288,262 +298,307 @@ class Overlay : public resident::Memory {
     // Names follow each function's role; the leading address comment ties
     // each declaration to its original entry.
     // menu_core.cpp
-    std::uint32_t run_command(std::uint32_t a0); // 801c531c
-    void field_menu_loop(); // 801c55a0
-    void title_file_loop(); // 801c58ec
-    void card_state_block(std::uint32_t a0); // 801c5b54
-    void party_block(std::uint32_t a0); // 801c5bb8
-    void screen_image_block(std::uint32_t a0); // 801c5c1c
-    void block_354(std::uint32_t a0); // 801c5c80
+    std::uint32_t run_command(std::uint32_t a0);  // 801c531c
+    void field_menu_loop();                       // 801c55a0
+    void title_file_loop();                       // 801c58ec
+    void card_state_block(std::uint32_t a0);      // 801c5b54
+    void party_block(std::uint32_t a0);           // 801c5bb8
+    void screen_image_block(std::uint32_t a0);    // 801c5c1c
+    void block_354(std::uint32_t a0);             // 801c5c80
     void table_directory_block(std::uint32_t a0); // 801c5ce4
-    void block_340(std::uint32_t a0); // 801c5d48
-    void block_344(std::uint32_t a0); // 801c5dac
-    void primitive_block(std::uint32_t a0); // 801c5e10
-    void field_blocks(std::uint32_t a0); // 801c5e74
-    void allocate_blocks(); // 801c5f10
-    void leave_menu(); // 801c5fe4
-    void run_menu_mode(); // 801c62a8
-    void reset_card_state(); // 801c6400
-    void load_resources(); // 801c65f4
-    void set_up_party(); // 801c6aa0
-    void reset_buffer_index(); // 801c6d4c
-    void reset_load_state(); // 801c6d5c
-    void load_white_clut(); // 801c6d90
-    void set_up_labels(); // 801c6e0c
-    void read_sheet_entries(); // 801c6e68
-    void set_up_frame_primitives(); // 801c6f70
-    void set_up_screen(); // 801c7b0c
-    void menu_frame(); // 801c7bf4
-    void decode_input(); // 801c7d78
-    void split_play_time(std::uint32_t a0); // 801c7f34
-    void set_gradient_quad(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801c8164
-    void check_loaded_disc(std::uint32_t a0); // 801c8694
-    void link_fade(); // 801d1258
-    void draw_screen(); // 801d1ca0
-    void update_view(); // 801d1d40
-    void zoom_in(); // 801d1e80
-    void zoom_out(); // 801d1eb0
-    void hide_cursors(); // 801d22c4
-    void set_markers(std::uint32_t a0); // 801d22f4
-    void clear_markers(); // 801d2484
-    void draw_status_panel(); // 801d2968
-    void open_field_menu(); // 801d2d38
-    std::uint32_t sound_mode_screen(); // 801d9808
-    void draw_file_labels(); // 801d9f34
+    void block_340(std::uint32_t a0);             // 801c5d48
+    void block_344(std::uint32_t a0);             // 801c5dac
+    void primitive_block(std::uint32_t a0);       // 801c5e10
+    void field_blocks(std::uint32_t a0);          // 801c5e74
+    void allocate_blocks();                       // 801c5f10
+    void leave_menu();                            // 801c5fe4
+    void run_menu_mode();                         // 801c62a8
+    void reset_card_state();                      // 801c6400
+    void load_resources();                        // 801c65f4
+    void set_up_party();                          // 801c6aa0
+    void reset_buffer_index();                    // 801c6d4c
+    void reset_load_state();                      // 801c6d5c
+    void load_white_clut();                       // 801c6d90
+    void set_up_labels();                         // 801c6e0c
+    void read_sheet_entries();                    // 801c6e68
+    void set_up_frame_primitives();               // 801c6f70
+    void set_up_screen();                         // 801c7b0c
+    void menu_frame();                            // 801c7bf4
+    void decode_input();                          // 801c7d78
+    void split_play_time(std::uint32_t a0);       // 801c7f34
+    void set_gradient_quad(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                           std::uint32_t a3);                      // 801c8164
+    void check_loaded_disc(std::uint32_t a0);                      // 801c8694
+    void link_fade();                                              // 801d1258
+    void draw_screen();                                            // 801d1ca0
+    void update_view();                                            // 801d1d40
+    void zoom_in();                                                // 801d1e80
+    void zoom_out();                                               // 801d1eb0
+    void hide_cursors();                                           // 801d22c4
+    void set_markers(std::uint32_t a0);                            // 801d22f4
+    void clear_markers();                                          // 801d2484
+    void draw_status_panel();                                      // 801d2968
+    void open_field_menu();                                        // 801d2d38
+    std::uint32_t sound_mode_screen();                             // 801d9808
+    void draw_file_labels();                                       // 801d9f34
     std::uint32_t file_screen(std::uint32_t a0, std::uint32_t a1); // 801d9f98
 
     // menu_text.cpp
     void split_decimal_digits(std::uint32_t a0); // 801c80b8
-    void set_screen_quad_vectors(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801c851c
-    void draw_highlight(std::uint32_t a0, std::uint32_t a1); // 801d1ee0
-    void prepare_window_packets(std::uint32_t a0); // 801e53cc
-    void set_label_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801e7c50
-    void layout_label_pairs(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801e7e68
+    void set_screen_quad_vectors(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                 std::uint32_t a3, std::uint32_t a4); // 801c851c
+    void draw_highlight(std::uint32_t a0, std::uint32_t a1);          // 801d1ee0
+    void prepare_window_packets(std::uint32_t a0);                    // 801e53cc
+    void set_label_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                           std::uint32_t a3); // 801e7c50
+    void layout_label_pairs(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                            std::uint32_t a3);                                     // 801e7e68
     void layout_labels_row4(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801e8018
-    void clear_bytes(std::uint32_t a0, std::uint32_t a1); // 801e8044
-    void place_label(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7); // 801e8070
-    void reveal_sprite_columns(std::uint32_t a0, std::uint32_t a1); // 801e8474
-    void reveal_row_list(std::uint32_t a0); // 801e86c8
+    void clear_bytes(std::uint32_t a0, std::uint32_t a1);                          // 801e8044
+    void place_label(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                     std::uint32_t a4, std::uint32_t a5, std::uint32_t a6,
+                     std::uint32_t a7);                                              // 801e8070
+    void reveal_sprite_columns(std::uint32_t a0, std::uint32_t a1);                  // 801e8474
+    void reveal_row_list(std::uint32_t a0);                                          // 801e86c8
     void build_sprite_columns(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801e8978
-    void build_row_list(std::uint32_t a0); // 801e8b4c
-    void load_character_name(std::uint32_t a0, std::uint32_t a1); // 801e8da8
-    void shade_quad(std::uint32_t a0, std::uint32_t a1); // 801e8eac
-    void shade_window_quads(std::uint32_t a0, std::uint32_t a1); // 801e8f60
-    void set_quad_translucent(std::uint32_t a0); // 801e91c4
-    void set_quad_rect(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5, std::uint32_t a6); // 801e920c
-    void init_text_quad(std::uint32_t a0); // 801e927c
+    void build_row_list(std::uint32_t a0);                                           // 801e8b4c
+    void load_character_name(std::uint32_t a0, std::uint32_t a1);                    // 801e8da8
+    void shade_quad(std::uint32_t a0, std::uint32_t a1);                             // 801e8eac
+    void shade_window_quads(std::uint32_t a0, std::uint32_t a1);                     // 801e8f60
+    void set_quad_translucent(std::uint32_t a0);                                     // 801e91c4
+    void set_quad_rect(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                       std::uint32_t a4, std::uint32_t a5, std::uint32_t a6); // 801e920c
+    void init_text_quad(std::uint32_t a0);                                    // 801e927c
 
     // menu_windows.cpp
-    void project_quads(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801ce198
-    void draw_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801ce2b4
-    void draw_header(); // 801ce338
-    void draw_cursors(); // 801ce3c8
-    void draw_lists_340_344(); // 801ce464
-    void draw_party_windows(); // 801ce540
-    void draw_status_quads(); // 801ce660
-    void draw_rows_35c(); // 801ce860
-    void draw_row_block(); // 801ceb5c
-    void draw_windows_360(); // 801cebb4
-    void draw_screen_image(); // 801cec40
-    void draw_lists_354(); // 801cf308
-    void draw_slot_cursors(); // 801cf37c
+    void project_quads(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                       std::uint32_t a3);                                       // 801ce198
+    void draw_packets(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2);    // 801ce2b4
+    void draw_header();                                                         // 801ce338
+    void draw_cursors();                                                        // 801ce3c8
+    void draw_lists_340_344();                                                  // 801ce464
+    void draw_party_windows();                                                  // 801ce540
+    void draw_status_quads();                                                   // 801ce660
+    void draw_rows_35c();                                                       // 801ce860
+    void draw_row_block();                                                      // 801ceb5c
+    void draw_windows_360();                                                    // 801cebb4
+    void draw_screen_image();                                                   // 801cec40
+    void draw_lists_354();                                                      // 801cf308
+    void draw_slot_cursors();                                                   // 801cf37c
     void draw_slot_icons(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801cf5e4
-    void draw_card_headers(); // 801cf8d8
-    void draw_slot_lines(); // 801cfb48
-    void draw_scroll_strip(); // 801cff64
-    void draw_file_screen(); // 801d01d0
-    void draw_slot_list(); // 801d02d8
-    void project_panel_piece(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d0954
-    void draw_panel(std::uint32_t a0, std::uint32_t a1); // 801d09f0
-    void draw_panels(); // 801d0c78
-    void draw_state_windows_4e0(); // 801d0d90
-    std::uint32_t delay_seven(); // 801d0e20
-    void draw_state_windows_ae0(); // 801d0e38
-    std::uint32_t delay_five(); // 801d0ebc
-    void draw_state_windows_10e0(); // 801d0ed4
-    void draw_state_windows_14e0(); // 801d0f54
-    void draw_state_window_17e0(); // 801d0fd4
-    void draw_windows_1de0(); // 801d1030
-    void draw_state_windows_18e0(); // 801d10dc
-    void draw_state_windows_1be0(); // 801d1160
-    void draw_state_windows(); // 801d11f0
+    void draw_card_headers();                                                   // 801cf8d8
+    void draw_slot_lines();                                                     // 801cfb48
+    void draw_scroll_strip();                                                   // 801cff64
+    void draw_file_screen();                                                    // 801d01d0
+    void draw_slot_list();                                                      // 801d02d8
+    void project_panel_piece(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                             std::uint32_t a3);                // 801d0954
+    void draw_panel(std::uint32_t a0, std::uint32_t a1);       // 801d09f0
+    void draw_panels();                                        // 801d0c78
+    void draw_state_windows_4e0();                             // 801d0d90
+    std::uint32_t delay_seven();                               // 801d0e20
+    void draw_state_windows_ae0();                             // 801d0e38
+    std::uint32_t delay_five();                                // 801d0ebc
+    void draw_state_windows_10e0();                            // 801d0ed4
+    void draw_state_windows_14e0();                            // 801d0f54
+    void draw_state_window_17e0();                             // 801d0fd4
+    void draw_windows_1de0();                                  // 801d1030
+    void draw_state_windows_18e0();                            // 801d10dc
+    void draw_state_windows_1be0();                            // 801d1160
+    void draw_state_windows();                                 // 801d11f0
     void draw_list_window(std::uint32_t a0, std::uint32_t a1); // 801d12d4
-    void draw_list_windows(); // 801d13f8
-    void draw_window_43c(); // 801d1464
-    void draw_quads_440(); // 801d14b0
-    void draw_rows_42c(); // 801d14fc
-    void draw_rows_430(); // 801d1640
-    void draw_rows_434(); // 801d17c4
-    void draw_rows_438(); // 801d1914
-    void draw_windows_444(); // 801d1aac
-    void draw_field_menu_screen(); // 801d1b20
-    void draw_title_file_screen(); // 801d1be8
-    void grow_opening_panels(); // 801d3b00
-    void build_panel_title(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801d3c4c
-    void build_panel_corners(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801d3db0
-    void build_panel_top_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d3ff8
-    void build_panel_bottom_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801d433c
-    void build_panel_left_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d4688
-    void build_panel_right_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801d49d0
-    void build_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7); // 801d4d1c
+    void draw_list_windows();                                  // 801d13f8
+    void draw_window_43c();                                    // 801d1464
+    void draw_quads_440();                                     // 801d14b0
+    void draw_rows_42c();                                      // 801d14fc
+    void draw_rows_430();                                      // 801d1640
+    void draw_rows_434();                                      // 801d17c4
+    void draw_rows_438();                                      // 801d1914
+    void draw_windows_444();                                   // 801d1aac
+    void draw_field_menu_screen();                             // 801d1b20
+    void draw_title_file_screen();                             // 801d1be8
+    void grow_opening_panels();                                // 801d3b00
+    void build_panel_title(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                           std::uint32_t a4); // 801d3c4c
+    void build_panel_corners(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                             std::uint32_t a4); // 801d3db0
+    void build_panel_top_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                              std::uint32_t a3); // 801d3ff8
+    void build_panel_bottom_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                 std::uint32_t a3, std::uint32_t a4); // 801d433c
+    void build_panel_left_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                               std::uint32_t a3); // 801d4688
+    void build_panel_right_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                std::uint32_t a3, std::uint32_t a4); // 801d49d0
+    void build_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                     std::uint32_t a4, std::uint32_t a5, std::uint32_t a6,
+                     std::uint32_t a7); // 801d4d1c
 
     // menu_fieldmenu.cpp
-    void start_slide(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5); // 801c81e0
-    void step_slide(std::uint32_t a0); // 801c8324
-    void play_menu_sound(std::uint32_t a0); // 801c8574
-    void open_amount_window(); // 801d28a8
-    void open_play_time_window(); // 801d28fc
+    void start_slide(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                     std::uint32_t a4, std::uint32_t a5);        // 801c81e0
+    void step_slide(std::uint32_t a0);                           // 801c8324
+    void play_menu_sound(std::uint32_t a0);                      // 801c8574
+    void open_amount_window();                                   // 801d28a8
+    void open_play_time_window();                                // 801d28fc
     void slide_party_panels(std::uint32_t a0, std::uint32_t a1); // 801d29a8
-    void open_window(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7, std::uint32_t a8); // 801d397c
-    void draw_panel_portrait(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d4f2c
+    void open_window(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                     std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7,
+                     std::uint32_t a8); // 801d397c
+    void draw_panel_portrait(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                             std::uint32_t a3);                                   // 801d4f2c
     void draw_panel_labels(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801d50ec
-    void draw_panel_numbers_4c_4e(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d51ec
-    void draw_panel_numbers_50_52(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d53d0
-    void draw_panel_numbers_44_48(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d55b4
-    void draw_panel_numbers_62_63(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d5794
-    void draw_party_panel(std::uint32_t a0, std::uint32_t a1); // 801d5a50
-    void draw_amount(std::uint32_t a0, std::uint32_t a1); // 801d5ba4
-    void draw_play_time(std::uint32_t a0, std::uint32_t a1); // 801d5cf8
+    void draw_panel_numbers_4c_4e(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3); // 801d51ec
+    void draw_panel_numbers_50_52(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3); // 801d53d0
+    void draw_panel_numbers_44_48(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3); // 801d55b4
+    void draw_panel_numbers_62_63(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3);               // 801d5794
+    void draw_party_panel(std::uint32_t a0, std::uint32_t a1);     // 801d5a50
+    void draw_amount(std::uint32_t a0, std::uint32_t a1);          // 801d5ba4
+    void draw_play_time(std::uint32_t a0, std::uint32_t a1);       // 801d5cf8
     void draw_detail_portrait(std::uint32_t a0, std::uint32_t a1); // 801d5ed4
-    void draw_detail_numbers(std::uint32_t a0, std::uint32_t a1); // 801d680c
-    void build_file_slot_marker(std::uint32_t a0); // 801e56e8
-    void build_file_slot_outline(std::uint32_t a0); // 801e5924
-    void build_file_slots(); // 801e5acc
-    void build_file_glyphs(); // 801e5b88
-    void build_file_banner(); // 801e5e4c
-    void build_file_select_panels(); // 801e6450
+    void draw_detail_numbers(std::uint32_t a0, std::uint32_t a1);  // 801d680c
+    void build_file_slot_marker(std::uint32_t a0);                 // 801e56e8
+    void build_file_slot_outline(std::uint32_t a0);                // 801e5924
+    void build_file_slots();                                       // 801e5acc
+    void build_file_glyphs();                                      // 801e5b88
+    void build_file_banner();                                      // 801e5e4c
+    void build_file_select_panels();                               // 801e6450
 
     // menu_screens.cpp
-    void status_panel_layout_sprites(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5); // 801cd81c
-    void status_panel_byte62_digits(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801cdb1c
-    void status_panel_values(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5); // 801cdc6c
-    void status_panel_values_tail(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801ce024
-    void build_status_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5); // 801ce0cc
-    void release_help_block(); // 801d3674
-    void open_item_screen(); // 801da4a8
-    void build_item_list(std::uint32_t a0); // 801da5bc
-    void show_item_description(std::uint32_t a0, std::uint32_t a1); // 801da9a8
-    void show_item_screen_texts(std::uint32_t a0); // 801db39c
-    void build_target_panels(std::uint32_t a0); // 801db5e4
+    void status_panel_layout_sprites(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                     std::uint32_t a3, std::uint32_t a4,
+                                     std::uint32_t a5); // 801cd81c
+    void status_panel_byte62_digits(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                    std::uint32_t a3, std::uint32_t a4); // 801cdb1c
+    void status_panel_values(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                             std::uint32_t a4, std::uint32_t a5); // 801cdc6c
+    void status_panel_values_tail(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3); // 801ce024
+    void build_status_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                            std::uint32_t a4, std::uint32_t a5);           // 801ce0cc
+    void release_help_block();                                             // 801d3674
+    void open_item_screen();                                               // 801da4a8
+    void build_item_list(std::uint32_t a0);                                // 801da5bc
+    void show_item_description(std::uint32_t a0, std::uint32_t a1);        // 801da9a8
+    void show_item_screen_texts(std::uint32_t a0);                         // 801db39c
+    void build_target_panels(std::uint32_t a0);                            // 801db5e4
     std::uint32_t use_item_on_targets(std::uint32_t a0, std::uint32_t a1); // 801db920
-    void measure_item_list(std::uint32_t a0, std::uint32_t a1); // 801dbdb4
-    std::uint32_t item_screen(); // 801dbe54
-    std::uint32_t apply_consumable(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801e31c0
+    void measure_item_list(std::uint32_t a0, std::uint32_t a1);            // 801dbdb4
+    std::uint32_t item_screen();                                           // 801dbe54
+    std::uint32_t apply_consumable(std::uint32_t a0, std::uint32_t a1,
+                                   std::uint32_t a2); // 801e31c0
 
     // menu_equip.cpp
-    void load_menu_data_set(std::uint32_t a0); // 801c72bc
-    std::uint32_t party_slot_bit(std::uint32_t a0, std::uint32_t a1); // 801c865c
+    void load_menu_data_set(std::uint32_t a0);                                    // 801c72bc
+    std::uint32_t party_slot_bit(std::uint32_t a0, std::uint32_t a1);             // 801c865c
     void draw_screen_title(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801d3344
-    void release_screen_title(); // 801d3444
-    void draw_party_window_sprites(std::uint32_t a0, std::uint32_t a1); // 801d3488
-    void draw_portrait_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d36e0
-    void release_text_blocks(std::uint32_t a0); // 801d4ea0
+    void release_screen_title();                                                  // 801d3444
+    void draw_party_window_sprites(std::uint32_t a0, std::uint32_t a1);           // 801d3488
+    void draw_portrait_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                             std::uint32_t a3);                                 // 801d36e0
+    void release_text_blocks(std::uint32_t a0);                                 // 801d4ea0
     void draw_stat_names(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801d7f50
-    void make_stat_bar(std::uint32_t a0, std::uint32_t a1); // 801d827c
-    void tint_sprite_parts(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d83ac
-    void measure_stat_bar(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801d84b4
+    void make_stat_bar(std::uint32_t a0, std::uint32_t a1);                     // 801d827c
+    void tint_sprite_parts(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                           std::uint32_t a3);                                         // 801d83ac
+    void measure_stat_bar(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2);      // 801d84b4
     std::uint32_t largest_stat(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801d85dc
-    void draw_stat_bars(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801d8644
-    void draw_stat_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d8de4
-    void draw_part_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801d8ea4
-    void close_equipment_shared(); // 801da518
+    void draw_stat_bars(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                        std::uint32_t a4); // 801d8644
+    void draw_stat_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                         std::uint32_t a3); // 801d8de4
+    void draw_part_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                         std::uint32_t a3);    // 801d8ea4
+    void close_equipment_shared();             // 801da518
     void open_cursor_sprite(std::uint32_t a0); // 801db02c
-    void draw_cursor_sprite(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801db0a8
-    void release_cursor_sprite(std::uint32_t a0); // 801db340
-    void open_equipment_list(std::uint32_t a0); // 801de2c8
+    void draw_cursor_sprite(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                            std::uint32_t a3);                      // 801db0a8
+    void release_cursor_sprite(std::uint32_t a0);                   // 801db340
+    void open_equipment_list(std::uint32_t a0);                     // 801de2c8
     void draw_equipment_frames(std::uint32_t a0, std::uint32_t a1); // 801de474
-    std::uint32_t build_candidate_list(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4); // 801de5cc
-    std::uint32_t commit_equipment(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801df0d4
+    std::uint32_t build_candidate_list(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                       std::uint32_t a3, std::uint32_t a4); // 801de5cc
+    std::uint32_t commit_equipment(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                   std::uint32_t a3);             // 801df0d4
     void keep_equipped_parts(std::uint32_t a0, std::uint32_t a1); // 801df5d0
-    void preview_candidate(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5); // 801dfb68
-    void draw_part_description(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3, std::uint32_t a4, std::uint32_t a5, std::uint32_t a6); // 801dff5c
+    void preview_candidate(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
+                           std::uint32_t a4, std::uint32_t a5); // 801dfb68
+    void draw_part_description(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                               std::uint32_t a3, std::uint32_t a4, std::uint32_t a5,
+                               std::uint32_t a6);                                     // 801dff5c
     void equipment_screen_loop(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801e05d0
-    std::uint32_t run_equipment_screen(std::uint32_t a0, std::uint32_t a1); // 801e0f78
-    void rebuild_equipment_bonuses(std::uint32_t a0, std::uint32_t a1); // 801e36d4
-    void update_equipment_stats(std::uint32_t a0, std::uint32_t a1); // 801e3a80
+    std::uint32_t run_equipment_screen(std::uint32_t a0, std::uint32_t a1);           // 801e0f78
+    void rebuild_equipment_bonuses(std::uint32_t a0, std::uint32_t a1);               // 801e36d4
+    void update_equipment_stats(std::uint32_t a0, std::uint32_t a1);                  // 801e3a80
 
     // menu_card.cpp
-    void undeliver_card_events(); // 801c87c4
-    std::uint32_t wait_card_event(); // 801c881c
-    std::uint32_t card_status(std::uint32_t a0); // 801c891c
-    void close_card_events(); // 801c8960
-    std::uint32_t poll_card_port(std::uint32_t a0); // 801c8a10
-    void poll_cards(); // 801c8bec
-    std::uint32_t list_card_directory(std::uint32_t a0); // 801c8d78
-    void list_unscanned_ports(); // 801c8ee8
+    void undeliver_card_events();                                     // 801c87c4
+    std::uint32_t wait_card_event();                                  // 801c881c
+    std::uint32_t card_status(std::uint32_t a0);                      // 801c891c
+    void close_card_events();                                         // 801c8960
+    std::uint32_t poll_card_port(std::uint32_t a0);                   // 801c8a10
+    void poll_cards();                                                // 801c8bec
+    std::uint32_t list_card_directory(std::uint32_t a0);              // 801c8d78
+    void list_unscanned_ports();                                      // 801c8ee8
     std::uint32_t read_file_head(std::uint32_t a0, std::uint32_t a1); // 801c9038
-    void load_file_head(std::uint32_t a0, std::uint32_t a1); // 801c90b0
-    void mark_game_files(std::uint32_t a0); // 801c9270
-    std::uint32_t refresh_cards(); // 801c93a8
-    std::uint32_t cursor_slot_suits(std::uint32_t a0); // 801c9bcc
-    std::uint32_t find_suitable_slot(std::uint32_t a0); // 801c9d34
-    void card_cursor_down(std::uint32_t a0, std::uint32_t a1); // 801c9ef4
-    std::uint32_t card_cursor_input(std::uint32_t a0); // 801ca750
-    void build_save_title(std::uint32_t a0); // 801ca8c0
-    std::uint32_t confirm_choice(std::uint32_t a0); // 801caa38
-    std::uint32_t ask_confirmation(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801cacf8
-    void reset_card_cursor(); // 801cadb0
-    void card_access_indicator(std::uint32_t a0); // 801cae08
-    void close_access_indicator(std::uint32_t a0); // 801cb0a8
-    void decode_game_names(); // 801cb184
-    void apply_loaded_payload(std::uint32_t a0); // 801cb28c
-    std::uint32_t load_game(); // 801cb304
-    std::uint32_t ask_format_card(std::uint32_t a0); // 801cb8ac
-    std::uint32_t choose_save_digit(std::uint32_t a0, std::uint32_t a1); // 801cb9e8
+    void load_file_head(std::uint32_t a0, std::uint32_t a1);          // 801c90b0
+    void mark_game_files(std::uint32_t a0);                           // 801c9270
+    std::uint32_t refresh_cards();                                    // 801c93a8
+    std::uint32_t cursor_slot_suits(std::uint32_t a0);                // 801c9bcc
+    std::uint32_t find_suitable_slot(std::uint32_t a0);               // 801c9d34
+    void card_cursor_down(std::uint32_t a0, std::uint32_t a1);        // 801c9ef4
+    std::uint32_t card_cursor_input(std::uint32_t a0);                // 801ca750
+    void build_save_title(std::uint32_t a0);                          // 801ca8c0
+    std::uint32_t confirm_choice(std::uint32_t a0);                   // 801caa38
+    std::uint32_t ask_confirmation(std::uint32_t a0, std::uint32_t a1,
+                                   std::uint32_t a2);                              // 801cacf8
+    void reset_card_cursor();                                                      // 801cadb0
+    void card_access_indicator(std::uint32_t a0);                                  // 801cae08
+    void close_access_indicator(std::uint32_t a0);                                 // 801cb0a8
+    void decode_game_names();                                                      // 801cb184
+    void apply_loaded_payload(std::uint32_t a0);                                   // 801cb28c
+    std::uint32_t load_game();                                                     // 801cb304
+    std::uint32_t ask_format_card(std::uint32_t a0);                               // 801cb8ac
+    std::uint32_t choose_save_digit(std::uint32_t a0, std::uint32_t a1);           // 801cb9e8
     void build_save_payload(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801cba4c
-    std::uint32_t save_game(std::uint32_t a0); // 801cbd90
-    std::uint32_t save_game_body(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3); // 801cbdbc
-    std::uint32_t run_file_command(std::uint32_t a0); // 801cd710
-    void show_message(std::uint32_t a0); // 801d2f4c
-    void close_message(); // 801d32b4
-    void restart_card_access(); // 801d9b08
-    std::uint32_t enter_card_mode(); // 801d9c84
-    void leave_card_mode(); // 801d9e3c
-    void leave_menu_screen(std::uint32_t a0); // 801e3088
-    void recompute_gear_engine(std::uint32_t a0, std::uint32_t a1); // 801e41c0
-    void recompute_gear_model(std::uint32_t a0, std::uint32_t a1); // 801e4258
-    void recompute_gear_frame(std::uint32_t a0, std::uint32_t a1); // 801e42ac
-    void recompute_gear_parts(std::uint32_t a0, std::uint32_t a1); // 801e433c
-    std::uint32_t gear_part_level(std::uint32_t a0); // 801e4928
-    void store_payload_game_data(std::uint32_t a0); // 801e4a28
-    void restore_payload_game_data(std::uint32_t a0, std::uint32_t a1); // 801e4d10
-    void release_file_blocks(); // 801e5b3c
-    void draw_details_labels(); // 801e61b0
-    void release_details_block(); // 801e649c
-    void clear_file_title(); // 801e64e0
-    void narrow_glyph_rows(std::uint32_t a0); // 801e6544
-    std::uint32_t kanji_glyph_address(std::uint32_t a0); // 801e65e4
-    void draw_file_title(std::uint32_t a0); // 801e6668
-    void draw_details_time(std::uint32_t a0); // 801e68ac
-    void draw_details_portrait(std::uint32_t a0, std::uint32_t a1); // 801e6ae8
-    void draw_details_level(std::uint32_t a0, std::uint32_t a1); // 801e6b70
-    void draw_details_hp(std::uint32_t a0, std::uint32_t a1); // 801e6cfc
-    void draw_details_values(std::uint32_t a0, std::uint32_t a1); // 801e6f5c
+    std::uint32_t save_game(std::uint32_t a0);                                     // 801cbd90
+    std::uint32_t save_game_body(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                 std::uint32_t a3);                               // 801cbdbc
+    std::uint32_t run_file_command(std::uint32_t a0);                             // 801cd710
+    void show_message(std::uint32_t a0);                                          // 801d2f4c
+    void close_message();                                                         // 801d32b4
+    void restart_card_access();                                                   // 801d9b08
+    std::uint32_t enter_card_mode();                                              // 801d9c84
+    void leave_card_mode();                                                       // 801d9e3c
+    void leave_menu_screen(std::uint32_t a0);                                     // 801e3088
+    void recompute_gear_engine(std::uint32_t a0, std::uint32_t a1);               // 801e41c0
+    void recompute_gear_model(std::uint32_t a0, std::uint32_t a1);                // 801e4258
+    void recompute_gear_frame(std::uint32_t a0, std::uint32_t a1);                // 801e42ac
+    void recompute_gear_parts(std::uint32_t a0, std::uint32_t a1);                // 801e433c
+    std::uint32_t gear_part_level(std::uint32_t a0);                              // 801e4928
+    void store_payload_game_data(std::uint32_t a0);                               // 801e4a28
+    void restore_payload_game_data(std::uint32_t a0, std::uint32_t a1);           // 801e4d10
+    void release_file_blocks();                                                   // 801e5b3c
+    void draw_details_labels();                                                   // 801e61b0
+    void release_details_block();                                                 // 801e649c
+    void clear_file_title();                                                      // 801e64e0
+    void narrow_glyph_rows(std::uint32_t a0);                                     // 801e6544
+    std::uint32_t kanji_glyph_address(std::uint32_t a0);                          // 801e65e4
+    void draw_file_title(std::uint32_t a0);                                       // 801e6668
+    void draw_details_time(std::uint32_t a0);                                     // 801e68ac
+    void draw_details_portrait(std::uint32_t a0, std::uint32_t a1);               // 801e6ae8
+    void draw_details_level(std::uint32_t a0, std::uint32_t a1);                  // 801e6b70
+    void draw_details_hp(std::uint32_t a0, std::uint32_t a1);                     // 801e6cfc
+    void draw_details_values(std::uint32_t a0, std::uint32_t a1);                 // 801e6f5c
     void draw_details_name(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2); // 801e71b4
-    void build_title_strip(); // 801e733c
-    void draw_file_details(std::uint32_t a0); // 801e76ec
-    void show_file_details(std::uint32_t a0, std::uint32_t a1); // 801e781c
-    void load_file_icon(std::uint32_t a0); // 801e78c8
+    void build_title_strip();                                                     // 801e733c
+    void draw_file_details(std::uint32_t a0);                                     // 801e76ec
+    void show_file_details(std::uint32_t a0, std::uint32_t a1);                   // 801e781c
+    void load_file_icon(std::uint32_t a0);                                        // 801e78c8
 
   private:
     std::size_t services_at_start_{};

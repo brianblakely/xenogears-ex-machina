@@ -104,8 +104,9 @@ std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destina
     class Memory final : public resident::Memory {
       public:
         explicit Memory(BattleMemory &memory) : memory_(memory) {}
-        [[nodiscard]] std::uint32_t read(std::uint32_t address, std::uint32_t width) const override {
-            return width == 1 ? memory_.u8(address)
+        [[nodiscard]] std::uint32_t read(std::uint32_t address,
+                                         std::uint32_t width) const override {
+            return width == 1   ? memory_.u8(address)
                    : width == 2 ? memory_.u16(address)
                                 : memory_.u32(address);
         }

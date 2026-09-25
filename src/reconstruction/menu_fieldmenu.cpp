@@ -8,20 +8,20 @@
 namespace xem::reconstruction::menu {
 namespace {
 // Menu state fields (offsets from *800625a0).
-constexpr std::uint32_t slide_record = 0x24;   // per slot: a window slide (below)
-constexpr std::uint32_t sprite_table = 0x2dc;  // the menu sprite bank 8002675c draws from
-constexpr std::uint32_t play_digits = 0x2ec;   // seven words: the split play time (801c7f34)
-constexpr std::uint32_t buffer_index = 0x308;  // 0/1: the buffer being built
-constexpr std::uint32_t digits = 0x31c;        // nine digit bytes from 801c80b8 (ff: blank)
-constexpr std::uint32_t flags_block = 0x33c;   // block of menu flag bytes
-constexpr std::uint32_t amount_block = 0x340;  // the amount window's sprites
-constexpr std::uint32_t time_block = 0x344;    // the play-time window's sprites
-constexpr std::uint32_t file_block = 0x34c;    // the file-select panel packets
-constexpr std::uint32_t detail_block = 0x358;  // the detail panel's sprites
-constexpr std::uint32_t window_blocks = 0x364; // per window slot: its packet block
+constexpr std::uint32_t slide_record = 0x24;    // per slot: a window slide (below)
+constexpr std::uint32_t sprite_table = 0x2dc;   // the menu sprite bank 8002675c draws from
+constexpr std::uint32_t play_digits = 0x2ec;    // seven words: the split play time (801c7f34)
+constexpr std::uint32_t buffer_index = 0x308;   // 0/1: the buffer being built
+constexpr std::uint32_t digits = 0x31c;         // nine digit bytes from 801c80b8 (ff: blank)
+constexpr std::uint32_t flags_block = 0x33c;    // block of menu flag bytes
+constexpr std::uint32_t amount_block = 0x340;   // the amount window's sprites
+constexpr std::uint32_t time_block = 0x344;     // the play-time window's sprites
+constexpr std::uint32_t file_block = 0x34c;     // the file-select panel packets
+constexpr std::uint32_t detail_block = 0x358;   // the detail panel's sprites
+constexpr std::uint32_t window_blocks = 0x364;  // per window slot: its packet block
 constexpr std::uint32_t window_records = 0x380; // per window slot: its record
-constexpr std::uint32_t panel_blocks = 0x39c;  // per party slot: the panel's sprites
-constexpr std::uint32_t slot_blocks = 0x3a8;   // per file slot: its marker packets
+constexpr std::uint32_t panel_blocks = 0x39c;   // per party slot: the panel's sprites
+constexpr std::uint32_t slot_blocks = 0x3a8;    // per file slot: its marker packets
 // A slide record (state + slot * 24): x from +0, x to +4, y from +8, y to
 // +c, per-step x and y (8.8 fixed point) +10/+14, accumulated x and y
 // +18/+1c, x and y decreasing +20/+21 (bytes), steps per frame +22, done +23.
@@ -121,7 +121,7 @@ void quad_corners(Overlay &o, std::uint32_t packet, std::uint32_t x, std::uint32
 // deltas in 8.8 fixed point with the longer axis moving one pixel a step;
 // clear the accumulated offsets and the done flag.
 void Overlay::start_slide(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5) {
+                          std::uint32_t a4, std::uint32_t a5) {
     const auto slide = at((a5 & 0xffU) * slide_record);
     put32(slide + slide_x_from, a0);
     put32(slide + slide_y_from, a1);
@@ -176,9 +176,9 @@ void Overlay::step_slide(std::uint32_t a0) {
         advance(slide_y, slide_y_step, slide_y_down);
     }
     const bool along_x = u32(slide + slide_x_step) == 0x100;
-    const auto position = static_cast<std::int32_t>(
-        whole(u32(slide + (along_x ? slide_x : slide_y))) +
-        u32(slide + (along_x ? slide_x_from : slide_y_from)));
+    const auto position =
+        static_cast<std::int32_t>(whole(u32(slide + (along_x ? slide_x : slide_y))) +
+                                  u32(slide + (along_x ? slide_x_from : slide_y_from)));
     const auto end = s32(slide + (along_x ? slide_x_to : slide_y_to));
     const bool down = u8(slide + (along_x ? slide_x_down : slide_y_down)) != 0;
     if (down ? position < end : end < position)
@@ -285,8 +285,8 @@ void Overlay::slide_party_panels(std::uint32_t a0, std::uint32_t a1) {
 // +12, `a7` +c) and flag byte +27 + slot set; otherwise 801d4d1c builds the
 // window with a6, a7 and a8.
 void Overlay::open_window(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7,
-                        std::uint32_t a8) {
+                          std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7,
+                          std::uint32_t a8) {
     const auto stack_frame = enter(0x58);
     const auto slot = a0 & 0xffU;
     const auto height = a4 & 0xffffU;
@@ -314,7 +314,7 @@ void Overlay::open_window(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, 
         put32(record + 0xc, a7);
     } else {
         build_panel(slot, a1 & 0xffffU, a2 & 0xffffU, a3 & 0xffffU, height, a6 & 0xffU, a7,
-                  a8 & 0xffU);
+                    a8 & 0xffU);
     }
 }
 
@@ -323,7 +323,8 @@ void Overlay::open_window(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, 
 // per buffer) with texture page (0, 0, 180, 0), the CLUT by the member's low
 // bit, and the slot's texture corner (801ea578, 801ea5c4) at the offset
 // (801e9b58, 801e9b5c), 48 x d (801e920c). `a1` is not read.
-void Overlay::draw_panel_portrait(std::uint32_t a0, std::uint32_t, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_panel_portrait(std::uint32_t a0, std::uint32_t, std::uint32_t a2,
+                                  std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto slot = a0 & 0xffU;
     const auto block = u32(at(panel_blocks + slot * 4));
@@ -335,8 +336,8 @@ void Overlay::draw_panel_portrait(std::uint32_t a0, std::uint32_t, std::uint32_t
     const auto member = u8(u32(at(flags_block)) + party_members + slot);
     put16(portrait + 0x5e, u16((member & 1U) != 0 ? odd_clut : even_clut));
     set_quad_rect(block + u32(at(buffer_index)) * packet_size + 0x50,
-              (u16(0x801e9b58) + a2) & 0xffffU, (u16(0x801e9b5c) + a3) & 0xffffU,
-              (u32(0x801ea578 + slot * 4) << 2U) & 0xfcU, u8(0x801ea5c4 + slot * 4), 0x48, 0xd);
+                  (u16(0x801e9b58) + a2) & 0xffffU, (u16(0x801e9b5c) + a3) & 0xffffU,
+                  (u32(0x801ea578 + slot * 4) << 2U) & 0xfcU, u8(0x801ea5c4 + slot * 4), 0x48, 0xd);
 }
 
 // 801d50ec: panel `a0`'s twenty label sprites: the bank sprite of each word
@@ -360,7 +361,8 @@ void Overlay::draw_panel_labels(std::uint32_t a0, std::uint32_t a1, std::uint32_
 // on panel `a0` at (a2, a3) plus the offsets 801e9b28/801e9b30: the first by
 // digit position (sprites from +af0, counted in +1273), the second packed
 // (from +be0, counted in +1274).
-void Overlay::draw_panel_numbers_4c_4e(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_panel_numbers_4c_4e(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                       std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto record = character_record(a1);
     const auto block = u32(at(panel_blocks + (a0 & 0xffU) * 4));
@@ -375,7 +377,8 @@ void Overlay::draw_panel_numbers_4c_4e(std::uint32_t a0, std::uint32_t a1, std::
 // 801d53d0: member `a1`'s record halfwords +50 and +52 as two-digit numbers on
 // panel `a0` at (a2, a3) plus 801e9b38/801e9b40: the first by digit position
 // (from +cd0, counted in +1275), the second packed (from +d70, in +1276).
-void Overlay::draw_panel_numbers_50_52(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_panel_numbers_50_52(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                       std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto record = character_record(a1);
     const auto block = u32(at(panel_blocks + (a0 & 0xffU) * 4));
@@ -390,7 +393,8 @@ void Overlay::draw_panel_numbers_50_52(std::uint32_t a0, std::uint32_t a1, std::
 // 801d55b4: member `a1`'s record words +44 and +48 as seven-digit numbers on
 // panel `a0` at (a2, a3) plus 801e9b48/801e9b50, by digit position (from
 // +e10 counted in +1277, from +1040 counted in +1278).
-void Overlay::draw_panel_numbers_44_48(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_panel_numbers_44_48(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                       std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto record = character_record(a1);
     const auto block = u32(at(panel_blocks + (a0 & 0xffU) * 4));
@@ -406,7 +410,8 @@ void Overlay::draw_panel_numbers_44_48(std::uint32_t a0, std::uint32_t a1, std::
 // panel `a0` at (a2, a3) plus 801e9b18/801e9b20, by digit position (from
 // +910 counted in +1271, from +a00 counted in +1272); the second number's
 // packets are then tinted: texture shading on, color (0, 80, 0).
-void Overlay::draw_panel_numbers_62_63(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::draw_panel_numbers_62_63(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                       std::uint32_t a3) {
     const auto stack_frame = enter(0x40);
     const auto record = character_record(a1);
     const auto block = u32(at(panel_blocks + (a0 & 0xffU) * 4));
@@ -417,7 +422,9 @@ void Overlay::draw_panel_numbers_62_63(std::uint32_t a0, std::uint32_t a1, std::
     draw_digits(*this, block, 0x1272, 0xa00, digits + 6, 3, a2 + u32(0x801e9b20),
                 a3 + u32(0x801e9b24), false);
     for (std::uint32_t i = 0; i < u8(block + 0x1272); ++i) {
-        const auto packet = [&] { return block + 0xa00 + (i * 2 + u32(at(buffer_index))) * packet_size; };
+        const auto packet = [&] {
+            return block + 0xa00 + (i * 2 + u32(at(buffer_index))) * packet_size;
+        };
         set_shade_tex(packet(), 0);
         put8(packet() + 4, 0);
         put8(packet() + 5, 0x80);
@@ -462,8 +469,8 @@ void Overlay::draw_amount(std::uint32_t a0, std::uint32_t a1) {
         if (digit == 0xff)
             continue;
         const auto block = u32(at(amount_block));
-        const auto used = sprite(*this, digit, block + u32(block + 0x320) * sprite_size,
-                                 a0 + i * 8, a1);
+        const auto used =
+            sprite(*this, digit, block + u32(block + 0x320) * sprite_size, a0 + i * 8, a1);
         const auto counted = u32(at(amount_block));
         put32(counted + 0x320, used + u32(counted + 0x320));
     }
@@ -504,7 +511,8 @@ void Overlay::draw_detail_portrait(std::uint32_t a0, std::uint32_t a1) {
     {
         const auto block = u32(at(detail_block));
         const auto frame_packet = block + u32(at(buffer_index)) * packet_size;
-        set_screen_quad_vectors(block + 0x1ea0, u16(frame_packet + 8), u16(frame_packet + 0xa), 0x30, 0x30);
+        set_screen_quad_vectors(block + 0x1ea0, u16(frame_packet + 8), u16(frame_packet + 0xa),
+                                0x30, 0x30);
     }
     init_text_quad(u32(at(buffer_index)) * packet_size + 0x50 + u32(at(detail_block)));
     const auto tpage = get_tpage(0, 0, 0x180, 0);
@@ -512,15 +520,14 @@ void Overlay::draw_detail_portrait(std::uint32_t a0, std::uint32_t a1) {
     const auto portrait = u32(at(detail_block)) + u32(at(buffer_index)) * packet_size;
     const auto member = u8(u32(at(flags_block)) + party_members + slot);
     const auto odd = layout == 0 ? (member & 1U) != 0
-                                 : ((u8(character_record(member) + record_gear) + 0xbU) &
-                                    1U) != 0;
+                                 : ((u8(character_record(member) + record_gear) + 0xbU) & 1U) != 0;
     put16(portrait + 0x5e, u16(odd ? odd_clut : even_clut));
     const auto corner = (layout * 3 + slot) * 4;
     const auto extent = (layout * 0x18 + 0x48) & 0xffffU;
     set_quad_rect(u32(at(buffer_index)) * packet_size + 0x50 + u32(at(detail_block)), 0, 0,
-              (u32(0x801ea578 + corner) << 2U) & 0xfcU, u8(0x801ea5c4 + corner), extent, 0xd);
+                  (u32(0x801ea578 + corner) << 2U) & 0xfcU, u8(0x801ea5c4 + corner), extent, 0xd);
     set_screen_quad_vectors(u32(at(detail_block)) + 0x1ec0, (u16(0x801e9d38) - shift) & 0xffffU,
-              u16(0x801e9d3c), extent, 0xd);
+                            u16(0x801e9d3c), extent, 0xd);
 }
 
 // 801d680c: the detail panel's two numbers for panel slot `a0` in layout
@@ -543,14 +550,13 @@ void Overlay::draw_detail_numbers(std::uint32_t a0, std::uint32_t a1) {
     const auto gear_record = [&] {
         return gear_numbers + u8(character_record(member()) + record_gear) * character_stride;
     };
-    const auto rectangles = [&](std::uint32_t counter, std::uint32_t packets,
-                                std::uint32_t rects) {
+    const auto rectangles = [&](std::uint32_t counter, std::uint32_t packets, std::uint32_t rects) {
         for (std::uint32_t i = 0; i < u8(u32(at(detail_block)) + counter); ++i) {
             const auto block = u32(at(detail_block));
             const auto packet = block + packets + (i * 2 + u32(at(buffer_index))) * packet_size;
             set_screen_quad_vectors(block + rects + i * 0x20, u16(packet + 8), u16(packet + 0xa),
-                      (u16(packet + 0x10) - u16(packet + 8)) & 0xffffU,
-                      (u16(packet + 0x22) - u16(packet + 0xa)) & 0xffffU);
+                                    (u16(packet + 0x10) - u16(packet + 8)) & 0xffffU,
+                                    (u16(packet + 0x22) - u16(packet + 0xa)) & 0xffffU);
         }
     };
 

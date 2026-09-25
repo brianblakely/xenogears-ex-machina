@@ -148,14 +148,26 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
     set_dma_callback(2, queue_runner);
     const auto entry = gpu.head * entry_bytes;
     std::span<std::uint8_t> queue(gpu.queue);
-    if (size == 0 || rect == nullptr)
-        throw MissingDependency({"gpu_enqueue", 0x80046894, {}, {}}, "symbol:gpu-uncopied-request",
-                                false, "Requests without a copied rectangle are not recovered");
-    const std::array<std::uint32_t, 2> words{pack((*rect)[0], (*rect)[1]),
-                                             pack((*rect)[2], (*rect)[3])};
-    for (std::uint32_t i = 0; i < (size >> 2U); ++i)
-        put(queue, entry + 0xc + 4 * i, words.at(i));
-    put(queue, entry + 4, queue_base + entry + 0xc);
+    if (size == 0) {
+        // 80046894: a request without a parameter copy keeps its pointer.
+        put(queue, entry + 4, parameter);
+    } else {
+        // The parameter's (size + 3) / 4 words go into the entry: the
+        // caller's rectangle, or the words at `parameter` (a packet).
+        const auto count = static_cast<std::uint32_t>(static_cast<std::int32_t>(size + 3U) >> 2);
+        for (std::uint32_t i = 0; i < count; ++i) {
+            std::uint32_t word = 0;
+            if (rect != nullptr) {
+                if (i >= 2)
+                    throw field::FieldFormatError("A rectangle request copies more than 8 bytes");
+                word = i == 0 ? pack((*rect)[0], (*rect)[1]) : pack((*rect)[2], (*rect)[3]);
+            } else {
+                word = memory(parameter + 4 * i);
+            }
+            put(queue, entry + 0xc + 4 * i, word);
+        }
+        put(queue, entry + 4, queue_base + entry + 0xc);
+    }
     put(queue, entry + 8, argument);
     put(queue, entry, operation);
     gpu.head = (gpu.head + 1U) & 63U;

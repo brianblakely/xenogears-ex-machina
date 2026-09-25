@@ -41,8 +41,8 @@ constexpr std::uint32_t part_depth = 0x10, part_clut_x = 0x12, part_clut_y = 0x1
 constexpr std::uint32_t part_page_x = 0x16, part_page_y = 0x18;
 constexpr std::uint32_t part_mirror_x = 0x1a, part_mirror_y = 0x1b;
 // POLY_FT4 fields.
-constexpr std::uint32_t quad_bytes = 0x28;        // one draw buffer's packet
-constexpr std::uint32_t quad_part_bytes = 0x50;   // both buffers' packets of a part
+constexpr std::uint32_t quad_bytes = 0x28;      // one draw buffer's packet
+constexpr std::uint32_t quad_part_bytes = 0x50; // both buffers' packets of a part
 constexpr std::uint32_t quad_x0 = 0x8, quad_y0 = 0xa, quad_x1 = 0x10, quad_y1 = 0x12;
 constexpr std::uint32_t quad_x2 = 0x18, quad_y2 = 0x1a, quad_x3 = 0x20, quad_y3 = 0x22;
 constexpr std::uint32_t quad_uv0 = 0xc, quad_clut = 0xe, quad_uv1 = 0x14, quad_page = 0x16;
@@ -71,7 +71,8 @@ void start_quad(Memory &memory, std::uint32_t packet, std::uint32_t part) {
     const auto clut_x = s16(memory, part + part_clut_x);
     const auto clut_y = s16(memory, part + part_clut_y);
     put16(memory, packet + quad_clut,
-          static_cast<std::uint32_t>(clut_y) << 6U | (static_cast<std::uint32_t>(clut_x >> 4) & 0x3fU));
+          static_cast<std::uint32_t>(clut_y) << 6U |
+              (static_cast<std::uint32_t>(clut_x >> 4) & 0x3fU));
 }
 
 // The quad's texture corners from u, v and the texel extent w, h.
@@ -152,7 +153,8 @@ std::uint32_t unpack_to_new_block(Memory &memory, std::uint32_t packed, std::uin
         return 0;
     static_cast<void>(field::decode_packed_through(
         [&](std::size_t position) {
-            return static_cast<std::uint8_t>(u8(memory, packed + static_cast<std::uint32_t>(position)));
+            return static_cast<std::uint8_t>(
+                u8(memory, packed + static_cast<std::uint32_t>(position)));
         },
         [&](std::size_t index, std::uint8_t value) {
             put8(memory, block + static_cast<std::uint32_t>(index), value);
@@ -207,9 +209,9 @@ void load_tim_list(Memory &memory, std::uint32_t list, const std::function<void(
 
 // 80026338: the six results stored in order through their word addresses.
 void sheet_part_texture(Memory &memory, std::uint32_t sheet, std::uint32_t id,
-                        std::uint32_t count_out, std::uint32_t depth_out,
-                        std::uint32_t clut_x_out, std::uint32_t clut_y_out,
-                        std::uint32_t vram_x_out, std::uint32_t vram_y_out) {
+                        std::uint32_t count_out, std::uint32_t depth_out, std::uint32_t clut_x_out,
+                        std::uint32_t clut_y_out, std::uint32_t vram_x_out,
+                        std::uint32_t vram_y_out) {
     const auto sprite = offset_table_entry(memory, sheet, id);
     const auto part = sprite + 4;
     put32(memory, count_out, static_cast<std::uint32_t>(s16(memory, sprite)));
@@ -224,9 +226,9 @@ void sheet_part_texture(Memory &memory, std::uint32_t sheet, std::uint32_t id,
           static_cast<std::uint32_t>(
               static_cast<std::int16_t>(u16(memory, part + part_page_x) & 0xffc0U) + u_cells));
     put32(memory, vram_y_out,
-          static_cast<std::uint32_t>(static_cast<std::int16_t>(u16(memory, part + part_page_y) &
-                                                               0xff00U) +
-                                     s16(memory, part + part_v)));
+          static_cast<std::uint32_t>(
+              static_cast<std::int16_t>(u16(memory, part + part_page_y) & 0xff00U) +
+              s16(memory, part + part_v)));
 }
 
 // 8002675c: each part's quad at x + scaled offset, of the scaled size; a
@@ -349,7 +351,7 @@ std::uint32_t layout_text_line(Memory &memory, std::uint32_t text, std::uint32_t
     put16(memory, window + 0x0, 0);
     put8(memory, window + 0x69, 100); // glyph budget
     put32(memory, window + 0x28, layout_line);
-    put16(memory, layout_line + 0x58, 0);          // the line's width
+    put16(memory, layout_line + 0x58, 0);         // the line's width
     put8(memory, layout_line + 0x5a, plane & 1U); // the line's bit plane
     glyphs(window);
     return static_cast<std::uint32_t>(s16(memory, u32(memory, window + 0x28) + 0x58)) << 2U;

@@ -127,6 +127,101 @@ void optional(std::ostream &out, const auto &value) {
 } // namespace
 
 namespace {
+// Card BIOS results recorded in the same original execution ("card KIND
+// VALUE [HEX]" service lines, in call order per kind). Results the menu
+// discards (critical sections, event close/enable/undeliver, the card file
+// system setup) are not recorded; their calls only count.
+class RecordedCardBios final : public game::menu::CardBios {
+  public:
+    void add(const std::string &kind, std::uint32_t value, std::vector<std::uint8_t> bytes) {
+        results_[kind].push_back({value, std::move(bytes)});
+    }
+    [[nodiscard]] std::size_t unconsumed() const {
+        std::size_t count = 0;
+        for (const auto &[kind, queue] : results_)
+            count += queue.size();
+        return count;
+    }
+    void bu_init() override {}
+    std::uint32_t open_event(std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t) override {
+        return take("open_event").value;
+    }
+    std::uint32_t close_event(std::uint32_t) override { return 1; }
+    std::uint32_t test_event(std::uint32_t) override {
+        // "card wait CODE": 801c881c returned CODE, the index of the event
+        // that fired among the polls new card, error, done, timeout.
+        auto &queue = results_["wait"];
+        if (queue.empty())
+            throw game::ServiceUnavailable("card event wait result");
+        static constexpr std::array<std::uint32_t, 4> order{3, 1, 0, 2};
+        const auto fired = queue.front().value;
+        const auto polled = order[poll_++ % 4];
+        if (polled != fired)
+            return 0;
+        poll_ = 0;
+        queue.pop_front();
+        return 1;
+    }
+    std::uint32_t enable_event(std::uint32_t) override { return 1; }
+    void undeliver_event(std::uint32_t, std::uint32_t) override {}
+    std::uint32_t enter_critical_section() override { return 1; }
+    void exit_critical_section() override {}
+    std::uint32_t open(std::string_view, std::uint32_t) override { return take("open").value; }
+    ReadResult read(std::uint32_t, std::uint32_t) override {
+        auto result = take("read");
+        return {result.value, std::move(result.bytes)};
+    }
+    std::uint32_t write(std::uint32_t, std::span<const std::uint8_t>) override {
+        return take("write").value;
+    }
+    std::uint32_t close(std::uint32_t fd) override { return fd; }
+    std::uint32_t format(std::string_view) override { return take("format").value; }
+    std::optional<DirectoryEntry> first_file(std::string_view) override { return entry("first"); }
+    std::optional<DirectoryEntry> next_file() override { return entry("next"); }
+    std::uint32_t rename(std::string_view, std::string_view) override {
+        return take("rename").value;
+    }
+    std::uint32_t erase(std::string_view) override { return 1; }
+    std::uint32_t kanji_address(std::uint32_t) override { return take("kanji").value; }
+    std::uint32_t rom_halfword(std::uint32_t) override { return take("rom").value; }
+    std::uint32_t card_info(std::uint32_t) override { return take("info").value; }
+    CardPatch init_card(std::uint32_t) override {
+        auto result = take("init");
+        CardPatch bytes{};
+        if (result.bytes.size() != bytes.size())
+            throw InputError("A recorded card patch is not 20 bytes");
+        std::ranges::copy(result.bytes, bytes.begin());
+        return bytes;
+    }
+    void start_card() override {}
+
+  private:
+    struct Result {
+        std::uint32_t value;
+        std::vector<std::uint8_t> bytes;
+    };
+    Result take(const std::string &kind) {
+        auto &queue = results_[kind];
+        if (queue.empty())
+            throw game::ServiceUnavailable("card BIOS " + kind + " result");
+        auto result = std::move(queue.front());
+        queue.pop_front();
+        return result;
+    }
+    std::optional<DirectoryEntry> entry(const std::string &kind) {
+        auto result = take(kind);
+        if (result.value == 0)
+            return std::nullopt;
+        if (result.bytes.size() != std::tuple_size_v<DirectoryEntry>)
+            throw InputError("A recorded directory entry is not 40 bytes");
+        DirectoryEntry bytes{};
+        std::ranges::copy(result.bytes, bytes.begin());
+        return bytes;
+    }
+    std::map<std::string, std::deque<Result>> results_;
+    std::uint32_t poll_{};
+};
+
 int run_case(int argc, char **argv) {
     std::string status = "invalid_input", reason, dependency;
     std::string_view entry = argc > 1 ? argv[1] : "unknown";
@@ -293,6 +388,7 @@ int run_case(int argc, char **argv) {
         // line starts the next main-loop iteration of "field_frames": the
         // code between frames, then the frame.
         std::vector<game::FrameServices> sections(1);
+        RecordedCardBios card_bios;
         {
             std::ifstream lines(argv[14]);
             if (!lines)
@@ -303,6 +399,17 @@ int run_case(int argc, char **argv) {
                 std::uint32_t first = 0, second = 0;
                 if (line == "frame") {
                     sections.emplace_back();
+                    continue;
+                }
+                if (line.starts_with("card ")) {
+                    // "card KIND VALUE [HEX]": a recorded card BIOS result.
+                    std::istringstream card(line.substr(5));
+                    std::string kind, text;
+                    std::uint32_t value = 0;
+                    if (!(card >> kind >> std::hex >> value))
+                        throw InputError("Malformed card service line");
+                    card >> text;
+                    card_bios.add(kind, value, unhex(text));
                     continue;
                 }
                 if (!(fields >> name >> std::hex >> first))
@@ -633,7 +740,7 @@ int run_case(int argc, char **argv) {
                                                  registers[7]};
             for (std::uint32_t k = 0; k < 8; ++k)
                 arguments.push_back(memory.word(sp + 0x10 + 4 * k));
-            game::menu::Overlay overlay(*program, services, sp);
+            game::menu::Overlay overlay(*program, services, sp, &card_bios);
             overlay.sound_positions = sound_positions;
             // Each frame entry's exported state (menu memory holds the game
             // data while the overlay runs).
@@ -644,8 +751,8 @@ int run_case(int argc, char **argv) {
                        << gte_controls(*program) << "],\"owned\":[" << owned_now
                        << "],\"hardware_writes\":[]}";
             };
-            overlay.set_stack_image(
-                memory.range(sp - game::menu::Overlay::stack_bytes, game::menu::Overlay::stack_bytes));
+            overlay.set_stack_image(memory.range(sp - game::menu::Overlay::stack_bytes,
+                                                 game::menu::Overlay::stack_bytes));
             return_value = overlay.call(address, arguments);
         } else if (entry == "menu_item_effect") {
             // 801e31c0: A0 table directory, A1 character, A2 item.

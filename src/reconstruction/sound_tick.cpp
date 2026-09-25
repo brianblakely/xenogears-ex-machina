@@ -1075,6 +1075,16 @@ class Tick {
             m.w16(voice + 0x6e, m.u16(voice + 0x6e) + (u(s8(m.u8(at))) << 5U));
             m.w16(voice + 2, m.u16(voice + 2) | 0x200U);
             return at + 1;
+        case 0x8003d79c: // d2 detune change in steps of 8
+            m.w16(voice + 0x6e, m.u16(voice + 0x6e) + (u(s8(m.u8(at))) << 3U));
+            m.w16(voice + 2, m.u16(voice + 2) | 0x200U);
+            return at + 1;
+        case 0x8003d7c8: { // d3 detune change by a halfword (signed high byte first)
+            const auto change = (u(s8(m.u8(at))) << 8U) + m.u8(at + 1);
+            m.w16(voice + 2, m.u16(voice + 2) | 0x200U);
+            m.w16(voice + 0x6e, m.u16(voice + 0x6e) + change);
+            return at + 2;
+        }
         case 0x8003d7fc: { // d4 pitch slide
             const auto steps = m.u8(at);
             const auto distance = u(s8(m.u8(at + 1))) << 24U;

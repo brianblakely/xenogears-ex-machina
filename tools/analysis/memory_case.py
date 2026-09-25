@@ -1719,8 +1719,9 @@ MENU_STACK_BELOW = 0x1800
 # The BIOS exception save area as interrupts taken inside menu code write it:
 # the thread control block's 32 register words (80008550..800085cf; general
 # PS1 BIOS layout, the field's KERNEL_SAVE covers the last 13), since menu
-# code interrupted in more registers.
-MENU_KERNEL_SAVE = ((0x8550, 0x85D0),) + KERNEL_SAVE[1:]
+# code interrupted in more registers; and the BIOS words libcard's kernel
+# patches (8004e8d8, 8004e990 inside InitCARD) exchange with the game.
+MENU_KERNEL_SAVE = ((0x4D98, 0x4DA4), (0x8550, 0x85D0), (0xE028, 0xE0A4)) + KERNEL_SAVE[1:]
 
 
 def menu_otc_alarms(rows: list[dict], entry_row: dict, exit_row: dict) -> set[int]:
@@ -1759,8 +1760,7 @@ def menu_inputs(
     for row in rows:
         hook = row["hook"]
         if block is None and (
-            hook in MENU_POSITIONS
-            or (service_line(row) is not None and row["event"] not in clears)
+            hook in MENU_POSITIONS or (service_line(row) is not None and row["event"] not in clears)
         ):
             events += 1
             lines += [line for item in pending for line in item]
@@ -1809,6 +1809,57 @@ def menu_inputs(
     return lines, dict(counts), sectors, stacks
 
 
+# Card BIOS results of a menu run, recorded at the return sites of the
+# overlay's BIOS calls ("bios-KIND-SITE", V0; directory entries and read
+# buffers as a register-relative range and a snapshot), 801c881c's return ("card-wait", the
+# event that fired), the snapshot at 801d9b08's return ("card-events", the
+# four event descriptors OpenEvent returned, stored at card state + 4fec,
+# 4ff0, 4ff4, 4ff8) and the Kanji ROM rows ("rom-801e670c", the first of
+# each row's eight reads). Results the menu discards are not recorded.
+CARD_EVENTS = (0x4FEC, 0x4FF0, 0x4FF4, 0x4FF8)
+CARD_READ_BUFFERS = {"bios-read-801c9068": 17, "bios-read-801cb680": 16}
+# The five words libcard's kernel patch (8004e990, inside InitCARD) leaves at
+# 8004e960, from the same snapshot.
+CARD_PATCH = 0x8004E960
+
+
+def card_lines(rows: list[dict], snapshots) -> list[str]:
+    lines, previous = [], None
+    for row in rows:
+        hook = row["hook"]
+        v0 = visible_registers(row)[2]
+        ranges = {r["name"]: bytes.fromhex(r["hex"]) for r in row.get("ranges", [])}
+        if hook == "card-wait":
+            lines.append(f"card wait {v0:x}")
+        elif hook == "card-events":
+            ram = snapshots.read(row)[0]
+            block = u32(ram, u32(ram, 0x800625A0) + 0x32C)
+            lines += [f"card open_event {u32(ram, block + offset):x}" for offset in CARD_EVENTS]
+            patch = ram[CARD_PATCH & 0x1FFFFF : (CARD_PATCH & 0x1FFFFF) + 20]
+            lines.append(f"card init 0 {patch.hex()}")
+        elif hook.startswith("bios-"):
+            kind = hook.split("-")[1]
+            if kind in ("first", "next"):
+                entry = ranges["dir"].hex() if v0 != 0 else ""
+                lines.append(f"card {kind} {v0:x} {entry}".rstrip())
+            elif kind == "read":
+                # The bytes read, from the return's snapshot at the buffer
+                # (S1 in 801c9038, S0 in 801cb304).
+                count = v0 if v0 < 0x80000000 else 0
+                buffer = visible_registers(row)[CARD_READ_BUFFERS[hook]] & 0x1FFFFF
+                data = snapshots.read(row)[0][buffer : buffer + count]
+                lines.append(f"card read {v0:x} {data.hex()}".rstrip())
+            else:
+                lines.append(f"card {kind} {v0:x}")
+        elif hook == "rom-801e670c" and previous != hook:
+            lines.append(f"card rom {v0:x}")  # lhu v0,0(v1)
+        if hook.startswith("rom-"):
+            previous = hook
+        elif hook.startswith(("bios-", "card-")):
+            previous = None
+    return lines
+
+
 def run_menu(args: argparse.Namespace) -> int:
     """One menu overlay call from its entry snapshot, compared at every later
     menu frame entry (and at its return when the capture holds it). Nothing
@@ -1848,6 +1899,7 @@ def run_menu(args: argparse.Namespace) -> int:
     clears = menu_otc_alarms(rows, entry_row, rows[end])
     platform, counts, sectors, stacks = menu_inputs(span, entry, io, clears)
     services = call_services(rows, snapshots, entry_row, rows[end], MENU_BRACKETS, clears)
+    services += card_lines(span, snapshots)
     with (
         tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
         BatchRunner(args.runner) as runner,
@@ -1885,24 +1937,50 @@ def run_menu(args: argparse.Namespace) -> int:
     for k, (index, output) in enumerate(zip(frames, outputs, strict=False)):
         row = rows[index]
         image = snapshots.read(row)[0]
-        result = compare(entry, image, output["owned"], sp, arrival_stacks=tuple(stacks),
-                         stack_below=MENU_STACK_BELOW, kernel_save=MENU_KERNEL_SAVE)
+        result = compare(
+            entry,
+            image,
+            output["owned"],
+            sp,
+            arrival_stacks=tuple(stacks),
+            stack_below=MENU_STACK_BELOW,
+            kernel_save=MENU_KERNEL_SAVE,
+        )
         ok = not (result["mismatch_count"] or result["unowned_count"])
-        compared.append({"frame": k, "frontend_run": row["frontend_run"], "matched": ok,
-                         "owned_bytes": result["owned_bytes"],
-                         "changed_bytes": result["changed_bytes"],
-                         "mismatch_count": result["mismatch_count"],
-                         "unowned_count": result["unowned_count"]})
+        compared.append(
+            {
+                "frame": k,
+                "frontend_run": row["frontend_run"],
+                "matched": ok,
+                "owned_bytes": result["owned_bytes"],
+                "changed_bytes": result["changed_bytes"],
+                "mismatch_count": result["mismatch_count"],
+                "unowned_count": result["unowned_count"],
+            }
+        )
         if not ok:
             divergence = {"frame": k, "frontend_run": row["frontend_run"], **result}
             break
     exit_result = None
-    if divergence is None and rows[last]["hook"] == args.exit_hook and report["status"] == "completed_boundary":
+    if (
+        divergence is None
+        and rows[last]["hook"] == args.exit_hook
+        and report["status"] == "completed_boundary"
+    ):
         image = snapshots.read(rows[last])[0]
-        result = compare(entry, image, report["owned"], sp, arrival_stacks=tuple(stacks),
-                         stack_below=MENU_STACK_BELOW, kernel_save=MENU_KERNEL_SAVE)
-        exit_result = {k: result[k] for k in ("owned_bytes", "changed_bytes", "mismatch_count",
-                                               "unowned_count")}
+        result = compare(
+            entry,
+            image,
+            report["owned"],
+            sp,
+            arrival_stacks=tuple(stacks),
+            stack_below=MENU_STACK_BELOW,
+            kernel_save=MENU_KERNEL_SAVE,
+        )
+        exit_result = {
+            k: result[k]
+            for k in ("owned_bytes", "changed_bytes", "mismatch_count", "unowned_count")
+        }
         if result["mismatch_count"] or result["unowned_count"]:
             divergence = {"exit": True, **result}
         elif report.get("platform_unconsumed"):
@@ -1927,9 +2005,13 @@ def run_menu(args: argparse.Namespace) -> int:
             "scratchpad": "not compared",
         },
         "status": report["status"],
-        "stopped_at": None if report["status"] == "completed_boundary" else {
-            "dependency": report.get("dependency"), "reason": report.get("reason"),
-            "location": report.get("location")},
+        "stopped_at": None
+        if report["status"] == "completed_boundary"
+        else {
+            "dependency": report.get("dependency"),
+            "reason": report.get("reason"),
+            "location": report.get("location"),
+        },
         "frames_recorded": len(frames),
         "frames_reported": len(outputs),
         "frames_matched": matched,
@@ -1944,9 +2026,19 @@ def run_menu(args: argparse.Namespace) -> int:
     if args.report:
         require(not args.report.exists(), "Reports are never overwritten")
         args.report.write_text(text + "\n")
-    print(json.dumps([summary["status"], len(frames), len(outputs), matched,
-                      (summary["stopped_at"] or {}).get("dependency"), bool(divergence),
-                      exit_result is not None]))
+    print(
+        json.dumps(
+            [
+                summary["status"],
+                len(frames),
+                len(outputs),
+                matched,
+                (summary["stopped_at"] or {}).get("dependency"),
+                bool(divergence),
+                exit_result is not None,
+            ]
+        )
+    )
     return 0 if divergence is None and matched == len(outputs) and outputs else 1
 
 

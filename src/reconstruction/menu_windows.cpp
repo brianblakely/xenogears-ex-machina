@@ -12,21 +12,21 @@
 namespace xem::reconstruction::menu {
 namespace {
 // Menu state fields (offsets from *800625a0).
-constexpr std::uint32_t draw_environment = 0x1d4; // current buffer's environment block
-constexpr std::uint32_t frame_counter = 0x2d8;    // frames since last cleared
-constexpr std::uint32_t sprite_sheet = 0x2dc;     // the menu sprite sheet (8002675c)
-constexpr std::uint32_t buffer_index = 0x308;     // 0/1: the buffer being built
-constexpr std::uint32_t file_screen_state = 0x32c;      // file screen block
-constexpr std::uint32_t shown_flags = 0x33c;      // block of per-window "shown" bytes
-constexpr std::uint32_t party_windows = 0x39c;    // three party window blocks
-constexpr std::uint32_t slot_blocks = 0x3a8;      // 32 file-slot blocks
-constexpr std::uint32_t panel_growth = 0x380;     // seven opening-panel records
-constexpr std::uint32_t panel_blocks = 0x364;     // seven 3D panel blocks
-constexpr std::uint32_t palette_step = 0x4cc;     // 0-5: file-slot palette row
-constexpr std::uint32_t palette_timer = 0x4d0;    // frames within a palette row
-constexpr std::uint32_t cursor_level = 0x4d4;     // pulsing cursor colour 4..7c
-constexpr std::uint32_t file_screen_mode = 0x4d8; // 0 none, 2 file selection
-constexpr std::uint32_t cursor_falling = 0x4d9;   // 1 while the cursor colour falls
+constexpr std::uint32_t draw_environment = 0x1d4;  // current buffer's environment block
+constexpr std::uint32_t frame_counter = 0x2d8;     // frames since last cleared
+constexpr std::uint32_t sprite_sheet = 0x2dc;      // the menu sprite sheet (8002675c)
+constexpr std::uint32_t buffer_index = 0x308;      // 0/1: the buffer being built
+constexpr std::uint32_t file_screen_state = 0x32c; // file screen block
+constexpr std::uint32_t shown_flags = 0x33c;       // block of per-window "shown" bytes
+constexpr std::uint32_t party_windows = 0x39c;     // three party window blocks
+constexpr std::uint32_t slot_blocks = 0x3a8;       // 32 file-slot blocks
+constexpr std::uint32_t panel_growth = 0x380;      // seven opening-panel records
+constexpr std::uint32_t panel_blocks = 0x364;      // seven 3D panel blocks
+constexpr std::uint32_t palette_step = 0x4cc;      // 0-5: file-slot palette row
+constexpr std::uint32_t palette_timer = 0x4d0;     // frames within a palette row
+constexpr std::uint32_t cursor_level = 0x4d4;      // pulsing cursor colour 4..7c
+constexpr std::uint32_t file_screen_mode = 0x4d8;  // 0 none, 2 file selection
+constexpr std::uint32_t cursor_falling = 0x4d9;    // 1 while the cursor colour falls
 // Overlay words: the file screen's slot for each cursor position (+4f7c).
 constexpr std::uint32_t slot_of_cursor = 0x801e981c;
 // Ordering-table entries in an environment block (+70, 16 words).
@@ -96,7 +96,8 @@ std::uint32_t half_inner(std::uint32_t extent) {
 // 801ce198: for `count` quads, project the four SVECTORs at `vectors` + 20*i
 // (RotTransPers4) into packet `index` + 2*i of `packets` (28 bytes each) and
 // link it into ordering-table entry 4.
-void Overlay::project_quads(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::project_quads(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                            std::uint32_t a3) {
     const auto stack_frame = enter(0x68);
     auto f = frame(0x68);
     auto index = a3;
@@ -217,7 +218,7 @@ void Overlay::draw_status_quads() {
     for (const auto &group : groups) {
         const auto status = block(*this, 0x358);
         project_quads(group.count == 0 ? 1U : u8(status + group.count), status + group.vectors,
-                  status + group.packets, u8(status + group.index));
+                      status + group.packets, u8(status + group.index));
     }
 }
 
@@ -241,8 +242,8 @@ void Overlay::draw_rows_35c() {
             const auto again = block(*this, 0x35c);
             draw(*this, 0x2228 + i * 0x48 + again + u8(again + i + 0x32e3) * 0x24);
             const auto group = block(*this, 0x35c);
-            project_quads(u8(group + i + 0x32ce), i * 0x80 + 0x2d80 + group, i * 0x140 + 0x1770 + group,
-                      u8(group + i + 0x32d5));
+            project_quads(u8(group + i + 0x32ce), i * 0x80 + 0x2d80 + group,
+                          i * 0x140 + 0x1770 + group, u8(group + i + 0x32d5));
         }
         const auto bar = block(*this, 0x35c);
         const auto packet = 0x2030 + i * 0x48 + bar + u8(bar + i + 0x32dc) * 0x24;
@@ -251,7 +252,7 @@ void Overlay::draw_rows_35c() {
         draw(*this, 0x2030 + i * 0x48 + again + u8(again + i + 0x32dc) * 0x24);
         const auto group = block(*this, 0x35c);
         project_quads(u8(group + i + 0x32c0), i * 0x80 + 0x2a00 + group, i * 0x140 + 0xeb0 + group,
-                  u8(group + i + 0x32c7));
+                      u8(group + i + 0x32c7));
     }
 }
 
@@ -374,7 +375,8 @@ void Overlay::draw_slot_icons(std::uint32_t a0, std::uint32_t a1, std::uint32_t 
             continue;
         const auto u = row << 4U;
         for (std::uint32_t icon = 0;
-             signed_word(icon) < signed_word(u8(block(*this, file_screen_state) + row * 0x200 + 0xb97));
+             signed_word(icon) <
+             signed_word(u8(block(*this, file_screen_state) + row * 0x200 + 0xb97));
              ++icon, ++slot) {
             const auto icon_block = u32(at(slot_blocks) + slot * 4);
             const auto packet = [&] { return buffer(*this) * 0x28 + icon_block; };
@@ -424,14 +426,15 @@ void Overlay::draw_card_headers() {
                 *this, u32(at(sprite_sheet)), label, header + block(*this, file_screen_state),
                 buffer(*this), 0x1e + side * 0x90, 0x36, 0x1000));
             parts = resident::sheet_quads(*this, u32(at(sprite_sheet)), side + 0x162,
-                                          header + block(*this, file_screen_state) + 0x50, buffer(*this),
-                                          0x1b + side * 0x90, 0x36, 0x1000);
+                                          header + block(*this, file_screen_state) + 0x50,
+                                          buffer(*this), 0x1b + side * 0x90, 0x36, 0x1000);
             built.at(side) = true;
         }
         if (!built.at(side))
             continue;
         for (std::uint32_t i = 0; signed_word(i) < signed_word(parts); ++i)
-            draw(*this, header + block(*this, file_screen_state) + (i * 2 + buffer(*this)) * 0x28 + 0x50);
+            draw(*this,
+                 header + block(*this, file_screen_state) + (i * 2 + buffer(*this)) * 0x28 + 0x50);
         draw(*this, header + block(*this, file_screen_state) + buffer(*this) * 0x28);
     }
 }
@@ -597,10 +600,10 @@ void Overlay::draw_slot_list() {
             if (u8(slots() + offset + 0x1310) == 0)
                 continue;
             draw_packets(u8(slots() + offset + 0x1312), base + slots() + 0x50,
-                      u8(slots() + offset + 0x130e));
+                         u8(slots() + offset + 0x130e));
             for (const auto &list : lists)
                 draw_packets(u8(slots() + offset + list.count), base + slots() + list.packets,
-                          u8(slots() + offset + 0x130f));
+                             u8(slots() + offset + 0x130f));
             draw(*this, base + slots() + u8(slots() + 0x130f) * 0x28);
             draw(*this, base + slots() + u8(slots() + offset + 0x1311) * 0x28 + 0x820);
         }
@@ -613,7 +616,8 @@ void Overlay::draw_slot_list() {
 
 // 801d0954: project the four SVECTORs at `vectors` into packet `index` of
 // `packets` (28 bytes each) and link it into ordering-table entry `entry`.
-void Overlay::project_panel_piece(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::project_panel_piece(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3) {
     const auto stack_frame = enter(0x40);
     auto f = frame(0x40);
     const auto packet = a1 + a2 * 0x28;
@@ -632,8 +636,8 @@ void Overlay::draw_panel(std::uint32_t a0, std::uint32_t a1) {
     auto f = frame(0x48);
     const auto block_address = u32(at(panel_blocks) + a0 * 4);
     const auto piece = [&](std::uint32_t vectors, std::uint32_t packets) {
-        project_panel_piece(block_address + vectors, block_address + packets, u8(block_address + 0x71c),
-                  u32(block_address + 0x718));
+        project_panel_piece(block_address + vectors, block_address + packets,
+                            u8(block_address + 0x71c), u32(block_address + 0x718));
     };
     for (std::uint32_t i = 0; i < 4; ++i)
         piece(0x510 + i * 0x20, i * 0x50);
@@ -1004,7 +1008,7 @@ void Overlay::grow_opening_panels() {
         const auto x = (u16(record) + (u16(record + 4) >> 1U) - (width >> 1U)) & 0xffffU;
         const auto y = (u16(record + 2) + (u16(record + 6) >> 1U) - (height >> 1U)) & 0xffffU;
         build_panel(u8(record + 0x10), x, y, width, height, u8(record + 0x12), u32(record + 0xc),
-                  u8(record + 0x13));
+                    u8(record + 0x13));
     }
 }
 
@@ -1014,8 +1018,8 @@ void Overlay::grow_opening_panels() {
 // 8), then the corner SVECTORs (801c851c) of the bar's top cap (+6d0, 8x8),
 // bottom cap (+6f0, 8 by -8 from y + height) and body (+6b0, 8 by height - 8
 // from y + 8). The width (A3) is not read.
-void Overlay::build_panel_title(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4) {
+void Overlay::build_panel_title(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0x48);
     static_cast<void>(a3);
     const auto x = a1 & 0xffffU;
@@ -1032,7 +1036,8 @@ void Overlay::build_panel_title(std::uint32_t a0, std::uint32_t a1, std::uint32_
                                             0x1000));
     set_screen_quad_vectors(block_address + 0x6d0, x, y, 8, 8);
     set_screen_quad_vectors(block_address + 0x6f0, x, (a2 + height) & 0xffffU, 8, 0xfff8);
-    set_screen_quad_vectors(block_address + 0x6b0, x, (a2 + 8) & 0xffffU, 8, (height + 0xfff8) & 0xffffU);
+    set_screen_quad_vectors(block_address + 0x6b0, x, (a2 + 8) & 0xffffU, 8,
+                            (height + 0xfff8) & 0xffffU);
 }
 
 // 801d3db0: panel `panel`'s frame corners: sprites fd, ff, 102 and 104 of the
@@ -1042,8 +1047,8 @@ void Overlay::build_panel_title(std::uint32_t a0, std::uint32_t a1, std::uint32_
 // mirrored by negative extents) around the rectangle (x, y, width, height),
 // and this buffer's first four part packets made semi-transparent at colour
 // 80 (801e91c4).
-void Overlay::build_panel_corners(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4) {
+void Overlay::build_panel_corners(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                  std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0x48);
     const auto block_address = panel(*this, a0);
     put32(block_address + 0x710, 0);
@@ -1069,29 +1074,32 @@ void Overlay::build_panel_corners(std::uint32_t a0, std::uint32_t a1, std::uint3
 // this buffer's two edge pieces (+140), the corner SVECTORs (801c851c) of
 // its two halves (+590, +5b0), (width - 10) / 2 wide and 16 high from x + 8
 // at y - 8, and both pieces made semi-transparent at colour 80 (801e91c4).
-void Overlay::build_panel_top_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::build_panel_top_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                   std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto block_address = panel(*this, a0);
     set_edge_uvs(*this, block_address, 0x140, 0, 7, 0x84, 0x94);
     const auto half = half_inner(a3);
     const auto y = (a2 - 8) & 0xffffU;
     set_screen_quad_vectors(block_address + 0x590, (a1 + 8) & 0xffffU, y, half & 0xffffU, 0x10);
-    set_screen_quad_vectors(block_address + 0x5b0, (a1 + half + 8) & 0xffffU, y, half & 0xffffU, 0x10);
+    set_screen_quad_vectors(block_address + 0x5b0, (a1 + half + 8) & 0xffffU, y, half & 0xffffU,
+                            0x10);
     for (std::uint32_t k = 0; k < 2; ++k)
         set_quad_translucent(block_address + (k * 2 + buffer(*this)) * 0x28 + 0x140);
 }
 
 // 801d433c: panel `panel`'s bottom edge, as 801d3ff8: u 8..f, v 84..94
 // (+1e0), halves (+5d0, +5f0) at y + height - 8 (height the stack word).
-void Overlay::build_panel_bottom_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4) {
+void Overlay::build_panel_bottom_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                      std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0x38);
     const auto block_address = panel(*this, a0);
     set_edge_uvs(*this, block_address, 0x1e0, 8, 0xf, 0x84, 0x94);
     const auto y = (a2 + a4 - 8) & 0xffffU;
     const auto half = half_inner(a3);
     set_screen_quad_vectors(block_address + 0x5d0, (a1 + 8) & 0xffffU, y, half & 0xffffU, 0x10);
-    set_screen_quad_vectors(block_address + 0x5f0, (a1 + half + 8) & 0xffffU, y, half & 0xffffU, 0x10);
+    set_screen_quad_vectors(block_address + 0x5f0, (a1 + half + 8) & 0xffffU, y, half & 0xffffU,
+                            0x10);
     for (std::uint32_t k = 0; k < 2; ++k)
         set_quad_translucent(block_address + (k * 2 + buffer(*this)) * 0x28 + 0x1e0);
 }
@@ -1099,14 +1107,16 @@ void Overlay::build_panel_bottom_edge(std::uint32_t a0, std::uint32_t a1, std::u
 // 801d4688: panel `panel`'s left edge, as 801d3ff8: u 10..20, v 84..8b
 // (+280), halves (+610, +630) 16 wide and (height - 10) / 2 high (height in
 // A3) from y + 8 at x - 8.
-void Overlay::build_panel_left_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3) {
+void Overlay::build_panel_left_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                    std::uint32_t a3) {
     const auto stack_frame = enter(0x38);
     const auto block_address = panel(*this, a0);
     set_edge_uvs(*this, block_address, 0x280, 0x10, 0x20, 0x84, 0x8b);
     const auto x = (a1 - 8) & 0xffffU;
     const auto half = half_inner(a3);
     set_screen_quad_vectors(block_address + 0x610, x, (a2 + 8) & 0xffffU, 0x10, half & 0xffffU);
-    set_screen_quad_vectors(block_address + 0x630, x, (a2 + half + 8) & 0xffffU, 0x10, half & 0xffffU);
+    set_screen_quad_vectors(block_address + 0x630, x, (a2 + half + 8) & 0xffffU, 0x10,
+                            half & 0xffffU);
     for (std::uint32_t k = 0; k < 2; ++k)
         set_quad_translucent(block_address + (k * 2 + buffer(*this)) * 0x28 + 0x280);
 }
@@ -1114,15 +1124,16 @@ void Overlay::build_panel_left_edge(std::uint32_t a0, std::uint32_t a1, std::uin
 // 801d49d0: panel `panel`'s right edge, as 801d4688: u 10..20, v 8c..93
 // (+320), halves (+650, +670) from y + 8 at x + width - 8 (height the low
 // half of the stack word).
-void Overlay::build_panel_right_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4) {
+void Overlay::build_panel_right_edge(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2,
+                                     std::uint32_t a3, std::uint32_t a4) {
     const auto stack_frame = enter(0x38);
     const auto block_address = panel(*this, a0);
     set_edge_uvs(*this, block_address, 0x320, 0x10, 0x20, 0x8c, 0x93);
     const auto x = (a1 + a3 - 8) & 0xffffU;
     const auto half = half_inner(a4);
     set_screen_quad_vectors(block_address + 0x650, x, (a2 + 8) & 0xffffU, 0x10, half & 0xffffU);
-    set_screen_quad_vectors(block_address + 0x670, x, (a2 + half + 8) & 0xffffU, 0x10, half & 0xffffU);
+    set_screen_quad_vectors(block_address + 0x670, x, (a2 + half + 8) & 0xffffU, 0x10,
+                            half & 0xffffU);
     for (std::uint32_t k = 0; k < 2; ++k)
         set_quad_translucent(block_address + (k * 2 + buffer(*this)) * 0x28 + 0x320);
 }
@@ -1134,7 +1145,7 @@ void Overlay::build_panel_right_edge(std::uint32_t a0, std::uint32_t a1, std::ui
 // (+714, byte; zero draws with the default view), ordering-table entry
 // (+718) and the buffer built (+71c) and is shown again.
 void Overlay::build_panel(std::uint32_t a0, std::uint32_t a1, std::uint32_t a2, std::uint32_t a3,
-                        std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7) {
+                          std::uint32_t a4, std::uint32_t a5, std::uint32_t a6, std::uint32_t a7) {
     const auto stack_frame = enter(0x40);
     const auto index = a0 & 0xffU;
     const auto x = a1 & 0xffffU;

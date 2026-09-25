@@ -29,9 +29,9 @@ constexpr std::uint32_t card_poll_timer = 0x326; // frames since the last card p
 constexpr std::uint32_t view_motion = 0x329;     // nonzero while the view moves
 constexpr std::uint32_t sounds = 0x32a;          // nonzero plays menu effects
 constexpr std::uint32_t b_334 = 0x334;           // file screen request (1 after card work)
-constexpr std::uint32_t top_cursor = 0x336;       // top command cursor
+constexpr std::uint32_t top_cursor = 0x336;      // top command cursor
 constexpr std::uint32_t file_choice = 0x338;     // file command: 0 delete, 1 copy, 2 save/load
-constexpr std::uint32_t file_details = 0x34c;     // file details block (sprites, packets)
+constexpr std::uint32_t file_details = 0x34c;    // file details block (sprites, packets)
 constexpr std::uint32_t message_window = 0x388;  // message window record (+11 open)
 constexpr std::uint32_t file_blocks = 0x3a8;     // 32 blocks the file screen releases
 constexpr std::uint32_t markers = 0x428;         // cursor and yes/no marker block
@@ -70,29 +70,29 @@ constexpr std::uint32_t entry_icon_shown = 0x58;
 // icon frames; then the payload's first 100h bytes).
 constexpr std::uint32_t heads = 0xb94;
 constexpr std::uint32_t head_bytes = 0x200;
-constexpr std::uint32_t port_status = 0x4f74;      // word per port: 0, -1, -2, -3
-constexpr std::uint32_t cursor_slot = 0x4f7c;      // word: slot 0..29
-constexpr std::uint32_t shown_slot = 0x4f80;       // word: slot the details show
-constexpr std::uint32_t listed_count = 0x4f84;     // word: position entries listed
-constexpr std::uint32_t port_scanned = 0x4f88;     // byte per port
-constexpr std::uint32_t port_files = 0x4f8a;       // byte per port: files found
-constexpr std::uint32_t port_files_seen = 0x4f8c;  // byte per port: count listed, ff none
-constexpr std::uint32_t game_file = 0x4f8e;        // byte per position: this game's file
-constexpr std::uint32_t position_entry = 0x4fae;   // byte per position: entry, ff none
-constexpr std::uint32_t game_prefix = 0x4fce;      // this game's file name prefix
-constexpr std::uint32_t port_present = 0x4fe4;     // byte per port
-constexpr std::uint32_t poll_mode = 0x4fe6;        // 0 off, 1 scan and flag, 2 scan
+constexpr std::uint32_t port_status = 0x4f74;     // word per port: 0, -1, -2, -3
+constexpr std::uint32_t cursor_slot = 0x4f7c;     // word: slot 0..29
+constexpr std::uint32_t shown_slot = 0x4f80;      // word: slot the details show
+constexpr std::uint32_t listed_count = 0x4f84;    // word: position entries listed
+constexpr std::uint32_t port_scanned = 0x4f88;    // byte per port
+constexpr std::uint32_t port_files = 0x4f8a;      // byte per port: files found
+constexpr std::uint32_t port_files_seen = 0x4f8c; // byte per port: count listed, ff none
+constexpr std::uint32_t game_file = 0x4f8e;       // byte per position: this game's file
+constexpr std::uint32_t position_entry = 0x4fae;  // byte per position: entry, ff none
+constexpr std::uint32_t game_prefix = 0x4fce;     // this game's file name prefix
+constexpr std::uint32_t port_present = 0x4fe4;    // byte per port
+constexpr std::uint32_t poll_mode = 0x4fe6;       // 0 off, 1 scan and flag, 2 scan
 constexpr std::uint32_t b_4fe7 = 0x4fe7;
-constexpr std::uint32_t presence_seen = 0x4fe8;    // byte per port
-constexpr std::uint32_t io_event = 0x4fec;         // card events: done,
-constexpr std::uint32_t error_event = 0x4ff0;      // error,
-constexpr std::uint32_t timeout_event = 0x4ff4;    // timeout,
-constexpr std::uint32_t new_card_event = 0x4ff8;   // new card
-constexpr std::uint32_t title_suffix = 0x4ffc;     // text appended to the save title
+constexpr std::uint32_t presence_seen = 0x4fe8;  // byte per port
+constexpr std::uint32_t io_event = 0x4fec;       // card events: done,
+constexpr std::uint32_t error_event = 0x4ff0;    // error,
+constexpr std::uint32_t timeout_event = 0x4ff4;  // timeout,
+constexpr std::uint32_t new_card_event = 0x4ff8; // new card
+constexpr std::uint32_t title_suffix = 0x4ffc;   // text appended to the save title
 
 // ---- Overlay static data ----------------------------------------------------
-constexpr std::uint32_t device_names = 0x801c50a8; // two 8-byte device names (6 copied)
-constexpr std::uint32_t temp_suffix = 0x801c50b8;  // temporary file name suffix
+constexpr std::uint32_t device_names = 0x801c50a8;   // two 8-byte device names (6 copied)
+constexpr std::uint32_t temp_suffix = 0x801c50b8;    // temporary file name suffix
 constexpr std::uint32_t title_template = 0x801c50e0; // 1bh bytes
 constexpr std::uint32_t status_codes = 0x801e9768;   // event index -> status word
 constexpr std::uint32_t card_changed = 0x801e9778;
@@ -101,31 +101,31 @@ constexpr std::uint32_t watch_cards = 0x801e977a;
 constexpr std::uint32_t slot_positions = 0x801e981c; // 30 words: slot -> position
 constexpr std::uint32_t position_x = 0x801e9894;     // halfword per position (stride 4)
 constexpr std::uint32_t position_y = 0x801e9914;
-constexpr std::uint32_t label_x = 0x801e9f98;        // 9 words
-constexpr std::uint32_t label_y = 0x801e9fbc;        // 9 words
-constexpr std::uint32_t time_x = 0x801e9fe0;         // colon x twice, then 7 digit x
-constexpr std::uint32_t member_x = 0x801ea004;       // 3 words
-constexpr std::uint32_t member_y = 0x801ea010;       // 3 words
+constexpr std::uint32_t label_x = 0x801e9f98;  // 9 words
+constexpr std::uint32_t label_y = 0x801e9fbc;  // 9 words
+constexpr std::uint32_t time_x = 0x801e9fe0;   // colon x twice, then 7 digit x
+constexpr std::uint32_t member_x = 0x801ea004; // 3 words
+constexpr std::uint32_t member_y = 0x801ea010; // 3 words
 constexpr std::uint32_t level_x = 0x801ea01c, level_y = 0x801ea020;
 constexpr std::uint32_t hp_x = 0x801ea02c, hp_y = 0x801ea030;
 constexpr std::uint32_t max_hp_x = 0x801ea034, max_hp_y = 0x801ea038;
 constexpr std::uint32_t stat_x = 0x801ea03c, stat_y = 0x801ea040;
 constexpr std::uint32_t stat2_x = 0x801ea044, stat2_y = 0x801ea048;
 constexpr std::uint32_t title_x = 0x801ea04c, title_y = 0x801ea050; // halfwords
-constexpr std::uint32_t label_ids = 0x801ea494;      // 9 words, ffff none
-constexpr std::uint32_t name_image_x = 0x801ea590;   // per column (stride 4)
+constexpr std::uint32_t label_ids = 0x801ea494;                     // 9 words, ffff none
+constexpr std::uint32_t name_image_x = 0x801ea590;                  // per column (stride 4)
 constexpr std::uint32_t name_image_y = 0x801ea5dc;
-constexpr std::uint32_t ascii_codes = 0x801ea5d0;    // Shift-JIS code per ASCII byte
-constexpr std::uint32_t used_digits = 0x801ea6d0;    // 16 bytes per port
+constexpr std::uint32_t ascii_codes = 0x801ea5d0; // Shift-JIS code per ASCII byte
+constexpr std::uint32_t used_digits = 0x801ea6d0; // 16 bytes per port
 constexpr std::uint32_t last_payload = 0x801ea6f4;
 constexpr std::uint32_t cards_reset = 0x801ea6f8;
 constexpr std::uint32_t saved_callbacks = 0x801ea718; // three words
 constexpr std::uint32_t two_byte_character = 0x801ea8c0;
-constexpr std::uint32_t icon_palette = 0x801ea8c4;   // 20h bytes
-constexpr std::uint32_t icon_rect = 0x801ea8e4;      // RECT
-constexpr std::uint32_t palette_rect = 0x801ea8ec;   // RECT
+constexpr std::uint32_t icon_palette = 0x801ea8c4; // 20h bytes
+constexpr std::uint32_t icon_rect = 0x801ea8e4;    // RECT
+constexpr std::uint32_t palette_rect = 0x801ea8ec; // RECT
 constexpr std::uint32_t card_cancelled = 0x801ea8fc;
-constexpr std::uint32_t port_blocks = 0x801ea900;    // word per port: blocks listed
+constexpr std::uint32_t port_blocks = 0x801ea900; // word per port: blocks listed
 
 // ---- Game data --------------------------------------------------------------
 constexpr std::uint32_t game = 0x8006d634;
@@ -133,8 +133,9 @@ constexpr std::uint32_t game_globals = game + 0x2324; // 20h bytes (8006f958)
 constexpr std::uint32_t game_disc = game + 0x19d4;    // u16 (8006f008)
 constexpr std::uint32_t gear_records = 0x8006dfac;    // records 11..30
 constexpr std::uint32_t record_bytes = 0xa4;
-constexpr std::uint32_t menu_mode = 0x80059460;       // 2: title file screen (load)
+constexpr std::uint32_t menu_mode = 0x80059460;        // 2: title file screen (load)
 constexpr std::uint32_t cd_read_callback = 0x80056844; // 8004373c's word
+constexpr std::uint32_t card_patch = 0x8004e960;       // libcard's patched words (8004e990)
 
 // The card event class and the specs of the four events (general BIOS:
 // SwCARD f4000001; spec 4 done, 8000 error, 100 timeout, 2000 new card).
@@ -482,9 +483,8 @@ void Overlay::mark_game_files(std::uint32_t a0) {
     for (std::uint32_t n = 0; n < 16; ++n)
         put8(cards + a0 * 16 + n + game_file, 0);
     const auto first = a0 * 16;
-    for (auto position = first; static_cast<std::int32_t>(position) <
-                                static_cast<std::int32_t>(first + 15);
-         ++position) {
+    for (auto position = first;
+         static_cast<std::int32_t>(position) < static_cast<std::int32_t>(first + 15); ++position) {
         const auto entry = u8(cards + position + position_entry);
         bool matches = true;
         for (std::uint32_t k = 0; k < 12; ++k)
@@ -552,7 +552,8 @@ std::uint32_t Overlay::refresh_cards() {
         close_message();
     }
     put8(poll_period, 1);
-    const std::array<std::uint32_t, 2> present{u8(cards + port_present), u8(cards + port_present + 1)};
+    const std::array<std::uint32_t, 2> present{u8(cards + port_present),
+                                               u8(cards + port_present + 1)};
     // With no card the original tests the caller's S3 here (never set in
     // this function); both of its outcomes reach the end: the cursor check
     // below finds the party's cursor flag cleared above.
@@ -814,7 +815,8 @@ void Overlay::build_save_title(std::uint32_t a0) {
 std::uint32_t Overlay::confirm_choice(std::uint32_t a0) {
     const auto stack_frame = enter(0x38);
     const auto cards = u32(at(state_card));
-    const std::array<std::uint32_t, 2> present{u8(cards + port_present), u8(cards + port_present + 1)};
+    const std::array<std::uint32_t, 2> present{u8(cards + port_present),
+                                               u8(cards + port_present + 1)};
     const auto marks = [&] { return u32(at(markers)); };
     if (u8(watch_cards) != 0)
         put8(cards + poll_mode, 2);
@@ -1123,7 +1125,8 @@ std::uint32_t Overlay::load_game() {
 std::uint32_t Overlay::ask_format_card(std::uint32_t a0) {
     const auto stack_frame = enter(0x28);
     const auto cards = u32(at(state_card));
-    const std::array<std::uint32_t, 2> present{u8(cards + port_present), u8(cards + port_present + 1)};
+    const std::array<std::uint32_t, 2> present{u8(cards + port_present),
+                                               u8(cards + port_present + 1)};
     show_message(((a0 & 0xffU) * 3 + 0x29) & 0xffU);
     put8(at(input_code), 8);
     put8(cards + poll_mode, 2);
@@ -1225,7 +1228,7 @@ std::uint32_t Overlay::save_game(std::uint32_t a0) {
 // failure; then the listing is refreshed. With `kind` 0 one save ends the
 // loop. Returns 1 when there was no card.
 std::uint32_t Overlay::save_game_body(std::uint32_t a0, std::uint32_t, std::uint32_t,
-                                 std::uint32_t a3) {
+                                      std::uint32_t a3) {
     auto f = frame(0x100);
     const auto final_name = f[0x10];
     const auto temp_name = f[0x50];
@@ -1289,7 +1292,9 @@ std::uint32_t Overlay::save_game_body(std::uint32_t a0, std::uint32_t, std::uint
             }
         }
         if (proceed) {
-            const auto position = [&] { return u32(slot_positions + u32(cards + cursor_slot) * 4); };
+            const auto position = [&] {
+                return u32(slot_positions + u32(cards + cursor_slot) * 4);
+            };
             const auto entry = [&] { return u8(cards + position() + position_entry); };
             if (entry() == 0xff) {
                 if ((ask_confirmation(0x5f, 0xff, 1) & 0xffU) == 0) {
@@ -1479,7 +1484,9 @@ void Overlay::show_message(std::uint32_t a0) {
             put32(line(i) + 0x78, u32(line(i - 1) + 0x78));
         }
     }
-    const auto glyphs = [&](std::uint32_t window_record) { program.dialogue_glyphs(window_record); };
+    const auto glyphs = [&](std::uint32_t window_record) {
+        program.dialogue_glyphs(window_record);
+    };
     for (std::uint32_t i = 0; i < 3; ++i) {
         const auto record = line(i);
         const auto text =
@@ -1490,7 +1497,7 @@ void Overlay::show_message(std::uint32_t a0) {
         const auto screen_y = (i * 16 + 0xa0) & 0xffffU;
         const auto image_v = ((i / 2) * 13 + 0x4e) & 0xffU;
         set_quad_rect(record + u32(at(buffer_index)) * 0x28, 0x84, screen_y, 0, image_v,
-                  u8(record + 0x7e), 0xd);
+                      u8(record + 0x7e), 0xd);
         set_screen_quad_vectors(record + 0x50, 0x84, screen_y, u8(record + 0x7e), 0xd);
         put8(record + 0x7f, 1);
         put8(record + 0x7d, u8(at(buffer_index)));
@@ -1529,7 +1536,9 @@ void Overlay::restart_card_access() {
     close_card_events();
     vsync();
     auto &service = bios(*this, "InitCARD");
-    service.init_card(1); // 8004e794
+    const auto patched = service.init_card(1); // 8004e794
+    for (std::uint32_t i = 0; i < patched.size(); ++i)
+        put8(card_patch + i, patched[i]);
     service.start_card(); // 8004e7e8
     service.bu_init();    // 80040464
     draw_sync();
@@ -1610,8 +1619,8 @@ void Overlay::leave_card_mode() {
     auto &service = bios(*this, "EnterCriticalSection");
     static_cast<void>(service.enter_critical_section());
     auto &cd = program.resident.cd;
-    cd.ready_callback = u32(saved_callbacks);    // 80040fb4
-    cd.sync_callback = u32(saved_callbacks + 4); // 80040fcc
+    cd.ready_callback = u32(saved_callbacks);          // 80040fb4
+    cd.sync_callback = u32(saved_callbacks + 4);       // 80040fcc
     put32(cd_read_callback, u32(saved_callbacks + 8)); // 8004373c
     service.exit_critical_section();
 }
@@ -1805,9 +1814,8 @@ void Overlay::recompute_gear_parts(std::uint32_t a0, std::uint32_t a1) {
 // the low halfword is negative, as a byte.
 std::uint32_t Overlay::gear_part_level(std::uint32_t a0) {
     const auto record = gear(a0);
-    const auto difference =
-        static_cast<std::int32_t>((u16(record + 0x44) / 120) & 0xffffU) -
-        static_cast<std::int32_t>(u8(record + 0x75));
+    const auto difference = static_cast<std::int32_t>((u16(record + 0x44) / 120) & 0xffffU) -
+                            static_cast<std::int32_t>(u8(record + 0x75));
     const auto half = difference / 2;
     const auto level = static_cast<std::int16_t>(half & 0xffff) < 0 ? 0 : half;
     return static_cast<std::uint32_t>(level) & 0xffU;
@@ -1857,18 +1865,20 @@ void Overlay::draw_details_labels() {
             const auto count = u8(block() + base + 0x1312);
             const auto parts = resident::sheet_quads(
                 *this, u32(at(sprite_sheet)), id, block() + base + 0xa98 + count * 0x50 + 0x50,
-                u32(at(buffer_index)), u32(label_x + n * 4) + column * 0x50,
-                u32(label_y + n * 4), 0x1000);
+                u32(at(buffer_index)), u32(label_x + n * 4) + column * 0x50, u32(label_y + n * 4),
+                0x1000);
             put8(block() + base + 0x1312, u8(block() + base + 0x1312) + parts);
         }
         put8(block() + base + 0x130e, u8(at(buffer_index)));
-        const auto quad = [&] { return block() + base + 0xa98 + 0x820 + u32(at(buffer_index)) * 0x28; };
+        const auto quad = [&] {
+            return block() + base + 0xa98 + 0x820 + u32(at(buffer_index)) * 0x28;
+        };
         init_text_quad(quad());
         put16(quad() + 0x16, get_tpage(0, 0, 0x180, 0));
         put16(quad() + 0x0e, u16(0x800595d4));
-        set_quad_rect(quad(), (u16(label_x) + column * 0x50) & 0xffffU, (u16(label_y) + 7) & 0xffffU,
-                  (u32(name_image_x + column * 4) << 2) & 0xfcU, u8(name_image_y + column * 4),
-                  0x48, 0xd);
+        set_quad_rect(quad(), (u16(label_x) + column * 0x50) & 0xffffU,
+                      (u16(label_y) + 7) & 0xffffU, (u32(name_image_x + column * 4) << 2) & 0xfcU,
+                      u8(name_image_y + column * 4), 0x48, 0xd);
         put8(block() + base + 0x1311, u8(at(buffer_index)));
     }
 }
@@ -2002,8 +2012,8 @@ void Overlay::draw_details_time(std::uint32_t a0) {
     static_cast<void>(quads(0xee, 0x24ac, u32(time_x + 4), 0x7a));
     split_play_time(u32(a0));
     for (std::uint32_t i = 0; i < 7; ++i)
-        static_cast<void>(quads(u32(at(0x2ec + i * 4)), 0x254c + i * 0x50,
-                                u32(time_x + 8 + i * 4), 0x7a));
+        static_cast<void>(
+            quads(u32(at(0x2ec + i * 4)), 0x254c + i * 0x50, u32(time_x + 8 + i * 4), 0x7a));
     static_cast<void>(quads(0x17, 0x2c7c, 8, 0x66));
     static_cast<void>(quads(0x32, 0x2ccc, 0x10, 0x66));
     const auto number = u8(a0 + 0x23) + 1;
@@ -2017,19 +2027,19 @@ void Overlay::draw_details_time(std::uint32_t a0) {
 void Overlay::draw_details_portrait(std::uint32_t a0, std::uint32_t a1) {
     const auto stack_frame = enter(0x28);
     const auto column = a0 & 0xffU;
-    static_cast<void>(resident::sheet_quads(
-        *this, u32(at(sprite_sheet)), u8(a1 + column + 0x1c) + 0x14e,
-        u32(at(file_details)) + 0xa98 + column * 0x87c, u32(at(buffer_index)),
-        u32(member_x + column * 4), u32(member_y + column * 4), 0x1000));
+    static_cast<void>(
+        resident::sheet_quads(*this, u32(at(sprite_sheet)), u8(a1 + column + 0x1c) + 0x14e,
+                              u32(at(file_details)) + 0xa98 + column * 0x87c, u32(at(buffer_index)),
+                              u32(member_x + column * 4), u32(member_y + column * 4), 0x1000));
 }
 
 namespace {
 // The digit sprites of menu state + 322 (+ first) as 801e6b70.. draw them:
 // each not ff digit at x + 8 * (index or drawn count) into the column's
 // packets from `packets`, counting parts at `counter`.
-void draw_digits(Overlay &overlay, std::uint32_t column, std::uint32_t first,
-                 std::uint32_t digits, std::uint32_t counter, std::uint32_t packets,
-                 std::uint32_t x, std::uint32_t y, bool by_drawn) {
+void draw_digits(Overlay &overlay, std::uint32_t column, std::uint32_t first, std::uint32_t digits,
+                 std::uint32_t counter, std::uint32_t packets, std::uint32_t x, std::uint32_t y,
+                 bool by_drawn) {
     const auto base = column * 0x87c;
     const auto block = [&] { return overlay.u32(overlay.at(file_details)); };
     overlay.put8(block() + base + counter, 0);
