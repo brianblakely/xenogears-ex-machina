@@ -986,9 +986,7 @@ void Program::disc_image_transferred() {
     const auto store16 = [&](std::size_t index, std::uint32_t value) {
         image[index] = (image[index] & 0xffff0000U) | (value & 0xffffU);
     };
-    const auto half = [&](std::uint32_t address) {
-        return (ram_word(address & ~3U) >> ((address & 2U) * 8U)) & 0xffffU;
-    };
+    const auto half = [&](std::uint32_t address) { return memory(address, 2); };
     std::int32_t slot = 0;
     while (slot < blocks && !(field16(slot, 0) == 1 && field16(slot, 2) == read.h_fe28))
         slot = static_cast<std::int16_t>(slot + 1);
@@ -1004,7 +1002,7 @@ void Program::disc_image_transferred() {
     auto data = (static_cast<std::uint32_t>(slot) << 11U) + read.destination;
     if (image[strips] == 0) {
         // A first sector: its record.
-        const auto type = ram_word(data);
+        const auto type = memory(data);
         data += 4;
         if (type - 0x1200U >= 2) {
             finish();
@@ -1028,9 +1026,9 @@ void Program::disc_image_transferred() {
         store16(width, half(data));
         data += 8;
         if (image[images] == 0)
-            image[images] = ram_word(data);
+            image[images] = memory(data);
         data += 4;
-        const auto count = ram_word(data);
+        const auto count = memory(data);
         data += 4;
         image[heights] = data;
         image[strips] = count;

@@ -311,7 +311,7 @@ void Program::script(field::EventContext &context,
                             state.camera,
                             state.control_inputs.encounter.inhibition,
                             state.script_flags_b21d0,
-                            resident.gte_screen,
+                            resident.gte.screen,
                             state.direction_tables};
     try {
         handler(world);

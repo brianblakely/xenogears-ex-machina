@@ -1,25 +1,33 @@
-// The libgpu request queue of the resident executable dc0b2dd7... as the
-// interrupt side reaches it: LoadImage 80044894 (with its request check
-// 8004463c), the enqueue 8004668c, the queue runner 8004696c (also the DMA2
-// completion callback) and the operations LoadImage 800460a0, StoreImage
-// 800462dc and DrawOTag 800465ec, with the timeout pair 80046efc/80046f30 and
-// the interrupt-mask swap 8004b8bc. GPU and DMA2 register stores become
-// HardwareWrite records; GPUSTAT and DMA2 control reads are platform inputs.
+// Resident libgpu of executable dc0b2dd7...: the request queue (enqueue
+// 8004668c, runner 8004696c, also the DMA2 completion callback) with its
+// alarm 80046efc and request check 8004463c, and the calls that go through
+// it: LoadImage 80044894 (_dws 800460a0), StoreImage (_drs 800462dc),
+// ClearImage 80044764 (_clr 80045e44), DrawOTag 80044bd0 and PutDrawEnv
+// 80044c44 (_cwc 800465ec), plus PutDispEnv 80044e9c and DrawSync 800445d0.
+// Operations that reach the GPU or its DMA channel become GpuCommand records;
+// the interrupt-mask swap 8004b8bc stores I_MASK as hardware writes.
+//
+// Platform results come from a field frame's services when a frame makes the
+// call, else (interrupt-side calls) from the recorded hardware reads. A frame's
+// services do not record GPUSTAT reads of waits with no state effect.
 #include "xem/reconstruction/original_layout.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <algorithm>
+#include <bit>
 #include <string>
+#include <vector>
 
 namespace xem::reconstruction {
 namespace {
 constexpr std::uint32_t queue_base = 0x8006be34;
 constexpr std::uint32_t entry_bytes = 0x60;
-constexpr std::uint32_t ready = 0x04000000;   // GPUSTAT: ready for a command word
-constexpr std::uint32_t busy = 0x01000000;    // DMA2 control: transfer active
-constexpr std::uint32_t load_op = 0x800460a0; // LoadImage
-constexpr std::uint32_t store_op = 0x800462dc;
-constexpr std::uint32_t draw_op = 0x800465ec;
+constexpr std::uint32_t ready = 0x04000000;    // GPUSTAT: ready for a command word
+constexpr std::uint32_t busy = 0x01000000;     // DMA2 control: transfer active
+constexpr std::uint32_t load_op = 0x800460a0;  // _dws: LoadImage
+constexpr std::uint32_t store_op = 0x800462dc; // _drs: StoreImage
+constexpr std::uint32_t send_op = 0x800465ec;  // _cwc: DrawOTag, PutDrawEnv
+constexpr std::uint32_t clear_op = 0x80045e44; // _clr: ClearImage
 constexpr std::uint32_t queue_runner = 0x8004696c;
 
 std::uint32_t get(std::span<const std::uint8_t> bytes, std::size_t at) {
@@ -44,37 +52,40 @@ std::uint32_t pack(std::int16_t low, std::int16_t high) {
     return static_cast<std::uint16_t>(low) |
            static_cast<std::uint32_t>(static_cast<std::uint16_t>(high)) << 16U;
 }
+std::int16_t s16(std::uint32_t value) {
+    return std::bit_cast<std::int16_t>(static_cast<std::uint16_t>(value));
+}
+std::uint32_t u32(std::int32_t value) { return static_cast<std::uint32_t>(value); }
+// Clamp a rectangle extent to [0, limit], or [0, limit - 1] when inclusive.
+std::int16_t clamp_extent(std::int16_t value, std::int16_t limit, bool inclusive) {
+    const auto top = static_cast<std::int16_t>(inclusive ? limit - 1 : limit);
+    if (value < 0)
+        return 0;
+    return value > top ? top : value;
+}
 } // namespace
 
-std::uint32_t Program::ram_word(std::uint32_t address) const {
-    const auto in = [&](const resident::HeapBlock &block) -> std::optional<std::uint32_t> {
-        if (address < block.address || address - block.address + 4U > block.bytes.size())
-            return std::nullopt;
-        return get(block.bytes, address - block.address);
-    };
-    const auto &read = resident.disc_read;
-    for (const auto *block : {&read.ring_payload, &read.ring, &read.list})
-        if (const auto value = in(*block))
-            return *value;
-    for (const auto &block : resident.disc_transfers)
-        if (const auto value = in(block))
-            return *value;
-    for (const auto &block : resident.music_blocks)
-        if (const auto value = in(block))
-            return *value;
-    for (const auto &block : resident.gpu.sources)
-        if (const auto value = in(block))
-            return *value;
-    throw field::FieldFormatError("Interrupt-side code reads RAM no Program value holds");
+// 80046efc: a deadline 240 vertical blanks after VSync(-1).
+void Program::gpu_alarm(FrameServices *services) {
+    auto &gpu = resident.gpu;
+    gpu.deadline =
+        (services != nullptr ? take_service(services->vblank_counts, "VSync(-1) for a libgpu alarm")
+                             : resident.vsync_counter) +
+        0xf0U;
+    gpu.polls = 0;
+}
+
+// 8004463c: request checking prints; level 0 checks nothing.
+void Program::gpu_check_rect() const {
+    if (resident.gpu.debug != 0)
+        gpu_print(0x80044720);
 }
 
 // 80044894: LoadImage(rect, data) through the service table.
 std::int32_t Program::load_image(std::array<std::int16_t, 4> &rect, std::uint32_t address,
-                                 std::uint32_t data) {
+                                 std::uint32_t data, FrameServices *services) {
     auto &gpu = resident.gpu;
-    // 8004463c: request checking prints; level 0 checks nothing.
-    if (gpu.debug != 0)
-        gpu_print(0x80044720);
+    gpu_check_rect();
     const auto table = [&](std::uint32_t offset) {
         if (gpu.services != 0x80056888 || offset / 4 >= gpu.functions.size())
             throw MissingDependency({"gpu_services", 0x800448c4, {}, {}}, "symbol:gpu-services",
@@ -84,20 +95,26 @@ std::int32_t Program::load_image(std::array<std::int16_t, 4> &rect, std::uint32_
     if (table(8) != 0x8004668c)
         throw MissingDependency({"gpu_enqueue", 0x800448d8, {}, {}}, "symbol:gpu-enqueue", false,
                                 "The libgpu enqueue service is not 8004668c");
-    return gpu_enqueue(table(0x20), rect, address, 8, data);
+    return gpu_enqueue(table(0x20), address, &rect, 8, data, services);
+}
+
+// LoadImage of the rectangle at `rect` in owned memory, which the call clamps
+// in place.
+void Program::load_image_at(FrameServices &services, std::uint32_t rect, std::uint32_t source) {
+    std::array<std::int16_t, 4> area{s16(memory(rect, 2)), s16(memory(rect + 2, 2)),
+                                     s16(memory(rect + 4, 2)), s16(memory(rect + 6, 2))};
+    static_cast<void>(load_image(area, rect, source, &services));
+    set_memory(rect + 4, static_cast<std::uint16_t>(area[2]), 2);
+    set_memory(rect + 6, static_cast<std::uint16_t>(area[3]), 2);
 }
 
 // 8004668c: run a request at once when the queue is idle (or queueing is off),
-// else copy it into the queue and run the queue.
-std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::array<std::int16_t, 4> &rect,
-                                  std::uint32_t address, std::uint32_t size,
-                                  std::uint32_t argument) {
+// else copy its rectangle into the queue and run the queue.
+std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t parameter,
+                                  std::array<std::int16_t, 4> *rect, std::uint32_t size,
+                                  std::uint32_t argument, FrameServices *services) {
     auto &gpu = resident.gpu;
-    const auto timeout_armed = [&] { // 80046efc
-        gpu.deadline = resident.vsync_counter + 240;
-        gpu.polls = 0;
-    };
-    timeout_armed();
+    gpu_alarm(services);
     while (((gpu.head + 1U) & 63U) == gpu.tail) {
         // 80046f30: the timeout path prints and resets the GPU.
         if (static_cast<std::int32_t>(gpu.deadline) <
@@ -106,32 +123,39 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::array<std::int16
             gpu_print(0x80046fc8);
         static_cast<void>(gpu_execute());
     }
+    // 8004b8bc(0): SetIntrMask returns the mask it replaces.
     const auto mask_register = resident.interrupts.registers[1];
-    gpu.enqueue_mask = io_latch(mask_register, 2); // 8004b8bc(0)
+    gpu.enqueue_mask = services != nullptr
+                           ? take_service(services->interrupt_masks, "SetIntrMask(0) result")
+                           : io_latch(mask_register, 2);
     io_write(mask_register, 0, 2);
     gpu.sync_pending = 1;
-    const auto chcr = [&](std::uint32_t site) { return platform_read(resident.platform, site, 4); };
-    if (gpu.queued == 0 ||
-        (gpu.head == gpu.tail && (chcr(0x8004674c) & busy) == 0 && gpu.sync_callback == 0)) {
-        while ((platform_read(resident.platform, 0x80046780, 4) & ready) == 0) {
-        }
-        static_cast<void>(gpu_operation(operation, address, &rect, argument));
-        gpu.current = {operation, address, argument};
+    const auto dma_busy = [&] {
+        const auto control = services != nullptr
+                                 ? take_service(services->dma_busy, "libgpu DMA busy check")
+                                 : platform_read(resident.platform, 0x8004674c, 4);
+        return (control & busy) != 0;
+    };
+    if (gpu.queued == 0 || (gpu.head == gpu.tail && !dma_busy() && gpu.sync_callback == 0)) {
+        if (services == nullptr)
+            while ((platform_read(resident.platform, 0x80046780, 4) & ready) == 0) {
+            }
+        static_cast<void>(gpu_operation(operation, parameter, rect, argument, services));
+        gpu.current = {operation, parameter, argument};
         io_write(mask_register, gpu.enqueue_mask, 2);
         return 0;
     }
     set_dma_callback(2, queue_runner);
     const auto entry = gpu.head * entry_bytes;
     std::span<std::uint8_t> queue(gpu.queue);
-    if (size != 0) {
-        const std::array<std::uint32_t, 2> words{pack(rect[0], rect[1]), pack(rect[2], rect[3])};
-        for (std::uint32_t i = 0; i < (size >> 2U); ++i)
-            put(queue, entry + 0xc + 4 * i, words.at(i));
-        put(queue, entry + 4, queue_base + entry + 0xc);
-    } else {
+    if (size == 0 || rect == nullptr)
         throw MissingDependency({"gpu_enqueue", 0x80046894, {}, {}}, "symbol:gpu-uncopied-request",
-                                false, "Requests without a copied parameter are not recovered");
-    }
+                                false, "Requests without a copied rectangle are not recovered");
+    const std::array<std::uint32_t, 2> words{pack((*rect)[0], (*rect)[1]),
+                                             pack((*rect)[2], (*rect)[3])};
+    for (std::uint32_t i = 0; i < (size >> 2U); ++i)
+        put(queue, entry + 0xc + 4 * i, words.at(i));
+    put(queue, entry + 4, queue_base + entry + 0xc);
     put(queue, entry + 8, argument);
     put(queue, entry, operation);
     gpu.head = (gpu.head + 1U) & 63U;
@@ -168,7 +192,7 @@ std::uint32_t Program::gpu_execute() {
             const auto operation = get(queue, entry);
             const auto parameter = get(queue, entry + 4);
             const auto argument = get(queue, entry + 8);
-            static_cast<void>(gpu_operation(operation, parameter, nullptr, argument));
+            static_cast<void>(gpu_operation(operation, parameter, nullptr, argument, nullptr));
             gpu.current = {get(queue, entry), get(queue, entry + 4), get(queue, entry + 8)};
             gpu.tail = (gpu.tail + 1U) & 63U;
         } while (gpu.head != gpu.tail && !chcr(0x80046b90));
@@ -183,14 +207,15 @@ std::uint32_t Program::gpu_execute() {
 }
 
 std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t parameter,
-                                    std::array<std::int16_t, 4> *rect, std::uint32_t argument) {
+                                    std::array<std::int16_t, 4> *rect, std::uint32_t argument,
+                                    FrameServices *services) {
     auto &gpu = resident.gpu;
-    const auto &registers = gpu.registers;
-    if (operation == draw_op) { // 800465ec DrawOTag(ordering table)
-        io_write(registers[1], 0x04000002, 4);
-        io_write(registers[2], parameter, 4);
-        io_write(registers[3], 0, 4);
-        io_write(registers[4], 0x01000401, 4);
+    if (operation == send_op) { // _cwc: the packet list at `parameter` by DMA
+        gpu.commands.push_back({GpuCommand::Kind::draw_packets, {}, parameter, 0});
+        return 0;
+    }
+    if (operation == clear_op) {
+        clear_operation(parameter, argument, services);
         return 0;
     }
     if (operation != load_op && operation != store_op)
@@ -212,11 +237,10 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
         rect = &queued;
     }
     auto &r = *rect;
-    gpu.deadline = resident.vsync_counter + 240; // 80046efc
-    gpu.polls = 0;
+    gpu_alarm(services);
     // Clamp the size to VRAM, in place.
-    r[2] = r[2] < 0 ? 0 : std::min(r[2], gpu.width);
-    r[3] = r[3] < 0 ? 0 : std::min(r[3], gpu.height);
+    r[2] = clamp_extent(r[2], gpu.width, false);
+    r[3] = clamp_extent(r[3], gpu.height, false);
     if (in_queue)
         put(queue, parameter - queue_base + 4, pack(r[2], r[3]));
     const auto pixels = static_cast<std::int32_t>(r[2]) * r[3] + 1;
@@ -225,45 +249,206 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
     const auto words = rounded >> 1;
     if (words <= 0)
         return -1;
-    const auto blocks = static_cast<std::uint32_t>(rounded >> 5);
-    auto remainder = static_cast<std::uint32_t>(words) - blocks * 16U;
     const bool load = operation == load_op;
-    const auto wait = [&](std::uint32_t first, std::uint32_t again, std::uint32_t bit) {
-        if ((platform_read(resident.platform, first, 4) & bit) != 0)
-            return;
-        for (;;) {
-            // 80046f30 timeout: prints and resets.
-            if (static_cast<std::int32_t>(gpu.deadline) <
-                    static_cast<std::int32_t>(resident.vsync_counter) ||
-                0xf0000 < static_cast<std::int32_t>(gpu.polls++))
-                gpu_print(0x80046fc8);
-            if ((platform_read(resident.platform, again, 4) & bit) != 0)
-                return;
-        }
-    };
-    wait(load ? 0x8004618c : 0x800463c4, load ? 0x800461c0 : 0x800463f8, ready);
-    io_write(registers[1], 0x04000000, 4);
-    io_write(registers[0], 0x01000000, 4);
-    io_write(registers[0], load ? 0xa0000000 : 0xc0000000, 4);
-    io_write(registers[0], pack(r[0], r[1]), 4);
-    io_write(registers[0], pack(r[2], r[3]), 4);
-    auto data = argument;
-    if (load) {
-        for (; remainder != 0; --remainder, data += 4)
-            io_write(registers[0], ram_word(data), 4);
-    } else if (remainder != 0 || blocks != 0) {
-        // StoreImage reads VRAM back through GPUREAD and DMA2: RAM contents
-        // the platform provides, not recorded here.
+    // Wait for GPUSTAT bit 26, polling the alarm.
+    if (services != nullptr) {
+        gpu.polls = take_service(services->alarm_polls, "LoadImage alarm polls");
+    } else {
+        const auto first = load ? 0x8004618cU : 0x800463c4U;
+        const auto again = load ? 0x800461c0U : 0x800463f8U;
+        if ((platform_read(resident.platform, first, 4) & ready) == 0)
+            for (;;) {
+                // 80046f30 timeout: prints and resets.
+                if (static_cast<std::int32_t>(gpu.deadline) <
+                        static_cast<std::int32_t>(resident.vsync_counter) ||
+                    0xf0000 < static_cast<std::int32_t>(gpu.polls++))
+                    gpu_print(0x80046fc8);
+                if ((platform_read(resident.platform, again, 4) & ready) != 0)
+                    break;
+            }
+    }
+    if (!load) // StoreImage reads VRAM back through GPUREAD and DMA2.
         throw MissingDependency({"gpu_store_image", 0x800464d8, {}, {}}, "platform:vram-readback",
                                 false, "VRAM read-back data is not a recorded platform input");
-    }
-    if (blocks != 0) {
-        io_write(registers[1], load ? 0x04000002 : 0x04000003, 4);
-        io_write(registers[2], data, 4);
-        io_write(registers[3], blocks << 16U | 0x10U, 4);
-        io_write(registers[4], load ? 0x01000201 : 0x01000200, 4);
-    }
+    gpu.commands.push_back({GpuCommand::Kind::load_image, r, argument, 0});
     return 0;
+}
+
+// _clr (80045e44): send a fill packet built in libgpu's packet buffer
+// (8005a238) for the rectangle at `rect` in owned memory, clamped in place.
+void Program::clear_operation(std::uint32_t rect, std::uint32_t color, FrameServices *services) {
+    if (services == nullptr)
+        throw MissingDependency({"gpu_clear_image", 0x80045e44, {}, {}}, "symbol:gpu-clear-image",
+                                false, "ClearImage outside a field frame is not recovered");
+    auto &gpu = resident.gpu;
+    const auto w = clamp_extent(s16(memory(rect + 4, 2)), gpu.width, true);
+    set_memory(rect + 4, static_cast<std::uint16_t>(w), 2);
+    const auto h = clamp_extent(s16(memory(rect + 6, 2)), gpu.height, true);
+    set_memory(rect + 6, static_cast<std::uint16_t>(h), 2);
+    const auto status = take_service(services->gpu_status, "GPUSTAT read by ClearImage");
+    const auto mode = 0xe1000000U | (color >> 31U) << 10U | (status & 0x7ffU);
+    std::vector<std::uint32_t> packet;
+    if ((memory(rect, 2) & 0x3fU) == 0 && (static_cast<std::uint32_t>(w) & 0x3fU) == 0) {
+        // Aligned: a VRAM fill.
+        packet = {0x05ffffffU,  0xe6000000U,     mode, 0x02000000U | (color & 0xffffffU),
+                  memory(rect), memory(rect + 4)};
+    } else {
+        // Unaligned: open the drawing area, draw a rectangle, then restore
+        // the area and offset read back through _param (80046638): GP1
+        // 10000003..5, then GPUREAD.
+        const auto info = [&](std::uint32_t index) {
+            gpu.commands.push_back({GpuCommand::Kind::control, {}, 0, 0x10000000U | index});
+            return take_service(services->gpu_info, "GPUREAD for ClearImage") & 0xffffffU;
+        };
+        packet = {0x0805a25cU,
+                  0xe3000000U,
+                  0xe4ffffffU,
+                  0xe5000000U,
+                  0xe6000000U,
+                  mode,
+                  0x60000000U | (color & 0xffffffU),
+                  memory(rect),
+                  memory(rect + 4),
+                  0x03ffffffU};
+        for (std::uint32_t index = 3; index <= 5; ++index)
+            packet.push_back(info(index) | (0xe0000000U + (index << 24U)));
+    }
+    for (std::size_t i = 0; i < packet.size(); ++i)
+        for (std::size_t b = 0; b < 4; ++b)
+            gpu.packet[i * 4 + b] = static_cast<std::uint8_t>(packet[i] >> (8U * b));
+    gpu.commands.push_back({GpuCommand::Kind::clear_image,
+                            {s16(memory(rect, 2)), s16(memory(rect + 2, 2)), w, h},
+                            0x8005a238,
+                            color});
+}
+
+// ClearImage (80044764).
+void Program::clear_image(FrameServices &services, std::uint32_t rect, std::uint32_t color) {
+    gpu_check_rect();
+    static_cast<void>(gpu_enqueue(clear_op, rect, nullptr, 8, color, &services));
+}
+
+// DrawOTag (80044bd0): send the packet list by DMA.
+void Program::draw_otag(FrameServices &services, std::uint32_t table) {
+    if (resident.gpu.debug >= 2)
+        gpu_print(0x80044bf0);
+    static_cast<void>(gpu_enqueue(send_op, table, nullptr, 0, 0, &services));
+}
+
+// PutDrawEnv (80044c44): build the environment's packet with SetDrawEnv2
+// (8004574c), send it, and keep a copy of the environment (800568e0).
+void Program::put_draw_env(FrameServices &services, std::uint32_t environment) {
+    auto &gpu = resident.gpu;
+    if (gpu.debug >= 2)
+        gpu_print(0x80044c74);
+    const auto type = resident.gpu_type;
+    const bool low = static_cast<std::uint8_t>(type - 1U) < 2;
+    const auto coordinate = [&](std::int32_t value, std::int16_t limit) {
+        return clamp_extent(static_cast<std::int16_t>(value), limit, true);
+    };
+    // get_cs/get_ce (80045a34/80045b00): a clamped drawing-area corner.
+    const auto corner = [&](std::uint32_t command, std::int32_t x, std::int32_t y) {
+        const auto cx = static_cast<std::uint32_t>(coordinate(x, gpu.width));
+        const auto cy = static_cast<std::uint32_t>(coordinate(y, gpu.height));
+        return command |
+               (low ? (cy & 0xfffU) << 12U | (cx & 0xfffU) : (cy & 0x3ffU) << 10U | (cx & 0x3ffU));
+    };
+    const auto e = environment;
+    const auto clip_x = s16(memory(e, 2));
+    const auto clip_y = s16(memory(e + 2, 2));
+    const auto clip_w = s16(memory(e + 4, 2));
+    const auto clip_h = s16(memory(e + 6, 2));
+    const auto packet = e + 0x1c;
+    set_memory(packet + 4, corner(0xe3000000U, clip_x, clip_y));
+    set_memory(packet + 8,
+               corner(0xe4000000U, s16(u32(clip_x + clip_w - 1)), s16(u32(clip_y + clip_h - 1))));
+    // get_ofs (80045bcc).
+    const auto ox = memory(e + 8, 2);
+    const auto oy = memory(e + 0xa, 2);
+    set_memory(packet + 0xc, 0xe5000000U | (low ? (oy & 0xfffU) << 12U | (ox & 0xfffU)
+                                                : (oy & 0x7ffU) << 11U | (ox & 0x7ffU)));
+    set_memory(packet + 0x10, gpu::draw_mode(type, memory(e + 0x17, 1) != 0,
+                                             memory(e + 0x16, 1) != 0, memory(e + 0x14, 2)));
+    const std::array<std::int16_t, 4> window{s16(memory(e + 0xc, 2)), s16(memory(e + 0xe, 2)),
+                                             s16(memory(e + 0x10, 2)), s16(memory(e + 0x12, 2))};
+    set_memory(packet + 0x14, gpu::texture_window(&window));
+    set_memory(packet + 0x18, 0xe6000000U);
+    if (memory(e + 0x18, 1) != 0)
+        throw MissingDependency({"put_draw_env", 0x80045800, {}, {}},
+                                "symbol:libgpu-environment-background", false,
+                                "Drawing environments with a background fill are not recovered");
+    set_memory(packet + 3, 6, 1);
+    set_memory(packet, memory(packet) | 0xffffffU);
+    static_cast<void>(gpu_enqueue(send_op, packet, nullptr, 0, 0, &services));
+    for (std::uint32_t i = 0; i < gpu.draw_environment.size(); ++i)
+        gpu.draw_environment[i] = static_cast<std::uint8_t>(memory(e + i, 1));
+}
+
+// PutDispEnv (80044e9c): display start, then display ranges and mode when
+// they changed since the copy kept at 8005693c.
+void Program::put_disp_env(std::uint32_t environment) {
+    auto &gpu = resident.gpu;
+    if (gpu.debug >= 2)
+        gpu_print(0x80044ecc);
+    if (static_cast<std::uint8_t>(resident.gpu_type - 1U) < 2)
+        throw MissingDependency({"put_disp_env", 0x80044f04, {}, {}}, "symbol:libgpu-display-type",
+                                false,
+                                "Display commands for libgpu types 1 and 2 are not recovered");
+    const auto e = environment;
+    // _ctl (80046560): a GP1 command, remembered per command number.
+    const auto control = [&](std::uint32_t command) {
+        gpu.control[command >> 24U] = static_cast<std::uint8_t>(command);
+        gpu.commands.push_back({GpuCommand::Kind::control, {}, 0, command});
+    };
+    control(0x05000000U | (memory(e + 2, 2) & 0x3ffU) << 10U | (memory(e, 2) & 0x3ffU));
+    const auto previous = [&](std::uint32_t offset) {
+        return static_cast<std::uint32_t>(gpu.display_environment[offset]) |
+               static_cast<std::uint32_t>(gpu.display_environment[offset + 1]) << 8U;
+    };
+    bool screen_same = true;
+    for (std::uint32_t i = 8; i < 0x10; i += 2)
+        screen_same = screen_same && previous(i) == memory(e + i, 2);
+    if (!screen_same)
+        throw MissingDependency({"put_disp_env", 0x80044fd8, {}, {}}, "symbol:libgpu-display-range",
+                                false, "Changing display ranges are not recovered");
+    bool mode_same = previous(0x10) == memory(e + 0x10, 2) && previous(0x12) == memory(e + 0x12, 2);
+    for (std::uint32_t i = 0; i < 8; i += 2)
+        mode_same = mode_same && previous(i) == memory(e + i, 2);
+    if (!mode_same) {
+        // GetVideoMode (8004c308) is stored in the environment's +12.
+        set_memory(e + 0x12, resident.video_mode, 1);
+        std::uint32_t mode = 0x08000000U;
+        if ((resident.video_mode & 0xffU) == 1)
+            mode |= 8U;
+        if (memory(e + 0x11, 1) != 0)
+            mode |= 0x10U;
+        if (memory(e + 0x10, 1) != 0)
+            mode |= 0x20U;
+        if (gpu.interlace != 0)
+            mode |= 0x80U;
+        const auto width = s16(memory(e + 4, 2));
+        if (width >= 0x119)
+            mode |= width < 0x161 ? 1U : width < 0x191 ? 0x40U : width < 0x231 ? 2U : 3U;
+        const auto height = s16(memory(e + 6, 2));
+        if (height >= (memory(e + 0x12, 1) != 0 ? 0x121 : 0x101))
+            mode |= 0x24U;
+        control(mode);
+    }
+    for (std::uint32_t i = 0; i < gpu.display_environment.size(); ++i)
+        gpu.display_environment[i] = static_cast<std::uint8_t>(memory(e + i, 1));
+}
+
+// DrawSync(0) (800445d0) -> _sync (80046db4): wait for an empty queue and an
+// idle GPU; the waits poll the alarm.
+void Program::draw_sync(FrameServices &services) {
+    auto &gpu = resident.gpu;
+    if (gpu.debug >= 2)
+        gpu_print(0x800445f0);
+    gpu_alarm(&services);
+    if (gpu.head != gpu.tail)
+        throw MissingDependency({"draw_sync", 0x80046dd4, {}, {}}, "symbol:libgpu-queued-call",
+                                false, "Draining queued libgpu calls is not recovered");
+    gpu.polls = take_service(services.alarm_polls, "DrawSync alarm polls");
 }
 
 void add_gpu_globals(std::vector<OriginalGlobal> &table) {
@@ -282,6 +467,12 @@ void add_gpu_globals(std::vector<OriginalGlobal> &table) {
                  value = static_cast<T>(static_cast<std::make_unsigned_t<T>>(raw));
              }});
     };
+    const auto bytes = [&](std::string name, std::uint32_t address, auto member) {
+        const auto size = (GpuState{}.*member).size();
+        for (std::uint32_t i = 0; i < size; ++i)
+            add(name, address + i, 1,
+                [member, i](Program &p) -> auto & { return (p.resident.gpu.*member)[i]; });
+    };
     add("gpu_services", 0x800568c8, 4,
         [](Program &p) -> auto & { return p.resident.gpu.services; });
     for (std::uint32_t i = 0; i < 12; ++i)
@@ -289,12 +480,16 @@ void add_gpu_globals(std::vector<OriginalGlobal> &table) {
             [i](Program &p) -> auto & { return p.resident.gpu.functions[i]; });
     add("gpu_queued", 0x800568d1, 1, [](Program &p) -> auto & { return p.resident.gpu.queued; });
     add("gpu_debug", 0x800568d2, 1, [](Program &p) -> auto & { return p.resident.gpu.debug; });
+    add("gpu_interlace", 0x800568d3, 1,
+        [](Program &p) -> auto & { return p.resident.gpu.interlace; });
     add("gpu_width", 0x800568d4, 2, [](Program &p) -> auto & { return p.resident.gpu.width; });
     add("gpu_height", 0x800568d6, 2, [](Program &p) -> auto & { return p.resident.gpu.height; });
     add("gpu_sync_pending", 0x800568d8, 4,
         [](Program &p) -> auto & { return p.resident.gpu.sync_pending; });
     add("gpu_sync_callback", 0x800568dc, 4,
         [](Program &p) -> auto & { return p.resident.gpu.sync_callback; });
+    bytes("gpu_draw_environment", 0x800568e0, &GpuState::draw_environment);
+    bytes("gpu_display_environment", 0x8005693c, &GpuState::display_environment);
     for (std::uint32_t i = 0; i < 5; ++i)
         add("gpu_registers", 0x800569a0 + 4 * i, 4,
             [i](Program &p) -> auto & { return p.resident.gpu.registers[i]; });
@@ -310,6 +505,8 @@ void add_gpu_globals(std::vector<OriginalGlobal> &table) {
     add("gpu_deadline", 0x800569e8, 4,
         [](Program &p) -> auto & { return p.resident.gpu.deadline; });
     add("gpu_polls", 0x800569ec, 4, [](Program &p) -> auto & { return p.resident.gpu.polls; });
+    bytes("gpu_packet", 0x8005a238, &GpuState::packet);
+    bytes("gpu_control", 0x8005a27c, &GpuState::control);
     // The request queue, one entry per byte.
     for (std::uint32_t i = 0; i < 64 * entry_bytes; ++i)
         add("gpu_queue", queue_base + i, 1,

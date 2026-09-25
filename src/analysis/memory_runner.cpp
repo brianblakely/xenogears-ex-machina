@@ -58,6 +58,65 @@ std::string quote(std::string_view text) {
     out << '"';
     return out.str();
 }
+// One field frame's platform results, and before a later frame of a
+// multi-frame run, the bytes and GTE registers code outside the frame changed.
+struct FrameSection {
+    game::FrameServices services;
+    std::vector<std::pair<std::uint32_t, std::vector<std::uint8_t>>> bytes;
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> gte;
+};
+std::vector<std::uint8_t> unhex(std::string_view text) {
+    if (text.size() % 2 != 0)
+        throw InputError("Odd hexadecimal byte string");
+    std::vector<std::uint8_t> bytes;
+    for (std::size_t i = 0; i < text.size(); i += 2)
+        bytes.push_back(
+            static_cast<std::uint8_t>(std::stoul(std::string(text.substr(i, 2)), nullptr, 16)));
+    return bytes;
+}
+// Memory a pure resident service writes outside Program state: the
+// decoder's output range.
+using ServiceOutput = std::optional<std::pair<std::uint32_t, std::vector<std::uint8_t>>>;
+// The owned ranges of the exported state (and a service's output), as JSON
+// objects.
+std::string owned_ranges(const game::Program &program, const ServiceOutput &service_output = {}) {
+    analysis::OriginalMemory image;
+    image.ram.assign(analysis::ram_bytes, 0);
+    const auto ranges = program.field    ? analysis::export_field(program, image)
+                        : program.battle ? analysis::export_battle(program, image)
+                        : program.menu   ? analysis::export_menu(program, image)
+                                         : analysis::export_resident(program, image);
+    std::ostringstream owned;
+    if (service_output) {
+        owned << "{\"name\":\"decoder_output\",\"address\":" << service_output->first
+              << ",\"hex\":" << quote(hex(service_output->second)) << '}';
+        if (!ranges.empty())
+            owned << ',';
+    }
+    for (std::size_t i = 0; i < ranges.size(); ++i) {
+        const auto &range = ranges[i];
+        owned << (i ? "," : "") << "{\"name\":" << quote(range.name)
+              << ",\"address\":" << range.address
+              << ",\"hex\":" << quote(hex(image.range(range.address, range.size))) << '}';
+    }
+    return owned.str();
+}
+// Hardware register stores from the `first`th on, as JSON objects.
+std::string hardware_writes(const game::Program &program, std::size_t first) {
+    std::ostringstream out;
+    const auto &writes = program.resident.hardware_writes;
+    for (auto i = first; i < writes.size(); ++i)
+        out << (i > first ? "," : "") << "{\"address\":" << writes[i].address
+            << ",\"value\":" << writes[i].value << ",\"width\":" << writes[i].width << '}';
+    return out.str();
+}
+// GTE control registers 0-30 (FLAG is transient).
+std::string gte_controls(const game::Program &program) {
+    std::ostringstream out;
+    for (std::uint32_t i = 0; i < 31; ++i)
+        out << (i ? "," : "") << program.resident.gte.control(i);
+    return out.str();
+}
 void optional(std::ostream &out, const auto &value) {
     if (value)
         out << +*value;
@@ -76,15 +135,15 @@ int main(int argc, char **argv) {
     std::uint32_t work = 0;
     bool executing = false;
     std::optional<game::Program> program;
+    std::ostringstream frames; // Completed frames of "field_frames".
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
-    // Memory a pure resident service writes outside Program state: the
-    // decoder's output range.
-    std::optional<std::pair<std::uint32_t, std::vector<std::uint8_t>>> service_output;
+    ServiceOutput service_output;
     try {
-        if (argc != 14)
+        if (argc != 15)
             throw InputError("Usage: xem-memory-runner ENTRY BUDGET STOP RAM SCRATCHPAD "
-                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO PLATFORM DISC");
+                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO PLATFORM DISC "
+                             "SERVICES");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
         // PLATFORM lists recorded platform inputs; DISC is the raw track the
@@ -119,8 +178,8 @@ int main(int argc, char **argv) {
                                       entry == "field_map_change_step" ||
                                       entry == "field_map_change_start";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && !resident_entry && !battle_entry && !menu_entry &&
-            !field_entry && !transition_entry)
+            entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
+            !battle_entry && !menu_entry && !field_entry && !transition_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -180,21 +239,71 @@ int main(int argc, char **argv) {
             program = analysis::import_field(memory, read_file(argv[6], analysis::ram_bytes),
                                              read_file(argv[7], analysis::ram_bytes), resources);
         }
-        // The 32 GTE control registers at entry.
-        const auto gte = hex_words(argv[9], 32, "GTE must be 32 comma-separated hex words");
-        std::array<std::uint32_t, 8> loaded{};
-        std::ranges::copy_n(gte.begin(), 8, loaded.begin());
-        program->resident.gte = game::field::gte_from_words(loaded);
+        // The 64 GTE registers at entry: data 0-31, then control 0-31. SXYP,
+        // IRGB/ORGB and LZCR mirror other registers and are not written.
+        const auto gte = hex_words(argv[9], 64, "GTE must be 64 comma-separated hex words");
+        for (std::uint32_t i = 0; i < 32; ++i)
+            if (i != 15 && i != 28 && i != 29 && i != 31)
+                program->resident.gte.set_data(i, gte[i]);
+        for (std::uint32_t i = 0; i < 32; ++i)
+            program->resident.gte.set_control(i, gte[32 + i]);
         // The hardware I/O page observed at entry (1f801000..1f801fff).
         const auto io = read_file(argv[11], program->resident.io.size());
         if (io.size() != program->resident.io.size())
             throw InputError("IO page must contain exactly 4 KiB");
         std::ranges::copy(io, program->resident.io.begin());
-        program->resident.gte_screen = {static_cast<std::int32_t>(gte[24]),
-                                        static_cast<std::int32_t>(gte[25]),
-                                        static_cast<std::uint16_t>(gte[26])};
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
+        // Platform results for a field frame, one "name value..." per line
+        // (hexadecimal), in the order the original consumed them.
+        // A "frame" line starts the next frame of "field_frames"; before it
+        // runs, "bytes ADDRESS HEX" and "gte INDEX VALUE" lines are applied.
+        std::vector<FrameSection> sections(1);
+        {
+            std::ifstream lines(argv[14]);
+            if (!lines)
+                throw InputError("Cannot open services");
+            for (std::string line; std::getline(lines, line);) {
+                std::istringstream fields(line);
+                std::string name;
+                std::uint32_t first = 0, second = 0;
+                if (line == "frame") {
+                    sections.emplace_back();
+                    continue;
+                }
+                if (!(fields >> name >> std::hex >> first))
+                    throw InputError("Malformed service line");
+                auto &services = sections.back().services;
+                if (name == "bytes") {
+                    std::string text;
+                    if (!(fields >> text))
+                        throw InputError("Malformed supplied bytes");
+                    sections.back().bytes.emplace_back(first, unhex(text));
+                } else if (name == "gte" && fields >> std::hex >> second)
+                    sections.back().gte.emplace_back(first, second);
+                else if (name == "hblank")
+                    services.hblank_counts.push_back(first);
+                else if (name == "vblank_wait" && fields >> std::hex >> second)
+                    services.vblank_waits.push_back({first, second});
+                else if (name == "vblank")
+                    services.vblank_counts.push_back(first);
+                else if (name == "alarm_polls")
+                    services.alarm_polls.push_back(first);
+                else if (name == "gpu_status")
+                    services.gpu_status.push_back(first);
+                else if (name == "dma_busy")
+                    services.dma_busy.push_back(first);
+                else if (name == "interrupt_mask")
+                    services.interrupt_masks.push_back(first);
+                else if (name == "gpu_info")
+                    services.gpu_info.push_back(first);
+                else
+                    throw InputError("Unknown service result " + name);
+            }
+        }
+        if (sections.size() != 1 && entry != "field_frames")
+            throw InputError("Only field_frames takes several frame sections");
+        auto &services = sections.front().services;
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -216,6 +325,79 @@ int main(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_update") {
             program->field_update(observer);
+        } else if (entry == "field_frames") {
+            // Consecutive frames from one import: each frame's exported state
+            // is reported, then the next section's supplied bytes apply.
+            std::vector<std::string> supplied;
+            for (std::size_t k = 0; k < sections.size(); ++k) {
+                auto &section = sections[k];
+                // A byte the Program does not own is not its state: reported,
+                // never applied.
+                std::ostringstream unowned;
+                for (const auto &[address, bytes] : section.bytes)
+                    for (std::size_t i = 0; i < bytes.size(); ++i) {
+                        const auto at = address + static_cast<std::uint32_t>(i);
+                        try {
+                            program->supply_bytes(at, std::span(bytes).subspan(i, 1));
+                        } catch (const std::exception &) {
+                            unowned << (unowned.tellp() > 0 ? "," : "") << at;
+                        }
+                    }
+                supplied.push_back(unowned.str());
+                for (const auto &[index, value] : section.gte) {
+                    if (index >= 64)
+                        throw InputError("GTE register index out of range");
+                    if (index < 32)
+                        program->resident.gte.set_data(index, value);
+                    else
+                        program->resident.gte.set_control(index - 32, value);
+                }
+                const auto written = program->resident.hardware_writes.size();
+                program->field_frame(section.services, observer);
+                frames << (k ? "," : "") << "{\"unowned_supplied\":[" << supplied.back()
+                       << "],\"gte\":[" << gte_controls(*program) << "],\"owned\":["
+                       << owned_ranges(*program) << "],\"hardware_writes\":["
+                       << hardware_writes(*program, written) << "]}";
+            }
+        } else if (entry.starts_with("field_frame")) {
+            // "field_frame" or "field_frame:STEP" resumes at a frame step.
+            static const std::map<std::string_view, game::FrameStep> steps{
+                {"start", game::FrameStep::start},
+                {"emitters", game::FrameStep::emitters},
+                {"fade", game::FrameStep::fade},
+                {"compass", game::FrameStep::compass},
+                {"models", game::FrameStep::models},
+                {"characters", game::FrameStep::characters},
+                {"particles", game::FrameStep::particles},
+                {"distortion", game::FrameStep::distortion},
+                {"call_800a84c0", game::FrameStep::call_800a84c0},
+                {"call_80075484", game::FrameStep::call_80075484},
+                {"call_8007520c", game::FrameStep::call_8007520c},
+                {"call_800abec8", game::FrameStep::call_800abec8},
+                {"drawn_time", game::FrameStep::drawn_time},
+                {"draw_sync", game::FrameStep::draw_sync},
+                {"dialogue_timers", game::FrameStep::dialogue_timers},
+                {"dialogue", game::FrameStep::dialogue},
+                {"vertical_sync", game::FrameStep::vertical_sync},
+                {"timed_release", game::FrameStep::timed_release},
+                {"clear", game::FrameStep::clear},
+                {"environments", game::FrameStep::environments},
+                {"uploads", game::FrameStep::uploads},
+                {"call_800920d8", game::FrameStep::call_800920d8},
+                {"load", game::FrameStep::load},
+                {"tables", game::FrameStep::tables},
+                {"draw", game::FrameStep::draw}};
+            auto from = game::FrameStep::start;
+            if (entry != "field_frame") {
+                const auto found =
+                    entry.starts_with("field_frame:")
+                        ? steps.find(entry.substr(std::string_view("field_frame:").size()))
+                        : steps.end();
+                if (found == steps.end())
+                    throw InputError("Unknown field frame step");
+                from = found->second;
+            }
+            program->field_frame(services, observer, from);
         } else if (entry == "field_checkpoints") {
             program->checkpoint_pass(observer);
         } else if (entry == "field_save") {
@@ -666,37 +848,23 @@ int main(int argc, char **argv) {
     } catch (const InputError &error) {
         status = "invalid_input";
         reason = error.what();
+    } catch (const game::ServiceUnavailable &error) {
+        status = "invalid_input";
+        reason = std::string("Service result not supplied: ") + error.what();
     } catch (const std::exception &error) {
         status = executing ? "reconstruction_error" : "invalid_input";
         reason = error.what();
     }
     // Committed state is exported even after a stop: it is partial, never a
     // result. Export happens before reporting so its failure changes the status.
-    std::ostringstream owned;
+    std::string owned;
     if (program && executing) {
-        analysis::OriginalMemory image;
-        image.ram.assign(analysis::ram_bytes, 0);
         try {
-            const auto ranges = program->field    ? analysis::export_field(*program, image)
-                                : program->battle ? analysis::export_battle(*program, image)
-                                : program->menu   ? analysis::export_menu(*program, image)
-                                                  : analysis::export_resident(*program, image);
-            if (service_output) {
-                owned << "{\"name\":\"decoder_output\",\"address\":" << service_output->first
-                      << ",\"hex\":" << quote(hex(service_output->second)) << '}';
-                if (!ranges.empty())
-                    owned << ',';
-            }
-            for (std::size_t i = 0; i < ranges.size(); ++i) {
-                const auto &range = ranges[i];
-                owned << (i ? "," : "") << "{\"name\":" << quote(range.name)
-                      << ",\"address\":" << range.address
-                      << ",\"hex\":" << quote(hex(image.range(range.address, range.size))) << '}';
-            }
+            owned = owned_ranges(*program, service_output);
         } catch (const std::exception &error) {
             status = "reconstruction_error";
             reason = std::string("Export failed: ") + error.what();
-            owned.str("");
+            owned.clear();
         }
     }
     std::cout << "{\"entry\":" << quote(entry) << ",\"status\":" << quote(status)
@@ -722,28 +890,16 @@ int main(int argc, char **argv) {
     std::cout << "},\"return_value\":";
     optional(std::cout, return_value);
     std::cout << ",\"gte\":[";
-    if (program && !owned.str().empty()) {
-        const auto gte = game::field::gte_words(program->resident.gte);
-        const auto &screen = program->resident.gte_screen;
-        for (std::size_t i = 0; i < gte.size(); ++i)
-            std::cout << (i ? "," : "") << gte[i];
-        std::cout << ',' << static_cast<std::uint32_t>(screen.offset_x) << ','
-                  << static_cast<std::uint32_t>(screen.offset_y) << ','
-                  << static_cast<std::uint32_t>(
-                         static_cast<std::int32_t>(static_cast<std::int16_t>(screen.h)));
-    }
+    if (program && !owned.empty())
+        std::cout << gte_controls(*program);
     std::cout << "],\"platform_unconsumed\":" << (program ? program->resident.platform.size() : 0)
               << ",\"delivered_sectors\":[";
     if (program)
         for (std::size_t i = 0; i < program->resident.drive.delivered.size(); ++i)
             std::cout << (i ? "," : "") << program->resident.drive.delivered[i];
-    std::cout << "],\"owned\":[" << owned.str() << "],\"hardware_writes\":[";
+    std::cout << "],\"owned\":[" << owned << "],\"hardware_writes\":[";
     if (program && executing)
-        for (std::size_t i = 0; i < program->resident.hardware_writes.size(); ++i) {
-            const auto &write = program->resident.hardware_writes[i];
-            std::cout << (i ? "," : "") << "{\"address\":" << write.address
-                      << ",\"value\":" << write.value << ",\"width\":" << write.width << '}';
-        }
-    std::cout << "]}\n";
+        std::cout << hardware_writes(*program, 0);
+    std::cout << "],\"frames\":[" << frames.str() << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
 }

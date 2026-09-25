@@ -421,7 +421,7 @@ void camera_setup(FieldWorld &world) {
 // 8007d93c(0): a full-screen semi-transparent tile, via the resident setTile
 // (80043d64) and SetSemiTrans (80043bfc) byte edits, copied to its second
 // buffer, and the fade counters reset.
-void prepare_fade(FieldFade &fade) {
+void prepare_fade(FadeChannel &fade) {
     auto &packet = fade.packets;
     packet[3] = 3;
     packet[7] = 0x60;
@@ -441,17 +441,18 @@ void prepare_fade(FieldFade &fade) {
 
 // 8009731c -> 8007d93c, 80071e58: prepare the tile and start a fade-out once.
 void start_fade_out(FieldWorld &world) {
-    prepare_fade(world.fade);
-    const auto frames = immediate15_or_variable(world, 1);
     auto &fade = world.fade;
+    auto &channel = fade.channels[0];
+    prepare_fade(channel);
+    const auto frames = immediate15_or_variable(world, 1);
     if (fade.started != 0) {
         fade.started = 0;
         if (fade.mode == 2) {
             if (frames == 0)
                 throw EventError("Original fade division by zero is not a recovered result");
             const auto rate = static_cast<std::uint32_t>(-0x10000 / frames);
-            fade.words = {0xff00, 0xff00, 0xff00, rate, rate, rate};
-            fade.halves = {2, 1, static_cast<std::uint16_t>(frames)};
+            channel.words = {0xff00, 0xff00, 0xff00, rate, rate, rate};
+            channel.halves = {2, 1, static_cast<std::uint16_t>(frames)};
         }
     }
     set_pc(world, pc(world) + 3U);
@@ -467,8 +468,8 @@ void start_fade(FieldWorld &world) {
             if (frames == 0)
                 throw EventError("Original fade division by zero is not a recovered result");
             const auto rate = static_cast<std::uint32_t>(0xff00 / frames);
-            fade.words = {0, 0, 0, rate, rate, rate};
-            fade.halves = {2, 1, static_cast<std::uint16_t>(frames)};
+            fade.channels[0].words = {0, 0, 0, rate, rate, rate};
+            fade.channels[0].halves = {2, 1, static_cast<std::uint16_t>(frames)};
         }
     }
     set_pc(world, pc(world) + 3U);

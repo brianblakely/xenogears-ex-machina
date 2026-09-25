@@ -675,7 +675,7 @@ std::optional<Program::PolygonHit> Program::polygon_contact(std::size_t index, s
     for (std::size_t axis = 0; axis < 3; ++axis)
         local.t[axis] = s32(word(actor.descriptor, 0x20 + axis * 4));
     const auto transform = field::compose_matrix(state.world_matrix, local);
-    resident.gte = transform; // SetRotMatrix and SetTransMatrix
+    resident.gte.transform = transform; // SetRotMatrix and SetTransMatrix
     const auto groups = resource_word(state, actor.model + 6, 2);
     const auto vertices = resource_word(state, actor.model + 8, 4);
     auto cursor = resource_word(state, actor.model + 0x10, 4);

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <map>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -40,6 +41,12 @@ constexpr std::size_t field_snapshot_bytes = 0x3804;
 constexpr std::size_t disc_file_table_bytes = 0x8000;
 constexpr std::size_t disc_directory_table_bytes = 0x7a;
 constexpr std::uint32_t pad_buffers = 0x800625fc;
+
+// Field frame draw buffers: two 80f4-byte blocks (environments, ordering tables).
+constexpr std::uint32_t draw_blocks = 0x800b249c;
+constexpr std::size_t draw_block_bytes = 0x80f4;
+
+constexpr std::uint32_t primitive_table = 0x8004fe50;
 
 constexpr std::size_t actor_bytes = 0x138;
 constexpr std::size_t descriptor_bytes = 0x5c;
@@ -360,6 +367,131 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
             static_cast<std::uint16_t>(memory.word(variable_bank + i * 2, 2));
     for (const auto &[address, size] : resources)
         state.resources.push_back({address, copy_of(memory.range(address, size))});
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        const auto address = draw_blocks + i * static_cast<std::uint32_t>(draw_block_bytes);
+        state.regions.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
+    }
+    // Compass quads (19 records of four vectors and a packet per buffer) and
+    // the draw-mode packets (twelve bytes each, 16 per buffer).
+    state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
+    state.regions.add("draw_modes", 0x800b1df4, copy_of(memory.range(0x800b1df4, 0x180)));
+    // The sprite system's per-buffer arenas (packets and upload nodes).
+    for (const auto arena : resident.sprite_arenas)
+        if (arena != 0)
+            state.regions.add("sprite_arena", arena,
+                              copy_of(memory.range(arena, resident.sprite_arena_bytes)));
+    // Descriptors after the event actors' (map pieces), and every model
+    // instance: its 24-byte record and a packet buffer per draw buffer, sized
+    // from its primitive groups by the resident primitive table (8004fe50).
+    for (std::uint32_t i = count; i < state.descriptor_count; ++i) {
+        auto &piece = state.pieces.emplace_back();
+        piece.address = table + i * static_cast<std::uint32_t>(descriptor_bytes);
+        copy_into(piece.descriptor, memory.range(piece.address, descriptor_bytes));
+    }
+    // A model's packet buffer size: its primitive groups by the resident
+    // primitive table (8004fe50).
+    const auto packet_bytes = [&](std::uint32_t model) {
+        auto record = memory.word(model + 0x10);
+        std::size_t size = 0;
+        for (auto groups = memory.word(model + 6, 2); groups != 0; --groups) {
+            const auto type = memory.word(record, 1);
+            const auto primitives = convert<std::int16_t>(memory.word(record + 2, 2));
+            if (type >= 17 || primitives < 0)
+                throw field::FieldFormatError("Model primitive group outside the resident table");
+            const auto entry = primitive_table + type * 0x28;
+            size += static_cast<std::size_t>(primitives) * memory.word(entry + 0x24);
+            record += 4 + static_cast<std::uint32_t>(primitives) * memory.word(entry + 0x1c);
+        }
+        return size;
+    };
+    std::set<std::uint32_t> instances;
+    for (std::uint32_t i = 0; i < state.descriptor_count; ++i) {
+        const auto instance = memory.word(table + i * static_cast<std::uint32_t>(descriptor_bytes));
+        if (instance == 0 || !instances.insert(instance).second)
+            continue;
+        state.regions.add("model_instance", instance, copy_of(memory.range(instance, 0x24)));
+        const auto size = packet_bytes(memory.word(instance + 4));
+        for (std::uint32_t buffer = 0; buffer < 2; ++buffer) {
+            const auto packets = memory.word(instance + 8 + buffer * 4);
+            state.regions.add("model_packets", packets, copy_of(memory.range(packets, size)));
+        }
+    }
+    // Sprite task nodes, each with the heap block it shares with its sprite,
+    // and the packet buffers of task sprites that draw a model (sprite +20:
+    // renderer, +2c/+30 packets, +34 model).
+    auto &tasks = resident.sprite_tasks;
+    for (auto head : {tasks.head, tasks.pending_head})
+        for (auto node = head, visited = 0U; node != 0; node = memory.word(node + 0x18)) {
+            if (++visited > 0x1000)
+                throw field::FieldFormatError("Sprite task list does not terminate");
+            const auto owned = std::ranges::any_of(tasks.nodes, [&](const auto &block) {
+                return node >= block.address && node - block.address < block.bytes.size();
+            });
+            if (owned)
+                continue;
+            bool found = false;
+            for (const auto &[at, header] : resident.heap.headers) {
+                if (node < at + 8 || node >= header[0] - 8)
+                    continue;
+                tasks.nodes.push_back({at + 8, copy_of(memory.range(at + 8, header[0] - 16 - at))});
+                found = true;
+                break;
+            }
+            if (!found)
+                throw field::FieldFormatError("Sprite task node is outside the heap");
+            const auto sprite = memory.word(node + 4);
+            const auto renderer = memory.word(sprite + 0x20);
+            if (const auto model = memory.word(renderer + 0x34); model != 0) {
+                const auto size = packet_bytes(model);
+                for (std::uint32_t buffer = 0; buffer < 2; ++buffer) {
+                    const auto packets = memory.word(renderer + 0x2c + buffer * 4);
+                    state.regions.add("task_model_packets", packets,
+                                      copy_of(memory.range(packets, size)));
+                }
+            }
+        }
+    // Each actor's ground shadow (descriptor +8): four corners and a packet
+    // per draw buffer (800764b4).
+    for (const auto &actor : state.actors)
+        if (const auto shadow = memory.word(actor.descriptor_address + 8); shadow != 0)
+            state.regions.add("shadow", shadow, copy_of(memory.range(shadow, 0x20 + 2 * 0x28)));
+    // Each sprite's parts (renderer +30), the heap block its frames are
+    // built into (8001dae8).
+    std::vector<std::uint32_t> sprites;
+    for (const auto &actor : state.actors)
+        if (actor.sprite.sprite.address != 0)
+            sprites.push_back(actor.sprite.sprite.address);
+    for (auto head : {tasks.head, tasks.pending_head})
+        for (auto node = head; node != 0; node = memory.word(node + 0x18))
+            sprites.push_back(memory.word(node + 4));
+    // The heap block holding `address`, unless already owned.
+    const auto own_block = [&](const char *name, std::uint32_t address) {
+        if (address == 0 || state.regions.contains(address, 1))
+            return;
+        const auto owned = std::ranges::any_of(tasks.nodes, [&](const auto &block) {
+            return address >= block.address && address - block.address < block.bytes.size();
+        });
+        if (owned)
+            return;
+        const auto block = std::ranges::find_if(resident.heap.headers, [&](const auto &entry) {
+            return address >= entry.first + 8 && address < entry.second[0] - 8;
+        });
+        if (block == resident.heap.headers.end())
+            throw field::FieldFormatError("Owned heap record is outside the heap");
+        const auto at = block->first + 8;
+        state.regions.add(name, at, copy_of(memory.range(at, block->second[0] - 8 - at)));
+    };
+    for (const auto sprite : sprites)
+        own_block("sprite_parts", memory.word(memory.word(sprite + 0x20) + 0x30));
+    // The first window's packet list per buffer precedes the windows
+    // (800c2698, 8008004c); later windows' lists end the window before.
+    state.regions.add("dialogue_lists", field::DialogueWindow::base - 0x18,
+                      copy_of(memory.range(field::DialogueWindow::base - 0x18, 0x18)));
+    // The text line records (+28) of each dialogue window in use (80034888).
+    for (std::uint32_t w = 0; w < state.dialogue.size(); ++w)
+        if (state.dialogue[w].half(field::DialogueWindow::busy) == 0)
+            own_block("dialogue_lines", memory.word(field::DialogueWindow::base +
+                                                    w * field::DialogueWindow::stride + 0x28));
     return program;
 }
 
@@ -520,24 +652,6 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
         read.ring_payload = {
             ring + header_bytes,
             copy_of(memory.range(ring + header_bytes, std::size_t{count} * 0x800))};
-    }
-    // Image data of LoadImage requests waiting in the libgpu queue.
-    auto &gpu = resident.gpu;
-    for (auto at = gpu.tail; at != gpu.head; at = (at + 1U) & 63U) {
-        const auto entry = at * 0x60U;
-        const auto word = [&](std::uint32_t offset) {
-            std::uint32_t value = 0;
-            for (std::uint32_t i = 0; i < 4; ++i)
-                value |= static_cast<std::uint32_t>(gpu.queue.at(entry + offset + i)) << (8U * i);
-            return value;
-        };
-        if (word(0) != 0x800460a0 || word(4) != 0x8006be40U + entry)
-            continue;
-        const auto size = word(0x10);
-        const auto pixels = std::size_t{size & 0xffffU} * (size >> 16U);
-        if (pixels > 1024 * 512)
-            throw field::FieldFormatError("Queued image request exceeds VRAM");
-        gpu.sources.push_back({word(8), copy_of(memory.range(word(8), (pixels + 1) / 2 * 4))});
     }
     if (cd.sync_callback == 0x8002ac24 && read.w_fe0c != 0) {
         // Entries up to and including the terminating one (file or
@@ -719,6 +833,12 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
             out.bytes("dialogue_block", block.address, block.bytes);
     for (const auto &resource : state.resources)
         out.bytes("resource", resource.address, resource.bytes);
+    for (const auto &[address, region] : state.regions.regions())
+        out.bytes(region.name, address, region.bytes);
+    for (const auto &piece : state.pieces)
+        out.bytes("descriptor", piece.address, piece.descriptor);
+    for (const auto &node : resident.sprite_tasks.nodes)
+        out.bytes("sprite_task_block", node.address, node.bytes);
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
         memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));

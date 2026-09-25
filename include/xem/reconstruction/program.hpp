@@ -9,12 +9,15 @@
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
+#include "xem/reconstruction/gpu.hpp"
+#include "xem/reconstruction/gte.hpp"
 #include "xem/reconstruction/interrupts.hpp"
 #include "xem/reconstruction/menu.hpp"
 #include "xem/reconstruction/menu_save.hpp"
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
+#include <deque>
 #include <functional>
 #include <map>
 #include <memory>
@@ -122,18 +125,21 @@ struct PadState {
     std::array<std::array<std::uint8_t, 8>, 2> actuators{}; // 8005a1bc
 };
 
-// libgpu request queue (enqueue 8004668c, execute 8004696c) and the image
-// operations the interrupt side reaches (LoadImage 80044894 / 800460a0,
-// StoreImage 800462dc, DrawOTag 800465ec).
+// Resident libgpu state: the request queue (enqueue 8004668c, runner
+// 8004696c), the statics of the calls through it (gpu_queue.cpp) and the
+// commands that reach the GPU.
 struct GpuState {
     std::uint32_t services{};                  // 800568c8: service table address
     std::array<std::uint32_t, 12> functions{}; // 80056888: the service table
     std::uint8_t queued{};                     // 800568d1: zero runs requests at once
     std::uint8_t debug{};                      // 800568d2: request checking level
+    std::uint8_t interlace{};                  // 800568d3: adds the interlace bit to display modes
     std::int16_t width{};                      // 800568d4: VRAM width
     std::int16_t height{};                     // 800568d6: VRAM height
-    std::uint32_t sync_pending{};              // 800568d8
+    std::uint32_t sync_pending{};              // 800568d8: set by each request
     std::uint32_t sync_callback{};             // 800568dc: DrawSync callback
+    std::array<std::uint8_t, 0x5c> draw_environment{};    // 800568e0: last PutDrawEnv
+    std::array<std::uint8_t, 0x14> display_environment{}; // 8005693c: last PutDispEnv
     // 800569a0 GP0, 800569a4 GP1/GPUSTAT, 800569a8 DMA2 address, 800569ac
     // DMA2 block, 800569b0 DMA2 control.
     std::array<std::uint32_t, 5> registers{};
@@ -147,9 +153,9 @@ struct GpuState {
     // 8006be34: 64 requests of 60h bytes: operation, parameter pointer,
     // argument, then the copied parameter.
     std::array<std::uint8_t, 64 * 0x60> queue{};
-    // Image data of queued LoadImage requests: caller memory the queue
-    // refers to. Read-only input, attached by the host.
-    std::vector<resident::HeapBlock> sources;
+    std::array<std::uint8_t, 0x44> packet{};   // 8005a238: packet built by _clr
+    std::array<std::uint8_t, 0x100> control{}; // 8005a27c: last GP1 value per command
+    std::vector<GpuCommand> commands;          // In program order
 };
 
 // Interrupt environment of the dispatcher 8004b9b4 and its handlers.
@@ -282,6 +288,37 @@ struct HardwareWrite {
     bool operator==(const HardwareWrite &) const = default;
 };
 
+// Platform results one field frame (8007554c) consumes, in call order. The
+// analysis host supplies the values observed at the original service returns;
+// a native host supplies its own platform's. A missing value stops the frame.
+struct FrameServices {
+    // VSync(1): horizontal blanks counted since the last VSync(0).
+    std::deque<std::uint32_t> hblank_counts;
+    // VSync(0) on return: root counter 1 (80057844) and the vertical-blank
+    // counter (80057848).
+    std::deque<std::array<std::uint32_t, 2>> vblank_waits;
+    // VSync(-1) read by each libgpu alarm (80046efc).
+    std::deque<std::uint32_t> vblank_counts;
+    // libgpu alarm polls counted while DrawSync or LoadImage waited (800569ec).
+    std::deque<std::uint32_t> alarm_polls;
+    // GPUSTAT as read by ClearImage's packet builder (80045e44).
+    std::deque<std::uint32_t> gpu_status;
+    // DMA channel 2 busy bit as read by libgpu's command queue (80046758).
+    std::deque<std::uint32_t> dma_busy;
+    // SetIntrMask(0) results: the interrupt mask replaced around a call.
+    std::deque<std::uint32_t> interrupt_masks;
+    // GPU information reads (GP1 10h, then GPUREAD) by libgpu _param (80046638).
+    std::deque<std::uint32_t> gpu_info;
+};
+
+// A platform result the host did not supply: invalid input, not a game result.
+class ServiceUnavailable : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+// Consumes the next result of one service queue.
+std::uint32_t take_service(std::deque<std::uint32_t> &results, const char *what);
+
 struct ResidentState {
     field::EventVariables variables;
     std::uint32_t random_seed{};
@@ -326,11 +363,10 @@ struct ResidentState {
     // input and drawing paths.
     std::uint32_t debug_pointer{}; // 8005917c
     std::uint32_t debug_word{};    // 80010000
-    // Loaded GTE rotation/translation (control registers 0-7). Machine state
-    // that survives calls: PushMatrix stores it to memory.
-    field::GteMatrix gte{};
-    field::GteScreen gte_screen{}; // GTE OFX/OFY/H (control 24-26)
-    std::uint8_t gpu_type{};       // 800568d0: libgpu draw-mode encoding
+    // Geometry coprocessor registers: machine state that survives calls
+    // (PushMatrix stores the loaded matrix to memory).
+    Gte gte{};
+    std::uint8_t gpu_type{}; // 800568d0: libgpu draw-mode encoding
     // Hardware I/O registers (1f801000..1f801fff) as observed; a platform input
     // that recovered code reads, never original RAM.
     std::array<std::uint8_t, 0x1000> io{};
@@ -342,12 +378,33 @@ struct ResidentState {
     CdState cd;
     std::vector<HardwareWrite> hardware_writes; // In program order
     std::uint32_t vsync_counter{};              // 80058960: VSync(-1)
-    std::uint32_t cd_sync_deadline{};           // 8005a228
-    std::uint32_t cd_sync_polls{};              // 8005a22c
-    std::uint32_t cd_sync_label{};              // 8005a230: diagnostic string for a timeout
-    std::uint32_t cd_dma_register{};            // 800567b4: address of DMA3 CHCR
-    std::array<std::uint16_t, 2> text_cluts{};  // 800595d4 (even rows), 80059414 (odd rows)
-    field::MatrixStack matrix_stack{};          // 80056d2c depth, 80056d30 records
+    std::uint32_t vsync_hcount{};               // 80057844: root counter 1 at the last VSync(0)
+    std::uint32_t vsync_previous{};             // 80057848: vertical blanks at the last VSync(0)
+    std::uint32_t video_mode{};                 // 80058990: GetVideoMode (1 PAL)
+    std::uint32_t w_4f378{};                    // 8004f378: nonzero hides the field compass
+    std::uint32_t w_4f37c{};                    // 8004f37c: nonzero skips actor billboards
+    std::uint32_t w_4f380{};                    // 8004f380: nonzero skips 8007520c and party models
+    std::uint32_t sprite_buffer{};              // 800592f8: draw buffer of the sprite system
+    std::array<std::uint32_t, 2> sprite_uploads{}; // 800594c4: pending uploads per buffer
+    // Per-buffer sprite arenas (800594b4, 800592fc bytes each) and the bump
+    // allocation within the current one.
+    std::array<std::uint32_t, 2> sprite_arenas{};   // 800594b4
+    std::uint32_t sprite_arena_bytes{};             // 800592fc
+    std::uint32_t sprite_arena_cursor{};            // 80059580
+    std::uint32_t sprite_arena_start{};             // 80059524
+    std::uint32_t sprite_arena_end{};               // 80059534
+    std::array<std::uint32_t, 2> sprite_releases{}; // 80059300: blocks freed per buffer
+    std::uint32_t sprite_table{};                   // 8005956c: ordering table sprites draw into
+    field::GteMatrix sprite_view{}; // 8004fbb8: camera matrix sprites are placed with
+    std::array<std::array<std::int16_t, 4>, 4>
+        sprite_quad{};                // 8004fb98: projected corners (SVECTOR)
+    std::uint8_t sprite_platform_b{}; // 800591ae: with 800591ad, forces sprite matrix updates
+    std::uint32_t cd_sync_deadline{}; // 8005a228
+    std::uint32_t cd_sync_polls{};    // 8005a22c
+    std::uint32_t cd_sync_label{};    // 8005a230: diagnostic string for a timeout
+    std::uint32_t cd_dma_register{};  // 800567b4: address of DMA3 CHCR
+    std::array<std::uint16_t, 2> text_cluts{}; // 800595d4 (even rows), 80059414 (odd rows)
+    field::MatrixStack matrix_stack{};         // 80056d2c depth, 80056d30 records
     // Game-mode selection (8001996c) for the mode dispatcher 80019acc.
     std::uint32_t next_mode{}; // 80018088
     // 800592bc: the heap block 800199cc loaded for mode_loaded (its address,
@@ -389,6 +446,7 @@ struct FieldState {
     std::uint32_t snapshot_cursor{}; // 800afc50: 800a3c8c's pointer into the snapshot
     std::uint32_t sprite_bundle_address{};
     std::int16_t sprite_gate{}; // 800b218e
+    std::uint8_t b_b2357{};     // 800b2357: nonzero disables billboard fog
     std::uint32_t initialized_sprites{};
     std::uint32_t party_reassignment{}; // 800b2268
     std::vector<field::SpriteAllocation> resources;
@@ -470,6 +528,92 @@ struct FieldState {
     field::MovieState movie{};
     std::uint32_t exit_mode{};  // 800b0064: bits 0-6 the next game mode, bit 80 calls 8001bb50
     std::uint32_t gate_adbc4{}; // 800adbc4: a requested map change waits unless ff
+    // Field frame 8007554c.
+    std::uint32_t frame_start_hcount{}; // 800adb9c: VSync(1) at frame start
+    std::uint32_t frame_drawn_hcount{}; // 800adba0: VSync(1) after drawing
+    std::uint32_t draw_buffer{};        // 800adb08: index of the buffer being built
+    std::uint32_t draw_block{};         // 800c426c: its 80f4-byte block (800b249c + 80f4 * index)
+    // Positional sound emitters (800afe88): actor, effect id and a word each.
+    std::array<std::array<std::uint16_t, 3>, 3> emitters{};
+    std::int16_t emitter_source{}; // 800b22e0: listener (0 controlled actor, 1 eye, 2 target)
+    std::array<std::array<std::int16_t, 4>, 2> fade_windows{}; // 800afe3c: fade texture windows
+    // Compass (80074108).
+    std::array<std::uint16_t, 16> compass_colors{};     // 800afc08
+    std::array<std::uint16_t, 128> compass_palette{};   // 800afd24: 8 rows, dark when blocked
+    std::array<std::int16_t, 4> compass_palette_rect{}; // 800b004c: its VRAM rectangle
+    std::int16_t compass_heading{};                     // 800adb48
+    std::int16_t compass_target{};                      // 800adb4a
+    field::GteMatrix matrix_afa84{}; // 800afa84: compass base times the camera rotation
+    // Regions the frame's drawing code addresses: both draw buffer blocks
+    // (800b249c), packet buffers and model instance records.
+    OriginalRegions regions;
+    // Descriptors after the event actors' (map pieces), 5c bytes each.
+    struct Piece {
+        std::uint32_t address{};
+        field::original::Block<0x5c> descriptor{};
+    };
+    std::vector<Piece> pieces;
+    // Model pass (800748e8).
+    field::GteMatrix cull_view{};                    // 800b00e8: bounding centre in view
+    std::array<std::uint32_t, 2> cull_margins{};     // 800c3a5c x, 800c3a60 y
+    std::array<std::int16_t, 3> piece_drift{};       // 800b21ae x, 800b21b0 z, 800b21b2 y
+    std::array<std::int32_t, 3> piece_drift_total{}; // 800b21bc x, y, z
+    std::uint8_t piece_drift_mode{};                 // 800b21d2: 7f bits select, 80 draws always
+    std::array<std::uint8_t, 3> fog_color{};         // 800b2190
+    std::array<std::uint8_t, 3> far_color{};         // 800b2194
+    std::array<std::int16_t, 2> fog_range{};         // 800b2198 near, 800b219a far
+    std::array<std::uint16_t, 3> back_color{};       // 800afb04: lit models' background
+    // Later frame steps. Gates whose drawing is not recovered keep their
+    // original address as their name.
+    std::uint32_t particles_paused{};                // 800adb34
+    std::array<std::uint8_t, 64> particle_slots{};   // 800b14b0: 1 while an emitter runs
+    std::int16_t distortion{};                       // 800b2078: screen distortion active
+    std::uint32_t w_af278{};                         // 800af278: gates 800a84c0
+    std::int16_t h_b00b2{};                          // 800b00b2: with 800adb50, gates 80075484
+    std::uint32_t w_adb50{};                         // 800adb50
+    std::uint32_t w_b2264{};                         // 800b2264: gates 8007520c
+    std::uint32_t w_adb54{};                         // 800adb54: gates 800abec8
+    std::uint32_t dialogue_ticks{};                  // 800ade98
+    std::uint32_t dialogue_cursor{};                 // 800ade94: 0..4, every fourth tick
+    std::uint32_t background_mode{};                 // 800b0048: 3 copies VRAM behind cuts
+    std::array<std::uint8_t, 3> clear_color{};       // 800b219c
+    std::int16_t h_afea8{};                          // 800afea8: calls of 800920d8
+    std::uint32_t pending_load{};                    // 800adbb4
+    std::uint32_t pending_load_source{};             // 800af87c
+    std::array<std::int16_t, 4> pending_load_rect{}; // 800afc58
+    std::uint32_t w_adb4c{};                         // 800adb4c: joins the second model table
+    std::int16_t ot_depth{};                         // 800b21d4: model table entries joined
+};
+
+// Resumable points of field frame 8007554c: each names the call the frame
+// makes next (original call site in comments). Analysis resumes a frame from
+// an original snapshot taken at that call; a native frame starts at `start`.
+enum class FrameStep : std::uint8_t {
+    start,           // 8007554c
+    emitters,        // 8007557c: 80086908
+    fade,            // 800755a8: 80071cb4
+    compass,         // 800755e4: 80074108
+    models,          // 80075604: 800748e8
+    characters,      // 8007560c: 800752c8
+    particles,       // 80075614: 800a9688
+    distortion,      // 80075638: 800a4dac
+    call_800a84c0,   // 80075648
+    call_80075484,   // 80075650
+    call_8007520c,   // 80075658
+    call_800abec8,   // 80075660
+    drawn_time,      // 80075694: VSync(1)
+    draw_sync,       // 800756a4: DrawSync(0)
+    dialogue_timers, // 800756ac: 800805f4
+    dialogue,        // 800756c4: 8008004c
+    vertical_sync,   // 800756cc: VSync(0)
+    timed_release,   // 800756d4: 80032cb8
+    clear,           // 800756dc: ClearImage or MoveImage
+    environments,    // 80075780: PutDispEnv, PutDrawEnv
+    uploads,         // 800757c4: 80025044
+    call_800920d8,   // 800757f0
+    load,            // 800757f8: a pending LoadImage
+    tables,          // 80075850: AddPrims
+    draw,            // 800758bc: DrawOTag
 };
 
 class Program;
@@ -519,6 +663,15 @@ class Program {
     // Field overlay 800739c0: the field update, then camera, view matrices,
     // actor facing and sprite orientation.
     void field_move(const ProgramObserver &observe = {});
+    // Field overlay 8007554c: one field frame (move phase, drawing, buffer
+    // presentation and the frame-rate wait). Services supply platform timing
+    // and GPU status results; see FrameServices.
+    void field_frame(FrameServices &services, const ProgramObserver &observe = {},
+                     FrameStep from = FrameStep::start);
+    // Original bytes that code outside a field frame (the field main loop and
+    // interrupt handlers between frames) changed, supplied as observed by a
+    // host running consecutive frames. Each byte must be owned state.
+    void supply_bytes(std::uint32_t address, std::span<const std::uint8_t> bytes);
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -639,6 +792,83 @@ class Program {
     [[nodiscard]] std::uint32_t current_disc() const;
 
   private:
+    // Field frame steps (field_frame.cpp).
+    void frame_emitters(std::uint32_t listener);                                    // 80086590
+    void frame_fade();                                                              // 80071cb4
+    void frame_compass(FrameServices &services);                                    // 80074108
+    void frame_models();                                                            // 800748e8
+    void frame_characters(FrameServices &services, const ProgramObserver &observe); // 800752c8
+    void sprite_buffer_begin(std::uint32_t buffer);                                 // 800250e0
+    void sprite_frames();                                                           // 8001d468
+    void build_sprite_frame(std::uint32_t sprite, std::uint32_t frame);             // 8001dae8
+    void build_sprite_cell_frame(std::uint32_t sprite, std::uint32_t frame);        // 8001d53c
+    [[nodiscard]] std::uint32_t sprite_part_controls(std::uint32_t sprite, std::uint32_t part,
+                                                     std::uint32_t stream, std::uint32_t &group);
+    [[nodiscard]] std::uint32_t sprite_part_offsets(std::uint32_t part, std::uint32_t stream,
+                                                    bool wide);
+    void sprite_frame_scale(std::uint32_t sprite, std::uint32_t record);
+    void sprite_upload(std::uint32_t source, std::int32_t x, std::int32_t y, std::uint32_t width,
+                       std::uint32_t height);         // 800251c8
+    void sprite_pending_tasks();                      // 8001c9f8
+    void draw_task_model(std::uint32_t node);         // 80025718
+    void refresh_sprite_matrix(std::uint32_t sprite); // 80022038
+    void frame_billboards(std::uint32_t table);       // 80075b44
+    void sprite_color(std::uint32_t sprite, std::uint32_t red, std::uint32_t green,
+                      std::uint32_t blue);                                     // 80021b98
+    void sprite_recolor_parts(std::uint32_t sprite);                           // 8001f6b0
+    void sprite_billboard(std::uint32_t sprite, std::uint32_t slot);           // 8001e298
+    void place_sprite(std::uint32_t sprite);                                   // 8001e148
+    void emit_sprite_parts(std::uint32_t sprite, std::uint32_t slot);          // 8001e3d8
+    [[nodiscard]] std::int32_t rot_trans_pers(const field::GteVector &vector); // 8004a64c
+    // Sprite sources over the owned field state; `actor` lends that actor
+    // to sprite callbacks that select it.
+    void with_sprite_sources(const std::function<void(const field::SpriteSources &)> &call,
+                             std::optional<std::uint32_t> actor = {});
+    [[nodiscard]] field::GteMatrix memory_matrix(std::uint32_t address) const;
+    void set_memory_matrix(std::uint32_t address, const field::GteMatrix &m);
+    // Owned record bytes (actor records, descriptors and sprites, sprite task
+    // blocks, music blocks, the disc read ring, payload, list and transfer
+    // blocks, game data and sound driver objects) at an original address:
+    // `record_block` spans to the end of the owning record.
+    [[nodiscard]] std::span<std::uint8_t> record_block(std::uint32_t address) const;
+    [[nodiscard]] std::span<std::uint8_t> record_bytes(std::uint32_t address,
+                                                       std::size_t width) const;
+    [[nodiscard]] std::span<std::uint8_t> descriptor_bytes(std::size_t index);
+    [[nodiscard]] bool model_culled(std::uint32_t instance); // 800aaa74
+    void draw_model(std::uint32_t model, std::uint32_t packets, std::uint32_t table,
+                    std::int32_t mode); // 8002c700
+    void draw_primitives(std::uint32_t routine, std::uint32_t record, std::int32_t count);
+    // Field 8007ab6c/8007ac58: one compass quad (a letter when `label`).
+    [[nodiscard]] std::uint32_t rot_average4(std::uint32_t record,
+                                             std::uint32_t packet);           // 8004a7bc
+    [[nodiscard]] field::GteLong vector_normal(const field::GteLong &vector); // 80048d7c
+    void frame_shadows(std::uint32_t table, std::uint32_t buffer);            // 800764b4
+    void compass_quad(std::uint32_t table, std::uint32_t record, const field::GteMatrix &m,
+                      bool label);
+    [[nodiscard]] std::uint16_t overlay_half(std::uint32_t address) const;
+    // Original addresses of Program-owned packets and globals, for the
+    // drawing code that links packets by address.
+    [[nodiscard]] std::uint32_t memory(std::uint32_t address, std::size_t width = 4) const;
+    [[nodiscard]] std::span<std::uint8_t> resource_bytes(std::uint32_t address,
+                                                         std::size_t width) const;
+    void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
+    void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
+    void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);
+    void frame_dialogue_timers();             // 800805f4
+    void frame_dialogue(std::uint32_t table); // 8008004c
+    void draw_dialogue_window(std::uint32_t table, std::uint32_t w, bool first);
+    void draw_dialogue_text(std::uint32_t window, std::uint32_t table,
+                            std::uint32_t buffer); // 80034888
+    void draw_dialogue_frame(std::uint32_t table, std::uint32_t buffer,
+                             std::uint32_t w); // 8007e1c0
+    void dialogue_quad(std::uint32_t packet, std::int32_t x, std::int32_t y, std::int32_t w,
+                       std::int32_t h, bool mirror);                    // 8007e16c
+    void dialogue_choice(std::uint32_t w);                              // 8007dcf8
+    [[nodiscard]] std::uint32_t dialogue_waiting(std::uint32_t window); // 80033cd0
+    [[nodiscard]] std::int32_t dialogue_line_y(std::uint32_t window);   // 800347c0
+    void link_text_packet(std::uint32_t table, std::uint32_t packet);   // 80031798
+    void set_draw_mode(std::uint32_t packet, std::uint32_t tpage,
+                       const std::array<std::int16_t, 4> &area); // 800454dc
     void dispatch(field::EventContext &context, std::uint8_t opcode,
                   const ProgramObserver &observe);
     void dispatch_extended(field::EventContext &context, std::uint8_t extended, SourcePoint point,
@@ -694,20 +924,33 @@ class Program {
     void disc_image_transferred();                                     // 8002bb50
     // 8004c21c through 8004b7a0: set the DMA completion callback of `channel`.
     void set_dma_callback(std::uint32_t channel, std::uint32_t function);
-    // libgpu (gpu_queue.cpp). A rectangle is x, y, width, height.
-    // `address` is the rectangle's original (stack) address.
+    // libgpu (gpu_queue.cpp). A rectangle is x, y, width, height. Inside a
+    // field frame `services` supplies the platform results; interrupt-side
+    // calls (null services) read the recorded hardware loads.
+    void gpu_alarm(FrameServices *services); // 80046efc
+    void gpu_check_rect() const;             // 8004463c
+    // 80044894; `address` is the rectangle's original address.
     std::int32_t load_image(std::array<std::int16_t, 4> &rect, std::uint32_t address,
-                            std::uint32_t data); // 80044894
-    std::int32_t gpu_enqueue(std::uint32_t operation, std::array<std::int16_t, 4> &rect,
-                             std::uint32_t address, std::uint32_t size,
-                             std::uint32_t argument); // 8004668c
-    std::uint32_t gpu_execute();                      // 8004696c
+                            std::uint32_t data, FrameServices *services = nullptr);
+    // LoadImage of a rectangle in owned memory, clamped there.
+    void load_image_at(FrameServices &services, std::uint32_t rect, std::uint32_t source);
+    std::int32_t gpu_enqueue(std::uint32_t operation, std::uint32_t parameter,
+                             std::array<std::int16_t, 4> *rect, std::uint32_t size,
+                             std::uint32_t argument, FrameServices *services); // 8004668c
+    std::uint32_t gpu_execute();                                               // 8004696c
     // Run a queued or immediate operation; `rect` is the rectangle parameter
-    // when the caller owns it, else it lives in the queue at `parameter`.
+    // when the caller holds it, else it lives in the queue at `parameter`.
     std::int32_t gpu_operation(std::uint32_t operation, std::uint32_t parameter,
-                               std::array<std::int16_t, 4> *rect, std::uint32_t argument);
+                               std::array<std::int16_t, 4> *rect, std::uint32_t argument,
+                               FrameServices *services);
+    void clear_operation(std::uint32_t rect, std::uint32_t color,
+                         FrameServices *services);                 // 80045e44
     void gpu_wait_ready(std::uint32_t first, std::uint32_t again); // GPUSTAT bit 26 poll
-    [[nodiscard]] std::uint32_t ram_word(std::uint32_t address) const;
+    void clear_image(FrameServices &services, std::uint32_t rect, std::uint32_t color); // 80044764
+    void draw_otag(FrameServices &services, std::uint32_t table);                       // 80044bd0
+    void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
+    void put_disp_env(std::uint32_t environment);                                       // 80044e9c
+    void draw_sync(FrameServices &services);                                            // 800445d0
     void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);
@@ -743,7 +986,7 @@ class Program {
         std::int32_t floor;
         field::FieldVector normal;
     };
-    // Leaves the composed model transform loaded in resident.gte, as the original.
+    // Leaves the composed model transform loaded in resident.gte.transform, as the original.
     [[nodiscard]] std::optional<PolygonHit> polygon_contact(std::size_t index, std::int32_t x,
                                                             std::int32_t z);
     // Resident sprite routines on an actor's descriptor sprite with the owned

@@ -52,6 +52,13 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/media.cpp
   src/reconstruction/field_movie.cpp
   src/reconstruction/field_gte.cpp
+  src/reconstruction/gte.cpp
+  src/reconstruction/gpu.cpp
+  src/reconstruction/field_frame.cpp
+  src/reconstruction/field_models.cpp
+  src/reconstruction/field_characters.cpp
+  src/reconstruction/field_dialogue_draw.cpp
+  src/reconstruction/field_view.cpp
   src/reconstruction/disc_stream.cpp
   src/reconstruction/disc_read.cpp
   src/reconstruction/interrupts.cpp
@@ -162,6 +169,9 @@ if(BUILD_TESTING)
   add_executable(test-disc-stream tests/test_disc_stream.cpp)
   target_link_libraries(test-disc-stream PRIVATE xem-reconstruction)
   add_test(NAME disc-stream-reconstruction COMMAND test-disc-stream)
+  add_executable(test-field-frame tests/test_field_frame.cpp)
+  target_link_libraries(test-field-frame PRIVATE xem-reconstruction)
+  add_test(NAME field-frame-reconstruction COMMAND test-field-frame)
   add_executable(test-packed-field tests/test_packed_field.cpp)
   target_link_libraries(test-packed-field PRIVATE xem-reconstruction)
   add_test(NAME packed-field-reconstruction COMMAND test-packed-field)

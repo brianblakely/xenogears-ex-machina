@@ -716,6 +716,33 @@ std::uint32_t upload_sprite_images(std::uint32_t address, std::int16_t x, std::i
     return 0;
 }
 
+namespace {
+// Resident 80021c20 / 80021ca0: the sprite's byte stack of loop counts
+// (+8e, indexed by the signed byte +8c, growing downward).
+std::uint32_t pop_sprite_count(SpriteWindow sprite) {
+    const auto top = get(sprite.bytes, 0x8c, 1);
+    const auto value = get(sprite.bytes,
+                           inside(sprite,
+                                  sprite.address + 0x8e +
+                                      static_cast<std::uint32_t>(std::bit_cast<std::int8_t>(
+                                          static_cast<std::uint8_t>(top))),
+                                  1),
+                           1);
+    put(sprite.bytes, 0x8c, top + 1, 1);
+    return value;
+}
+void push_sprite_count(SpriteWindow sprite, std::uint32_t value) {
+    const auto top = (get(sprite.bytes, 0x8c, 1) - 1) & 0xffU;
+    put(sprite.bytes, 0x8c, top, 1);
+    const auto at = inside(
+        sprite,
+        sprite.address + 0x8e +
+            static_cast<std::uint32_t>(std::bit_cast<std::int8_t>(static_cast<std::uint8_t>(top))),
+        1);
+    put(sprite.bytes, at, value, 1);
+}
+} // namespace
+
 std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &environment,
                                       const SpriteSources &sources) {
     check_window(sprite);
@@ -770,6 +797,17 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
                 select_sprite_animation(sprite, animation, environment, sources);
             put(sprite.bytes, 0xa8, get(sprite.bytes, 0xa8) & 0xcfffffffU);
             return commands;
+        } else if (opcode == 0x82) {
+            // Restart the current animation (+af), keeping the motion word
+            // +10, and run it at once (800248d4 re-entered).
+            if (get(sprite.bytes, 0x68) != 0)
+                invoke_sprite_callback(sprite, sources);
+            const auto animation = std::bit_cast<std::int8_t>(sprite.bytes[0xaf]);
+            const auto motion = get(sprite.bytes, 0x10);
+            select_sprite_animation(sprite, animation, environment, sources);
+            put(sprite.bytes, 0x10, motion);
+            put(sprite.bytes, 0x9e, 0, 2);
+            return commands + execute_sprite_commands(sprite, environment, sources);
         } else if (opcode == 0x81) {
             put(sprite.bytes, 0x9e, 0, 2);
             invoke_sprite_callback(sprite, sources);
@@ -950,6 +988,73 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
         } else if (opcode == 0xe1) {
             const auto delta = signed_half(resource(sources, pointer + 1, 2));
             put(sprite.bytes, 0x64, get(sprite.bytes, 0x64) + static_cast<std::uint32_t>(delta));
+        } else if (opcode == 0xa6) {
+            // 8001fbe4 A6: add a rate-scaled speed to +10 unless +a8 bit 0.
+            if ((get(sprite.bytes, 0xa8) & 1) != 1) {
+                const auto operand = std::bit_cast<std::int8_t>(
+                    static_cast<std::uint8_t>(resource(sources, pointer + 1, 1)));
+                const auto rate =
+                    signed_word(static_cast<std::uint32_t>(environment.rate_control) + 1);
+                const auto scaled = truncate_shift(
+                    product(product(operand * 16, rate), signed_half(get(sprite.bytes, 0x82, 2))),
+                    12);
+                const auto divisor =
+                    static_cast<std::int32_t>((get(sprite.bytes, 0xac) >> 7) & 0xfff);
+                require_recovered(divisor != 0,
+                                  "Original A6 zero-divisor behavior is unreconstructed");
+                const auto delta = signed_word(static_cast<std::uint32_t>(scaled) << 16) / divisor;
+                put(sprite.bytes, 0x10,
+                    get(sprite.bytes, 0x10) + static_cast<std::uint32_t>(delta));
+            }
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xce) {
+            // 8001fbe4 CE: add to (or with bit 12 set) the renderer's +2 angle
+            // or an auxiliary record's +4 (group in bits 9-11).
+            const auto value = resource(sources, pointer + 1, 2);
+            const auto renderer = get(sprite.bytes, 0x20);
+            if (renderer != 0) {
+                auto amount = (value & 0x1ffU) * 8;
+                if ((get(sprite.bytes, 0xac) >> 2) & 1)
+                    amount = 0U - amount;
+                const auto group = (value >> 9) & 7U;
+                const auto set = ((value >> 12) & 1U) != 0;
+                const auto at = inside(sprite, renderer, 0x38);
+                if (group != 0) {
+                    if (const auto records = get(sprite.bytes, at + 0x34); records != 0) {
+                        const auto record = inside(sprite, records + group * 8, 8);
+                        put(sprite.bytes, record + 4,
+                            set ? amount : get(sprite.bytes, record + 4, 2) + amount, 2);
+                    }
+                } else {
+                    put(sprite.bytes, at + 2, set ? amount : get(sprite.bytes, at + 2, 2) + amount,
+                        2);
+                    put(sprite.bytes, 0x3c, get(sprite.bytes, 0x3c) | 0x10000000U);
+                }
+            }
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0x83 || opcode == 0x84 || opcode == 0x88 || opcode == 0x89) {
+            // Dispatched to 8001fbe4, whose table starts at 8a: no effect.
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xb4) {
+            // 8001fbe4 B4: push a loop count.
+            push_sprite_count(sprite, resource(sources, pointer + 1, 1));
+            static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                      sources.replay_widths));
+        } else if (opcode == 0xe4) {
+            // Loop end: a nonzero count is pushed back less one and jumps as E1.
+            const auto count = pop_sprite_count(sprite) & 0xffU;
+            if (count == 0) {
+                static_cast<void>(store_sprite_command_pc(sprite, static_cast<std::uint8_t>(opcode),
+                                                          sources.replay_widths));
+            } else {
+                push_sprite_count(sprite, count - 1);
+                const auto delta = signed_half(resource(sources, pointer + 1, 2));
+                put(sprite.bytes, 0x64,
+                    get(sprite.bytes, 0x64) + static_cast<std::uint32_t>(delta));
+            }
         } else {
             throw UnrecoveredSpriteCommand(pointer, static_cast<std::uint8_t>(opcode));
         }

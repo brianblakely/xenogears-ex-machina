@@ -118,7 +118,7 @@ bool Program::start_map_change() {
         state.gate_adbc4 != 0xff || resident.battle_request.gate_90 != 0)
         return false;
     if (preload_field((resident.field_map & 0xfffU) << 1U, 0) != 0 || disc_busy() != 0 ||
-        static_cast<std::int16_t>(state.fade.halves[2]) != 0)
+        static_cast<std::int16_t>(state.fade.channels[0].halves[2]) != 0)
         return false;
     state.control_inputs.encounter.enabled_byte = 0;
     save_field_departure();

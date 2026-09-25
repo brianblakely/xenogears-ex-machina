@@ -171,8 +171,6 @@ GteLong outer_product12(const GteLong &a, const GteLong &b) {
     return result;
 }
 
-namespace {
-// GTE unsigned division H / SZ3 by table-seeded Newton-Raphson.
 std::uint32_t gte_divide(std::uint32_t h, std::uint32_t sz3) {
     if (h >= sz3 * 2)
         return 0x1ffff;
@@ -188,7 +186,6 @@ std::uint32_t gte_divide(std::uint32_t h, std::uint32_t sz3) {
     d = ((0x0000080 + d * u) & 0xffffffffffffULL) >> 8;
     return static_cast<std::uint32_t>(std::min<std::uint64_t>(0x1ffff, (n * d + 0x8000) >> 16));
 }
-} // namespace
 
 std::array<std::int16_t, 2> rot_trans_pers(const GteMatrix &loaded, const GteScreen &screen,
                                            const GteVector &vector) {
