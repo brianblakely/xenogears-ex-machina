@@ -34,173 +34,68 @@ struct Store {
     std::uint32_t value;
 };
 constexpr std::array<Store, 92> resets_a{{
-        {0x800adb00, 2, 0xffff},
-        {0x800afe9c, 2, 0x0},
-        {0x800afea0, 2, 0x0},
-        {0x800c2694, 2, 0x0},
-        {0x800c38f8, 2, 0x0},
-        {0x800c3900, 2, 0x0},
-        {0x800c3908, 2, 0x0},
-        {0x800b2356, 1, 0x5},
-        {0x800b2346, 2, 0x3},
-        {0x800b234a, 2, 0x40},
-        {0x800b234c, 2, 0xff},
-        {0x800c3a38, 2, 0xff},
-        {0x800c3a60, 4, 0x0},
-        {0x800c3a5c, 4, 0x0},
-        {0x800b21bc, 4, 0x0},
-        {0x800b21c0, 4, 0x0},
-        {0x800b21c4, 4, 0x0},
-        {0x800b2264, 4, 0x0},
-        {0x800b21b8, 4, 0x0},
-        {0x800b21d1, 1, 0x0},
-        {0x800b21d0, 1, 0x0},
-        {0x800b2094, 4, 0x0},
-        {0x800b2090, 4, 0x0},
-        {0x800b208c, 4, 0x0},
-        {0x800b2088, 4, 0x0},
-        {0x800b2084, 4, 0x0},
-        {0x800b2080, 4, 0x0},
-        {0x800b20b2, 2, 0x0},
-        {0x800b20b0, 2, 0x0},
-        {0x800b2268, 4, 0x0},
-        {0x800b21ce, 1, 0x0},
-        {0x800b21b0, 2, 0x0},
-        {0x800b21b2, 2, 0x0},
-        {0x800b21ae, 2, 0x0},
-        {0x800b2078, 2, 0x0},
-        {0x800b21cd, 1, 0x0},
-        {0x800b219f, 1, 0x0},
-        {0x800b219e, 1, 0x0},
-        {0x800b219d, 1, 0x0},
-        {0x800b219c, 1, 0x0},
-        {0x800b21cc, 1, 0x0},
-        {0x800b21cf, 1, 0x0},
-        {0x800b21d2, 1, 0x0},
-        {0x800adb74, 4, 0x0},
-        {0x800adb4c, 4, 0x0},
-        {0x800adb90, 4, 0x0},
-        {0x800adb24, 4, 0x0},
-        {0x800adb98, 4, 0x0},
-        {0x800adb94, 4, 0x0},
-        {0x800adb70, 4, 0x0},
-        {0x800adb2c, 4, 0x0},
-        {0x800adb68, 4, 0x0},
-        {0x800adb88, 4, 0x0},
-        {0x800adba8, 4, 0x0},
-        {0x800b0064, 4, 0x0},
-        {0x800adb18, 4, 0x0},
-        {0x800adb50, 4, 0x0},
-        {0x800afe84, 4, 0x0},
-        {0x800afd04, 4, 0x0},
-        {0x800b02c8, 1, 0x0},
-        {0x800adbd4, 4, 0x0},
-        {0x800adbd0, 4, 0x0},
-        {0x800b22e0, 2, 0x0},
-        {0x800b233c, 2, 0x0},
-        {0x800b14a4, 4, 0x0},
-        {0x800b236c, 2, 0x0},
-        {0x800adb38, 4, 0x0},
-        {0x800adb3c, 4, 0x0},
-        {0x800afd14, 4, 0x20},
-        {0x800b0048, 4, 0x2},
-        {0x800b21ac, 2, 0x3ff},
-        {0x800adc18, 4, 0x4},
-        {0x800adb44, 4, 0x0},
-        {0x800adb02, 2, 0x0},
-        {0x800b233e, 2, 0x0},
-        {0x800b2344, 2, 0x0},
-        {0x800b2342, 2, 0x0},
-        {0x800b2348, 2, 0x0},
-        {0x800b234e, 2, 0x0},
-        {0x800b2355, 1, 0x0},
-        {0x800adb04, 1, 0x0},
-        {0x800adb05, 1, 0x0},
-        {0x800b2357, 1, 0x0},
-        {0x800b2354, 1, 0x0},
-        {0x800adbb4, 4, 0x0},
-        {0x800b2350, 4, 0x0},
-        {0x800adb54, 2, 0x0},
-        {0x800b2358, 1, 0x0},
-        {0x800adb84, 4, 0x0},
-        {0x800adb7c, 4, 0x0},
-        {0x800adb8c, 4, 0x0},
-        {0x800adb64, 4, 0xff},
+    {0x800adb00, 2, 0xffff}, {0x800afe9c, 2, 0x0},  {0x800afea0, 2, 0x0},   {0x800c2694, 2, 0x0},
+    {0x800c38f8, 2, 0x0},    {0x800c3900, 2, 0x0},  {0x800c3908, 2, 0x0},   {0x800b2356, 1, 0x5},
+    {0x800b2346, 2, 0x3},    {0x800b234a, 2, 0x40}, {0x800b234c, 2, 0xff},  {0x800c3a38, 2, 0xff},
+    {0x800c3a60, 4, 0x0},    {0x800c3a5c, 4, 0x0},  {0x800b21bc, 4, 0x0},   {0x800b21c0, 4, 0x0},
+    {0x800b21c4, 4, 0x0},    {0x800b2264, 4, 0x0},  {0x800b21b8, 4, 0x0},   {0x800b21d1, 1, 0x0},
+    {0x800b21d0, 1, 0x0},    {0x800b2094, 4, 0x0},  {0x800b2090, 4, 0x0},   {0x800b208c, 4, 0x0},
+    {0x800b2088, 4, 0x0},    {0x800b2084, 4, 0x0},  {0x800b2080, 4, 0x0},   {0x800b20b2, 2, 0x0},
+    {0x800b20b0, 2, 0x0},    {0x800b2268, 4, 0x0},  {0x800b21ce, 1, 0x0},   {0x800b21b0, 2, 0x0},
+    {0x800b21b2, 2, 0x0},    {0x800b21ae, 2, 0x0},  {0x800b2078, 2, 0x0},   {0x800b21cd, 1, 0x0},
+    {0x800b219f, 1, 0x0},    {0x800b219e, 1, 0x0},  {0x800b219d, 1, 0x0},   {0x800b219c, 1, 0x0},
+    {0x800b21cc, 1, 0x0},    {0x800b21cf, 1, 0x0},  {0x800b21d2, 1, 0x0},   {0x800adb74, 4, 0x0},
+    {0x800adb4c, 4, 0x0},    {0x800adb90, 4, 0x0},  {0x800adb24, 4, 0x0},   {0x800adb98, 4, 0x0},
+    {0x800adb94, 4, 0x0},    {0x800adb70, 4, 0x0},  {0x800adb2c, 4, 0x0},   {0x800adb68, 4, 0x0},
+    {0x800adb88, 4, 0x0},    {0x800adba8, 4, 0x0},  {0x800b0064, 4, 0x0},   {0x800adb18, 4, 0x0},
+    {0x800adb50, 4, 0x0},    {0x800afe84, 4, 0x0},  {0x800afd04, 4, 0x0},   {0x800b02c8, 1, 0x0},
+    {0x800adbd4, 4, 0x0},    {0x800adbd0, 4, 0x0},  {0x800b22e0, 2, 0x0},   {0x800b233c, 2, 0x0},
+    {0x800b14a4, 4, 0x0},    {0x800b236c, 2, 0x0},  {0x800adb38, 4, 0x0},   {0x800adb3c, 4, 0x0},
+    {0x800afd14, 4, 0x20},   {0x800b0048, 4, 0x2},  {0x800b21ac, 2, 0x3ff}, {0x800adc18, 4, 0x4},
+    {0x800adb44, 4, 0x0},    {0x800adb02, 2, 0x0},  {0x800b233e, 2, 0x0},   {0x800b2344, 2, 0x0},
+    {0x800b2342, 2, 0x0},    {0x800b2348, 2, 0x0},  {0x800b234e, 2, 0x0},   {0x800b2355, 1, 0x0},
+    {0x800adb04, 1, 0x0},    {0x800adb05, 1, 0x0},  {0x800b2357, 1, 0x0},   {0x800b2354, 1, 0x0},
+    {0x800adbb4, 4, 0x0},    {0x800b2350, 4, 0x0},  {0x800adb54, 2, 0x0},   {0x800b2358, 1, 0x0},
+    {0x800adb84, 4, 0x0},    {0x800adb7c, 4, 0x0},  {0x800adb8c, 4, 0x0},   {0x800adb64, 4, 0xff},
 }};
 constexpr std::array<Store, 16> resets_b{{
-        {0x800adc08, 2, 0x1},
-        {0x800af93a, 2, 0x1000},
-        {0x800b21d4, 2, 0x720},
-        {0x800b21a4, 2, 0x100},
-        {0x800b21a2, 2, 0x100},
-        {0x800b21a0, 2, 0x100},
-        {0x800b21aa, 2, 0x200},
-        {0x800b21a8, 2, 0x200},
-        {0x800b21a6, 2, 0x200},
-        {0x800b21b4, 2, 0x80},
-        {0x800adbc4, 4, 0xff},
-        {0x800b218c, 2, 0x1000},
-        {0x800b2184, 2, 0x0},
-        {0x800b2186, 2, 0x0},
-        {0x800b2188, 2, 0x0},
-        {0x800adb6c, 4, 0xffffffff},
+    {0x800adc08, 2, 0x1},
+    {0x800af93a, 2, 0x1000},
+    {0x800b21d4, 2, 0x720},
+    {0x800b21a4, 2, 0x100},
+    {0x800b21a2, 2, 0x100},
+    {0x800b21a0, 2, 0x100},
+    {0x800b21aa, 2, 0x200},
+    {0x800b21a8, 2, 0x200},
+    {0x800b21a6, 2, 0x200},
+    {0x800b21b4, 2, 0x80},
+    {0x800adbc4, 4, 0xff},
+    {0x800b218c, 2, 0x1000},
+    {0x800b2184, 2, 0x0},
+    {0x800b2186, 2, 0x0},
+    {0x800b2188, 2, 0x0},
+    {0x800adb6c, 4, 0xffffffff},
 }};
 constexpr std::array<Store, 23> resets_c{{
-        {0x800b2290, 2, 0x1d},
-        {0x800adbec, 4, 0xffffffff},
-        {0x800b21d8, 4, 0x2},
-        {0x800b217a, 2, 0xffff},
-        {0x800b2192, 1, 0x80},
-        {0x800b2191, 1, 0x80},
-        {0x800b2190, 1, 0x80},
-        {0x800b2196, 1, 0xff},
-        {0x800b2195, 1, 0xff},
-        {0x800b2194, 1, 0xff},
-        {0x800b2198, 2, 0x15e0},
-        {0x800b219a, 2, 0x300c},
-        {0x800adb08, 4, 0x0},
-        {0x800adc0c, 4, 0x0},
-        {0x800afea8, 2, 0x0},
-        {0x800b226c, 4, 0x0},
-        {0x800b2178, 2, 0x0},
-        {0x800b2174, 2, 0x0},
-        {0x800b2176, 2, 0x0},
-        {0x800b2180, 4, 0x0},
-        {0x800b217c, 4, 0x0},
-        {0x800b218e, 2, 0x0},
-        {0x800b21d6, 2, 0x8},
+    {0x800b2290, 2, 0x1d},   {0x800adbec, 4, 0xffffffff}, {0x800b21d8, 4, 0x2},
+    {0x800b217a, 2, 0xffff}, {0x800b2192, 1, 0x80},       {0x800b2191, 1, 0x80},
+    {0x800b2190, 1, 0x80},   {0x800b2196, 1, 0xff},       {0x800b2195, 1, 0xff},
+    {0x800b2194, 1, 0xff},   {0x800b2198, 2, 0x15e0},     {0x800b219a, 2, 0x300c},
+    {0x800adb08, 4, 0x0},    {0x800adc0c, 4, 0x0},        {0x800afea8, 2, 0x0},
+    {0x800b226c, 4, 0x0},    {0x800b2178, 2, 0x0},        {0x800b2174, 2, 0x0},
+    {0x800b2176, 2, 0x0},    {0x800b2180, 4, 0x0},        {0x800b217c, 4, 0x0},
+    {0x800b218e, 2, 0x0},    {0x800b21d6, 2, 0x8},
 }};
 // The loader's object and view state reset before event initialization
 // (80071680..80071764), in program order.
 constexpr std::array<Store, 28> resets_d{{
-        {0x800b225e, 1, 0x1e},
-        {0x800b225d, 1, 0x1e},
-        {0x800b225c, 1, 0x1e},
-        {0x800b0084, 2, 0x140},
-        {0x800b008e, 2, 0x0},
-        {0x800b00a9, 1, 0x0},
-        {0x800b00a8, 1, 0x0},
-        {0x800b00a6, 1, 0x0},
-        {0x800b00a5, 1, 0x0},
-        {0x800b00a4, 1, 0x0},
-        {0x800b00a2, 1, 0x0},
-        {0x800b00a1, 1, 0x0},
-        {0x800b00a0, 1, 0x0},
-        {0x800b0090, 4, 0x0},
-        {0x800b0098, 4, 0x1000},
-        {0x800b00b0, 2, 0x0},
-        {0x800b00ae, 2, 0x0},
-        {0x800b00ac, 2, 0x0},
-        {0x800b008c, 2, 0x0},
-        {0x800b008a, 2, 0x0},
-        {0x800b0088, 2, 0x0},
-        {0x800b0086, 2, 0x0},
-        {0x800b0082, 2, 0x0},
-        {0x800b0080, 2, 0x0},
-        {0x800b00b2, 2, 0x0},
-        {0x800b0094, 4, 0x0},
-        {0x800b00aa, 1, 0x20},
-        {0x800adb1c, 4, 0x0},
+    {0x800b225e, 1, 0x1e}, {0x800b225d, 1, 0x1e}, {0x800b225c, 1, 0x1e},   {0x800b0084, 2, 0x140},
+    {0x800b008e, 2, 0x0},  {0x800b00a9, 1, 0x0},  {0x800b00a8, 1, 0x0},    {0x800b00a6, 1, 0x0},
+    {0x800b00a5, 1, 0x0},  {0x800b00a4, 1, 0x0},  {0x800b00a2, 1, 0x0},    {0x800b00a1, 1, 0x0},
+    {0x800b00a0, 1, 0x0},  {0x800b0090, 4, 0x0},  {0x800b0098, 4, 0x1000}, {0x800b00b0, 2, 0x0},
+    {0x800b00ae, 2, 0x0},  {0x800b00ac, 2, 0x0},  {0x800b008c, 2, 0x0},    {0x800b008a, 2, 0x0},
+    {0x800b0088, 2, 0x0},  {0x800b0086, 2, 0x0},  {0x800b0082, 2, 0x0},    {0x800b0080, 2, 0x0},
+    {0x800b00b2, 2, 0x0},  {0x800b0094, 4, 0x0},  {0x800b00aa, 1, 0x20},   {0x800adb1c, 4, 0x0},
 }};
 } // namespace
 
@@ -282,8 +177,8 @@ void Program::reset_field_state() {
     resident.gte.screen.h = 0x200; // SetGeomScreen (8004a14c)
     for (const auto address : {0x800af990U, 0x800af85cU, 0x800afa64U, 0x800afaa4U})
         identity_matrix(address);
-    for (const auto address : {0x800afa54U, 0x800afa56U, 0x800afa58U, 0x800afa5cU, 0x800afa5eU,
-                               0x800afa60U})
+    for (const auto address :
+         {0x800afa54U, 0x800afa56U, 0x800afa58U, 0x800afa5cU, 0x800afa5eU, 0x800afa60U})
         set_memory(address, 0, 2);
     set_memory(0x800afac4, 0x3000);
     // 8003f738 of the angles at 800afa54 into 800afa64 (rotation only).
@@ -314,7 +209,8 @@ void Program::reset_field_state() {
     // 800abd18: five 80h x e0h sprites (SPRT), opaque, with a draw
     // mode per buffer.
     for (std::uint32_t i = 0; i < 5; ++i) {
-        const auto tpage = gpu::texture_page(1, 0, static_cast<std::int32_t>(0x280U + 0x40U * i), 0);
+        const auto tpage =
+            gpu::texture_page(1, 0, static_cast<std::int32_t>(0x280U + 0x40U * i), 0);
         set_draw_mode(0x800b0188 + 0x18U * i, tpage, {0, 0, 0xff, 0xff});
         set_draw_mode(0x800b0194 + 0x18U * i, tpage, {0, 0, 0xff, 0xff});
         const auto poly = 0x800b0200 + 0x28U * i;
@@ -342,8 +238,8 @@ void Program::reset_camera() {
     set_memory(0x800af9ec, 0x00400000);
     set_memory(0x800af9f0, 0x08000000);
     set_memory(0x800af9e6, 0x800, 2);
-    for (const auto address : {0x800afa38U, 0x800afa34U, 0x800afa30U, 0x800afa44U, 0x800afa40U,
-                               0x800afa3cU})
+    for (const auto address :
+         {0x800afa38U, 0x800afa34U, 0x800afa30U, 0x800afa44U, 0x800afa40U, 0x800afa3cU})
         set_memory(address, 0);
     set_memory(0x800afa28, 0, 2);
     set_memory(0x800afa2c, 0, 2);
@@ -366,10 +262,10 @@ void Program::reset_camera() {
     set_memory(0x800af8d4, 0x10000000);
     set_memory(0x800af9fc, 0x1e, 2);
     set_memory(0x800af9f8, 0x200);
-    for (const auto address : {0x800af890U, 0x800af894U, 0x800af898U, 0x800af8a0U, 0x800af8a8U,
-                               0x800af8e0U, 0x800af8e4U, 0x800af8e8U, 0x800af8b0U, 0x800af8b4U,
-                               0x800af8b8U, 0x800af8c0U, 0x800af8c4U, 0x800af8c8U, 0x800af8d0U,
-                               0x800af8d8U})
+    for (const auto address :
+         {0x800af890U, 0x800af894U, 0x800af898U, 0x800af8a0U, 0x800af8a8U, 0x800af8e0U, 0x800af8e4U,
+          0x800af8e8U, 0x800af8b0U, 0x800af8b4U, 0x800af8b8U, 0x800af8c0U, 0x800af8c4U, 0x800af8c8U,
+          0x800af8d0U, 0x800af8d8U})
         set_memory(address, 0);
     set_memory(0x800afa00, 0, 2);
     set_memory(0x800afa10, 0, 2);
@@ -651,10 +547,10 @@ void Program::setup_field_view(std::uint32_t view) {
         set_memory(0x800afb04 + 2 * c, (memory(source + 2 * c, 2) << 4U) & 0xffffU, 2);
     gte.transform = matrix(0x800af990); // SetRotMatrix, SetTransMatrix
     // RotTrans (8004a6dc) of the vector at 800afa5c into 800afa78.
-    const auto moved = field::rot_trans(
-        gte.transform, {static_cast<std::int16_t>(memory(0x800afa5c, 2)),
-                        static_cast<std::int16_t>(memory(0x800afa5e, 2)),
-                        static_cast<std::int16_t>(memory(0x800afa60, 2))});
+    const auto moved =
+        field::rot_trans(gte.transform, {static_cast<std::int16_t>(memory(0x800afa5c, 2)),
+                                         static_cast<std::int16_t>(memory(0x800afa5e, 2)),
+                                         static_cast<std::int16_t>(memory(0x800afa60, 2))});
     for (std::uint32_t i = 0; i < 3; ++i)
         set_memory(0x800afa78 + 4 * i, u32_of(moved[i]));
     // 80030b14: the light matrix under the field rotation.
@@ -720,7 +616,7 @@ void Program::build_shadow(std::uint32_t shadow) {
     const auto packet = shadow + 0x20;
     set_memory(packet + 3, 9, 1); // SetPolyFT4 (80043cb0)
     set_memory(packet + 7, 0x2c, 1);
-    constexpr std::array<std::int16_t, 12> corners{0x18, 0, 0x18, -0x18, 0, 0x18,
+    constexpr std::array<std::int16_t, 12> corners{0x18, 0, 0x18,  -0x18, 0, 0x18,
                                                    0x18, 0, -0x18, -0x18, 0, -0x18};
     for (std::uint32_t i = 0; i < 4; ++i)
         for (std::uint32_t axis = 0; axis < 3; ++axis)
@@ -730,7 +626,7 @@ void Program::build_shadow(std::uint32_t shadow) {
         set_memory(packet + c, 0x80, 1);
     set_memory(packet + 0x16, gpu::texture_page(0, 2, 0x280, 0x1e0), 2);
     set_memory(packet + 0xe, (0xf3U << 6U) | (0x100U >> 4U & 0x3fU), 2); // GetClut(100, f3)
-    set_memory(packet + 7, memory(packet + 7, 1) | 2U, 1);              // SetSemiTrans(1)
+    set_memory(packet + 7, memory(packet + 7, 1) | 2U, 1);               // SetSemiTrans(1)
     set_quad_uv(packet, {0, 0xe0, 0xf, 0xe0, 0, 0xef, 0xf, 0xef});
     for (std::uint32_t at = 0; at < 0x28; at += 4)
         set_memory(shadow + 0x48 + at, memory(packet + at));
@@ -761,8 +657,8 @@ void Program::create_field_actor(std::uint32_t index) {
     defaults.seed = resident.random_seed;
     for (std::size_t i = 0; i < 4; ++i)
         defaults.triangle_counts[i] = u32_of(state.triangle_counts[i]);
-    defaults = field::original::initialize_actor_defaults(defaults, state.layer_count, state.collision,
-                                                          resident.math.reciprocal);
+    defaults = field::original::initialize_actor_defaults(
+        defaults, state.layer_count, state.collision, resident.math.reciprocal);
     if (defaults.queried_layers == 0)
         throw MissingDependency({"create_field_actor", 0x80080a74, {}, {}},
                                 "state:actor-defaults-stack", false,
@@ -1257,8 +1153,8 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     init_field_events(observe); // 800a28d4
     state.event_control.post_initialization = 1;
     observed(observe, *this, {"load_events", 0x80071770, {}, {}});
-    throw MissingDependency({"load_field", 0x80071770, {}, {}}, "symbol:field-load-80070cc8",
-                            false, "The field load after its events is not reconstructed");
+    throw MissingDependency({"load_field", 0x80071770, {}, {}}, "symbol:field-load-80070cc8", false,
+                            "The field load after its events is not reconstructed");
 }
 
 } // namespace xem::reconstruction

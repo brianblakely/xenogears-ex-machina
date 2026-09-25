@@ -38,8 +38,8 @@ void observed(const ProgramObserver &observe, const Program &program, SourcePoin
 // MIPS DIV quotient; division by zero has no defined result.
 std::int32_t divide(std::int32_t dividend, std::int32_t divisor, std::uint32_t site) {
     if (divisor == 0)
-        throw MissingDependency({"division_by_zero", site, {}, {}}, "state:division-by-zero",
-                                false, "An original division by zero has no recovered result");
+        throw MissingDependency({"division_by_zero", site, {}, {}}, "state:division-by-zero", false,
+                                "An original division by zero has no recovered result");
     if (dividend == std::numeric_limits<std::int32_t>::min() && divisor == -1)
         return dividend;
     return dividend / divisor;
@@ -246,9 +246,8 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
     // 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and VSync.
     for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
         if (state.particle_slots[slot] == 1)
-            throw MissingDependency({"field_reload", 0x800a92dc, {}, {}},
-                                    "symbol:field-particles", false,
-                                    "Releasing an active particle emitter is not recovered");
+            throw MissingDependency({"field_reload", 0x800a92dc, {}, {}}, "symbol:field-particles",
+                                    false, "Releasing an active particle emitter is not recovered");
         state.particle_slots[slot] = 0;
         reload.particle_ids[slot] = -1;
     }
@@ -361,9 +360,8 @@ std::span<std::uint8_t> Program::owned_span(std::uint32_t address) {
     if (field) {
         auto &state = *field;
         const auto window = [&](std::uint32_t base, std::span<std::uint8_t> bytes) {
-            return address >= base && address - base < bytes.size()
-                       ? bytes.subspan(address - base)
-                       : std::span<std::uint8_t>{};
+            return address >= base && address - base < bytes.size() ? bytes.subspan(address - base)
+                                                                    : std::span<std::uint8_t>{};
         };
         for (auto &actor : state.actors) {
             if (actor.extension_110)
@@ -405,7 +403,7 @@ std::span<std::uint8_t> Program::owned_span(std::uint32_t address) {
 namespace {
 // The allocated heap block holding `address`: its data address and size.
 std::optional<std::pair<std::uint32_t, std::uint32_t>> allocated_block(const resident::Heap &heap,
-                                                                        std::uint32_t address) {
+                                                                       std::uint32_t address) {
     const auto after = heap.headers.upper_bound(address - 8);
     if (after == heap.headers.begin())
         return {};
@@ -481,7 +479,9 @@ void Program::reset_graph(std::uint32_t mode) {
 void Program::destroy_sprite_tasks() {
     auto &tasks = resident.sprite_tasks;
     const auto get = [&](std::uint32_t address) { return memory(address); };
-    const auto set = [&](std::uint32_t address, std::uint32_t value) { set_memory(address, value); };
+    const auto set = [&](std::uint32_t address, std::uint32_t value) {
+        set_memory(address, value);
+    };
     // 8001cb48: unlink an auxiliary header from the pending list.
     const auto unlink_pending = [&](std::uint32_t node) {
         std::uint32_t previous = 0;
@@ -903,10 +903,9 @@ void Program::prepare_party_sprites() {
     load.needed = (resident.field_map & 0xc000U) != 0 ? 1 : 0;
     load.pending = 0;
     if (load.loaded != (load.needed == 0 ? 1U : 2U))
-        throw MissingDependency({"prepare_party_sprites", load.needed == 0 ? 0x8001ad4cU : 0x8001aeb8U,
-                                 {}, {}},
-                                "symbol:party-sprite-read", false,
-                                "Reading another party sprite set is not recovered");
+        throw MissingDependency(
+            {"prepare_party_sprites", load.needed == 0 ? 0x8001ad4cU : 0x8001aeb8U, {}, {}},
+            "symbol:party-sprite-read", false, "Reading another party sprite set is not recovered");
 }
 
 // 8001b3a8: decode the party sprite files read ahead (8004f374).
@@ -935,25 +934,27 @@ void Program::field_reload(FrameServices &services, std::uint32_t frame,
 void add_reload_globals(std::vector<OriginalGlobal> &table) {
     const auto entry = [&](std::string name, std::uint32_t address, std::size_t width,
                            bool resident, auto access) {
-        table.push_back(
-            {std::move(name), address, width, resident,
-             [access](const Program &program) {
-                 const auto value = access(const_cast<Program &>(program));
-                 using T = std::remove_cvref_t<decltype(value)>;
-                 return static_cast<std::uint32_t>(static_cast<std::make_unsigned_t<T>>(value));
-             },
-             [access](Program &program, std::uint32_t raw) {
-                 auto &value = access(program);
-                 using T = std::remove_reference_t<decltype(value)>;
-                 value = static_cast<T>(static_cast<std::make_unsigned_t<T>>(raw));
-             }});
+        table.push_back({std::move(name), address, width, resident,
+                         [access](const Program &program) {
+                             const auto value = access(const_cast<Program &>(program));
+                             using T = std::remove_cvref_t<decltype(value)>;
+                             return static_cast<std::uint32_t>(
+                                 static_cast<std::make_unsigned_t<T>>(value));
+                         },
+                         [access](Program &program, std::uint32_t raw) {
+                             auto &value = access(program);
+                             using T = std::remove_reference_t<decltype(value)>;
+                             value = static_cast<T>(static_cast<std::make_unsigned_t<T>>(raw));
+                         }});
     };
     const auto add = [&](std::string name, std::uint32_t address, std::size_t width, auto access) {
         entry(std::move(name), address, width, false,
               [access](Program &p) -> auto & { return access(loaded(p).reload); });
     };
     const auto resident = [&](std::string name, std::uint32_t address, std::size_t width,
-                              auto access) { entry(std::move(name), address, width, true, access); };
+                              auto access) {
+        entry(std::move(name), address, width, true, access);
+    };
     resident("w_59394", 0x80059394, 4, [](Program &p) -> auto & { return p.resident.w_59394; });
     resident("w_593a0", 0x800593a0, 4, [](Program &p) -> auto & { return p.resident.w_593a0; });
     add("transition_zoom", 0x800c2684, 4, [](ReloadState &r) -> auto & { return r.zoom; });
@@ -961,8 +962,7 @@ void add_reload_globals(std::vector<OriginalGlobal> &table) {
         add("transition_angles", 0x800b00b8 + 2 * i, 2,
             [i](ReloadState &r) -> auto & { return r.angles[i]; });
     add("fade_frames", 0x800afd14, 4, [](ReloadState &r) -> auto & { return r.fade_frames; });
-    add("stream_pending", 0x800adb60, 4,
-        [](ReloadState &r) -> auto & { return r.stream_pending; });
+    add("stream_pending", 0x800adb60, 4, [](ReloadState &r) -> auto & { return r.stream_pending; });
     add("stream_ring", 0x800adc14, 4, [](ReloadState &r) -> auto & { return r.stream_ring; });
     for (std::uint32_t i = 0; i < 4; ++i)
         add("vram_rect", 0x800afc28 + 2 * i, 2,
@@ -976,13 +976,11 @@ void add_reload_globals(std::vector<OriginalGlobal> &table) {
         [](ReloadState &r) -> auto & { return r.descriptor_table; });
     add("event_actors", 0x800adbfc, 4, [](ReloadState &r) -> auto & { return r.event_actors; });
     add("zones_address", 0x800adbf4, 4, [](ReloadState &r) -> auto & { return r.zones_address; });
-    add("events_address", 0x800adbf8, 4,
-        [](ReloadState &r) -> auto & { return r.events_address; });
+    add("events_address", 0x800adbf8, 4, [](ReloadState &r) -> auto & { return r.events_address; });
     add("geometry_address", 0x800afb14, 4,
         [](ReloadState &r) -> auto & { return r.geometry_address; });
     add("w_adb24", 0x800adb24, 4, [](ReloadState &r) -> auto & { return r.w_adb24; });
-    add("event_bytecode", 0x800adc00, 4,
-        [](ReloadState &r) -> auto & { return r.event_bytecode; });
+    add("event_bytecode", 0x800adc00, 4, [](ReloadState &r) -> auto & { return r.event_bytecode; });
     add("collision_attributes", 0x800afb20, 4,
         [](ReloadState &r) -> auto & { return r.collision_attributes; });
     for (std::uint32_t i = 0; i < 4; ++i) {

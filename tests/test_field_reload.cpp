@@ -77,8 +77,7 @@ void idle_map_change() {
     state.event_control.gate_values[2] = 1;
     game::FrameServices services;
     program.field_map_change_step(services);
-    check(program.resident.preload_slot == 0xffffffffU &&
-              program.resident.heap.headers.empty(),
+    check(program.resident.preload_slot == 0xffffffffU && program.resident.heap.headers.empty(),
           "No map change is due: the step neither reads ahead nor reloads");
 }
 

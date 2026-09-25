@@ -181,13 +181,12 @@ int run_case(int argc, char **argv) {
                                       entry == "field_map_change_step" ||
                                       entry == "field_map_change_start";
         // The field reload 800a5c40 and the steps around each field frame.
-        const bool reload_entry = entry == "field_pre_frame" || entry == "field_post_frame" ||
-                                  entry == "field_reload_draw" || entry == "field_reload_shade" ||
-                                  entry == "field_reload_fade_in" ||
-                                  entry == "field_reload_fade_frame" ||
-                                  entry == "field_reload_finish" ||
-                                  entry == "field_reload_teardown" || entry == "field_reload" ||
-                                  entry == "field_load";
+        const bool reload_entry =
+            entry == "field_pre_frame" || entry == "field_post_frame" ||
+            entry == "field_reload_draw" || entry == "field_reload_shade" ||
+            entry == "field_reload_fade_in" || entry == "field_reload_fade_frame" ||
+            entry == "field_reload_finish" || entry == "field_reload_teardown" ||
+            entry == "field_reload" || entry == "field_load";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
             !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
@@ -240,8 +239,8 @@ int run_case(int argc, char **argv) {
                 analysis::import_menu_block(*program, memory, registers[20]);
         } else if (entry == "field_load") {
             // Between the reload's teardown and the load: no field is loaded.
-            program = analysis::import_unloaded_field(memory,
-                                                      read_file(argv[7], analysis::ram_bytes));
+            program =
+                analysis::import_unloaded_field(memory, read_file(argv[7], analysis::ram_bytes));
         } else {
             // Qualified resource extents: one "address size" decimal pair per line.
             std::vector<analysis::ResourceExtent> resources;
@@ -324,8 +323,7 @@ int run_case(int argc, char **argv) {
                     if (!(fields >> text) || text.size() != std::size_t{first} * 8U)
                         throw InputError("Malformed VRAM read-back");
                     services.vram_reads.push_back(unhex(text));
-                }
-                else
+                } else
                     throw InputError("Unknown service result " + name);
             }
         }

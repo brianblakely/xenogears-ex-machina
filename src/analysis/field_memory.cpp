@@ -302,10 +302,17 @@ namespace {
 // Field words and records the field load (80070cc8) and the reload write
 // whose meaning is not recovered, owned as raw regions: address and size.
 constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 16> field_raw{{
-    {0x8006f990, 12},  // party slots of a field return (800a28d4)
-    {0x800adb0c, 4},   {0x800adb18, 4}, {0x800adb3c, 4}, {0x800adb44, 4},
-    {0x800adb6c, 4},   {0x800adb7c, 4}, {0x800adb8c, 4}, {0x800adbd4, 4},
-    {0x800afe84, 4},   {0x800b14a4, 4},
+    {0x8006f990, 12}, // party slots of a field return (800a28d4)
+    {0x800adb0c, 4},
+    {0x800adb18, 4},
+    {0x800adb3c, 4},
+    {0x800adb44, 4},
+    {0x800adb6c, 4},
+    {0x800adb7c, 4},
+    {0x800adb8c, 4},
+    {0x800adbd4, 4},
+    {0x800afe84, 4},
+    {0x800b14a4, 4},
     {0x800b0188, 0x140}, // 800abd18: five sprites and their draw modes per buffer
     {0x800b06a4, 18},    // 80070c84: three records of six bytes
     {0x800658dc, 0x220}, // component 6 of the loaded field (80070cc8)
@@ -376,9 +383,10 @@ Program import_unloaded_field(const OriginalMemory &memory, std::span<const std:
         const auto header = resident.heap.headers.find(reload.vram_save_address - 8);
         if (header == resident.heap.headers.end())
             throw field::FieldFormatError("The saved VRAM is not a heap block");
-        reload.vram_save = {reload.vram_save_address,
-                            copy_of(memory.range(reload.vram_save_address,
-                                                 header->second[0] - 8 - reload.vram_save_address))};
+        reload.vram_save = {
+            reload.vram_save_address,
+            copy_of(memory.range(reload.vram_save_address,
+                                 header->second[0] - 8 - reload.vram_save_address))};
     }
     return program;
 }
@@ -457,9 +465,10 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
         const auto header = resident.heap.headers.find(reload.vram_save_address - 8);
         if (header == resident.heap.headers.end())
             throw field::FieldFormatError("The saved VRAM is not a heap block");
-        reload.vram_save = {reload.vram_save_address,
-                            copy_of(memory.range(reload.vram_save_address,
-                                                 header->second[0] - 8 - reload.vram_save_address))};
+        reload.vram_save = {
+            reload.vram_save_address,
+            copy_of(memory.range(reload.vram_save_address,
+                                 header->second[0] - 8 - reload.vram_save_address))};
     }
     // The sprite system's per-buffer arenas (packets and upload nodes).
     for (const auto arena : resident.sprite_arenas)

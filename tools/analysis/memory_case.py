@@ -777,7 +777,9 @@ def compare(
     # Stacks the code switched to inside heap blocks (80022a0c): their frames
     # are transient like the entry stack, and the heap's copy of those bytes
     # holds whatever the frames left.
-    switched = [(address & 0x1FFFFF, (address & 0x1FFFFF) + size) for address, size in stack_windows]
+    switched = [
+        (address & 0x1FFFFF, (address & 0x1FFFFF) + size) for address, size in stack_windows
+    ]
     windows += switched
 
     def switched_stack(offset: int) -> bool:
@@ -1057,9 +1059,7 @@ def run(args: argparse.Namespace) -> int:
                         if (cycle - start) % (1 << 32) >= (row["cycle_u32"] - start) % (1 << 32)
                     ]
                 if args.entry in RELOAD_ENTRIES:
-                    lines += call_services(
-                        call_rows, snapshots, row, item["exit_row"], interrupts
-                    )
+                    lines += call_services(call_rows, snapshots, row, item["exit_row"], interrupts)
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             entry_row = first["entry_row"]
             report = runner.call(
