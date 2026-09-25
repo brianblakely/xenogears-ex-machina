@@ -458,6 +458,9 @@ struct ResidentState {
     std::uint32_t battle_marker{};  // 80059480
     std::uint32_t battle_spacer{};  // 800594ac
     std::uint8_t b_5959c{};         // 8005959c: 8001b6c4 sets it, 80070f40 clears it
+    std::uint32_t battle_wave{};    // 800595ac: the wave bank 800b853c loads
+    // 80000010, low RAM: 8001cc18 reads it as the generation of a null owner.
+    std::uint32_t null_owner_generation{};
     // The scene files 800379d8 reads (directory 15 files 2n+6 and 2n+7): the
     // stage file (80059470), a word it clears (80059520), and the scene data
     // after the second file's first word (800658c8 and 8005949c); the list
@@ -936,6 +939,7 @@ class Program {
     void set_geometry_screen(std::int32_t h);                 // SetGeomScreen 8004a14c
     // 8001b94c: a battle draw environment's dither, background and colour.
     void set_battle_draw_modes(std::uint32_t environment);
+    void set_display_mask(std::uint32_t mask); // SetDispMask 80044534
     // Field extended event handler that the FE handler's table reaches for
     // actor `index`, whose working PC is the extended byte.
     void event_extended(std::size_t index, const ProgramObserver &observe = {});
@@ -1055,6 +1059,9 @@ class Program {
     // 80071278 up to 8009892c: release the setup's effect bank, marker and
     // setup module blocks once the setup frames end.
     void battle_release_setup();
+    // 800b81bc: the battle renderer and task setup before the main loop;
+    // the setup module's task keeps `task_argument` (A0).
+    void battle_renderer_setup(std::uint32_t task_argument);
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
     // Post-battle 801e2794: victory rewards and write-back.
@@ -1152,7 +1159,7 @@ class Program {
     [[nodiscard]] std::span<std::uint8_t> resource_bytes(std::uint32_t address,
                                                          std::size_t width) const;
     void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
-    // A byte or halfword store to battle memory when it holds it, else set_memory.
+    // A store to battle memory when it holds it, else set_memory.
     void store_owned(std::uint32_t address, std::uint32_t value, std::uint32_t width);
     void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
     void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);

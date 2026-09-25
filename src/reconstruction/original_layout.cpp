@@ -835,6 +835,10 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.battle_spacer; });
     add_resident("battle_5959c", 0x8005959c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5959c; });
+    add_resident("battle_wave", 0x800595ac, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_wave; });
+    add_resident("null_owner_generation", 0x80000010, 4,
+                 [](Program &p) -> auto & { return p.resident.null_owner_generation; });
     add_resident("battle_stage", 0x80059470, 4,
                  [](Program &p) -> auto & { return p.resident.battle_stage; });
     add_resident("battle_stage_b", 0x80059520, 4,
@@ -886,6 +890,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sprite.rate_control; });
     add_resident("sprite_platform", 0x800591ad, 1,
                  [](Program &p) -> auto & { return p.resident.sprite.platform_mode; });
+    add_resident("sprite_platform_argument", 0x800591a8, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite.platform_argument; });
     add_resident("sprite_binding", 0x800591b0, 1,
                  [](Program &p) -> auto & { return p.resident.sprite.binding_control; });
     add_resident("sprite_variant", 0x800591b8, 4,

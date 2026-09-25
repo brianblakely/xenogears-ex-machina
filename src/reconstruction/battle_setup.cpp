@@ -4,6 +4,7 @@
 #include "xem/reconstruction/gpu.hpp"
 #include "xem/reconstruction/program.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -1102,6 +1103,122 @@ void Program::battle_release_setup() {
         if (memory.u8(0x800d2fc4) == 0)
             memory.put8(0x800c3e4c, 1);
     });
+}
+
+// 800b81bc, before the battle main loop:
+// - 800b88c4: the rate from the enemies present (800ccc5c; 80059198 ends
+//   clear) and the next draw buffer's ordering table.
+// - 800b8840: the sprite and task state, the battle's display globals and
+//   both 5000h sprite arenas (80024f64).
+// - 801e62e0: the setup module's task (801e7098) holding A0.
+// - The wave bank of 800595ac is released (80038310), the four light
+//   vectors come from the scene data and the display is enabled.
+void Program::battle_renderer_setup(std::uint32_t task_argument) {
+    auto &data = *battle;
+    auto &sprite = resident.sprite;
+    // 800b88c4: enemy slots 3..10 on the field (+2 below 11h) and present (+4).
+    std::int32_t enemies = 0;
+    for (std::uint32_t slot = 3; slot < 11; ++slot)
+        if (data.u8(battle::info(slot) + 2) < 0x11 && data.u8(battle::info(slot) + 4) != 0)
+            ++enemies;
+    data.put32(0x800c3d58, static_cast<std::uint32_t>(enemies));
+    const auto rate = std::max(enemies / 2 - 1, 0);
+    sprite.rate_control = 0;
+    resident.sprite_models.depth_shift = 2;
+    data.put32(0x800ccc5c, static_cast<std::uint32_t>(rate));
+    const auto draw = data.u32(0x800ccb00) == 0x800c4a20 ? 0x800c8a90U : 0x800c4a20U;
+    data.put32(0x800ccb00, draw);
+    data.put32(0x800ccb04, draw + 0x70);
+    clear_ordering_table(draw + 0x70, 0x1000);
+    data.put32(0x800ccb34, 1);
+    for (std::uint32_t i = 0; i < 4; ++i) // dither, draw on display, background, red
+        data.put8(0x800c8aa8 + i, data.u8(0x800c4a38 + i));
+    data.put32(0x800ccb00, 0x800c8a90);
+    data.put8(0x800ccc58, 0);
+    // 800b8840.
+    auto &tasks = resident.sprite_tasks;
+    sprite.platform_mode = 1;
+    tasks.active_flags = 0;
+    tasks.creation_flags = 0;
+    sprite.platform_argument = 0x2000;
+    data.put32(0x800c3e20, 0); // 800bed30
+    data.put32(0x800c3610, 0);
+    data.put16(0x800d2e54, 0);
+    data.put32(0x800d2d68, 0); // 800be108
+    data.put32(0x800c374c, 0);
+    tasks.head = 0; // 8001c944
+    tasks.pending_head = 0;
+    tasks.primary_count = 0;
+    tasks.auxiliary_count = 0;
+    tasks.wait_count = 0;
+    data.put32(0x800c3674, 0x200); // 800bb7f8
+    data.put32(0x800c3678, 0xffffffffU);
+    data.put8(0x800c3cc4, 0);
+    data.put32(0x800c3cbc, 1);
+    data.put32(0x800c3cc0, 0); // 800bc2f0(0)
+    data.put32(0x800c3cbc, 1);
+    for (const auto [pointer, site] :
+         {std::pair{0x800c3680U, 0x800bc3b0U}, {0x800c3684U, 0x800bc3d8U}})
+        if (data.u32(pointer) != 0)
+            throw MissingDependency({"battle_renderer_setup", site, {}, {}},
+                                    "symbol:battle-camera-callback", false,
+                                    "A pending 800c3680/800c3684 callback is not reconstructed");
+    // 80024f64(5000, 0): both sprite arenas, no uploads or releases, an empty
+    // frame list.
+    resident.sprite_arena_bytes = 0x5000;
+    const auto arenas = load_block(0xa000, 0, 0x80024f78);
+    resident.sprite_arenas = {arenas, arenas + 0x5000};
+    resident.sprite_releases = {0, 0};
+    resident.sprite_uploads[0] = 0;
+    sprite.frame_head = 0;
+    data.put16(0x800c3d14, 0); // 800bcd8c
+    data.put8(0x800d2fdc, 0);  // 800b7c28
+    resident.sprite_models.lod = 0;
+    // 801e62e0: 801e7098 in allocation mode 1; 8001cd08(0, 78h) allocates
+    // the task and its 78h bytes and registers it without an owner (8001cc18).
+    tasks.allocation_mode = 1;
+    auto block = resident::heap_allocate(resident.heap, 0x94, tasks.allocation_mode, 0x8001cd24);
+    if (!block)
+        throw battle::BattleError("A quiet null allocation in 8001cd08");
+    const auto address = block->address;
+    auto &bytes = block->bytes;
+    const auto get = [&](std::uint32_t at) {
+        std::uint32_t value = 0;
+        for (std::uint32_t i = 0; i < 4; ++i)
+            value |= static_cast<std::uint32_t>(bytes[at + i]) << (8U * i);
+        return value;
+    };
+    const auto put = [&](std::uint32_t at, std::uint32_t value) {
+        for (std::uint32_t i = 0; i < 4; ++i)
+            bytes[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    // Without an owner the owner generation is the word at 00000010.
+    put(0, 0);
+    put(0xc, 0x8001cd94);
+    put(8, 0);
+    put(0x14, resident.null_owner_generation & 0x1fffffffU);
+    put(0x10, (get(0x10) & 0xe0000000U) | (tasks.serial & 0x1fffffffU));
+    put(0x18, tasks.head);
+    tasks.head = address;
+    ++tasks.serial;
+    ++tasks.primary_count; // 800591ac is clear: no flag 31
+    put(0xc, 0x8001ce44);
+    put(4, 0);
+    put(8, 0x801e6fec); // 8001cd6c
+    put(0x20, task_argument);
+    tasks.nodes.push_back({address, std::move(bytes)});
+    tasks.allocation_mode = 0;
+    // 80038310(*800595ac).
+    resident::release_wave_bank(resident.sound, resident.battle_wave);
+    const auto light = [&](std::uint32_t to, std::uint32_t from) { // 80021b04
+        for (std::uint32_t i = 0; i < 6; i += 2)
+            data.put16(to + i, data.u16(resident.battle_scene_data + from + i));
+    };
+    light(0x800d30a0, 0x482);
+    light(0x800d3354, 0x482);
+    light(0x800d30a8, 0x47c);
+    light(0x800d335c, 0x47c);
+    set_display_mask(1);
 }
 
 void Program::battle_adjust_party() { run_battle(battle::adjust_party); }

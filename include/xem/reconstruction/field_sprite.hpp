@@ -91,8 +91,9 @@ struct SpriteEnvironment {
     std::uint32_t variant{};
     std::uint8_t binding_control{};
     std::uint32_t frame_head{};
-    std::uint32_t texture_page{}; // 80059310: 8002cc34 writes a full word
-    std::uint32_t texture_mode{}; // 80050108
+    std::uint32_t texture_page{};      // 80059310: 8002cc34 writes a full word
+    std::uint32_t texture_mode{};      // 80050108
+    std::uint32_t platform_argument{}; // 800591a8: 80022000's argument under platform_mode
     bool operator==(const SpriteEnvironment &) const = default;
 };
 
