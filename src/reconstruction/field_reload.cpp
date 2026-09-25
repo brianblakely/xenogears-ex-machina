@@ -998,6 +998,9 @@ void add_reload_globals(std::vector<OriginalGlobal> &table) {
     for (std::uint32_t i = 0; i < 10; ++i)
         resident("light_colors", 0x80059f84 + 2 * i, 2,
                  [i](Program &p) -> auto & { return p.resident.light_colors[i]; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        resident("window_color", 0x800594d4 + i, 1,
+                 [i](Program &p) -> auto & { return p.resident.window_color[i]; });
     entry("collision_address", 0x800afb18, 4, false,
           [](Program &p) -> auto & { return loaded(p).collision_address; });
     entry("sprite_bundle_address", 0x800afb1c, 4, false,

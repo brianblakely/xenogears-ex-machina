@@ -461,6 +461,7 @@ struct ResidentState {
     // 80059f84: the GTE light color matrix (LR1..LB3) 80030a30 builds, with
     // the halfword after it.
     std::array<std::uint16_t, 10> light_colors{};
+    std::array<std::uint8_t, 3> window_color{}; // 800594d4: dialogue backing tile color
     // 80022a0c's rectangle and pixels (800592f0, 800592f4).
     std::array<std::uint32_t, 2> image_upload{};
     // Stack windows code ran on inside heap blocks (80022a0c): address and
@@ -1146,6 +1147,10 @@ class Program {
     void build_shadow(std::uint32_t shadow);                               // 8007aa44
     void create_field_actor(std::uint32_t index);                          // 80080f44
     void load_descriptors();                                               // 80071318..800715a0
+    void draw_mode_packet(std::uint32_t packet, std::uint32_t tpage,
+                          const std::array<std::int16_t, 4> *area); // 800454dc
+    void init_dialogue_packets(std::uint32_t w);                  // 8007ee0c
+    void init_dialogue();                                         // 8007decc
     void reset_graph(std::uint32_t mode);         // 80044110 ResetGraph
     void destroy_sprite_tasks();                  // 8001c8dc
     void flush_sprite_uploads(FrameServices &services); // 80025044

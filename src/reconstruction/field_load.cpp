@@ -4,6 +4,7 @@
 // addresses name correlations only; owned records are Program state.
 #include "xem/reconstruction/field_actor.hpp"
 #include "xem/reconstruction/field_gte.hpp"
+#include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
 #include "xem/reconstruction/field_view.hpp"
 #include "xem/reconstruction/original_layout.hpp"
@@ -168,6 +169,38 @@ constexpr std::array<Store, 23> resets_c{{
         {0x800b217c, 4, 0x0},
         {0x800b218e, 2, 0x0},
         {0x800b21d6, 2, 0x8},
+}};
+// The loader's object and view state reset before event initialization
+// (80071680..80071764), in program order.
+constexpr std::array<Store, 28> resets_d{{
+        {0x800b225e, 1, 0x1e},
+        {0x800b225d, 1, 0x1e},
+        {0x800b225c, 1, 0x1e},
+        {0x800b0084, 2, 0x140},
+        {0x800b008e, 2, 0x0},
+        {0x800b00a9, 1, 0x0},
+        {0x800b00a8, 1, 0x0},
+        {0x800b00a6, 1, 0x0},
+        {0x800b00a5, 1, 0x0},
+        {0x800b00a4, 1, 0x0},
+        {0x800b00a2, 1, 0x0},
+        {0x800b00a1, 1, 0x0},
+        {0x800b00a0, 1, 0x0},
+        {0x800b0090, 4, 0x0},
+        {0x800b0098, 4, 0x1000},
+        {0x800b00b0, 2, 0x0},
+        {0x800b00ae, 2, 0x0},
+        {0x800b00ac, 2, 0x0},
+        {0x800b008c, 2, 0x0},
+        {0x800b008a, 2, 0x0},
+        {0x800b0088, 2, 0x0},
+        {0x800b0086, 2, 0x0},
+        {0x800b0082, 2, 0x0},
+        {0x800b0080, 2, 0x0},
+        {0x800b00b2, 2, 0x0},
+        {0x800b0094, 4, 0x0},
+        {0x800b00aa, 1, 0x20},
+        {0x800adb1c, 4, 0x0},
 }};
 } // namespace
 
@@ -795,6 +828,144 @@ void Program::load_descriptors() {
     }
 }
 
+// SetDrawMode (800454dc) with dfe and dtd clear and an optional texture
+// window.
+void Program::draw_mode_packet(std::uint32_t packet, std::uint32_t tpage,
+                               const std::array<std::int16_t, 4> *area) {
+    set_memory(packet + 3, 2, 1);
+    set_memory(packet + 4, gpu::draw_mode(resident.gpu_type, false, false, tpage));
+    set_memory(packet + 8, gpu::texture_window(area));
+}
+
+// 8007ee0c(w): dialogue window `w`'s packets: the draw modes, the backing
+// tile (color 800594d4), the frame sprites and their copies for the second
+// buffer, the eight border sprites from the overlay table 800ade9c, and the
+// cursor quad.
+void Program::init_dialogue_packets(std::uint32_t w) {
+    const auto base = 0x800c2744U + 0x498U * w;
+    const auto half = [&](std::uint32_t address, std::uint32_t value) {
+        set_memory(address, value & 0xffffU, 2);
+    };
+    const auto byte = [&](std::uint32_t address, std::uint32_t value) {
+        set_memory(address, value & 0xffU, 1);
+    };
+    const auto copy = [&](std::uint32_t from, std::uint32_t to, std::uint32_t size) {
+        for (std::uint32_t at = 0; at < size; at += 4)
+            set_memory(to + at, memory(from + at));
+    };
+    const auto table_rect = [&](std::uint32_t address) {
+        return std::array<std::int16_t, 4>{static_cast<std::int16_t>(overlay_half(address)),
+                                           static_cast<std::int16_t>(overlay_half(address + 2)),
+                                           static_cast<std::int16_t>(overlay_half(address + 4)),
+                                           static_cast<std::int16_t>(overlay_half(address + 6))};
+    };
+    const auto window_tpage = gpu::texture_page(0, 2, 0x280, 0x1f0);
+    draw_mode_packet(base + 0x18, window_tpage, nullptr);
+    draw_mode_packet(base + 0x24, window_tpage, nullptr);
+    // The backing tile (80043d64), semi-transparent, in the window color.
+    const auto tile = base + 0x30;
+    byte(tile + 3, 3);
+    byte(tile + 7, 0x60);
+    for (std::uint32_t c = 0; c < 3; ++c)
+        byte(tile + 4 + c, memory(0x800594d4 + c, 1));
+    byte(tile + 7, memory(tile + 7, 1) | 2U);
+    copy(tile, base + 0x40, 0x10);
+    // Two frame sprites (80043d14) with their draw modes.
+    const auto sprite = [&](std::uint32_t modes, std::uint32_t at, std::uint32_t area,
+                            std::int32_t x, std::array<std::uint32_t, 2> size) {
+        const auto rect = table_rect(area);
+        const auto tpage = gpu::texture_page(0, 0, x, 0x1c0);
+        draw_mode_packet(modes, tpage, &rect);
+        draw_mode_packet(modes + 0xc, tpage, &rect);
+        byte(at + 3, 4); // SetSprt (80043d14)
+        byte(at + 7, 0x64);
+        for (std::uint32_t c = 4; c < 7; ++c)
+            byte(at + c, 0x80);
+        half(at + 0xe, (0xf6U << 6U) | (0x100U >> 4U & 0x3fU)); // GetClut(100, f6)
+        half(at + 0x10, size[0]);
+        byte(at + 0xc, 0x80);
+        byte(at + 0xd, 0xc0);
+        half(at + 0x12, size[1]);
+        half(at + 8, 0);
+        half(at + 0xa, 0);
+        copy(at, at + 0x14, 0x14);
+    };
+    sprite(base + 0x31c, base + 0x334, 0x800adf04, 0x298, {0xc, 8});
+    sprite(base + 0x2d8, base + 0x2f0, 0x800adedc, 0x288, {8, 0xc});
+    half(base + 0x35e, 2);
+    // The eight border sprites.
+    for (std::uint32_t i = 0; i < 8; ++i) {
+        const auto row = 0x800ade9cU + 8U * i;
+        const auto rect = table_rect(row);
+        const auto tpage = gpu::texture_page(0, 2, 0x280, 0x1f0);
+        draw_mode_packet(base + 0x50 + 0xc * i, tpage, &rect);
+        draw_mode_packet(base + 0xc8 + 0xc * i, tpage, &rect);
+        const auto at = base + 0x140 + 0x14 * i;
+        byte(at + 3, 4); // SetSprt (80043d14)
+        byte(at + 7, 0x64);
+        for (std::uint32_t c = 4; c < 7; ++c)
+            byte(at + c, 0x80);
+        half(at + 0xe, (0xf4U << 6U) | (0x100U >> 4U & 0x3fU)); // GetClut(100, f4)
+        byte(at + 7, memory(at + 7, 1) | 2U);                   // SetSemiTrans(1)
+        byte(at + 0xc, 0x80);
+        byte(at + 0xd, 0xc0);
+        half(at + 0x10, overlay_half(row + 4));
+        half(at + 8, 0);
+        half(at + 0xa, 0);
+        half(at + 0x12, overlay_half(row + 6));
+        copy(at, base + 0x208 + 0x14 * i, 0x14);
+    }
+    // The cursor quad.
+    const std::array<std::int16_t, 4> full{0, 0, 0xff, 0xff};
+    const auto cursor_tpage = gpu::texture_page(1, 0, 0x2c0, 0x100);
+    draw_mode_packet(base + 0x380, cursor_tpage, &full);
+    draw_mode_packet(base + 0x38c, cursor_tpage, &full);
+    const auto quad = base + 0x398;
+    byte(quad + 3, 9); // SetPolyFT4 (80043cb0)
+    byte(quad + 7, 0x2c);
+    for (std::uint32_t c = 4; c < 7; ++c)
+        byte(quad + c, 0x80);
+    half(quad + 0xe, 0xe0U << 6U); // GetClut(0, e0)
+    half(quad + 0x16, cursor_tpage);
+    copy(quad, base + 0x3c0, 0x28);
+}
+
+// 8007decc: the sixteen text draw modes (800b1df4, 800b1eb4) and the four
+// dialogue windows' initial state and packets.
+void Program::init_dialogue() {
+    const std::array<std::int16_t, 4> full{0, 0, 0xff, 0xff};
+    for (std::uint32_t i = 0; i < 16; ++i) {
+        const auto area = 0x800afc80U + 8U * i;
+        set_memory(area + 2, 0, 2);
+        set_memory(area, 0, 2);
+        set_memory(area + 6, 0xff, 2);
+        set_memory(area + 4, 0xff, 2);
+        const auto tpage = gpu::texture_page(0, 0, 0x380, 0x100);
+        draw_mode_packet(0x800b1df4 + 0xc * i, tpage, &full);
+        draw_mode_packet(0x800b1eb4 + 0xc * i, tpage, &full);
+    }
+    auto &state = loaded(*this);
+    for (std::uint32_t w = 0; w < 4; ++w) {
+        const auto at = 0x800c2698U + 0x498U * w;
+        for (const auto [offset, value] :
+             std::initializer_list<std::pair<std::uint32_t, std::uint32_t>>{{0x416, 0xff},
+                                                                            {0x418, 0xff},
+                                                                            {0x37c, 0xffff},
+                                                                            {0x3c4, 0xffff},
+                                                                            {0x40e, 0xffff},
+                                                                            {0x414, 0xffff},
+                                                                            {0x410, 0xffff},
+                                                                            {0x416, 0xff},
+                                                                            {0x412, 0}})
+            set_memory(at + offset, value, 2);
+        init_dialogue_packets(w);
+        state.dialogue_slots[w] = -1;
+        const auto tpage = gpu::texture_page(0, 0, 0x300, 0x100);
+        draw_mode_packet(at, tpage, &full);
+        draw_mode_packet(at + 0xc, tpage, &full);
+    }
+}
+
 void Program::load_field(FrameServices &services, std::uint32_t frame,
                          const ProgramObserver &observe) {
     reset_field_state();
@@ -877,8 +1048,61 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     observed(observe, *this, {"load_components", 0x80071318, {}, {}});
     load_descriptors();
     observed(observe, *this, {"load_descriptors", 0x800715a0, {}, {}});
-    throw MissingDependency({"load_field", 0x800715a0, {}, {}}, "symbol:field-load-80070cc8",
-                            false, "The field load after its descriptors is not reconstructed");
+    if (state.event_control.diagnostic_suppression == 0)
+        throw MissingDependency({"load_field", 0x800715b4, {}, {}}, "symbol:field-debug-802812a4",
+                                false, "The diagnostic overlay call 802812a4 is not recovered");
+    init_dialogue(); // 8007decc
+    observed(observe, *this, {"load_dialogue", 0x800715c4, {}, {}});
+    // 80071a64: both fade channels' tiles (8007d93c).
+    for (auto &channel : state.fade.channels)
+        field::prepare_fade_channel(channel);
+    observed(observe, *this, {"load_fades", 0x800715cc, {}, {}});
+    // The bundle is no longer needed: keep cleared, released.
+    auto &heap = resident.heap;
+    auto &preload = resident.preload_block;
+    const auto preload_header = heap.headers.find(preload.address - 8);
+    if (preload_header == heap.headers.end())
+        throw field::FieldFormatError("The read-ahead bundle has no heap header");
+    preload_header->second[1] &= ~resident::heap_keep;
+    const auto preload_address = preload.address;
+    if (resident::heap_release(heap, preload, 0x800715e4) != 0)
+        throw field::FieldFormatError("The read-ahead bundle was not released");
+    preload.address = preload_address;
+    heap.tag = 5; // 80032498(5, 0)
+    heap.tag_words[5] = 0;
+    heap.quiet = 0;
+    // 80024f64(3c00, 0): both sprite arenas in one block, no pending uploads
+    // or releases, an empty frame list.
+    auto &r = resident;
+    r.sprite_arena_bytes = 0x3c00;
+    const auto arenas = load_block(0x7800, 0, 0x80024f78);
+    r.sprite_arenas = {arenas, arenas + 0x3c00};
+    r.sprite_releases = {0, 0};
+    r.sprite_uploads[0] = 0;
+    r.sprite.frame_head = 0;
+    // 8001c944: no sprite tasks.
+    auto &tasks = r.sprite_tasks;
+    tasks.head = 0;
+    tasks.pending_head = 0;
+    tasks.primary_count = 0;
+    tasks.auxiliary_count = 0;
+    tasks.wait_count = 0;
+    observed(observe, *this, {"load_sprite_system", 0x8007160c, {}, {}});
+    heap.tag = 8; // 80032498(8, 0)
+    heap.tag_words[8] = 0;
+    heap.quiet = 0;
+    // 80077844: two rotation matrices.
+    constexpr std::array<std::int16_t, 9> identity{0x800, 0, 0, 0x800, 0, 0, 0x800, 0, 0};
+    constexpr std::array<std::int16_t, 9> tilt{0x1f8, -4033, -504, 0, 0, 0, 0, 0, 0};
+    for (std::uint32_t i = 0; i < 9; ++i) {
+        set_memory(0x800b223c + 2 * i, static_cast<std::uint16_t>(identity[i]), 2);
+        set_memory(0x800b221c + 2 * i, static_cast<std::uint16_t>(tilt[i]), 2);
+    }
+    for (const auto &store : resets_d)
+        store_original(store.address, store.value, store.width);
+    observed(observe, *this, {"load_view_reset", 0x80071768, {}, {}});
+    throw MissingDependency({"load_field", 0x80071768, {}, {}}, "symbol:field-load-80070cc8",
+                            false, "The field load's event initialization is not reconstructed");
 }
 
 } // namespace xem::reconstruction

@@ -483,6 +483,8 @@ void arithmetic(FieldWorld &world, bool divide) {
 }
 } // namespace
 
+void prepare_fade_channel(FadeChannel &channel) { prepare_fade(channel); }
+
 void begin_fade_out(FieldFade &fade, std::int32_t frames) {
     auto &channel = fade.channels[0];
     if (fade.started != 0) {
