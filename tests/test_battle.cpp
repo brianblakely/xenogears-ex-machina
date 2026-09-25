@@ -366,9 +366,130 @@ void menu() {
         }
     }
     check(escaped && stayed, "Escape succeeds for some rand states and fails for others");
-    memory.put8(turn + 0x2dd, 5);
+    memory.put8(turn + 0x2dd, 2);
     rejects([&] { battle::menu_step(context, resident, 0); },
-            "Unreconstructed pages are explicit dependencies", "0x5");
+            "Unreconstructed pages are explicit dependencies", "0x2");
+}
+
+// Member 0 on an invented attack page: candidates 3 (right of it) and 4
+// (above it) around slot 0; a one-part glyph sprite; heap-free paths only.
+void attack() {
+    auto memory = sample();
+    xem::reconstruction::ResidentState resident;
+    resident.math.angle.assign(1025, 0); // invented: every ratio maps to angle 0
+    constexpr std::uint32_t info = 0x800c3eb4;
+    const auto place = [&](std::uint32_t slot, std::uint32_t x, std::uint32_t y) {
+        memory.put16(info + slot * 0x1c + 0xa, x);
+        memory.put16(info + slot * 0x1c + 0xc, y);
+    };
+    for (std::uint32_t i = 0; i < 11; ++i)
+        memory.put8(0x800c3e90 + i, 0xff);
+    memory.put8(0x800c3e90, 3);
+    memory.put8(0x800c3e90 + 1, 4);
+    memory.put8(0x800c3e90 + 2, 5);
+    place(0, 100, 100);
+    place(3, 150, 100);
+    place(4, 100, 50);
+    place(5, 180, 100);
+    std::uint32_t seed = 1;
+    battle::Battle context{memory, seed};
+    check(battle::direction_target(context, resident, 0, 0) == 3,
+          "Direction 0 takes the nearest candidate at angle 0");
+    check(battle::direction_target(context, resident, 0, 1) == 4,
+          "Direction 1 takes the candidate at angle -400");
+    check(battle::direction_target(context, resident, 0, 2) == 0,
+          "A direction without candidates keeps the origin");
+
+    // Glyph table at 80101000: sprite 1 has one part 8x16 at (2, 3), uv (5, 6).
+    constexpr std::uint32_t table = 0x80101000;
+    memory.regions[table].resize(0x100);
+    memory.regions[0x80102000].resize(0x100);
+    memory.put32(0x800d2f5c, table);
+    memory.put32(0x800ccb34, 1);
+    memory.put16(table + 4 + 2, 0x10);
+    memory.put16(table + 0x10, 1);
+    const auto part = table + 0x14;
+    memory.put16(part, 5);
+    memory.put16(part + 2, 6);
+    memory.put16(part + 4, 8);
+    memory.put16(part + 6, 16);
+    memory.put16(part + 8, 2);
+    memory.put16(part + 10, 3);
+    memory.put16(part + 16, 2);     // texture page mode
+    memory.put16(part + 18, 0x20);  // CLUT x
+    memory.put16(part + 20, 0x1f0); // CLUT y
+    memory.put16(part + 22, 0x340); // page x
+    memory.put16(part + 24, 0x100); // page y
+    check(battle::draw_glyph(context, 1, 0x80102000, 40, 50) == 1, "A glyph returns its parts");
+    const auto prim = 0x80102000 + 0x28U;
+    check(memory.u8(prim + 3) == 9 && memory.u8(prim + 7) == 0x2d && memory.u16(prim + 8) == 42 &&
+              memory.u16(prim + 16) == 50 && memory.u16(prim + 10) == 53 &&
+              memory.u16(prim + 26) == 69 && memory.u8(prim + 12) == 5 &&
+              memory.u8(prim + 20) == 13 && memory.u8(prim + 29) == 22 &&
+              memory.u16(prim + 22) == (0x100U | 0x10U | 0xdU) &&
+              memory.u16(prim + 14) == (0x1f0U << 6 | 2U),
+          "A glyph part becomes a textured quad in the draw buffer's half");
+
+    // Page 0x64 while the command is closed stops at once.
+    memory.put8(turn + 0x2dd, 0x64);
+    memory.put8(turn + 0x2e1, 1);
+    memory.put8(0x800d366c, 1);
+    battle::menu_step(context, resident, 0, [](battle::MenuPresentation, std::uint32_t) {
+        throw std::runtime_error("no presentation expected");
+    });
+    check(memory.u8(turn + 0x2e2) == 0xff && memory.u8(0x800d366c) == 0,
+          "Page 0x64 resets the shown page and stops while the command is closed");
+    memory.put8(turn + 0x2dd, 5);
+    memory.put8(turn + 0x2e1, 0);
+    rejects([&] { battle::menu_step(context, resident, 0); },
+            "Attack pages without presentation brackets are explicit dependencies",
+            "presentation bracket");
+
+    // Result screens: a Cross wait repeats until Cross, then clears the flags.
+    memory.regions[0x80103000].resize(0x100);
+    memory.put32(0x800d2d28, 0x80103000);
+    memory.put8(0x800d3014, 8);
+    check(battle::result_screen_step(context, resident, 0x801e1f24, 0) == 0x801e1f24,
+          "Without Cross the gold screen waits another frame");
+    memory.put8(0x80103000 + 0xb1, 1);
+    memory.put8(0x800d3014, 4);
+    check(battle::result_screen_step(context, resident, 0x801e1f24, 0) == 0x801e1f88 &&
+              memory.u8(0x80103000 + 0xb1) == 0,
+          "Cross closes the gold screen's flags");
+    check(battle::result_screen_step(context, resident, 0x801e1f88, 0) == 0x8008fa98,
+          "The gold screen then closes window 0 over a frame");
+    rejects(
+        [&] { static_cast<void>(battle::result_screen_step(context, resident, 0x801e1dac, 1)); },
+        "Screen contents are explicit dependencies", "learned skills");
+}
+
+// The resident battle epilogue 8001b758.
+void epilogue() {
+    xem::reconstruction::Program program;
+    auto &resident = program.resident;
+    resident.game_state = 0x8006d634;
+    resident.game_data.assign(xem::reconstruction::game_data_bytes, 0);
+    const auto selector = 0x8006f94e - 0x8006d634;
+    resident.game_data[selector] = 0x00;
+    resident.game_data[selector + 1] = 0x05; // 500: at least 400
+    resident.mode_loaded = 3;
+    program.finish_battle_mode(1, 0);
+    check(resident.next_mode == 3 && resident.battle_request.resident_flag == 1,
+          "A victory on a selector of 400 or more selects mode 3");
+    program.finish_battle_mode(0x40, 1);
+    check(resident.next_mode == 6, "An escape with 800d3338 set selects mode 6");
+    resident.w_4f30c = 7;
+    resident.game_data[selector + 4] = 9;
+    program.finish_battle_mode(0x81, 0);
+    check(resident.next_mode == 1 && resident.w_4f30c == 0 &&
+              resident.game_data[selector] == 0xea && resident.game_data[selector + 1] == 1 &&
+              resident.game_data[selector + 4] == 0,
+          "A defeat selects mode 1 with map selector 1ea");
+    resident.battle_request.resident_flag = 0;
+    resident.b_5947c = 1;
+    program.finish_battle_mode(1, 0);
+    check(resident.next_mode == 2 && resident.battle_request.resident_flag == 0,
+          "With 8005947c set a victory selects mode 2 and leaves 800594f8");
 }
 } // namespace
 
@@ -381,7 +502,9 @@ int main() {
         enemy_script();
         turns();
         menu();
-        std::cout << "Battle actions: seven source-boundary groups passed\n";
+        attack();
+        epilogue();
+        std::cout << "Battle actions: nine source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;
