@@ -966,6 +966,155 @@ void Program::init_dialogue() {
     }
 }
 
+// Bytes [address, address + size) out of the raw heap contents, for a
+// record that now owns them.
+std::vector<std::uint8_t> Program::take_contents(std::uint32_t address, std::uint32_t size) {
+    auto &contents = resident.heap_contents;
+    auto after = contents.upper_bound(address);
+    if (after == contents.begin())
+        throw field::FieldFormatError("Adopted bytes are not raw heap contents");
+    auto run = std::prev(after);
+    const auto start = run->first;
+    if (address - start > run->second.size() || size > run->second.size() - (address - start))
+        throw field::FieldFormatError("Adopted bytes cross raw heap contents");
+    auto bytes = std::move(run->second);
+    contents.erase(run);
+    const auto offset = address - start;
+    std::vector<std::uint8_t> taken(bytes.begin() + offset, bytes.begin() + offset + size);
+    if (offset != 0)
+        contents[start] = {bytes.begin(), bytes.begin() + offset};
+    if (offset + size < bytes.size())
+        contents[address + size] = {bytes.begin() + offset + size, bytes.end()};
+    return taken;
+}
+
+// The loaded field's records as Program values (the view import_field
+// builds from an image): actors and their descriptors, map pieces, the
+// parsed events, zones, messages and collision, the sprite and geometry
+// resources, model instances with their packet buffers, shadows and the
+// sprite arenas. `sizes` are the components' logical sizes.
+void Program::adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    const auto raw = [&](std::uint32_t address, std::uint32_t size) {
+        const auto bytes = owned_span(address);
+        if (bytes.size() < size)
+            throw field::FieldFormatError("A loaded component is not owned whole");
+        return std::vector<std::uint8_t>(bytes.begin(), bytes.begin() + size);
+    };
+    state.event_package = field::parse_event_package(raw(reload.events_address, sizes[5]));
+    resident.variables.unsigned_bitmap = state.event_package.variable_unsigned_bits;
+    state.zones = raw(reload.zones_address, sizes[8]);
+    state.messages = take_contents(state.messages_address, sizes[7]);
+    state.collision_component = take_contents(state.collision_address, sizes[1]);
+    state.resources.push_back(
+        {state.sprite_bundle_address, take_contents(state.sprite_bundle_address, sizes[3])});
+    state.resources.push_back(
+        {reload.geometry_address, take_contents(reload.geometry_address, sizes[2])});
+    const auto table = reload.descriptor_table;
+    const auto count = reload.event_actors;
+    if (count > 255 || count != state.event_package.entries.size())
+        throw field::FieldFormatError("The loaded actor count differs from the event component");
+    // Model instances with their packet buffers (sizes by the resident
+    // primitive table 8004fe50), then shadows.
+    const auto packet_bytes = [&](std::uint32_t model) {
+        auto record = memory(model + 0x10);
+        std::uint32_t size = 0;
+        for (auto groups = memory(model + 6, 2); groups != 0; --groups) {
+            const auto type = memory(record, 1);
+            const auto primitives = static_cast<std::int16_t>(memory(record + 2, 2));
+            if (type >= 17 || primitives < 0)
+                throw field::FieldFormatError("Model primitive group outside the resident table");
+            const auto entry = 0x8004fe50U + type * 0x28U;
+            size += static_cast<std::uint32_t>(primitives) * memory(entry + 0x24);
+            record += 4 + static_cast<std::uint32_t>(primitives) * memory(entry + 0x1c);
+        }
+        return size;
+    };
+    for (std::uint32_t i = 0; i < state.descriptor_count; ++i) {
+        const auto instance = memory(table + 0x5c * i);
+        if (instance == 0 || state.regions.contains(instance, 1))
+            continue;
+        const auto model = memory(instance + 4);
+        const auto size = packet_bytes(model);
+        const std::array<std::uint32_t, 2> packets{memory(instance + 8), memory(instance + 0xc)};
+        state.regions.add("model_instance", instance, take_contents(instance, 0x24));
+        for (const auto at : packets)
+            state.regions.add("model_packets", at, take_contents(at, size));
+    }
+    std::vector<FieldActor> actors(count);
+    for (std::uint32_t i = 0; i < count; ++i) {
+        auto &actor = actors[i];
+        actor.descriptor_address = table + 0x5c * i;
+        if (const auto shadow = memory(actor.descriptor_address + 8); shadow != 0)
+            state.regions.add("shadow", shadow, take_contents(shadow, 0x70));
+        actor.address = memory(actor.descriptor_address + 0x4c);
+        const auto storage = take_contents(actor.address, 0x138);
+        std::ranges::copy(storage, actor.storage.begin());
+        if (const auto instance = memory(actor.descriptor_address); instance != 0)
+            actor.model = memory(instance + 4);
+        if (memory(actor.descriptor_address + 4) != 0)
+            throw MissingDependency({"adopt_loaded_field", 0x80071768, i, {}},
+                                    "state:loaded-actor-sprite", false,
+                                    "A loaded actor already has a sprite");
+    }
+    // Descriptors last: the records above read them in place.
+    for (auto &actor : actors)
+        std::ranges::copy(take_contents(actor.descriptor_address, 0x5c), actor.descriptor.begin());
+    state.actors = std::move(actors);
+    state.pieces.clear();
+    for (std::uint32_t i = count; i < state.descriptor_count; ++i) {
+        auto &piece = state.pieces.emplace_back();
+        piece.address = table + 0x5c * i;
+        std::ranges::copy(take_contents(piece.address, 0x5c), piece.descriptor.begin());
+    }
+    for (const auto arena : resident.sprite_arenas)
+        state.regions.add("sprite_arena", arena, take_contents(arena, resident.sprite_arena_bytes));
+}
+
+// 800a28d4 without a return (8004f30c clear): variable 10 and the party
+// ids (800a30b4); each actor starts at its script 2 entry (flag 04000000 when
+// that entry is empty), then at its script 0 entry; then each actor runs its
+// initialization batch (800a1ec8) and, unless it made a sprite, gets the
+// bundle's default sprite (80076ac0) and flag 800.
+void Program::init_field_events(const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    if (resident.w_4f30c != 0)
+        throw MissingDependency({"init_field_events", 0x800a28f4, {}, {}},
+                                "symbol:field-return-800a3474", false,
+                                "The field return branch is restore_field, not connected here");
+    auto &variables = resident.variables;
+    variables.write(0x10, 0);
+    for (std::uint32_t slot = 0; slot < 3; ++slot) // 800a30b4
+        variables.write(static_cast<std::uint16_t>(0x3e + 2 * slot), state.party_characters[slot]);
+    const auto &package = state.event_package;
+    const auto set_pc = [&](FieldActor &actor, std::uint32_t pc) {
+        actor.storage[0xcc] = static_cast<std::uint8_t>(pc);
+        actor.storage[0xcd] = static_cast<std::uint8_t>(pc >> 8U);
+    };
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        auto &actor = state.actors[i];
+        state.published_actor = i;
+        const auto first = package.entries.at(i)[2];
+        set_pc(actor, first);
+        if (first >= package.bytecode.size())
+            throw field::FieldFormatError("An entry lies outside the event bytecode");
+        if (package.bytecode[first] == 0)
+            set_memory(actor.address + 4, memory(actor.address + 4) | 0x04000000U);
+        set_pc(actor, package.entries.at(i)[0]);
+    }
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        state.published_actor = i;
+        state.initialized_sprites = 0;
+        state.event_control.budget_mode = 0;
+        static_cast<void>(event_batch(i, 0xffff, observe));
+        if (state.initialized_sprites == 0)
+            throw MissingDependency({"init_field_events", 0x80076ac0, i, {}},
+                                    "symbol:field-default-sprite", false,
+                                    "The bundle's default sprite for an actor is not connected");
+    }
+}
+
 void Program::load_field(FrameServices &services, std::uint32_t frame,
                          const ProgramObserver &observe) {
     reset_field_state();
@@ -984,7 +1133,10 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
         compass_record(0x800b0dbc + 0x70U * (mark - 4), mark, mark, 1);
     compass_letters();
     observed(observe, *this, {"load_compass", 0x80070e88, {}, {}});
-    const auto size = [&](std::uint32_t index) { return memory(bundle + 0x10c + 4 * index); };
+    std::array<std::uint32_t, 9> sizes{};
+    for (std::uint32_t i = 0; i < 9; ++i)
+        sizes[i] = memory(bundle + 0x10c + 4 * i);
+    const auto size = [&](std::uint32_t index) { return sizes.at(index); };
     // Component 0: TIM image lists, loaded into VRAM.
     const auto images = load_block(size(0) + 0x10, 1, 0x80070ea0);
     decode_component(0, images);
@@ -1101,8 +1253,12 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     for (const auto &store : resets_d)
         store_original(store.address, store.value, store.width);
     observed(observe, *this, {"load_view_reset", 0x80071768, {}, {}});
-    throw MissingDependency({"load_field", 0x80071768, {}, {}}, "symbol:field-load-80070cc8",
-                            false, "The field load's event initialization is not reconstructed");
+    adopt_loaded_field(sizes);
+    init_field_events(observe); // 800a28d4
+    state.event_control.post_initialization = 1;
+    observed(observe, *this, {"load_events", 0x80071770, {}, {}});
+    throw MissingDependency({"load_field", 0x80071770, {}, {}}, "symbol:field-load-80070cc8",
+                            false, "The field load after its events is not reconstructed");
 }
 
 } // namespace xem::reconstruction

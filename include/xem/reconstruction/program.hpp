@@ -29,6 +29,9 @@ namespace xem::reconstruction {
 inline constexpr std::uint32_t game_data_bytes = 0x2358;
 // Load address of the field overlay image.
 inline constexpr std::uint32_t field_overlay_base = 0x8006faf0;
+// The field main loop 80077e88's stack pointer (the SP at its calls of
+// 8007554c and 800a5c40): the bottom of the stack its callees' frames grow from.
+inline constexpr std::uint32_t field_loop_stack = 0x801fffc8;
 
 inline constexpr std::string_view resident_executable_sha256 =
     "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119";
@@ -845,8 +848,8 @@ class Program {
     void save_field_departure();
     // Field 80078494..80078558 in the main loop 80077e88: once a requested
     // map's data is read ahead and the disc and fade are idle, save the
-    // departure and reload (800a5c40, not reconstructed: MissingDependency).
-    void field_map_change_step();
+    // departure, reload (800a5c40) and reset the input queue.
+    void field_map_change_step(FrameServices &services, const ProgramObserver &observe = {});
     // The same step up to the reload call (80078540): true when it is due.
     bool start_map_change();
     // Field 80077dac, before each field frame of the main loop and of the
@@ -1151,6 +1154,9 @@ class Program {
                           const std::array<std::int16_t, 4> *area); // 800454dc
     void init_dialogue_packets(std::uint32_t w);                  // 8007ee0c
     void init_dialogue();                                         // 8007decc
+    std::vector<std::uint8_t> take_contents(std::uint32_t address, std::uint32_t size);
+    void adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes);
+    void init_field_events(const ProgramObserver &observe); // 800a28d4 (no return)
     void reset_graph(std::uint32_t mode);         // 80044110 ResetGraph
     void destroy_sprite_tasks();                  // 8001c8dc
     void flush_sprite_uploads(FrameServices &services); // 80025044

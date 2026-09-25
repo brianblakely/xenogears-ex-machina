@@ -298,6 +298,7 @@ tests/test_field_loop.cpp
 tests/test_field_media.cpp
 tests/test_field_motion.cpp
 tests/test_field_movie.cpp
+tests/test_field_reload.cpp
 tests/test_field_return.cpp
 tests/test_field_script.cpp
 tests/test_field_sprite.cpp

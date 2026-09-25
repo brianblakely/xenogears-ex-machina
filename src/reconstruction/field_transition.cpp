@@ -126,14 +126,12 @@ bool Program::start_map_change() {
     return true;
 }
 
-void Program::field_map_change_step() {
+void Program::field_map_change_step(FrameServices &services, const ProgramObserver &observe) {
     if (!start_map_change())
         return;
-    // Then 80035db0 resets the input queue and 800adb04 becomes one.
-    throw MissingDependency({"field_reload", 0x800a5c40, {}, {}}, "symbol:field-reload-800a5c40",
-                            false,
-                            "The map reload 800a5c40 (teardown, loads, initialization and its "
-                            "fade-in frames) is not reconstructed");
+    field_reload(services, field_loop_stack - 0x48, observe); // 800a5c40
+    resident.input_queue.reset();                             // 80035db0
+    loaded(*this).control_inputs.encounter.enabled_byte = 1;
 }
 
 } // namespace xem::reconstruction

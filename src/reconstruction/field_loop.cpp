@@ -217,7 +217,7 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
             unrecovered("field_battle_start", 0x80078334, "symbol:field-battle-start",
                         "Starting a battle from the field main loop is not recovered");
     }
-    field_map_change_step(); // 80078494..80078558
+    field_map_change_step(services, observe); // 80078494..80078558
     // 80078558: leaving the field (exit kinds 1, 2 and 3) with draw buffer 1.
     if (state.draw_buffer == 1) {
         if (gates[1] == 0 && loop_disc_busy() == 0)

@@ -440,7 +440,7 @@ int run_case(int argc, char **argv) {
             // 800a63a0..800a6400; SP is the reload's frame.
             program->field_reload_finish(services, registers[29]);
         } else if (entry == "field_map_change_step") {
-            program->field_map_change_step(); // 80078494..80078558 of 80077e88
+            program->field_map_change_step(services, observer); // 80078494..80078558 of 80077e88
         } else if (entry == "field_map_change_start") {
             // 80078494 up to the reload call: the reload is due.
             if (!program->start_map_change())

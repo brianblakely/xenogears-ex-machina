@@ -929,9 +929,7 @@ void Program::field_reload(FrameServices &services, std::uint32_t frame,
     done("reload_party_sprites", 0x800a6034);
     decode_party_sprites();
     done("reload_party_decode", 0x800a603c);
-    throw MissingDependency({"field_reload", 0x80070cc8, {}, {}},
-                            "symbol:field-load-80070cc8", false,
-                            "The field load 80070cc8 is not reconstructed");
+    load_field(services, frame - 0xa0, observe); // 80070cc8
 }
 
 void add_reload_globals(std::vector<OriginalGlobal> &table) {
