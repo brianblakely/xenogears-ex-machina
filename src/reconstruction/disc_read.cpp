@@ -111,6 +111,11 @@ bool Program::deliver_interrupt() {
     return true;
 }
 
+void Program::deliver_pending_arrivals() {
+    while (deliver_interrupt()) {
+    }
+}
+
 void Program::deliver_arrivals(std::uint32_t point) {
     using Kind = PlatformInput::Kind;
     const auto &inputs = resident.platform;

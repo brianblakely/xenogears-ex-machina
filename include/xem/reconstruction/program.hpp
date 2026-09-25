@@ -731,6 +731,10 @@ class Program {
     // pending interrupt the dispatcher enables, until none is pending.
     // Asynchronous register reads come from resident.platform.
     void interrupt_dispatch();
+    // Deliver the interrupt arrivals at the front of the platform input: a
+    // host ending an imported call whose remaining arrivals all came before
+    // its return.
+    void deliver_pending_arrivals();
     // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
     // driver flags the event handler loaded). Returns 0.
     std::uint32_t sound_tick(std::uint32_t event);

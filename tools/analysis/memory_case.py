@@ -352,12 +352,17 @@ def header_sector(row: dict) -> int:
     return (decimal(header[0]) * 60 + decimal(header[1])) * 75 + decimal(header[2]) - 150
 
 
-def platform_inputs(rows: list[dict], ram: bytes, arrival: str | None) -> tuple[str, list[int]]:
+def platform_inputs(
+    rows: list[dict], ram: bytes, io: bytes, arrival: str | None
+) -> tuple[str, list[int]]:
     """The runner's platform input file and the recorded delivered sectors.
 
     Load values come from the original registers after each load; nothing is
-    taken from an exit image.
+    taken from an exit image. CD_datasync's DMA3 busy reads are checked
+    against the imported I/O page, which the recovered disc status reads.
     """
+    dma3 = u32(ram, 0x800567B4) - IO_BASE
+    idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000 if 0 <= dma3 <= len(io) - 4 else None
     lines, sectors = [], []
     for row in rows:
         hook = row["hook"]
@@ -371,6 +376,9 @@ def platform_inputs(rows: list[dict], ram: bytes, arrival: str | None) -> tuple[
             code = u32(ram, site)
             require(code >> 26 in LOADS, "Load hook does not follow a load instruction")
             value = visible_registers(row)[(code >> 16) & 31]
+            if site == DATASYNC_READ:
+                require(value & 0x1000000 == idle, "DMA3 busy differs from the imported I/O page")
+                continue
             lines.append(f"read {site:08x} {value:08x}")
     if sectors:
         lines.insert(0, f"drive {sectors[0]}")
@@ -604,6 +612,7 @@ def compare(
     interrupt_changed: set[int] = frozenset(),
     superseded: dict[int, tuple[int, int]] | None = None,
     arrival_stacks: tuple[int, ...] = (),
+    syscalls: bool = False,
 ) -> dict:
     """Exact comparison of owned bytes plus attribution of every other change.
 
@@ -634,7 +643,8 @@ def compare(
     kernel = {
         o
         for o in set(changed) | own | set(interrupt_changed)
-        if (interrupt_changed or arrival_stacks) and any(a <= o < b for a, b in KERNEL_SAVE)
+        if (interrupt_changed or arrival_stacks or syscalls)
+        and any(a <= o < b for a, b in KERNEL_SAVE)
     }
     excused = {o for o in interrupt_changed if o not in own} | kernel
     # An owned byte that only interrupt code changed belongs to the interrupt
@@ -869,7 +879,7 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
-            platform, recorded_sectors = platform_inputs(first["inputs"], entry, args.arrival)
+            platform, recorded_sectors = platform_inputs(first["inputs"], entry, io, args.arrival)
             (work / "platform.txt").write_text(platform)
             lines = []
             for item in frames:
@@ -946,6 +956,7 @@ def run(args: argparse.Namespace) -> int:
                         for row in item["inputs"]
                         if row["hook"] == args.arrival
                     ),
+                    args.syscalls,
                 )
                 # Exact GTE control registers at exit. Interrupt handlers are
                 # not modeled; one that changed these registers would surface here.
@@ -1074,6 +1085,8 @@ def run(args: argparse.Namespace) -> int:
             "interrupts": interrupts,
             "presentation": presentation,
             "return_register": args.return_register,
+            "arrival": args.arrival,
+            "syscalls": args.syscalls,
         },
         "matched_behaviours": [
             {"changed_ranges": list(key), "calls": count} for key, count in behaviours.items()
@@ -1557,6 +1570,12 @@ def main() -> int:
         action="append",
         default=[],
         help="ENTRY:EXIT hook names bracketing interrupt-context code (repeatable)",
+    )
+    parser.add_argument(
+        "--syscalls",
+        action="store_true",
+        help="The call enters BIOS critical sections (syscalls 1 and 2); the BIOS exception "
+        "save areas the syscall exceptions write are BIOS state, not the call's",
     )
     parser.add_argument(
         "--entry-repeats",

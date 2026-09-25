@@ -230,6 +230,11 @@ int run_case(int argc, char **argv) {
                 throw InputError("Malformed resource manifest");
             program = analysis::import_field(memory, read_file(argv[6], analysis::ram_bytes),
                                              read_file(argv[7], analysis::ram_bytes), resources);
+            // A poll with the sequence read issued (8004f358 1) may open the
+            // sequence over the event data the read placed at 80062648 (its
+            // byte length is the data's third word).
+            if (entry == "music_poll" && program->resident.music.sequence_pending == 1)
+                analysis::import_disc_data(*program, memory, 0x80062648, memory.word(0x80062650));
         }
         // The 64 GTE registers at entry: data 0-31, then control 0-31. SXYP,
         // IRGB/ORGB and LZCR mirror other registers and are not written.
@@ -773,9 +778,13 @@ int run_case(int argc, char **argv) {
         } else if (entry == "music_stop") {
             program->stop_music(); // 8001b66c
         } else if (entry == "music_poll") {
-            return_value = program->poll_music(registers[4]); // 80085c90: A0 music id
+            // 80085c90: A0 music id. Arrivals inside the call that its waits
+            // did not take came before it returned.
+            return_value = program->poll_music(registers[4]);
+            program->deliver_pending_arrivals();
         } else if (entry == "music_chunk") {
             program->consume_music_chunk(registers[4]); // 800859dc: A0 chunk
+            program->deliver_pending_arrivals();
         } else if (entry == "sequence_open") {
             return_value = program->open_sequence(registers[4]); // 80039850: A0 event data
         } else if (entry == "sequence_start") {
