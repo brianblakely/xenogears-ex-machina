@@ -184,7 +184,8 @@ int run_case(int argc, char **argv) {
                                   entry == "field_reload_fade_in" ||
                                   entry == "field_reload_fade_frame" ||
                                   entry == "field_reload_finish" ||
-                                  entry == "field_reload_teardown";
+                                  entry == "field_reload_teardown" || entry == "field_reload" ||
+                                  entry == "field_load";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
             !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
@@ -230,6 +231,10 @@ int run_case(int argc, char **argv) {
                 analysis::import_menu_block(*program, memory, registers[4]);
             else if (entry == "menu_save_seal" || entry == "menu_load_check")
                 analysis::import_menu_block(*program, memory, registers[20]);
+        } else if (entry == "field_load") {
+            // Between the reload's teardown and the load: no field is loaded.
+            program = analysis::import_unloaded_field(memory,
+                                                      read_file(argv[7], analysis::ram_bytes));
         } else {
             // Qualified resource extents: one "address size" decimal pair per line.
             std::vector<analysis::ResourceExtent> resources;
@@ -263,7 +268,7 @@ int run_case(int argc, char **argv) {
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
         // A field teardown releases whole heap blocks: own all their bytes.
-        if (entry == "field_reload_teardown")
+        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load")
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
@@ -424,6 +429,11 @@ int run_case(int argc, char **argv) {
             // One pass from the loop head 800a6148; S1 holds the shade.
             return_value = static_cast<std::uint32_t>(program->field_reload_fade_frame(
                 services, static_cast<std::int32_t>(registers[17]), observer));
+        } else if (entry == "field_load") {
+            program->load_field(services, observer); // 80070cc8
+        } else if (entry == "field_reload") {
+            // From the reload's entry 800a5c40: its frame is SP - 48h.
+            program->field_reload(services, registers[29] - 0x48, observer);
         } else if (entry == "field_reload_teardown") {
             program->field_reload_teardown(services, observer); // From 800a5c40
         } else if (entry == "field_reload_finish") {

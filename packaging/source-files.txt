@@ -209,6 +209,7 @@ src/reconstruction/field_disassembler.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_frame.cpp
 src/reconstruction/field_gte.cpp
+src/reconstruction/field_load.cpp
 src/reconstruction/field_loop.cpp
 src/reconstruction/field_media.cpp
 src/reconstruction/field_models.cpp

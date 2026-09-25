@@ -75,6 +75,12 @@ void import_menu_block(reconstruction::Program &program, const OriginalMemory &m
                                                    std::span<const std::uint8_t> overlay,
                                                    std::span<const ResourceExtent> resources);
 
+// Builds the state of a field between the reload's teardown and the load of
+// the next map (80070cc8): field globals, the decoded overlay and the fixed
+// field regions, with no loaded components, actors or records.
+[[nodiscard]] reconstruction::Program import_unloaded_field(const OriginalMemory &memory,
+                                                            std::span<const std::uint8_t> overlay);
+
 // Supplies recorded platform inputs to the Program. `platform` has one input
 // per line: `drive LBA` (the sector the drive delivers next), `read SITE
 // VALUE` (hex) or `interrupt`. `disc` is the raw 2352-byte-sector track the

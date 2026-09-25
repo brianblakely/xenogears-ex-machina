@@ -3,6 +3,7 @@
 #include "xem/reconstruction/original_layout.hpp"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <fstream>
 #include <functional>
@@ -297,13 +298,36 @@ Program import_resident(const OriginalMemory &memory) {
     return program;
 }
 
-Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t> field_source,
-                     std::span<const std::uint8_t> overlay,
-                     std::span<const ResourceExtent> resources) {
+namespace {
+// Field words and records the field load (80070cc8) and the reload write
+// whose meaning is not recovered, owned as raw regions: address and size.
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 13> field_raw{{
+    {0x8006f990, 12},  // party slots of a field return (800a28d4)
+    {0x800adb0c, 4},   {0x800adb18, 4}, {0x800adb3c, 4}, {0x800adb44, 4},
+    {0x800adb6c, 4},   {0x800adb7c, 4}, {0x800adb8c, 4}, {0x800adbd4, 4},
+    {0x800afe84, 4},   {0x800b14a4, 4},
+    {0x800b0188, 0x140}, // 800abd18: five sprites and their draw modes per buffer
+    {0x800b06a4, 18},    // 80070c84: three records of six bytes
+}};
+// The fixed rows of memory_case's resource manifest (RESIDENT_TABLES).
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 6> fixed_resources{{
+    {0x800b1f78, 256},
+    {0x8004fd40, 12},
+    {0x8004fe50, 17 * 0x28},
+    {0x8004fab8, 0x20},
+    {0x8004faf8, 0x10},
+    {0x800adf04, 0x28},
+}};
+void import_field_raw(Program &program, const OriginalMemory &memory) {
+    for (const auto &[address, size] : field_raw)
+        program.field->regions.add("field_raw", address, copy_of(memory.range(address, size)));
+}
+
+// Field globals and the decoded overlay, common to loaded and unloaded fields.
+Program import_field_globals(const OriginalMemory &memory, std::span<const std::uint8_t> overlay) {
     auto program = import_resident(memory);
     program.field = std::make_unique<FieldState>();
     auto &state = *program.field;
-    auto &resident = program.resident;
     for (const auto &item : reconstruction::original_globals())
         if (!item.resident)
             item.set(program, memory.word(item.address, item.width));
@@ -317,6 +341,51 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
     state.overlay_verified.resize(overlay.size());
     for (std::size_t i = 0; i < overlay.size(); ++i)
         state.overlay_verified[i] = loaded[i] == overlay[i];
+    return program;
+}
+} // namespace
+
+Program import_unloaded_field(const OriginalMemory &memory, std::span<const std::uint8_t> overlay) {
+    auto program = import_field_globals(memory, overlay);
+    auto &state = *program.field;
+    auto &resident = program.resident;
+    state.replay_widths = copy_of(memory.range(replay_widths, 256));
+    copy_into(state.history_ring, memory.range(history_ring, state.history_ring.size()));
+    for (std::uint32_t i = 0; i < resident.variables.words.size(); ++i)
+        resident.variables.words[i] =
+            static_cast<std::uint16_t>(memory.word(variable_bank + i * 2, 2));
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        const auto address = draw_blocks + i * static_cast<std::uint32_t>(draw_block_bytes);
+        state.regions.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
+    }
+    state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
+    state.regions.add("draw_modes", 0x800b1df4, copy_of(memory.range(0x800b1df4, 0x180)));
+    state.regions.add("reload_transition", 0x800b11ac,
+                      copy_of(memory.range(0x800b11ac, 0x800b14a4 - 0x800b11ac)));
+    state.regions.add("dialogue_lists", field::DialogueWindow::base - 0x18,
+                      copy_of(memory.range(field::DialogueWindow::base - 0x18, 0x18)));
+    import_field_raw(program, memory);
+    // The fixed tables the loaded field's resources include: the bundle
+    // header copy (800b1f78) and resident sprite and model tables.
+    for (const auto &[address, size] : fixed_resources)
+        state.resources.push_back({address, copy_of(memory.range(address, size))});
+    if (auto &reload = state.reload; state.particles_paused == 1) {
+        const auto header = resident.heap.headers.find(reload.vram_save_address - 8);
+        if (header == resident.heap.headers.end())
+            throw field::FieldFormatError("The saved VRAM is not a heap block");
+        reload.vram_save = {reload.vram_save_address,
+                            copy_of(memory.range(reload.vram_save_address,
+                                                 header->second[0] - 8 - reload.vram_save_address))};
+    }
+    return program;
+}
+
+Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t> field_source,
+                     std::span<const std::uint8_t> overlay,
+                     std::span<const ResourceExtent> resources) {
+    auto program = import_field_globals(memory, overlay);
+    auto &state = *program.field;
+    auto &resident = program.resident;
 
     const auto components = field::decode_field_components(field_source);
     const auto event_component = components[5].logical_data();
@@ -379,6 +448,7 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
     // The field reload's transition quads: draw modes, packets and corners.
     state.regions.add("reload_transition", 0x800b11ac,
                       copy_of(memory.range(0x800b11ac, 0x800b14a4 - 0x800b11ac)));
+    import_field_raw(program, memory);
     // While particles pause (800adb34), the VRAM 800a915c saved: its heap block.
     if (auto &reload = state.reload; state.particles_paused == 1) {
         const auto header = resident.heap.headers.find(reload.vram_save_address - 8);

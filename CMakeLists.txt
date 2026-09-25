@@ -32,6 +32,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_dialogue.cpp
   src/reconstruction/field_transition.cpp
   src/reconstruction/field_reload.cpp
+  src/reconstruction/field_load.cpp
   src/reconstruction/original_layout.cpp
   src/reconstruction/battle.cpp
   src/reconstruction/battle_ai.cpp

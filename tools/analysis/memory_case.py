@@ -138,6 +138,8 @@ RELOAD_ENTRIES = (
     "field_reload_fade_frame",
     "field_reload_finish",
     "field_reload_teardown",
+    "field_reload",
+    "field_load",
 )
 # 80077dac in the reload's fade-in loop: the loop head before it and the
 # return after it. Its VSync(1) result goes straight to 800adb9c, which the
@@ -147,7 +149,12 @@ FRAME_START_HCOUNT = 0x800ADB9C
 # StoreImage read-backs without a service hook: the hook after the transfer
 # completes, the word naming the destination and the byte count. 800a915c
 # saves 40h x 100h of VRAM into the block at 800afc70 before t-b.
-VRAM_READS = {"t-b": (0x800AFC70, 0x8000)}
+VRAM_READS = {"t-b": [(0x800AFC70, 0x8000)]}
+# 800a5884's five columns (800a5774) are read into one heap block, just below
+# the read-ahead block (8005a4e0), each read overwriting the last: the image
+# after them holds the fifth (bit 15 set, which 800a5774 sets again). The
+# first four are overwritten before any image and are supplied with it.
+COLUMN_READS = ("r-5884", 5, 0x7000)
 
 # Platform inputs. A hook named `load-SITE` sits on the instruction after the
 # original hardware load at SITE (hex); the loaded value is that load's target
@@ -267,10 +274,15 @@ def call_services(
             continue
         hook = row["hook"]
         if hook in VRAM_READS and row["event"] > entry_row["event"]:
-            pointer, size = VRAM_READS[hook]
             ram = snapshots.read(row)[0]
-            at = u32(ram, pointer) & 0x1FFFFF
-            lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+            for pointer, size in VRAM_READS[hook]:
+                at = u32(ram, pointer) & 0x1FFFFF
+                lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+        if hook == COLUMN_READS[0] and row["event"] > entry_row["event"]:
+            ram = snapshots.read(row)[0]
+            _, count, size = COLUMN_READS
+            at = (u32(ram, 0x8005A4E0) - 8 - size) & 0x1FFFFF
+            lines += [f"vram_read {size // 4:x} {ram[at : at + size].hex()}"] * count
         if row["event"] == exit_row["event"]:
             continue
         if hook in starts:

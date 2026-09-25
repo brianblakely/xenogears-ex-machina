@@ -328,6 +328,15 @@ class ServiceUnavailable : public std::runtime_error {
 // Consumes the next result of one service queue.
 std::uint32_t take_service(std::deque<std::uint32_t> &results, const char *what);
 
+// Party sprite files (8001b044, 8001b3a8): 8004f374 marks files read ahead
+// for decoding, 8004f31c the kind of set loaded, 8004f320 the kind the map
+// needs (1 when map bits 0e-0f are set).
+struct PartySpriteLoad {
+    std::uint32_t pending{}; // 8004f374
+    std::uint32_t loaded{};  // 8004f31c
+    std::uint32_t needed{};  // 8004f320
+};
+
 struct ResidentState {
     field::EventVariables variables;
     std::uint32_t random_seed{};
@@ -447,6 +456,7 @@ struct ResidentState {
     // their producers are not recovered.
     std::uint32_t w_59394{};
     std::uint32_t w_593a0{};
+    PartySpriteLoad party_sprite_load;
     // Bytes of allocated heap blocks that no other Program value interprets,
     // by address; a field teardown releases them with their blocks.
     std::map<std::uint32_t, std::vector<std::uint8_t>> heap_contents;
@@ -479,6 +489,7 @@ struct ReloadState {
     std::uint32_t geometry_address{};
     std::uint32_t w_adb24{}; // 800adb24: the distortion buffers 800b20b4..800b20c0 are held
 };
+
 
 struct FieldState {
     // Decoded field overlay image loaded at 8006faf0, a read-only source for
@@ -845,6 +856,14 @@ class Program {
     // field's effects, save the screen, tear the field down (800700b0) and
     // move the read-ahead map data.
     void field_reload_teardown(FrameServices &services, const ProgramObserver &observe = {});
+    // Field 800a5c40 from its entry, for reload type 2: the teardown, the
+    // screen fade 800a5884, the party sprites (8001b044, 8001b3a8), then the
+    // field load 80070cc8 onward. `frame` is the reload's stack frame (its
+    // entry SP - 48h). Completed stages are observable boundaries.
+    void field_reload(FrameServices &services, std::uint32_t frame,
+                      const ProgramObserver &observe = {});
+    // Field 80070cc8: load the map data read ahead (8005a4e0) as the field.
+    void load_field(FrameServices &services, const ProgramObserver &observe = {});
     // Battle 80085ccc: commit and resolve an action.
     void commit_battle_action(std::uint32_t attacker, std::uint32_t targets,
                               std::uint32_t animation);
@@ -1080,6 +1099,20 @@ class Program {
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
                     std::int32_t x, std::int32_t y); // 8004495c
     void field_teardown(FrameServices &services); // 800700b0
+    void reload_transition_setup();                  // 800a663c(1, 1)
+    void reload_present(FrameServices &services);    // 800a6924
+    void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
+    void prepare_party_sprites();                    // 8001b044
+    void decode_party_sprites();                     // 8001b3a8
+    // Field load steps (field_load.cpp).
+    void store_original(std::uint32_t address, std::uint32_t value, std::size_t width);
+    void identity_matrix(std::uint32_t address); // 80070594
+    void reset_field_state();                    // 800705dc
+    void reset_camera();                         // 8007254c
+    void set_quad_uv(std::uint32_t packet, const std::array<std::int32_t, 8> &uv); // 8007a44c
+    void compass_record(std::uint32_t record, std::uint32_t column, std::uint32_t row,
+                        std::uint32_t style); // 8007a7f4
+    void compass_letters();                   // 8007a5c4
     void reset_graph(std::uint32_t mode);         // 80044110 ResetGraph
     void destroy_sprite_tasks();                  // 8001c8dc
     void flush_sprite_uploads(FrameServices &services); // 80025044

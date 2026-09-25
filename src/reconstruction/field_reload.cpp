@@ -763,6 +763,177 @@ void Program::field_teardown(FrameServices &services) {
                                 false, "Releasing the 800a84c0 buffers is not recovered");
 }
 
+// 800a663c(1, 1): the five transition quads, each a textured quad over a
+// 40h-wide column of the screen copy at (2c0, 100), unrotated at zoom 1000h,
+// semi-transparent (abr 1), with a draw mode per buffer.
+void Program::reload_transition_setup() {
+    auto &reload = loaded(*this).reload;
+    reload.zoom = 0x1000;
+    reload.angles = {0, 0, 0};
+    const auto half = [&](std::uint32_t address, std::int32_t value) {
+        set_memory(address, u32(value) & 0xffffU, 2);
+    };
+    const auto byte = [&](std::uint32_t address, std::uint32_t value) {
+        set_memory(address, value & 0xffU, 1);
+    };
+    for (std::uint32_t i = 0; i < 5; ++i) {
+        const auto packet = transition_packets + 0x50U * i;
+        const auto corners = transition_corners + 0x20U * i;
+        const auto x = s32(0x2c0U + 0x40U * i);
+        const auto left = s32(0x20U * i) - 0x50, right = s32(0x20U * i) - 0x30;
+        const auto u = s32(0x40U * i);
+        byte(packet + 3, 9); // SetPolyFT4 (80043cb0)
+        byte(packet + 7, 0x2c);
+        half(corners + 2, -0x38);
+        half(corners + 0x12, 0x38);
+        half(corners + 0x1a, 0x38);
+        half(corners + 0, left);
+        half(corners + 4, 0);
+        half(corners + 8, right);
+        half(corners + 0xa, -0x38);
+        half(corners + 0xc, 0);
+        half(corners + 0x10, left);
+        half(corners + 0x14, 0);
+        half(corners + 0x18, right);
+        half(corners + 0x1c, 0);
+        half(packet + 0x1a, 0xdf);
+        half(packet + 0x22, 0xdf);
+        const auto windows = 0x800b1224U + 0x10U * i;
+        half(packet + 8, u);
+        half(packet + 0xa, 0);
+        half(packet + 0x10, 0x40 + u);
+        half(packet + 0x12, 0);
+        half(packet + 0x18, u);
+        half(packet + 0x20, 0x40 + u);
+        half(windows + 4, 0xff);
+        half(windows + 6, 0xff);
+        half(windows + 0, 0);
+        half(windows + 2, 0);
+        half(windows + 0xc, 0xff);
+        half(windows + 8, 0);
+        half(windows + 0xa, 0);
+        half(windows + 0xe, 0xff);
+        const auto tpage = gpu::texture_page(2, 1, x, 0x100); // GetTPage (80043a1c)
+        set_draw_mode(transition_modes + 0x18U * i, tpage, {0, 0, 0xff, 0xff});
+        set_draw_mode(transition_modes + 0x18U * i + 0xc, tpage, {0, 0, 0xff, 0xff});
+        for (std::uint32_t c = 4; c < 7; ++c)
+            byte(packet + c, 0x80);
+        byte(packet + 7, memory(packet + 7, 1) | 2U); // SetSemiTrans (80043bfc)
+        half(packet + 0x16, s32(tpage));
+        byte(packet + 0x1d, 0xdf);
+        byte(packet + 0xc, 0);
+        byte(packet + 0xd, 0);
+        byte(packet + 0x14, 0x40);
+        byte(packet + 0x15, 0);
+        byte(packet + 0x1c, 0);
+        byte(packet + 0x24, 0x40);
+        byte(packet + 0x25, 0xdf);
+        for (std::uint32_t at = 0; at < 0x28; at += 4)
+            set_memory(packet + 0x28 + at, memory(packet + at));
+    }
+}
+
+// 800a6924: present the buffer: DrawSync, VSync(2), clear to black, the
+// environments, then its small table.
+void Program::reload_present(FrameServices &services) {
+    auto &state = loaded(*this);
+    draw_sync(services);
+    vertical_sync(services); // VSync(2)
+    clear_image(services, state.draw_block, 0);
+    put_draw_env(services, state.draw_block);
+    put_disp_env(state.draw_block + 0xb8);
+    draw_otag(services, state.draw_block + 0x80f0);
+}
+
+// 800a5884(1, 1): two presented frames of the transition quads, five
+// columns of the screen copy made semi-transparent (800a5774: StoreImage,
+// bit 15 of every pixel, LoadImage), then two more frames.
+void Program::reload_screen_fade(FrameServices &services, std::uint32_t frame) {
+    reload_transition_setup();
+    const auto show = [&] {
+        for (std::uint32_t i = 0; i < 2; ++i) {
+            swap_draw_buffer();
+            reload_transition_draw();
+            reload_present(services);
+        }
+    };
+    show();
+    for (std::uint32_t i = 0; i < 5; ++i) {
+        // 800a5774(2c0 + 40i, 100, e0); its rectangle is on its stack.
+        const auto rect_address = frame - 0x20U - 0x30U + 0x10U;
+        std::array<std::int16_t, 4> rect{static_cast<std::int16_t>(0x2c0 + 0x40 * i), 0x100, 0x40,
+                                         0xe0};
+        auto block = resident::heap_allocate(resident.heap, 0xe0U << 7U, 1, 0x800a57a0);
+        if (!block)
+            throw field::FieldFormatError("The screen column allocation failed");
+        store_image(services, rect, rect_address, block->address, block->bytes);
+        draw_sync(services);
+        for (std::uint32_t at = 0; at < (0xe0U << 5U) * 4U; at += 4) {
+            block->bytes[at + 1] |= 0x80;
+            block->bytes[at + 3] |= 0x80;
+        }
+        static_cast<void>(load_image(rect, rect_address, block->address, &services));
+        draw_sync(services);
+        if (resident::heap_release(resident.heap, *block, 0x800a5864) != 0)
+            throw field::FieldFormatError("The screen column block was not released");
+    }
+    show();
+}
+
+// 8001b044: wait for the disc, then read the party sprite files the map
+// needs unless that set is loaded (8001ad4c, 8001aeb8); a return with a
+// reload mode (8004f30c) takes 8001b158.
+void Program::prepare_party_sprites() {
+    auto &load = resident.party_sprite_load;
+    // 8001ad1c: poll the disc status, then 80028a60(0).
+    while (disc_busy() != 0)
+        if (!deliver_interrupt())
+            throw MissingDependency({"prepare_party_sprites", 0x8001ad24, {}, {}},
+                                    "interrupt:disc-read-completion", false,
+                                    "Waiting for the disc needs the interrupt arrivals");
+    disc_wait(0);
+    if (load.pending == 1)
+        throw MissingDependency({"prepare_party_sprites", 0x8001b08c, {}, {}},
+                                "symbol:party-sprite-decode", false,
+                                "Decoding read-ahead party sprites first is not recovered");
+    if (resident.w_4f30c != 0)
+        throw MissingDependency({"prepare_party_sprites", 0x8001b158, {}, {}},
+                                "symbol:party-sprite-return", false,
+                                "The return path of the party sprites (8001b158) is not recovered");
+    load.needed = (resident.field_map & 0xc000U) != 0 ? 1 : 0;
+    load.pending = 0;
+    if (load.loaded != (load.needed == 0 ? 1U : 2U))
+        throw MissingDependency({"prepare_party_sprites", load.needed == 0 ? 0x8001ad4cU : 0x8001aeb8U,
+                                 {}, {}},
+                                "symbol:party-sprite-read", false,
+                                "Reading another party sprite set is not recovered");
+}
+
+// 8001b3a8: decode the party sprite files read ahead (8004f374).
+void Program::decode_party_sprites() {
+    if (resident.party_sprite_load.pending != 0)
+        throw MissingDependency({"decode_party_sprites", 0x8001b3d4, {}, {}},
+                                "symbol:party-sprite-decode", false,
+                                "Decoding read-ahead party sprites is not recovered");
+}
+
+void Program::field_reload(FrameServices &services, std::uint32_t frame,
+                           const ProgramObserver &observe) {
+    const auto done = [&](std::string_view operation, std::uint32_t address) {
+        observed(observe, *this, {operation, address, {}, {}}, true);
+    };
+    field_reload_teardown(services, observe);
+    reload_screen_fade(services, frame);
+    done("reload_screen_fade", 0x800a602c);
+    prepare_party_sprites();
+    done("reload_party_sprites", 0x800a6034);
+    decode_party_sprites();
+    done("reload_party_decode", 0x800a603c);
+    throw MissingDependency({"field_reload", 0x80070cc8, {}, {}},
+                            "symbol:field-load-80070cc8", false,
+                            "The field load 80070cc8 is not reconstructed");
+}
+
 void add_reload_globals(std::vector<OriginalGlobal> &table) {
     const auto entry = [&](std::string name, std::uint32_t address, std::size_t width,
                            bool resident, auto access) {
@@ -821,6 +992,12 @@ void add_reload_globals(std::vector<OriginalGlobal> &table) {
                  [i](Program &p) -> auto & { return p.resident.gpu.move_packet[i]; });
     resident("gpu_reset_mask", 0x800569e4, 4,
              [](Program &p) -> auto & { return p.resident.gpu.reset_mask; });
+    resident("party_sprites_pending", 0x8004f374, 4,
+             [](Program &p) -> auto & { return p.resident.party_sprite_load.pending; });
+    resident("party_sprites_loaded", 0x8004f31c, 4,
+             [](Program &p) -> auto & { return p.resident.party_sprite_load.loaded; });
+    resident("party_sprites_needed", 0x8004f320, 4,
+             [](Program &p) -> auto & { return p.resident.party_sprite_load.needed; });
 }
 
 } // namespace xem::reconstruction
