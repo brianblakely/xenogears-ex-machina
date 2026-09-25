@@ -143,6 +143,9 @@ struct GpuState {
     // 800569a0 GP0, 800569a4 GP1/GPUSTAT, 800569a8 DMA2 address, 800569ac
     // DMA2 block, 800569b0 DMA2 control.
     std::array<std::uint32_t, 5> registers{};
+    // 800569b4 DMA6 address, 800569b8 DMA6 block, 800569bc DMA6 control,
+    // 800569c0 DPCR: the registers ClearOTagR's ordering-table DMA uses.
+    std::array<std::uint32_t, 4> otc_registers{};
     std::array<std::uint32_t, 3> current{}; // 800569c4: last operation, parameter, argument
     std::uint32_t head{};                   // 800569d4
     std::uint32_t tail{};                   // 800569d8
@@ -418,6 +421,13 @@ struct ResidentState {
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
+    // Field main loop (field_loop.cpp) globals whose meaning is not recovered.
+    std::uint32_t w_4f2f4{}; // 8004f2f4: cleared by 800a31e8
+    std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
+    std::uint32_t w_4f328{}; // 8004f328: bit 80 stops variable 10, bit 4 counts it down
+    std::uint8_t b_59171{};  // 80059171: 800b236c when triangle opens the menu
+    // 80065848: 8007ae78's pointer record for port 2 (x, y, buttons, dx, dy).
+    std::array<std::int32_t, 5> pointer{};
     InterruptState interrupts;
     PadState pad;
     GpuState gpu;
@@ -583,6 +593,27 @@ struct FieldState {
     std::array<std::int16_t, 4> pending_load_rect{}; // 800afc58
     std::uint32_t w_adb4c{};                         // 800adb4c: joins the second model table
     std::int16_t ot_depth{};                         // 800b21d4: model table entries joined
+    // Field main loop 80077e88 between frames (field_loop.cpp).
+    std::uint32_t transition{};         // 800adb38: nonzero runs the 800a5924 transition
+    std::uint32_t w_adbd0{};            // 800adbd0: read by the branch after a battle request
+    std::uint32_t gate_adbd8{};         // 800adbd8: zero leaves the field (exit kind 3)
+    std::uint32_t gate_adbe8{};         // 800adbe8: zero leaves the field (exit kind 2)
+    std::uint16_t input_mask{};         // 800b217a: buttons of port 1 the drain keeps
+    std::uint16_t held_buttons_2{};     // 800afea0: port 2 buttons held
+    std::uint16_t held_history{};       // 800afc6c: port 1 buttons held since cleared
+    std::uint8_t b_b02c8{};             // 800b02c8: 1 skips 800a31e8
+    std::uint8_t pause_inhibited{};     // 800b2358: nonzero ignores Start (800c3900 800)
+    // 8007ae78: pad buffer per port (800b0054), divisors (800b005c, 800b0060)
+    // and positions per port (800b0068 x, 800b0070 y).
+    std::array<std::uint32_t, 2> pointer_pads{};
+    std::array<std::uint16_t, 2> pointer_divisors{};
+    std::array<std::int32_t, 2> pointer_x{};
+    std::array<std::int32_t, 2> pointer_y{};
+    // Main-loop registers that survive between frames: s4 latches the
+    // L2+R2 combination (800798bc), s5 records that 800afc78 was saved.
+    // A host takes them from the loop's registers at an imported frame.
+    bool combination_latched{};
+    bool music_saved{};
 };
 
 // Resumable points of field frame 8007554c: each names the call the frame
@@ -668,10 +699,15 @@ class Program {
     // and GPU status results; see FrameServices.
     void field_frame(FrameServices &services, const ProgramObserver &observe = {},
                      FrameStep from = FrameStep::start);
-    // Original bytes that code outside a field frame (the field main loop and
-    // interrupt handlers between frames) changed, supplied as observed by a
-    // host running consecutive frames. Each byte must be owned state.
-    void supply_bytes(std::uint32_t address, std::span<const std::uint8_t> bytes);
+    // Field main loop 80077e88 from a frame's return (800782e4) up to the
+    // call of the next frame (800782dc): 800a5924, the exit, map-change and
+    // menu checks, 80078b5c, the pause and reset checks, then 80077dac
+    // (buffer swap, ordering tables, the pad drain 80074700 and 800a31e8).
+    // `services` supplies 80077dac's VSync(1). Branches whose callees are not
+    // recovered stop with MissingDependency.
+    void field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
+    // One main-loop iteration: the code between frames, then the frame.
+    void field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -895,6 +931,15 @@ class Program {
     void disc_wait(std::uint32_t once); // Resident 80028a60
     // A waiting loop polls again: run the next interrupt arrival, if any.
     bool deliver_interrupt();
+    // Run the arrivals recorded at `point`, the original address of the code
+    // they followed (see PlatformInput).
+    void deliver_arrivals(std::uint32_t point);
+    // Field main-loop steps (field_loop.cpp).
+    std::int32_t loop_disc_busy();                                // 80078bc8
+    void clear_ordering_table(std::uint32_t table, std::uint32_t count); // 80044ad8
+    void drain_pad();                                             // 80074700
+    void pointer_state();                                         // 8007ae78(1, 80065848)
+    void record_play_state();                                     // 800a31e8
     std::uint32_t file_size(std::int32_t file); // Resident 80028738
     std::uint32_t read_size(std::int32_t file); // Resident 80028808
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,

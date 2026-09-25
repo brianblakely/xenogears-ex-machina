@@ -88,12 +88,35 @@ void Program::disc_wait(std::uint32_t once) {
 }
 
 bool Program::deliver_interrupt() {
+    using Kind = PlatformInput::Kind;
     auto &inputs = resident.platform;
-    if (inputs.empty() || inputs.front().kind != PlatformInput::Kind::interrupt)
+    if (inputs.empty() ||
+        (inputs.front().kind != Kind::interrupt && inputs.front().kind != Kind::tick))
         return false;
+    const auto arrival = inputs.front();
     inputs.pop_front();
+    if (arrival.kind == Kind::tick) {
+        static_cast<void>(sound_tick(arrival.value));
+        return true;
+    }
+    for (auto &buffers = resident.pad.buffers; !inputs.empty() && inputs.front().kind == Kind::pad;
+         inputs.pop_front()) {
+        const auto index = inputs.front().site;
+        if (index >= buffers.size() * buffers[0].size() || inputs.front().value > 0xff)
+            throw PlatformInputError("A controller buffer input is out of range");
+        buffers[index / buffers[0].size()][index % buffers[0].size()] =
+            static_cast<std::uint8_t>(inputs.front().value);
+    }
     interrupt_dispatch();
     return true;
+}
+
+void Program::deliver_arrivals(std::uint32_t point) {
+    using Kind = PlatformInput::Kind;
+    const auto &inputs = resident.platform;
+    while (!inputs.empty() && inputs.front().site == point &&
+           (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick))
+        static_cast<void>(deliver_interrupt());
 }
 
 // Resident 80028738: the file's byte size (record bytes 3-6).

@@ -55,6 +55,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/gte.cpp
   src/reconstruction/gpu.cpp
   src/reconstruction/field_frame.cpp
+  src/reconstruction/field_loop.cpp
   src/reconstruction/field_models.cpp
   src/reconstruction/field_characters.cpp
   src/reconstruction/field_dialogue_draw.cpp
@@ -173,6 +174,9 @@ if(BUILD_TESTING)
   add_executable(test-field-frame tests/test_field_frame.cpp)
   target_link_libraries(test-field-frame PRIVATE xem-reconstruction)
   add_test(NAME field-frame-reconstruction COMMAND test-field-frame)
+  add_executable(test-field-loop tests/test_field_loop.cpp)
+  target_link_libraries(test-field-loop PRIVATE xem-reconstruction)
+  add_test(NAME field-loop-reconstruction COMMAND test-field-loop)
   add_executable(test-packed-field tests/test_packed_field.cpp)
   target_link_libraries(test-packed-field PRIVATE xem-reconstruction)
   add_test(NAME packed-field-reconstruction COMMAND test-packed-field)

@@ -202,73 +202,6 @@ void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t
     write_original(*this, address, std::span(bytes).first(width));
 }
 
-// A supplied byte of a wider original global replaces that byte of its value.
-void Program::supply_bytes(std::uint32_t address, std::span<const std::uint8_t> bytes) {
-    const auto &globals = original_globals();
-    for (std::size_t i = 0; i < bytes.size(); ++i) {
-        const auto at = ram_address(address + static_cast<std::uint32_t>(i));
-        const bool record = (field && field->regions.contains(at, 1)) ||
-                            !resource_bytes(at, 1).empty() || !record_bytes(at, 1).empty();
-        const auto global = std::ranges::find_if(globals, [&](const OriginalGlobal &item) {
-            return at >= item.address && at - item.address < item.width;
-        });
-        // Sound pool headers (four words).
-        auto &pools = resident.sound.pool_headers;
-        if (const auto after = pools.upper_bound(at); after != pools.begin()) {
-            auto &[pool_address, pool] = *std::prev(after);
-            if (at - pool_address < 16) {
-                auto &value = pool[(at - pool_address) / 4];
-                const auto shift = 8U * ((at - pool_address) & 3U);
-                value = (value & ~(0xffU << shift)) | static_cast<std::uint32_t>(bytes[i]) << shift;
-                continue;
-            }
-        }
-        // Sound driver statics (whole original ranges).
-        auto &statics = resident.sound.statics;
-        if (const auto after = statics.upper_bound(at); after != statics.begin()) {
-            auto &[static_address, block] = *std::prev(after);
-            if (at - static_address < block.size()) {
-                block[at - static_address] = bytes[i];
-                continue;
-            }
-        }
-        // Heap headers (next, flags) and heap-held bytes.
-        auto &heap = resident.heap;
-        if (const auto after = heap.headers.upper_bound(at); after != heap.headers.begin()) {
-            auto &[header_address, header] = *std::prev(after);
-            if (at - header_address < 8) {
-                auto &value = header[(at - header_address) / 4];
-                const auto shift = 8U * ((at - header_address) & 3U);
-                value = (value & ~(0xffU << shift)) | static_cast<std::uint32_t>(bytes[i]) << shift;
-                continue;
-            }
-        }
-        if (const auto after = heap.held.upper_bound(at); after != heap.held.begin()) {
-            auto &[held_address, held] = *std::prev(after);
-            if (at - held_address < held.size()) {
-                held[at - held_address] = bytes[i];
-                continue;
-            }
-        }
-        // Event variables (800c3a68): halfword values.
-        if (constexpr std::uint32_t bank = 0x800c3a68;
-            at >= bank && at - bank < resident.variables.words.size() * 2) {
-            auto &word = resident.variables.words[(at - bank) / 2];
-            const auto shift = 8U * ((at - bank) & 1U);
-            word = static_cast<std::uint16_t>((word & ~(0xffU << shift)) |
-                                              static_cast<std::uint32_t>(bytes[i]) << shift);
-            continue;
-        }
-        if (record || global == globals.end() || (!global->resident && !field)) {
-            set_memory(at, bytes[i], 1);
-            continue;
-        }
-        const auto shift = 8U * (at - global->address);
-        global->set(*this, (global->get(*this) & ~(0xffU << shift)) |
-                               static_cast<std::uint32_t>(bytes[i]) << shift);
-    }
-}
-
 // RotAverage4 (8004a7bc): the four SVECTOR corners at `record` projected
 // into the packet's vertices (RTPT on three, RTPS on the fourth); returns
 // the average depth OTZ.
@@ -566,7 +499,9 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
         throw MissingDependency({"field_frame", 0x8007554c, {}, {}},
                                 "symbol:field-diagnostic-output", false,
                                 "Unsuppressed frame diagnostic output is not recovered");
+    // Interrupts that arrived while a step ran are delivered when it ends.
     const auto done = [&](std::string_view operation, std::uint32_t address) {
+        deliver_arrivals(address);
         observed(observe, *this, {operation, address, {}, {}}, true);
     };
     const auto unrecovered = [&](std::string_view operation, std::uint32_t address, const char *id,
@@ -578,7 +513,9 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
     case FrameStep::start:
         // 8007555c VSync(1); the VSync(-1) that follows only paces the final wait.
         state.frame_start_hcount = take_service(services.hblank_counts, "VSync(1) at frame start");
+        deliver_arrivals(0x8007555c);
         field_move(observe);
+        deliver_arrivals(0x800739c0);
         [[fallthrough]];
     case FrameStep::emitters:
         // 80086908: the listener for positional sound emitters.

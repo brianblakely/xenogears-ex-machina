@@ -58,22 +58,6 @@ std::string quote(std::string_view text) {
     out << '"';
     return out.str();
 }
-// One field frame's platform results, and before a later frame of a
-// multi-frame run, the bytes and GTE registers code outside the frame changed.
-struct FrameSection {
-    game::FrameServices services;
-    std::vector<std::pair<std::uint32_t, std::vector<std::uint8_t>>> bytes;
-    std::vector<std::pair<std::uint32_t, std::uint32_t>> gte;
-};
-std::vector<std::uint8_t> unhex(std::string_view text) {
-    if (text.size() % 2 != 0)
-        throw InputError("Odd hexadecimal byte string");
-    std::vector<std::uint8_t> bytes;
-    for (std::size_t i = 0; i < text.size(); i += 2)
-        bytes.push_back(
-            static_cast<std::uint8_t>(std::stoul(std::string(text.substr(i, 2)), nullptr, 16)));
-    return bytes;
-}
 // Memory a pure resident service writes outside Program state: the
 // decoder's output range.
 using ServiceOutput = std::optional<std::pair<std::uint32_t, std::vector<std::uint8_t>>>;
@@ -136,7 +120,7 @@ int run_case(int argc, char **argv) {
     std::uint32_t work = 0;
     bool executing = false;
     std::optional<game::Program> program;
-    std::ostringstream frames; // Completed frames of "field_frames".
+    std::ostringstream frames; // Completed boundaries of "field_frames".
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
     ServiceOutput service_output;
@@ -256,10 +240,10 @@ int run_case(int argc, char **argv) {
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
         // Platform results for a field frame, one "name value..." per line
-        // (hexadecimal), in the order the original consumed them.
-        // A "frame" line starts the next frame of "field_frames"; before it
-        // runs, "bytes ADDRESS HEX" and "gte INDEX VALUE" lines are applied.
-        std::vector<FrameSection> sections(1);
+        // (hexadecimal), in the order the original consumed them. A "frame"
+        // line starts the next main-loop iteration of "field_frames": the
+        // code between frames, then the frame.
+        std::vector<game::FrameServices> sections(1);
         {
             std::ifstream lines(argv[14]);
             if (!lines)
@@ -274,15 +258,8 @@ int run_case(int argc, char **argv) {
                 }
                 if (!(fields >> name >> std::hex >> first))
                     throw InputError("Malformed service line");
-                auto &services = sections.back().services;
-                if (name == "bytes") {
-                    std::string text;
-                    if (!(fields >> text))
-                        throw InputError("Malformed supplied bytes");
-                    sections.back().bytes.emplace_back(first, unhex(text));
-                } else if (name == "gte" && fields >> std::hex >> second)
-                    sections.back().gte.emplace_back(first, second);
-                else if (name == "hblank")
+                auto &services = sections.back();
+                if (name == "hblank")
                     services.hblank_counts.push_back(first);
                 else if (name == "vblank_wait" && fields >> std::hex >> second)
                     services.vblank_waits.push_back({first, second});
@@ -304,7 +281,7 @@ int run_case(int argc, char **argv) {
         }
         if (sections.size() != 1 && entry != "field_frames")
             throw InputError("Only field_frames takes several frame sections");
-        auto &services = sections.front().services;
+        auto &services = sections.front();
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -327,38 +304,29 @@ int run_case(int argc, char **argv) {
         } else if (entry == "field_update") {
             program->field_update(observer);
         } else if (entry == "field_frames") {
-            // Consecutive frames from one import: each frame's exported state
-            // is reported, then the next section's supplied bytes apply.
-            std::vector<std::string> supplied;
-            for (std::size_t k = 0; k < sections.size(); ++k) {
-                auto &section = sections[k];
-                // A byte the Program does not own is not its state: reported,
-                // never applied.
-                std::ostringstream unowned;
-                for (const auto &[address, bytes] : section.bytes)
-                    for (std::size_t i = 0; i < bytes.size(); ++i) {
-                        const auto at = address + static_cast<std::uint32_t>(i);
-                        try {
-                            program->supply_bytes(at, std::span(bytes).subspan(i, 1));
-                        } catch (const std::exception &) {
-                            unowned << (unowned.tellp() > 0 ? "," : "") << at;
-                        }
-                    }
-                supplied.push_back(unowned.str());
-                for (const auto &[index, value] : section.gte) {
-                    if (index >= 64)
-                        throw InputError("GTE register index out of range");
-                    if (index < 32)
-                        program->resident.gte.set_data(index, value);
-                    else
-                        program->resident.gte.set_control(index - 32, value);
-                }
-                const auto written = program->resident.hardware_writes.size();
-                program->field_frame(section.services, observer);
-                frames << (k ? "," : "") << "{\"unowned_supplied\":[" << supplied.back()
-                       << "],\"gte\":[" << gte_controls(*program) << "],\"owned\":["
+            // Consecutive main-loop iterations from one import: the first
+            // frame, then per section the code between frames and the next
+            // frame. Every boundary's exported state is reported; nothing
+            // observed enters between them. The loop's s4 and s5 come from
+            // the registers at the imported frame's entry.
+            auto &state = *program->field;
+            state.combination_latched = registers[20] != 0;
+            state.music_saved = registers[21] != 0;
+            const auto report = [&](std::string_view boundary, std::size_t written) {
+                frames << (frames.tellp() > 0 ? "," : "") << "{\"boundary\":" << quote(boundary)
+                       << ",\"gte\":[" << gte_controls(*program) << "],\"owned\":["
                        << owned_ranges(*program) << "],\"hardware_writes\":["
                        << hardware_writes(*program, written) << "]}";
+            };
+            for (std::size_t k = 0; k < sections.size(); ++k) {
+                auto written = program->resident.hardware_writes.size();
+                if (k != 0) {
+                    program->field_between_frames(sections[k], observer);
+                    report("entry", written);
+                    written = program->resident.hardware_writes.size();
+                }
+                program->field_frame(sections[k], observer);
+                report("exit", written);
             }
         } else if (entry.starts_with("field_frame")) {
             // "field_frame" or "field_frame:STEP" resumes at a frame step.

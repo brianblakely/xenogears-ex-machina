@@ -894,6 +894,35 @@ std::vector<OriginalGlobal> build() {
     add("b_b2357", 0x800b2357, 1, [](Program &p) -> auto & { return f(p).b_b2357; });
     add("party_reassignment", 0x800b2268, 4,
         [](Program &p) -> auto & { return f(p).party_reassignment; });
+    // Field main loop between frames (field_loop.cpp).
+    add("transition", 0x800adb38, 4, [](Program &p) -> auto & { return f(p).transition; });
+    add("w_adbd0", 0x800adbd0, 4, [](Program &p) -> auto & { return f(p).w_adbd0; });
+    add("gate_adbd8", 0x800adbd8, 4, [](Program &p) -> auto & { return f(p).gate_adbd8; });
+    add("gate_adbe8", 0x800adbe8, 4, [](Program &p) -> auto & { return f(p).gate_adbe8; });
+    add("input_mask", 0x800b217a, 2, [](Program &p) -> auto & { return f(p).input_mask; });
+    add("held_buttons_2", 0x800afea0, 2,
+        [](Program &p) -> auto & { return f(p).held_buttons_2; });
+    add("held_history", 0x800afc6c, 2, [](Program &p) -> auto & { return f(p).held_history; });
+    add("b_b02c8", 0x800b02c8, 1, [](Program &p) -> auto & { return f(p).b_b02c8; });
+    add("pause_inhibited", 0x800b2358, 1,
+        [](Program &p) -> auto & { return f(p).pause_inhibited; });
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        add("pointer_pads", 0x800b0054 + 4 * i, 4,
+            [i](Program &p) -> auto & { return f(p).pointer_pads[i]; });
+        add("pointer_divisors", 0x800b005c + 4 * i, 2,
+            [i](Program &p) -> auto & { return f(p).pointer_divisors[i]; });
+        add("pointer_x", 0x800b0068 + 4 * i, 4,
+            [i](Program &p) -> auto & { return f(p).pointer_x[i]; });
+        add("pointer_y", 0x800b0070 + 4 * i, 4,
+            [i](Program &p) -> auto & { return f(p).pointer_y[i]; });
+    }
+    add_resident("w_4f2f4", 0x8004f2f4, 4, [](Program &p) -> auto & { return p.resident.w_4f2f4; });
+    add_resident("w_4f318", 0x8004f318, 4, [](Program &p) -> auto & { return p.resident.w_4f318; });
+    add_resident("w_4f328", 0x8004f328, 4, [](Program &p) -> auto & { return p.resident.w_4f328; });
+    add_resident("b_59171", 0x80059171, 1, [](Program &p) -> auto & { return p.resident.b_59171; });
+    for (std::uint32_t i = 0; i < 5; ++i)
+        add_resident("pointer", 0x80065848 + 4 * i, 4,
+                     [i](Program &p) -> auto & { return p.resident.pointer[i]; });
     add_interrupt_globals(g);
     // Remaining bytes of the regions a field-return snapshot copies.
     const auto covered = [&](std::uint32_t address) {

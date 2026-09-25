@@ -14,6 +14,7 @@ from tools.analysis.memory_case import (
     compare,
     differing_positions,
     image_map,
+    loop_inputs,
     pairs,
     superseded_bytes,
     visible_registers,
@@ -219,6 +220,58 @@ class MemoryCaseTests(unittest.TestCase):
         del row["load_delay"]
         with self.assertRaisesRegex(ValueError, "recapture"):
             visible_registers(row)
+
+    def test_loop_arrivals_follow_the_reads_before_their_point(self):
+        ram = bytearray(RAM)
+        # lw v0, 0(v0) at each load site; DMA3 control register address.
+        for site in (0x45DE4, 0x4BA34, 0x42A6C):
+            ram[site : site + 4] = (0x8C420000).to_bytes(4, "little")
+        ram[0x567B4:0x567B8] = (0x1F8010B8).to_bytes(4, "little")
+        io = bytearray(0x1000)
+
+        def row(hook, cycle, v0=0, sp=0x801FFFC8, pc=0):
+            return {
+                "hook": hook,
+                "cycle_u32": cycle,
+                "subcycle_u32": 0,
+                "pc": pc,
+                "code": 0,
+                "gpr_u32": [0, 0, v0] + [0] * 26 + [sp, 0, 0, 0, 0, 0],
+                "load_delay": {"select": 0, "registers": [0, 0], "values": [0, 0]},
+            }
+
+        image = [row("vsync0-return", 20)]
+        loop = [
+            row("frame-entry", 0),
+            row("tick-entry", 30, v0=0x80060000, sp=0x85D8),
+            row("tick-exit", 31),
+            row("frame-exit", 40),
+            row("dispatch-entry", 50, sp=0x800588BC),
+            row("load-8004ba34", 51, v0=1, pc=0x8004BA38),
+            row("dispatch-exit", 52),
+            row("load-80042a6c", 55, pc=0x80042A70),
+            row("vsync1-loop", 60, v0=0x55),
+            row("load-80045de4", 70, pc=0x80045DE8),
+            row("drain-call", 80),
+        ]
+        lines, counts, sectors, stacks = loop_inputs(image, loop, {50: b"\x00\x41"}, bytes(ram), bytes(io))
+        self.assertEqual(
+            lines,
+            [
+                "tick 8007554c 80060000",
+                "arrival 80077db4",
+                "pad 0 0",
+                "pad 1 41",
+                "read 8004ba34 00000001",
+                "read 80045de4 00000000",
+            ],
+        )
+        self.assertEqual(sectors, [])
+        self.assertEqual(stacks, {0x85D8, 0x800588BC})
+        self.assertEqual(counts["datasync_reads_checked"], 1)
+        io[0xB8 + 3] = 1  # DMA3 busy in the imported page, idle in the recording
+        with self.assertRaisesRegex(ValueError, "DMA3 busy"):
+            loop_inputs(image, loop, {50: b""}, bytes(ram), bytes(io))
 
 
 if __name__ == "__main__":

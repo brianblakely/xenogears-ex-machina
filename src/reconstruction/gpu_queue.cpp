@@ -493,6 +493,9 @@ void add_gpu_globals(std::vector<OriginalGlobal> &table) {
     for (std::uint32_t i = 0; i < 5; ++i)
         add("gpu_registers", 0x800569a0 + 4 * i, 4,
             [i](Program &p) -> auto & { return p.resident.gpu.registers[i]; });
+    for (std::uint32_t i = 0; i < 4; ++i)
+        add("gpu_otc_registers", 0x800569b4 + 4 * i, 4,
+            [i](Program &p) -> auto & { return p.resident.gpu.otc_registers[i]; });
     for (std::uint32_t i = 0; i < 3; ++i)
         add("gpu_current", 0x800569c4 + 4 * i, 4,
             [i](Program &p) -> auto & { return p.resident.gpu.current[i]; });

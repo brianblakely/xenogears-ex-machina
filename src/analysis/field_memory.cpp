@@ -636,6 +636,16 @@ void load_platform(Program &program, const char *platform, const char *disc) {
                 {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
         } else if (kind == "interrupt") {
             resident.platform.push_back({reconstruction::PlatformInput::Kind::interrupt, 0, 0});
+        } else if (kind == "arrival" || kind == "tick" || kind == "pad") {
+            // arrival POINT; tick POINT EVENT; pad INDEX BYTE (hexadecimal).
+            std::string first, second = "0";
+            if (!(lines >> first) || (kind != "arrival" && !(lines >> second)))
+                throw field::FieldFormatError("Malformed platform arrival");
+            using Kind = reconstruction::PlatformInput::Kind;
+            resident.platform.push_back({kind == "arrival" ? Kind::interrupt
+                                         : kind == "tick"  ? Kind::tick
+                                                           : Kind::pad,
+                                         number(first, 16), number(second, 16)});
         } else {
             throw field::FieldFormatError("Unknown platform input " + kind);
         }

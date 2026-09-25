@@ -742,47 +742,6 @@ def segments(
     return update_changed, interrupt_changed, superseded
 
 
-def supplied_lines(
-    previous_exit: bytes,
-    entry: bytes,
-    interrupt_changed: set[int],
-    own: set[int] | None,
-    superseded: dict[int, tuple[int, int]],
-    sp: int,
-    previous_cop2: list[int],
-    cop2: list[int],
-) -> tuple[list[str], int]:
-    """Effects of code outside a frame, as observed before the next frame.
-
-    The field main loop between two frames and the interrupt handlers inside
-    the previous frame are not the frame's code: every byte they changed is
-    supplied at its value at the next frame's entry, except bytes the frame's
-    own segments changed (unless an interrupt superseded them), the stack
-    below the next entry SP and the BIOS exception save areas. GTE registers
-    are supplied where the next entry differs from the previous exit.
-    """
-    low, high = (sp & 0x1FFFFF) - STACK_BELOW_ENTRY, sp & 0x1FFFFF
-    own = set() if own is None else own
-    offsets = set(unowned_offsets(previous_exit, entry))
-    offsets |= {o for o in interrupt_changed if o not in own} | set(superseded)
-    offsets = sorted(
-        o for o in offsets if not low <= o < high and not any(a <= o < b for a, b in KERNEL_SAVE)
-    )
-    runs = []
-    for o in offsets:
-        if runs and o == runs[-1][1]:
-            runs[-1][1] = o + 1
-        else:
-            runs.append([o, o + 1])
-    lines = [f"bytes {0x80000000 + a:x} {entry[a:b].hex()}" for a, b in runs]
-    lines += [
-        f"gte {i:x} {v:x}"
-        for i, (u, v) in enumerate(zip(previous_cop2, cop2, strict=True))
-        if u != v
-    ]
-    return lines, len(offsets)
-
-
 NONZERO = re.compile(rb"[^\x00]")
 
 
@@ -837,7 +796,6 @@ def run(args: argparse.Namespace) -> int:
     dependencies = collections.defaultdict(list)
     divergences = []
     superseded_calls = []  # Matched calls with interrupt-superseded owned bytes.
-    chain_reports = [] if args.frames > 1 else None
     matched = 0
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
@@ -857,12 +815,6 @@ def run(args: argparse.Namespace) -> int:
         # recorded services; it is not comparable.
         selected = [call for call in selected if frame_keys.get(id(call[0])) is not None]
     chains = [[call] for call in selected]
-    if args.frames > 1:
-        require(
-            args.entry == "field_frame" and not args.frame_from and not args.stop,
-            "Multi-frame runs compare whole field frames",
-        )
-        chains = [selected[i : i + args.frames] for i in range(0, len(selected), args.frames)]
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     require(not trace.get("failed"), "Capture instruction trace failed")
     # The trace and snapshot files must be the ones the capture recorded.
@@ -915,37 +867,11 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
-            require(
-                len(frames) == 1 or not any(item["inputs"] for item in frames),
-                "Multi-frame runs take no recorded platform inputs",
-            )
             platform, recorded_sectors = platform_inputs(first["inputs"], entry, args.arrival)
             (work / "platform.txt").write_text(platform)
-            lines, supplied = [], []
-            for k, item in enumerate(frames):
+            lines = []
+            for item in frames:
                 row = item["entry_row"]
-                if k:
-                    before = frames[k - 1]
-                    own, by_interrupts, superseded = segments(
-                        before["entry_row"],
-                        before["exit_row"],
-                        before["handlers"],
-                        before["entry"],
-                        before["exit"],
-                        before["brackets"],
-                    )
-                    extra, count = supplied_lines(
-                        before["exit"],
-                        item["entry"],
-                        by_interrupts,
-                        own,
-                        superseded,
-                        visible_registers(row)[29],
-                        before["exit_row"]["cop2_u32"],
-                        row["cop2_u32"],
-                    )
-                    supplied.append(count)
-                    lines += ["frame", *extra]
                 if args.entry == "field_frame":
                     # Results of the frame containing the entry, from the entry
                     # on: captures of one execution share cycle counts.
@@ -961,9 +887,7 @@ def run(args: argparse.Namespace) -> int:
             entry_row = first["entry_row"]
             report = runner.call(
                 [
-                    "field_frames"
-                    if len(frames) > 1
-                    else args.entry + (f":{args.frame_from}" if args.frame_from else ""),
+                    args.entry + (f":{args.frame_from}" if args.frame_from else ""),
                     str(args.budget),
                     args.stop,
                     str(work / "ram.bin"),
@@ -982,25 +906,7 @@ def run(args: argparse.Namespace) -> int:
                 ],
                 args.timeout * len(frames),
             )
-            # A multi-frame run reports each completed frame; the first frame it
-            # did not complete carries the run's status.
-            if len(frames) > 1:
-                outputs = report.get("frames", [])
-                if chain_reports is not None:
-                    chain_reports.append(
-                        {
-                            "first_call": index,
-                            "frames": len(frames),
-                            "completed": len(outputs),
-                            "supplied_bytes": supplied,
-                            # Supplied bytes that are no Program state.
-                            "unowned_supplied": [
-                                [hex(address) for address in output["unowned_supplied"]]
-                                for output in outputs[1:]
-                            ],
-                        }
-                    )
-            elif report["status"] == "completed_boundary":
+            if report["status"] == "completed_boundary":
                 outputs = [report]
             else:
                 outputs = []
@@ -1187,7 +1093,6 @@ def run(args: argparse.Namespace) -> int:
         },
         "divergences": divergences,
         "interrupt_superseded": superseded_calls,
-        "multi_frame": chain_reports,
         "tolerance": "exact; owned bytes and every unowned original write",
         "exclusions": {
             "stack_below_entry_sp": STACK_BELOW_ENTRY,
@@ -1226,6 +1131,334 @@ def run(args: argparse.Namespace) -> int:
         )
     )
     return 0 if matched == len(selected) else 1
+
+# Multi-frame runs: the field main loop 80077e88 between frames. Each
+# interrupt arrival is delivered where the recovered code reaches the point
+# that follows the last position hook before it (Program::deliver_arrivals):
+# frame steps are hooked at their call sites in the image capture, the loop
+# steps in the platform capture.
+ARRIVAL_POINTS = {
+    "frame-entry": 0x8007555C,  # during the frame's first VSync(1)
+    "vsync1-a": 0x800739C0,  # field_move
+    "s-86908": 0x80086908,
+    "s-71cb4": 0x80071CB4,
+    "s-74108": 0x80074108,
+    "s-748e8": 0x800748E8,
+    "s-752c8": 0x800752C8,
+    "s-a9688": 0x800A9688,
+    "s-a4dac": 0x80075694,  # up to the VSync(1) after drawing
+    "vsync1-b": 0x8004B54C,  # DrawSync, dialogue, VSync(0)
+    "vsync0-return": 0x8007554C,  # the rest of the frame and its final wait
+    "frame-exit": 0x80077DB4,  # 800a5924 .. the VSync(1) of 80077dac
+    "vsync1-loop": 0x80077DCC,  # the ordering tables
+    "drain-call": 0x80074700,  # the pad drain (ordering unknown; delivered after it)
+    "drain-return": 0x800A31E8,
+    "loop-31e8": 0x80077DAC,  # 800a31e8
+}
+# Hardware reads the code between frames consumes: ClearOTagR's DMA6 busy
+# polls. The frame's own results come from its services.
+LOOP_READS = (0x80045DE4, 0x80045E18)
+# CD_datasync's DMA3 busy read; the recovered disc status (800286cc) takes it
+# from the imported I/O page, so every recording must agree with that page.
+DATASYNC_READ = 0x80042A6C
+PAD_BUFFERS = (0x625FC, 0x44)
+MAIN_LOOP_RETURN = 0x800782E4
+
+
+def trace_rows(capture: Path) -> list[dict]:
+    return [json.loads(line) for line in (capture / "instruction-trace.jsonl").open()]
+
+
+def loop_inputs(
+    image_rows: list[dict],
+    loop_rows: list[dict],
+    pads: dict[int, bytes],
+    ram: bytes,
+    io: bytes,
+) -> tuple[list[str], dict, list[int], set[int]]:
+    """Platform input lines of a chain, their accounting, sectors and arrival stacks.
+
+    Rows are one execution's records between the chain's first frame entry
+    and last frame exit, merged by cycle.
+    """
+    base = loop_rows[0]["cycle_u32"]
+    merged = sorted(
+        image_rows + loop_rows,
+        key=lambda row: ((row["cycle_u32"] - base) % (1 << 32), row["subcycle_u32"]),
+    )
+    dma3 = u32(ram, 0x800567B4) - IO_BASE
+    idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000
+    lines, pending, block, last = [], [], None, None
+    counts = collections.Counter()
+    sectors, stacks = [], set()
+    for row in merged:
+        hook = row["hook"]
+        if hook in ARRIVAL_POINTS:
+            require(block is None, "A position hook inside interrupt code")
+            lines += [line for item in pending for line in item]
+            pending, last = [], hook
+        elif hook in ("dispatch-entry", "tick-entry"):
+            require(block is None and last is not None, "Arrival outside the chain's positions")
+            point = ARRIVAL_POINTS[last]
+            stacks.add(visible_registers(row)[29])
+            if hook == "tick-entry":
+                block = [f"tick {point:x} {visible_registers(row)[2]:x}"]
+                counts["tick_arrivals"] += 1
+            else:
+                pad = pads[row["cycle_u32"]]
+                block = [f"arrival {point:x}"] + [f"pad {i:x} {b:x}" for i, b in enumerate(pad)]
+                counts["interrupt_arrivals"] += 1
+                counts["pad_bytes"] += len(pad)
+            if last == "drain-call":
+                counts["arrivals_during_drain"] += 1
+        elif hook in ("dispatch-exit", "tick-exit"):
+            require(block is not None, "Interrupt exit without its arrival")
+            pending.append(block)
+            block = None
+        elif hook == SECTOR_HOOK:
+            require(block is not None, "Sector delivered outside interrupt code")
+            sectors.append(header_sector(row))
+        elif hook.startswith(LOAD_PREFIX):
+            site = int(hook[len(LOAD_PREFIX) :], 16)
+            require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
+            code = u32(ram, site)
+            require(code >> 26 in LOADS, "Load hook does not follow a load instruction")
+            value = visible_registers(row)[(code >> 16) & 31]
+            if block is not None:
+                block.append(f"read {site:08x} {value:08x}")
+                counts["interrupt_reads"] += 1
+            elif site in LOOP_READS:
+                lines.append(f"read {site:08x} {value:08x}")
+                counts["loop_reads"] += 1
+            elif site == DATASYNC_READ:
+                require(value & 0x1000000 == idle, "DMA3 busy differs from the imported I/O page")
+                counts["datasync_reads_checked"] += 1
+    require(block is None, "The chain ends inside interrupt code")
+    lines += [line for item in pending for line in item]
+    if sectors:
+        lines.insert(0, f"drive {sectors[0]}")
+    return lines, dict(counts), sectors, stacks
+
+
+def run_frames(args: argparse.Namespace) -> int:
+    """Consecutive field main-loop iterations from one imported frame entry.
+
+    The image capture (--capture) holds frame-entry and frame-exit snapshots
+    plus the frame-step, dispatch and tick hooks; --services the frames'
+    service results; --platform the loop hooks, arrivals and hardware reads.
+    All three record one execution. Every frame boundary is compared exactly;
+    nothing observed enters the run except the declared platform inputs.
+    """
+    capture = args.capture
+    require(args.entry == "field_frame" and args.platform and args.services,
+            "Multi-frame runs are field_frame chains with --platform and --services")
+    snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
+    for path in (capture, args.platform, args.services):
+        trace = json.loads((path / "observation.json").read_text())["instruction_trace"]
+        require(not trace.get("failed") and not trace.get("budget_reached"),
+                f"Capture trace of {path} failed or reached its budget")
+        require(file_sha256(path / "instruction-trace.jsonl") == trace.get("trace_sha256"),
+                f"Capture trace of {path} does not match its recorded digest")
+    calls = pairs(capture, "frame-entry", "frame-exit")
+    image_rows = trace_rows(capture)
+    loop_rows = trace_rows(args.platform)
+    services = frame_services(args.services, "frame-entry", "frame-exit", ())
+    positions = {hook for hook in ARRIVAL_POINTS if hook not in ("frame-entry", "frame-exit")}
+    loop_hooks = {"frame-entry", "frame-exit", "vsync1-loop", "drain-call", "drain-return",
+                  "loop-31e8"}
+    # A main-loop iteration's frame returns to 800782e4. Frames other code
+    # calls (the entry fade-in 80078d44 returns to 80079178) split chains.
+    selected = calls[args.start : args.start + args.limit]
+    callers = collections.Counter(
+        hex(visible_registers(entry)[31]) for entry, *_ in selected
+        if visible_registers(entry)[31] != MAIN_LOOP_RETURN
+    )
+    runs, chains, results = [[]], [], []
+    for call in selected:
+        if visible_registers(call[0])[31] == MAIN_LOOP_RETURN:
+            runs[-1].append(call)
+        elif runs[-1]:
+            runs.append([])
+    for run in runs:
+        chains += [run[i : i + args.frames] for i in range(0, len(run), args.frames)]
+    loaded_sources: dict[int, Sources] = {}
+    with (
+        tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
+        BatchRunner(args.runner) as runner,
+    ):
+        work = Path(directory)
+        for chain in chains:
+            entry_row, last_exit = chain[0][0], chain[-1][1]
+            entry, scratch, io = snapshots.read(entry_row)
+            start, end = entry_row["cycle_u32"], last_exit["cycle_u32"]
+
+            first_run, last_run = entry_row["frontend_run"], last_exit["frontend_run"]
+
+            # Cycle counts wrap; frontend frames place a row in the chain's span.
+            def inside(row: dict, start=start, end=end, runs=(first_run, last_run)) -> bool:
+                return (
+                    runs[0] <= row["frontend_run"] <= runs[1]
+                    and (row["cycle_u32"] - start) % (1 << 32) <= (end - start) % (1 << 32)
+                )
+
+            chain_loop = [row for row in loop_rows if inside(row)]
+            chain_image = [row for row in image_rows if inside(row) and row["hook"] in positions]
+            pads = {
+                row["cycle_u32"]: snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)]
+                for row in image_rows
+                if inside(row) and row["hook"] == "dispatch-entry"
+            }
+            platform, counts, sectors, stacks = loop_inputs(
+                chain_image, chain_loop, pads, entry, io
+            )
+            # Services: each frame's results; before each later frame, the
+            # VSync(1) of 80077dac.
+            loop_vsyncs = [
+                visible_registers(row)[2] for row in chain_loop if row["hook"] == "vsync1-loop"
+            ]
+            lines, service_counts = [], collections.Counter()
+            for k, (frame_entry, _, _, _) in enumerate(chain):
+                key = frame_entry["snapshot"]["ram_sha256"]
+                require(key in services, "No service results recorded for a chain frame")
+                if k:
+                    require(len(loop_vsyncs) >= k, "No VSync(1) recorded between frames")
+                    lines += ["frame", f"hblank {loop_vsyncs[k - 1]:x}"]
+                    service_counts["hblank"] += 1
+                for _, line in services[key][1]:
+                    lines.append(line)
+                    service_counts[line.split()[0]] += 1
+            map_id = image_map(entry) if args.map is None else args.map
+            if map_id not in loaded_sources:
+                loaded_sources[map_id] = Sources(args.raw, map_id, args.field_slot)
+            sources = loaded_sources[map_id]
+            (work / "field.bin").write_bytes(sources.field)
+            (work / "overlay.bin").write_bytes(sources.overlay)
+            (work / "ram.bin").write_bytes(entry)
+            (work / "scratch.bin").write_bytes(scratch)
+            (work / "io.bin").write_bytes(io)
+            (work / "resources.txt").write_text(sources.manifest(entry))
+            (work / "platform.txt").write_text("".join(line + "\n" for line in platform))
+            (work / "services.txt").write_text("".join(line + "\n" for line in lines))
+            report = runner.call(
+                [
+                    "field_frames",
+                    str(args.budget * len(chain)),
+                    "",
+                    str(work / "ram.bin"),
+                    str(work / "scratch.bin"),
+                    str(work / "field.bin"),
+                    str(work / "overlay.bin"),
+                    str(work / "resources.txt"),
+                    ",".join(f"{value:x}" for value in entry_row["cop2_u32"]),
+                    ",".join(f"{value:x}" for value in visible_registers(entry_row)),
+                    str(work / "io.bin"),
+                    str(work / "platform.txt"),
+                    str(args.raw) if args.raw.exists() else "",
+                    str(work / "services.txt"),
+                ],
+                args.timeout * len(chain),
+            )
+            outputs = report.get("frames", [])
+            sp = visible_registers(entry_row)[29] + args.frame_above
+            boundaries = []
+            for k, (frame_entry, frame_exit, _, _) in enumerate(chain):
+                boundaries += [] if k == 0 else [("entry", frame_entry)]
+                boundaries.append(("exit", frame_exit))
+            compared, first_divergence = [], None
+            for (kind, row), output in zip(boundaries, outputs, strict=False):
+                require(output["boundary"] == kind, "Runner boundaries out of order")
+                image = snapshots.read(row)[0]
+                result = compare(entry, image, output["owned"], sp, arrival_stacks=tuple(stacks))
+                if output["gte"] != gte_words(row):
+                    result["gte_mismatch"] = {"computed": output["gte"], "original": gte_words(row)}
+                    result["mismatch_count"] += 1
+                ok = not (result["mismatch_count"] or result["unowned_count"])
+                compared.append(
+                    {"boundary": kind, "frontend_run": row["frontend_run"], "matched": ok,
+                     "changed_bytes": result["changed_bytes"],
+                     "owned_bytes": result["owned_bytes"],
+                     "interrupt_attributed": result["interrupt_attributed"],
+                     "mismatch_count": result["mismatch_count"],
+                     "unowned_count": result["unowned_count"]}
+                )
+                if not ok:
+                    first_divergence = {"boundary": kind, "frontend_run": row["frontend_run"],
+                                        **result}
+                    break
+            matched = 0
+            for item in compared:
+                if not item["matched"]:
+                    break
+                matched += 1
+            complete = len(outputs) == len(boundaries)
+            if complete and first_divergence is None:
+                if report.get("platform_unconsumed"):
+                    first_divergence = {"platform_unconsumed": report["platform_unconsumed"]}
+                elif sectors and report.get("delivered_sectors") != sectors:
+                    first_divergence = {"sector_mismatch": {
+                        "computed": report.get("delivered_sectors"), "recorded": sectors}}
+            # Frames whose exit matched with every earlier boundary.
+            frames_matched = sum(1 for item in compared[:matched] if item["boundary"] == "exit")
+            results.append(
+                {
+                    "first_frame": entry_row["frontend_run"],
+                    "frames": len(chain),
+                    "boundaries": len(boundaries),
+                    "boundaries_completed": len(outputs),
+                    "boundaries_matched": matched,
+                    "frames_matched": frames_matched,
+                    "status": report["status"],
+                    "stopped_at": None if complete else {
+                        "dependency": report.get("dependency"),
+                        "reason": report.get("reason"),
+                        "location": report.get("location"),
+                    },
+                    "first_divergence": first_divergence,
+                    "platform_inputs": counts,
+                    "service_results": dict(service_counts),
+                    "supplied_state_bytes": 0,
+                    "boundary_results": compared,
+                }
+            )
+    summary = {
+        "captures": {
+            name: {
+                "path": str(path),
+                "trace_sha256": json.loads((path / "observation.json").read_text())[
+                    "instruction_trace"]["trace_sha256"],
+            }
+            for name, path in (("images", capture), ("platform", args.platform),
+                               ("services", args.services))
+        },
+        "runner_sha256": file_sha256(args.runner),
+        "tool_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "source_revision": subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
+        ).stdout.strip(),
+        "entry": "field_frames",
+        "tolerance": "exact at every frame entry and exit; owned bytes and every unowned "
+        "original write since the import",
+        "exclusions": {
+            "stack_below_entry_sp": STACK_BELOW_ENTRY,
+            "stack_below_arrival_sp": STACK_BELOW_ENTRY,
+            "bios_save_areas_and_pad_buffers": [[hex(a), hex(b)] for a, b in KERNEL_SAVE],
+            "scratchpad": "not compared",
+        },
+        "frames_of_other_callers": dict(callers),
+        "chains": results,
+    }
+    text = json.dumps(summary, indent=1)
+    if args.report:
+        require(not args.report.exists(), "Reports are never overwritten")
+        args.report.write_text(text + "\n")
+    print(json.dumps([
+        [c["first_frame"], c["frames"], c["frames_matched"], c["boundaries_matched"],
+         c["status"], (c["stopped_at"] or {}).get("dependency"),
+         bool(c["first_divergence"])]
+        for c in results
+    ]))
+    return 0 if all(c["frames_matched"] == c["frames"] and not c["first_divergence"]
+                    for c in results) else 1
 
 
 def main() -> int:
@@ -1303,8 +1536,14 @@ def main() -> int:
         "--frames",
         type=int,
         default=1,
-        help="Run this many consecutive field frames from one import; code outside the "
-        "frames supplies its observed changes between them",
+        help="Run this many consecutive field main-loop iterations from one import "
+        "(field_frame only; needs --platform)",
+    )
+    parser.add_argument(
+        "--platform",
+        type=Path,
+        help="Capture of the same execution with the main-loop hooks, interrupt arrivals and "
+        "their hardware reads (multi-frame runs)",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)
@@ -1320,7 +1559,7 @@ def main() -> int:
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     with host_slot("compare"):
-        return run(args)
+        return run_frames(args) if args.frames > 1 else run(args)
 
 
 if __name__ == "__main__":

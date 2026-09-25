@@ -22,12 +22,18 @@ class PlatformInputError : public std::runtime_error {
 
 // One ordered platform event. A `read` is the value an original hardware
 // register load returned, identified by the address of that load instruction
-// (its site). An `interrupt` is the arrival of an interrupt exception while
-// recovered code waits; its handler then consumes the reads that follow.
-// Arrival time is external: waits deliver the next interrupt when they would
-// otherwise poll again.
+// (its site). An `interrupt` is the arrival of an interrupt exception (the
+// dispatcher 8004b9b4) and a `tick` the arrival of the sound driver's timer
+// event (8003c028; `value` is its event argument); the handler then consumes
+// the reads that follow. Arrival time is external. An arrival with site zero
+// is delivered by the next wait that would otherwise poll again; any other
+// site names the original code it arrived during, and recovered code
+// delivers it when that code ends (Program::deliver_arrivals). `pad` entries
+// after an interrupt are the controller receive buffers (800625fc, two of
+// 22h bytes) the BIOS filled before the dispatch: site is the byte index,
+// value the byte.
 struct PlatformInput {
-    enum class Kind : std::uint8_t { read, interrupt };
+    enum class Kind : std::uint8_t { read, interrupt, tick, pad };
     Kind kind{Kind::read};
     std::uint32_t site{};
     std::uint32_t value{};

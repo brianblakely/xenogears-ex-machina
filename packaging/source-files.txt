@@ -209,6 +209,7 @@ src/reconstruction/field_disassembler.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_frame.cpp
 src/reconstruction/field_gte.cpp
+src/reconstruction/field_loop.cpp
 src/reconstruction/field_media.cpp
 src/reconstruction/field_models.cpp
 src/reconstruction/field_motion.cpp
@@ -291,6 +292,7 @@ tests/test_field_disassembler.cpp
 tests/test_field_events.cpp
 tests/test_field_frame.cpp
 tests/test_field_gte.cpp
+tests/test_field_loop.cpp
 tests/test_field_media.cpp
 tests/test_field_motion.cpp
 tests/test_field_movie.cpp
