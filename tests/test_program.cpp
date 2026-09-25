@@ -32,13 +32,7 @@ game::Program events(std::vector<std::uint8_t> code, std::size_t count = 1) {
     state.actors.resize(count);
     state.event_control.gate_values = {1, 1, 1};
     state.event_control.post_initialization = 1;
-    // Each descriptor (800afb10 table, 5c bytes apart) names its actor (+4c).
-    state.reload.descriptor_table = 0x80120000;
     for (auto &actor : state.actors) {
-        const auto index = static_cast<std::uint32_t>(&actor - state.actors.data());
-        actor.address = 0x80130000 + 0x138 * index;
-        actor.descriptor_address = state.reload.descriptor_table + 0x5c * index;
-        put(actor.descriptor, 0x4c, actor.address);
         put(actor.descriptor, 0x58, 0x200);
         for (std::size_t i = 1; i < 8; ++i)
             put(actor.storage, 0x90 + i * 8, 15U << 18U);

@@ -298,41 +298,6 @@ void stop_effect_pair(SoundDriver &driver, std::uint32_t channel) {
     }
 }
 
-void release_effect_bank(SoundDriver &driver, std::uint32_t bank) {
-    std::uint32_t previous = 0;
-    auto at = driver.effect_banks;
-    while (at != 0 && at != bank) {
-        previous = at;
-        at = u32(driver, at + 0x1c);
-    }
-    if (at == 0)
-        throw SoundError("Released effect bank is not on the effect bank list (driver error 0x10)");
-    // 8003a094: stop the effect voices playing an effect of this bank.
-    const auto id = s16(u16(driver, bank + 0x14));
-    for (std::uint32_t index = 0; index < driver.voice_limit; ++index) {
-        const auto record = voice(driver, index);
-        if ((u16(driver, record) & 1) == 0 || s16(u16(driver, record + 0xa)) != id)
-            continue;
-        put16(driver, record, 0);
-        const auto effects = driver.effect_block;
-        put32(driver, effects + 0x48, u32(driver, effects + 0x48) & ~bit(u8(driver, record + 6)));
-        release_voice(driver, record + 0x30, u8(driver, record + 0x27));
-    }
-    // Between BIOS DisableEvent/EnableEvent.
-    if (previous != 0)
-        put32(driver, previous + 0x1c, u32(driver, bank + 0x1c));
-    else
-        driver.effect_banks = u32(driver, bank + 0x1c);
-    put32(driver, bank + 0x1c, 0);
-    // 8003f614: the bank's signature 'sesd', a zero word sum over its
-    // length (+8) and version 101.
-    std::uint32_t sum = 0;
-    for (std::uint32_t word = 0; word < (u32(driver, bank + 8) + 3) / 4; ++word)
-        sum += u32(driver, bank + 4 * word);
-    if (u32(driver, bank) != 0x73646573 || sum != 0 || u16(driver, bank + 0xc) != 0x101)
-        throw SoundError("Released effect bank fails its signature check (driver error 0xb)");
-}
-
 void start_effect(SoundDriver &driver, std::uint32_t id, std::uint32_t channel,
                   std::uint32_t volume, std::uint32_t pan) {
     if ((driver.flags & 0x800) == 0)

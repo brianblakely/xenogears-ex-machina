@@ -5,11 +5,8 @@
 //
 // Interrupts that arrive between frames are platform inputs delivered where
 // the original recorded them (Program::deliver_arrivals).
-#include "xem/reconstruction/field_return.hpp"
-#include "xem/reconstruction/original_layout.hpp"
 #include "xem/reconstruction/program.hpp"
 
-#include <algorithm>
 #include <bit>
 
 namespace xem::reconstruction {
@@ -200,7 +197,7 @@ void Program::record_play_state() {
     variables.write(0x22, s16(word(actor, 0x26, 2)));
 }
 
-bool Program::field_between_frames(FrameServices &services, const ProgramObserver &observe) {
+void Program::field_between_frames(FrameServices &services, const ProgramObserver &observe) {
     auto &state = loaded(*this);
     auto &request = resident.battle_request;
     auto &inputs = state.control_inputs;
@@ -212,16 +209,14 @@ bool Program::field_between_frames(FrameServices &services, const ProgramObserve
         unrecovered("field_transition", 0x800a5944, "symbol:field-transition-800a5924",
                     "The transition frames of 800a5924 are not recovered");
     // 800782ec: a battle request with draw buffer 1, the disc idle and
-    // 80077e10 clear: the battle starts; the loop leaves unless the battle
-    // music starts first.
+    // 80077e10 clear.
     if (state.draw_buffer == 1 && request.field_active == 0 && loop_disc_busy() == 0) {
         // 80077e10: -1 while 800adbd0 is 1, 800b2344 is zero and the
         // controlled actor has flag 800.
         const bool waiting = state.w_adbd0 == 1 && inputs.jump_mode == 0 && (flags() & 0x800U) != 0;
-        if (!waiting && start_battle(observe)) {
-            leave_field_loop(services, 0, observe);
-            return false;
-        }
+        if (!waiting)
+            unrecovered("field_battle_start", 0x80078334, "symbol:field-battle-start",
+                        "Starting a battle from the field main loop is not recovered");
     }
     field_map_change_step(services, observe); // 80078494..80078558
     // 80078558: leaving the field (exit kinds 1, 2 and 3) with draw buffer 1.
@@ -269,214 +264,6 @@ bool Program::field_between_frames(FrameServices &services, const ProgramObserve
     field_post_frame(); // 80078b5c
     observed(observe, *this, {"field_loop_tail", 0x80078b5c, {}, {}});
     field_loop_top(services, observe);
-    return true;
-}
-
-// 80078334..80078494: a battle starts. The read-ahead map data is released
-// (8004f334 set), the field music is saved once (800afc78, s5), the dialogue
-// windows close (8007ffe8). With 800adbd0 set the battle music (800b2290)
-// starts and the loop goes on; otherwise the field is saved for the return
-// (8004f30c counted, 800a3f4c) unless 800adb18 is set, the battle music's
-// volume is set (8003a89c) when it was started here, and the loop leaves.
-bool Program::start_battle(const ProgramObserver &observe) {
-    auto &state = loaded(*this);
-    auto &music = resident.music;
-    const auto done = [&](std::string_view operation, std::uint32_t address) {
-        reach_position(address);
-        observed(observe, *this, {operation, address, {}, {}});
-    };
-    deliver_arrivals(0x80077db4); // Since the last frame's exit.
-    done("battle_start", 0x80078334);
-    if (resident.preload_slot != 0xffffffffU) {
-        auto &heap = resident.heap;
-        auto &block = resident.preload_block;
-        const auto header = heap.headers.find(block.address - 8);
-        if (header == heap.headers.end() || block.bytes.empty())
-            throw field::FieldFormatError("The read-ahead block is not owned");
-        header->second[1] &= ~resident::heap_keep; // 800320b8
-        const auto address = block.address;
-        if (resident::heap_release(heap, block, 0x80078360) != 0)
-            throw field::FieldFormatError("The read-ahead block was not released");
-        block = {};
-        block.address = address; // 8005a4e0 keeps naming the released block
-    }
-    if (!state.music_saved) {
-        state.saved_music = music.requested;
-        state.music_saved = true;
-    }
-    close_dialogues(); // 8007ffe8
-    done("battle_close_dialogues", 0x8007838c);
-    if (state.w_adbd0 == 1) {
-        resident.battle_request.mode = static_cast<std::uint8_t>(memory(0x800b2355, 1));
-        state.saved_music = music.requested;
-        const auto battle_music = static_cast<std::uint32_t>(s16(memory(0x800b2290, 2)));
-        if (music.loaded_sequence != battle_music) {
-            if (music.loaded_sequence != 0xffffffffU)
-                music.reuse_sequence = 1;
-            stop_music(); // 8001b66c
-            music.gate = 0xffffffffU;
-            music.requested = battle_music;
-            load_music(battle_music); // 80085b20
-        }
-        state.w_adbd0 = 0;
-        state.w_adbd4 = 1;
-        return false;
-    }
-    if (state.w_adb18 == 0) {
-        ++resident.w_4f30c;
-        save_field_return(); // 800a3f4c
-    }
-    done("battle_save_return", 0x8007845c);
-    if (state.w_adbd4 == 1)
-        sequence_volume(music.current_sequence, 0x7f, 0); // 8003a89c
-    state.w_adbd4 = 0;
-    return true;
-}
-
-// 800798bc: the menu's character (80059179) for the next mode: 1 unless the
-// party is reassigned and the controlled actor's sprite has neither flag 40
-// nor 80, then 800b234c unless it is ff.
-void Program::select_menu_character() {
-    auto &state = loaded(*this);
-    std::uint8_t character = 1;
-    if (state.party_reassignment != 0) {
-        const auto actor =
-            memory(state.reload.descriptor_table +
-                   0x5cU * static_cast<std::uint32_t>(state.controlled_actor) + 0x4c);
-        character = (memory(actor + 0x14) & 0xc0U) != 0 ? 1 : 0;
-    }
-    if (const auto chosen = memory(0x800b234c, 2); chosen != 0xff)
-        resident.b_59179 = static_cast<std::uint8_t>(chosen);
-    else
-        resident.b_59179 = character;
-}
-
-// 80077d2c: release the three party sprite files (8005a414), each unkept
-// first (800320b8).
-void Program::release_party_sprites() {
-    for (const auto address : resident.party_sprite_resources) {
-        const auto header = resident.heap.headers.find(address - 8);
-        if (header == resident.heap.headers.end())
-            throw field::FieldFormatError("A party sprite file has no heap header");
-        header->second[1] &= ~resident::heap_keep;
-    }
-    for (const auto address : resident.party_sprite_resources)
-        static_cast<void>(release_owned_block(address, 0x80077d70));
-}
-
-// 80085988: release the field's effect bank from the sound driver
-// (8003852c), then its heap block, unkept first (800320b8).
-void Program::release_sound_bank() {
-    const auto bank = resident.field_effect_bank;
-    resident::release_effect_bank(resident.sound, bank);
-    const auto header = resident.heap.headers.find(bank - 8);
-    if (header == resident.heap.headers.end())
-        throw field::FieldFormatError("The effect bank has no heap header");
-    header->second[1] &= ~resident::heap_keep;
-    static_cast<void>(release_owned_block(bank, 0x800859b8));
-    resident.sound.objects.erase(bank);
-    resident.w_4f32c = 0xffffffffU;
-}
-
-// 800a3f4c: the field-return snapshot (8005a4e4) for the return from a
-// battle: the descriptor count, the fixed regions and the collision
-// attributes (*800afb20), each event actor's descriptor words, sprite
-// checkpoint (80021ebc) and record with its extensions, the variables; the
-// party modes are kept apart (8005a408).
-void Program::save_field_return() {
-    auto &state = loaded(*this);
-    field::original::FieldCaptureInput input{};
-    input.descriptor_count = state.descriptor_count;
-    auto &globals = input.globals;
-    read_original(*this, snapshot_regions[0].address, globals.object_state);
-    read_original(*this, snapshot_regions[1].address, globals.transform_state);
-    read_original(*this, snapshot_regions[2].address, globals.field_state);
-    read_original(*this, snapshot_regions[3].address, globals.camera_state);
-    const auto bytes = [&](std::uint32_t address, std::span<std::uint8_t> out) {
-        for (std::size_t i = 0; i < out.size(); ++i)
-            out[i] = static_cast<std::uint8_t>(memory(address + static_cast<std::uint32_t>(i), 1));
-    };
-    // The live attribute table (*800afb20) is the parsed collision's.
-    const auto &attributes = state.collision.attributes_raw;
-    if (attributes.size() < globals.collision_attributes.size())
-        throw field::FieldFormatError("The field-return snapshot needs the collision attributes");
-    std::copy_n(attributes.begin(), globals.collision_attributes.size(),
-                globals.collision_attributes.begin());
-    std::vector<field::original::ActorCaptureInput> actors(state.actors.size());
-    for (std::size_t i = 0; i < state.actors.size(); ++i) {
-        const auto &actor = state.actors[i];
-        auto &out = actors[i];
-        std::copy_n(actor.descriptor.begin() + 0x50, 8, out.descriptor_auxiliary.begin());
-        out.descriptor_flags = static_cast<std::uint32_t>(actor.descriptor[0x58]) |
-                               static_cast<std::uint32_t>(actor.descriptor[0x59]) << 8U;
-        out.actor = actor.storage;
-        const auto &sprite = actor.sprite.sprite;
-        if (sprite.bytes.size() < out.sprite.sprite.size())
-            throw field::FieldFormatError("The field-return snapshot needs each actor's sprite");
-        std::copy_n(sprite.bytes.begin(), out.sprite.sprite.size(), out.sprite.sprite.begin());
-        const auto sprite_word = [&](std::size_t at) {
-            std::uint32_t value = 0;
-            for (std::size_t k = 0; k < 4; ++k)
-                value |= static_cast<std::uint32_t>(sprite.bytes[at + k]) << (8U * k);
-            return value;
-        };
-        bytes(sprite_word(0x7c), out.sprite.sequencer);
-        bytes(sprite_word(0x20), out.sprite.settings);
-        out.extension_110 = actor.extension_110;
-        out.extension_114 = actor.extension_114;
-    }
-    input.actors = actors;
-    input.variables = resident.variables.words;
-    input.party_modes = resident.party_modes();
-    auto result = field::original::capture_field_return(input, resident.field_snapshot);
-    resident.field_snapshot = std::move(result.storage);
-    resident.saved_party_modes = result.saved_party_modes;
-    state.snapshot_cursor = 0x8005a4e4U + static_cast<std::uint32_t>(result.bytes_used);
-}
-
-// 80078abc..80078b30: the loop leaves the field: the menu character
-// (800798bc), the saved VRAM back (800a91f0), the play state (800a31e8),
-// particles, effects and dialogue windows stopped, DrawSync and VSync, the
-// field torn down (800700b0), the party sprite files and the field's sound
-// bank released (80077d2c, 80085988), then the block 800adb30 names; the
-// exit of kind `kind` (8007954c) follows.
-void Program::leave_field_loop(FrameServices &services, std::uint32_t kind,
-                               const ProgramObserver &observe) {
-    auto &state = loaded(*this);
-    const auto done = [&](std::string_view operation, std::uint32_t address) {
-        reach_position(address);
-        observed(observe, *this, {operation, address, {}, {}});
-    };
-    select_menu_character(); // 800798bc
-    done("leave_menu_character", 0x80078ac4);
-    restore_screen_vram(services); // 800a91f0
-    done("leave_restore_vram", 0x80078acc);
-    record_play_state(); // 800a31e8
-    done("leave_play_state", 0x80078ad4);
-    stop_particles(services); // 800a9460
-    done("leave_particles", 0x80078adc);
-    stop_field_effects(); // 800864f0
-    done("leave_effects", 0x80078ae4);
-    close_dialogues(); // 8007ffe8
-    done("leave_dialogues", 0x80078aec);
-    draw_sync(services);
-    vertical_sync(services);
-    done("leave_sync", 0x80078afc);
-    field_teardown(services); // 800700b0
-    done("leave_teardown", 0x80078b04);
-    release_party_sprites(); // 80077d2c
-    done("leave_party_sprites", 0x80078b0c);
-    release_sound_bank(); // 80085988
-    done("leave_sound_bank", 0x80078b14);
-    resident.party_sprite_load.loaded = 0;
-    static_cast<void>(release_owned_block(state.exit_block, 0x80078b24));
-    done("leave_release", 0x80078b2c);
-    // 8007954c calls the mode dispatcher (800796dc) unless 8004f370 keeps it
-    // from doing so; then the loop returns (80078b34).
-    if (exit_field(kind))
-        done("leave_dispatch", 0x800796dc);
-    else
-        done("leave_exit", 0x80078b34);
 }
 
 // 80078174..800782dc: the top of the main loop, up to its frame.
@@ -546,8 +333,8 @@ void Program::field_pre_frame(FrameServices &services) {
 }
 
 void Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {
-    if (field_between_frames(services, observe))
-        field_frame(services, observe);
+    field_between_frames(services, observe);
+    field_frame(services, observe);
 }
 
 } // namespace xem::reconstruction

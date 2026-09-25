@@ -140,46 +140,6 @@ void Program::field_reload_finish(FrameServices &services, std::uint32_t frame) 
     resident::heap_coalesce(resident.heap);
 }
 
-// 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and
-// VSync (800775f8).
-void Program::stop_particles(FrameServices &services) {
-    auto &state = loaded(*this);
-    for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
-        if (state.particle_slots[slot] == 1)
-            throw MissingDependency({"stop_particles", 0x800a92dc, {}, {}},
-                                    "symbol:field-particles", false,
-                                    "Releasing an active particle emitter is not recovered");
-        state.particle_slots[slot] = 0;
-        state.reload.particle_ids[slot] = -1;
-    }
-    draw_sync(services);
-    vertical_sync(services);
-}
-
-// 800864f0: forget the positional emitters and stop the effect pairs whose
-// bit in 800b233c is clear.
-void Program::stop_field_effects() {
-    auto &state = loaded(*this);
-    auto &kept = state.reload.effects_kept;
-    for (auto &emitter : state.emitters) {
-        emitter[1] = 0xffff;
-        emitter[0] = 0xffff;
-    }
-    for (std::uint32_t pair = 0; pair < 4; ++pair) {
-        if ((kept & 1U) == 0)
-            resident::stop_effect_pair(resident.sound, pair * 2);
-        kept = static_cast<std::uint16_t>(kept >> 1U);
-    }
-}
-
-// 8007ffe8: close each open dialogue window (8007f6f8).
-void Program::close_dialogues() {
-    auto &state = loaded(*this);
-    for (std::uint32_t w = 0; w < 4; ++w)
-        if (state.dialogue[w].half(0x3f6) == 0)
-            close_dialogue(w);
-}
-
 // 800a915c: pause the particles and save 40h x 100h of VRAM at (3c0, 100)
 // into a heap block (800afc70), once.
 void Program::save_screen_vram(FrameServices &services) {
@@ -325,10 +285,32 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
             throw field::FieldFormatError("Reload block has no heap header");
         return found->second[1];
     };
-    release_named_block();    // 8003748c
-    stop_particles(services); // 800a9460
-    stop_field_effects();     // 800864f0
-    close_dialogues();        // 8007ffe8
+    release_named_block(); // 8003748c
+    // 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and VSync.
+    for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
+        if (state.particle_slots[slot] == 1)
+            throw MissingDependency({"field_reload", 0x800a92dc, {}, {}}, "symbol:field-particles",
+                                    false, "Releasing an active particle emitter is not recovered");
+        state.particle_slots[slot] = 0;
+        reload.particle_ids[slot] = -1;
+    }
+    draw_sync(services);
+    vertical_sync(services);
+    // 800864f0: forget the positional emitters and stop the effect pairs
+    // whose bit in 800b233c is clear.
+    for (auto &emitter : state.emitters) {
+        emitter[1] = 0xffff;
+        emitter[0] = 0xffff;
+    }
+    for (std::uint32_t pair = 0; pair < 4; ++pair) {
+        if ((reload.effects_kept & 1U) == 0)
+            resident::stop_effect_pair(resident.sound, pair * 2);
+        reload.effects_kept = static_cast<std::uint16_t>(reload.effects_kept >> 1U);
+    }
+    // 8007ffe8: close each open dialogue window (8007f6f8).
+    for (std::uint32_t w = 0; w < 4; ++w)
+        if (state.dialogue[w].half(0x3f6) == 0)
+            close_dialogue(w);
     done("reload_suspend", 0x800a5c70);
     if (state.background_mode != 6) {
         save_screen_vram(services); // 800a915c
@@ -693,12 +675,6 @@ void Program::field_teardown(FrameServices &services) {
                 take(word(actor.storage, 0x110), *actor.extension_110);
             if (actor.extension_114)
                 take(word(actor.storage, 0x114), *actor.extension_114);
-        }
-        if (state.published_actor) {
-            const auto &published = state.actors.at(*state.published_actor);
-            state.published_left = {static_cast<std::uint32_t>(*state.published_actor),
-                                    published.address, published.descriptor_address};
-            state.published_actor.reset();
         }
         state.actors.clear();
         for (auto &piece : state.pieces)

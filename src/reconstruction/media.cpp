@@ -72,33 +72,9 @@ field::MovieStep Program::movie_decision(field::MovieServices &services) {
 bool Program::exit_field(std::uint32_t kind) {
     auto &state = loaded(*this);
     resident.b_5942c = 0;
-    if (kind == 0 || kind == 2) {
-        // A battle (0) or the menu (2): the departure (800a30fc, battles only)
-        // and the music to resume (800afc78 for a battle) in the game data
-        // (+2322) with the map (+2320 from +1932); then the battle mode (2)
-        // or the menu mode (4, a return counted in 8004f30c).
-        if (kind == 0) {
-            save_field_departure(); // 800a30fc
-            resident.music.requested = state.saved_music;
-        }
-        auto &data = resident.game_data;
-        if (data.size() != game_data_bytes)
-            throw field::FieldFormatError("Leaving the field requires the game data");
-        const auto music = resident.music.requested;
-        data[0x2322] = static_cast<std::uint8_t>(music);
-        data[0x2323] = static_cast<std::uint8_t>(music >> 8U);
-        data[0x2320] = data[0x1932];
-        data[0x2321] = data[0x1933];
-        if (resident.w_4f370 != 0)
-            return false;
-        set_next_mode(kind == 0 ? 2 : 4);
-        if (kind == 2)
-            ++resident.w_4f30c;
-        return true;
-    }
     if (kind != 3)
-        throw MissingDependency({"field_exit", 0x800795dc, {}, {}}, "symbol:field-exit-1", false,
-                                "The exit of kind 1 is not recovered");
+        throw MissingDependency({"field_exit", 0x8007954c, {}, {}}, "symbol:field-exit", false,
+                                "Only the map-change exit (kind 3) is recovered");
     resident.w_4f310 = 0;
     resident.w_4f30c = 0;
     if (resident.w_4f370 != 0)

@@ -385,32 +385,25 @@ int run_case(int argc, char **argv) {
                            << ']';
                 frames << "]}";
             };
-            // A completed frame (its call, 8007554c) is a stage inside the
-            // field entry only; the entry's fade-in frames.
-            bool entering = false;
+            // Stages are reported inside the field entry only.
+            bool staging = false;
             const game::ProgramObserver staged = [&](const game::Program &at_program,
                                                      game::SourcePoint at, bool completed) {
                 observer(at_program, at, completed);
-                if (completed && stages.contains(at.machine_address) &&
-                    (entering || at.machine_address != 0x8007554c))
+                if (staging && completed && stages.contains(at.machine_address))
                     report("stage", program->resident.hardware_writes.size());
             };
             for (std::size_t k = 0; k < sections.size(); ++k) {
                 auto written = program->resident.hardware_writes.size();
                 if (k == 0 && entry == "field_entry_frames") {
-                    entering = true;
+                    staging = true;
                     program->field_entry(sections[k], registers[29] - 0x30, staged);
-                    entering = false;
+                    staging = false;
                     program->field_loop_start(sections[k], staged);
                     report("entry", written);
                     written = program->resident.hardware_writes.size();
                 } else if (k != 0) {
-                    // A loop that leaves the field (a battle start) ends the run.
-                    if (!program->field_between_frames(sections[k], staged)) {
-                        if (k + 1 != sections.size())
-                            throw InputError("Frame sections follow the field's exit");
-                        break;
-                    }
+                    program->field_between_frames(sections[k], staged);
                     report("entry", written);
                     written = program->resident.hardware_writes.size();
                 }

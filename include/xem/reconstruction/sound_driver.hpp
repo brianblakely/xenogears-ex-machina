@@ -43,9 +43,6 @@ struct SoundDriver {
     std::uint32_t voice_changes{};                // 80059554
     std::uint32_t voice_holds{};                  // 800594fc
     std::map<std::uint32_t, std::vector<std::uint8_t>> objects;
-    // Pool bytes a replaced object left outside the object that replaced it:
-    // RAM keeps them until another object covers them.
-    std::map<std::uint32_t, std::vector<std::uint8_t>> held;
     // Sound-pool block headers (10 bytes before each object: flags, 0, end,
     // next allocated header at +c), keyed by header address. Freeing a block
     // only unlinks it from this list.
@@ -191,10 +188,6 @@ void stop_sequence(SoundDriver &driver, std::uint32_t sequence);
 // 80038310: unlink a wave bank, free its SPU block (800396e0) and its pool
 // block.
 void release_wave_bank(SoundDriver &driver, std::uint32_t wave);
-// 8003852c: unlink an effect bank after stopping the effect voices playing
-// it (8003a094); its signature must hold (8003f614). Its memory stays with
-// its owner.
-void release_effect_bank(SoundDriver &driver, std::uint32_t bank);
 // 800399d4: stop a playing sequence, unlink it, free its child blocks and,
 // unless flag 4000 marks it static, free its pool block.
 void release_sequence(SoundDriver &driver, std::uint32_t sequence);

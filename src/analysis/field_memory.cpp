@@ -301,14 +301,16 @@ Program import_resident(const OriginalMemory &memory) {
 namespace {
 // Field words and records the field load (80070cc8) and the reload write
 // whose meaning is not recovered, owned as raw regions: address and size.
-constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 14> field_raw{{
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 16> field_raw{{
     {0x8006f990, 12}, // party slots of a field return (800a28d4)
     {0x800adb0c, 4},
+    {0x800adb18, 4},
     {0x800adb3c, 4},
     {0x800adb44, 4},
     {0x800adb6c, 4},
     {0x800adb7c, 4},
     {0x800adb8c, 4},
+    {0x800adbd4, 4},
     {0x800afe84, 4},
     {0x800b14a4, 4},
     {0x800b0188, 0x140}, // 800abd18: five sprites and their draw modes per buffer
@@ -676,8 +678,6 @@ void export_resident_into(const Program &program, Claims &out) {
     }
     for (const auto &[address, bytes] : resident.sound.objects)
         out.bytes("sound_object", address, bytes);
-    for (const auto &[address, bytes] : resident.sound.held)
-        out.bytes("sound_pool_held", address, bytes);
     for (const auto &[address, bytes] : resident.sound.statics)
         out.bytes("sound_static", address, bytes);
     out.bytes("sound_spu_blocks", reconstruction::resident::spu_block_table,
@@ -1037,18 +1037,13 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes("vram_save", saved.address, saved.bytes);
     for (const auto &node : resident.sprite_tasks.nodes)
         out.bytes("sprite_task_block", node.address, node.bytes);
-    std::optional<std::array<std::uint32_t, 3>> published = state.published_left;
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
-        published = {static_cast<std::uint32_t>(*state.published_actor), actor.address,
-                     actor.descriptor_address};
-    }
-    if (published) {
-        memory.put(published_index, (*published)[0]);
+        memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));
         out.claim("published_index", published_index, 4);
-        memory.put(published_actor, (*published)[1]);
+        memory.put(published_actor, actor.address);
         out.claim("published_actor", published_actor, 4);
-        memory.put(published_descriptor, (*published)[2]);
+        memory.put(published_descriptor, actor.descriptor_address);
         out.claim("published_descriptor", published_descriptor, 4);
     }
     return std::move(out.owned);

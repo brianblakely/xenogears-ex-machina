@@ -51,13 +51,6 @@ game::Program sample() {
     state.pointer_y = {0, -0x190};
     state.regions.add("draw_blocks", draw_blocks, std::vector<std::uint8_t>(2 * block_bytes));
     state.actors.resize(1);
-    // The descriptor (800afb10 table) names its actor (+4c).
-    state.reload.descriptor_table = 0x80120000;
-    state.actors[0].address = 0x80130000;
-    state.actors[0].descriptor_address = 0x80120000;
-    state.actors[0].descriptor[0x4c] = 0x00;
-    state.actors[0].descriptor[0x4e] = 0x13;
-    state.actors[0].descriptor[0x4f] = 0x80;
     auto &actor = state.actors[0].storage;
     actor[0x22] = 0x34;
     actor[0x23] = 0x12;
