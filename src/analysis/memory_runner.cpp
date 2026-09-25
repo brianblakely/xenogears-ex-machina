@@ -173,8 +173,7 @@ int run_case(int argc, char **argv) {
             entry == "battle_scene_files" || entry == "battle_setup_files" ||
             entry == "battle_load_prologue" || entry == "battle_effect_lists" ||
             entry == "battle_release_setup" || entry == "battle_renderer_setup" ||
-            entry == "battle_stage_setup" ||
-            entry.starts_with("battle_turn_");
+            entry == "battle_stage_setup" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||

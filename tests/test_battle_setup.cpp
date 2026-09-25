@@ -88,16 +88,15 @@ void participants() {
     memory.put16(scene + 2 * 0x20 + 6, 0x50);
     memory.put16(scene + 1 * 0x20 + 0x10, 0x60);
     memory.put16(scene + 1 * 0x20 + 0x12, 0x70);
-    memory.put16(enemies + 0, 0x200);  // enemy 0's scripts at +200
+    memory.put16(enemies + 0, 0x200); // enemy 0's scripts at +200
     memory.put16(enemies + 0x30, 0x300);
     memory.put8(enemies + 0x32 + 0x5a, 7); // record byte 5a
     memory.put16(enemies + 0x200, 8);
     memory.put16(enemies + 0x202, 0xa);
     memory.put16(enemies + 0x204, 0xffff);
     memory.put16(enemies + 0x206, 0xc);
-    program.run_battle([&](battle::Battle &context) {
-        battle::setup_participants(context, program.resident);
-    });
+    program.run_battle(
+        [&](battle::Battle &context) { battle::setup_participants(context, program.resident); });
     check(memory.u8(present) == 1 && memory.u8(present + 1) == 0 && memory.u8(present + 3) == 1 &&
               memory.u8(present + 4) == 0 && memory.u8(0x800d3280) == 0,
           "Presence follows the party ids and the formation");
@@ -128,7 +127,7 @@ void turns() {
         memory.put8(0x800d2d24 + slot, id);
     memory.put8(present, 1);
     memory.put8(present + 3, 1);
-    memory.put32(0x800d3364, scene); // phase 1's formation data
+    memory.put32(0x800d3364, scene);         // phase 1's formation data
     auto &data = program.resident.game_data; // from 8006d634
     data[0x8006f65a - 0x8006d634] = 5;
     data[0x8006f5c4 - 0x8006d634] = 120;
