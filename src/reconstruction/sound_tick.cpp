@@ -1018,6 +1018,9 @@ class Tick {
         case 0x8003d340: // b0
             m.w16(voice, m.u16(voice) | 0x800U);
             return at;
+        case 0x8003d358: // b1 clears b0's flag
+            m.w16(voice, m.u16(voice) & 0xf7ffU);
+            return at;
         case 0x8003d370: // b2 frequency modulation on
         case 0x8003d3a4: // b3 off
             if ((m.u8(voice + 0x27) & 1U) != 0) {

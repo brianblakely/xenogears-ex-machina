@@ -184,7 +184,7 @@ void Program::gpu_wait_ready(std::uint32_t first, std::uint32_t again) {
 
 // 8004696c: run queued requests while DMA2 is idle; when the queue empties,
 // run the DrawSync callback once.
-std::uint32_t Program::gpu_execute() {
+std::uint32_t Program::gpu_execute(FrameServices *services) {
     auto &gpu = resident.gpu;
     const auto chcr = [&](std::uint32_t site) {
         return (platform_read(resident.platform, site, 4) & busy) != 0;
@@ -204,7 +204,7 @@ std::uint32_t Program::gpu_execute() {
             const auto operation = get(queue, entry);
             const auto parameter = get(queue, entry + 4);
             const auto argument = get(queue, entry + 8);
-            static_cast<void>(gpu_operation(operation, parameter, nullptr, argument, nullptr));
+            static_cast<void>(gpu_operation(operation, parameter, nullptr, argument, services));
             gpu.current = {get(queue, entry), get(queue, entry + 4), get(queue, entry + 8)};
             gpu.tail = (gpu.tail + 1U) & 63U;
         } while (gpu.head != gpu.tail && !chcr(0x80046b90));
@@ -470,16 +470,27 @@ void Program::put_disp_env(std::uint32_t environment) {
         gpu.display_environment[i] = static_cast<std::uint8_t>(memory(e + i, 1));
 }
 
-// DrawSync(0) (800445d0) -> _sync (80046db4): wait for an empty queue and an
-// idle GPU; the waits poll the alarm.
-void Program::draw_sync(FrameServices &services) {
+// DrawSync(0) (800445d0) -> _sync (80046db4): run the queue (8004696c) until
+// it is empty, then wait for an idle GPU; the waits poll the alarm.
+void Program::draw_sync(FrameServices &services, const std::function<void()> &arrivals) {
     auto &gpu = resident.gpu;
     if (gpu.debug >= 2)
         gpu_print(0x800445f0);
     gpu_alarm(&services);
-    if (gpu.head != gpu.tail)
-        throw MissingDependency({"draw_sync", 0x80046dd4, {}, {}}, "symbol:libgpu-queued-call",
-                                false, "Draining queued libgpu calls is not recovered");
+    while (gpu.head != gpu.tail) {
+        if (arrivals)
+            arrivals();
+        if (gpu.head == gpu.tail)
+            break;
+        static_cast<void>(gpu_execute(&services));
+        // 80046f30: on a timeout it prints, resets the GPU and DrawSync
+        // returns -1.
+        if (static_cast<std::int32_t>(gpu.deadline) <
+                static_cast<std::int32_t>(resident.vsync_counter) ||
+            0xf0000 < static_cast<std::int32_t>(gpu.polls++))
+            throw MissingDependency({"draw_sync", 0x80046ddc, {}, {}}, "symbol:libgpu-timeout",
+                                    false, "A DrawSync timeout is not recovered");
+    }
     gpu.polls = take_service(services.alarm_polls, "DrawSync alarm polls");
 }
 

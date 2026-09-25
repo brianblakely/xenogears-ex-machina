@@ -257,8 +257,10 @@ std::uint32_t copy_name_codes(Overlay &overlay, std::uint32_t name, std::uint32_
     return at / 2;
 }
 
-// 80039e60(code): start effect `code` on a free voice pair.
+// 80039e60(code): start effect `code` on a free voice pair. Sound ticks
+// waiting since the last event arrive first (no capture marks this call).
 void menu_effect(Overlay &overlay, std::uint32_t code) {
+    overlay.catch_up();
     resident::start_effect_on_free_pair(overlay.program.resident.sound, code);
 }
 

@@ -360,7 +360,7 @@ void Overlay::load_image(std::uint32_t rect, std::uint32_t data) {
 }
 void Overlay::draw_sync() {
     catch_up();
-    program.draw_sync(services);
+    program.draw_sync(services, [this] { catch_up(); });
 }
 void Overlay::vsync() {
     catch_up();

@@ -1132,7 +1132,9 @@ class Program {
     std::int32_t gpu_enqueue(std::uint32_t operation, std::uint32_t parameter,
                              std::array<std::int16_t, 4> *rect, std::uint32_t size,
                              std::uint32_t argument, FrameServices *services); // 8004668c
-    std::uint32_t gpu_execute();                                               // 8004696c
+    // `services` supply the results of a request run from the main flow
+    // (DrawSync's drain); a request run from the DMA2 interrupt has none.
+    std::uint32_t gpu_execute(FrameServices *services = nullptr); // 8004696c
     // Run a queued or immediate operation; `rect` is the rectangle parameter
     // when the caller holds it, else it lives in the queue at `parameter`.
     std::int32_t gpu_operation(std::uint32_t operation, std::uint32_t parameter,
@@ -1145,7 +1147,8 @@ class Program {
     void draw_otag(FrameServices &services, std::uint32_t table);                       // 80044bd0
     void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
-    void draw_sync(FrameServices &services);                                            // 800445d0
+    // `arrivals` delivers the interrupts that arrive while the queue drains.
+    void draw_sync(FrameServices &services, const std::function<void()> &arrivals = {}); // 800445d0
     // Reload steps (field_reload.cpp).
     void party_record(std::uint32_t slot);       // 8009fee4
     void vertical_sync(FrameServices &services); // VSync(0) (8004b54c)
