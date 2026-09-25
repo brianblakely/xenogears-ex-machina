@@ -14,8 +14,10 @@ void Program::store_owned(std::uint32_t address, std::uint32_t value, std::uint3
     if (battle && battle->contains(address, width)) {
         if (width == 1)
             battle->put8(address, value);
-        else
+        else if (width == 2)
             battle->put16(address, value);
+        else
+            battle->put32(address, value);
         return;
     }
     set_memory(address, value, width);

@@ -162,18 +162,18 @@ int run_case(int argc, char **argv) {
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision" ||
                                  entry == "music_poll" || entry == "music_chunk";
-        const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
-                                  entry == "battle_alive" || entry == "battle_rewards" ||
-                                  entry == "battle_reward_totals" || entry == "battle_drops" ||
-                                  entry == "battle_atb" || entry == "battle_reload" ||
-                                  entry == "battle_ai" || entry == "battle_results_step" ||
-                                  entry == "battle_setup_phase" || entry == "battle_prologue" ||
-                                  entry == "battle_after_load" || entry == "battle_after_scene" ||
-                                  entry == "battle_adjust_party" || entry == "battle_place_party" ||
-                                  entry == "battle_scene_files" || entry == "battle_setup_files" ||
-                                  entry == "battle_load_prologue" || entry == "battle_effect_lists" ||
-                                  entry == "battle_release_setup" ||
-                                  entry.starts_with("battle_turn_");
+        const bool battle_entry =
+            entry == "battle_commit" || entry == "battle_apply" || entry == "battle_alive" ||
+            entry == "battle_rewards" || entry == "battle_reward_totals" ||
+            entry == "battle_drops" || entry == "battle_atb" || entry == "battle_reload" ||
+            entry == "battle_ai" || entry == "battle_results_step" ||
+            entry == "battle_setup_phase" || entry == "battle_prologue" ||
+            entry == "battle_after_load" || entry == "battle_after_scene" ||
+            entry == "battle_adjust_party" || entry == "battle_place_party" ||
+            entry == "battle_scene_files" || entry == "battle_setup_files" ||
+            entry == "battle_load_prologue" || entry == "battle_effect_lists" ||
+            entry == "battle_release_setup" || entry == "battle_renderer_setup" ||
+            entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -640,6 +640,9 @@ int run_case(int argc, char **argv) {
             program->deliver_pending_arrivals();
         } else if (entry == "battle_release_setup") {
             program->battle_release_setup(); // 80071278 up to 8009892c
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_renderer_setup") {
+            program->battle_renderer_setup(registers[4]); // 800b81bc: A0 the task's argument
             program->deliver_pending_arrivals();
         } else if (entry == "battle_scene_files") {
             program->battle_scene_files(); // 8001bb0c

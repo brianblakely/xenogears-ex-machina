@@ -703,6 +703,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_transfer", block.address, block.bytes);
     for (const auto &[address, bytes] : resident.heap_contents)
         out.bytes("heap_contents", address, bytes);
+    for (const auto &node : resident.sprite_tasks.nodes)
+        out.bytes("sprite_task_block", node.address, node.bytes);
     for (const auto &[address, bytes] : resident.heap_outside)
         out.bytes("heap_outside", address, bytes);
 }
@@ -1070,8 +1072,6 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes("descriptor", piece.address, piece.descriptor);
     if (const auto &saved = state.reload.vram_save; !saved.bytes.empty())
         out.bytes("vram_save", saved.address, saved.bytes);
-    for (const auto &node : resident.sprite_tasks.nodes)
-        out.bytes("sprite_task_block", node.address, node.bytes);
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
         memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));

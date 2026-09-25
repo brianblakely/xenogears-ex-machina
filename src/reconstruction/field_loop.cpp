@@ -76,8 +76,8 @@ void Program::clear_ordering_table(std::uint32_t table, std::uint32_t count) {
     // entry down, each entry links to the one before it; the first ends the
     // list.
     for (auto i = count; i-- > 1;)
-        set_memory(table + 4U * i, (table + 4U * (i - 1U)) & 0xffffffU);
-    set_memory(table, 0x00ffffffU);
+        store_owned(table + 4U * i, (table + 4U * (i - 1U)) & 0xffffffU, 4);
+    store_owned(table, 0x00ffffffU, 4);
     gpu_alarm(nullptr);
     constexpr std::uint32_t busy = 0x01000000U;
     if ((platform_read(resident.platform, 0x80045de4, 4) & busy) != 0)
@@ -87,7 +87,7 @@ void Program::clear_ordering_table(std::uint32_t table, std::uint32_t count) {
                 unrecovered("clear_ordering_table", 0x80046f30, "symbol:printf-80019964",
                             "The libgpu timeout message and reset are not reconstructed");
         } while ((platform_read(resident.platform, 0x80045e18, 4) & busy) != 0);
-    set_memory(table, 0x8005698cU & 0xffffffU);
+    store_owned(table, 0x8005698cU & 0xffffffU, 4);
 }
 
 // 8007ae78(1, 80065848) after 8007af74(1): port 2's pointer record. A mouse

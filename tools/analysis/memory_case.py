@@ -86,6 +86,7 @@ RESIDENT_ENTRIES = (
     "battle_load_prologue",
     "battle_effect_lists",
     "battle_release_setup",
+    "battle_renderer_setup",
     "mode_dispatch",
     "battle_mode_start",
     "battle_atb",
