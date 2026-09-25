@@ -552,4 +552,24 @@ void finish_turn(Battle &battle) {
     battle.memory.put8(atb_enabled, 1);
 }
 
+void approach_route(Battle &battle, std::uint32_t actor, std::uint32_t target) {
+    plan_route(battle, actor & 0xff, target & 0xff);
+}
+
+void join_target_group(Battle &battle, std::uint32_t actor, std::uint32_t target) {
+    join_group(battle, actor & 0xff, target & 0xff);
+}
+
+void clear_current_event(Battle &battle) { clear_event(battle); }
+
+void apply_event(Battle &battle, std::uint32_t queue) {
+    accumulate_results(battle, queue & 0xff);
+    apply_results(battle, queue & 0xff);
+    battle.memory.put8(battle.memory.u32(ui_state_pointer) + 0xad, 0);
+}
+
+std::uint32_t order_candidates(Battle &battle, std::uint32_t actor) {
+    return choose_default_target(battle, actor & 0xff);
+}
+
 } // namespace xem::reconstruction::battle

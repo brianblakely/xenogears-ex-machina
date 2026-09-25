@@ -167,6 +167,80 @@ bool try_escape(Battle &battle, std::uint32_t slot);
 // character (8006d8a0) and gear (8006dfac) records.
 void write_back_party(Battle &battle);
 
+// Presentation calls of the attack pages. The reconstruction does not run
+// them: `present` observes each at its call. The attack model spans frames
+// and runs the battle's logic tick, as does a frame, so a step ends there and
+// a resume entry continues after it.
+enum class MenuPresentation : std::uint8_t {
+    camera,        // 800bc404: frame the camera on a slot mask
+    target_camera, // 800bcd98: point the target camera at a slot mask
+    target_text,   // 80093b08: the target name window (member)
+    attack_model,  // 800b89fc: load and pose the member's attack model (member)
+    model_reset,   // 800b8da4: return the attack model to its stance
+    combo_camera,  // 800bcd98(0) in 800819a4: the target cursor leaves
+    frame,         // 800716d8: one battle frame
+};
+using MenuPresent = std::function<void(MenuPresentation, std::uint32_t argument)>;
+// menu_step with the attack pages: page 1 enters the attack page (80087a38,
+// 80084a7c, 80077698) up to the attack model; page 5 (80081b58) targets by
+// direction (8008189c, 80084854), confirms attacks and, once the member's AP
+// pay for them, executes the combo (800819a4, 800861d0, 80087af0) up to the
+// frame inside 800861d0; page 0x64 (80080838) resets +2e2 and runs page 5,
+// which stops at once while +2e1 is set.
+void menu_step(Battle &battle, ResidentState &resident, std::uint32_t member,
+               const MenuPresent &present);
+// Page 1's confirmation of the attack item (800811b8): enter page 5.
+void enter_attack_page(Battle &battle, ResidentState &resident, std::uint32_t member,
+                       const MenuPresent &present);
+// 80081b58: one frame of the attack page.
+void attack_page(Battle &battle, ResidentState &resident, std::uint32_t member,
+                 const MenuPresent &present);
+// 80081b98 (from the target text's return, 80094134): the attack page after
+// 8008189c, with its input.
+void resume_attack_view(Battle &battle, ResidentState &resident, std::uint32_t member,
+                        const MenuPresent &present);
+// 800819e4: the combo start after its target camera call, then the rest of
+// the confirmation (80081ee0).
+void resume_combo(Battle &battle, ResidentState &resident, std::uint32_t member,
+                  const MenuPresent &present);
+// 80081ee0: the confirmation after 800819a4, up to the frame in 800861d0.
+void confirm_attack(Battle &battle, ResidentState &resident, std::uint32_t member,
+                    const MenuPresent &present);
+// 80087ac0: the attack page entry after the attack model returns.
+void resume_attack_entry(Battle &battle, ResidentState &resident, std::uint32_t member);
+// 80086b34: the attack confirmation after the frame inside 800861d0: release
+// the three text blocks, execute the attack (80087af0: group change, combo
+// step, commit, reaction script 80079ab0, results) and reload the member's
+// turn timer by the AP left.
+void resume_attack_confirm(Battle &battle, ResidentState &resident, std::uint32_t member);
+// 80084854: the candidate (800c3e90) nearest to `origin` in screen direction
+// `direction` (0-3), measured by ratan2 over the slot positions; `origin`
+// when none lies that way.
+std::uint32_t direction_target(const Battle &battle, const ResidentState &resident,
+                               std::uint32_t origin, std::uint32_t direction);
+
+// 80076a10 (8002675c at scale 1): build sprite `id` of the glyph table
+// (800d2f5c) as POLY_FT4 primitives at `destination` (0x50 per part, 0x28 per
+// draw buffer 800ccb34) placed at x, y; returns its part count.
+std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
+                         std::uint32_t x, std::uint32_t y);
+
+// Turn-procedure helpers the attack pages share.
+void approach_route(Battle &battle, std::uint32_t actor, std::uint32_t target);    // 800877e0
+void join_target_group(Battle &battle, std::uint32_t actor, std::uint32_t target); // 80087edc
+void clear_current_event(Battle &battle);                                          // 80085388
+// 80085c88: accumulate and apply event `queue`'s results.
+void apply_event(Battle &battle, std::uint32_t queue);
+std::uint32_t order_candidates(Battle &battle, std::uint32_t actor); // 800841e0
+// 80079ab0 up to its executor call: enemy `slot`'s reaction script (pointer
+// at 800d3408 + (slot - 3) * 0x40) when armed (800c3d18 + (slot - 3) * 4).
+// Returns whether it ran action 62.
+bool run_reaction_script(Battle &battle, std::uint32_t slot);
+// 8008aa40 and 8008aa74: a menu sound effect; the latter while 800d366c
+// enables menu effects.
+void play_menu_effect(ResidentState &resident, std::uint32_t id);
+void play_enabled_menu_effect(Battle &battle, ResidentState &resident, std::uint32_t id);
+
 // Post-battle module (directory 10 file 4, sha256 f474fd48..., loaded at
 // 801de000) and the persistent game data (8006d634, 2358 bytes) are
 // addressable through the same memory during victory processing.
@@ -185,5 +259,16 @@ void total_rewards(Battle &battle);
 void add_drops(Battle &battle, std::uint32_t ids, std::uint32_t counts, std::uint32_t categories);
 // 801e2acc: split the experience pool and apply level-ups (801e308c).
 void distribute_experience(Battle &battle);
+
+// The result screens (801e1fb8) between frames: continue after the frame
+// that returned to `site` (the frame call's return address) up to the next
+// frame call and return that call's return address. The Cross waits of the
+// summary, experience, level-up and gold/items screens, the flags the
+// screens raise and clear (UI +a0, +a1, +ac, +b0..b2, +cf) and the window
+// closes (8008fa60, releasing the blocks of window `window`, S0 there).
+// Screen contents (text, windows, sounds, the skill and item lists) stop
+// with a BattleError.
+std::uint32_t result_screen_step(Battle &battle, ResidentState &resident, std::uint32_t site,
+                                 std::uint32_t window);
 
 } // namespace xem::reconstruction::battle

@@ -319,4 +319,38 @@ void run_enemy_script(Battle &battle, std::uint32_t slot, std::uint32_t flag) {
     }
 }
 
+bool run_reaction_script(Battle &battle, std::uint32_t slot) {
+    auto &memory = battle.memory;
+    const std::uint32_t enemy = (slot - 3) & 0xff;
+    const auto record = fixed_record_base + (enemy + 3) * record_stride;
+    // A knocked-out enemy reacts only with its +34 bit 800.
+    if ((memory.u16(record + 0x7c) & 0x8000) != 0 && (memory.u16(record + 0x34) & 0x800) == 0)
+        return false;
+    memory.put8(action_list, 0);
+    bool special = false;
+    if (memory.u8(0x800c3d18 + enemy * 4) != 0) {
+        std::uint32_t pc = memory.u32(enemy_blocks + enemy * 0x40 + 8);
+        for (std::uint32_t i = 0; i < 0x100; ++i)
+            memory.put8(action_list + i, 0);
+        std::uint32_t count = 0;
+        for (;;) {
+            const std::uint32_t opcode = memory.u8(pc);
+            if (opcode == 0xfd || opcode == 0xff)
+                break;
+            if (opcode >= 0x80) {
+                if (!run_condition(battle, pc, enemy))
+                    skip_rule(battle, pc);
+                continue;
+            }
+            if (opcode == 0x62)
+                special = true;
+            count = run_action(battle, pc, enemy, count & 0xff);
+        }
+    }
+    if (memory.u8(action_list) != 0)
+        throw BattleError("The reaction's actions (80079ab0 runs the executor 800793f0 inside the "
+                          "command menu) are not reconstructed");
+    return special;
+}
+
 } // namespace xem::reconstruction::battle

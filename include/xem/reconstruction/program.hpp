@@ -260,6 +260,8 @@ struct ResidentState {
     std::uint32_t w_4f30c{}; // 8004f30c
     std::uint32_t w_4f310{}; // 8004f310
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
+    // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
+    std::uint8_t b_5947c{};
 };
 
 struct FieldState {
@@ -451,6 +453,14 @@ class Program {
     // 80019acc(0), which the caller runs next; false when 8004f370 keeps the
     // field. Other kinds stop with MissingDependency.
     bool exit_field(std::uint32_t kind);
+    // Resident 8001b758 up to 8001b82c, after the battle 80070f40 returns:
+    // victory (1), escape (40) and 21 select the next mode (6 with the
+    // battle's 800d3338 set, 2 with 8005947c set, otherwise 1 or 3 by the
+    // persistent map selector 8006f94e); a defeat (81) clears 8004f30c
+    // (8001ac94) and selects mode 1 with map selector 1ea and 8006f950..954
+    // cleared. Unless 8005947c is set, 800594f8 becomes 1. `outcome`
+    // (800c48ea) and `mode_flag` (800d3338) are battle overlay bytes.
+    void finish_battle_mode(std::uint32_t outcome, std::uint32_t mode_flag);
     // Resident 8001b484: read map data `id` ahead into slot `slot`. 0 once that
     // data is the one read ahead; -1 while the disc is busy or after starting
     // the read.

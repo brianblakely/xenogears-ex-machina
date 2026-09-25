@@ -464,6 +464,16 @@ Program import_battle(const OriginalMemory &memory) {
     // post-battle module loaded at 801de000.
     static_cast<void>(own_block(memory.word(0x800d2c08)));
     static_cast<void>(own_block(reconstruction::battle::result_module_base));
+    // The attack pages: the direction arrows (800c3e24), the combo sprites
+    // (800d2db4), the glyph sprite table (800d2f5c), 800861d0's three text
+    // blocks (800c3a70) and the blocks 8007fce8 and 8007fdec release.
+    for (const auto pointer : {0x800c3e24U, 0x800d2db4U, 0x800d2f5cU, 0x800c3a70U, 0x800c3a74U,
+                               0x800c3a78U, 0x800d367cU, 0x800c3de8U})
+        static_cast<void>(own_block(memory.word(pointer)));
+    // The result screens' window blocks (8008f8f4 allocates, 8008fa60 releases).
+    for (std::uint32_t window = 0; window < 8; ++window)
+        for (const auto table : {0x800d2e38U, 0x800d2d90U})
+            static_cast<void>(own_block(memory.word(table + window * 4)));
     return program;
 }
 

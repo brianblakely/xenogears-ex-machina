@@ -87,4 +87,40 @@ bool Program::exit_field(std::uint32_t kind) {
     return true;
 }
 
+void Program::finish_battle_mode(std::uint32_t outcome, std::uint32_t mode_flag) {
+    // The persistent map selector 8006f94e and its neighbours, in game data.
+    const auto halfword = [&](std::uint32_t address) -> std::uint8_t * {
+        const auto offset = address - resident.game_state;
+        if (resident.game_data.size() != game_data_bytes || offset + 2 > game_data_bytes)
+            throw field::FieldFormatError("The battle epilogue requires the game data");
+        return resident.game_data.data() + offset;
+    };
+    outcome &= 0xffU;
+    if (outcome == 1 || outcome == 0x40 || outcome == 0x21) {
+        std::uint32_t mode = 0;
+        if ((mode_flag & 0xffU) != 0) {
+            mode = 6;
+        } else if (resident.b_5947c != 0) {
+            mode = 2;
+        } else {
+            const auto *map = halfword(0x8006f94e);
+            mode = ((map[0] | static_cast<std::uint32_t>(map[1]) << 8U) & 0x7ffU) < 0x400 ? 1 : 3;
+        }
+        set_next_mode(mode);
+    } else if (outcome == 0x81) {
+        resident.w_4f30c = 0; // 8001ac94
+        for (const auto [address, value] : {std::pair{0x8006f94eU, 0x1eaU},
+                                            {0x8006f950U, 0U},
+                                            {0x8006f952U, 0U},
+                                            {0x8006f954U, 0U}}) {
+            auto *bytes = halfword(address);
+            bytes[0] = static_cast<std::uint8_t>(value);
+            bytes[1] = static_cast<std::uint8_t>(value >> 8U);
+        }
+        set_next_mode(1);
+    }
+    if (resident.b_5947c == 0)
+        resident.battle_request.resident_flag = 1;
+}
+
 } // namespace xem::reconstruction

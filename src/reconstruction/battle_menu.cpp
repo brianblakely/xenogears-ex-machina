@@ -68,7 +68,8 @@ void repeat_or_move(Battle &battle, ResidentState &resident, std::uint32_t face,
 }
 
 // 8008115c: page 1.
-void page_1(Battle &battle, ResidentState &resident, std::uint32_t member) {
+void page_1(Battle &battle, ResidentState &resident, std::uint32_t member,
+            const MenuPresent &present) {
     switch (battle.memory.u8(command_code)) {
     case 0:
         if (item(battle, member, 0x26) != 0)
@@ -89,8 +90,7 @@ void page_1(Battle &battle, ResidentState &resident, std::uint32_t member) {
     case 7:
         if (battle.memory.u8(turn_state(battle) + (member & 0xff) * 0x40 + 0x3c) == 0xff)
             return menu_effect(battle, resident, 0x4f);
-        throw BattleError("The attack page entry (80087a38, 80084a7c, camera 80077698) is not "
-                          "reconstructed");
+        return enter_attack_page(battle, resident, member, present);
     default:
         return;
     }
@@ -233,6 +233,12 @@ void write_back_party(Battle &battle) {
     }
 }
 
+void play_menu_effect(ResidentState &resident, std::uint32_t id) { effect(resident, id); }
+
+void play_enabled_menu_effect(Battle &battle, ResidentState &resident, std::uint32_t id) {
+    menu_effect(battle, resident, id);
+}
+
 void decode_input(Battle &battle, ResidentState &resident) {
     auto &memory = battle.memory;
     auto &queue = resident.input_queue;
@@ -312,14 +318,28 @@ void decode_input(Battle &battle, ResidentState &resident) {
 }
 
 void menu_step(Battle &battle, ResidentState &resident, std::uint32_t member) {
+    menu_step(battle, resident, member, [](MenuPresentation call, std::uint32_t) {
+        throw BattleError(std::format("Presentation call {} of the attack pages needs a "
+                                      "presentation bracket",
+                                      static_cast<int>(call)));
+    });
+}
+
+void menu_step(Battle &battle, ResidentState &resident, std::uint32_t member,
+               const MenuPresent &present) {
     const auto current = battle.memory.u8(turn_state(battle) + page);
     switch (current) {
     case 1:
-        return page_1(battle, resident, member);
+        return page_1(battle, resident, member, present);
     case 3:
         return page_3(battle, resident, member);
+    case 5:
+        return attack_page(battle, resident, member, present);
     case 9:
         return page_9(battle, resident, member);
+    case 0x64: // 80080838: +2e2 takes the loop's constant ff (S0), then page 5.
+        battle.memory.put8(turn_state(battle) + 0x2e2, 0xff);
+        return attack_page(battle, resident, member, present);
     default:
         if (current - 1 >= 0x65)
             return;

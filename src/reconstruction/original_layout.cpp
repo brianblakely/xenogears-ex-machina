@@ -647,6 +647,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.w_4f310; });
     add_resident("field_exit_4f370", 0x8004f370, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f370; });
+    add_resident("battle_5947c", 0x8005947c, 1,
+                 [](Program &p) -> auto & { return p.resident.b_5947c; });
     add_resident("vsync_counter", 0x80058960, 4,
                  [](Program &p) -> auto & { return p.resident.vsync_counter; });
     add_resident("cd_sync_deadline", 0x8005a228, 4,
@@ -717,6 +719,9 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.heap.last_size; });
     add_resident("heap_last_caller", 0x80059340, 4,
                  [](Program &p) -> auto & { return p.resident.heap.last_caller; });
+    for (std::size_t tag = 0; tag < 16; ++tag)
+        add_resident("heap_tag_word", static_cast<std::uint32_t>(0x80059fa4 + 4 * tag), 4,
+                     [tag](Program &p) -> auto & { return p.resident.heap.tag_words[tag]; });
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
     add("party_reassignment", 0x800b2268, 4,
         [](Program &p) -> auto & { return f(p).party_reassignment; });

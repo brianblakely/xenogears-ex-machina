@@ -87,12 +87,13 @@ int main(int argc, char **argv) {
                              "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
-        const bool resident_entry =
-            entry == "heap_allocate" || entry == "heap_release" || entry == "music_stop" ||
-            entry == "disc_read_file" || entry == "disc_read_files" ||
-            entry == "disc_read_stream" || entry == "decode_block" || entry == "sound_set_mode" ||
-            entry == "sound_set_master" || entry == "sound_set_cd" ||
-            entry == "sound_update_voices" || entry == "set_next_mode" || entry == "field_exit";
+        const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
+                                    entry == "music_stop" || entry == "disc_read_file" ||
+                                    entry == "disc_read_files" || entry == "disc_read_stream" ||
+                                    entry == "decode_block" || entry == "sound_set_mode" ||
+                                    entry == "sound_set_master" || entry == "sound_set_cd" ||
+                                    entry == "sound_update_voices" || entry == "set_next_mode" ||
+                                    entry == "field_exit" || entry == "battle_mode_exit";
         // Field entries beyond the update: one extended event handler, the
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision";
@@ -100,7 +101,8 @@ int main(int argc, char **argv) {
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
                                   entry == "battle_atb" || entry == "battle_reload" ||
-                                  entry == "battle_ai" || entry.starts_with("battle_turn_");
+                                  entry == "battle_ai" || entry == "battle_results_step" ||
+                                  entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -303,6 +305,61 @@ int main(int argc, char **argv) {
                     game::battle::decode_input(context, program->resident);
                 else if (step == "menu") // 800807c8: S2 member
                     game::battle::menu_step(context, program->resident, registers[18] & 0xff);
+                else if (step == "menu_presented") {
+                    // The capture brackets the camera and target camera as
+                    // presentation; the attack model (1), the frame inside
+                    // 800861d0 (2) and the target text (3) end the step at
+                    // their call.
+                    const game::battle::MenuPresent present =
+                        [&](game::battle::MenuPresentation call, std::uint32_t) {
+                            using Call = game::battle::MenuPresentation;
+                            if (call == Call::attack_model || call == Call::frame ||
+                                call == Call::target_text || call == Call::combo_camera) {
+                                return_value = call == Call::attack_model  ? 1
+                                               : call == Call::frame       ? 2
+                                               : call == Call::target_text ? 3
+                                                                           : 4;
+                                throw BoundaryReached{};
+                            }
+                            if (call == Call::model_reset)
+                                throw game::battle::BattleError(
+                                    "The attack model reset 800b8da4 is not bracketed");
+                        };
+                    game::battle::menu_step(context, program->resident, registers[18] & 0xff,
+                                            present);
+                } else if (step == "view_resume") { // 80094134: S2 member (8008189c)
+                    const game::battle::MenuPresent present =
+                        [&](game::battle::MenuPresentation call, std::uint32_t) {
+                            using Call = game::battle::MenuPresentation;
+                            if (call == Call::frame || call == Call::combo_camera) {
+                                return_value = call == Call::frame ? 2 : 4;
+                                throw BoundaryReached{};
+                            }
+                            if (call != Call::camera && call != Call::target_camera)
+                                throw game::battle::BattleError(
+                                    "A presentation call after the target text is not bracketed");
+                        };
+                    game::battle::resume_attack_view(context, program->resident,
+                                                     registers[18] & 0xff, present);
+                } else if (step == "combo_resume") { // 800819e4: S3 member
+                    const game::battle::MenuPresent present =
+                        [&](game::battle::MenuPresentation call, std::uint32_t) {
+                            using Call = game::battle::MenuPresentation;
+                            if (call == Call::frame) {
+                                return_value = 2;
+                                throw BoundaryReached{};
+                            }
+                            if (call != Call::camera)
+                                throw game::battle::BattleError(
+                                    "A presentation call after the combo camera is not bracketed");
+                        };
+                    game::battle::resume_combo(context, program->resident, registers[19], present);
+                } else if (step == "attack_resume") // 80087ac0: S0 member
+                    game::battle::resume_attack_entry(context, program->resident,
+                                                      registers[16] & 0xff);
+                else if (step == "confirm_resume") // 80086b34: FP member
+                    game::battle::resume_attack_confirm(context, program->resident,
+                                                        registers[30] & 0xff);
                 else
                     throw InputError("Unsupported turn step");
             });
@@ -310,6 +367,13 @@ int main(int argc, char **argv) {
             program->tick_battle_timers(); // 8007171c
         } else if (entry == "battle_reload") {
             program->reload_battle_timer(); // 800718bc
+        } else if (entry == "battle_results_step") {
+            // At the frame routine's return (80071714): RA is the caller's
+            // continuation, S0 the window 8008fa60 closes.
+            program->run_battle([&](game::battle::Battle &context) {
+                return_value = game::battle::result_screen_step(context, program->resident,
+                                                                registers[31], registers[16]);
+            });
         } else if (entry == "battle_rewards") {
             program->grant_battle_rewards(); // 801e2794
         } else if (entry == "battle_reward_totals") {
@@ -495,6 +559,10 @@ int main(int argc, char **argv) {
             // 8003ebf0: A0 sequence, A1 first voice record, A2 voice count.
             game::resident::update_voices(program->resident.sound, registers[4], registers[5],
                                           registers[6]);
+        } else if (entry == "battle_mode_exit") {
+            // 8001b758: the outcome 800c48ea and 800d3338 are read from the
+            // battle overlay the returned battle leaves in RAM.
+            program->finish_battle_mode(memory.ram.at(0xc48ea), memory.ram.at(0xd3338));
         } else if (entry == "set_next_mode") {
             program->set_next_mode(registers[4]); // 8001996c: A0 mode
         } else if (entry == "field_event_extended") {

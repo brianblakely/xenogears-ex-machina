@@ -67,6 +67,7 @@ RESIDENT_ENTRIES = (
     "battle_rewards",
     "battle_reward_totals",
     "battle_drops",
+    "battle_results_step",
     "battle_atb",
     "battle_reload",
     "disc_read_file",
@@ -95,6 +96,7 @@ RESIDENT_ENTRIES = (
     "sound_set_cd",
     "sound_update_voices",
     "set_next_mode",
+    "battle_mode_exit",
     "field_exit",
     "battle_turn_select",
     "battle_turn_begin",
@@ -107,6 +109,11 @@ RESIDENT_ENTRIES = (
     "battle_turn_finish",
     "battle_turn_decode",
     "battle_turn_menu",
+    "battle_turn_menu_presented",
+    "battle_turn_attack_resume",
+    "battle_turn_view_resume",
+    "battle_turn_combo_resume",
+    "battle_turn_confirm_resume",
 )
 # Field entries besides the update and move phases.
 FIELD_ENTRIES = ("field_event_extended", "movie_decision")
@@ -161,6 +168,8 @@ def pairs(
     exit_hook: str,
     interrupts: tuple[tuple[str, str], ...] = (),
     outcomes: tuple[str, ...] = (),
+    presentation: tuple[tuple[str, str], ...] = (),
+    entry_repeats: bool = False,
 ) -> list[tuple[dict, dict, list]]:
     """Adjacent entry/exit records of one call, in original order.
 
@@ -168,7 +177,17 @@ def pairs(
     (a dispatcher or callback). Each call lists the complete interrupt
     invocations observed between its entry and exit. Outcome hooks close a
     call like the exit hook; they mark the branch a decision took.
+
+    Presentation pairs bracket calls the reconstruction does not run (camera,
+    text windows). They are attributed like interrupt code; a bracket that
+    overlaps another (an interrupt inside a camera call) merges into one span
+    that is presentation.
+
+    With `entry_repeats` the entry hook is a loop head: its repeated records
+    inside a call belong to that call.
     """
+    interrupts = tuple(interrupts) + tuple(presentation)
+    presented = {entry for entry, _ in presentation}
     exits = {exit_hook, *outcomes}
     rows = [
         json.loads(line) for line in (capture / "instruction-trace.jsonl").read_text().splitlines()
@@ -188,14 +207,41 @@ def pairs(
             if pending is not None:
                 handlers.append((entry, row))
         elif row["hook"] == entry_hook:
+            if entry_repeats and pending is not None:
+                continue
             require(pending is None, "Nested or unmatched original entry record")
             require(not open_handlers, "Call entry inside interrupt code")
             pending, handlers = row, []
         elif row["hook"] in exits and pending is not None:
             require(not open_handlers, "Call exit inside interrupt code")
-            result.append((pending, row, handlers))
+            result.append((pending, row, merge_brackets(handlers, presented)))
             pending = None
     return result
+
+
+def merge_brackets(handlers: list, presented: set[str]) -> list:
+    """Time-ordered brackets; overlapping spans merge when one is presentation.
+
+    Each item is (entry row, return row); a merged span keeps the earliest
+    entry and the latest return and counts as presentation.
+    """
+    spans = sorted(handlers, key=lambda pair: pair[0]["event"])
+    merged: list = []
+    for before, after in spans:
+        if merged and before["event"] < merged[-1][1]["event"]:
+            last_before, last_after = merged[-1]
+            require(
+                before["hook"] in presented or last_before["hook"] in presented,
+                "Interrupt brackets overlap",
+            )
+            if after["event"] > last_after["event"]:
+                last_after = after
+            if last_before["hook"] not in presented:
+                last_before = dict(last_before, hook=before["hook"])
+            merged[-1] = (last_before, last_after)
+        else:
+            merged.append((before, after))
+    return merged
 
 
 PARTY_RESOURCES = 0x8005A414
@@ -345,6 +391,8 @@ def compare(
         for o in interrupt_changed
         if o not in verified
         and ((o in own and o not in kernel) or (o in computed and computed[o] != entry[o]))
+        # The stack below the entry SP is transient for both.
+        and not low <= o < high
     )
     return {
         "owned_bytes": len(computed),
@@ -427,7 +475,18 @@ def run(args: argparse.Namespace) -> int:
         hook, _, value = item.partition("=")
         require(hook and value.isdigit(), "Outcomes are HOOK=VALUE")
         outcomes[hook] = int(value)
-    calls = pairs(capture, args.entry_hook, args.exit_hook, interrupts, tuple(outcomes))
+    presentation = tuple(tuple(item.split(":", 1)) for item in args.presentation)
+    require(all(len(item) == 2 for item in presentation), "Presentation pairs are ENTRY:EXIT")
+    presented = {entry for entry, _ in presentation}
+    calls = pairs(
+        capture,
+        args.entry_hook,
+        args.exit_hook,
+        interrupts,
+        tuple(outcomes),
+        presentation,
+        args.entry_repeats,
+    )
     require(calls, "No original entry/exit pairs in the capture")
     selected = calls[args.start : args.start + args.limit]
     # Resident entries (the heap) need no loaded field or field source. Field
@@ -546,6 +605,16 @@ def run(args: argparse.Namespace) -> int:
             # Exact GTE rotation/translation at exit. Interrupt handlers are not
             # modeled; one that changed these registers would surface here.
             expected_gte = gte_words(exit_row)
+            # Presentation (a camera call) may load GTE matrices the call's own
+            # code never uses: the reconstruction keeps the entry's registers
+            # and every segment of original call code must leave them unchanged.
+            if any(before["hook"] in presented for before, _ in handlers):
+                expected_gte = gte_words(entry_row)
+                bounds = [entry_row, *(row for pair in handlers for row in pair), exit_row]
+                for start_row, end_row in zip(bounds[::2], bounds[1::2]):
+                    if gte_words(start_row) != gte_words(end_row):
+                        result["gte_segment_mismatch"] = start_row["frontend_run"]
+                        result["mismatch_count"] += 1
             # A call closed by an outcome hook must return that hook's value.
             if exit_row["hook"] in outcomes:
                 if report["return_value"] != outcomes[exit_row["hook"]]:
@@ -619,6 +688,7 @@ def run(args: argparse.Namespace) -> int:
             "entry": args.entry_hook,
             "exit": args.exit_hook,
             "interrupts": interrupts,
+            "presentation": presentation,
             "return_register": args.return_register,
         },
         "matched_behaviours": [
@@ -710,6 +780,17 @@ def main() -> int:
         action="append",
         default=[],
         help="ENTRY:EXIT hook names bracketing interrupt-context code (repeatable)",
+    )
+    parser.add_argument(
+        "--entry-repeats",
+        action="store_true",
+        help="The entry hook heads a loop; repeats inside a call belong to it",
+    )
+    parser.add_argument(
+        "--presentation",
+        action="append",
+        default=[],
+        help="ENTRY:EXIT hook names bracketing presentation calls the reconstruction skips",
     )
     parser.add_argument(
         "--return-register",
