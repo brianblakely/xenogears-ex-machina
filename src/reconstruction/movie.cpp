@@ -395,10 +395,14 @@ void Program::movie_slice_decoded() {
     auto &outputs = resident.mdec_output;
     if (outputs.empty())
         throw PlatformInputError("No MDEC output is supplied for a decoded slice");
-    if (outputs.front().size() != size)
-        throw PlatformInputError("The supplied MDEC output differs from the slice's size");
-    dma_store(memory(slice_buffers + 4 * memory(slice_buffer_index)), outputs.front());
+    // A recording may cover more than the slice (its buffer's full size).
+    if (outputs.front().size() < size)
+        throw PlatformInputError("The supplied MDEC output is shorter than the slice");
+    dma_store(memory(slice_buffers + 4 * memory(slice_buffer_index)),
+              std::span<const std::uint8_t>(outputs.front()).first(size));
     outputs.pop_front();
+    // The completed transfer left DMA1 idle (CHCR 1f801098 bit 24).
+    resident.io[0x98 + 3] &= 0xfeU;
     if (memory(load_enabled) != 0) {
         std::array<std::int16_t, 4> area{
             static_cast<std::int16_t>(memory(rect, 2)), static_cast<std::int16_t>(memory(rect + 2, 2)),
@@ -463,6 +467,17 @@ void Program::mdec_hardware_reset(std::uint32_t mode) {
     verify_mdec_registers();
     io_write(mdec_control, 0x80000000U, 4);
     io_write(dma0_channel, 0, 4);
+    if ((io_latch(dma1_channel, 4) & 0x01000000U) != 0) {
+        // An output transfer is still running: the reset stops it after
+        // the MDEC wrote part of the slice, bytes the platform supplies.
+        const auto buffer = 0x80000000U | io_latch(dma1_address, 4);
+        const auto bytes = (io_latch(dma1_block, 4) >> 16U) * 0x80U;
+        const auto found = resident.mdec_aborted.find(buffer);
+        if (found == resident.mdec_aborted.end() || found->second.size() < bytes)
+            throw PlatformInputError("No MDEC output is supplied for the stopped transfer");
+        dma_store(buffer, std::span<const std::uint8_t>(found->second).first(bytes));
+        resident.mdec_aborted.erase(found);
+    }
     io_write(dma1_channel, 0, 4);
     if (mode == 1)
         static_cast<void>(io_latch(dma1_channel, 4)); // A read with no effect.

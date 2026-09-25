@@ -244,6 +244,13 @@ void Program::seek_file(std::int32_t file) {
     }
 }
 
+std::int32_t Program::file_count(std::uint32_t file) {
+    const auto &read = resident.disc_read;
+    const auto size = s32(table_bytes(read.files, (file + read.directory - 1U) * 7U + 3U, 4,
+                                      "File table"));
+    return size < 0 ? static_cast<std::int16_t>(-size) : 0;
+}
+
 // Resident 8002a260: allocate count * 808 + 24 bytes, store the count,
 // then select (80028a94) and reset (80028aac) the ring. The header is the
 // ring the disc reads fill; the payload after it holds the chunks.

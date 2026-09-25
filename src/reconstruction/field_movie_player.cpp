@@ -56,6 +56,10 @@ constexpr std::uint32_t write_cursor = 0x800c390c;
 // full screen, mark that block's display environment 24-bit.
 void Program::movie_frame_ready(std::uint32_t callback, std::uint32_t frame, std::uint32_t,
                                 std::uint32_t y) {
+    if (callback == 0x800768d8 && movie_mode_memory) {
+        movie_mode_frame_ready(frame, y);
+        return;
+    }
     if (callback != 0x800a7120)
         unrecovered("movie_frame_ready", 0x801d3480, "symbol:movie-frame-callback",
                     "A movie frame callback other than the field's 800a7120 is not reconstructed");
@@ -630,6 +634,8 @@ void add_movie_globals(std::vector<OriginalGlobal> &table) {
     };
     add_resident("movie_overlay_enabled", 0x8004f300, 4,
                  [](ResidentState &r) -> auto & { return r.w_4f300; });
+    add_resident("movie_request", 0x8004fe44, 4,
+                 [](ResidentState &r) -> auto & { return r.movie_request; });
     add_resident("cd_564cc", 0x800564cc, 4, [](ResidentState &r) -> auto & { return r.cd.w_564cc; });
     add_resident("stream_header_mode", 0x8005a470, 4,
                  [](ResidentState &r) -> auto & { return r.cd.stream_header_mode; });

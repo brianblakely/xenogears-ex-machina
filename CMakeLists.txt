@@ -58,6 +58,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_movie_player.cpp
   src/reconstruction/movie.cpp
   src/reconstruction/movie_stream.cpp
+  src/reconstruction/movie_mode.cpp
   src/reconstruction/resident_disc.cpp
   src/reconstruction/resident_gpu.cpp
   src/reconstruction/field_gte.cpp

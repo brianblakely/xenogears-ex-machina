@@ -454,6 +454,9 @@ struct ResidentState {
     std::uint32_t w_4f310{}; // 8004f310
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     std::uint32_t w_4f300{}; // 8004f300: field drawing over a movie (800a7948, 800acc58)
+    // 8004fe44..47: the movie mode's request (kind and flag, movie, next
+    // mode, keep playing through Circle and Start).
+    std::uint32_t movie_request{};
     // 8005a414: each party slot's sprite file block (the movie player parks
     // slots 1 and 2 in VRAM while a movie plays).
     std::array<std::uint32_t, 3> party_blocks{};
@@ -478,6 +481,9 @@ struct ResidentState {
     // each, in order: a hardware result (movie.hpp), consumed by the
     // transfer's completion callback.
     std::deque<std::vector<std::uint8_t>> mdec_output;
+    // The slice buffers' bytes after an MDEC reset stopped a running output
+    // transfer, by buffer address: what the MDEC wrote before it stopped.
+    std::map<std::uint32_t, std::vector<std::uint8_t>> mdec_aborted;
     DiscDrive drive;
     // 8003748c releases the block 80059394 names unless 800593a0 is set;
     // their producers are not recovered.
@@ -769,6 +775,14 @@ class Program {
     std::optional<battle::BattleMemory> battle;
     // Menu-mode memory while the menu overlay is loaded.
     std::optional<menu::MenuMemory> menu;
+    // Mode 6 (the movie mode, movie_mode.cpp) while its overlay is loaded:
+    // the overlay image with its statics (8006faf0..80077458) and the
+    // player's stack frame (80076488), whose rectangle ClearImage reads.
+    struct MovieModeMemory {
+        resident::HeapBlock overlay;
+        resident::HeapBlock frame;
+    };
+    std::optional<MovieModeMemory> movie_mode_memory;
 
     [[nodiscard]] field::FieldSpriteEnvironment sprite_environment() const;
     void set_sprite_environment(const field::FieldSpriteEnvironment &environment);
@@ -929,6 +943,14 @@ class Program {
     void movie_open_display();  // 800a708c
     void movie_start_request(); // 800a7218
     void movie_decode_steps(std::uint32_t count, movie::MdecCodec &codec); // 800a732c
+    // Mode 6, the movie mode (movie_mode.cpp): 800737ec plays the movie the
+    // request bytes 8004fe44..47 name, then selects the next mode (8004fe46).
+    // The mode dispatcher it enters last (80019acc) is not reconstructed;
+    // the call returns before it. `frame` is 80076488's stack frame (its
+    // entry SP - 308h). The observer sees "movie_mode_head" at each pass of
+    // the player loop (8007670c).
+    void movie_mode(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
+                    const ProgramObserver &observe = {});
     // Field 8007954c: leave the field. Kind 3 (a map change to the mode in
     // 800b0064) returns true where the original calls the mode dispatcher
     // 80019acc(0), which the caller runs next; false when 8004f370 keeps the
@@ -1218,6 +1240,24 @@ class Program {
     // The field movie player's helpers (field_movie_player.cpp).
     void movie_frame_ready(std::uint32_t callback, std::uint32_t frame, std::uint32_t x,
                            std::uint32_t y);                            // 800a7120
+    // Mode 6's helpers (movie_mode.cpp).
+    void movie_mode_play(FrameServices &services, movie::MdecCodec &codec, std::uint32_t select,
+                         std::uint32_t frame, const ProgramObserver &observe); // 800763bc
+    void movie_mode_run(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
+                        const ProgramObserver &observe);                       // 80076488
+    void movie_mode_frame_ready(std::uint32_t frame, std::uint32_t y);        // 800768d8
+    void movie_mode_pad();                                                     // 800769a4
+    // Resident libgpu environment setup (resident_gpu.cpp).
+    void set_def_draw_env(std::uint32_t environment, std::uint32_t x, std::uint32_t y,
+                          std::uint32_t w, std::uint32_t h); // 80043928
+    void set_def_disp_env(std::uint32_t environment, std::uint32_t x, std::uint32_t y,
+                          std::uint32_t w, std::uint32_t h); // 800439e0
+    void set_disp_mask(std::uint32_t mask);                  // 80044534
+    // 8003569c(port): the port's buttons from its controller buffer.
+    [[nodiscard]] std::uint32_t pad_buttons(std::size_t port);
+    // 80028928(file): a directory entry's negative size as a count; 0 when
+    // the size is not negative.
+    [[nodiscard]] std::int32_t file_count(std::uint32_t file);
     void movie_wait_disc(FrameServices &services, const ProgramObserver &observe); // 800a7394
     void movie_release_parked(FrameServices &services, std::uint32_t frame); // 800a73e8
     void movie_restore_parked(FrameServices &services, std::uint32_t frame); // 800a74f8

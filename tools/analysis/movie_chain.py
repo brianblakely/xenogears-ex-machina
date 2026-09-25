@@ -76,10 +76,28 @@ MOVIE_POSITION_PCS = (
     0x801D4324, 0x801D4370, 0x801D4380, 0x801D4390, 0x801D4398, 0x801D43B8, 0x801D3930,
     0x801D3AC4, 0x801D5888, 0x801D58E4,
 )
-MOVIE_POSITIONS = {f"mv-{pc:08x}": pc for pc in MOVIE_POSITION_PCS} | {"mv-exit": 0x800A8308}
+# Mode 6 (the movie mode, 800737ec): its call sites, the loop head 8007670c
+# and the dispatcher call 80073bac.
+MODE6_POSITION_PCS = (
+    0x80073834, 0x80073840, 0x8007384C, 0x80073854, 0x8007385C, 0x80073864, 0x80073870, 0x80073894,
+    0x800738A0, 0x800738B4, 0x800738BC, 0x800738E8, 0x800738F0, 0x80073990, 0x800739A8, 0x800739C0,
+    0x800739D8, 0x80073AA4, 0x80073AB4, 0x80073B84, 0x80073B8C, 0x80073B94, 0x80073BA4,
+    0x8007640C, 0x80076418, 0x80076470, 0x80076520, 0x8007654C, 0x80076560, 0x80076568,
+    0x80076570, 0x80076588, 0x800765F4, 0x80076698, 0x800766D0, 0x800766FC, 0x80076704,
+    0x80076750, 0x80076758, 0x80076760, 0x800767B8, 0x800767C0, 0x800767C8, 0x800767F0,
+    0x80076834, 0x800769BC, 0x80076ACC,
+)
+MOVIE_POSITIONS = (
+    {f"mv-{pc:08x}": pc for pc in MOVIE_POSITION_PCS}
+    | {"mv-exit": 0x800A8308}
+    | {f"m6-{pc:08x}": pc for pc in MODE6_POSITION_PCS}
+    | {"m6-head": 0x8007670C, "m6-exit": 0x80073BAC}
+)
+# Mode 6's VSync(1) pairs around each decode step: 800773b8, 8 bytes each.
+MODE6_VSYNC_TABLE = 0x800773B8
 # The player's PutDrawEnv calls (positions at their jal).
 DRAW_ENVIRONMENT_CALLS = {
-    0x800A7F04, 0x800A7F3C, 0x800A80EC, 0x800A8184, 0x800A81DC, 0x800A823C
+    0x800A7F04, 0x800A7F3C, 0x800A80EC, 0x800A8184, 0x800A81DC, 0x800A823C, 0x80073AA4, 0x800766D0
 }
 # The 800a7394 frame loop's call of 80077dac: arrivals after it (during its
 # VSync(1)) follow the field chain's convention.
@@ -326,12 +344,50 @@ def services_of(rows: list[dict], snapshots: SnapshotReader) -> tuple[list[str],
     return lines, dict(counts)
 
 
+def stopped_transfer_lines(rows: list[dict], snapshots: SnapshotReader) -> list[str]:
+    """The slice buffers after the chain's last library stop (801d4318),
+    read at the first snapshot after it: an MDEC output transfer that the
+    stop's reset cut short left part of a slice there (`mdec_abort`)."""
+    stops = [i for i, row in enumerate(rows) if row["hook"] == "mv-801d4324"]
+    records = slice_records(rows)
+    if not stops or not records:
+        return []
+    after = next((row for row in rows[stops[-1] :] if "snapshot" in row), None)
+    require(after is not None, "No snapshot follows the library's stop")
+    ram = snapshots.read(after)[0]
+    size = max(len(data) for _, _, data in records)
+    lines = []
+    for buffer in sorted({address for _, address, _ in records}):
+        at = buffer & 0x1FFFFF
+        lines.append(f"mdec_abort {buffer:x} {ram[at : at + size].hex()}")
+    return lines
+
+
+def mode6_vsyncs(rows: list[dict], snapshots: SnapshotReader) -> list[str]:
+    """Mode 6's VSync(1) results: the pairs each loop pass stored in its
+    table, read at the next head or the exit (the loop keeps the first 16)."""
+    lines, polls = [], 0
+    for row in rows:
+        if row["hook"] == "m6-80076758":
+            polls += 1
+        elif row["hook"] in ("m6-head", "m6-exit") and polls:
+            require(polls <= 16 and "snapshot" in row, "Mode 6 VSync(1) results are not recorded")
+            ram = snapshots.read(row)[0]
+            for i in range(polls):
+                for half in (0, 4):
+                    lines.append(f"hblank {u32(ram, MODE6_VSYNC_TABLE + 8 * i + half):x}")
+            polls = 0
+    require(polls == 0, "Mode 6 decode steps after the last snapshot")
+    return lines
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--capture", type=Path, required=True)
     parser.add_argument("--raw", type=Path, default=ROOT / ".local/references/source-1/disc.bin")
     parser.add_argument("--runner", type=Path, default=ROOT / "build/debug/xem-memory-runner")
     parser.add_argument("--from-end", action="store_true", help="Import at the loop's end 800a80b4")
+    parser.add_argument("--mode6", action="store_true", help="The movie mode 800737ec instead")
     parser.add_argument(
         "--field-slot", type=int, help="Catalog slot of a field loaded outside its map pair"
     )
@@ -349,12 +405,18 @@ def main() -> int:
     )
     rows = rows_of(capture)
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
-    entry_hook = END_HOOK if args.from_end else ENTRY_HOOK
+    entry_hook = "m6-entry" if args.mode6 else END_HOOK if args.from_end else ENTRY_HOOK
     start = next(i for i, row in enumerate(rows) if row["hook"] == entry_hook and "snapshot" in row)
     entry_row = rows[start]
     # Boundaries, in the runner's order.
     boundaries = []
-    if not args.from_end:
+    if args.mode6:
+        exit_row = next(i for i in range(start + 1, len(rows)) if rows[i]["hook"] == "m6-exit")
+        heads = [i for i in range(start + 1, exit_row) if rows[i]["hook"] == "m6-head"]
+        boundaries += [("head", i) for i in heads[: args.passes]]
+        if len(heads) <= args.passes:
+            boundaries.append(("exit", exit_row))
+    elif not args.from_end:
         first = next(i for i in range(start + 1, len(rows)) if rows[i]["hook"] == FIRST_HOOK)
         boundaries.append(("prepared", first))
         heads = [i for i in range(first, len(rows)) if rows[i]["hook"] == HEAD_HOOK]
@@ -367,20 +429,28 @@ def main() -> int:
         if end is not None and len(heads) - 1 <= args.passes:
             boundaries.append(("ended", end))
     finished = next((i for i in range(start + 1, len(rows)) if rows[i]["hook"] == EXIT_HOOK), None)
-    if (args.from_end or boundaries[-1][0] == "ended") and finished is not None:
+    if not args.mode6 and (args.from_end or boundaries[-1][0] == "ended") and finished is not None:
         boundaries.append(("finished", finished))
     last = boundaries[-1][1]
     entry, scratch, io = snapshots.read(entry_row)
     chain_rows = rows[start + 1 : last + 1]
     # An image with the movie library loaded: the loop's first head, or the
     # entry itself when the chain starts at the loop's end.
+    library_hook = "m6-head" if args.mode6 else HEAD_HOOK
     library = snapshots.read(rows[boundaries[0][1]] if args.from_end else rows[
-        next(i for i in range(start, len(rows)) if rows[i]["hook"] == HEAD_HOOK)
+        next(i for i in range(start, len(rows)) if rows[i]["hook"] == library_hook)
     ])[0]
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
     platform, counts, sectors = platform_lines(chain_rows, entry, io, library)
+    stopped = stopped_transfer_lines(chain_rows, snapshots)
+    platform += stopped
+    counts["stopped_transfer_buffers"] = len(stopped)
     services, service_counts = services_of(chain_rows, snapshots)
-    sources = Sources(args.raw, image_map(entry), args.field_slot)
+    if args.mode6:
+        vsyncs = mode6_vsyncs(chain_rows, snapshots)
+        services += vsyncs
+        service_counts["hblank"] = service_counts.get("hblank", 0) + len(vsyncs)
+    sources = None if args.mode6 else Sources(args.raw, image_map(entry), args.field_slot)
     registers = visible_registers(entry_row)
     with (
         host_slot("compare"),
@@ -388,19 +458,23 @@ def main() -> int:
         BatchRunner(args.runner) as runner,
     ):
         work = Path(directory)
-        (work / "field.bin").write_bytes(sources.field)
-        (work / "overlay.bin").write_bytes(sources.overlay)
+        (work / "field.bin").write_bytes(sources.field if sources else b"")
+        (work / "overlay.bin").write_bytes(sources.overlay if sources else b"")
         (work / "ram.bin").write_bytes(entry)
         (work / "scratch.bin").write_bytes(scratch)
         (work / "io.bin").write_bytes(io)
-        (work / "resources.txt").write_text(sources.manifest(entry))
+        (work / "resources.txt").write_text(sources.manifest(entry) if sources else "")
         (work / "platform.txt").write_text("".join(line + "\n" for line in platform))
         (work / "services.txt").write_text("".join(line + "\n" for line in services))
         passes = sum(1 for kind, _ in boundaries if kind == "pass")
-        truncated = not args.from_end and boundaries[-1][0] in ("pass", "first_frame")
+        truncated = not args.from_end and boundaries[-1][0] in ("pass", "first_frame", "head")
+        if args.mode6:
+            passes = len(boundaries) - 1
         report = runner.call(
             [
-                "movie_finish_chain" if args.from_end else "movie_chain",
+                "movie_mode_chain" if args.mode6
+                else "movie_finish_chain" if args.from_end
+                else "movie_chain",
                 str(args.budget),
                 f"passes={passes + 1}" if truncated else "",
                 str(work / "ram.bin"),
@@ -458,7 +532,7 @@ def main() -> int:
         "source_revision": subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
         ).stdout.strip(),
-        "entry": "movie_finish_chain" if args.from_end else "movie_chain",
+        "entry": "movie_mode_chain" if args.mode6 else "movie_finish_chain" if args.from_end else "movie_chain",
         "entry_frame": entry_row["frontend_run"],
         "field_slot": args.field_slot,
         "boundaries": len(boundaries),

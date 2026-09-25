@@ -670,6 +670,9 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("music_block", block.address, block.bytes);
     if (!resident.mode_block.bytes.empty())
         out.bytes("mode_block", resident.mode_block.address, resident.mode_block.bytes);
+    if (program.movie_mode_memory)
+        out.bytes("movie_mode_overlay", program.movie_mode_memory->overlay.address,
+                  program.movie_mode_memory->overlay.bytes);
     if (!resident.preload_block.bytes.empty())
         out.bytes("preload_block", resident.preload_block.address, resident.preload_block.bytes);
     if (resident.cd.dma_set_callback) {
@@ -730,6 +733,15 @@ void load_platform(Program &program, const char *platform, const char *disc) {
                 throw field::FieldFormatError("Malformed platform read");
             resident.platform.push_back(
                 {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
+        } else if (kind == "mdec_abort") {
+            // mdec_abort ADDRESS HEX: a slice buffer after a stopped transfer.
+            std::string address, text;
+            if (!(lines >> address >> text) || text.size() % 2 != 0)
+                throw field::FieldFormatError("Malformed stopped MDEC output input");
+            std::vector<std::uint8_t> bytes(text.size() / 2);
+            for (std::size_t i = 0; i < bytes.size(); ++i)
+                bytes[i] = static_cast<std::uint8_t>(number(text.substr(2 * i, 2), 16));
+            resident.mdec_aborted[number(address, 16)] = std::move(bytes);
         } else if (kind == "mdec") {
             // mdec HEX: one MDEC output transfer's bytes.
             std::string text;
