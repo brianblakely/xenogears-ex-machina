@@ -105,7 +105,7 @@
  ],
  "reconstruction_set": {
   "sources": ["src/reconstruction", "include/xem/reconstruction"],
-  "count": 731,
+  "count": 732,
   "functions": [
    {"entry": "8001996c", "images": ["resident"], "basis": "declaration", "evidence": ["include/xem/reconstruction/program.hpp:840"]},
    {"entry": "80019ca0", "images": ["resident"], "basis": "reviewed", "evidence": ["src/reconstruction/field_loop.cpp:275"]},
@@ -384,6 +384,7 @@
    {"entry": "8003bdbc", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:196"]},
    {"entry": "8003bdfc", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:1315"]},
    {"entry": "8003be68", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:205"]},
+   {"entry": "8003c020", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:69"]},
    {"entry": "8003c484", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:310"]},
    {"entry": "8003c4c4", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:574"]},
    {"entry": "8003c6e8", "images": ["resident"], "basis": "definition", "evidence": ["src/reconstruction/sound_tick.cpp:668"]},
@@ -1343,11 +1344,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1503,
-    "reconstructed": 599,
+    "reconstructed": 600,
     "reconstructed_partial": 45,
-    "not_reconstructed": 859,
+    "not_reconstructed": 858,
     "executed_instructions": 86140,
-    "not_reconstructed_executed_instructions": 42788
+    "not_reconstructed_executed_instructions": 42583
    },
    "images": [
     {
@@ -2448,11 +2449,11 @@
      ],
      "totals": {
       "executed_functions": 622,
-      "reconstructed": 297,
+      "reconstructed": 298,
       "reconstructed_partial": 18,
-      "not_reconstructed": 307,
+      "not_reconstructed": 306,
       "executed_instructions": 22757,
-      "not_reconstructed_executed_instructions": 7950
+      "not_reconstructed_executed_instructions": 7745
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -2815,7 +2816,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 324, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -3260,11 +3261,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1324,
-    "reconstructed": 592,
+    "reconstructed": 593,
     "reconstructed_partial": 44,
-    "not_reconstructed": 688,
+    "not_reconstructed": 687,
     "executed_instructions": 75492,
-    "not_reconstructed_executed_instructions": 32940
+    "not_reconstructed_executed_instructions": 32735
    },
    "images": [
     {
@@ -4185,11 +4186,11 @@
      ],
      "totals": {
       "executed_functions": 609,
-      "reconstructed": 296,
+      "reconstructed": 297,
       "reconstructed_partial": 18,
-      "not_reconstructed": 295,
+      "not_reconstructed": 294,
       "executed_instructions": 22317,
-      "not_reconstructed_executed_instructions": 7593
+      "not_reconstructed_executed_instructions": 7388
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -4541,7 +4542,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 324, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -4983,11 +4984,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1227,
-    "reconstructed": 540,
+    "reconstructed": 541,
     "reconstructed_partial": 37,
-    "not_reconstructed": 650,
+    "not_reconstructed": 649,
     "executed_instructions": 64813,
-    "not_reconstructed_executed_instructions": 28408
+    "not_reconstructed_executed_instructions": 28203
    },
    "images": [
     {
@@ -5784,11 +5785,11 @@
      ],
      "totals": {
       "executed_functions": 594,
-      "reconstructed": 296,
+      "reconstructed": 297,
       "reconstructed_partial": 17,
-      "not_reconstructed": 281,
+      "not_reconstructed": 280,
       "executed_instructions": 20690,
-      "not_reconstructed_executed_instructions": 6917
+      "not_reconstructed_executed_instructions": 6712
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -6121,7 +6122,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 324, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -6554,11 +6555,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1462,
-    "reconstructed": 576,
+    "reconstructed": 577,
     "reconstructed_partial": 41,
-    "not_reconstructed": 845,
+    "not_reconstructed": 844,
     "executed_instructions": 80583,
-    "not_reconstructed_executed_instructions": 41008
+    "not_reconstructed_executed_instructions": 40792
    },
    "images": [
     {
@@ -7592,11 +7593,11 @@
      ],
      "totals": {
       "executed_functions": 630,
-      "reconstructed": 299,
+      "reconstructed": 300,
       "reconstructed_partial": 17,
-      "not_reconstructed": 314,
+      "not_reconstructed": 313,
       "executed_instructions": 22496,
-      "not_reconstructed_executed_instructions": 8136
+      "not_reconstructed_executed_instructions": 7920
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -7948,7 +7949,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 216, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 216, "status": "reconstructed"},
       {"entry": "8003c484", "size_instructions": 16, "executed_instructions": 16, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 334, "status": "reconstructed"},
@@ -8410,11 +8411,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 809,
-    "reconstructed": 493,
+    "reconstructed": 494,
     "reconstructed_partial": 31,
-    "not_reconstructed": 285,
+    "not_reconstructed": 284,
     "executed_instructions": 40095,
-    "not_reconstructed_executed_instructions": 7153
+    "not_reconstructed_executed_instructions": 6948
    },
    "images": [
     {
@@ -8821,11 +8822,11 @@
      ],
      "totals": {
       "executed_functions": 506,
-      "reconstructed": 289,
+      "reconstructed": 290,
       "reconstructed_partial": 16,
-      "not_reconstructed": 201,
+      "not_reconstructed": 200,
       "executed_instructions": 17113,
-      "not_reconstructed_executed_instructions": 3892
+      "not_reconstructed_executed_instructions": 3687
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -9103,7 +9104,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 319, "status": "reconstructed"},
       {"entry": "8003cd08", "size_instructions": 10, "executed_instructions": 10, "status": "not_reconstructed"},
@@ -9485,11 +9486,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1049,
-    "reconstructed": 509,
+    "reconstructed": 510,
     "reconstructed_partial": 32,
-    "not_reconstructed": 508,
+    "not_reconstructed": 507,
     "executed_instructions": 55729,
-    "not_reconstructed_executed_instructions": 21323
+    "not_reconstructed_executed_instructions": 21118
    },
    "images": [
     {
@@ -10097,11 +10098,11 @@
      ],
      "totals": {
       "executed_functions": 565,
-      "reconstructed": 297,
+      "reconstructed": 298,
       "reconstructed_partial": 16,
-      "not_reconstructed": 252,
+      "not_reconstructed": 251,
       "executed_instructions": 18395,
-      "not_reconstructed_executed_instructions": 4912
+      "not_reconstructed_executed_instructions": 4707
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -10398,7 +10399,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 121, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 324, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -10820,11 +10821,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1018,
-    "reconstructed": 501,
+    "reconstructed": 502,
     "reconstructed_partial": 32,
-    "not_reconstructed": 485,
+    "not_reconstructed": 484,
     "executed_instructions": 53371,
-    "not_reconstructed_executed_instructions": 19580
+    "not_reconstructed_executed_instructions": 19375
    },
    "images": [
     {
@@ -11417,11 +11418,11 @@
      ],
      "totals": {
       "executed_functions": 549,
-      "reconstructed": 293,
+      "reconstructed": 294,
       "reconstructed_partial": 16,
-      "not_reconstructed": 240,
+      "not_reconstructed": 239,
       "executed_instructions": 18026,
-      "not_reconstructed_executed_instructions": 4676
+      "not_reconstructed_executed_instructions": 4471
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -11712,7 +11713,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 121, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 324, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -12128,11 +12129,11 @@
    "setup_frames_excluded": 445,
    "totals": {
     "executed_functions": 955,
-    "reconstructed": 437,
+    "reconstructed": 438,
     "reconstructed_partial": 28,
-    "not_reconstructed": 490,
+    "not_reconstructed": 489,
     "executed_instructions": 49799,
-    "not_reconstructed_executed_instructions": 21089
+    "not_reconstructed_executed_instructions": 20884
    },
    "images": [
     {
@@ -12672,11 +12673,11 @@
      ],
      "totals": {
       "executed_functions": 527,
-      "reconstructed": 266,
+      "reconstructed": 267,
       "reconstructed_partial": 15,
-      "not_reconstructed": 246,
+      "not_reconstructed": 245,
       "executed_instructions": 17282,
-      "not_reconstructed_executed_instructions": 5404
+      "not_reconstructed_executed_instructions": 5199
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -12941,7 +12942,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 300, "status": "reconstructed"},
       {"entry": "8003cd08", "size_instructions": 10, "executed_instructions": 10, "status": "not_reconstructed"},
@@ -13338,11 +13339,11 @@
    "setup_frames_excluded": 445,
    "totals": {
     "executed_functions": 673,
-    "reconstructed": 282,
+    "reconstructed": 283,
     "reconstructed_partial": 16,
-    "not_reconstructed": 375,
+    "not_reconstructed": 374,
     "executed_instructions": 35183,
-    "not_reconstructed_executed_instructions": 17385
+    "not_reconstructed_executed_instructions": 17183
    },
    "images": [
     {
@@ -13731,11 +13732,11 @@
      ],
      "totals": {
       "executed_functions": 360,
-      "reconstructed": 173,
+      "reconstructed": 174,
       "reconstructed_partial": 9,
-      "not_reconstructed": 178,
+      "not_reconstructed": 177,
       "executed_instructions": 11305,
-      "not_reconstructed_executed_instructions": 4165
+      "not_reconstructed_executed_instructions": 3963
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -13873,7 +13874,7 @@
        "status": "reconstructed_partial",
        "missing_paths": ["\n                                        "]
       },
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 202, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 202, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 286, "status": "reconstructed"},
       {"entry": "8003cd08", "size_instructions": 10, "executed_instructions": 10, "status": "not_reconstructed"},
@@ -14191,11 +14192,11 @@
    "setup_frames_excluded": 445,
    "totals": {
     "executed_functions": 638,
-    "reconstructed": 283,
+    "reconstructed": 284,
     "reconstructed_partial": 15,
-    "not_reconstructed": 340,
+    "not_reconstructed": 339,
     "executed_instructions": 31696,
-    "not_reconstructed_executed_instructions": 14381
+    "not_reconstructed_executed_instructions": 14183
    },
    "images": [
     {
@@ -14559,11 +14560,11 @@
      ],
      "totals": {
       "executed_functions": 344,
-      "reconstructed": 172,
+      "reconstructed": 173,
       "reconstructed_partial": 9,
-      "not_reconstructed": 163,
+      "not_reconstructed": 162,
       "executed_instructions": 10955,
-      "not_reconstructed_executed_instructions": 3897
+      "not_reconstructed_executed_instructions": 3699
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -14698,7 +14699,7 @@
        "status": "reconstructed_partial",
        "missing_paths": ["\n                                        "]
       },
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 198, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 198, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 279, "status": "reconstructed"},
       {"entry": "8003cd30", "size_instructions": 7, "executed_instructions": 7, "status": "not_reconstructed"},
@@ -15001,11 +15002,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 1563,
-    "reconstructed": 604,
+    "reconstructed": 605,
     "reconstructed_partial": 46,
-    "not_reconstructed": 913,
+    "not_reconstructed": 912,
     "executed_instructions": 93775,
-    "not_reconstructed_executed_instructions": 49771
+    "not_reconstructed_executed_instructions": 49566
    },
    "images": [
     {
@@ -16168,11 +16169,11 @@
      ],
      "totals": {
       "executed_functions": 626,
-      "reconstructed": 298,
+      "reconstructed": 299,
       "reconstructed_partial": 18,
-      "not_reconstructed": 310,
+      "not_reconstructed": 309,
       "executed_instructions": 23001,
-      "not_reconstructed_executed_instructions": 8168
+      "not_reconstructed_executed_instructions": 7963
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -16539,7 +16540,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 324, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -16987,11 +16988,11 @@
    "setup_frames_excluded": 0,
    "totals": {
     "executed_functions": 996,
-    "reconstructed": 405,
+    "reconstructed": 406,
     "reconstructed_partial": 25,
-    "not_reconstructed": 566,
+    "not_reconstructed": 565,
     "executed_instructions": 44170,
-    "not_reconstructed_executed_instructions": 18396
+    "not_reconstructed_executed_instructions": 18177
    },
    "images": [
     {
@@ -17524,11 +17525,11 @@
      ],
      "totals": {
       "executed_functions": 591,
-      "reconstructed": 249,
+      "reconstructed": 250,
       "reconstructed_partial": 14,
-      "not_reconstructed": 328,
+      "not_reconstructed": 327,
       "executed_instructions": 18966,
-      "not_reconstructed_executed_instructions": 7992
+      "not_reconstructed_executed_instructions": 7773
      },
      "functions": [
       {"entry": "80019524", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
@@ -17784,7 +17785,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 219, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 219, "status": "reconstructed"},
       {"entry": "8003c484", "size_instructions": 16, "executed_instructions": 16, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 287, "status": "reconstructed"},
@@ -18275,11 +18276,11 @@
    "setup_frames_excluded": 0,
    "totals": {
     "executed_functions": 996,
-    "reconstructed": 405,
+    "reconstructed": 406,
     "reconstructed_partial": 25,
-    "not_reconstructed": 566,
+    "not_reconstructed": 565,
     "executed_instructions": 44181,
-    "not_reconstructed_executed_instructions": 18407
+    "not_reconstructed_executed_instructions": 18188
    },
    "images": [
     {
@@ -18812,11 +18813,11 @@
      ],
      "totals": {
       "executed_functions": 591,
-      "reconstructed": 249,
+      "reconstructed": 250,
       "reconstructed_partial": 14,
-      "not_reconstructed": 328,
+      "not_reconstructed": 327,
       "executed_instructions": 18966,
-      "not_reconstructed_executed_instructions": 7992
+      "not_reconstructed_executed_instructions": 7773
      },
      "functions": [
       {"entry": "80019524", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
@@ -19072,7 +19073,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 219, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 219, "status": "reconstructed"},
       {"entry": "8003c484", "size_instructions": 16, "executed_instructions": 16, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 287, "status": "reconstructed"},
@@ -19564,11 +19565,11 @@
    "setup_frames_excluded": 0,
    "totals": {
     "executed_functions": 1695,
-    "reconstructed": 516,
+    "reconstructed": 517,
     "reconstructed_partial": 33,
-    "not_reconstructed": 1146,
+    "not_reconstructed": 1145,
     "executed_instructions": 88207,
-    "not_reconstructed_executed_instructions": 54429
+    "not_reconstructed_executed_instructions": 54199
    },
    "images": [
     {
@@ -20721,11 +20722,11 @@
      ],
      "totals": {
       "executed_functions": 758,
-      "reconstructed": 301,
+      "reconstructed": 302,
       "reconstructed_partial": 17,
-      "not_reconstructed": 440,
+      "not_reconstructed": 439,
       "executed_instructions": 26474,
-      "not_reconstructed_executed_instructions": 11938
+      "not_reconstructed_executed_instructions": 11708
      },
      "functions": [
       {"entry": "80019524", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
@@ -21109,7 +21110,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "reconstructed"},
       {"entry": "8003c484", "size_instructions": 16, "executed_instructions": 16, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 119, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 329, "status": "reconstructed"},
@@ -21741,11 +21742,11 @@
    "setup_frames_excluded": 0,
    "totals": {
     "executed_functions": 1697,
-    "reconstructed": 516,
+    "reconstructed": 517,
     "reconstructed_partial": 33,
-    "not_reconstructed": 1148,
+    "not_reconstructed": 1147,
     "executed_instructions": 88234,
-    "not_reconstructed_executed_instructions": 54442
+    "not_reconstructed_executed_instructions": 54212
    },
    "images": [
     {
@@ -22900,11 +22901,11 @@
      ],
      "totals": {
       "executed_functions": 758,
-      "reconstructed": 301,
+      "reconstructed": 302,
       "reconstructed_partial": 17,
-      "not_reconstructed": 440,
+      "not_reconstructed": 439,
       "executed_instructions": 26487,
-      "not_reconstructed_executed_instructions": 11938
+      "not_reconstructed_executed_instructions": 11708
      },
      "functions": [
       {"entry": "80019524", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
@@ -23288,7 +23289,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "reconstructed"},
       {"entry": "8003c484", "size_instructions": 16, "executed_instructions": 16, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 119, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 329, "status": "reconstructed"},
@@ -23924,11 +23925,11 @@
    "setup_frames_excluded": 0,
    "totals": {
     "executed_functions": 1695,
-    "reconstructed": 516,
+    "reconstructed": 517,
     "reconstructed_partial": 33,
-    "not_reconstructed": 1146,
+    "not_reconstructed": 1145,
     "executed_instructions": 88220,
-    "not_reconstructed_executed_instructions": 54447
+    "not_reconstructed_executed_instructions": 54217
    },
    "images": [
     {
@@ -25081,11 +25082,11 @@
      ],
      "totals": {
       "executed_functions": 758,
-      "reconstructed": 301,
+      "reconstructed": 302,
       "reconstructed_partial": 17,
-      "not_reconstructed": 440,
+      "not_reconstructed": 439,
       "executed_instructions": 26469,
-      "not_reconstructed_executed_instructions": 11938
+      "not_reconstructed_executed_instructions": 11708
      },
      "functions": [
       {"entry": "80019524", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
@@ -25469,7 +25470,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "reconstructed"},
       {"entry": "8003c484", "size_instructions": 16, "executed_instructions": 16, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 119, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 329, "status": "reconstructed"},
@@ -26105,11 +26106,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 763,
-    "reconstructed": 467,
+    "reconstructed": 468,
     "reconstructed_partial": 28,
-    "not_reconstructed": 268,
+    "not_reconstructed": 267,
     "executed_instructions": 37786,
-    "not_reconstructed_executed_instructions": 6478
+    "not_reconstructed_executed_instructions": 6273
    },
    "images": [
     {
@@ -26477,11 +26478,11 @@
      ],
      "totals": {
       "executed_functions": 493,
-      "reconstructed": 280,
+      "reconstructed": 281,
       "reconstructed_partial": 14,
-      "not_reconstructed": 199,
+      "not_reconstructed": 198,
       "executed_instructions": 16788,
-      "not_reconstructed_executed_instructions": 3865
+      "not_reconstructed_executed_instructions": 3660
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -26734,7 +26735,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 319, "status": "reconstructed"},
       {"entry": "8003cd08", "size_instructions": 10, "executed_instructions": 10, "status": "not_reconstructed"},
@@ -27110,11 +27111,11 @@
    "setup_frames_excluded": 318,
    "totals": {
     "executed_functions": 765,
-    "reconstructed": 467,
+    "reconstructed": 468,
     "reconstructed_partial": 28,
-    "not_reconstructed": 270,
+    "not_reconstructed": 269,
     "executed_instructions": 37917,
-    "not_reconstructed_executed_instructions": 6556
+    "not_reconstructed_executed_instructions": 6351
    },
    "images": [
     {
@@ -27482,11 +27483,11 @@
      ],
      "totals": {
       "executed_functions": 495,
-      "reconstructed": 281,
+      "reconstructed": 282,
       "reconstructed_partial": 14,
-      "not_reconstructed": 200,
+      "not_reconstructed": 199,
       "executed_instructions": 16810,
-      "not_reconstructed_executed_instructions": 3866
+      "not_reconstructed_executed_instructions": 3661
      },
      "functions": [
       {"entry": "80019548", "size_instructions": 6, "executed_instructions": 6, "status": "not_reconstructed"},
@@ -27739,7 +27740,7 @@
        "missing_paths": ["\n                                        "]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
-      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "not_reconstructed"},
+      {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 104, "status": "reconstructed"},
       {"entry": "8003c6e8", "size_instructions": 359, "executed_instructions": 323, "status": "reconstructed"},
       {"entry": "8003cc84", "size_instructions": 31, "executed_instructions": 31, "status": "reconstructed"},
@@ -28100,11 +28101,11 @@
   "routes": 18,
   "totals": {
    "executed_functions": 2211,
-   "reconstructed": 667,
+   "reconstructed": 668,
    "reconstructed_partial": 51,
-   "not_reconstructed": 1493,
+   "not_reconstructed": 1492,
    "executed_instructions": 134529,
-   "not_reconstructed_executed_instructions": 84308
+   "not_reconstructed_executed_instructions": 84078
   },
   "images": {
    "battle": {
@@ -28181,11 +28182,11 @@
    },
    "resident": {
     "executed_functions": 812,
-    "reconstructed": 312,
+    "reconstructed": 313,
     "reconstructed_partial": 20,
-    "not_reconstructed": 480,
+    "not_reconstructed": 479,
     "executed_instructions": 28784,
-    "not_reconstructed_executed_instructions": 13078
+    "not_reconstructed_executed_instructions": 12848
    }
   }
  }
