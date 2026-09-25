@@ -33,7 +33,7 @@ class AuthoringContractTests(unittest.TestCase):
 
     def test_contract_matches_current_plan_and_reviewed_complete_lock(self):
         result = validate(ROOT, build_matrix())
-        self.assertEqual(result["authoring_gates_defined"], 14)
+        self.assertEqual(result["authoring_gates_defined"], 15)
         self.assertEqual(result["reviewed_authoring_packages"], len(self.lock["packages"]) - 1)
 
     def test_untrusted_build_cannot_fall_back_to_plain_node_or_acquire_privilege(self):
@@ -121,10 +121,10 @@ class AuthoringContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unimplemented native authoring gate promoted"):
             validate_gates(self.contract, self.acceptance, build_matrix())
 
-    def test_early_and_release_prerequisites_cannot_be_removed(self):
+    def test_bridge_and_release_prerequisites_cannot_be_removed(self):
         matrix = build_matrix()
         for collection, identity in (
-            ("early_exits", "P02A-EARLY-EXIT"),
+            ("phase_exits", "P02A-EXIT"),
             ("phase_exits", "P03-EXIT"),
             ("phase_exits", "P13-EXIT"),
         ):
@@ -136,6 +136,23 @@ class AuthoringContractTests(unittest.TestCase):
                 self.assertRaisesRegex(ValueError, "omits authoring prerequisite"),
             ):
                 validate_gates(self.contract, self.acceptance, changed)
+
+    def test_bridge_cannot_depend_on_later_sdk_implementation(self):
+        gate = self.acceptance["gates"][0]
+        gate["tasks"].append("P07-T01")
+        with self.assertRaisesRegex(ValueError, "requires a later phase task"):
+            validate_gates(self.contract, self.acceptance, build_matrix())
+
+    def test_graphical_gate_owners_are_separate_sequential_phases(self):
+        matrix = build_matrix()
+        by_id = {g["id"]: g for g in self.acceptance["gates"]}
+        self.assertEqual(by_id["AUTHOR-LEVEL-EDITORS"]["owner_phase"], 11)
+        self.assertEqual(by_id["AUTHOR-RULE-EDITORS"]["owner_phase"], 12)
+        gate = next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == 11)
+        self.assertNotIn("AUTHOR-RULE-EDITORS", gate["requires_authoring_gates"])
+        by_id["AUTHOR-LEVEL-EDITORS"]["tasks"].append("P12-T01")
+        with self.assertRaisesRegex(ValueError, "requires a later phase task"):
+            validate_gates(self.contract, self.acceptance, matrix)
 
     def test_dependency_qualification_rejects_stale_installed_manifests(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -168,14 +185,14 @@ class AuthoringContractTests(unittest.TestCase):
 
     def test_completed_narrow_facets_cannot_bypass_unexecuted_authoring_gates(self):
         for collection, identity in (
-            ("early_exits", "P02A-EARLY-EXIT"),
+            ("phase_exits", "P02A-EXIT"),
             ("phase_exits", "P03-EXIT"),
         ):
             matrix = build_matrix()
             gate = next(g for g in matrix["crosscutting"][collection] if g["id"] == identity)
             gate["status"] = "passed"
             for row in matrix["requirements"]:
-                if row["source_id"] in {f"P02A-T{index:02}" for index in range(35, 40)}:
+                if row["source_id"] in gate["tasks"]:
                     row["status"] = "passed"
             with (
                 self.subTest(identity=identity),
@@ -185,9 +202,9 @@ class AuthoringContractTests(unittest.TestCase):
 
     def test_unknown_authoring_prerequisites_are_not_ignored(self):
         matrix = build_matrix()
-        matrix["crosscutting"]["early_exits"][0]["requires_authoring_gates"].append(
-            "AUTHOR-INVENTED"
-        )
+        next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == "2A")[
+            "requires_authoring_gates"
+        ].append("AUTHOR-INVENTED")
         with self.assertRaisesRegex(ValueError, "unknown authoring gate"):
             validate_gates(self.contract, self.acceptance, matrix)
 

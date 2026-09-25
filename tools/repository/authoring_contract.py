@@ -20,7 +20,7 @@ STAGES = [
     "verify_package",
     "publish",
 ]
-EARLY_GATES = {
+BRIDGE_GATES = {
     "AUTHOR-BUILD",
     "AUTHOR-ISOLATION",
     "AUTHOR-PACKAGE",
@@ -34,7 +34,7 @@ EARLY_GATES = {
     "AUTHOR-EVENT-STATE",
     "AUTHOR-DELIVERY",
 }
-EXPANDED_GATES = {"AUTHOR-TOWN", "AUTHOR-EDITORS"}
+EXPANDED_GATES = {"AUTHOR-TOWN", "AUTHOR-LEVEL-EDITORS", "AUTHOR-RULE-EDITORS"}
 REVIEWED_LICENSES = {
     "0BSD",
     "MIT",
@@ -200,7 +200,7 @@ def validate_policy(contract: dict) -> None:
         "ordinary-play or protected acceptance policy weakened",
     )
     require(
-        set(verification["early_gate_ids"]) == EARLY_GATES
+        set(verification["bridge_gate_ids"]) == BRIDGE_GATES
         and set(verification["expanded_gate_ids"]) == EXPANDED_GATES,
         "source-to-playable acceptance gate omitted",
     )
@@ -331,10 +331,34 @@ def validate_gates(contract: dict, acceptance: dict, matrix: dict) -> int:
     gates = {gate["id"]: gate for gate in acceptance["gates"]}
     require(len(gates) == len(acceptance["gates"]), "duplicate authoring gate")
     require(
-        set(gates) == EARLY_GATES | EXPANDED_GATES, "source-to-playable acceptance gate omitted"
+        set(gates) == BRIDGE_GATES | EXPANDED_GATES, "source-to-playable acceptance gate omitted"
     )
     tasks = matrix["source_snapshot"]["tasks"]
+    order = matrix["source_snapshot"]["phases"]
+    expected_owners = {
+        **{identity: "P02A" for identity in BRIDGE_GATES},
+        "AUTHOR-TOWN": "P07",
+        "AUTHOR-LEVEL-EDITORS": "P11",
+        "AUTHOR-RULE-EDITORS": "P12",
+    }
     for gate in gates.values():
+        phase = str(gate.get("owner_phase"))
+        owner = "P02A" if phase == "2A" else "P" + phase.zfill(2)
+        require(owner == expected_owners[gate["id"]], "authoring gate has the wrong phase owner")
+        require(
+            all(
+                task in tasks and order.index(task.split("-T")[0]) <= order.index(owner)
+                for task in gate["tasks"]
+            ),
+            "authoring gate requires a later phase task",
+        )
+        require(
+            all(
+                task in tasks and order.index(task.split("-T")[0]) > order.index(owner)
+                for task in gate.get("regression_tasks", [])
+            ),
+            "authoring regression task must belong to a later phase",
+        )
         require(
             set(gate["tasks"]) <= tasks.keys() and gate["tasks"], "gate refers to missing tasks"
         )
@@ -343,7 +367,7 @@ def validate_gates(contract: dict, acceptance: dict, matrix: dict) -> int:
             "unimplemented native authoring gate promoted",
         )
         require(
-            gate["milestone"] == ("early" if gate["id"] in EARLY_GATES else "expanded"),
+            gate["milestone"] == ("bridge" if gate["id"] in BRIDGE_GATES else "expanded"),
             "gate milestone mismatch",
         )
         require(
@@ -358,7 +382,7 @@ def validate_gates(contract: dict, acceptance: dict, matrix: dict) -> int:
         "specification/ordinary-play evidence boundary weakened",
     )
     cross = matrix["crosscutting"]
-    exits = {item["id"]: item for item in cross["phase_exits"] + cross["early_exits"]}
+    exits = {item["id"]: item for item in cross["phase_exits"]}
     bindings = {**exits, **{item["id"]: item for item in cross["release_checkpoints"]}}
     for phase, gate in bindings.items():
         references = set(gate.get("requires_authoring_gates", []))
@@ -371,12 +395,12 @@ def validate_gates(contract: dict, acceptance: dict, matrix: dict) -> int:
                 "phase exit passed without executed authoring gates: " + phase,
             )
     required = {
-        "P02A-EARLY-EXIT": EARLY_GATES,
-        "P03-EXIT": EARLY_GATES,
-        "P07-EXIT": EARLY_GATES | {"AUTHOR-TOWN"},
-        "P11-EXIT": {"AUTHOR-EDITORS"},
-        "P12-EXIT": {"AUTHOR-EDITORS"},
-        "P13-EXIT": EARLY_GATES | EXPANDED_GATES,
+        "P02A-EXIT": BRIDGE_GATES,
+        "P03-EXIT": BRIDGE_GATES,
+        "P07-EXIT": BRIDGE_GATES | {"AUTHOR-TOWN"},
+        "P11-EXIT": {"AUTHOR-LEVEL-EDITORS"},
+        "P12-EXIT": {"AUTHOR-RULE-EDITORS"},
+        "P13-EXIT": BRIDGE_GATES | EXPANDED_GATES,
     }
     for phase, prerequisites in required.items():
         require(

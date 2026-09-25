@@ -1,9 +1,11 @@
 # Phase 1 slice analysis contract — reviewed scope
 
-Phase 1 prepares independently recovered source for Phase 2 and the playable
-slice in Phase 3. It does not claim a shipping runtime, native platform execution,
-or complete analysis of both discs. The plan explicitly continues analysis after
-this exit. The broad Phase 1 facets and unchecked todos remain visible.
+Phase 1 completes the independently recovered source and original evidence required
+for the frozen first playable slice. Every checkbox and facet in its scoped
+checklist is required; the nine proof domains below are the integrated acceptance
+obligations, not an alternative to checking the todos. Phase 2 begins only after
+Phase 1 is complete. This does not claim a shipping runtime or complete recovery
+of both discs: all remaining whole-game recovery has explicit Phase 4 owners.
 
 ## Selected original scenario
 
@@ -61,26 +63,30 @@ behavioral oracle, silent unknown opcode, debugger-only progression bypass,
 unexplained state mask, or an unreviewed resource interpretation. Readiness and
 timing scope must be explicit.
 
-## Approved matrix correction
+## Checklist and evidence ownership
 
-1. Give Phase 1 original analysis the declared target original-reference-analysis.
-   Keep every later Arch/Vulkan, Windows/D3D12 and macOS/Metal target and its
-   actual native execution gate unchanged.
-2. Correct P01-T05 acceptance to require traced original hardware-call intent and
-   documented native service boundaries. Native service execution is validated
-   by the existing later native implementation requirements.
-3. Retain every broad Phase 1 facet. Give every facet an explicit disposition in
-   a machine-checked slice manifest: required with concrete proof obligations,
-   or outside this slice with a linked later-phase facet and unresolved backlog
-   record. A deferred disposition is not a passed facet or a checked todo.
-4. Permit only Phase 1's exit to use that reviewed manifest: every required proof
-   obligation must pass on original evidence and reviewed reconstruction; every
-   broad facet must be accounted for; every deferred case must remain tracked.
-   All other phase exits keep their full facet requirements.
-5. Keep the checked-todo validator unchanged: a checked plan todo still requires
-   evidence for every one of its facets. A first-slice exit does not mark broader
-   unfinished analysis todos complete.
+The complete Phase 1 checklist is scoped to the frozen original route, including
+all required branches, inputs, resources, media, menus, save behavior, timing and
+scenario semantics. All nine proof domains remain mandatory. The manifest maps
+every Phase 1 facet to required proofs; a deferred Phase 1 disposition is invalid.
 
-The parent must independently review the final slice manifest and these concrete
-gate corrections before any Phase 1 exit status is changed. This contract is not
-an exit result; every required domain above is currently incomplete.
+The final Phase 1 checkbox owns integrated acceptance: original proof, readable
+reconstruction, frozen-route qualification and independent review must all pass.
+Checking a todo still requires evidence for each of its facets. The phase exit
+passes exactly when all its checkboxes are checked and the preceding phase is
+complete; it cannot substitute a slice-only waiver for incomplete checklist work.
+
+The outside-slice world-map and minigame records retain their source-qualified
+backlog identities, but their required recovery facets are owned by Phase 4.
+The Phase 4 recovery checklist also carries every remaining category from the
+original broader research scope. Recording that remainder is a bounded Phase 1
+deliverable, not evidence that the remaining behavior has been recovered.
+
+Original-reference-analysis remains the target for recovery evidence. Later
+native tasks retain their own explicit platform targets; moving a task must not
+change targets merely because its ordinal number changed. Hardware-call recovery
+proves original intent and native-service boundaries, not later native execution.
+
+The final route and original evidence must be independently reviewed before the
+Phase 1 integrated-acceptance checkbox or exit can pass. This contract is not an
+exit result; the required proof domains remain incomplete until demonstrated.

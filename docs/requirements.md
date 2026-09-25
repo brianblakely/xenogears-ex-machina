@@ -8,7 +8,7 @@ All target cells require individual platform evidence before a cross-platform pa
 Original-game oracles require local original observations, never synthetic fixtures.
 The JSON companion preserves the exact source requirements, tables, boundaries and gates.
 
-298 source tasks; 2194 explicit test facets.
+322 source tasks; 2389 explicit test facets.
 
 ## Phase 0
 
@@ -253,9 +253,9 @@ Exit gate: A reproducible empty-project build, original-game coverage inventory,
 
 ### P01-T01
 
-Analyze disc layout, boot metadata, executable loading, archives, sector references, compression, and shared versus disc-specific resources.
+Freeze the source-qualified first-slice route and its required branches/resources, then analyze its disc layout, boot metadata, executable loading, archives, sector references, compression, and shared versus disc-specific resources.
 
-Reproduce offsets and decoding from both original profiles; round-trip supported formats and explicitly classify unsupported entries; every claim links to independently collected evidence.
+Freeze the required original route and resource/branch inventory without reducing the agreed slice obligations. Reproduce every required offset, source identity and decoding result from the qualified original profiles; round-trip supported formats and cite independent original evidence. Whole-game resources outside that inventory are owned by the Phase 4 recovery checklist.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -267,12 +267,13 @@ Reproduce offsets and decoding from both original profiles; round-trip supported
 | TEST-P01-T01-F06 | compression | original-reference-analysis | defined |
 | TEST-P01-T01-F07 | shared resources | original-reference-analysis | defined |
 | TEST-P01-T01-F08 | disc-specific resources | original-reference-analysis | defined |
+| TEST-P01-T01-F09 | frozen source-qualified route and required resource/branch inventory | original-reference-analysis | defined |
 
 ### P01-T02
 
 Map the main executable and dynamically loaded code/data. Track overlay identity alongside addresses so reused memory locations do not become ambiguous symbols.
 
-Trace loader transitions and show two overlays at a reused address retain distinct identities and symbols; compare map to original bytes and execution.
+For the entire frozen first-slice scope, including required branches and boundary cases: Trace loader transitions and show two overlays at a reused address retain distinct identities and symbols; compare map to original bytes and execution.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -286,7 +287,7 @@ Trace loader transitions and show two overlays at a reused address retain distin
 
 Disassemble the original MIPS code and recover function boundaries, calling conventions, globals, structures, tables, dispatchers, and subsystem relationships.
 
-Review original disassembly and call/data references; focused original traces and boundary cases must support each recovered symbol and relationship.
+For the entire frozen first-slice scope, including required branches and boundary cases: Review original disassembly and call/data references; focused original traces and boundary cases must support each recovered symbol and relationship.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -303,7 +304,7 @@ Review original disassembly and call/data references; focused original traces an
 
 Decompile functions into readable, reviewed source. Resolve inferred types, control flow, pointer arithmetic, signedness, fixed-point arithmetic, and overflow behavior rather than treating automatic pseudocode as finished code.
 
-Compare reviewed reconstruction against original traces at normal and arithmetic boundary inputs; document defined native arithmetic and unresolved cases instead of accepting automatic pseudocode.
+For the entire frozen first-slice scope, including required branches and boundary cases: Compare reviewed reconstruction against original traces at normal and arithmetic boundary inputs; document defined native arithmetic and unresolved cases instead of accepting automatic pseudocode.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -320,7 +321,7 @@ Compare reviewed reconstruction against original traces at normal and arithmetic
 
 Identify hardware-facing code, BIOS interfaces, GPU command generation, audio interfaces, controller reads, and disc I/O; separate their gameplay intent from the PS1-specific mechanism.
 
-Trace the original call sites and dependencies for each named hardware-facing facet used by the reviewed first playable slice; document input/output, state, ordering and timing intent plus the native service boundary. Validate the recovered intent against source-qualified original execution. Later native platform facets require actual native service execution; Phase 1 analysis does not claim it.
+For the entire frozen first-slice scope, including required branches and boundary cases: Trace the original call sites and dependencies for each named hardware-facing facet used by the reviewed first playable slice; document input/output, state, ordering and timing intent plus the native service boundary. Validate the recovered intent against source-qualified original execution. Later native platform facets require actual native service execution; Phase 1 analysis does not claim it.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -336,7 +337,7 @@ Trace the original call sites and dependencies for each named hardware-facing fa
 
 Recover game-visible PS1 rendering behaviors needed by the optional fidelity settings, including projected-vertex precision, texture interpolation, color quantization, dithering, rasterization resolution, primitive ordering, and transparency. Capture representative original-game visual references.
 
-Recover each operation from original source and matched captures with exact profiles and coordinates. Document applicable render stage, scene, parameters and tolerances; no full-screen approximation or synthetic image establishes original fidelity.
+For the entire frozen first-slice scope, including required branches and boundary cases: Recover each operation from original source and matched captures with exact profiles and coordinates. Document applicable render stage, scene, parameters and tolerances; no full-screen approximation or synthetic image establishes original fidelity.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -353,7 +354,7 @@ Recover each operation from original source and matched captures with exact prof
 
 Trace original Mono, Stereo, and Wide sound paths, including panning/polarity, reverb, master output, and streamed/FMVs' routing. Capture matched unprocessed two-channel signals and establish Wide's actual changes and intended playback model from original-game evidence and primary documentation where available. Distinguish matrix encoding from phase-based stereo expansion before selecting a decoder.
 
-Capture identical original scenarios and levels in each sound mode on both discs; trace signal operations and routing, compare phase/polarity/timing and primary documentation where available. Keep ambiguities open and defer decoder selection until the spatial reference is supported.
+For the entire frozen first-slice scope, including required branches and boundary cases: Capture identical original scenarios and levels in each sound mode on both discs; trace signal operations and routing, compare phase/polarity/timing and primary documentation where available. Keep ambiguities open and defer decoder selection until the spatial reference is supported.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -372,7 +373,7 @@ Capture identical original scenarios and levels in each sound mode on both discs
 
 Trace original execution to validate uncertain findings. Capture inputs, seeds, state transitions, script instructions, and timing observations for focused scenarios.
 
-Re-run exact original profile with documented emulator/hardware setup and input log; corroborate state and timing observations, recording confidence and divergence.
+For the entire frozen first-slice scope, including required branches and boundary cases: Re-run exact original profile with documented emulator/hardware setup and input log; corroborate state and timing observations, recording confidence and divergence.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -385,9 +386,9 @@ Re-run exact original profile with documented emulator/hardware setup and input 
 
 ### P01-T09
 
-Recover field, geometry, sprite, animation, collision, camera, texture/palette, UI, dialogue, battle, world-map, audio, and FMV data formats through direct analysis.
+Recover every field, geometry, sprite, animation, collision, camera, texture/palette, UI, dialogue, battle, audio, and FMV format used by the frozen slice through direct original analysis. Whole-game and world-map format recovery belongs to Phase 4.
 
-Derive format fields from original bytes and use bounded local parsing fixtures plus independent behavioral evidence; preserve unknown fields and reject truncation/corruption.
+For the entire frozen first-slice scope, including required branches and boundary cases: Derive format fields from original bytes and use bounded local parsing fixtures plus independent behavioral evidence; preserve unknown fields and reject truncation/corruption.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -402,15 +403,14 @@ Derive format fields from original bytes and use bounded local parsing fixtures 
 | TEST-P01-T09-F09 | UI formats | original-reference-analysis | defined |
 | TEST-P01-T09-F10 | dialogue formats | original-reference-analysis | defined |
 | TEST-P01-T09-F11 | battle formats | original-reference-analysis | defined |
-| TEST-P01-T09-F12 | world-map formats | original-reference-analysis | defined |
-| TEST-P01-T09-F13 | audio formats | original-reference-analysis | defined |
-| TEST-P01-T09-F14 | FMV formats | original-reference-analysis | defined |
+| TEST-P01-T09-F12 | audio formats | original-reference-analysis | defined |
+| TEST-P01-T09-F13 | FMV formats | original-reference-analysis | defined |
 
 ### P01-T10
 
 Recover event-script bytecode, operands, scheduling, waits, branching, concurrent actors, and side effects. Build this project's own disassembler and instruction reference.
 
-Decode and trace each used instruction family, branch and concurrent schedule; compare effects to original and report unsupported opcodes with source/PC rather than no-op.
+For the entire frozen first-slice scope, including required branches and boundary cases: Decode and trace each used instruction family, branch and concurrent schedule; compare effects to original and report unsupported opcodes with source/PC rather than no-op.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -426,9 +426,9 @@ Decode and trace each used instruction family, branch and concurrent schedule; c
 
 ### P01-T11
 
-Recover movement and jump rules, encounter logic, random-number generation, battle formulas, enemy behavior, story-state changes, minigame rules, and save formats.
+Recover the movement, jump, encounter, RNG, battle-formula, enemy-behavior, story-state, and save-format rules exercised by the frozen slice, including its required boundary and failure paths. Remaining rules, including minigames, belong to Phase 4.
 
-Capture original normal, boundary and failure cases with controlled inputs/seeds; validate reconstructed outcomes and arithmetic against those observations.
+For the entire frozen first-slice scope, including required branches and boundary cases: Capture original normal, boundary and failure cases with controlled inputs/seeds; validate reconstructed outcomes and arithmetic against those observations.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -439,14 +439,13 @@ Capture original normal, boundary and failure cases with controlled inputs/seeds
 | TEST-P01-T11-F05 | battle formulas | original-reference-analysis | defined |
 | TEST-P01-T11-F06 | enemy behavior | original-reference-analysis | defined |
 | TEST-P01-T11-F07 | story-state changes | original-reference-analysis | defined |
-| TEST-P01-T11-F08 | minigame rules | original-reference-analysis | defined |
-| TEST-P01-T11-F09 | save formats | original-reference-analysis | defined |
+| TEST-P01-T11-F08 | save formats | original-reference-analysis | defined |
 
 ### P01-T12
 
 Identify simulation cadences and dependencies on frame counters, asynchronous loads, interrupts, and hardware timing. Document which timings are gameplay rules and which are implementation artifacts.
 
-Vary observed original load/timing conditions and measure subsystem changes; classify evidence-supported gameplay cadence separately from presentation or hardware delay.
+For the entire frozen first-slice scope, including required branches and boundary cases: Vary observed original load/timing conditions and measure subsystem changes; classify evidence-supported gameplay cadence separately from presentation or hardware delay.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -462,7 +461,7 @@ Vary observed original load/timing conditions and measure subsystem changes; cla
 
 Recover state ownership, action eligibility, menu/dialogue structure, event/control readiness, spawn/transition preconditions, and subsystem initialization needed for native agent queries and typed go-anywhere setup. Map original addresses and symbols to native semantic fields without making raw memory offsets the native API.
 
-Trace ordinary entry and action acceptance/rejection in the selected original slice, including internal and offscreen state. Record semantic IDs, valid setup and stable readiness with original coordinates; require these proof obligations at the slice gate.
+For the entire frozen first-slice scope, including required branches and boundary cases: Trace ordinary entry and action acceptance/rejection in the selected original slice, including internal and offscreen state. Record semantic IDs, valid setup and stable readiness with original coordinates; require these proof obligations at the slice gate.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -479,7 +478,7 @@ Trace ordinary entry and action acceptance/rejection in the selected original sl
 
 Create original parser fixtures and behavioral tests for each finding. Generate tests requiring original data locally from the user's imported assets; use synthetic or redistributable fixtures in public CI.
 
-Public CI runs without copyrighted data; local tests bind to source profile and independent expected results; fixture manifests disclose origin and cannot promote synthetic results to behavioral proof.
+For the entire frozen first-slice scope, including required branches and boundary cases: Public CI runs without copyrighted data; local tests bind to source profile and independent expected results; fixture manifests disclose origin and cannot promote synthetic results to behavioral proof.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -491,9 +490,9 @@ Public CI runs without copyrighted data; local tests bind to source profile and 
 
 ### P01-T15
 
-Maintain explicit unresolved-symbol, unknown-format, and unimplemented-instruction inventories. Never silently treat unknown behavior as a no-op.
+Close every unresolved symbol, format, instruction, and behavior required by the frozen slice. Deliver a source-qualified remainder inventory mapped to the Phase 4 recovery tasks; never silently treat unknown behavior as a no-op.
 
-Inject an unresolved case in each inventory and require precise diagnostic and blocked affected coverage, with no silent no-op or progression bypass.
+Reconcile the frozen slice against every unresolved-symbol, unknown-format and instruction inventory. No required slice gap may remain. Record each outside-slice obligation with a concrete Phase 4 owner and next investigation; inventorying later work does not count as recovering it.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -501,8 +500,22 @@ Inject an unresolved case in each inventory and require precise diagnostic and b
 | TEST-P01-T15-F02 | unknown formats | original-reference-analysis | defined |
 | TEST-P01-T15-F03 | unimplemented instructions | original-reference-analysis | defined |
 | TEST-P01-T15-F04 | explicit unknown behavior errors | original-reference-analysis | defined |
+| TEST-P01-T15-F05 | zero unresolved required slice gaps | original-reference-analysis | defined |
 
-Exit gate: The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, including its agent-visible state and scenario-entry semantics, with a tracked backlog for the rest of the game.
+### P01-T16
+
+Demonstrate integrated Phase 1 acceptance: every scoped recovery task and all nine original-source proof domains pass, the route/manifest and reusable reconstruction are independently reviewed, no required slice gap remains, and every whole-game remainder has a Phase 4 owner. Record the evidence before checking this task.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P01-T16-F01 | all nine original slice proof domains | original-reference-analysis | defined |
+| TEST-P01-T16-F02 | independent frozen-route and reconstruction review | original-reference-analysis | defined |
+| TEST-P01-T16-F03 | no unresolved required slice work | original-reference-analysis | defined |
+| TEST-P01-T16-F04 | explicit Phase 4 remainder ownership | original-reference-analysis | defined |
+
+Exit gate: Every Phase 1 checkbox is checked: the frozen slice has reviewed reusable source, qualified original comparisons for all nine proof domains, a frozen route and independent acceptance review, and no unresolved required path. The whole-game remainder is explicitly assigned to Phase 4; it is not unfinished Phase 1 checklist work.
 
 ## Phase 2
 
@@ -603,16 +616,16 @@ Toggle each independently staged operation over one recorded trace; compare auth
 
 ### P02-T07
 
-Separate original sound-mode generation from output processing: preserve a two-channel Wide tap, a Wide-specific decoding/spatial-reconstruction stage, and an HRTF binaural stage. Preserve interchannel phase/timing and original-mode bypass paths; allow a null audio output without stalling logical media/event progression.
+Define and test the audio service boundaries for original sound generation, an unprocessed two-channel Wide tap, bypass routing, and optional output processors. Preserve interchannel phase/timing and allow null audio output without stalling logical media/event progression. Reserve documented processor/state-restoration interfaces for the Wide reconstruction and HRTF implementation in Phase 10; do not require those processors here.
 
-Inspect signal taps and bypass routing with phase/polarity fixtures and verified original captures; disable output and require identical logical media/script events. Gate reconstruction on Phase 1 Wide findings.
+Exercise the original-mode tap/bypass and null-output media contracts with phase/polarity and logical-timing fixtures. Verify an optional processor can be absent without changing logical state. Wide decoding and HRTF output are unavailable until Phase 10, whose checklist owns their implementation and fidelity tests.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
 | TEST-P02-T07-F01 | original sound generator boundary | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P02-T07-F02 | raw two-channel Wide tap | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T07-F03 | Wide-specific reconstruction | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T07-F04 | HRTF stage | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T07-F03 | Wide reconstruction processor interface, not implementation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T07-F04 | HRTF processor interface, not implementation | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P02-T07-F05 | phase and timing preservation | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P02-T07-F06 | original-mode bypass | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P02-T07-F07 | null output media progression | arch-vulkan, windows-d3d12, macos-metal | defined |
@@ -649,9 +662,9 @@ Replay a fixed input/seed scenario over varying render cadence; compare canonica
 
 ### P02-T10
 
-Define authoritative state for entities, party, inventory, story flags, RNGs, events, battles, minigames, logical audio positions, and media timelines.
+Define the authoritative-state boundaries for all planned game domains, and implement concrete serializable state for the Phase 2 field entities, party/inventory, flags, RNGs, events, input, and logical media timers. Battle and minigame boundaries must be declared without inventing their unrecovered concrete state; their implementation belongs to Phases 3–4.
 
-Mutate each authoritative domain, serialize/restore and compare canonical state; no domain can be silently omitted or reconstructed from nondeterministic presentation state.
+Mutate each implemented Phase 2 domain, serialize/restore it and compare canonical state. Audit the declared domain boundaries and explicit unsupported states for later battle/minigame systems. Concrete later-domain behavior is tested by the owning Phase 3/4 tasks, never credited from an empty schema.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -661,8 +674,8 @@ Mutate each authoritative domain, serialize/restore and compare canonical state;
 | TEST-P02-T10-F04 | story flags | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T10-F05 | RNG state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T10-F06 | event state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T10-F07 | battle state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T10-F08 | minigame state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T10-F07 | declared battle-state ownership boundary | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T10-F08 | declared minigame-state ownership boundary | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T10-F09 | logical audio positions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T10-F10 | media timelines | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
@@ -683,14 +696,14 @@ Restore into a fresh process with all transient services recreated; validate eve
 
 ### P02-T12
 
-Define a deterministic scheduling and persistence contract for both original scripts and future Lua tasks. Store explicit task progress; do not assume arbitrary Lua stacks can later be serialized.
+Implement deterministic scheduling and persistence for recovered original-script execution and explicit native event tasks. Define the adapter/state contract required by Phase 7 Lua tasks without embedding Lua here; arbitrary Lua stacks are not assumed serializable.
 
-Suspend concurrent tasks at documented boundaries, restore and replay; compare scheduling and effects and reject unsupported persistence patterns with actionable errors.
+Suspend concurrent original/native tasks at documented boundaries, restore and replay, and compare scheduling and effects. Validate the Lua adapter contract with explicit native task records only; actual Lua execution, suspension and debugging are Phase 7 obligations.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
 | TEST-P02-T12-F01 | deterministic original-script scheduling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T12-F02 | deterministic Lua task scheduling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T12-F02 | defined deterministic Lua task adapter contract | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T12-F03 | persistence contract | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T12-F04 | explicit task progress | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T12-F05 | no arbitrary Lua stack serialization assumption | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
@@ -711,9 +724,9 @@ Inject randomized job delays and completion orders into repeated seeded replays;
 
 ### P02-T14
 
-Define shared native content/entity/collision/event interfaces for both original-data import and Phase 2A authored packages. Keep origin-specific decoding separate from common simulation services; generated content must not bypass recovered movement rules or require a second gameplay model.
+Define the shared native content, entity, collision, and event interfaces, and exercise them through original-data adapters and redistributable native fixtures. Specify the package-loader boundary that Phase 2A will implement; both origins must call the same recovered movement and interaction services, never a second gameplay model.
 
-Load equivalent original-derived and authored fixtures through their origin adapters; verify both reach the same entity, collision, movement and event services. Reject any path that bypasses recovered movement eligibility or supplies a second simulation; compare authoritative state and command behavior.
+Load a qualified original-data case and redistributable native fixtures through the shared service boundary. Compare state/command behavior where inputs are equivalent and reject bypasses of recovered movement rules. Record the package input contract; the TypeScript-to-package loader is implemented and tested in Phase 2A.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -721,12 +734,88 @@ Load equivalent original-derived and authored fixtures through their origin adap
 | TEST-P02-T14-F02 | shared entity interface | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T14-F03 | shared collision interface | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T14-F04 | shared event interface | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T14-F05 | original and authored package inputs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T14-F05 | original input implementation and specified authored-package boundary | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T14-F06 | separate origin-specific decoding | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T14-F07 | recovered movement rules for generated content | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02-T14-F08 | single gameplay model | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P02-T15
+
+Implement the shared field services using the Phase 1 reconstruction: loading and valid spawn, walking/running/jumping, collision/elevation, camera transforms, interactions, and transitions between supported fields. Reuse `xem-reconstruction` operations rather than copying game rules into a new runtime model.
+
+Run source-qualified field cases through native services and compare recovered behavior. Exercise redistributable boundary/error fixtures separately. Both direct agent input and the physical-input adapter must invoke these same operations.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02-T15-F01 | reused reconstructed field operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T15-F02 | valid field loading and spawn | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T15-F03 | walking running and jumping | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T15-F04 | collision and elevation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T15-F05 | camera and interaction services | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T15-F06 | field transitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P02-T16
+
+Implement the minimum native event vocabulary used by Phase 2A: triggers, doors, dialogue, pickups, conditions, ordered tasks, and simulation-tick waits. Execute it through the shared scheduler and state/debug services; the authoring compiler is added in Phase 2A. Broader quest/cutscene/combat/minigame vocabulary is owned by Phase 7.
+
+Run each implemented event instruction in the actual scheduler with stepped and unthrottled commands. Query the supported vocabulary and reject future operations until their recovered subsystem and source-to-runtime tests exist.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02-T16-F01 | native trigger instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F02 | door instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F03 | dialogue instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F04 | pickup instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F05 | condition instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F06 | ordered tasks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F07 | simulation-tick waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T16-F08 | discoverable unsupported operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P02-T17
+
+Implement reliable shared movement, one-time reward, and interaction primitives with defined failure/re-entry behavior, actor-arrival waits, and logical timers. Drive them from the simulation scheduler, not GUI animation or wall time.
+
+Exercise blocked arrival, repeated interaction, failed conditions, save/restore and leave/re-entry. Compare exact stepped and unthrottled execution for reward uniqueness, bounded waits and equal native state without a GUI. Player rewind is tested in Phase 8.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02-T17-F01 | movement primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F02 | one-time reward primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F03 | interaction primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F04 | defined failure behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F05 | defined re-entry behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F06 | actor-arrival waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F07 | simulation scheduler timers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T17-F08 | independence from GUI animation and wall time | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P02-T18
+
+Implement ordinary save/load for the minimum field/inventory/event services, separately from exact debug snapshots. Preserve stable resource IDs, task progress, RNGs, and one-time rewards across process restart and re-entry; define the content-identity hook that Phase 2A packages will supply.
+
+Save and reload the native field fixture before, during and after an interaction; compare supported persistent state and separately test exact snapshots. Reject malformed/incompatible data atomically and verify a reward cannot be duplicated by reload.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02-T18-F01 | ordinary field save/load | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T18-F02 | separate exact debug snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T18-F03 | stable resource and content identity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T18-F04 | task RNG and reward persistence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T18-F05 | restart re-entry and malformed-save rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P02-T19
+
+Render the minimum shared field/character/door/object representation with the native renderer, and expose an image-free version of the same scene. Supply the supported mesh/material and coordinate contracts needed by Phase 2A; authored GLB/package decoding remains Phase 2A work, while complete visual options remain Phase 5 work.
+
+Use redistributable native geometry fixtures and the qualified original field input. Verify visible transforms/interaction state, and compare authoritative hashes with rendering disabled and a spectator attached.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02-T19-F01 | native field object and character rendering | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T19-F02 | supported mesh material and coordinate contract | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T19-F03 | same authoritative image-free scene | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T19-F04 | no dependence on future authored package decoder | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P02-T20
 
 Provide a documented versioned machine-readable API and a command-line client over local process I/O or IPC, with structured requests/responses, request IDs, capability/schema discovery, stable resource IDs, and machine-readable errors. Do not require a window, terminal UI, network account, or particular agent product.
 
@@ -734,38 +823,36 @@ Run the protocol acceptance gates with a plain pipe client from a clean device-f
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T15-F01 | versioned API | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F02 | command-line client | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F03 | local process I/O or IPC | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F04 | request and response IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F05 | schema discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F06 | capability discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F07 | stable IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F08 | structured errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T15-F09 | no GUI account or agent-vendor dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F01 | versioned API | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F02 | command-line client | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F03 | local process I/O or IPC | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F04 | request and response IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F05 | schema discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F06 | capability discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F07 | stable IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F08 | structured errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T20-F09 | no GUI account or agent-vendor dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T16
+### P02-T21
 
-Expose typed engine actions for direction/analog axes, run, jump, confirm, cancel, camera rotation, menu toggles, menu-item selection, scrolling, dialogue choices, battle commands/targets, and minigame controls as each subsystem is implemented. Include direct pointer actions for UI tests without requiring OS mouse injection.
+Expose typed engine actions for direction/analog axes, run, jump, confirm, cancel, camera rotation, the implemented menu/inventory controls, semantic selection/scrolling, and dialogue choices. Include direct pointer actions for native UI tests without OS mouse injection. Battle commands and minigame controls are added and tested in Phases 3–4; reject them explicitly until available.
 
 Invoke each action through typed engine commands in an eligible state and a disabled state; compare physical-client handlers and resulting state. Pointer tests target native UI coordinates and need no OS events.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T16-F01 | directional and analog input | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F02 | run | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F03 | jump | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F04 | confirm and cancel | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F05 | camera rotation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F06 | menu toggles | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F07 | semantic item selection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F08 | scrolling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F09 | dialogue choices | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F10 | battle commands and targets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F11 | minigame controls | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T16-F12 | direct pointer UI tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F01 | directional and analog input | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F02 | run | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F03 | jump | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F04 | confirm and cancel | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F05 | camera rotation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F06 | menu toggles | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F07 | semantic item selection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F08 | scrolling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F09 | dialogue choices | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T21-F10 | direct pointer UI tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T17
+### P02-T22
 
 Dispatch human input and agent commands through the same gameplay command handlers, eligibility checks, and state transitions. Agent commands must not simulate keyboard/mouse/controller events, enqueue synthetic SDL input, or rely on a virtual controller, screen coordinates, OCR, or focus on a desktop window.
 
@@ -773,15 +860,15 @@ Replay identical canonical actions from human and agent clients; compare accepta
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T17-F01 | same human and agent command handlers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T17-F02 | same eligibility checks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T17-F03 | same transitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T17-F04 | no OS event injection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T17-F05 | no synthetic SDL events | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T17-F06 | no virtual devices | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T17-F07 | no screenshot OCR or desktop focus dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F01 | same human and agent command handlers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F02 | same eligibility checks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F03 | same transitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F04 | no OS event injection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F05 | no synthetic SDL events | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F06 | no virtual devices | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T22-F07 | no screenshot OCR or desktop focus dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T18
+### P02-T23
 
 Define action press/hold/release semantics, simultaneous actions, analog ranges, tick scheduling, ordered batches, and acknowledgments with the exact applied simulation tick. Reject invalid or unavailable commands with reasons and no unintended partial mutation.
 
@@ -789,59 +876,54 @@ Exercise boundary ticks, simultaneous axes/buttons, conflicts, delayed/stale bat
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T18-F01 | press hold release semantics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F02 | simultaneous actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F03 | analog ranges | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F04 | exact tick scheduling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F05 | ordered batches | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F06 | applied-tick acknowledgments | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F07 | invalid-action reasons | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T18-F08 | no unintended partial mutation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F01 | press hold release semantics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F02 | simultaneous actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F03 | analog ranges | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F04 | exact tick scheduling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F05 | ordered batches | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F06 | applied-tick acknowledgments | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F07 | invalid-action reasons | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T23-F08 | no unintended partial mutation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T19
+### P02-T24
 
-Provide semantic menu/dialogue/battle queries with stable selection and target IDs, available and disabled actions, reasons for disabled choices, focus, scrolling state, and current control ownership. Direct semantic selection must obey the same game rules as human selection, not bypass locks or grant resources.
+Provide semantic queries for the implemented menu/inventory and dialogue surfaces, with stable selection/choice IDs, enabled and disabled actions, reasons, focus, scrolling, and control ownership. Selection must obey ordinary game rules; battle targeting is implemented and tested in Phase 3.
 
 Query each decision surface and attempt every enabled/disabled selection, including stale IDs. Compare legal human selection; no semantic selection bypasses locks, resource costs or progression.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T19-F01 | stable menu selection IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F02 | dialogue choice IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F03 | battle target IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F04 | enabled and disabled actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F05 | disabled reasons | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F06 | focus | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F07 | scrolling state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F08 | control ownership | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T19-F09 | rule-preserving semantic selection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F01 | stable menu selection IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F02 | dialogue choice IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F03 | enabled and disabled actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F04 | disabled reasons | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F05 | focus | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F06 | scrolling state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F07 | control ownership | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T24-F08 | rule-preserving semantic selection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T20
+### P02-T25
 
-Expose complete structured snapshots and targeted queries for all simulation state: active/inactive entities and components, transforms, collision/terrain, camera, maps/transitions, flags, variables, party, stats, equipment, inventory, encounters, battle state/AI, minigames, original script stacks/instruction pointers/waits, Lua tasks, RNG state, pending events/timers, and logical audio/media state. Include internal and offscreen state, not only what the player can see.
+Expose complete structured snapshots and targeted queries for every implemented Phase 2 state field: active/inactive entities, components, transforms, collision/terrain, camera, maps/transitions, flags/variables, party/inventory, original/native event progress, RNGs, pending events/timers, and logical audio/media state. Include internal and offscreen state. Phases 3–4 extend this to equipment/combat/AI/minigames and Phase 7 to Lua; unavailable domains must be explicit, never silently omitted.
 
 Inventory every serialized authoritative field and match it to a typed discoverable query path; mutate each domain in valid native scenarios and compare full snapshot, query and restored hashes. Omission of implemented state fails the subsystem gate.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T20-F01 | active and inactive entities | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F02 | components and transforms | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F03 | collision and terrain | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F04 | camera | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F05 | maps and transitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F06 | flags and variables | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F07 | party stats equipment and inventory | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F08 | encounters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F09 | battle and AI | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F10 | minigames | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F11 | original script stacks PCs and waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F12 | Lua tasks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F13 | RNG state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F14 | pending events and timers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F15 | logical audio and media | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T20-F16 | internal and offscreen state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F01 | active and inactive entities | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F02 | components and transforms | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F03 | collision and terrain | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F04 | camera | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F05 | maps and transitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F06 | flags and variables | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F07 | party stats equipment and inventory | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F08 | original script stacks PCs and waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F09 | RNG state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F10 | pending events and timers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F11 | logical audio and media | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T25-F12 | internal and offscreen state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T21
+### P02-T26
 
 Expose subsystem diagnostics, resource/loading state, rendering/audio status, and native symbol/source correlations separately from authoritative state. Establish schema coverage so new state cannot silently become invisible to agents.
 
@@ -849,15 +931,15 @@ Introduce a new state member and require the registration gate to fail until que
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T21-F01 | subsystem diagnostics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T21-F02 | resource and loading status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T21-F03 | render status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T21-F04 | audio status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T21-F05 | native symbol and source correlations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T21-F06 | diagnostics outside authoritative state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T21-F07 | schema coverage gate | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F01 | subsystem diagnostics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F02 | resource and loading status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F03 | render status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F04 | audio status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F05 | native symbol and source correlations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F06 | diagnostics outside authoritative state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T26-F07 | schema coverage gate | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T22
+### P02-T27
 
 Provide consistent tick-tagged snapshots, filtered queries, state diffs, subscriptions, event streams, and state hashes. Large results need pagination/chunking with snapshot consistency and explicit truncation; do not require dumping the whole game after every action.
 
@@ -865,16 +947,16 @@ Query and paginate while advancing and restoring; pages must retain one immutabl
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T22-F01 | consistent tick-tagged snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F02 | filtered queries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F03 | state diffs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F04 | subscriptions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F05 | event streams | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F06 | state hashes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F07 | snapshot-consistent pagination | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T22-F08 | explicit truncation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F01 | consistent tick-tagged snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F02 | filtered queries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F03 | state diffs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F04 | subscriptions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F05 | event streams | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F06 | state hashes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F07 | snapshot-consistent pagination | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T27-F08 | explicit truncation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T23
+### P02-T28
 
 Support an atomic observe → submit actions → advance → observe cycle and bounded run-until operations so agents can act on an identified state rather than race a continuously advancing process. Keep the control service responsive while paused or running, with explicit cancellation and input ownership/handoff rules.
 
@@ -882,15 +964,15 @@ Race stale observations and competing controllers against a bounded cycle. Verif
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T23-F01 | atomic observe-act-advance-observe | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T23-F02 | bounded run-until | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T23-F03 | identified-state preconditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T23-F04 | service responsive while paused | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T23-F05 | service responsive while running | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T23-F06 | cancellation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T23-F07 | input ownership and handoff | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F01 | atomic observe-act-advance-observe | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F02 | bounded run-until | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F03 | identified-state preconditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F04 | service responsive while paused | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F05 | service responsive while running | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F06 | cancellation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T28-F07 | input ownership and handoff | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T24
+### P02-T29
 
 Separate normal gameplay actions from opt-in debug mutations. Log debug writes, setup shortcuts, and loaded snapshots; do not count a debug-assisted outcome as an unmodified gameplay-completion test.
 
@@ -898,27 +980,27 @@ Attempt mutation as a gameplay client, then with explicit debug authority; requi
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T24-F01 | normal actions distinct from debug | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T24-F02 | opt-in debug mutation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T24-F03 | setup and snapshot provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T24-F04 | debug-assisted outcome classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T29-F01 | normal actions distinct from debug | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T29-F02 | opt-in debug mutation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T29-F03 | setup and snapshot provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T29-F04 | debug-assisted outcome classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T25
+### P02-T30
 
 Keep privileged control local by default, with read-only spectators, explicit trusted debug access, and authenticated opt-in remote access. Resource bounds and command cancellation must remain available even in unthrottled runs.
 
-Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.
+Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T25-F01 | privileged control local by default | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T25-F02 | read-only spectators | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T25-F03 | explicit trusted debug | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T25-F04 | authenticated opt-in remote control | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T25-F05 | resource bounds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T25-F06 | cancellation at unlocked speed | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T30-F01 | privileged control local by default | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T30-F02 | read-only spectators | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T30-F03 | explicit trusted debug | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T30-F04 | authenticated opt-in remote control | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T30-F05 | resource bounds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T30-F06 | cancellation at unlocked speed | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T26
+### P02-T31
 
 Implement real-time, fixed-multiplier, paused/stepped, and fully unthrottled execution modes in the core scheduler. Unthrottled mode removes artificial sleeps and wall-clock frame caps; it is not just high-FPS rendering or a fixed 2x/4x fast-forward setting.
 
@@ -926,14 +1008,14 @@ Run identical seeded traces in each mode; compare every tick hash and stop reaso
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T26-F01 | real-time mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T26-F02 | fixed multiplier | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T26-F03 | paused mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T26-F04 | exact stepped mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T26-F05 | fully unthrottled mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T26-F06 | no artificial unlocked sleep or wall cap | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T31-F01 | real-time mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T31-F02 | fixed multiplier | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T31-F03 | paused mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T31-F04 | exact stepped mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T31-F05 | fully unthrottled mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T31-F06 | no artificial unlocked sleep or wall cap | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T27
+### P02-T32
 
 Let agents advance an exact number of simulation ticks or run until a typed condition, event, decision point, breakpoint, or simulation-time budget. Report the stop reason, elapsed simulation time, tick count, wall time, and throughput; support interruption without corrupting state.
 
@@ -941,18 +1023,18 @@ Exercise success, budget, breakpoint and cancellation at boundary ticks, includi
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T27-F01 | exact tick count | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F02 | typed condition stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F03 | event stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F04 | decision-point stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F05 | breakpoint stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F06 | simulation budget | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F07 | stop reasons | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F08 | simulation elapsed time | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F09 | wall time and throughput | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T27-F10 | safe interruption | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F01 | exact tick count | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F02 | typed condition stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F03 | event stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F04 | decision-point stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F05 | breakpoint stop | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F06 | simulation budget | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F07 | stop reasons | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F08 | simulation elapsed time | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F09 | wall time and throughput | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T32-F10 | safe interruption | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T28
+### P02-T33
 
 Preserve fixed/recovered tick semantics and execute every required gameplay update at maximum speed. Do not enlarge physics timesteps, skip collision/event work, or automatically skip cutscenes to manufacture throughput. Advancing logical media time without output must preserve the same script completion and synchronization events.
 
@@ -960,14 +1042,14 @@ Compare per-tick hashes and update counters at real-time and unlocked speed duri
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T28-F01 | unchanged recovered tick semantics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T28-F02 | every gameplay update | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T28-F03 | collision work retained | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T28-F04 | event work retained | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T28-F05 | no automatic cutscene skipping | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T28-F06 | logical media completion equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T33-F01 | unchanged recovered tick semantics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T33-F02 | every gameplay update | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T33-F03 | collision work retained | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T33-F04 | event work retained | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T33-F05 | no automatic cutscene skipping | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T33-F06 | logical media completion equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T29
+### P02-T34
 
 Make simulation pacing independent from VSync, GPU presentation, audio-device clocks, video playback, image encoders, and spectator consumption. Use null/rebuildable presentation paths when testing without rendering/audio, and measure actual throughput without promising a hardware-independent acceleration factor.
 
@@ -975,16 +1057,16 @@ Stall each output service and run the same bounded trace without it. Require equ
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T29-F01 | pacing independent of VSync | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F02 | GPU independent clock | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F03 | audio-clock independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F04 | video-playback independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F05 | encoder independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F06 | spectator independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F07 | null and rebuildable presentation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T29-F08 | measured throughput | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F01 | pacing independent of VSync | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F02 | GPU independent clock | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F03 | audio-clock independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F04 | video-playback independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F05 | encoder independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F06 | spectator independence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F07 | null and rebuildable presentation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T34-F08 | measured throughput | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T30
+### P02-T35
 
 Provide exact portable debug snapshots, restore, reset, seeded replay, and branching test sessions before the first playable slice. Phase 8 adds player-facing save-state/rewind features on this foundation rather than postponing agent checkpoint support.
 
@@ -992,36 +1074,35 @@ Restore into a fresh process and branch at field/event/battle boundaries; compar
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T30-F01 | portable exact debug snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T30-F02 | restore | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T30-F03 | reset | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T30-F04 | seeded replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T30-F05 | branching test sessions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T30-F06 | available before first slice | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T35-F01 | portable exact debug snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T35-F02 | restore | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T35-F03 | reset | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T35-F04 | seeded replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T35-F05 | branching test sessions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T35-F06 | available before first slice | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T31
+### P02-T36
 
-Implement pause/resume, simulation single-step, original-script and Lua task/instruction stepping, conditional breakpoints, state watchpoints, event/transition breakpoints, variable inspection/editing, call/task stacks, and trace capture. Expose debug symbols and native-debugger integration for native code stepping, memory inspection, assertions, crashes, and hangs.
+Implement pause/resume, simulation single-step, original-script and native-event task/instruction stepping, conditional breakpoints, state watchpoints, event/transition breakpoints, variable inspection/editing, call/task stacks, and traces. Expose native debug symbols and debugger integration for code stepping, memory, assertions, crashes, and hangs. Phase 7 adds and tests Lua-specific stepping through the same services.
 
 Demonstrate each stop/inspection mode with source correlations and continuation semantics. Capture a controlled assertion/hang, obtain native stack/memory through the documented debugger path, and replay the bounded failure history.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T31-F01 | pause and resume | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F02 | simulation step | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F03 | original-script task and instruction step | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F04 | Lua task and instruction step | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F05 | conditional breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F06 | state watchpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F07 | event and transition breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F08 | variable inspection and editing | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F09 | call and task stacks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F10 | traces | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F11 | native debug symbols | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F12 | native debugger integration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T31-F13 | memory assertion crash and hang inspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F01 | pause and resume | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F02 | simulation step | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F03 | original-script task and instruction step | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F04 | conditional breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F05 | state watchpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F06 | event and transition breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F07 | variable inspection and editing | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F08 | call and task stacks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F09 | traces | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F10 | native debug symbols | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F11 | native debugger integration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T36-F12 | memory assertion crash and hang inspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T32
+### P02-T37
 
 Provide guarded typed state mutation with validation, preconditions, rollback on failure, before/after diffs, and provenance. Make raw diagnostic access explicitly unsafe/debug-only rather than the routine agent gameplay interface.
 
@@ -1029,15 +1110,15 @@ Submit valid and invalid multi-field edits with stale guards; invalid edits leav
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T32-F01 | typed guarded mutation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T32-F02 | state validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T32-F03 | preconditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T32-F04 | rollback | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T32-F05 | before and after diffs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T32-F06 | mutation provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T32-F07 | unsafe raw diagnostics restricted | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F01 | typed guarded mutation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F02 | state validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F03 | preconditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F04 | rollback | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F05 | before and after diffs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F06 | mutation provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T37-F07 | unsafe raw diagnostics restricted | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T33
+### P02-T38
 
 Capture structured logs, coverage, event histories, performance counters/profiles, assertion/crash reports, and relevant stack/state dumps. Produce deterministic replay inputs and a bounded recent-history buffer for failures.
 
@@ -1045,74 +1126,70 @@ Trigger deterministic assertion, malformed input and injected hang cases; requir
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T33-F01 | structured logs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F02 | coverage | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F03 | event histories | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F04 | performance counters and profiles | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F05 | assertion and crash artifacts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F06 | stacks and state dumps | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F07 | replay inputs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T33-F08 | bounded recent history | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F01 | structured logs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F02 | coverage | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F03 | event histories | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F04 | performance counters and profiles | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F05 | assertion and crash artifacts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F06 | stacks and state dumps | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F07 | replay inputs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T38-F08 | bounded recent history | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T34
+### P02-T39
 
-Build native parity with every supported feature in the existing emulator scenario apparatus: clean reset/cold start without prior saves, source/profile and catalog checks, numeric/named scene selection, ordered input/wait/capture steps, explicit readiness predicates, bounded execution, guarded setup, and success/failure artifacts with exact provenance.
+Implement and verify native parity for the existing emulator apparatus capabilities applicable to the Phase 2 runtime: clean reset/cold start, qualified source/catalog checks, field entry, ordered input/wait/capture, readiness, bounded execution, guarded setup, and exact success/failure provenance. Assign remaining Kernel/menu, battle, and other subsystem parity rows to the Phase 3–4 checklists; do not label those rows implemented here.
 
-Execute every applicable row in docs/agent/emulator-parity.json against native services; compare intended behavior to evidence-qualified original scenarios. Native ticks and IDs require explicit semantic mapping, never copied RAM hooks.
+Execute every parity row whose native services are implemented in Phase 2, using evidence-qualified original scenarios. Verify explicit unsupported responses and a concrete Phase 3/4 owner for other rows. Native ticks/IDs need semantic mapping, not copied RAM hooks; later checklist acceptance requires the remaining parity executions.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T34-F01 | cold reset without saves | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F02 | source and catalog validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F03 | numeric and named entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F04 | ordered input wait and capture | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F05 | readiness predicates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F06 | bounded execution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F07 | guarded setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F08 | success and failure artifacts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T34-F09 | exact provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F01 | cold reset without saves | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F02 | source and catalog validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F03 | numeric and named entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F04 | ordered input wait and capture | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F05 | readiness predicates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F06 | bounded execution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F07 | guarded setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F08 | success and failure artifacts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T39-F09 | exact provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T35
+### P02-T40
 
-Use the existing emulator contract as the parity baseline, not as the native implementation. Its documented verified paths include original Kernel MENU and numeric field entry; position/facing, typed party/progression setup, battle launch, and other entries are an explicit adapter backlog. Implement and test native equivalents/extensions rather than claiming those are already verified emulator features.
+Use the existing emulator contract as the reference baseline, not the native implementation. Preserve the distinction between verified original Kernel MENU/numeric-field entry and unsupported original setup adapters. Demonstrate the qualified Phase 2 native field/reset paths and fail unsupported setup explicitly; Phase 3 completes slice-menu/battle parity and Phase 4 completes whole-game native scenario coverage.
 
 Review parity evidence scopes and run positive/negative adapter cases. No backlog row may be labeled verified without new original evidence, and native coverage needs separate execution results.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T35-F01 | emulator contract used as baseline | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T35-F02 | independently implemented native services | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T35-F03 | verified Kernel scope | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T35-F04 | verified numeric-field scope | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T35-F05 | position backlog explicit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T35-F06 | party and progression backlog explicit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T35-F07 | battle and other entry backlog explicit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F01 | emulator contract used as baseline | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F02 | independently implemented native services | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F03 | verified Kernel scope | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F04 | verified numeric-field scope | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F05 | position backlog explicit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F06 | party and progression backlog explicit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T40-F07 | battle and other entry backlog explicit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T36
+### P02-T41
 
-Implement typed native scenario entry for any supported field/map, world-map location, battle/formation, minigame, cutscene/event, and menu state as its subsystem comes online, across both discs. Allow explicit player/party position and facing, collision-safe spawn, party/stats/equipment/inventory, story flags/progression, encounter state, camera, RNG seed, and mode/configuration setup.
+Implement typed native scenario entry for the qualified fields/maps, native event interactions, and basic menu/inventory states supported in Phase 2. Support player/party position and facing, collision-safe spawn, available party/inventory/flags, camera, RNG seed, and configuration. Validate both source-profile identities, but reject world-map, battle, minigame, and other unavailable setup families until their Phase 3–4 implementations pass.
 
 Cold-create valid and invalid scenarios for every implemented entry family via normal native initialization. Require schema/catalog discovery, complete dependent state and actionable readiness with no old save prerequisite.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T36-F01 | field and map entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F02 | world-map location | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F03 | battle and formation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F04 | minigame | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F05 | cutscene and event | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F06 | menu entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F07 | both discs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F08 | player and party position and facing | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F09 | collision-safe spawn | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F10 | party stats equipment inventory | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F11 | story and progression | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F12 | encounter setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F13 | camera setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F14 | RNG seed | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T36-F15 | mode and configuration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F01 | field and map entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F02 | implemented native event entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F03 | implemented basic menu entry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F04 | both source-profile identities validated without claiming whole-game scenario support | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F05 | player and party position and facing | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F06 | collision-safe spawn | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F07 | implemented party and inventory setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F08 | story and progression | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F09 | camera setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F10 | RNG seed | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T41-F11 | mode and configuration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T37
+### P02-T42
 
 Load scenarios through the same native loaders, initialization services, and state validators as ordinary play. Reconstruct required dependent state; reject invalid combinations and unknown entry types explicitly instead of silently falling back, leaving partial state, or requiring a conveniently preexisting save.
 
@@ -1120,16 +1197,16 @@ Compare ordinary transitions with typed setup; inject bad resources, colliding s
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T37-F01 | shared ordinary loaders | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F02 | shared initialization | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F03 | shared validators | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F04 | dependent state reconstruction | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F05 | invalid combination rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F06 | unknown entry errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F07 | atomic setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T37-F08 | no hidden save prerequisite | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F01 | shared ordinary loaders | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F02 | shared initialization | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F03 | shared validators | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F04 | dependent state reconstruction | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F05 | invalid combination rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F06 | unknown entry errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F07 | atomic setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T42-F08 | no hidden save prerequisite | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T38
+### P02-T43
 
 Distinguish asset availability, map initialization, script completion, actionable dialogue/menu, battle readiness, and actual player-control readiness. Native scenarios must use recovered logical ticks and semantic conditions; emulator frontend-frame counts are not automatically interchangeable with native ticks.
 
@@ -1137,16 +1214,16 @@ Stop separately at each semantic readiness condition in original-correlated nati
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T38-F01 | asset availability | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F02 | map initialization | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F03 | script completion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F04 | actionable dialogue and menu | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F05 | battle readiness | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F06 | actual player control | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F07 | recovered logical ticks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T38-F08 | no implicit emulator-frame conversion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F01 | asset availability | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F02 | map initialization | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F03 | script completion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F04 | actionable dialogue and menu | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F05 | battle readiness | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F06 | actual player control | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F07 | recovered logical ticks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T43-F08 | no implicit emulator-frame conversion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T39
+### P02-T44
 
 Provide a discoverable location/event/formation catalog and declarative scenario schema with conditions, setup, direct actions, waits, assertions, snapshots, and optional images. Extend the emulator/native parity table as either apparatus grows.
 
@@ -1154,17 +1231,17 @@ Discover content and compile/run a scenario from schemas alone. Version and rege
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T39-F01 | discoverable location event formation catalog | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F02 | declarative conditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F03 | setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F04 | actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F05 | waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F06 | assertions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F07 | snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F08 | optional images | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T39-F09 | maintained parity table | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F01 | discoverable location event formation catalog | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F02 | declarative conditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F03 | setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F04 | actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F05 | waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F06 | assertions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F07 | snapshots | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F08 | optional images | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T44-F09 | maintained parity table | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T40
+### P02-T45
 
 Record source/asset/build/mod identities, normalized setup, seeds, ordered commands, applied ticks, guarded mutations, expected/observed readiness, state hashes, captures, and completion/failure status. Label exploratory/unsafe setup separately from validated gameplay evidence.
 
@@ -1172,19 +1249,19 @@ Recreate a run from its manifest and compare state/event trace. Reject missing p
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T40-F01 | source asset build and mod identities | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F02 | normalized setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F03 | seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F04 | ordered commands | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F05 | applied ticks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F06 | guarded mutations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F07 | expected and observed readiness | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F08 | hashes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F09 | captures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F10 | terminal status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T40-F11 | exploratory setup labels | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F01 | source asset build and mod identities | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F02 | normalized setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F03 | seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F04 | ordered commands | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F05 | applied ticks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F06 | guarded mutations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F07 | expected and observed readiness | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F08 | hashes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F09 | captures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F10 | terminal status | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T45-F11 | exploratory setup labels | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T41
+### P02-T46
 
 Enforce simulation-work budgets plus a separate wall-clock watchdog for hangs. Do not inherit an emulator-specific frame ceiling as the native test limit or require real-time waiting to detect readiness.
 
@@ -1192,12 +1269,12 @@ Bound a nonterminating condition by ticks/work and an injected deadlock by wall 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T41-F01 | simulation-work budget | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T41-F02 | independent wall watchdog | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T41-F03 | no inherited emulator frame ceiling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T41-F04 | readiness without real-time sleep | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T46-F01 | simulation-work budget | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T46-F02 | independent wall watchdog | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T46-F03 | no inherited emulator frame ceiling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T46-F04 | readiness without real-time sleep | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T42
+### P02-T47
 
 Offer image-free headless execution by default, on-demand screenshots, and an optional live image stream using offscreen rendering of the same authoritative session. Pure logical headless operation must need no GPU; document any renderer requirements when image output is enabled.
 
@@ -1205,13 +1282,13 @@ Launch with display/input/audio/GPU access absent, play and query state, then en
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T42-F01 | image-free default | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T42-F02 | on-demand screenshot | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T42-F03 | optional same-session offscreen stream | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T42-F04 | no GPU in logical mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T42-F05 | explicit image renderer requirements | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T47-F01 | image-free default | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T47-F02 | on-demand screenshot | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T47-F03 | optional same-session offscreen stream | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T47-F04 | no GPU in logical mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T47-F05 | explicit image renderer requirements | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T43
+### P02-T48
 
 Supply a lightweight spectator viewer or documented stream client that can attach/detach without restarting the session. A spectator is read-only unless control is explicitly handed over; the agent must not depend on a viewer being connected.
 
@@ -1219,14 +1296,14 @@ Attach, disconnect and reconnect a viewer during agent play; verify session cont
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T43-F01 | spectator client documentation | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T43-F02 | attach without restart | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T43-F03 | detach without restart | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T43-F04 | read-only observation | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T43-F05 | explicit control transfer | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T43-F06 | no viewer prerequisite | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T48-F01 | spectator client documentation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T48-F02 | attach without restart | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T48-F03 | detach without restart | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T48-F04 | read-only observation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T48-F05 | explicit control transfer | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T48-F06 | no viewer prerequisite | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P02-T44
+### P02-T49
 
 Tag each image with session ID, simulation tick/time, render profile, and output dimensions. Allow configurable resolution and capture cadence, plus a paused-state image without advancing simulation.
 
@@ -1234,15 +1311,15 @@ Inspect image envelopes at varied cadence/resolution and while paused; metadata 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T44-F01 | image session ID | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T44-F02 | tick and logical time | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T44-F03 | render profile | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T44-F04 | dimensions | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T44-F05 | configurable resolution | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T44-F06 | configurable cadence | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T44-F07 | paused image without stepping | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F01 | image session ID | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F02 | tick and logical time | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F03 | render profile | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F04 | dimensions | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F05 | configurable resolution | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F06 | configurable cadence | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T49-F07 | paused image without stepping | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P02-T45
+### P02-T50
 
 Decouple rendering/encoding/stream transport from simulation with bounded queues and an explicit sample/drop policy. Slow viewers must not back-pressure game progress; report dropped/skipped frames and label accelerated timelines honestly. Exact every-tick captures may be a separate opt-in offline mode with a documented performance cost.
 
@@ -1250,16 +1327,16 @@ Throttle or stop consumers and exhaust queues while running unlocked. Old images
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T45-F01 | bounded rendering queue | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F02 | bounded encoding queue | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F03 | bounded transport queue | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F04 | sample and drop policy | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F05 | no viewer backpressure | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F06 | drop telemetry | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F07 | honest accelerated timestamps | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P02-T45-F08 | explicit offline exact-capture cost | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F01 | bounded rendering queue | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F02 | bounded encoding queue | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F03 | bounded transport queue | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F04 | sample and drop policy | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F05 | no viewer backpressure | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F06 | drop telemetry | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F07 | honest accelerated timestamps | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P02-T50-F08 | explicit offline exact-capture cost | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P02-T46
+### P02-T51
 
 Validate image-free, offscreen, and streamed runs against the same action trace/state hashes. Human observation may cost computation but must not change gameplay outcomes, require real-time pacing, or become a prerequisite for full introspection.
 
@@ -1267,14 +1344,14 @@ Run identical complete slice traces in all presentation modes, including slow/di
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T46-F01 | same action trace with images absent | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T46-F02 | offscreen equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T46-F03 | streamed equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T46-F04 | state-hash equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T46-F05 | no outcome or clock dependence on observation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T46-F06 | full introspection without images | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T51-F01 | same action trace with images absent | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T51-F02 | offscreen equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T51-F03 | streamed equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T51-F04 | state-hash equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T51-F05 | no outcome or clock dependence on observation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T51-F06 | full introspection without images | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02-T47
+### P02-T52
 
 Start Windows and macOS compile/headless protocol checks now while Arch remains the primary execution and integration platform.
 
@@ -1282,22 +1359,35 @@ Compile on declared Windows/macOS targets and run Arch integration; record targe
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02-T47-F01 | early Windows compile check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T47-F02 | early macOS compile check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T47-F03 | Arch execution priority | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T47-F04 | Arch integration priority | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T47-F05 | Windows headless protocol check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02-T47-F06 | macOS headless protocol check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T52-F01 | early Windows compile check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T52-F02 | early macOS compile check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T52-F03 | Arch execution priority | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T52-F04 | Arch integration priority | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T52-F05 | Windows headless protocol check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T52-F06 | macOS headless protocol check | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-Exit gate: The new runtime independently imports original assets and supports direct agent commands, full structured state access, exact stepping and unthrottled execution, debug snapshots/breakpoints, and valid scenario launch for its implemented systems. The same session runs image-free without a display/GPU/audio device or with an optional offscreen spectator stream. Identical actions produce equivalent authoritative state across those modes. These capabilities must exist before Phase 3 is declared complete.
+### P02-T53
+
+Demonstrate integrated Phase 2 acceptance on the minimum shared native field/event/inventory/save-load services: direct legal input, full implemented-state queries, exact/unthrottled timing, snapshots/replay, debugging, valid scenario setup, and optional spectator images all pass together. Compare authoritative state across image-free and rendered modes, and publish all assigned native architecture-gate evidence before Phase 2A begins.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02-T53-F01 | minimum shared gameplay prerequisites implemented | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T53-F02 | all assigned native architecture gates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T53-F03 | image-free and rendered state equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02-T53-F04 | no dependency on later authoring Lua or full-game implementation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+Exit gate: Every Phase 2 checkbox is checked. The native minimum field/event/inventory/save-load services and all assigned agent architecture gates work before Phase 2A begins: qualified import, direct input, complete implemented-state queries, exact/unthrottled time, snapshots, debugging, typed setup, and optional spectator images. The same actions yield equivalent authoritative state with or without presentation; no later gameplay, Lua, authoring, or Wide/HRTF implementation is needed to pass this phase.
 
 ## Phase 2A
 
 ### P02A-T01
 
-Define a typed authoring SDK distinguishing solid geometry, open surfaces, render meshes, collision, asset references, entities, and runtime event definitions. Begin with ordinary functions; add a minimal custom TSX factory after equivalent function-based builds pass. Avoid UI lifecycle semantics and implicit per-frame generation.
+Define a typed, function-based TypeScript authoring SDK distinguishing solids, open surfaces, render meshes, collision, asset references, entities, and the supported native event definitions. Return serializable definitions with no UI lifecycle or implicit per-frame generation. The optional TSX syntax adapter is implemented in Phase 7.
 
-Type-check positive and invalid SDK examples. Build identical content using ordinary functions first, then optional TSX and compare normalized outputs. Require geometry/domain type errors, serializable definitions, and no rendering or UI lifecycle dependency.
+Type-check positive and invalid ordinary-function SDK examples. Require geometry/domain type errors and serializable definitions without rendering/UI lifecycle dependencies. TSX is explicitly unsupported until the Phase 7 adapter is implemented and parity-tested.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -1307,13 +1397,12 @@ Type-check positive and invalid SDK examples. Build identical content using ordi
 | TEST-P02A-T01-F04 | typed asset references | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T01-F05 | typed entities and runtime events | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T01-F06 | ordinary function SDK first | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T01-F07 | optional minimal TSX factory after function parity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T01-F08 | serializable definitions without React lifecycle | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T01-F09 | no implicit per-frame generation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T01-F07 | serializable definitions without React lifecycle | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T01-F08 | no implicit per-frame generation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P02A-T02
 
-Define a versioned intermediate representation preserving namespaced content IDs, entity instances, reusable mesh references, transforms, materials, collision, spawn/portal/trigger definitions, NPCs, encounters, and event graphs. Keep object identity independent of file paths, display names, triangle indices, and PS1 addresses; do not flatten a whole town into an anonymous mesh.
+Define a versioned intermediate representation for the two-room bridge, preserving namespaced content IDs, entity instances, reusable meshes, transforms, materials, collision, spawns/portals/triggers, NPCs, and supported event graphs. Keep identity independent of paths, display names, triangles, and PS1 addresses. Phase 7 extends the same representation to encounters and the wider content SDK.
 
 Round-trip a multi-instance world IR, rename files/display labels and retessellate meshes without changing content identities. Validate references, version handling and separate collision/event records; ensure individual town objects remain queryable.
 
@@ -1326,26 +1415,25 @@ Round-trip a multi-instance world IR, rename files/display labels and retessella
 | TEST-P02A-T02-F05 | transforms and materials | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T02-F06 | explicit collision | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T02-F07 | spawns portals and triggers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T02-F08 | NPCs and encounters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T02-F08 | NPC definitions for the two-room bridge | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T02-F09 | event graphs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T02-F10 | identity independent of paths names triangles and PS1 addresses | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T02-F11 | unflattened semantic world objects | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P02A-T03
 
-Use `.ts`/`.tsx`, explicit parameter files, Lua, and source assets as authoritative inputs. Generated JSON manifests are build products, not a second authoring source; graphical clients may edit exposed parameter data or propose source patches, but must not silently overwrite arbitrary code.
+Use `.ts`, explicit parameter files, and referenced source assets as authoritative bridge inputs. Generated manifests are build products, not a competing editable source. Expose parameter/source-patch operations through the shared headless service and preserve handwritten code; Phase 7 adds TSX/Lua sources and Phase 11 supplies graphical clients.
 
-Edit declared parameters and apply a reviewed source patch through graphical and agent clients. Rebuild identical packages through one compiler, retain unrelated handwritten code, and reject edits that treat generated manifests as an independent source of truth.
+Edit declared parameters and apply reviewed source patches through the CLI/service. Rebuild through one compiler, preserve unrelated handwritten code and stable IDs, and reject generated manifests as an independent source of truth. Actual graphical-client equivalence is verified in Phase 11.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T03-F01 | authoritative TS and TSX source | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T03-F01 | authoritative ordinary TypeScript source | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T03-F02 | authoritative parameter files | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T03-F03 | authoritative Lua and source assets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T03-F03 | authoritative referenced source assets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P02A-T03-F04 | generated manifests only build products | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T03-F05 | graphical exposed-parameter edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T03-F06 | reviewable source patches | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T03-F07 | preservation of arbitrary handwritten code | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T03-F05 | reviewable source patches | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T03-F06 | preservation of arbitrary handwritten code | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P02A-T04
 
@@ -1445,7 +1533,7 @@ Play the same compiled package with GPU/display access absent and with the nativ
 
 ### P02A-T09
 
-Keep the original imported store immutable. Build separate mod layers with explicit dependencies and overrides; resolve original assets locally by verified IDs/hashes instead of embedding extracted game assets in distributable source or packages.
+Keep the original imported store immutable. Build a separate authored-package layer with explicit dependencies and overrides for the supported bridge resources; resolve originals locally by verified IDs/hashes instead of embedding extracted assets in distributable sources or packages. Phase 7 generalizes installation, load order and conflicts across full-game mods.
 
 Build generated-only and mixed-asset variants, prove the imported store is unchanged, and inspect the distributed source/package allowlist. Mixed packages reference locally supplied assets by verified ID/hash; wrong or missing originals fail explicitly without embedding private bytes.
 
@@ -1479,19 +1567,16 @@ Rebuild clean copies on every declared supported toolchain with identical record
 
 ### P02A-T11
 
-Cache generated meshes by complete dependency/parameter identity, preserve instancing, and rebuild only affected components. Generate static geometry during builds, not rendered frames; opening a door changes native state/transforms rather than rerunning a boolean operation. Runtime procedural generation requires a separately specified generator and persistence contract, not just a seed in a manifest.
+Generate static geometry during builds and preserve reusable mesh instances. Ordinary interactions, such as opening a door, update native state/transforms rather than rerunning a geometry operation. Dependency caching and incremental component rebuilds are implemented in Phase 7.
 
-Change one component parameter and verify only dependent outputs rebuild while shared mesh instances survive. Trace rendered frames and door actions to prove static generators do not rerun. Reject runtime generation declarations lacking an explicit algorithm/state/persistence contract.
+Verify shared mesh instances survive package load. Trace rendered frames and door actions to prove static generators are not rerun at runtime. Dependency-cache and incremental-rebuild validation belongs to Phase 7.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T11-F01 | complete dependency and parameter cache keys | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T11-F02 | reusable instancing | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T11-F03 | rebuild only affected components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T11-F04 | build-time static generation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T11-F05 | native door state and transform updates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T11-F06 | no runtime boolean recomputation for ordinary interactions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T11-F07 | separately specified runtime generator persistence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T11-F01 | reusable instancing | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T11-F02 | build-time static generation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T11-F03 | native door state and transform updates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T11-F04 | no runtime boolean recomputation for ordinary interactions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P02A-T12
 
@@ -1530,59 +1615,24 @@ Submit open, nonmanifold and invalid boolean operands alongside valid solids and
 
 ### P02A-T14
 
-Add parameterized rooms, corridors, houses, stairs, bridges, doors, machinery, and user-authored custom components built from those operations. Expose lower-level algorithms and mesh arrays so the component catalog does not limit what an agent can invent.
-
-Build a parameterized component suite and a new custom object not present in the catalog. Vary dimensions and connectivity, inspect generated topology and collision, and demonstrate a user can supply algorithms and mesh arrays without engine C++ changes.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P02A-T14-F01 | parameterized rooms | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F02 | corridors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F03 | houses | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F04 | stairs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F05 | bridges | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F06 | doors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F07 | machinery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F08 | user-authored custom components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F09 | lower-level algorithm access | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T14-F10 | arbitrary mesh-array access | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-
-### P02A-T15
-
-Expand surface generators incrementally with path sweeps, terrain/heightfields, and specialized surfaces as demonstrated use cases require. Do not present unimplemented lofting, deformation, rigging, or modeling operations as available capabilities.
-
-Exercise every advertised surface generator with source and native-loadable results. Query the capability catalog for unimplemented operations and require unsupported responses; add specialized algorithms only with a documented use case and acceptance example.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P02A-T15-F01 | demonstrated path sweeps | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T15-F02 | demonstrated terrain and heightfields | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T15-F03 | use-case-driven specialized surfaces | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T15-F04 | discoverable unsupported lofting | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T15-F05 | discoverable unsupported deformation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T15-F06 | discoverable unsupported rigging | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T15-F07 | no advertised unimplemented modeling operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-
-### P02A-T16
-
 Establish one authoring coordinate/unit convention and documented conversions to imported assets, geometry backends, renderer coordinates, and recovered collision arithmetic. Make conversions explicit and test scale, handedness, normals, winding, and precision at boundaries.
 
 Transform asymmetric measured fixtures across all coordinate systems and back. Compare scale, orientation, normals and winding, then traverse native collision at precision limits using recovered arithmetic; implicit or double conversions fail.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T16-F01 | documented authoring units and coordinates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F02 | imported-asset conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F03 | geometry-backend conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F04 | renderer conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F05 | recovered collision arithmetic conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F06 | scale validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F07 | handedness validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F08 | normals validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F09 | winding validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T16-F10 | precision boundary tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F01 | documented authoring units and coordinates | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F02 | imported-asset conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F03 | geometry-backend conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F04 | renderer conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F05 | recovered collision arithmetic conversions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F06 | scale validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F07 | handedness validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F08 | normals validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F09 | winding validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T14-F10 | precision boundary tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T17
+### P02A-T15
 
 Specify materials, texture density/projection, UV generation, hard/smooth edges, vertex colors, and semantic surface regions. Preserve intended materials on boolean cut faces and through parameter changes; define the renderer-supported material subset and report unsupported features rather than assuming export implies shader support.
 
@@ -1590,17 +1640,17 @@ Render generated surfaces and cut faces with diagnostic materials in the native 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T17-F01 | renderer-supported materials | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F02 | texture density and projection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F03 | generated UVs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F04 | hard and smooth edges | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F05 | vertex colors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F06 | semantic surface regions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F07 | material identity on boolean cuts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F08 | material preservation through parameter changes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T17-F09 | explicit unsupported shader features | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F01 | renderer-supported materials | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F02 | texture density and projection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F03 | generated UVs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F04 | hard and smooth edges | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F05 | vertex colors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F06 | semantic surface regions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F07 | material identity on boolean cuts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F08 | material preservation through parameter changes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T15-F09 | explicit unsupported shader features | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T18
+### P02A-T16
 
 Provide explicit collision modes: supported static surface/triangle data, composed primitives, separate simplified geometry, or none. Compile into this runtime's actual movement representation and preserve openings; neither one bounding box nor a convex hull around an arch is an acceptable doorway collider.
 
@@ -1608,15 +1658,15 @@ Traverse generated stairs, narrow/arched doors and obstructed passages through l
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T18-F01 | static surface and triangle collision mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T18-F02 | composed primitive collision mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T18-F03 | separate simplified collision geometry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T18-F04 | explicit no-collision mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T18-F05 | compilation to native movement representation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T18-F06 | preserved openings and arches | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T18-F07 | no bounding-box or convex-hull doorway substitute | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F01 | static surface and triangle collision mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F02 | composed primitive collision mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F03 | separate simplified collision geometry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F04 | explicit no-collision mode | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F05 | compilation to native movement representation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F06 | preserved openings and arches | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T16-F07 | no bounding-box or convex-hull doorway substitute | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T19
+### P02A-T17
 
 Support named anchors, doorway connections, placement/facing constraints, collision-aware clearance, room adjacency, and repeatable prop distribution. Persist solved transforms and geometry; do not require the runtime to reinterpret a prompt or silently teleport the player to satisfy traversal tests.
 
@@ -1624,18 +1674,18 @@ Solve and build a connected layout twice with recorded inputs, inspect persisten
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T19-F01 | named anchors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F02 | doorway connections | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F03 | placement constraints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F04 | facing constraints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F05 | collision-aware clearance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F06 | room adjacency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F07 | repeatable prop distribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F08 | persisted solved transforms and geometry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F09 | no runtime prompt interpretation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T19-F10 | no traversal-test teleportation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F01 | named anchors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F02 | doorway connections | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F03 | placement constraints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F04 | facing constraints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F05 | collision-aware clearance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F06 | room adjacency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F07 | repeatable prop distribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F08 | persisted solved transforms and geometry | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F09 | no runtime prompt interpretation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T17-F10 | no traversal-test teleportation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T20
+### P02A-T18
 
 Preserve component/instance/operation IDs and source spans in generated geometry and diagnostics. Report invalid dimensions, failing boolean operands, blocked interactions, and connectivity failures against editable source parameters; stable semantic region IDs must not depend only on triangle numbers.
 
@@ -1643,18 +1693,18 @@ Introduce each geometric and gameplay failure, retessellate the mesh, and verify
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T20-F01 | persistent component IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F02 | instance IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F03 | operation IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F04 | source spans in geometry and diagnostics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F05 | invalid-dimension attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F06 | boolean-operand attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F07 | blocked-interaction attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F08 | connectivity attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F09 | editable parameter mapping | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T20-F10 | semantic regions independent of triangle numbering | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F01 | persistent component IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F02 | instance IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F03 | operation IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F04 | source spans in geometry and diagnostics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F05 | invalid-dimension attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F06 | boolean-operand attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F07 | blocked-interaction attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F08 | connectivity attribution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F09 | editable parameter mapping | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T18-F10 | semantic regions independent of triangle numbering | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T21
+### P02A-T19
 
 Distinguish build validity, native traversal/collision validity, and presentation quality. Use actual-runtime movement tests plus optional native captures/overlays; a successful GLB export or external preview is not proof of a playable level.
 
@@ -1662,50 +1712,31 @@ Produce a valid GLB with a deliberately blocked doorway and require build succes
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T21-F01 | separate build validity result | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T21-F02 | separate native traversal and collision result | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T21-F03 | separate presentation quality result | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T21-F04 | actual-runtime legal movement tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T21-F05 | optional native captures and overlays | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T21-F06 | no export or external-preview gameplay pass | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T19-F01 | separate build validity result | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T19-F02 | separate native traversal and collision result | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T19-F03 | separate presentation quality result | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T19-F04 | actual-runtime legal movement tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T19-F05 | optional native captures and overlays | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T19-F06 | no export or external-preview gameplay pass | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T22
+### P02A-T20
 
-Make TypeScript behavior helpers return serializable event/condition definitions, such as interact → set door state → play sound, rather than retaining JavaScript closures. Validate instruction signatures, targets, state ownership, and supported runtime capabilities during compilation.
+Compile TypeScript behavior helpers into the Phase 2 native event/condition vocabulary, such as interact → set door state → play sound, rather than retaining JavaScript closures. Validate signatures, targets, state ownership, and runtime capabilities; do not implement a second event scheduler.
 
 Compile declarative interactions to native instructions, reject closures and invalid signatures/targets/ownership, then run the package without Node. Compare event ordering and resulting state to the declared native instructions; unsupported calls must fail compilation.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T22-F01 | serializable event and condition definitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F02 | interaction door-state and sound sequence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F03 | no retained JavaScript closures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F04 | instruction signature validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F05 | target validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F06 | state ownership validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F07 | runtime capability validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T22-F08 | no embedded gameplay JavaScript or authored TypeScript-to-C++ translation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F01 | serializable event and condition definitions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F02 | interaction door-state and sound sequence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F03 | no retained JavaScript closures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F04 | instruction signature validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F05 | target validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F06 | state ownership validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F07 | runtime capability validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T20-F08 | no embedded gameplay JavaScript or authored TypeScript-to-C++ translation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T23
-
-Implement a small native event vocabulary first: triggers, doors, dialogue, pickups, conditions, ordered tasks, and simulation-tick waits. Expand into quests, cutscenes, encounters, battles, and minigames as those systems are recovered; unavailable operations must be discoverably unsupported.
-
-Run each implemented event instruction in the actual scheduler with stepped and unthrottled commands. Query the supported vocabulary and reject future operations until their recovered subsystem and source-to-runtime tests exist.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P02A-T23-F01 | native trigger instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F02 | door instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F03 | dialogue instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F04 | pickup instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F05 | condition instructions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F06 | ordered tasks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F07 | simulation-tick waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F08 | incremental quest and cutscene expansion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F09 | recovered encounter battle and minigame expansion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T23-F10 | discoverable unsupported operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-
-### P02A-T24
+### P02A-T21
 
 Store explicit event-graph progress, wait conditions, targets, timeouts, cancellation state, and mod-defined persistent data in authoritative native state. Provide source-correlated inspection, stepping, breakpoints, and snapshot/replay support; do not hide quest progress in build-time JavaScript or unserializable closures.
 
@@ -1713,71 +1744,38 @@ Pause an authored event at waits, branch/restore snapshots, cancel and replay it
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T24-F01 | authoritative event-graph progress | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F02 | wait conditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F03 | explicit targets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F04 | timeouts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F05 | cancellation state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F06 | mod persistent data | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F07 | source-correlated inspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F08 | stepping and breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F09 | snapshot and replay support | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T24-F10 | no quest state in build JavaScript or closures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F01 | authoritative event-graph progress | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F02 | wait conditions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F03 | explicit targets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F04 | timeouts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F05 | cancellation state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F06 | mod persistent data | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F07 | source-correlated inspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F08 | stepping and breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F09 | snapshot and replay support | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T21-F10 | no quest state in build JavaScript or closures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T25
+### P02A-T22
 
-Reference packaged Lua modules for behavior beyond the declarative vocabulary, using the Phase 7 deterministic API and permission model. Ordinary content authoring must not require C++ rebuilds; a genuinely new engine capability remains an explicit engineering task, not an invented SDK call.
+Publish types, schemas, native-validator parity fixtures, runnable examples, capability/version discovery, compact guidance, and an exact-ID catalog for the supported bridge SDK and assets. Include tags, dimensions, anchors, applicable animations, compatibility, references, provenance, and optional previews. Phase 7 owns broader catalog/search optimization.
 
-Package a declarative event plus Lua extension and run with Node absent using deterministic native APIs. Verify permissions/persistence and unchanged engine binary; requests for a new engine operation must report unsupported instead of fabricating an SDK call.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P02A-T25-F01 | packaged Lua module references | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T25-F02 | shared Phase 7 deterministic API | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T25-F03 | shared Lua permission model | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T25-F04 | ordinary authoring without C++ rebuild | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T25-F05 | explicit unsupported engine-capability boundary | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-
-### P02A-T26
-
-Provide reliable movement, one-time reward, interaction, and quest-transition primitives with defined failure/re-entry behavior. Keep actor-arrival waits and logical timers on the simulation scheduler, independent from GUI animation or wall clocks.
-
-Exercise blocked arrival, repeated interaction, failed quest conditions and leave/re-entry around saves/rewind. Compare stepped and unthrottled execution for exactly-once rewards, bounded waits and equal state with GUI/rendering disabled.
+Discover and build both bridge variants using only published SDK/catalog information. Compare Zod/exported JSON Schema/native validation on positive and negative fixtures, query exact IDs and require explicit unsupported operations. No optional search engine is needed to pass this phase.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T26-F01 | movement primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F02 | one-time reward primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F03 | interaction primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F04 | quest-transition primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F05 | defined failure behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F06 | defined re-entry behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F07 | actor-arrival waits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F08 | simulation scheduler timers | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T26-F09 | independence from GUI animation and wall time | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F01 | published SDK types | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F02 | serializable Zod and JSON Schema subset | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F03 | native-validator schema parity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F04 | runnable original examples | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F05 | capability and version discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F06 | compact agent guidance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F07 | exact catalog IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F08 | tags dimensions and anchors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F09 | animations and compatibility | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F10 | references and provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T22-F11 | optional previews | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T27
-
-Publish SDK types, schemas, examples, capability/version discovery, and compact agent-facing guidance with runnable original examples. Index assets and content by exact IDs, tags, dimensions, anchors, animations, compatibility, references, and provenance; provide previews when useful.
-
-Discover and build content using only published SDK/catalog information. Compare Zod/exported JSON Schema/native validation on positive and negative fixtures; query exact IDs and unsupported states. If adopted, rebuild SQLite/FTS5 metadata and verify equivalent search results without making it an early bridge prerequisite.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P02A-T27-F01 | published SDK types | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F02 | serializable Zod and JSON Schema subset | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F03 | native-validator schema parity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F04 | runnable original examples | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F05 | capability and version discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F06 | compact agent guidance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F07 | exact catalog IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F08 | tags dimensions and anchors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F09 | animations and compatibility | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F10 | references and provenance | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F11 | optional previews | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T27-F12 | rebuildable SQLite FTS5 catalog when adopted | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-
-### P02A-T28
+### P02A-T23
 
 Mark recovered original content as verified, partially understood, opaque/preserved-only, or unsupported. Preserve unknown original script blocks losslessly and keep factual game/lore records distinct from generated creative suggestions. Asset existence must not imply safe editability.
 
@@ -1785,15 +1783,15 @@ Query assets from each evidence class and attempt supported and unsupported edit
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T28-F01 | verified original-content classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T28-F02 | partially understood classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T28-F03 | opaque preserved-only classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T28-F04 | unsupported classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T28-F05 | lossless unknown script blocks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T28-F06 | factual game records separate from generated suggestions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T28-F07 | resource existence distinct from safe editability | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F01 | verified original-content classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F02 | partially understood classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F03 | opaque preserved-only classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F04 | unsupported classification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F05 | lossless unknown script blocks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F06 | factual game records separate from generated suggestions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T23-F07 | resource existence distinct from safe editability | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T29
+### P02A-T24
 
 Expose a CLI and versioned JSON-RPC service over local stdio/IPC for discovery, source/parameter edits, validation, build, runtime scenario launch, inspection, traces, captures, tests, diffs, and packaging. Add MCP only as an optional adapter; do not require an embedded chatbot, network service, GUI, or particular agent vendor.
 
@@ -1801,38 +1799,37 @@ Drive the complete discover/edit/build/play/inspect/test/package loop over local
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T29-F01 | headless content CLI | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F02 | versioned JSON-RPC over local stdio or IPC | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F03 | discovery operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F04 | source and parameter edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F05 | validation and build | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F06 | native scenario launch | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F07 | inspection traces and captures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F08 | tests diffs and packaging | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F09 | optional MCP adapter | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T29-F10 | no chatbot network GUI or vendor prerequisite | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F01 | headless content CLI | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F02 | versioned JSON-RPC over local stdio or IPC | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F03 | discovery operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F04 | source and parameter edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F05 | validation and build | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F06 | native scenario launch | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F07 | inspection traces and captures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F08 | tests diffs and packaging | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F09 | optional MCP adapter | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T24-F10 | no chatbot network GUI or vendor prerequisite | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T30
+### P02A-T25
 
-Use semantic, batched, atomic edit transactions with expected source revisions, idempotent retries, dry runs, diffs, and undo. Validate cross-file changes as a unit, reject stale writes, and share command contracts with graphical clients. Direct file edits must use the same build/validation pipeline.
+Use semantic, batched, atomic source/parameter edits with expected revisions, idempotent retries, dry runs, diffs, undo, and cross-file validation. Reject stale writes; direct file edits use the same build/validation pipeline. Define the client-neutral command contract now and verify actual graphical clients in Phase 11.
 
-Submit concurrent stale and valid cross-file changes, repeat requests, dry-run and undo them. Failed or stale edits leave all files unchanged; successful agent, graphical and direct-file changes pass the same build and validation pipeline without losing unrelated work.
+Submit stale and valid cross-file edits through the CLI/service; repeat requests, dry-run and undo. Failed edits leave every file unchanged, and valid direct-file/service edits pass the same build without losing unrelated work. Graphical-client execution is a Phase 11 test.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T30-F01 | semantic edit commands | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F02 | batched atomic transactions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F03 | expected source revisions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F04 | idempotent retries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F05 | dry runs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F06 | diffs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F07 | undo | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F08 | cross-file validation as a unit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F09 | stale-write rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F10 | shared graphical command contracts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T30-F11 | same pipeline for direct file edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F01 | semantic edit commands | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F02 | batched atomic transactions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F03 | expected source revisions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F04 | idempotent retries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F05 | dry runs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F06 | diffs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F07 | undo | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F08 | cross-file validation as a unit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F09 | stale-write rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T25-F10 | same pipeline for direct file edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T31
+### P02A-T26
 
 Keep source revision, package hash, runtime session ID, and snapshot ID distinct. Support cancellation and bounded/paginated queries; pin active test sessions to immutable package revisions so subsequent edits cannot silently change what is being verified.
 
@@ -1840,16 +1837,16 @@ Edit source and publish a later build while a scenario is running. Confirm the a
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T31-F01 | distinct source revision identity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F02 | distinct immutable package hash | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F03 | distinct runtime session ID | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F04 | distinct snapshot ID | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F05 | cancellation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F06 | bounded queries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F07 | pagination | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T31-F08 | active tests pinned to immutable package revisions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F01 | distinct source revision identity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F02 | distinct immutable package hash | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F03 | distinct runtime session ID | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F04 | distinct snapshot ID | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F05 | cancellation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F06 | bounded queries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F07 | pagination | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T26-F08 | active tests pinned to immutable package revisions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T32
+### P02A-T27
 
 Return machine-readable diagnostic codes, severity, source spans, object/operation IDs, observed/expected values, and exact reproduction scenarios. Include execution traces, native state, and optional object-ID/collision/path/camera overlays so an agent can map a visible problem back to an editable component.
 
@@ -1857,55 +1854,53 @@ Cause geometric, load and runtime interaction failures and require complete stru
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T32-F01 | machine-readable diagnostic codes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F02 | severity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F03 | source spans | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F04 | object and operation IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F05 | observed and expected values | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F06 | exact reproduction scenarios | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F07 | execution traces | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F08 | native state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F09 | optional object-ID overlays | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F10 | collision path and camera overlays | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T32-F11 | editable-component correlation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F01 | machine-readable diagnostic codes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F02 | severity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F03 | source spans | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F04 | object and operation IDs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F05 | observed and expected values | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F06 | exact reproduction scenarios | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F07 | execution traces | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F08 | native state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F09 | optional object-ID overlays | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F10 | collision path and camera overlays | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T27-F11 | editable-component correlation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T33
+### P02A-T28
 
 Treat source generators and dependency installation as executable build code. Isolate them with OS/process-level filesystem/network/credential restrictions, controlled dependencies, separate output/temp directories, memory/work limits, and a watchdog. Node `vm` or TypeScript typing is not the isolation boundary; never expose runtime debug privileges to untrusted generators or Lua.
 
-Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.
+Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T33-F01 | executable generator and dependency-install threat model | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F02 | OS or process isolation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F03 | filesystem restrictions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F04 | network restrictions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F05 | credential restrictions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F06 | controlled dependencies | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F07 | separate output and temporary directories | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F08 | memory and work limits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F09 | independent watchdog | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F10 | Node vm and typing not isolation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T33-F11 | no runtime debug authority for generators or Lua | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F01 | executable generator and dependency-install threat model | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F02 | OS or process isolation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F03 | filesystem restrictions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F04 | network restrictions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F05 | credential restrictions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F06 | controlled dependencies | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F07 | separate output and temporary directories | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F08 | memory and work limits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F09 | independent watchdog | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F10 | Node vm and typing not isolation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T28-F11 | no runtime debug authority for generators or Lua | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T34
+### P02A-T29
 
-Implement build watching with atomic publication of successful outputs and retention of the previous working package on failure. Initially restart the preview scenario after rebuilding; add compatible incremental reload and state migration only at validated safe boundaries with explicit snapshot invalidation.
+Implement build watching with atomic publication of successful outputs and retention of the previous working package on failure. Restart the preview scenario after each successful revision and explicitly invalidate incompatible snapshots. Compatible incremental reload and state migration are Phase 7 work.
 
-Watch valid then broken source revisions and confirm only a complete successful package replaces the prior build. Restart the initial preview explicitly; for later supported reloads test compatibility/migration and snapshot invalidation at declared safe boundaries.
+Watch valid then broken revisions; publish only complete successful packages and retain the previous package after failure. Restart the preview and reject snapshots tied to an incompatible package; no incremental reload or migration is required here.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T34-F01 | build watching | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T34-F02 | atomic successful publication | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T34-F03 | prior working package retained on failure | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T34-F04 | preview scenario restart initially | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T34-F05 | compatible incremental reload only at safe boundaries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T34-F06 | explicit state migration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T34-F07 | snapshot invalidation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T29-F01 | build watching | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T29-F02 | atomic successful publication | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T29-F03 | prior working package retained on failure | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T29-F04 | preview scenario restart initially | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T29-F05 | snapshot invalidation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P02A-T35
+### P02A-T30
 
 First demonstrate one generated wall, a usable doorway/door interaction, and a collectible through the complete SDK → mesh/package → native loader → gameplay path. Use ordinary TypeScript before adding TSX or a broad editor shell.
 
@@ -1913,15 +1908,15 @@ Author a wall/doorway/collectible in ordinary TypeScript, build actual geometry,
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T35-F01 | generated wall | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T35-F02 | usable doorway | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T35-F03 | native door interaction | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T35-F04 | collectible | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T35-F05 | full SDK mesh package loader gameplay path | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T35-F06 | ordinary TypeScript before TSX | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T35-F07 | bridge before broad editor shell | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F01 | generated wall | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F02 | usable doorway | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F03 | native door interaction | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F04 | collectible | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F05 | full SDK mesh package loader gameplay path | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F06 | ordinary TypeScript before TSX | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T30-F07 | bridge before broad editor shell | arch-vulkan, arch-headless | defined |
 
-### P02A-T36
+### P02A-T31
 
 Extend the bridge to two traversable rooms with an arched passage, stairs or another elevation change, a custom procedurally modeled object, an NPC/dialogue interaction, and a one-time reward. Build the environment/object geometry from source without external geometry; verify an additional variant mixing in an original or redistributable external model.
 
@@ -1929,16 +1924,16 @@ Build and traverse the two-room generated-only scene, using source-generated geo
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T36-F01 | two traversable generated rooms | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F02 | arched passage | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F03 | stairs or elevation change | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F04 | custom procedurally modeled object | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F05 | NPC and dialogue interaction | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F06 | one-time reward | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F07 | generated-only environment and object geometry | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T36-F08 | separate mixed original or redistributable-model variant | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F01 | two traversable generated rooms | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F02 | arched passage | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F03 | stairs or elevation change | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F04 | custom procedurally modeled object | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F05 | NPC and dialogue interaction | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F06 | one-time reward | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F07 | generated-only environment and object geometry | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T31-F08 | separate mixed original or redistributable-model variant | arch-vulkan, arch-headless | defined |
 
-### P02A-T37
+### P02A-T32
 
 Have an agent discover the supported SDK, write the source, build it, and complete the scenario through legal native commands. Test collision/clearance, interactions, transitions, reward-once semantics, save/restore, and leave/re-enter behavior under stepped and unthrottled execution with optional native images.
 
@@ -1946,20 +1941,20 @@ Have a generic agent discover the available SDK and build the two-room scene, th
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T37-F01 | agent SDK discovery | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F02 | agent source authoring | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F03 | agent build | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F04 | legal native completion commands | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F05 | collision and clearance tests | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F06 | interactions and transitions | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F07 | reward-once tests | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F08 | save and restore | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F09 | leave and re-enter | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F10 | stepped execution | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F11 | unthrottled execution | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T37-F12 | optional native images | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F01 | agent SDK discovery | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F02 | agent source authoring | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F03 | agent build | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F04 | legal native completion commands | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F05 | collision and clearance tests | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F06 | interactions and transitions | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F07 | reward-once tests | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F08 | save and restore | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F09 | leave and re-enter | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F10 | stepped execution | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F11 | unthrottled execution | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T32-F12 | optional native images | arch-vulkan, arch-headless | defined |
 
-### P02A-T38
+### P02A-T33
 
 Supply a known failing revision, require source-aware diagnosis and repair, and rerun the protected tests. Then request a targeted change such as widening the arch while preserving unrelated content and IDs. Deliver the source diff, immutable package, captures where enabled, and exact test/replay artifacts.
 
@@ -1967,19 +1962,19 @@ Start with a seeded failing revision, diagnose its native failure, patch only th
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T38-F01 | known failing source revision | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F02 | source-aware diagnosis | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F03 | source repair | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F04 | rerun protected tests | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F05 | targeted follow-up arch revision | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F06 | preserved unrelated content | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F07 | preserved stable IDs | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F08 | delivered source diff | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F09 | immutable package | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F10 | optional captures | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T38-F11 | exact test and replay artifacts | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F01 | known failing source revision | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F02 | source-aware diagnosis | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F03 | source repair | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F04 | rerun protected tests | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F05 | targeted follow-up arch revision | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F06 | preserved unrelated content | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F07 | preserved stable IDs | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F08 | delivered source diff | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F09 | immutable package | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F10 | optional captures | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T33-F11 | exact test and replay artifacts | arch-vulkan, arch-headless | defined |
 
-### P02A-T39
+### P02A-T34
 
 Separate privileged fixture setup from subsequent gameplay. Test helpers must move through actual collision and eligibility rules, not teleport or set completion flags. Protect acceptance criteria and harness configuration from authoring edits; report passed, failed, timed out, and unsupported distinctly.
 
@@ -1987,38 +1982,16 @@ Attempt to pass the scenario via teleportation, flag mutation or acceptance/harn
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T39-F01 | privileged fixture setup separated from gameplay | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F02 | actual collision movement | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F03 | actual eligibility rules | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F04 | no teleport completion shortcut | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F05 | no completion-flag mutation | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F06 | protected acceptance criteria | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F07 | protected harness configuration | arch-vulkan, arch-headless | defined |
-| TEST-P02A-T39-F08 | distinct passed failed timed-out and unsupported results | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F01 | privileged fixture setup separated from gameplay | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F02 | actual collision movement | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F03 | actual eligibility rules | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F04 | no teleport completion shortcut | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F05 | no completion-flag mutation | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F06 | protected acceptance criteria | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F07 | protected harness configuration | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T34-F08 | distinct passed failed timed-out and unsupported results | arch-vulkan, arch-headless | defined |
 
-### P02A-T40
-
-Expand to a prompt-authored small town/dungeon with a branching quest, optional encounter, failure/retry paths, and custom Lua behavior through Phase 7. Validate references, declarative reachability where analyzable, script/runtime behavior, save/rewind, duplicate rewards, and presentation separately. Do not claim static graph checks prove arbitrary scripts correct.
-
-Generate and revise a source-authored town/dungeon with branching quest and Lua behavior. Test multiple legal paths, retry/re-entry, optional encounters, save/rewind and reward uniqueness in the native runtime; label static reachability and presentation findings separately from executed script correctness.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P02A-T40-F01 | prompt-authored town or dungeon | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F02 | branching quest | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F03 | optional encounter | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F04 | failure and retry paths | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F05 | custom Lua behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F06 | Phase 7 expansion gate | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F07 | reference validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F08 | analyzable declarative reachability | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F09 | actual script and runtime behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F10 | save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F11 | duplicate-reward prevention | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F12 | separate presentation review | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T40-F13 | static checks do not prove arbitrary scripts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-
-### P02A-T41
+### P02A-T35
 
 Record engine/compiler/package versions, seeds, initial state, actions, coverage, result assertions, failures, and optional images/audio for every verification run. Use multiple seeds/player policies for balance checks and distinguish simulation time from estimated human reading/decision time.
 
@@ -2026,29 +1999,43 @@ Audit each verification artifact for reproducible identities and action/assertio
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P02A-T41-F01 | engine versions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F02 | compiler versions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F03 | package versions and hashes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F04 | seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F05 | initial state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F06 | exact actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F07 | coverage | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F08 | result assertions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F09 | failures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F10 | optional images and audio | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F11 | multiple balance seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F12 | multiple player policies | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P02A-T41-F13 | simulation versus estimated human time | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F01 | engine versions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F02 | compiler versions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F03 | package versions and hashes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F04 | seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F05 | initial state | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F06 | exact actions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F07 | coverage | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F08 | result assertions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F09 | failures | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F10 | optional images and audio | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F11 | multiple balance seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F12 | multiple player policies | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P02A-T35-F13 | simulation versus estimated human time | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-**Early exit criterion, required by Phase 3:** The two-room authored bridge builds, loads, plays, saves/restores, and survives a diagnosed source revision in the actual native runtime without engine C++ changes or GUI automation. Generated and imported geometry paths are demonstrated separately; headless execution requires no authoring runtime or GPU. The broader Phase 2A checklist remains open until demonstrated through the Phase 7/creator-toolkit milestones.
+### P02A-T36
+
+Demonstrate integrated Phase 2A acceptance: every bridge checkbox and assigned authoring gate passes for generated-only and mixed-asset two-room variants, including legal play, saves/exact snapshots, protected failure diagnosis/repair, targeted source revision, immutable delivery, and headless operation without authoring tools. Complete this checklist before Phase 3 begins; no expanded-SDK task is deferred beneath it.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P02A-T36-F01 | all assigned bridge acceptance gates | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T36-F02 | generated-only and mixed-asset two-room completion | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T36-F03 | protected repair and targeted source-preserving revision | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T36-F04 | prebuilt headless package without authoring runtime | arch-vulkan, arch-headless | defined |
+| TEST-P02A-T36-F05 | no unfinished broader SDK checklist | arch-vulkan, arch-headless | defined |
+
+Exit gate: Every Phase 2A checkbox and bridge acceptance gate passes before Phase 3 begins. Both the generated-only two-room environment and the mixed-asset variant build, load, play legally, save/restore, and survive source-aware diagnosis, repair, and targeted revision in the native runtime. Delivery includes preserved source, immutable packages and exact test provenance; prebuilt headless play requires neither an authoring runtime nor a GPU. No broader SDK work remains on this phase checklist.
 
 ## Phase 3
 
 ### P03-T01
 
-Select a compact field-to-battle scenario with enough variety to exercise the engine rather than a display-only room.
+Use the original route, required branches, and acceptance scope frozen in Phase 1. Bind those source-qualified inputs to the completed Phase 2 runtime and Phase 2A content services; do not select an easier replacement scenario.
 
-Select an evidence-backed original checkpoint containing traversal, interactions, event concurrency and a complete battle return; a display-only room does not pass.
+Reconcile the native scenario manifest with the frozen Phase 1 route, original profiles and required media/menu/battle branches. Reject missing requirements, substituted routes, and dependencies on unimplemented later-phase features.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -2058,7 +2045,7 @@ Select an evidence-backed original checkpoint containing traversal, interactions
 
 ### P03-T02
 
-Implement field loading, character rendering, movement, running, jumping, collision, camera rotation, interaction, and map transitions.
+Integrate and behaviorally validate original field loading, character rendering, movement/running/jumping, collision, camera rotation, interaction, and map transitions for the frozen slice, reusing the Phase 2 shared services and Phase 1 recovered operations rather than implementing a second rules model.
 
 Replay the slice against original observations at terrain and transition boundaries, comparing position/collision outcomes and camera/interaction semantics.
 
@@ -2076,7 +2063,7 @@ Replay the slice against original observations at terrain and transition boundar
 
 ### P03-T03
 
-Implement the original-script instructions needed for the slice, including dialogue, concurrent activity, waits, triggers, and story-state changes.
+Integrate the original-script instructions needed by the slice, including dialogue, concurrent activity, waits, triggers, and story-state changes, with the established scheduler, state, and debugging services.
 
 Compare original and native instruction/event traces for normal and rapidly advanced dialogue; required state changes occur once in observed order.
 
@@ -2107,7 +2094,7 @@ Use controlled initial battle state and RNG; compare legal actions, outcomes, re
 
 ### P03-T05
 
-Implement the required game menus, inventory/equipment interactions, ordinary save/load, and basic keyboard/controller input.
+Complete the slice-specific original menus, inventory/equipment interactions, ordinary save/load, and basic keyboard/controller bindings through the established state, persistence, and command services. Verify the slice-menu and battle setup/parity rows not applicable to the Phase 2 field foundation.
 
 Complete the slice using each device and exercise menu edits plus save/restart/load; recovered state and usable actions match the original contract.
 
@@ -2172,14 +2159,16 @@ Run the frozen original-qualified field/event/battle/reward/menu/save route thro
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P03-T09-F01 | typed cold-start setup | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F02 | complete state inspection | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F03 | traversal jump interaction | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F04 | dialogue and menu choices | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F05 | legal complete encounter | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F06 | save and restore | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F07 | no OS injection or screenshot interpretation | arch-vulkan, arch-headless | defined |
-| TEST-P03-T09-F08 | setup and play provenance separation | arch-vulkan, arch-headless | defined |
+| TEST-P03-T09-F01 | typed cold-start setup | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F02 | complete state inspection | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F03 | traversal jump interaction | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F04 | dialogue and menu choices | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F05 | legal complete encounter | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F06 | save and restore | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F07 | no OS injection or screenshot interpretation | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F08 | setup and play provenance separation | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F09 | battle commands and targets | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
+| TEST-P03-T09-F10 | battle target IDs | arch-vulkan, arch-headless, windows-d3d12, macos-metal, windows-headless, macos-headless | defined |
 
 ### P03-T10
 
@@ -2215,7 +2204,7 @@ Attach a viewer mid-slice, slow it, change cadence and disconnect; compare state
 
 ### P03-T12
 
-Demonstrate the Phase 2A early authored-content bridge alongside, not instead of, the recovered original-game slice. Both paths must use the same native loaders/services, movement and interaction rules, authoritative state, agent API, and optional renderer; record separate original-fidelity and authoring acceptance evidence.
+Rerun the completed Phase 2A authored bridge as an integration regression, alongside the separately validated original-game slice. Both origins must use the same native entity/movement/interaction/event services, authoritative state, agent API, and optional renderer; retain distinct original-fidelity and authoring evidence.
 
 Complete the original slice against original observations and the authored two-room gate against protected source-to-playable assertions. Verify both use the same native services, commands and state model; neither evidence set substitutes for the other before Phase 3 passes.
 
@@ -2230,11 +2219,176 @@ Complete the original slice against original observations and the authored two-r
 | TEST-P03-T12-F07 | shared optional renderer | arch-vulkan, arch-headless | defined |
 | TEST-P03-T12-F08 | separate original-fidelity and authored-content acceptance | arch-vulkan, arch-headless | defined |
 
-Exit gate: Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention. The Phase 2A source-to-playable early gate also passes before broad expansion.
+### P03-T13
+
+Demonstrate integrated Phase 3 acceptance. Run the complete frozen original field/dialogue/battle/reward/menu/save-load/media route under human and direct agent control. Pass original comparisons, legal progression without corrective debug, all first-slice architecture checks, and the completed authoring-bridge regression. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P03-T13-F01 | all phase deliverables verified together | arch-vulkan, arch-headless | defined |
+| TEST-P03-T13-F02 | all assigned acceptance gates and regressions | arch-vulkan, arch-headless | defined |
+| TEST-P03-T13-F03 | evidence-qualified phase goal and exit | arch-vulkan, arch-headless | defined |
+| TEST-P03-T13-F04 | no unmet checklist or later-phase dependency | arch-vulkan, arch-headless | defined |
+
+Exit gate: Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention. The already-completed Phase 2A bridge remains passing as an integration regression; every Phase 3 checkbox is checked before Phase 4 begins.
 
 ## Phase 4
 
 ### P04-T01
+
+Complete the remaining both-disc source and system recovery: disc layout/loading, archives/compression, executable and overlay identities, functions/types/globals/control flow, reviewed reusable source, hardware-service intent, and gameplay timing/ordering. Reuse the completed Phase 1 reconstruction; close the remaining scope rather than repeating proved slice work.
+
+For the remaining full-game scope, reuse Phase 1 evidence and independently establish every listed recovery facet from original binaries/data or execution. Test each recovered boundary with local original comparisons and appropriate public malformed/synthetic fixtures; synthetic outcomes never replace original oracles. Close the assigned remainder inventory before accepting full-game native integration.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P04-T01-F01 | full-game disc layout | original-reference-analysis | defined |
+| TEST-P04-T01-F02 | full-game boot metadata | original-reference-analysis | defined |
+| TEST-P04-T01-F03 | full-game executable loading | original-reference-analysis | defined |
+| TEST-P04-T01-F04 | full-game archives | original-reference-analysis | defined |
+| TEST-P04-T01-F05 | full-game sector references | original-reference-analysis | defined |
+| TEST-P04-T01-F06 | full-game compression | original-reference-analysis | defined |
+| TEST-P04-T01-F07 | full-game shared resources | original-reference-analysis | defined |
+| TEST-P04-T01-F08 | full-game disc-specific resources | original-reference-analysis | defined |
+| TEST-P04-T01-F09 | full-game main executable map | original-reference-analysis | defined |
+| TEST-P04-T01-F10 | full-game dynamically loaded code | original-reference-analysis | defined |
+| TEST-P04-T01-F11 | full-game dynamically loaded data | original-reference-analysis | defined |
+| TEST-P04-T01-F12 | full-game overlay-qualified addresses | original-reference-analysis | defined |
+| TEST-P04-T01-F13 | full-game reused memory identities | original-reference-analysis | defined |
+| TEST-P04-T01-F14 | full-game MIPS disassembly | original-reference-analysis | defined |
+| TEST-P04-T01-F15 | full-game function boundaries | original-reference-analysis | defined |
+| TEST-P04-T01-F16 | full-game calling conventions | original-reference-analysis | defined |
+| TEST-P04-T01-F17 | full-game globals | original-reference-analysis | defined |
+| TEST-P04-T01-F18 | full-game structures | original-reference-analysis | defined |
+| TEST-P04-T01-F19 | full-game tables | original-reference-analysis | defined |
+| TEST-P04-T01-F20 | full-game dispatchers | original-reference-analysis | defined |
+| TEST-P04-T01-F21 | full-game subsystem relationships | original-reference-analysis | defined |
+| TEST-P04-T01-F22 | full-game readable decompiled source | original-reference-analysis | defined |
+| TEST-P04-T01-F23 | full-game independent review | original-reference-analysis | defined |
+| TEST-P04-T01-F24 | full-game inferred types | original-reference-analysis | defined |
+| TEST-P04-T01-F25 | full-game control flow | original-reference-analysis | defined |
+| TEST-P04-T01-F26 | full-game pointer arithmetic | original-reference-analysis | defined |
+| TEST-P04-T01-F27 | full-game signedness | original-reference-analysis | defined |
+| TEST-P04-T01-F28 | full-game fixed-point arithmetic | original-reference-analysis | defined |
+| TEST-P04-T01-F29 | full-game overflow behavior | original-reference-analysis | defined |
+| TEST-P04-T01-F30 | full-game hardware-facing code | original-reference-analysis | defined |
+| TEST-P04-T01-F31 | full-game BIOS interfaces | original-reference-analysis | defined |
+| TEST-P04-T01-F32 | full-game GPU command generation | original-reference-analysis | defined |
+| TEST-P04-T01-F33 | full-game audio interfaces | original-reference-analysis | defined |
+| TEST-P04-T01-F34 | full-game controller reads | original-reference-analysis | defined |
+| TEST-P04-T01-F35 | full-game disc I/O | original-reference-analysis | defined |
+| TEST-P04-T01-F36 | full-game gameplay intent separated from PS1 mechanisms | original-reference-analysis | defined |
+| TEST-P04-T01-F37 | full-game simulation cadences | original-reference-analysis | defined |
+| TEST-P04-T01-F38 | full-game frame counters | original-reference-analysis | defined |
+| TEST-P04-T01-F39 | full-game asynchronous load dependencies | original-reference-analysis | defined |
+| TEST-P04-T01-F40 | full-game interrupts | original-reference-analysis | defined |
+| TEST-P04-T01-F41 | full-game hardware timing | original-reference-analysis | defined |
+| TEST-P04-T01-F42 | full-game gameplay timing rules | original-reference-analysis | defined |
+| TEST-P04-T01-F43 | full-game implementation timing artifacts | original-reference-analysis | defined |
+
+### P04-T02
+
+Complete the remaining original data-format, event-bytecode, movement/encounter/RNG/battle/AI/progression/minigame/save-rule, state-ownership, action-eligibility, and scenario-entry recovery across both discs. Include world-map and optional-content behavior outside the first slice; every implementation below must use independently recovered rules.
+
+For the remaining full-game scope, reuse Phase 1 evidence and independently establish every listed recovery facet from original binaries/data or execution. Test each recovered boundary with local original comparisons and appropriate public malformed/synthetic fixtures; synthetic outcomes never replace original oracles. Close the assigned remainder inventory before accepting full-game native integration.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P04-T02-F01 | full-game field formats | original-reference-analysis | defined |
+| TEST-P04-T02-F02 | full-game geometry formats | original-reference-analysis | defined |
+| TEST-P04-T02-F03 | full-game sprite formats | original-reference-analysis | defined |
+| TEST-P04-T02-F04 | full-game animation formats | original-reference-analysis | defined |
+| TEST-P04-T02-F05 | full-game collision formats | original-reference-analysis | defined |
+| TEST-P04-T02-F06 | full-game camera formats | original-reference-analysis | defined |
+| TEST-P04-T02-F07 | full-game texture formats | original-reference-analysis | defined |
+| TEST-P04-T02-F08 | full-game palette formats | original-reference-analysis | defined |
+| TEST-P04-T02-F09 | full-game UI formats | original-reference-analysis | defined |
+| TEST-P04-T02-F10 | full-game dialogue formats | original-reference-analysis | defined |
+| TEST-P04-T02-F11 | full-game battle formats | original-reference-analysis | defined |
+| TEST-P04-T02-F12 | full-game world-map formats | original-reference-analysis | defined |
+| TEST-P04-T02-F13 | full-game audio formats | original-reference-analysis | defined |
+| TEST-P04-T02-F14 | full-game FMV formats | original-reference-analysis | defined |
+| TEST-P04-T02-F15 | full-game event bytecode | original-reference-analysis | defined |
+| TEST-P04-T02-F16 | full-game operands | original-reference-analysis | defined |
+| TEST-P04-T02-F17 | full-game scheduling | original-reference-analysis | defined |
+| TEST-P04-T02-F18 | full-game waits | original-reference-analysis | defined |
+| TEST-P04-T02-F19 | full-game branching | original-reference-analysis | defined |
+| TEST-P04-T02-F20 | full-game concurrent actors | original-reference-analysis | defined |
+| TEST-P04-T02-F21 | full-game side effects | original-reference-analysis | defined |
+| TEST-P04-T02-F22 | full-game original disassembler | original-reference-analysis | defined |
+| TEST-P04-T02-F23 | full-game instruction reference | original-reference-analysis | defined |
+| TEST-P04-T02-F24 | full-game movement rules | original-reference-analysis | defined |
+| TEST-P04-T02-F25 | full-game jump rules | original-reference-analysis | defined |
+| TEST-P04-T02-F26 | full-game encounter logic | original-reference-analysis | defined |
+| TEST-P04-T02-F27 | full-game RNG | original-reference-analysis | defined |
+| TEST-P04-T02-F28 | full-game battle formulas | original-reference-analysis | defined |
+| TEST-P04-T02-F29 | full-game enemy behavior | original-reference-analysis | defined |
+| TEST-P04-T02-F30 | full-game story-state changes | original-reference-analysis | defined |
+| TEST-P04-T02-F31 | full-game minigame rules | original-reference-analysis | defined |
+| TEST-P04-T02-F32 | full-game save formats | original-reference-analysis | defined |
+| TEST-P04-T02-F33 | full-game state ownership | original-reference-analysis | defined |
+| TEST-P04-T02-F34 | full-game action eligibility | original-reference-analysis | defined |
+| TEST-P04-T02-F35 | full-game menu and dialogue structure | original-reference-analysis | defined |
+| TEST-P04-T02-F36 | full-game event and control readiness | original-reference-analysis | defined |
+| TEST-P04-T02-F37 | full-game spawn preconditions | original-reference-analysis | defined |
+| TEST-P04-T02-F38 | full-game transition preconditions | original-reference-analysis | defined |
+| TEST-P04-T02-F39 | full-game subsystem initialization | original-reference-analysis | defined |
+| TEST-P04-T02-F40 | full-game semantic field correlations independent of memory addresses | original-reference-analysis | defined |
+
+### P04-T03
+
+Complete original visual and Mono/Stereo/Wide signal references across the supported game content, including panning/polarity, reverb, streamed/FMVs routing, and the actual playback model. Preserve the evidence needed by Phases 5 and 10 without implementing their optional enhancements here.
+
+For the remaining full-game scope, reuse Phase 1 evidence and independently establish every listed recovery facet from original binaries/data or execution. Test each recovered boundary with local original comparisons and appropriate public malformed/synthetic fixtures; synthetic outcomes never replace original oracles. Close the assigned remainder inventory before accepting full-game native integration.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P04-T03-F01 | full-game projected-vertex precision | original-reference-analysis | defined |
+| TEST-P04-T03-F02 | full-game texture interpolation | original-reference-analysis | defined |
+| TEST-P04-T03-F03 | full-game color quantization | original-reference-analysis | defined |
+| TEST-P04-T03-F04 | full-game dithering | original-reference-analysis | defined |
+| TEST-P04-T03-F05 | full-game rasterization resolution | original-reference-analysis | defined |
+| TEST-P04-T03-F06 | full-game primitive ordering | original-reference-analysis | defined |
+| TEST-P04-T03-F07 | full-game transparency | original-reference-analysis | defined |
+| TEST-P04-T03-F08 | full-game original visual references | original-reference-analysis | defined |
+| TEST-P04-T03-F09 | full-game Mono signal | original-reference-analysis | defined |
+| TEST-P04-T03-F10 | full-game Stereo signal | original-reference-analysis | defined |
+| TEST-P04-T03-F11 | full-game Wide signal | original-reference-analysis | defined |
+| TEST-P04-T03-F12 | full-game panning and polarity | original-reference-analysis | defined |
+| TEST-P04-T03-F13 | full-game reverb | original-reference-analysis | defined |
+| TEST-P04-T03-F14 | full-game master output | original-reference-analysis | defined |
+| TEST-P04-T03-F15 | full-game streamed and FMV routing | original-reference-analysis | defined |
+| TEST-P04-T03-F16 | full-game matched raw two-channel captures | original-reference-analysis | defined |
+| TEST-P04-T03-F17 | full-game intended playback model | original-reference-analysis | defined |
+| TEST-P04-T03-F18 | full-game matrix versus phase-expansion discrimination | original-reference-analysis | defined |
+
+### P04-T04
+
+Close the whole-game recovery inventory with original execution/static comparisons, reviewed source, parser and malformed-input fixtures, and an explicit disposition for every original symbol/format/instruction/content obligation. No required original-game path may remain guessed, silently ignored, or merely deferred; keep intentional presentation/gameplay changes separate from unknown behavior.
+
+For the remaining full-game scope, reuse Phase 1 evidence and independently establish every listed recovery facet from original binaries/data or execution. Test each recovered boundary with local original comparisons and appropriate public malformed/synthetic fixtures; synthetic outcomes never replace original oracles. Close the assigned remainder inventory before accepting full-game native integration.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P04-T04-F01 | full-game original execution tracing | original-reference-analysis | defined |
+| TEST-P04-T04-F02 | full-game captured inputs | original-reference-analysis | defined |
+| TEST-P04-T04-F03 | full-game seeds | original-reference-analysis | defined |
+| TEST-P04-T04-F04 | full-game state transitions | original-reference-analysis | defined |
+| TEST-P04-T04-F05 | full-game script instructions | original-reference-analysis | defined |
+| TEST-P04-T04-F06 | full-game timing observations | original-reference-analysis | defined |
+| TEST-P04-T04-F07 | full-game original parser fixtures | original-reference-analysis | defined |
+| TEST-P04-T04-F08 | full-game per-finding behavioral tests | original-reference-analysis | defined |
+| TEST-P04-T04-F09 | full-game local original-data fixture generation | original-reference-analysis | defined |
+| TEST-P04-T04-F10 | full-game public synthetic fixtures | original-reference-analysis | defined |
+| TEST-P04-T04-F11 | full-game redistributable CI fixtures | original-reference-analysis | defined |
+| TEST-P04-T04-F12 | full-game unresolved symbols | original-reference-analysis | defined |
+| TEST-P04-T04-F13 | full-game unknown formats | original-reference-analysis | defined |
+| TEST-P04-T04-F14 | full-game unimplemented instructions | original-reference-analysis | defined |
+| TEST-P04-T04-F15 | full-game explicit unknown behavior errors | original-reference-analysis | defined |
+
+### P04-T05
 
 Complete field behavior: terrain/elevation, ladders, traversal, party following, triggers, camera rules, map transitions, and story-dependent variants.
 
@@ -2242,16 +2396,16 @@ Traverse every inventoried field variant and edge route with automated and manua
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T01-F01 | terrain/elevation | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F02 | ladders | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F03 | traversal | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F04 | party following | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F05 | field triggers | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F06 | camera rules | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F07 | map transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T01-F08 | story-dependent field variants | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F01 | terrain/elevation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F02 | ladders | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F03 | traversal | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F04 | party following | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F05 | field triggers | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F06 | camera rules | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F07 | map transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T05-F08 | story-dependent field variants | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T02
+### P04-T06
 
 Complete the recovered event interpreter and all used instructions. Track coverage by map, scene, branch, and original instruction family.
 
@@ -2259,14 +2413,14 @@ Reconcile original script inventory against implemented and exercised instructio
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T02-F01 | complete interpreter | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T02-F02 | all used instructions | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T02-F03 | map coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T02-F04 | scene coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T02-F05 | branch coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T02-F06 | instruction-family coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T06-F01 | complete interpreter | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T06-F02 | all used instructions | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T06-F03 | map coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T06-F04 | scene coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T06-F05 | branch coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T06-F06 | instruction-family coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T03
+### P04-T07
 
 Complete menus, dialogue, shops, equipment, inventory, party management, and ordinary save/load; implement original-save import/export from independently recovered formats where supported.
 
@@ -2274,18 +2428,18 @@ Exercise all original menu flows and corrupted/unsupported saves; independently 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T03-F01 | all menus | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F02 | dialogue | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F03 | shops | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F04 | equipment | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F05 | inventory | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F06 | party management | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F07 | ordinary save/load | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F08 | original-save import | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F09 | original-save export | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T03-F10 | declared supported save formats | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F01 | all menus | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F02 | dialogue | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F03 | shops | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F04 | equipment | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F05 | inventory | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F06 | party management | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F07 | ordinary save/load | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F08 | original-save import | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F09 | original-save export | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T07-F10 | declared supported save formats | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T04
+### P04-T08
 
 Complete on-foot battles, including combos, Deathblows, status effects, enemy AI, scripted encounters, rewards, and progression.
 
@@ -2293,15 +2447,15 @@ Cover normal, edge and failure cases for every recovered battle rule and relevan
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T04-F01 | on-foot combos | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T04-F02 | Deathblows | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T04-F03 | status effects | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T04-F04 | enemy AI | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T04-F05 | scripted encounters | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T04-F06 | rewards | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T04-F07 | progression | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F01 | on-foot combos | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F02 | Deathblows | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F03 | status effects | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F04 | enemy AI | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F05 | scripted encounters | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F06 | rewards | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T08-F07 | progression | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T05
+### P04-T09
 
 Complete Gear battles, resources, equipment, animation, enemy behavior, and their distinct rules and interfaces.
 
@@ -2309,15 +2463,15 @@ Run representative and exhaustive-rule Gear encounters using original oracles fo
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T05-F01 | Gear battles | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T05-F02 | Gear resources | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T05-F03 | Gear equipment | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T05-F04 | Gear animation | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T05-F05 | Gear enemy behavior | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T05-F06 | Gear rules | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T05-F07 | Gear interfaces | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F01 | Gear battles | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F02 | Gear resources | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F03 | Gear equipment | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F04 | Gear animation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F05 | Gear enemy behavior | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F06 | Gear rules | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T09-F07 | Gear interfaces | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T06
+### P04-T10
 
 Complete the world map, transportation, location entry, and story-dependent world changes.
 
@@ -2325,12 +2479,12 @@ Traverse each inventoried transport and story variant, entering/exiting location
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T06-F01 | world map | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T06-F02 | transportation | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T06-F03 | location entry | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T06-F04 | story-dependent world changes | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T10-F01 | world map | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T10-F02 | transportation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T10-F03 | location entry | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T10-F04 | story-dependent world changes | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T07
+### P04-T11
 
 Complete music sequencing, sample playback, sound effects, mixing, FMV demux/decoding integration, and event/media synchronization.
 
@@ -2338,15 +2492,15 @@ Cover the full audio/media catalog with timing and mixing captures; transitions 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T07-F01 | music sequencing | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T07-F02 | sample playback | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T07-F03 | sound effects | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T07-F04 | mixing | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T07-F05 | FMV demux | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T07-F06 | FMV decoding | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T07-F07 | event/media synchronization | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F01 | music sequencing | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F02 | sample playback | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F03 | sound effects | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F04 | mixing | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F05 | FMV demux | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F06 | FMV decoding | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T11-F07 | event/media synchronization | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T08
+### P04-T12
 
 Reproduce and validate original Mono, Stereo, and Wide signal behavior, including phase/polarity and routing, before using native Wide output for headphone surround. Identify which content paths actually carry Wide processing.
 
@@ -2354,15 +2508,15 @@ Match original and native raw two-channel captures for each verified routed path
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T08-F01 | original Mono reproduction | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T08-F02 | original Stereo reproduction | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T08-F03 | original Wide reproduction | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T08-F04 | phase and polarity | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T08-F05 | routing | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T08-F06 | content path attribution | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T08-F07 | native signal gate before surround | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F01 | original Mono reproduction | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F02 | original Stereo reproduction | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F03 | original Wide reproduction | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F04 | phase and polarity | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F05 | routing | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F06 | content path attribution | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T12-F07 | native signal gate before surround | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T09
+### P04-T13
 
 Complete every minigame, optional activity, side quest, boss, ending sequence, and relevant failure/retry path.
 
@@ -2370,15 +2524,15 @@ Reconcile per-content and branch inventory with complete original/native runs in
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T09-F01 | every minigame | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T09-F02 | optional activities | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T09-F03 | side quests | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T09-F04 | bosses | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T09-F05 | ending sequences | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T09-F06 | failure paths | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T09-F07 | retry paths | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F01 | every minigame | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F02 | optional activities | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F03 | side quests | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F04 | bosses | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F05 | ending sequences | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F06 | failure paths | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T13-F07 | retry paths | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T10
+### P04-T14
 
 Complete both discs' content and transitions, with unified imported-data access instead of requiring a physical disc swap during native play.
 
@@ -2386,13 +2540,13 @@ Progress across both verified source profiles and the original disc boundary wit
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T10-F01 | disc 1 content | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T10-F02 | disc 2 content | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T10-F03 | disc transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T10-F04 | unified imported-data access | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T10-F05 | no physical swap in native play | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T14-F01 | disc 1 content | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T14-F02 | disc 2 content | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T14-F03 | disc transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T14-F04 | unified imported-data access | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T14-F05 | no physical swap in native play | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T11
+### P04-T15
 
 Eliminate silent fallback logic and progression workarounds; account for remaining unimplemented or unvalidated behavior explicitly.
 
@@ -2400,12 +2554,12 @@ Inject unknown opcodes/assets and inspect all fallback sites; diagnostics identi
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T11-F01 | no silent fallbacks | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T11-F02 | no progression workarounds | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T11-F03 | unimplemented behavior accounting | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T11-F04 | unvalidated behavior accounting | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T15-F01 | no silent fallbacks | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T15-F02 | no progression workarounds | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T15-F03 | unimplemented behavior accounting | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T15-F04 | unvalidated behavior accounting | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T12
+### P04-T16
 
 Build automated progression checkpoints plus manual coverage for interactions that scripted runs do not meaningfully exercise.
 
@@ -2413,10 +2567,10 @@ Run checkpoint suite and separately record human interactions that automation ca
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T12-F01 | automated progression checkpoints | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P04-T12-F02 | manual interaction coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T16-F01 | automated progression checkpoints | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P04-T16-F02 | manual interaction coverage | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P04-T13
+### P04-T17
 
 Extend direct agent actions, complete introspection, typed go-anywhere setup, breakpoints, and semantic readiness alongside every subsystem. Native world-map, battle, minigame, cutscene, and progression setup must not remain limited to the emulator apparatus's initial field-entry adapters.
 
@@ -2424,18 +2578,26 @@ Reconcile implemented subsystem/catalog coverage with action/query/setup/debug r
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T13-F01 | actions for every subsystem | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F02 | complete state introspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F03 | typed setup for every subsystem | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F04 | breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F05 | semantic readiness | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F06 | world-map setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F07 | battle setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F08 | minigame setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F09 | cutscene setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T13-F10 | progression setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F01 | actions for every subsystem | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F02 | complete state introspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F03 | typed setup for every subsystem | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F04 | breakpoints | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F05 | semantic readiness | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F06 | world-map setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F07 | battle setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F08 | minigame setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F09 | cutscene setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F10 | progression setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F11 | minigame controls | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F12 | encounters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F13 | battle and AI | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F14 | minigames | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F15 | world-map location | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F16 | battle and formation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F17 | minigame | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T17-F18 | encounter setup | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P04-T14
+### P04-T18
 
 Run both-disc progression and optional-content scenarios headlessly at unlocked speed, with reproducible inputs/seeds and bounded assertions. Test human and agent command-path equivalence and separate debug-launched scenario coverage from continuous unmodified playthrough evidence.
 
@@ -2443,15 +2605,28 @@ Complete original-qualified routes and optional branches through direct commands
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P04-T14-F01 | both-disc headless progression | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T14-F02 | optional-content headless runs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T14-F03 | unlocked speed | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T14-F04 | reproducible inputs and seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T14-F05 | bounded assertions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T14-F06 | human and agent equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P04-T14-F07 | setup coverage distinct from continuous playthrough | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F01 | both-disc headless progression | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F02 | optional-content headless runs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F03 | unlocked speed | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F04 | reproducible inputs and seeds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F05 | bounded assertions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F06 | human and agent equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T18-F07 | setup coverage distinct from continuous playthrough | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-Exit gate: Both discs and optional activities are playable from beginning to end, with no known progression-blocking gaps. All game systems are accessible through the foundational agent/debug interface and valid native go-anywhere setup; no gameplay subsystem requires a desktop UI or real-time pacing.
+### P04-T19
+
+Demonstrate integrated Phase 4 acceptance. Reconcile full both-disc recovery and implementation coverage, including all original systems, optional content, failure/retry paths, saves and transitions. Pass continuous unmodified progression plus targeted legal-action scenarios, complete native setup/debug coverage, and a documented original-behavior baseline. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P04-T19-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T19-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T19-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P04-T19-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+Exit gate: Every Phase 4 checkbox is checked: all declared original systems, both discs, optional activities, ordinary saves, failure/retry paths, and transitions are recovered, implemented, and validated, with no known progression-blocking or required-system gaps. Continuous unmodified playthrough evidence and targeted coverage remain distinct. Every gameplay system has complete headless actions, state/debug access, valid go-anywhere setup, and unlocked execution.
 
 ## Phase 5
 
@@ -2730,13 +2905,26 @@ Render generated and imported mesh fixtures in each supported native visual prof
 | TEST-P05-T17-F07 | selection and debugging | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P05-T17-F08 | no browser or external preview authority | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-Exit gate: Recorded gameplay reaches equivalent authoritative state across resolutions, aspect ratios, framerates, backends, visual profiles, and render-disabled execution. Modern is the default; supported PS1 quirks are selectable and validated, including in agent spectator images.
+### P05-T18
+
+Demonstrate integrated Phase 5 acceptance. Verify every listed display/renderer/profile option, visual correctness against the appropriate references, backend behavior, and unchanged authoritative state across resolutions, aspect ratios, framerates, visual profiles, and image-free/streamed execution. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P05-T18-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P05-T18-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P05-T18-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P05-T18-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+Exit gate: Every Phase 5 checkbox is checked: all listed resolution/aspect-ratio/framerate, filtering/culling, backend, and visual-profile features work, and reference captures validate their intended presentation. Recorded gameplay reaches equivalent authoritative state across those configurations and render-disabled execution. Modern remains the default; optional PS1 quirks and spectator output are visually validated, not inferred correct from matching state hashes.
 
 ## Phase 6
 
 ### P06-T01
 
-Implement action-based input contexts for exploration, combat, minigames, game menus, the app menu, and editors.
+Implement action-based input contexts for exploration, combat, minigames, game menus, and the app menu. Define the shared context/focus boundary that the graphical editor shell will implement and test in Phase 11; no editor UI is required to complete this phase.
 
 Route each action in all active contexts and transitions; irrelevant/covered contexts receive no action and all required controls remain reachable.
 
@@ -2747,7 +2935,6 @@ Route each action in all active contexts and transitions; irrelevant/covered con
 | TEST-P06-T01-F03 | minigame contexts | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P06-T01-F04 | game-menu context | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P06-T01-F05 | app-menu context | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P06-T01-F06 | editor contexts | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P06-T02
 
@@ -2939,6 +3126,19 @@ Race two controllers and a spectator at handoff boundaries; exactly one owner ap
 | TEST-P06-T14-F03 | explicit handoff | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P06-T14-F04 | read-only spectator input | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
+### P06-T15
+
+Demonstrate integrated Phase 6 acceptance. Operate every implemented game/menu/minigame through complete keyboard, mouse/wheel, and controller paths; verify rebinding, focus, device reconnects, input ownership, and equivalent direct agent commands without OS/SDL event synthesis. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P06-T15-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P06-T15-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P06-T15-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P06-T15-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
 Exit gate: The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel. Agents can invoke the equivalent validated engine actions directly without any synthesized OS/SDL input.
 
 ## Phase 7
@@ -3024,9 +3224,9 @@ Change a rule/state transition through an independently authored Lua module; dem
 
 ### P07-T06
 
-Implement explicit, versioned Lua state and resumable tasks compatible with snapshots, rewind, and editor scrubbing. Reject unsupported persistence patterns with actionable diagnostics.
+Implement explicit, versioned Lua state and resumable tasks compatible with the existing snapshot/replay services. Define the state contract required by later player rewind and editor scrubbing; reject unsupported persistence patterns with actionable diagnostics. Their actual UI/integration tests belong to Phases 8 and 11.
 
-Suspend/resume all supported task boundaries through save/rewind/scrub, compare state and reject closures/stacks or patterns outside the persistence contract with repair guidance.
+Suspend and resume every supported Lua task boundary through exact snapshots and deterministic replay. Compare task/state progress and reject unsupported closures/stacks. Validate the documented extension contract without claiming that future player rewind or editor scrubbing already exists.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -3034,9 +3234,7 @@ Suspend/resume all supported task boundaries through save/rewind/scrub, compare 
 | TEST-P07-T06-F02 | versioned Lua state | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P07-T06-F03 | resumable tasks | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P07-T06-F04 | snapshot compatibility | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T06-F05 | rewind compatibility | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T06-F06 | editor-scrub compatibility | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T06-F07 | rejected unsupported persistence | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P07-T06-F05 | rejected unsupported persistence | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P07-T07
 
@@ -3086,17 +3284,19 @@ Manage original packages entirely through UI, recover from broken dependencies a
 
 ### P07-T10
 
-Allow hot reload only at defined safe boundaries. Invalidate or migrate snapshots whose scripts, assets, or state schemas changed.
+Implement hot/incremental reload only at defined safe boundaries. Publish successful revisions atomically; invalidate or explicitly migrate snapshots whose scripts, assets, or state schemas changed, and retain the previous working package on failure. Reject incompatible live continuation instead of silently mutating active tests.
 
 Reload during permitted/forbidden states, then load old snapshots; defer unsafe reload and explicitly migrate or reject incompatibility with no silent divergence.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P07-T10-F01 | safe-boundary hot reload | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T10-F02 | script-change snapshot handling | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T10-F03 | asset-change snapshot handling | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T10-F04 | state-schema-change snapshot handling | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P07-T10-F05 | snapshot invalidation/migration | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P07-T10-F01 | safe-boundary hot reload | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T10-F02 | script-change snapshot handling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T10-F03 | asset-change snapshot handling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T10-F04 | state-schema-change snapshot handling | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T10-F05 | snapshot invalidation/migration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T10-F06 | compatible incremental reload only at safe boundaries | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T10-F07 | explicit state migration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P07-T11
 
@@ -3160,23 +3360,144 @@ Attempt debug authority escalation from Lua and a spectator, then test authorize
 
 ### P07-T15
 
-Complete the Phase 2A SDK/build/service checklist for the supported content types, including schema/catalog discovery, reusable procedural components, scoped edits, source-aware diagnostics, immutable builds, and a prompt-authored town/dungeon with branching progression and custom Lua behavior.
+Add the optional minimal TSX factory after function-based SDK parity, and accept TSX/Lua source references through the same source/package contracts. The custom JSX factory returns serializable content definitions, not React UI; compare equivalent TypeScript and TSX outputs and keep prebuilt play free of build-time JavaScript.
+
+Build equivalent ordinary TypeScript and TSX projects, compare normalized content and diagnostics, and run their prebuilt packages with authoring tools absent. Validate packaged Lua source identity using the Phase 7 permission/state model.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T15-F01 | authoritative TSX source | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T15-F02 | authoritative packaged Lua source references | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T15-F03 | function and TSX normalized-output parity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T15-F04 | optional minimal TSX factory after function parity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T16
+
+Add complete dependency/parameter cache keys, incremental component rebuilds, to the established build services. Measure catalog/search costs and adopt optional indexing or mesh optimization only when justified. Keep generated static geometry out of runtime frames; reject runtime-generator declarations without a separately specified algorithm/state/persistence contract.
+
+Change a component parameter and verify only dependent outputs rebuild, while shared instances remain stable. If SQLite/FTS5 is adopted, rebuild its metadata and compare exact-ID/search results. Unsupported runtime generation fails explicitly; no cache or search result supplies gameplay truth.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T16-F01 | complete dependency and parameter cache keys | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T16-F02 | rebuild only affected components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T16-F03 | separately specified runtime generator persistence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T16-F04 | rebuildable SQLite FTS5 catalog when adopted | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T17
+
+Add parameterized rooms, corridors, houses, stairs, bridges, doors, machinery, and user-authored custom components built from those operations. Expose lower-level algorithms and mesh arrays so the component catalog does not limit what an agent can invent.
+
+Build a parameterized component suite and a new custom object not present in the catalog. Vary dimensions and connectivity, inspect generated topology and collision, and demonstrate a user can supply algorithms and mesh arrays without engine C++ changes.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T17-F01 | parameterized rooms | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F02 | corridors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F03 | houses | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F04 | stairs | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F05 | bridges | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F06 | doors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F07 | machinery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F08 | user-authored custom components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F09 | lower-level algorithm access | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T17-F10 | arbitrary mesh-array access | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T18
+
+Expand surface generators incrementally with path sweeps, terrain/heightfields, and specialized surfaces as demonstrated use cases require. Do not present unimplemented lofting, deformation, rigging, or modeling operations as available capabilities.
+
+Exercise every advertised surface generator with source and native-loadable results. Query the capability catalog for unimplemented operations and require unsupported responses; add specialized algorithms only with a documented use case and acceptance example.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T18-F01 | demonstrated path sweeps | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T18-F02 | demonstrated terrain and heightfields | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T18-F03 | use-case-driven specialized surfaces | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T18-F04 | discoverable unsupported lofting | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T18-F05 | discoverable unsupported deformation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T18-F06 | discoverable unsupported rigging | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T18-F07 | no advertised unimplemented modeling operations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T19
+
+Reference packaged Lua modules for behavior beyond the declarative vocabulary, using the Phase 7 deterministic API and permission model. Ordinary content authoring must not require C++ rebuilds; a genuinely new engine capability remains an explicit engineering task, not an invented SDK call.
+
+Package a declarative event plus Lua extension and run with Node absent using deterministic native APIs. Verify permissions/persistence and unchanged engine binary; requests for a new engine operation must report unsupported instead of fabricating an SDK call.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T19-F01 | packaged Lua module references | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T19-F02 | shared Phase 7 deterministic API | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T19-F03 | shared Lua permission model | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T19-F04 | ordinary authoring without C++ rebuild | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T19-F05 | explicit unsupported engine-capability boundary | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T20
+
+Produce and revise a prompt-authored small town/dungeon with a branching quest, optional encounter, failure/retry paths, and custom Lua behavior. Validate references, analyzable declarative reachability, actual runtime behavior, ordinary saves/exact snapshots, reward uniqueness, and presentation separately. Phase 8 adds rewind validation; static graph checks do not prove arbitrary scripts correct.
+
+Generate and revise the town/dungeon using the completed SDK and Lua API. Test multiple legal paths, retry/re-entry, optional encounters, ordinary saves/exact snapshots and reward uniqueness. Label static reachability and presentation findings separately; the Phase 8 checklist owns player-rewind integration.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T20-F01 | prompt-authored town or dungeon | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F02 | branching quest | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F03 | optional encounter | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F04 | failure and retry paths | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F05 | custom Lua behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F06 | Phase 7 expansion gate | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F07 | reference validation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F08 | analyzable declarative reachability | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F09 | actual script and runtime behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F10 | duplicate-reward prevention | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F11 | separate presentation review | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T20-F12 | static checks do not prove arbitrary scripts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T21
+
+Expand the existing authoring IR and event vocabulary to quests, cutscenes, encounters, battles, minigames, and their validated transition primitives, using the original systems completed in Phase 4. Preserve stable IDs and explicit serializable progress; unimplemented engine capabilities remain discoverably unsupported.
+
+Compile positive and unsupported content cases, play each supported family through legal native commands, and compare saved event progress, transition preconditions and reward behavior. Do not substitute source graph checks for actual runtime execution.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T21-F01 | encounter definitions in the shared IR | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T21-F02 | broader serializable event and condition vocabulary | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T21-F03 | incremental quest and cutscene expansion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T21-F04 | recovered encounter battle and minigame expansion | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T21-F05 | quest-transition primitives | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T22
+
+Implement and validate Lua-specific scheduling, explicit task persistence, task/instruction stepping, breakpoints, watches, stacks, and full task/state queries through the established native services. Test resumable progress and errors without granting Lua native debug privileges.
+
+Suspend, inspect, step and restore supported Lua tasks; compare ordering and outcomes with the declared deterministic API, reject unsupported stack/closure persistence, and verify that untrusted Lua cannot acquire native debug authority.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T22-F01 | Lua task and instruction step | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T22-F02 | Lua tasks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P07-T23
+
+Complete the expanded SDK/build/service tasks in this phase, using the fully completed Phase 2A bridge. Deliver the broader procedural components, catalog discovery, scoped edits, source-aware diagnostics, immutable builds, and a prompt-authored town/dungeon with branching progression and custom Lua behavior.
 
 Close every Phase 2A checklist facet for supported content types with actual build/runtime evidence. Produce and revise a town/dungeon using generated geometry, branching events and Lua, retaining source diffs, immutable artifacts and protected native scenario results.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P07-T15-F01 | complete supported Phase 2A SDK and services | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F02 | schema and catalog discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F03 | reusable procedural components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F04 | scoped edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F05 | source-aware diagnostics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F06 | immutable builds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F07 | prompt-authored town or dungeon | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F08 | branching progression | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T15-F09 | custom Lua behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F01 | complete supported Phase 2A SDK and services | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F02 | schema and catalog discovery | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F03 | reusable procedural components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F04 | scoped edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F05 | source-aware diagnostics | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F06 | immutable builds | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F07 | prompt-authored town or dungeon | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F08 | branching progression | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T23-F09 | custom Lua behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P07-T16
+### P07-T24
 
 Extend typed authoring definitions to items, characters, Gears, enemy behaviors, encounters, rewards, dialogue, cutscenes, and minigame configuration. Use shared native/event/Lua contracts rather than a second simulation or generated C++ for routine content.
 
@@ -3184,19 +3505,19 @@ Author one supported definition per domain, type-check/validate its references a
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P07-T16-F01 | typed items | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F02 | characters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F03 | Gears | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F04 | enemy behaviors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F05 | encounters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F06 | rewards | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F07 | dialogue | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F08 | cutscenes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F09 | minigame configuration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F10 | shared native event and Lua contracts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T16-F11 | no second simulation or routine generated C++ | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F01 | typed items | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F02 | characters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F03 | Gears | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F04 | enemy behaviors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F05 | encounters | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F06 | rewards | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F07 | dialogue | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F08 | cutscenes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F09 | minigame configuration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F10 | shared native event and Lua contracts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T24-F11 | no second simulation or routine generated C++ | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P07-T17
+### P07-T25
 
 Standardize source mod projects with a manifest, intent/acceptance specification, TypeScript components, parameter data, optional assets, Lua behavior, and scenario tests. Separate creative proposals from verified game facts and explicit engine capability limits.
 
@@ -3204,17 +3525,17 @@ Build a documented source project from its complete manifest and run its protect
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P07-T17-F01 | standard source project manifest | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F02 | intent and acceptance specification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F03 | TypeScript components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F04 | parameter data | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F05 | optional assets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F06 | Lua behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F07 | scenario tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F08 | creative proposals separated from verified facts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T17-F09 | explicit engine capability limits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F01 | standard source project manifest | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F02 | intent and acceptance specification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F03 | TypeScript components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F04 | parameter data | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F05 | optional assets | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F06 | Lua behavior | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F07 | scenario tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F08 | creative proposals separated from verified facts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T25-F09 | explicit engine capability limits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P07-T18
+### P07-T26
 
 Demonstrate prompt → retrieval → small specification → blockout → native test → diagnosis/repair → presentation refinement → package. Include a follow-up prompt that edits only the requested content and preserves human changes, stable identities, and protected tests; do not regenerate the whole project by default.
 
@@ -3222,20 +3543,20 @@ Record the full prompt-to-playable loop and a follow-up source revision against 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P07-T18-F01 | prompt and retrieval workflow | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F02 | small specification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F03 | blockout | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F04 | native test | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F05 | diagnosis and repair | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F06 | presentation refinement | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F07 | packaging | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F08 | targeted follow-up prompt | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F09 | preserved human changes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F10 | stable identities | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F11 | protected tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T18-F12 | no default whole-project regeneration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F01 | prompt and retrieval workflow | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F02 | small specification | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F03 | blockout | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F04 | native test | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F05 | diagnosis and repair | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F06 | presentation refinement | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F07 | packaging | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F08 | targeted follow-up prompt | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F09 | preserved human changes | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F10 | stable identities | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F11 | protected tests | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T26-F12 | no default whole-project regeneration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P07-T19
+### P07-T27
 
 Treat optional editor extensions and external asset-generation integrations as separate trusted tooling capabilities. A gameplay mod must run without executing its editor plugin or generator; generated artwork remains a candidate until import validation and native review pass.
 
@@ -3243,14 +3564,27 @@ Install and play prebuilt content with its tooling extensions/generators absent 
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P07-T19-F01 | optional editor extensions as trusted tools | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T19-F02 | external asset generators as trusted tools | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T19-F03 | prebuilt mod plays without editor plugin execution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T19-F04 | prebuilt mod plays without generator execution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T19-F05 | generated artwork validated at import | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P07-T19-F06 | native review of generated artwork | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T27-F01 | optional editor extensions as trusted tools | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T27-F02 | external asset generators as trusted tools | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T27-F03 | prebuilt mod plays without editor plugin execution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T27-F04 | prebuilt mod plays without generator execution | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T27-F05 | generated artwork validated at import | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T27-F06 | native review of generated artwork | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-Exit gate: All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed. The expanded Phase 2A workflow produces and revises a source-authored town/dungeon mod, including real generated geometry and tested gameplay, without engine C++ changes or GUI automation.
+### P07-T28
+
+Demonstrate integrated Phase 7 acceptance. Run all four example Lua mods and the source-authored town/dungeon through legal play, source-preserving revision, ordinary saves/exact snapshots, debugging and unthrottled headless execution. Verify mod installation/conflicts/permissions and base-game operation without third-party mods; no player rewind or graphical editor is required yet. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P07-T28-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T28-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T28-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P07-T28-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+Exit gate: All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed. The expanded SDK completed in this phase produces and revises a source-authored town/dungeon mod, including real generated geometry and tested gameplay, without engine C++ changes or GUI automation.
 
 ## Phase 8
 
@@ -3379,7 +3713,7 @@ Rewind before a consequential action and resume with changed input; old future v
 
 ### P08-T09
 
-Restore audio and FMVs from logical playback positions; rebuild platform-specific decoder, audio-device, and GPU state.
+Restore audio and FMVs from logical playback positions; rebuild platform-specific decoder, audio-device, and GPU state. Provide bounded presentation-state rebuild/pre-roll hooks for future output processors; Phase 10 owns Wide/HRTF-specific implementation and verification.
 
 Restore into fresh platform services during active media, compare logical positions and sync, and verify no serialized native handles or stale resources are required.
 
@@ -3390,23 +3724,9 @@ Restore into fresh platform services during active media, compare logical positi
 | TEST-P08-T09-F03 | decoder rebuild | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P08-T09-F04 | audio-device rebuild | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P08-T09-F05 | GPU rebuild | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P08-T09-F06 | defined later-processor restoration hook without requiring a future processor | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P08-T10
-
-Preserve or deterministically reconstruct Wide-decoder history, HRTF convolution tails, and resampler delay through portable presentation-state caches or bounded audio pre-roll. Validate phase-preserving linked-channel processing or muting during acceleration; prevent stale cues/clicks after load, rewind, skip, or device changes.
-
-Compare continuous and restored offline audio captures from identical logical state, checking linked phase/timing and declared transient/latency tolerances. Require bounded reconstruction before resuming output and no stale cues/clicks.
-
-| Test ID | Required facet | Targets | Result |
-|---|---|---|---|
-| TEST-P08-T10-F01 | Wide decoder history | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T10-F02 | HRTF convolution tails | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T10-F03 | resampler delay | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T10-F04 | portable caches or bounded pre-roll | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T10-F05 | phase-preserving linked-channel acceleration or mute | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T10-F06 | load rewind skip and device-switch restoration | arch-vulkan, windows-d3d12, macos-metal | defined |
-
-### P08-T11
 
 Support map changes, battles, cutscenes, and disc-content transitions across rewind. Track and resolve unsupported boundaries before feature completion.
 
@@ -3414,13 +3734,13 @@ Traverse each boundary backward and forward with original and mod content; compa
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P08-T11-F01 | rewind map transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T11-F02 | rewind battles | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T11-F03 | rewind cutscenes | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T11-F04 | rewind disc-content transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
-| TEST-P08-T11-F05 | resolved unsupported boundaries | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P08-T10-F01 | rewind map transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P08-T10-F02 | rewind battles | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P08-T10-F03 | rewind cutscenes | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P08-T10-F04 | rewind disc-content transitions | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P08-T10-F05 | resolved unsupported boundaries | arch-vulkan, windows-d3d12, macos-metal | defined |
 
-### P08-T12
+### P08-T11
 
 Expose save/load, rewind, branching replay, and snapshot inspection through the agent API with explicit ticks, compatibility errors, and isolated save directories. An image-free run must restore the same simulation state and rebuild presentation on demand.
 
@@ -3428,17 +3748,17 @@ Perform restore/rewind/branch via protocol in fresh processes and private save r
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P08-T12-F01 | agent save and load | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F02 | agent rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F03 | branching replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F04 | snapshot inspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F05 | explicit ticks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F06 | compatibility errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F07 | isolated saves | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F08 | image-free state restore | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T12-F09 | presentation reconstruction on demand | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F01 | agent save and load | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F02 | agent rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F03 | branching replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F04 | snapshot inspection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F05 | explicit ticks | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F06 | compatibility errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F07 | isolated saves | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F08 | image-free state restore | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T11-F09 | presentation reconstruction on demand | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P08-T13
+### P08-T12
 
 Test replay/state equivalence across supported platforms and representative mod combinations, in real-time, stepped, accelerated, and unthrottled modes with images off/on. Declare incompatible snapshots rather than silently accepting divergent state.
 
@@ -3446,36 +3766,51 @@ Exchange supported snapshots/replays across declared targets and mod profiles; c
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P08-T13-F01 | Linux replay equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F02 | Windows replay equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F03 | macOS replay equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F04 | representative mod combinations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F05 | explicit incompatible snapshot errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F06 | real-time replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F07 | stepped replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F08 | fixed-speed replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F09 | unthrottled replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F10 | images-off replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T13-F11 | images-on replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F01 | Linux replay equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F02 | Windows replay equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F03 | macOS replay equivalence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F04 | representative mod combinations | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F05 | explicit incompatible snapshot errors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F06 | real-time replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F07 | stepped replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F08 | fixed-speed replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F09 | unthrottled replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F10 | images-off replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T12-F11 | images-on replay | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
-### P08-T14
+### P08-T13
 
-Include compiled event-task progress and exact authored-package identities in snapshot compatibility. Test save/re-entry/rewind during generated doors, quests, battles, and Lua tasks; package reload must explicitly preserve, migrate, restart, or reject state rather than silently changing definitions beneath it.
+Include compiled event-task progress and exact authored-package identities in snapshot compatibility. Test save/re-entry/rewind during generated doors, quests, battles, and Lua tasks; package reload must explicitly preserve, migrate, restart, or reject state rather than silently changing definitions beneath it. Include the Phase 7 town/dungeon and Lua examples in player-rewind tests; Phase 11 will separately verify graphical timeline scrubbing.
 
 Snapshot at authored door/quest/battle/Lua waits, leave/re-enter and rewind with the exact package. Rebuild compatible/incompatible definitions and verify declared preserve/migrate/restart/reject behavior, atomic failures and explicit invalidation instead of silently rebinding saved state.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
-| TEST-P08-T14-F01 | serialized compiled event-task progress | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F02 | exact authored-package snapshot identity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F03 | save and re-entry during generated doors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F04 | quest save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F05 | authored battle save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F06 | Lua task save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F07 | explicit compatible preservation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F08 | explicit migration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F09 | explicit restart or rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
-| TEST-P08-T14-F10 | no silent definition replacement | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F01 | serialized compiled event-task progress | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F02 | exact authored-package snapshot identity | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F03 | save and re-entry during generated doors | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F04 | quest save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F05 | authored battle save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F06 | Lua task save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F07 | explicit compatible preservation | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F08 | explicit migration | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F09 | explicit restart or rejection | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F10 | no silent definition replacement | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F11 | rewind compatibility | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T13-F12 | save and rewind | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P08-T14
+
+Demonstrate integrated Phase 8 acceptance. Verify player snapshots, acceleration, rewind and branching replay across all original-game contexts and the Phase 7 examples, including exactly-once side effects, saved package/Lua identities, media restoration, and rendering-independent authoritative state. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P08-T14-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T14-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T14-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P08-T14-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 Exit gate: Save → restore and record → rewind → replay produce equivalent authoritative state throughout the game and with supported Lua mods. Agent-controlled execution remains independent of real-time pacing and rendering; audiovisual state resumes without stale processing history.
 
@@ -3740,13 +4075,26 @@ Pair watched-unlocked and explicitly skipped traces for each branch; compare con
 | TEST-P09-T18-F07 | no automatic choices | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P09-T18-F08 | no debug substitute for consequences | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
+### P09-T19
+
+Demonstrate integrated Phase 9 acceptance. Verify the specified independent options and defaults, platforming encounter behavior, and watched-versus-skipped outcomes for every supported scene path, including required choices, rewards, transitions, load and rewind. Keep natural headless completion distinct from explicit semantic skipping. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P09-T19-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P09-T19-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P09-T19-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P09-T19-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
 Exit gate: Platforming-area defaults work, optional modifications remain independent, and cutscene skipping preserves progression without requiring any preexisting mod or real-time-only test path.
 
 ## Phase 10
 
 ### P10-T01
 
-Implement a playable first-person camera with mouse/controller look, camera-relative movement, configurable FOV, sensitivity, and inversion.
+Implement a playable first-person camera with mouse/controller look, camera-relative movement, configurable FOV, sensitivity, and inversion. Activate and test the reserved V binding through the existing input/agent command layer.
 
 Traverse original field scenarios from first person using both devices and setting extremes; camera/movement controls remain usable and settings persist.
 
@@ -3759,6 +4107,7 @@ Traverse original field scenarios from first person using both devices and setti
 | TEST-P10-T01-F05 | configurable FOV | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P10-T01-F06 | configurable sensitivity | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P10-T01-F07 | configurable inversion | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T01-F08 | activation of reserved first-person binding and direct command | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P10-T02
 
@@ -4040,9 +4389,9 @@ Report independent input, reconstruction and HRTF oracles, signal metrics and li
 
 ### P10-T21
 
-Validate Phase 8 state restoration, accelerated playback, sample-rate changes, device reconnects, and operation on ordinary two-channel Linux/Windows/macOS output devices without an external surround processor.
+Validate Phase 8 state restoration, accelerated playback, sample-rate changes, device reconnects, and operation on ordinary two-channel Linux/Windows/macOS output devices without an external surround processor. Preserve or deterministically reconstruct Wide-decoder history, HRTF convolution tails, and resampler delay through portable presentation-state caches or bounded audio pre-roll. Validate phase-preserving linked-channel processing or muting during acceleration; prevent stale cues/clicks after load, rewind, skip, or device changes.
 
-Run Phase 8 transition fixtures on ordinary two-channel devices per platform and compare offline/live signal behavior within declared tolerances, with profile/device identities.
+Run Phase 8 transition fixtures on ordinary two-channel devices per platform and compare offline/live signal behavior within declared tolerances, with profile/device identities. Compare continuous and restored offline audio captures from identical logical state, checking linked phase/timing and declared transient/latency tolerances. Require bounded reconstruction before resuming output and no stale cues/clicks.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -4054,6 +4403,12 @@ Run Phase 8 transition fixtures on ordinary two-channel devices per platform and
 | TEST-P10-T21-F06 | Windows two-channel output | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P10-T21-F07 | macOS two-channel output | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P10-T21-F08 | no external processor | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T21-F09 | Wide decoder history | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T21-F10 | HRTF convolution tails | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T21-F11 | resampler delay | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T21-F12 | portable caches or bounded pre-roll | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T21-F13 | phase-preserving linked-channel acceleration or mute | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P10-T21-F14 | load rewind skip and device-switch restoration | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P10-T22
 
@@ -4088,13 +4443,26 @@ Run media/event scenarios to the same logical endpoint with output off and offli
 | TEST-P10-T23-F06 | no device or wall-playback requirement | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P10-T23-F07 | rebuild output history | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
+### P10-T24
+
+Demonstrate integrated Phase 10 acceptance. Pass the first-person gameplay/camera-handoff tests, original/enhanced FMV comparisons, and independently qualified Wide-to-two-channel-headphone signal/listening tests. Verify the new output processors with existing save/rewind/acceleration/skip/device-change services and headless/offline diagnostics. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P10-T24-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P10-T24-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P10-T24-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P10-T24-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
 Exit gate: First-person exploration is playable, camera handoffs work, every enhanced FMV retains an original option, and Wide headphone surround reproduces the verified intended presentation through exactly two channels. These features remain inspectable/testable by agents without forcing real-time simulation or physical audiovisual devices.
 
 ## Phase 11
 
 ### P11-T01
 
-Create a shared editor shell with project management, asset browser, inspectors, console, undo/redo, autosave, and validation.
+Create a shared editor shell with project management, asset browser, inspectors, console, undo/redo, autosave, and validation. Implement and test editor input contexts, text-entry focus and action isolation through the Phase 6 input services.
 
 Create/open/save/recover a project, browse/inspect assets and edit/undo/redo; errors surface in UI and autosave survives interruption without corrupting project data.
 
@@ -4109,6 +4477,7 @@ Create/open/save/recover a project, browse/inspect assets and edit/undo/redo; er
 | TEST-P11-T01-F07 | redo | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P11-T01-F08 | autosave | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P11-T01-F09 | validation | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P11-T01-F10 | editor contexts | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P11-T02
 
@@ -4220,7 +4589,7 @@ Round-trip visual edits and regeneration around custom handwritten nodes; preser
 
 ### P11-T09
 
-Use snapshots and deterministic replay for timeline scrubbing and preview; scrubbing must not duplicate or permanently apply story consequences.
+Use snapshots and deterministic replay for timeline scrubbing and preview; scrubbing must not duplicate or permanently apply story consequences. Verify the Phase 7 Lua persistence contract through actual graphical scrubbing, rather than treating an earlier snapshot test as editor evidence.
 
 Scrub repeatedly across rewards/flags/transitions, branch preview and close/reopen; canonical preview state matches replay and project/game persistent state receives no unintended writes.
 
@@ -4230,6 +4599,7 @@ Scrub repeatedly across rewards/flags/transitions, branch preview and close/reop
 | TEST-P11-T09-F02 | deterministic replay preview | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P11-T09-F03 | no duplicate story consequences | arch-vulkan, windows-d3d12, macos-metal | defined |
 | TEST-P11-T09-F04 | no permanent preview consequences | arch-vulkan, windows-d3d12, macos-metal | defined |
+| TEST-P11-T09-F05 | editor-scrub compatibility | arch-vulkan, windows-d3d12, macos-metal | defined |
 
 ### P11-T10
 
@@ -4288,6 +4658,8 @@ Open and edit a source project through graphical panels and agent commands, rebu
 | TEST-P11-T13-F05 | shared build services | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P11-T13-F06 | persistent source documents | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P11-T13-F07 | persistent history outside disposable UI components | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P11-T13-F08 | graphical exposed-parameter edits | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P11-T13-F09 | shared graphical command contracts | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 ### P11-T14
 
@@ -4362,6 +4734,19 @@ Exercise each enabled tooling extension through its documented services and corr
 | TEST-P11-T17-F06 | no automatic extension execution on gameplay load | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P11-T17-F07 | QML or UI toolkit independent from TypeScript source | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P11-T17-F08 | UI toolkit independent from native runtime | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P11-T18
+
+Demonstrate integrated Phase 11 acceptance. Create and revise a level and branching cutscene through graphical and agent clients, preserve handwritten TypeScript/Lua, verify focus/undo/conflicts/scrubbing, export a package, and play/debug it in the ordinary native runtime. No Phase 12 rules-editor implementation is required for this acceptance. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P11-T18-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P11-T18-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P11-T18-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P11-T18-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 Exit gate: A creator can build or modify a level and branching cutscene, author Lua behavior, export a mod, and play it in a normal game build. The same content can be launched, inspected, and tested headlessly through the native agent interface. Agent-created TypeScript worlds remain editable through supported source/parameter operations, graphical changes preserve custom code, and human/agent revisions share validation and undo semantics.
 
@@ -4540,6 +4925,19 @@ Create and revise an enemy/encounter or minigame from a prompt using generated a
 | TEST-P12-T11-F09 | legal-action evidence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P12-T11-F10 | persistence evidence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P12-T11-F11 | exact source revision evidence | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
+### P12-T12
+
+Demonstrate integrated Phase 12 acceptance. Create the substantially changed battle ruleset and materially redesigned minigame using the graphical tools and Lua, including the procedural-arena agent example. Verify legal native gameplay, state/debug access, persistence, targeted revision and reproducible multi-seed tests without engine rebuilds. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P12-T12-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P12-T12-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P12-T12-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P12-T12-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
 Exit gate: A mod author can make those changes through the graphical tools and Lua without modifying or rebuilding engine C++. Agents can play, inspect, debug, and rapidly test the modified battles/minigames through the same native interface. Prompt-driven creation and targeted revision use the shared TypeScript/Lua pipeline rather than an editor-specific implementation.
 
@@ -4944,14 +5342,27 @@ Reconcile facet-level executed evidence with all source tasks, defaults, platfor
 | TEST-P13-T22-F05 | complete agent-native runtime | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 | TEST-P13-T22-F06 | complete source-authoring pipeline | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
 
+### P13-T23
+
+Demonstrate integrated Phase 13 acceptance. Audit the complete requirement-to-test matrix and every earlier completed phase against release artifacts. Pass declared-platform clean-install/import/defaults, game/agent/authoring/editor/security/performance coverage, source separation and documentation, and record the release evidence without promoting unexecuted tests. Check this task only after every other task in this phase has passed its required verification.
+
+Execute the integrated acceptance described by this task using the phase-owned fixtures/scenarios and declared targets. Link individual facet and acceptance-gate evidence, preserve the original/native versus synthetic-tooling distinction, and reject unsupported, failed, or unexecuted obligations. This final checklist item contains the phase exit proof; no separate early-exit waiver is available.
+
+| Test ID | Required facet | Targets | Result |
+|---|---|---|---|
+| TEST-P13-T23-F01 | all phase deliverables verified together | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P13-T23-F02 | all assigned acceptance gates and regressions | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P13-T23-F03 | evidence-qualified phase goal and exit | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+| TEST-P13-T23-F04 | no unmet checklist or later-phase dependency | arch-vulkan, windows-d3d12, macos-metal, arch-headless, windows-headless, macos-headless | defined |
+
 Exit gate: The complete requirements matrix passes on the declared platforms. Human and agent play, image-free and optional streamed execution, complete debugging/go-anywhere access, and unlocked-speed testing are shipped and documented alongside all audiovisual and editing features. The agentic TypeScript build–play–repair workflow, source-preserving editors, and prebuilt native mod execution are also packaged and verified.
 
 ## Crosscutting sources and default policy
 
 `docs/traceability.json` maps every project boundary, foundational native-agent and
-agent-authoring contract row, selected authoring-stack responsibility, early gate,
+agent-authoring contract row, selected authoring-stack responsibility, completion rule,
 required-feature row, keyboard default, execution rule and release checkpoint to tests.
-`docs/requirement-review.json` binds reviewed source text to facet specifications;
+`docs/requirement-review.json` binds reviewed source text, facets and explicit target scope;
 `docs/requirements-migration.json` preserves the earlier evidence and task mapping.
 `docs/defaults.json` records prescribed defaults and leaves other choices undecided.
 `docs/platforms.json` separates declared target plans from executed platform coverage.

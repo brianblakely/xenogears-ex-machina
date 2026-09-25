@@ -1,4 +1,4 @@
-"""Strict Phase 1 first-slice gate; broad facets and later native gates remain intact."""
+"""Require the complete slice checklist and original proof; no deferred-facet exit."""
 
 from __future__ import annotations
 
@@ -42,9 +42,9 @@ def validate_structure(matrix: dict) -> None:
     require(manifest.get("id") == "SLICE-FOREST-23", "unreviewed slice identity")
     require(manifest["status"] in {"candidate", "reviewed"}, "invalid slice status")
     require(
-        gate.get("requires_all_phase_facets") is False
+        gate.get("requires_all_phase_facets") is True
         and gate.get("requires_reviewed_slice") == MANIFEST,
-        "gate must name the reviewed slice contract",
+        "gate must require every facet and name the reviewed slice contract",
     )
     proofs = indexed(manifest["proofs"], "id", "proof IDs")
     require(
@@ -52,41 +52,20 @@ def validate_structure(matrix: dict) -> None:
         "missing or changed required proof domain",
     )
     dispositions = indexed(manifest["facet_dispositions"], "facet", "facet dispositions")
-    require(dispositions.keys() == facets.keys(), "dropped or unknown broad facet")
+    require(dispositions.keys() == facets.keys(), "dropped or unknown slice facet")
     backlog = indexed(manifest["backlog"], "id", "backlog IDs")
     assigned = set()
     for key, disposition in dispositions.items():
         require(
             facets[key]["targets"] == ["original-reference-analysis"], "analysis target changed"
         )
-        if disposition["disposition"] == "required":
-            references = disposition.get("proofs", [])
-            require(
-                bool(references) and set(references) <= proofs.keys(), "unmapped required facet"
-            )
-            assigned.update(references)
-        else:
-            require(disposition["disposition"] == "deferred", "unknown facet disposition")
-            require(facets[key]["status"] != "passed", "deferred facet cannot be passed")
-            references = disposition.get("backlog", [])
-            require(
-                bool(disposition.get("reason"))
-                and bool(references)
-                and set(references) <= backlog.keys(),
-                "deferred facet lacks tracked rationale",
-            )
-            for reference in references:
-                item = backlog[reference]
-                require(
-                    item["kind"] == "outside_slice"
-                    and item["status"] == "unresolved"
-                    and bool(item["later_facets"])
-                    and all(
-                        key in rows and rows[key]["phase"] not in (0, 1)
-                        for key in item["later_facets"]
-                    ),
-                    "deferred work must remain unresolved and linked to later facets",
-                )
+        require(
+            disposition["disposition"] == "required",
+            "every Phase 1 facet is required; move outside-slice work to Phase 4",
+        )
+        references = disposition.get("proofs", [])
+        require(bool(references) and set(references) <= proofs.keys(), "unmapped required facet")
+        assigned.update(references)
     require(assigned == proofs.keys(), "required proof omitted from facet mapping")
     for item in backlog.values():
         require(
@@ -101,6 +80,12 @@ def validate_structure(matrix: dict) -> None:
             )
         else:
             require(item["kind"] == "outside_slice", "unknown backlog kind")
+            require(
+                item.get("owner_phase") == 4
+                and bool(item.get("later_facets"))
+                and all(key in rows and rows[key]["phase"] == 4 for key in item["later_facets"]),
+                "outside-slice work must remain linked to later facets owned by Phase 4",
+            )
     for proof in proofs.values():
         require(
             proof["status"] in {"defined", "blocked", "failed", "passed"}, "invalid proof status"
@@ -115,7 +100,11 @@ def validate_structure(matrix: dict) -> None:
             )
         else:
             require(bool(proof["open_work"]), "incomplete proof lacks its remaining work")
-    if gate["status"] == "passed" or manifest["status"] == "reviewed":
+    acceptance_passed = any(
+        row["source_id"] == gate.get("completion_task") and row["status"] == "passed"
+        for row in facets.values()
+    )
+    if gate["status"] == "passed" or manifest["status"] == "reviewed" or acceptance_passed:
         require(
             all(p["status"] == "passed" for p in proofs.values()),
             "exit cannot bypass incomplete required proofs",
@@ -189,7 +178,11 @@ def validate_evidence(
         for record in proof["reconstruction"]:
             checked_source(root, record, allowlist)
     gate = next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == 1)
-    if gate["status"] != "passed" and manifest["status"] != "reviewed":
+    acceptance_passed = any(
+        row["source_id"] == gate.get("completion_task") and row["status"] == "passed"
+        for row in matrix["requirements"]
+    )
+    if gate["status"] != "passed" and manifest["status"] != "reviewed" and not acceptance_passed:
         return
     route = manifest["selection"]["frozen_route"]
     checked_source(root, route, allowlist)

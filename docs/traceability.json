@@ -7,7 +7,8 @@
       "tasks": [
         "P00-T08",
         "P01-T04",
-        "P13-T16"
+        "P13-T16",
+        "P04-T01"
       ],
       "status": "defined",
       "evidence": []
@@ -18,7 +19,8 @@
       "tasks": [
         "P00-T05",
         "P01-T08",
-        "P02-T08"
+        "P02-T08",
+        "P04-T04"
       ],
       "status": "defined",
       "evidence": []
@@ -62,8 +64,8 @@
       "source": "**One runtime for humans and agents:** Interactive play, headless agent play, automated tests, and editor previews must use the same simulation, state, rules, loaders, and command handlers. The human UI and agent API are clients of that runtime; headless execution must not substitute a simplified game model or require simulated OS input.",
       "tasks": [
         "P02-T01",
-        "P02-T17",
-        "P04-T13"
+        "P02-T22",
+        "P04-T17"
       ],
       "status": "defined",
       "evidence": []
@@ -73,8 +75,8 @@
       "source": "**Presentation-independent execution:** Logical simulation must run without a window, display server, GPU, physical input device, or audio output device. Optional offscreen rendering and spectator streaming may use a renderer, but neither rendering nor a spectator may govern the simulation clock or be required for agent control.",
       "tasks": [
         "P02-T04",
-        "P02-T28",
-        "P02-T29",
+        "P02-T33",
+        "P02-T34",
         "P13-T06"
       ],
       "status": "defined",
@@ -98,7 +100,8 @@
         "P01-T06",
         "P05-T02",
         "P05-T03",
-        "P05-T12"
+        "P05-T12",
+        "P04-T03"
       ],
       "status": "defined",
       "evidence": []
@@ -110,7 +113,8 @@
         "P01-T07",
         "P10-T12",
         "P10-T15",
-        "P13-T10"
+        "P13-T10",
+        "P04-T03"
       ],
       "status": "defined",
       "evidence": []
@@ -122,8 +126,8 @@
         "P00-T14",
         "P02A-T04",
         "P02A-T08",
-        "P02A-T22",
-        "P02A-T25",
+        "P02A-T20",
+        "P07-T19",
         "P13-T19"
       ],
       "status": "defined",
@@ -135,7 +139,7 @@
       "tasks": [
         "P02A-T02",
         "P02A-T03",
-        "P02A-T30",
+        "P02A-T25",
         "P11-T13",
         "P11-T14",
         "P11-T15"
@@ -169,7 +173,8 @@
         "P00-T08",
         "P01-T04",
         "P02-T08",
-        "P13-T16"
+        "P13-T16",
+        "P04-T01"
       ],
       "status": "defined",
       "evidence": []
@@ -197,9 +202,9 @@
       ],
       "tasks": [
         "P00-T12",
-        "P02-T15",
+        "P02-T20",
         "P03-T09",
-        "P04-T13"
+        "P04-T17"
       ],
       "status": "defined",
       "evidence": []
@@ -212,7 +217,7 @@
       ],
       "tasks": [
         "P02-T04",
-        "P02-T42",
+        "P02-T47",
         "P13-T06"
       ],
       "status": "defined",
@@ -225,8 +230,8 @@
         "2–4, 6–7, 13"
       ],
       "tasks": [
-        "P02-T16",
-        "P02-T17",
+        "P02-T21",
+        "P02-T22",
         "P06-T13"
       ],
       "status": "defined",
@@ -240,8 +245,8 @@
       ],
       "tasks": [
         "P00-T12",
-        "P02-T20",
-        "P02-T22",
+        "P02-T25",
+        "P02-T27",
         "P07-T13"
       ],
       "status": "defined",
@@ -254,10 +259,10 @@
         "2–4, 7–8, 11–13"
       ],
       "tasks": [
-        "P02-T30",
-        "P02-T31",
-        "P02-T32",
-        "P02-T33"
+        "P02-T35",
+        "P02-T36",
+        "P02-T37",
+        "P02-T38"
       ],
       "status": "defined",
       "evidence": []
@@ -270,9 +275,9 @@
       ],
       "tasks": [
         "P00-T13",
-        "P02-T34",
-        "P02-T36",
-        "P04-T13"
+        "P02-T39",
+        "P02-T41",
+        "P04-T17"
       ],
       "status": "defined",
       "evidence": []
@@ -284,10 +289,10 @@
         "2–4, 8–10, 12–13"
       ],
       "tasks": [
-        "P02-T26",
-        "P02-T27",
-        "P02-T28",
-        "P02-T29"
+        "P02-T31",
+        "P02-T32",
+        "P02-T33",
+        "P02-T34"
       ],
       "status": "defined",
       "evidence": []
@@ -299,10 +304,10 @@
         "2–3, 5, 10–13"
       ],
       "tasks": [
-        "P02-T42",
-        "P02-T43",
-        "P02-T44",
-        "P02-T45"
+        "P02-T47",
+        "P02-T48",
+        "P02-T49",
+        "P02-T50"
       ],
       "status": "defined",
       "evidence": []
@@ -315,7 +320,7 @@
       ],
       "tasks": [
         "P02-T01",
-        "P02-T17",
+        "P02-T22",
         "P11-T12"
       ],
       "status": "defined",
@@ -329,12 +334,12 @@
       ],
       "tasks": [
         "P00-T14",
-        "P02A-T29",
-        "P02A-T35",
-        "P02A-T37",
-        "P02A-T38",
-        "P02A-T39",
-        "P07-T18",
+        "P02A-T24",
+        "P02A-T30",
+        "P02A-T32",
+        "P02A-T33",
+        "P02A-T34",
+        "P07-T26",
         "P13-T21"
       ],
       "status": "defined",
@@ -349,10 +354,10 @@
       "tasks": [
         "P02A-T01",
         "P02A-T12",
-        "P02A-T14",
-        "P02A-T36",
+        "P07-T17",
+        "P02A-T31",
         "P03-T12",
-        "P07-T15",
+        "P07-T23",
         "P11-T13"
       ],
       "status": "defined",
@@ -368,7 +373,7 @@
         "P02A-T05",
         "P02A-T12",
         "P02A-T13",
-        "P02A-T15",
+        "P07-T18",
         "P05-T17",
         "P11-T16",
         "P13-T20"
@@ -380,7 +385,7 @@
       "id": "FEATURE-AUTHORING-04",
       "source_row": [
         "Explicit source → Node build → intermediate representation → GLB/world/collision/events → C++ native-loader bridge",
-        "2–3, 2A, 7, 13"
+        "2, 2A, 3, 7, 13"
       ],
       "tasks": [
         "P02-T14",
@@ -403,10 +408,10 @@
       ],
       "tasks": [
         "P02A-T08",
-        "P02A-T22",
-        "P02A-T25",
+        "P02A-T20",
         "P07-T19",
-        "P08-T14",
+        "P07-T27",
+        "P08-T13",
         "P13-T19"
       ],
       "status": "defined",
@@ -420,14 +425,14 @@
       ],
       "tasks": [
         "P00-T14",
+        "P02A-T22",
+        "P02A-T23",
+        "P02A-T24",
+        "P02A-T25",
+        "P02A-T26",
         "P02A-T27",
         "P02A-T28",
-        "P02A-T29",
-        "P02A-T30",
-        "P02A-T31",
-        "P02A-T32",
-        "P02A-T33",
-        "P07-T15",
+        "P07-T23",
         "P11-T15",
         "P13-T20"
       ],
@@ -442,11 +447,11 @@
       ],
       "tasks": [
         "P02A-T03",
-        "P02A-T30",
-        "P02A-T38",
-        "P02A-T39",
+        "P02A-T25",
+        "P02A-T33",
+        "P02A-T34",
         "P03-T12",
-        "P07-T18",
+        "P07-T26",
         "P11-T14",
         "P11-T15",
         "P12-T11",
@@ -511,7 +516,8 @@
         "P05-T03",
         "P05-T04",
         "P05-T05",
-        "P13-T15"
+        "P13-T15",
+        "P04-T03"
       ],
       "status": "defined",
       "evidence": []
@@ -580,11 +586,11 @@
         "2–3, 7–8"
       ],
       "tasks": [
-        "P02-T30",
+        "P02-T35",
         "P08-T01",
         "P08-T05",
         "P08-T07",
-        "P08-T12"
+        "P08-T11"
       ],
       "status": "defined",
       "evidence": []
@@ -707,8 +713,8 @@
       "tasks": [
         "P01-T07",
         "P02-T07",
-        "P04-T08",
-        "P08-T10",
+        "P04-T12",
+        "P10-T21",
         "P10-T12",
         "P10-T13",
         "P10-T14",
@@ -718,8 +724,8 @@
         "P10-T18",
         "P10-T19",
         "P10-T20",
-        "P10-T21",
-        "P13-T10"
+        "P13-T10",
+        "P04-T03"
       ],
       "status": "defined",
       "evidence": []
@@ -731,7 +737,7 @@
         "4, 10, 13"
       ],
       "tasks": [
-        "P04-T08",
+        "P04-T12",
         "P10-T16"
       ],
       "status": "defined",
@@ -900,7 +906,7 @@
       "id": "DEFAULT-09",
       "source_row": [
         "Toggle first-person mode",
-        "V"
+        "V (reserved here; activated and tested in Phase 10)"
       ],
       "facets": [
         "P06-T04-F01",
@@ -919,21 +925,60 @@
       "status": "passed",
       "evidence": [
         "VERIFY-PHASE0-AUTHORING-FOUNDATION"
-      ]
+      ],
+      "requires_previous_phase": null,
+      "tasks": [
+        "P00-T01",
+        "P00-T02",
+        "P00-T03",
+        "P00-T04",
+        "P00-T05",
+        "P00-T06",
+        "P00-T07",
+        "P00-T08",
+        "P00-T09",
+        "P00-T10",
+        "P00-T11",
+        "P00-T12",
+        "P00-T13",
+        "P00-T14"
+      ],
+      "goal": "Define a new project's scope and workflow without selecting another project's codebase."
     },
     {
       "id": "P01-EXIT",
-      "source": "The code, formats, scripts, and behavior required for the first playable slice are independently documented and validated, including its agent-visible state and scenario-entry semantics, with a tracked backlog for the rest of the game.",
+      "source": "Every Phase 1 checkbox is checked: the frozen slice has reviewed reusable source, qualified original comparisons for all nine proof domains, a frozen route and independent acceptance review, and no unresolved required path. The whole-game remainder is explicitly assigned to Phase 4; it is not unfinished Phase 1 checklist work.",
       "phase": 1,
-      "requires_all_phase_facets": false,
+      "requires_all_phase_facets": true,
       "status": "defined",
       "evidence": [],
       "requires_reviewed_slice": "analysis/slices/forest23.json",
-      "scope": "Nine mandatory first-slice original-analysis proof domains; every broad facet accounted for and deferred facets remain unpassed. Other phase/native gates are unchanged."
+      "requires_previous_phase": "P00",
+      "tasks": [
+        "P01-T01",
+        "P01-T02",
+        "P01-T03",
+        "P01-T04",
+        "P01-T05",
+        "P01-T06",
+        "P01-T07",
+        "P01-T08",
+        "P01-T09",
+        "P01-T10",
+        "P01-T11",
+        "P01-T12",
+        "P01-T13",
+        "P01-T14",
+        "P01-T15",
+        "P01-T16"
+      ],
+      "completion_task": "P01-T16",
+      "scope": "Every slice-scoped checklist facet and all nine original proof domains are required. Outside-slice obligations are Phase 4 work, never deferred Phase 1 facets.",
+      "goal": "Deliver readable, reusable, independently recovered source and validated original-game evidence for the complete first playable slice, ready for native implementation in Phase 2. This is a bounded source-reconstruction milestone, not completion of both discs' decompilation."
     },
     {
       "id": "P02-EXIT",
-      "source": "The new runtime independently imports original assets and supports direct agent commands, full structured state access, exact stepping and unthrottled execution, debug snapshots/breakpoints, and valid scenario launch for its implemented systems. The same session runs image-free without a display/GPU/audio device or with an optional offscreen spectator stream. Identical actions produce equivalent authoritative state across those modes. These capabilities must exist before Phase 3 is declared complete.",
+      "source": "Every Phase 2 checkbox is checked. The native minimum field/event/inventory/save-load services and all assigned agent architecture gates work before Phase 2A begins: qualified import, direct input, complete implemented-state queries, exact/unthrottled time, snapshots, debugging, typed setup, and optional spectator images. The same actions yield equivalent authoritative state with or without presentation; no later gameplay, Lua, authoring, or Wide/HRTF implementation is needed to pass this phase.",
       "phase": 2,
       "requires_all_phase_facets": true,
       "status": "defined",
@@ -950,21 +995,71 @@
         "GATE-SCENARIO",
         "GATE-SPECTATOR",
         "GATE-ARTIFACTS"
-      ]
+      ],
+      "requires_previous_phase": "P01",
+      "tasks": [
+        "P02-T01",
+        "P02-T02",
+        "P02-T03",
+        "P02-T04",
+        "P02-T05",
+        "P02-T06",
+        "P02-T07",
+        "P02-T08",
+        "P02-T09",
+        "P02-T10",
+        "P02-T11",
+        "P02-T12",
+        "P02-T13",
+        "P02-T14",
+        "P02-T15",
+        "P02-T16",
+        "P02-T17",
+        "P02-T18",
+        "P02-T19",
+        "P02-T20",
+        "P02-T21",
+        "P02-T22",
+        "P02-T23",
+        "P02-T24",
+        "P02-T25",
+        "P02-T26",
+        "P02-T27",
+        "P02-T28",
+        "P02-T29",
+        "P02-T30",
+        "P02-T31",
+        "P02-T32",
+        "P02-T33",
+        "P02-T34",
+        "P02-T35",
+        "P02-T36",
+        "P02-T37",
+        "P02-T38",
+        "P02-T39",
+        "P02-T40",
+        "P02-T41",
+        "P02-T42",
+        "P02-T43",
+        "P02-T44",
+        "P02-T45",
+        "P02-T46",
+        "P02-T47",
+        "P02-T48",
+        "P02-T49",
+        "P02-T50",
+        "P02-T51",
+        "P02-T52",
+        "P02-T53"
+      ],
+      "completion_task": "P02-T53",
+      "goal": "Deliver one working native runtime foundation, including the shared field, interaction, event, persistence, and presentation services required by Phase 2A, with direct agent control, complete introspection of implemented state, debugging, and independent simulation time."
     },
     {
-      "id": "P03-EXIT",
-      "source": "Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention. The Phase 2A source-to-playable early gate also passes before broad expansion.",
-      "phase": 3,
-      "requires_all_phase_facets": true,
+      "id": "P02A-EXIT",
+      "phase": "2A",
       "status": "defined",
       "evidence": [],
-      "requires_agent_gates": [
-        "GATE-FIRST-SLICE"
-      ],
-      "requires_early_exits": [
-        "P02A-EARLY-EXIT"
-      ],
       "requires_authoring_gates": [
         "AUTHOR-BUILD",
         "AUTHOR-ISOLATION",
@@ -978,40 +1073,11 @@
         "AUTHOR-REVISION",
         "AUTHOR-EVENT-STATE",
         "AUTHOR-DELIVERY"
-      ]
-    },
-    {
-      "id": "P04-EXIT",
-      "source": "Both discs and optional activities are playable from beginning to end, with no known progression-blocking gaps. All game systems are accessible through the foundational agent/debug interface and valid native go-anywhere setup; no gameplay subsystem requires a desktop UI or real-time pacing.",
-      "phase": 4,
+      ],
+      "source": "Every Phase 2A checkbox and bridge acceptance gate passes before Phase 3 begins. Both the generated-only two-room environment and the mixed-asset variant build, load, play legally, save/restore, and survive source-aware diagnosis, repair, and targeted revision in the native runtime. Delivery includes preserved source, immutable packages and exact test provenance; prebuilt headless play requires neither an authoring runtime nor a GPU. No broader SDK work remains on this phase checklist.",
       "requires_all_phase_facets": true,
-      "status": "defined",
-      "evidence": []
-    },
-    {
-      "id": "P05-EXIT",
-      "source": "Recorded gameplay reaches equivalent authoritative state across resolutions, aspect ratios, framerates, backends, visual profiles, and render-disabled execution. Modern is the default; supported PS1 quirks are selectable and validated, including in agent spectator images.",
-      "phase": 5,
-      "requires_all_phase_facets": true,
-      "status": "defined",
-      "evidence": []
-    },
-    {
-      "id": "P06-EXIT",
-      "source": "The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel. Agents can invoke the equivalent validated engine actions directly without any synthesized OS/SDL input.",
-      "phase": 6,
-      "requires_all_phase_facets": true,
-      "status": "defined",
-      "evidence": []
-    },
-    {
-      "id": "P07-EXIT",
-      "source": "All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed. The expanded Phase 2A workflow produces and revises a source-authored town/dungeon mod, including real generated geometry and tested gameplay, without engine C++ changes or GUI automation.",
-      "phase": 7,
-      "requires_all_phase_facets": true,
-      "status": "defined",
-      "evidence": [],
-      "requires_task_facets": [
+      "requires_previous_phase": "P02",
+      "tasks": [
         "P02A-T01",
         "P02A-T02",
         "P02A-T03",
@@ -1047,13 +1113,152 @@
         "P02A-T33",
         "P02A-T34",
         "P02A-T35",
-        "P02A-T36",
-        "P02A-T37",
-        "P02A-T38",
-        "P02A-T39",
-        "P02A-T40",
-        "P02A-T41"
+        "P02A-T36"
       ],
+      "completion_task": "P02A-T36",
+      "goal": "Deliver a complete two-room source-to-playable authoring bridge: an ordinary coding agent generates actual geometry and interactions, builds an immutable native package, plays it, diagnoses a failure, repairs the source, and delivers a targeted revision without per-mod engine C++ changes or GUI automation."
+    },
+    {
+      "id": "P03-EXIT",
+      "source": "Field exploration → dialogue/cutscene → battle → reward → menu → save/load works natively on Arch under human input and direct headless agent control. The agent run requires no desktop/display/GPU/audio device in image-free mode, offers optional spectator images, and executes without real-time throttling or emulator execution. Debug/setup capabilities are demonstrated; ordinary slice progression needs no corrective debug intervention. The already-completed Phase 2A bridge remains passing as an integration regression; every Phase 3 checkbox is checked before Phase 4 begins.",
+      "phase": 3,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": [],
+      "requires_agent_gates": [
+        "GATE-FIRST-SLICE"
+      ],
+      "requires_authoring_gates": [
+        "AUTHOR-BUILD",
+        "AUTHOR-ISOLATION",
+        "AUTHOR-PACKAGE",
+        "AUTHOR-GEOMETRY",
+        "AUTHOR-MINIMAL",
+        "AUTHOR-TWO-ROOM",
+        "AUTHOR-MIXED-ASSETS",
+        "AUTHOR-PLAY",
+        "AUTHOR-REPAIR",
+        "AUTHOR-REVISION",
+        "AUTHOR-EVENT-STATE",
+        "AUTHOR-DELIVERY"
+      ],
+      "requires_previous_phase": "P02A",
+      "tasks": [
+        "P03-T01",
+        "P03-T02",
+        "P03-T03",
+        "P03-T04",
+        "P03-T05",
+        "P03-T06",
+        "P03-T07",
+        "P03-T08",
+        "P03-T09",
+        "P03-T10",
+        "P03-T11",
+        "P03-T12",
+        "P03-T13"
+      ],
+      "completion_task": "P03-T13",
+      "goal": "Prove the full pipeline from original-game evidence to native gameplay, including foundational agent play rather than only human-visible output."
+    },
+    {
+      "id": "P04-EXIT",
+      "source": "Every Phase 4 checkbox is checked: all declared original systems, both discs, optional activities, ordinary saves, failure/retry paths, and transitions are recovered, implemented, and validated, with no known progression-blocking or required-system gaps. Continuous unmodified playthrough evidence and targeted coverage remain distinct. Every gameplay system has complete headless actions, state/debug access, valid go-anywhere setup, and unlocked execution.",
+      "phase": 4,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": [],
+      "requires_previous_phase": "P03",
+      "tasks": [
+        "P04-T01",
+        "P04-T02",
+        "P04-T03",
+        "P04-T04",
+        "P04-T05",
+        "P04-T06",
+        "P04-T07",
+        "P04-T08",
+        "P04-T09",
+        "P04-T10",
+        "P04-T11",
+        "P04-T12",
+        "P04-T13",
+        "P04-T14",
+        "P04-T15",
+        "P04-T16",
+        "P04-T17",
+        "P04-T18",
+        "P04-T19"
+      ],
+      "completion_task": "P04-T19",
+      "goal": "Complete the remaining independent recovery and native integration of both discs and every original gameplay system, using the source and services proved by Phases 1–3. Deliver complete human/agent gameplay coverage, not only a route to the ending."
+    },
+    {
+      "id": "P05-EXIT",
+      "source": "Every Phase 5 checkbox is checked: all listed resolution/aspect-ratio/framerate, filtering/culling, backend, and visual-profile features work, and reference captures validate their intended presentation. Recorded gameplay reaches equivalent authoritative state across those configurations and render-disabled execution. Modern remains the default; optional PS1 quirks and spectator output are visually validated, not inferred correct from matching state hashes.",
+      "phase": 5,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": [],
+      "requires_previous_phase": "P04",
+      "tasks": [
+        "P05-T01",
+        "P05-T02",
+        "P05-T03",
+        "P05-T04",
+        "P05-T05",
+        "P05-T06",
+        "P05-T07",
+        "P05-T08",
+        "P05-T09",
+        "P05-T10",
+        "P05-T11",
+        "P05-T12",
+        "P05-T13",
+        "P05-T14",
+        "P05-T15",
+        "P05-T16",
+        "P05-T17",
+        "P05-T18"
+      ],
+      "completion_task": "P05-T18",
+      "goal": "Deliver modern rendering by default while preserving PS1 rendering quirks as optional, independently configurable presentation features."
+    },
+    {
+      "id": "P06-EXIT",
+      "source": "The entire game is operable without a controller, every player-facing menu has appropriate mouse support, and every scrollable menu responds correctly to the wheel. Agents can invoke the equivalent validated engine actions directly without any synthesized OS/SDL input.",
+      "phase": 6,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": [],
+      "requires_previous_phase": "P05",
+      "tasks": [
+        "P06-T01",
+        "P06-T02",
+        "P06-T03",
+        "P06-T04",
+        "P06-T05",
+        "P06-T06",
+        "P06-T07",
+        "P06-T08",
+        "P06-T09",
+        "P06-T10",
+        "P06-T11",
+        "P06-T12",
+        "P06-T13",
+        "P06-T14",
+        "P06-T15"
+      ],
+      "completion_task": "P06-T15",
+      "goal": "Make the full game usable as a native PC application while keeping human input and foundational direct agent input on the same engine command layer."
+    },
+    {
+      "id": "P07-EXIT",
+      "source": "All four example mods run, their state survives save/restore, they remain playable/debuggable headlessly, and the unmodified base game runs with no third-party mod installed. The expanded SDK completed in this phase produces and revises a source-authored town/dungeon mod, including real generated geometry and tested gameplay, without engine C++ changes or GUI automation.",
+      "phase": 7,
+      "requires_all_phase_facets": true,
+      "status": "defined",
+      "evidence": [],
       "requires_authoring_gates": [
         "AUTHOR-BUILD",
         "AUTHOR-ISOLATION",
@@ -1068,7 +1273,40 @@
         "AUTHOR-EVENT-STATE",
         "AUTHOR-DELIVERY",
         "AUTHOR-TOWN"
-      ]
+      ],
+      "requires_previous_phase": "P06",
+      "tasks": [
+        "P07-T01",
+        "P07-T02",
+        "P07-T03",
+        "P07-T04",
+        "P07-T05",
+        "P07-T06",
+        "P07-T07",
+        "P07-T08",
+        "P07-T09",
+        "P07-T10",
+        "P07-T11",
+        "P07-T12",
+        "P07-T13",
+        "P07-T14",
+        "P07-T15",
+        "P07-T16",
+        "P07-T17",
+        "P07-T18",
+        "P07-T19",
+        "P07-T20",
+        "P07-T21",
+        "P07-T22",
+        "P07-T23",
+        "P07-T24",
+        "P07-T25",
+        "P07-T26",
+        "P07-T27",
+        "P07-T28"
+      ],
+      "completion_task": "P07-T28",
+      "goal": "Deliver the complete mod/Lua framework and expanded prompt-driven content SDK on the finished base game and Phase 2A bridge, without weakening deterministic state or debug visibility. Graphical clients follow in Phases 11–12."
     },
     {
       "id": "P08-EXIT",
@@ -1076,7 +1314,26 @@
       "phase": 8,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_previous_phase": "P07",
+      "tasks": [
+        "P08-T01",
+        "P08-T02",
+        "P08-T03",
+        "P08-T04",
+        "P08-T05",
+        "P08-T06",
+        "P08-T07",
+        "P08-T08",
+        "P08-T09",
+        "P08-T10",
+        "P08-T11",
+        "P08-T12",
+        "P08-T13",
+        "P08-T14"
+      ],
+      "completion_task": "P08-T14",
+      "goal": "Build player-facing time-control features on the snapshots and agent-controlled scheduler already required in Phase 2, not postpone those foundational facilities until this phase."
     },
     {
       "id": "P09-EXIT",
@@ -1084,7 +1341,31 @@
       "phase": 9,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_previous_phase": "P08",
+      "tasks": [
+        "P09-T01",
+        "P09-T02",
+        "P09-T03",
+        "P09-T04",
+        "P09-T05",
+        "P09-T06",
+        "P09-T07",
+        "P09-T08",
+        "P09-T09",
+        "P09-T10",
+        "P09-T11",
+        "P09-T12",
+        "P09-T13",
+        "P09-T14",
+        "P09-T15",
+        "P09-T16",
+        "P09-T17",
+        "P09-T18",
+        "P09-T19"
+      ],
+      "completion_task": "P09-T19",
+      "goal": "Independently implement the requested convenience features without basing the project on a preexisting mod."
     },
     {
       "id": "P10-EXIT",
@@ -1092,7 +1373,36 @@
       "phase": 10,
       "requires_all_phase_facets": true,
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "requires_previous_phase": "P09",
+      "tasks": [
+        "P10-T01",
+        "P10-T02",
+        "P10-T03",
+        "P10-T04",
+        "P10-T05",
+        "P10-T06",
+        "P10-T07",
+        "P10-T08",
+        "P10-T09",
+        "P10-T10",
+        "P10-T11",
+        "P10-T12",
+        "P10-T13",
+        "P10-T14",
+        "P10-T15",
+        "P10-T16",
+        "P10-T17",
+        "P10-T18",
+        "P10-T19",
+        "P10-T20",
+        "P10-T21",
+        "P10-T22",
+        "P10-T23",
+        "P10-T24"
+      ],
+      "completion_task": "P10-T24",
+      "goal": "Deliver the requested camera and audiovisual options, including two-channel headphone surround faithful to the verified intent of the original Wide mode."
     },
     {
       "id": "P11-EXIT",
@@ -1102,8 +1412,31 @@
       "status": "defined",
       "evidence": [],
       "requires_authoring_gates": [
-        "AUTHOR-EDITORS"
-      ]
+        "AUTHOR-LEVEL-EDITORS"
+      ],
+      "requires_previous_phase": "P10",
+      "tasks": [
+        "P11-T01",
+        "P11-T02",
+        "P11-T03",
+        "P11-T04",
+        "P11-T05",
+        "P11-T06",
+        "P11-T07",
+        "P11-T08",
+        "P11-T09",
+        "P11-T10",
+        "P11-T11",
+        "P11-T12",
+        "P11-T13",
+        "P11-T14",
+        "P11-T15",
+        "P11-T16",
+        "P11-T17",
+        "P11-T18"
+      ],
+      "completion_task": "P11-T18",
+      "goal": "Author and inspect content using the same independently built runtime and foundational agent/debug services as the game. Build graphical clients over the Phase 2A/7 authoring pipeline rather than introducing a competing project format or editor-only operations."
     },
     {
       "id": "P12-EXIT",
@@ -1113,8 +1446,25 @@
       "status": "defined",
       "evidence": [],
       "requires_authoring_gates": [
-        "AUTHOR-EDITORS"
-      ]
+        "AUTHOR-RULE-EDITORS"
+      ],
+      "requires_previous_phase": "P11",
+      "tasks": [
+        "P12-T01",
+        "P12-T02",
+        "P12-T03",
+        "P12-T04",
+        "P12-T05",
+        "P12-T06",
+        "P12-T07",
+        "P12-T08",
+        "P12-T09",
+        "P12-T10",
+        "P12-T11",
+        "P12-T12"
+      ],
+      "completion_task": "P12-T12",
+      "goal": "Enable substantial rules changes, not just texture replacements or numerical table edits."
     },
     {
       "id": "P13-EXIT",
@@ -1137,8 +1487,37 @@
         "AUTHOR-EVENT-STATE",
         "AUTHOR-DELIVERY",
         "AUTHOR-TOWN",
-        "AUTHOR-EDITORS"
-      ]
+        "AUTHOR-LEVEL-EDITORS",
+        "AUTHOR-RULE-EDITORS"
+      ],
+      "requires_previous_phase": "P12",
+      "tasks": [
+        "P13-T01",
+        "P13-T02",
+        "P13-T03",
+        "P13-T04",
+        "P13-T05",
+        "P13-T06",
+        "P13-T07",
+        "P13-T08",
+        "P13-T09",
+        "P13-T10",
+        "P13-T11",
+        "P13-T12",
+        "P13-T13",
+        "P13-T14",
+        "P13-T15",
+        "P13-T16",
+        "P13-T17",
+        "P13-T18",
+        "P13-T19",
+        "P13-T20",
+        "P13-T21",
+        "P13-T22",
+        "P13-T23"
+      ],
+      "completion_task": "P13-T23",
+      "goal": "Validate and ship the complete feature set, including the first-class agent interface, led by Arch Linux."
     }
   ],
   "release_checkpoints": [
@@ -1146,7 +1525,7 @@
       "id": "RELEASE-01",
       "source_row": [
         "Research/tooling baseline",
-        "Phases 0–2 provide independently imported original content and a serializable native runtime with direct agent commands, full introspection, debug/scenario control, exact stepping/unlocked execution, and optional spectator images for implemented systems."
+        "Phases 0 → 1 → 2 are complete: qualified first-slice source/evidence and a working native minimum field/event/persistence runtime with direct agent control, full implemented-state access, debugging, exact/unlocked time, and optional spectator images."
       ],
       "required_phases": [
         0,
@@ -1158,36 +1537,37 @@
       "evidence": []
     },
     {
-      "id": "RELEASE-02",
-      "source_row": [
-        "Engineering preview",
-        "Phase 3: the same field/event/battle/save-load slice runs under human control and a direct headless agent on Arch, with debug demonstrations, no-image operation, optional live images, and no required real-time pacing. The Phase 2A early source-to-playable bridge passes separately alongside it."
-      ],
-      "required_phases": [
-        3
-      ],
-      "requires_phase_exit_evidence": true,
-      "status": "defined",
-      "evidence": [],
-      "required_early_exits": [
-        "P02A-EARLY-EXIT"
-      ]
-    },
-    {
       "id": "RELEASE-AUTHORING-PREVIEW",
       "source_row": [
         "Agent-authoring preview",
-        "Phases 2A–3: TypeScript generates actual two-room geometry and interactive content, exports a versioned package, and an agent plays, diagnoses, repairs, and revises it through the native runtime without engine edits or GUI automation. Not a substitute for original-game fidelity."
+        "Phase 2A is complete: TypeScript generates the two-room environment and custom object, builds a native package, and an agent legally plays, diagnoses, repairs and revises it with preserved source and exact provenance. No Phase 2A checklist work remains open."
       ],
       "required_phases": [
+        0,
+        1,
+        2,
+        "2A"
+      ],
+      "requires_phase_exit_evidence": true,
+      "status": "defined",
+      "evidence": []
+    },
+    {
+      "id": "RELEASE-02",
+      "source_row": [
+        "Engineering preview",
+        "Phase 3 is complete: the frozen original field/event/battle/menu/save-load/media slice runs under human and direct headless agent control on Arch, with independent original evidence, debugging, optional images, unlocked time, and regression of the completed authoring bridge."
+      ],
+      "required_phases": [
+        0,
+        1,
+        2,
+        "2A",
         3
       ],
       "requires_phase_exit_evidence": true,
       "status": "defined",
-      "evidence": [],
-      "required_early_exits": [
-        "P02A-EARLY-EXIT"
-      ]
+      "evidence": []
     },
     {
       "id": "RELEASE-03",
@@ -1196,6 +1576,11 @@
         "Phase 4 completes both discs and full agent/debug/go-anywhere coverage; Phases 5–6 provide modern-default rendering, optional PS1 quirks, and complete physical PC controls alongside the direct agent API."
       ],
       "required_phases": [
+        0,
+        1,
+        2,
+        "2A",
+        3,
         4,
         5,
         6
@@ -1208,9 +1593,17 @@
       "id": "RELEASE-04",
       "source_row": [
         "Feature-complete runtime beta",
-        "Phases 7–10 provide agent-compatible Lua mods, the expanded Phase 2A prompt-authored town/dungeon workflow, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround."
+        "Phases 7–10 provide agent-compatible Lua mods, the Phase 7 expanded SDK and prompt-authored town/dungeon workflow, player save states/rewind/fast forward, optional gameplay changes, safe skipping, first-person mode, enhanced/original FMVs, and verified Wide-decoded two-channel headphone surround."
       ],
       "required_phases": [
+        0,
+        1,
+        2,
+        "2A",
+        3,
+        4,
+        5,
+        6,
         7,
         8,
         9,
@@ -1227,6 +1620,18 @@
         "Phases 11–12 provide graphical level, cutscene, battle-system, and minigame editing through the shared TypeScript content pipeline, native runtime/Lua, and existing agent/debug services, with source-preserving revisions, unlocked headless testing, and optional human observation."
       ],
       "required_phases": [
+        0,
+        1,
+        2,
+        "2A",
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
         11,
         12
       ],
@@ -1244,6 +1649,7 @@
         0,
         1,
         2,
+        "2A",
         3,
         4,
         5,
@@ -1258,32 +1664,51 @@
       ],
       "requires_phase_exit_evidence": true,
       "status": "defined",
-      "evidence": [],
-      "required_early_exits": [
-        "P02A-EARLY-EXIT"
-      ]
+      "evidence": []
     }
   ],
   "execution_rules": [
     {
+      "id": "RULE-SEQUENTIAL",
+      "source": "**Execution rule:** Complete phases in this exact order: **0 → 1 → 2 → 2A → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13**. Do not begin a later phase until every checkbox in the preceding phase is satisfied, verified, and checked. Work within the active phase may be divided into bounded tasks, but work from different phases does not run in parallel.",
+      "tasks": [
+        "P01-T16",
+        "P02-T53",
+        "P02A-T36",
+        "P03-T13",
+        "P04-T19",
+        "P05-T18",
+        "P06-T15",
+        "P07-T28",
+        "P08-T14",
+        "P09-T19",
+        "P10-T24",
+        "P11-T18",
+        "P12-T12",
+        "P13-T23"
+      ],
+      "status": "defined",
+      "evidence": []
+    },
+    {
       "id": "EXECUTION-01",
-      "source": "**Execution rule:** Continue this analysis throughout development. Do not wait for a complete decompilation of both discs before implementing an understood subsystem.",
+      "source": "**Execution rule:** Finish and verify the entire Phase 1 checklist before starting Phase 2. Phase 4 performs the remaining whole-game recovery using this source and evidence; no Phase 1 exit exception or overlapping implementation is permitted.",
       "status": "defined",
       "evidence": [],
       "procedure": "Audit phase handoffs: agent services and their first-slice demonstration precede broad game expansion; later parallel subsystem development cannot bypass complete-game or headless gates."
     },
     {
       "id": "EXECUTION-AUTHORING",
-      "source": "**Ordering:** Start alongside Phase 2 as understood native services become available. The early bridge gate below is required for Phase 3; the broader authoring SDK, geometry vocabulary, and agent workflow continue through Phase 7, with graphical clients in Phases 11–12. Do not wait for both discs or the complete editor suite to prove source-to-playable content. Authored test scenes do not replace original-game behavioral evidence.",
+      "source": "**Ordering:** Start only after every Phase 2 checkbox is checked. Complete every Phase 2A checkbox before Phase 3 begins. This phase uses ordinary TypeScript, the established native services, and the finite geometry/interaction scope below. Phase 7 owns TSX, the broader SDK/component catalog, Lua authoring and the town/dungeon workflow; Phases 11–12 own graphical clients. Authored tests prove the bridge, never original-game fidelity.",
       "tasks": [
         "P02-T14",
-        "P02A-T35",
-        "P02A-T36",
-        "P02A-T37",
-        "P02A-T38",
-        "P02A-T39",
+        "P02A-T30",
+        "P02A-T31",
+        "P02A-T32",
+        "P02A-T33",
+        "P02A-T34",
         "P03-T12",
-        "P07-T15",
+        "P07-T23",
         "P11-T13"
       ],
       "procedure": "Audit separate original-fidelity and source-to-playable evidence; the Arch early bridge precedes broad expansion while full SDK and graphical work retain their later gates. Authored tests cannot pass original-game fidelity requirements.",
@@ -1292,7 +1717,7 @@
     },
     {
       "id": "EXECUTION-02",
-      "source": "**Parallelization:** After Phase 3, rendering, human input, and mod infrastructure may advance alongside this phase. The agent interface is already required, not a parallel task that can be deferred. Complete-game validation remains mandatory before the playable PC alpha checkpoint.",
+      "source": "**Ordering:** Finish every Phase 4 recovery, implementation, and acceptance checkbox before starting Phase 5. Rendering enhancements, complete PC-control polish, and mod-framework work remain in Phases 5–7, respectively; the existing agent interface must already cover every completed original subsystem.",
       "status": "defined",
       "evidence": [],
       "procedure": "Audit phase handoffs: agent services and their first-slice demonstration precede broad game expansion; later parallel subsystem development cannot bypass complete-game or headless gates."
@@ -1318,9 +1743,9 @@
         "Agents can play every implemented field, battle, menu, cutscene interaction, world-map activity, and minigame through the actual native runtime. No separate mock simulation or screenshot-driven UI automation is required."
       ],
       "tasks": [
-        "P02-T17",
-        "P04-T13",
-        "P04-T14"
+        "P02-T22",
+        "P04-T17",
+        "P04-T18"
       ],
       "status": "defined",
       "evidence": []
@@ -1332,8 +1757,8 @@
         "Accept typed gameplay actions and commands at the engine boundary, including analog/directional state, held/released actions, menu selections, dialogue choices, and battle commands. Do not inject keyboard/mouse/controller events into the OS, synthesize SDL events, or require virtual devices."
       ],
       "tasks": [
-        "P02-T16",
-        "P02-T18",
+        "P02-T21",
+        "P02-T23",
         "P06-T13"
       ],
       "status": "defined",
@@ -1346,9 +1771,9 @@
         "Expose structured, consistent game-state snapshots, targeted queries, deltas, events, and diagnostics, including non-visible state. Do not limit agents to screenshots, textual summaries, or public-facing player information."
       ],
       "tasks": [
-        "P02-T20",
-        "P02-T21",
-        "P02-T22"
+        "P02-T25",
+        "P02-T26",
+        "P02-T27"
       ],
       "status": "defined",
       "evidence": []
@@ -1360,10 +1785,10 @@
         "Provide pause/step, breakpoints, watchpoints, traces, state inspection/editing, snapshots, deterministic replay, arbitrary valid scenario setup, and native parity with every supported emulator-test capability. Extend typed setup to the complete native game rather than inheriting current emulator-adapter limitations."
       ],
       "tasks": [
-        "P02-T30",
-        "P02-T31",
-        "P02-T32",
-        "P02-T36"
+        "P02-T35",
+        "P02-T36",
+        "P02-T37",
+        "P02-T41"
       ],
       "status": "defined",
       "evidence": []
@@ -1375,10 +1800,10 @@
         "Support exact stepping, bounded run-until conditions, real-time play, fixed acceleration, and fully unthrottled execution as fast as the simulation can run. Removing pacing must not change tick semantics or skip required gameplay work."
       ],
       "tasks": [
-        "P02-T26",
-        "P02-T27",
-        "P02-T28",
-        "P02-T29"
+        "P02-T31",
+        "P02-T32",
+        "P02-T33",
+        "P02-T34"
       ],
       "status": "defined",
       "evidence": []
@@ -1390,11 +1815,11 @@
         "Offer on-demand images and an attachable live image stream from the native renderer. Viewing is optional and read-only by default; attaching, disconnecting, slowing, or dropping a spectator must not change game state or force real-time execution."
       ],
       "tasks": [
-        "P02-T42",
-        "P02-T43",
-        "P02-T44",
-        "P02-T45",
-        "P02-T46"
+        "P02-T47",
+        "P02-T48",
+        "P02-T49",
+        "P02-T50",
+        "P02-T51"
       ],
       "status": "defined",
       "evidence": []
@@ -1406,10 +1831,10 @@
         "Provide a documented, versioned, discoverable machine-readable API with explicit capabilities, IDs, tick semantics, errors, cancellation, and reproducible run artifacts. It must be usable without a GUI or a specific agent vendor."
       ],
       "tasks": [
-        "P02-T15",
-        "P02-T23",
-        "P02-T25",
-        "P02-T40"
+        "P02-T20",
+        "P02-T28",
+        "P02-T30",
+        "P02-T45"
       ],
       "status": "defined",
       "evidence": []
@@ -1425,7 +1850,7 @@
         "P03-T09",
         "P03-T10",
         "P03-T11",
-        "P04-T13"
+        "P04-T17"
       ],
       "status": "defined",
       "evidence": []
@@ -1438,14 +1863,14 @@
       "P00-T14",
       "P02A-T01",
       "P02A-T12",
-      "P02A-T29",
-      "P02A-T35",
-      "P02A-T36",
-      "P02A-T37",
-      "P02A-T38",
-      "P02A-T39",
-      "P07-T15",
-      "P07-T18",
+      "P02A-T24",
+      "P02A-T30",
+      "P02A-T31",
+      "P02A-T32",
+      "P02A-T33",
+      "P02A-T34",
+      "P07-T23",
+      "P07-T26",
       "P11-T13",
       "P13-T19"
     ],
@@ -1463,9 +1888,9 @@
         "P02A-T01",
         "P02A-T12",
         "P02A-T13",
-        "P02A-T14",
-        "P02A-T15",
-        "P02A-T36"
+        "P07-T17",
+        "P07-T18",
+        "P02A-T31"
       ],
       "status": "defined",
       "evidence": []
@@ -1478,9 +1903,9 @@
       ],
       "tasks": [
         "P02A-T01",
-        "P02A-T27",
-        "P02A-T28",
-        "P07-T16"
+        "P02A-T22",
+        "P02A-T23",
+        "P07-T24"
       ],
       "status": "defined",
       "evidence": []
@@ -1509,9 +1934,9 @@
         "Expose semantic, revision-aware, transactional edits and headless build/test commands. Graphical panels are clients; no content operation may be available only through a GUI callback."
       ],
       "tasks": [
-        "P02A-T29",
-        "P02A-T30",
-        "P02A-T31",
+        "P02A-T24",
+        "P02A-T25",
+        "P02A-T26",
         "P11-T13",
         "P11-T17"
       ],
@@ -1525,12 +1950,12 @@
         "Compile declarative events to native instructions with explicit serializable progress. Custom Lua state, tasks, actions, and errors participate in the same introspection, snapshots, and scheduler as the base game."
       ],
       "tasks": [
-        "P02A-T22",
-        "P02A-T23",
-        "P02A-T24",
-        "P02A-T25",
+        "P02A-T20",
+        "P02-T16",
+        "P02A-T21",
+        "P07-T19",
         "P07-T13",
-        "P08-T14"
+        "P08-T13"
       ],
       "status": "defined",
       "evidence": []
@@ -1543,11 +1968,11 @@
       ],
       "tasks": [
         "P02A-T10",
-        "P02A-T21",
+        "P02A-T19",
+        "P02A-T27",
         "P02A-T32",
-        "P02A-T37",
-        "P02A-T38",
-        "P02A-T39"
+        "P02A-T33",
+        "P02A-T34"
       ],
       "status": "defined",
       "evidence": []
@@ -1560,11 +1985,11 @@
       ],
       "tasks": [
         "P02A-T03",
-        "P02A-T30",
-        "P02A-T38",
-        "P02A-T41",
-        "P07-T17",
-        "P07-T18",
+        "P02A-T25",
+        "P02A-T33",
+        "P02A-T35",
+        "P07-T25",
+        "P07-T26",
         "P11-T15",
         "P13-T21"
       ],
@@ -1575,17 +2000,17 @@
       "id": "AUTHORING-08",
       "source_row": [
         "Early architecture gate",
-        "Prove a small source-to-playable authoring bridge during Phases 2A–3, before broad content expansion or the full graphical editor suite. Expand the same foundation through Phases 7 and 11–13."
+        "Complete a small source-to-playable authoring bridge in Phase 2A, after the Phase 2 runtime foundation and before the Phase 3 original-game slice. Phase 7 expands the SDK; Phases 11–13 add graphical clients and release qualification."
       ],
       "tasks": [
         "P00-T14",
-        "P02A-T35",
-        "P02A-T36",
-        "P02A-T37",
-        "P02A-T38",
-        "P02A-T39",
+        "P02A-T30",
+        "P02A-T31",
+        "P02A-T32",
+        "P02A-T33",
+        "P02A-T34",
         "P03-T12",
-        "P07-T15",
+        "P07-T23",
         "P11-T13",
         "P13-T19"
       ],
@@ -1605,7 +2030,7 @@
         "P00-T14",
         "P02A-T01",
         "P02A-T03",
-        "P02A-T22"
+        "P02A-T20"
       ],
       "status": "defined",
       "evidence": []
@@ -1635,7 +2060,7 @@
         "P00-T14",
         "P02A-T04",
         "P02A-T10",
-        "P02A-T33",
+        "P02A-T28",
         "P13-T19"
       ],
       "status": "defined",
@@ -1669,7 +2094,7 @@
         "P02A-T05",
         "P02A-T12",
         "P02A-T13",
-        "P02A-T15"
+        "P07-T18"
       ],
       "status": "defined",
       "evidence": []
@@ -1684,7 +2109,7 @@
       "tasks": [
         "P00-T14",
         "P02A-T06",
-        "P02A-T17"
+        "P02A-T15"
       ],
       "status": "defined",
       "evidence": []
@@ -1698,7 +2123,7 @@
       ],
       "tasks": [
         "P00-T14",
-        "P02A-T27",
+        "P02A-T22",
         "P13-T20"
       ],
       "status": "defined",
@@ -1730,8 +2155,8 @@
         "P02-T14",
         "P02A-T07",
         "P02A-T08",
-        "P02A-T22",
-        "P02A-T25",
+        "P02A-T20",
+        "P07-T19",
         "P13-T19"
       ],
       "status": "defined",
@@ -1747,42 +2172,32 @@
       "tasks": [
         "P00-T14",
         "P02A-T05",
-        "P02A-T27"
+        "P02A-T22"
       ],
       "status": "defined",
       "evidence": []
     }
   ],
-  "early_exits": [
-    {
-      "id": "P02A-EARLY-EXIT",
-      "source": "**Early exit criterion, required by Phase 3:** The two-room authored bridge builds, loads, plays, saves/restores, and survives a diagnosed source revision in the actual native runtime without engine C++ changes or GUI automation. Generated and imported geometry paths are demonstrated separately; headless execution requires no authoring runtime or GPU. The broader Phase 2A checklist remains open until demonstrated through the Phase 7/creator-toolkit milestones.",
-      "tasks": [
-        "P02A-T35",
-        "P02A-T36",
-        "P02A-T37",
-        "P02A-T38",
-        "P02A-T39"
-      ],
-      "phase": "2A",
-      "requires_all_phase_facets": false,
-      "requires_authoring_gates": [
-        "AUTHOR-BUILD",
-        "AUTHOR-ISOLATION",
-        "AUTHOR-PACKAGE",
-        "AUTHOR-GEOMETRY",
-        "AUTHOR-MINIMAL",
-        "AUTHOR-TWO-ROOM",
-        "AUTHOR-MIXED-ASSETS",
-        "AUTHOR-PLAY",
-        "AUTHOR-REPAIR",
-        "AUTHOR-REVISION",
-        "AUTHOR-EVENT-STATE",
-        "AUTHOR-DELIVERY"
-      ],
-      "scope": "Arch native early bridge alongside Phase 3; this does not close the broader Phase 2A SDK, supported-platform or creator-toolkit obligations. Phase 7 requires the complete Phase 2A checklist, with platform packaging and source-preserving graphical delivery verified by Phases 11–13.",
-      "status": "defined",
-      "evidence": []
-    }
-  ]
+  "completion_rule": {
+    "id": "RULE-CHECKLIST-COMPLETION",
+    "source": "**Completion rule:** A completed phase has every checkbox checked, including its integrated acceptance task. Its goal states the delivered outcome; its exit criterion summarizes the checklist rather than adding hidden requirements or allowing an early exit. An incomplete, deferred, or merely specified implementation cannot be checked. Required work that belongs later is listed in that later phase, not left unchecked beneath a completed phase.",
+    "tasks": [
+      "P01-T16",
+      "P02-T53",
+      "P02A-T36",
+      "P03-T13",
+      "P04-T19",
+      "P05-T18",
+      "P06-T15",
+      "P07-T28",
+      "P08-T14",
+      "P09-T19",
+      "P10-T24",
+      "P11-T18",
+      "P12-T12",
+      "P13-T23"
+    ],
+    "status": "defined",
+    "evidence": []
+  }
 }

@@ -174,20 +174,33 @@ def validate_finding(finding: dict, profiles: set[str]) -> None:
 
 
 def validate_plan_completion(plan: str, rows: list[dict]) -> None:
+    """Checked work requires complete evidence and all preceding phase checklists."""
     phase, task = None, 0
     by_task = {}
+    checklists = {}
     for row in rows:
         by_task.setdefault(row["source_id"], []).append(row)
     for line in plan.splitlines():
         if match := PHASE_HEADING.match(line):
             phase, task = phase_id(match[1]), 0
+            checklists[phase] = []
         if match := re.match(r"- \[([ x])\] ", line):
             task += 1
-            if match[1] == "x":
-                key = f"{phase}-T{task:02}"
+            key = f"{phase}-T{task:02}"
+            checked = match[1] == "x"
+            checklists[phase].append(checked)
+            if checked:
                 require(
                     key in by_task and all(row["status"] == "passed" for row in by_task[key]),
                     f"Checked plan todo lacks complete facet evidence: {key}",
+                )
+                require(
+                    all(
+                        items and all(items)
+                        for owner, items in checklists.items()
+                        if owner != phase
+                    ),
+                    f"Checked task precedes completion of an earlier phase: {key}",
                 )
 
 
@@ -602,16 +615,18 @@ def validate_traceability(matrix: dict) -> None:
         "Unmapped/changed execution rule",
     )
     require(
-        cross["foundational_requirement"]["source"] == source["foundational_requirement"]
-        and bool(source["foundational_requirement"]),
-        "Unmapped/changed foundational requirement",
+        bool(source["completion_rule"])
+        and cross["completion_rule"]["source"] == source["completion_rule"],
+        "Unmapped/changed checklist completion rule",
     )
-    require(
-        cross["foundational_authoring_requirement"]["source"]
-        == source["foundational_authoring_requirement"]
-        and bool(source["foundational_authoring_requirement"]),
-        "Unmapped/changed foundational authoring requirement",
-    )
+    for name, label in (
+        ("foundational_requirement", "foundational requirement"),
+        ("foundational_authoring_requirement", "foundational authoring requirement"),
+    ):
+        require(
+            bool(source[name]) and cross[name]["source"] == source[name],
+            f"Unmapped/changed {label}",
+        )
     for table in (
         "feature_summary",
         "keyboard_defaults",
@@ -624,13 +639,24 @@ def validate_traceability(matrix: dict) -> None:
             [row["source_row"] for row in cross[table]] == source["tables"][table],
             f"Unmapped/changed {table}",
         )
+    require("early_exits" not in cross, "Early-exit exceptions are not supported")
+    order = source["phases"]
+    expected_order = [phase_id(p) for p in (0, 1, 2, "2A", 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13)]
+    require(order == expected_order, "Missing, reordered or unreviewed phase sequence")
+    require(
+        [phase_id(g["phase"]) for g in cross["phase_exits"]] == order,
+        "Phase exits must cover the exact sequential phase order",
+    )
     exits = {phase_id(row["phase"]): row["source"] for row in cross["phase_exits"]}
     require(exits == source["exits"], "Unmapped/changed phase exit criterion")
-    early_exits = {phase_id(row["phase"]): row["source"] for row in cross["early_exits"]}
-    require(early_exits == source["early_exits"], "Unmapped/changed early exit criterion")
     require(
-        len(exits) == len(cross["phase_exits"]) and len(early_exits) == len(cross["early_exits"]),
-        "Duplicate phase exit criterion",
+        set(source["phase_goals"]) == set(order) and all(source["phase_goals"].values()),
+        "Every phase needs a bounded goal",
+    )
+    require(
+        source["checked_tasks"].keys() == source["tasks"].keys()
+        and all(type(value) is bool for value in source["checked_tasks"].values()),
+        "Checklist completion snapshot is incomplete",
     )
     rows = {row["id"]: row for row in matrix["requirements"]}
     for collection in cross.values():
@@ -640,7 +666,8 @@ def validate_traceability(matrix: dict) -> None:
             continue
         for item in collection:
             require(
-                item["status"] in {"defined", "passed", "failed", "blocked"}, "Invalid gate status"
+                item["status"] in {"defined", "passed", "failed", "blocked"},
+                "Invalid gate status",
             )
             if "tasks" in item:
                 require(
@@ -655,105 +682,84 @@ def validate_traceability(matrix: dict) -> None:
             if item["status"] == "passed":
                 require(bool(item["evidence"]), "Gate pass requires executed evidence")
     validate_slice_structure(matrix)
-    early_gates = unique(cross["early_exits"], "early exits")
-    for gate in early_gates.values():
+    gates = {phase_id(gate["phase"]): gate for gate in cross["phase_exits"]}
+    for index, pid in enumerate(order):
+        gate = gates[pid]
+        previous = order[index - 1] if index else None
+        tasks = [key for key in source["tasks"] if key.startswith(pid + "-")]
+        require(bool(tasks) and gate.get("tasks") == tasks, "Phase gate omits checklist tasks")
         require(
-            gate["requires_all_phase_facets"] is False and bool(gate.get("tasks")),
-            "Early exit must distinguish its subset from full phase completion",
+            gate["requires_all_phase_facets"] is True,
+            "Every phase gate must require all its facets",
         )
-        if gate["status"] == "passed":
+        require(
+            gate.get("requires_previous_phase") == previous,
+            "Phase prerequisite must be the immediately preceding completed phase",
+        )
+        require(gate.get("goal") == source["phase_goals"][pid], "Unmapped/changed phase goal")
+        require(
+            "requires_early_exits" not in gate and "requires_task_facets" not in gate,
+            "Phase gate cannot use an early exit or another phase's unfinished checklist",
+        )
+        if previous is not None:
+            previous_number = gates[previous]["phase"]
             require(
-                all(
-                    row["status"] == "passed"
-                    for row in rows.values()
-                    if row["source_id"] in gate["tasks"]
+                source["prerequisites"].get(pid)
+                == (
+                    f"Phase {previous_number} is complete, "
+                    "with every checkbox verified and checked."
                 ),
-                "Early exit cannot bypass incomplete facets",
+                "Plan prerequisite contradicts the sequential phase gate",
             )
-    authoring_early = early_gates.get("P02A-EARLY-EXIT", {})
-    require(
-        authoring_early.get("tasks") == [f"P02A-T{task:02}" for task in range(35, 40)],
-        "Authoring early exit omits protected bridge acceptance",
-    )
-    phase_gates = {gate["phase"]: gate for gate in cross["phase_exits"]}
-    require(
-        phase_gates[3].get("requires_early_exits") == ["P02A-EARLY-EXIT"],
-        "Phase 3 must require the authored early bridge",
-    )
-    require(
-        phase_gates[7].get("requires_task_facets")
-        == [key for key in source["tasks"] if key.startswith("P02A-")],
-        "Phase 7 must require the expanded authoring checklist",
-    )
-    for gate in cross["phase_exits"]:
-        if gate["phase"] == 1:
-            continue
-        require(gate["requires_all_phase_facets"] is True, "Phase gate must require all facets")
-        require(
-            set(gate.get("requires_early_exits", [])) <= early_gates.keys(),
-            "Unknown early exit dependency",
-        )
-        require(
-            set(gate.get("requires_task_facets", [])) <= source["tasks"].keys(),
-            "Unknown required checklist task",
-        )
+            require(
+                gate.get("completion_task") == tasks[-1],
+                "Phase needs a final integrated acceptance checkbox",
+            )
+        phase_rows = [row for row in rows.values() if row["source_id"] in tasks]
+        complete = all(source["checked_tasks"][key] for key in tasks)
+        if previous is not None and source["checked_tasks"][gate["completion_task"]]:
+            require(complete, "Integrated acceptance cannot precede the rest of its checklist")
         if gate["status"] == "passed":
             require(
-                all(
-                    row["status"] == "passed"
-                    for row in rows.values()
-                    if row["phase"] == gate["phase"]
-                ),
+                all(row["status"] == "passed" for row in phase_rows),
                 "Phase exit cannot bypass incomplete facets",
             )
+        require(
+            (gate["status"] == "passed") == complete,
+            "Phase completion must equal every checkbox being checked",
+        )
+        if complete or any(row["status"] in {"passed", "failed"} for row in phase_rows):
             require(
-                all(
-                    early_gates[key]["status"] == "passed"
-                    for key in gate.get("requires_early_exits", [])
-                ),
-                "Phase exit cannot bypass incomplete early bridge",
+                previous is None or gates[previous]["status"] == "passed",
+                "Later phase work cannot precede completion of its prerequisite",
             )
-            require(
-                all(
-                    row["status"] == "passed"
-                    for row in rows.values()
-                    if row["source_id"] in gate.get("requires_task_facets", [])
-                ),
-                "Phase exit cannot bypass incomplete authoring checklist",
-            )
+    release_last = {
+        "Research/tooling baseline": "P02",
+        "Agent-authoring preview": "P02A",
+        "Engineering preview": "P03",
+        "Playable PC alpha": "P06",
+        "Feature-complete runtime beta": "P10",
+        "Creator-toolkit beta": "P12",
+        "1.0": "P13",
+    }
     for gate in cross["release_checkpoints"]:
         require(
             gate["requires_phase_exit_evidence"] is True,
             "Release gate must require phase exit evidence",
         )
+        require("required_early_exits" not in gate, "Release checkpoints cannot use early exits")
+        required = gate["required_phases"]
         require(
-            bool(gate["required_phases"]) and set(gate["required_phases"]) <= phase_gates.keys(),
+            bool(required) and all(phase_id(p) in gates for p in required),
             "Release checkpoint references unknown phases",
         )
-        require(
-            set(gate.get("required_early_exits", [])) <= early_gates.keys(),
-            "Release checkpoint references unknown early exits",
-        )
-        if gate["source_row"][0] in {"Engineering preview", "Agent-authoring preview"}:
-            require(
-                gate.get("required_early_exits") == ["P02A-EARLY-EXIT"],
-                "Preview release cannot omit the authored early bridge",
-            )
+        last = release_last[gate["source_row"][0]]
+        expected = [gates[p]["phase"] for p in order[: order.index(last) + 1]]
+        require(required == expected, "Release checkpoint must require its full sequential prefix")
         if gate["status"] == "passed":
             require(
-                all(
-                    item["status"] == "passed"
-                    for item in cross["phase_exits"]
-                    if item["phase"] in gate["required_phases"]
-                ),
+                all(gates[phase_id(p)]["status"] == "passed" for p in required),
                 "Release checkpoint cannot bypass incomplete phases",
-            )
-            require(
-                all(
-                    early_gates[key]["status"] == "passed"
-                    for key in gate.get("required_early_exits", [])
-                ),
-                "Release checkpoint cannot bypass incomplete early bridge",
             )
 
 
@@ -771,10 +777,15 @@ def validate(root: Path = ROOT) -> dict:
         require(set(row["targets"]) <= targets.keys(), "Requirement uses an undeclared target")
     defaults = load(root, "docs/defaults.json")
     for default in defaults["prescribed"]:
-        require(
-            all(default["source"] + "-" + suffix in rows for suffix in default["facets"]),
-            "Default has missing facet coverage",
-        )
+        require(bool(default.get("sources")), "Default has no owning requirement sources")
+        for reference in default["sources"]:
+            require(
+                bool(reference["facets"])
+                and all(
+                    reference["source"] + "-" + suffix in rows for suffix in reference["facets"]
+                ),
+                "Default has missing facet coverage",
+            )
 
     profiles = unique(
         load(root, "analysis/reference-profiles.json")["profiles"], "reference profiles"

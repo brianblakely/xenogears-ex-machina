@@ -1,5 +1,7 @@
 # Executable reconstruction workflow
 
+Phase ownership: complete every slice-scoped Phase 1 checklist item and its original-evidence acceptance before native Phase 2 work begins. Reuse the recovered library in the runtime; remaining whole-game recovery is Phase 4 work, not an unfinished Phase 1 exit.
+
 Phase 1 grows one recovered C++ program. Run a relevant connected entry, compare
 its computed checkpoints with qualified original observations, fix the earliest
 divergence, then connect the next encountered dependency. The
