@@ -3,6 +3,7 @@
 #include "xem/reconstruction/original_layout.hpp"
 
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <fstream>
 #include <functional>
@@ -297,13 +298,46 @@ Program import_resident(const OriginalMemory &memory) {
     return program;
 }
 
-Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t> field_source,
-                     std::span<const std::uint8_t> overlay,
-                     std::span<const ResourceExtent> resources) {
+namespace {
+// Field words and records the field load (80070cc8) and the reload write
+// whose meaning is not recovered, owned as raw regions: address and size.
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 16> field_raw{{
+    {0x8006f990, 12}, // party slots of a field return (800a28d4)
+    {0x800adb0c, 4},
+    {0x800adb18, 4},
+    {0x800adb3c, 4},
+    {0x800adb44, 4},
+    {0x800adb6c, 4},
+    {0x800adb7c, 4},
+    {0x800adb8c, 4},
+    {0x800adbd4, 4},
+    {0x800afe84, 4},
+    {0x800b14a4, 4},
+    {0x800b0188, 0x140}, // 800abd18: five sprites and their draw modes per buffer
+    {0x800b06a4, 18},    // 80070c84: three records of six bytes
+    {0x800658dc, 0x220}, // component 6 of the loaded field (80070cc8)
+    {0x800afac8, 0x3c},  // 8006fdec: three light records
+    {0x800afc80, 0x80},  // 8007decc: sixteen text texture windows
+}};
+// The fixed rows of memory_case's resource manifest (RESIDENT_TABLES).
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 6> fixed_resources{{
+    {0x800b1f78, 256},
+    {0x8004fd40, 12},
+    {0x8004fe50, 17 * 0x28},
+    {0x8004fab8, 0x20},
+    {0x8004faf8, 0x10},
+    {0x800adf04, 0x28},
+}};
+void import_field_raw(Program &program, const OriginalMemory &memory) {
+    for (const auto &[address, size] : field_raw)
+        program.field->regions.add("field_raw", address, copy_of(memory.range(address, size)));
+}
+
+// Field globals and the decoded overlay, common to loaded and unloaded fields.
+Program import_field_globals(const OriginalMemory &memory, std::span<const std::uint8_t> overlay) {
     auto program = import_resident(memory);
     program.field = std::make_unique<FieldState>();
     auto &state = *program.field;
-    auto &resident = program.resident;
     for (const auto &item : reconstruction::original_globals())
         if (!item.resident)
             item.set(program, memory.word(item.address, item.width));
@@ -317,6 +351,52 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
     state.overlay_verified.resize(overlay.size());
     for (std::size_t i = 0; i < overlay.size(); ++i)
         state.overlay_verified[i] = loaded[i] == overlay[i];
+    return program;
+}
+} // namespace
+
+Program import_unloaded_field(const OriginalMemory &memory, std::span<const std::uint8_t> overlay) {
+    auto program = import_field_globals(memory, overlay);
+    auto &state = *program.field;
+    auto &resident = program.resident;
+    state.replay_widths = copy_of(memory.range(replay_widths, 256));
+    copy_into(state.history_ring, memory.range(history_ring, state.history_ring.size()));
+    for (std::uint32_t i = 0; i < resident.variables.words.size(); ++i)
+        resident.variables.words[i] =
+            static_cast<std::uint16_t>(memory.word(variable_bank + i * 2, 2));
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        const auto address = draw_blocks + i * static_cast<std::uint32_t>(draw_block_bytes);
+        state.regions.add("draw_block", address, copy_of(memory.range(address, draw_block_bytes)));
+    }
+    state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
+    state.regions.add("draw_modes", 0x800b1df4, copy_of(memory.range(0x800b1df4, 0x180)));
+    state.regions.add("reload_transition", 0x800b11ac,
+                      copy_of(memory.range(0x800b11ac, 0x800b14a4 - 0x800b11ac)));
+    state.regions.add("dialogue_lists", field::DialogueWindow::base - 0x18,
+                      copy_of(memory.range(field::DialogueWindow::base - 0x18, 0x18)));
+    import_field_raw(program, memory);
+    // The fixed tables the loaded field's resources include: the bundle
+    // header copy (800b1f78) and resident sprite and model tables.
+    for (const auto &[address, size] : fixed_resources)
+        state.resources.push_back({address, copy_of(memory.range(address, size))});
+    if (auto &reload = state.reload; state.particles_paused == 1) {
+        const auto header = resident.heap.headers.find(reload.vram_save_address - 8);
+        if (header == resident.heap.headers.end())
+            throw field::FieldFormatError("The saved VRAM is not a heap block");
+        reload.vram_save = {
+            reload.vram_save_address,
+            copy_of(memory.range(reload.vram_save_address,
+                                 header->second[0] - 8 - reload.vram_save_address))};
+    }
+    return program;
+}
+
+Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t> field_source,
+                     std::span<const std::uint8_t> overlay,
+                     std::span<const ResourceExtent> resources) {
+    auto program = import_field_globals(memory, overlay);
+    auto &state = *program.field;
+    auto &resident = program.resident;
 
     const auto components = field::decode_field_components(field_source);
     const auto event_component = components[5].logical_data();
@@ -376,6 +456,20 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
     // the draw-mode packets (twelve bytes each, 16 per buffer).
     state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
     state.regions.add("draw_modes", 0x800b1df4, copy_of(memory.range(0x800b1df4, 0x180)));
+    // The field reload's transition quads: draw modes, packets and corners.
+    state.regions.add("reload_transition", 0x800b11ac,
+                      copy_of(memory.range(0x800b11ac, 0x800b14a4 - 0x800b11ac)));
+    import_field_raw(program, memory);
+    // While particles pause (800adb34), the VRAM 800a915c saved: its heap block.
+    if (auto &reload = state.reload; state.particles_paused == 1) {
+        const auto header = resident.heap.headers.find(reload.vram_save_address - 8);
+        if (header == resident.heap.headers.end())
+            throw field::FieldFormatError("The saved VRAM is not a heap block");
+        reload.vram_save = {
+            reload.vram_save_address,
+            copy_of(memory.range(reload.vram_save_address,
+                                 header->second[0] - 8 - reload.vram_save_address))};
+    }
     // The sprite system's per-buffer arenas (packets and upload nodes).
     for (const auto arena : resident.sprite_arenas)
         if (arena != 0)
@@ -607,6 +701,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("heap_held", address, held);
     for (const auto &block : resident.disc_transfers)
         out.bytes("disc_transfer", block.address, block.bytes);
+    for (const auto &[address, bytes] : resident.heap_contents)
+        out.bytes("heap_contents", address, bytes);
 }
 } // namespace
 
@@ -849,6 +945,36 @@ std::vector<OwnedRange> export_menu(const Program &program, OriginalMemory &memo
     return std::move(out.owned);
 }
 
+void import_heap_contents(Program &program, const OriginalMemory &memory) {
+    auto scratch = memory;
+    const auto owned =
+        program.field ? export_field(program, scratch) : export_resident(program, scratch);
+    std::map<std::uint32_t, std::uint32_t> claimed; // start -> end
+    for (const auto &range : owned)
+        claimed.emplace(range.address, range.address + static_cast<std::uint32_t>(range.size));
+    auto &resident = program.resident;
+    for (const auto &[header, words] : resident.heap.headers) {
+        const auto tag = words[1] & reconstruction::resident::heap_tag_mask;
+        if (tag == 0 || tag == reconstruction::resident::heap_end_tag)
+            continue;
+        const auto end = words[0] - 8;
+        auto at = header + 8;
+        // Claims are disjoint: walk the ones that overlap the block.
+        auto claim = claimed.upper_bound(at);
+        if (claim != claimed.begin() && std::prev(claim)->second > at)
+            --claim;
+        while (at < end) {
+            const auto next = claim != claimed.end() && claim->first < end ? claim->first : end;
+            if (next > at)
+                resident.heap_contents[at] = copy_of(memory.range(at, next - at));
+            if (claim == claimed.end() || claim->first >= end)
+                break;
+            at = std::max(at, claim->second);
+            ++claim;
+        }
+    }
+}
+
 std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &memory) {
     if (!program.field)
         throw field::FieldFormatError("Export requires field state");
@@ -876,9 +1002,11 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
     }
     out.bytes("variables", variable_bank, variables);
     out.bytes("history_ring", history_ring, state.history_ring);
-    out.bytes("collision_component", state.collision_address, state.collision_component);
+    if (!state.collision_component.empty())
+        out.bytes("collision_component", state.collision_address, state.collision_component);
     out.bytes("replay_widths", replay_widths, state.replay_widths);
-    out.bytes("messages", state.messages_address, state.messages);
+    if (!state.messages.empty())
+        out.bytes("messages", state.messages_address, state.messages);
     for (const auto &blocks : state.dialogue_blocks)
         for (const auto &block : blocks)
             out.bytes("dialogue_block", block.address, block.bytes);
@@ -888,6 +1016,8 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes(region.name, address, region.bytes);
     for (const auto &piece : state.pieces)
         out.bytes("descriptor", piece.address, piece.descriptor);
+    if (const auto &saved = state.reload.vram_save; !saved.bytes.empty())
+        out.bytes("vram_save", saved.address, saved.bytes);
     for (const auto &node : resident.sprite_tasks.nodes)
         out.bytes("sprite_task_block", node.address, node.bytes);
     if (state.published_actor) {

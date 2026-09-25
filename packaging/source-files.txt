@@ -210,6 +210,7 @@ src/reconstruction/field_disassembler.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_frame.cpp
 src/reconstruction/field_gte.cpp
+src/reconstruction/field_load.cpp
 src/reconstruction/field_loop.cpp
 src/reconstruction/field_media.cpp
 src/reconstruction/field_models.cpp
@@ -217,6 +218,7 @@ src/reconstruction/field_motion.cpp
 src/reconstruction/field_move.cpp
 src/reconstruction/field_movie.cpp
 src/reconstruction/field_music.cpp
+src/reconstruction/field_reload.cpp
 src/reconstruction/field_return.cpp
 src/reconstruction/field_script.cpp
 src/reconstruction/field_sprite.cpp
@@ -300,6 +302,7 @@ tests/test_field_loop.cpp
 tests/test_field_media.cpp
 tests/test_field_motion.cpp
 tests/test_field_movie.cpp
+tests/test_field_reload.cpp
 tests/test_field_return.cpp
 tests/test_field_script.cpp
 tests/test_field_sprite.cpp

@@ -75,6 +75,12 @@ void import_menu_block(reconstruction::Program &program, const OriginalMemory &m
                                                    std::span<const std::uint8_t> overlay,
                                                    std::span<const ResourceExtent> resources);
 
+// Builds the state of a field between the reload's teardown and the load of
+// the next map (80070cc8): field globals, the decoded overlay and the fixed
+// field regions, with no loaded components, actors or records.
+[[nodiscard]] reconstruction::Program import_unloaded_field(const OriginalMemory &memory,
+                                                            std::span<const std::uint8_t> overlay);
+
 // Supplies recorded platform inputs to the Program. `platform` has one input
 // per line: `drive LBA` (the sector the drive delivers next), `read SITE
 // VALUE` (hex) or `interrupt`. `disc` is the raw 2352-byte-sector track the
@@ -89,6 +95,10 @@ void attach_interrupt_memory(reconstruction::Program &program, const OriginalMem
 // (as a disc transfer block).
 void import_disc_data(reconstruction::Program &program, const OriginalMemory &memory,
                       std::uint32_t address, std::uint32_t size);
+
+// Owns the bytes of allocated heap blocks that no other Program value owns,
+// as resident heap contents: a field teardown releases whole blocks.
+void import_heap_contents(reconstruction::Program &program, const OriginalMemory &memory);
 
 // Writes every Program-owned original correlation back over a copy of the entry
 // image and lists the owned ranges. Comparison is performed by the caller.

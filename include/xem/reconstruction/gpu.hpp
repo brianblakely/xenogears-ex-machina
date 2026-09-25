@@ -3,6 +3,7 @@
 #include <array>
 #include <cstdint>
 #include <map>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,10 @@ class OriginalRegions {
     [[nodiscard]] bool contains(std::uint32_t address, std::size_t width) const;
     [[nodiscard]] std::uint32_t word(std::uint32_t address, std::size_t width = 4) const;
     void put(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
+    // The owned bytes from `address` to the end of its region; empty if none.
+    [[nodiscard]] std::span<std::uint8_t> span(std::uint32_t address);
+    // Drops the regions that start in [address, address + size).
+    void remove(std::uint32_t address, std::size_t size);
     [[nodiscard]] const std::map<std::uint32_t, Region> &regions() const { return regions_; }
     bool operator==(const OriginalRegions &) const = default;
 
@@ -48,6 +53,7 @@ struct GpuCommand {
     enum class Kind : std::uint8_t {
         clear_image,  // _clr: fill rect with color, packet at address
         load_image,   // _dws: copy words at address into VRAM rect
+        store_image,  // _drs: copy VRAM rect into words at address
         move_image,   // MoveImage: copy VRAM rect to (x, y) in value
         draw_packets, // _cwc: send the packet list at address (DrawOTag, PutDrawEnv)
         control,      // _ctl: GP1 command in value (PutDispEnv)

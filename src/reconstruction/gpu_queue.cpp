@@ -250,6 +250,23 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
     if (words <= 0)
         return -1;
     const bool load = operation == load_op;
+    if (!load) {
+        // StoreImage (_drs) reads VRAM back through GPUREAD and DMA2: the
+        // words are a platform input, stored by the caller that owns the
+        // destination. Its GPUSTAT waits have no recorded result; the GPU is
+        // taken as ready at once, leaving the alarm's poll count.
+        if (services == nullptr || services->vram_reads.empty())
+            throw MissingDependency({"gpu_store_image", 0x800464d8, {}, {}},
+                                    "platform:vram-readback", false,
+                                    "VRAM read-back data is not a recorded platform input");
+        auto data = std::move(services->vram_reads.front());
+        services->vram_reads.pop_front();
+        if (data.size() != static_cast<std::size_t>(words) * 4U)
+            throw field::FieldFormatError("VRAM read-back size differs from its rectangle");
+        gpu.commands.push_back({GpuCommand::Kind::store_image, r, argument, 0});
+        gpu.readback = {argument, std::move(data)};
+        return 0;
+    }
     // Wait for GPUSTAT bit 26, polling the alarm.
     if (services != nullptr) {
         gpu.polls = take_service(services->alarm_polls, "LoadImage alarm polls");
@@ -267,9 +284,6 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
                     break;
             }
     }
-    if (!load) // StoreImage reads VRAM back through GPUREAD and DMA2.
-        throw MissingDependency({"gpu_store_image", 0x800464d8, {}, {}}, "platform:vram-readback",
-                                false, "VRAM read-back data is not a recorded platform input");
     gpu.commands.push_back({GpuCommand::Kind::load_image, r, argument, 0});
     return 0;
 }

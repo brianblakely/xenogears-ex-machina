@@ -29,6 +29,9 @@ namespace xem::reconstruction {
 inline constexpr std::uint32_t game_data_bytes = 0x2358;
 // Load address of the field overlay image.
 inline constexpr std::uint32_t field_overlay_base = 0x8006faf0;
+// The field main loop 80077e88's stack pointer (the SP at its calls of
+// 8007554c and 800a5c40): the bottom of the stack its callees' frames grow from.
+inline constexpr std::uint32_t field_loop_stack = 0x801fffc8;
 
 inline constexpr std::string_view resident_executable_sha256 =
     "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119";
@@ -159,6 +162,11 @@ struct GpuState {
     std::array<std::uint8_t, 0x44> packet{};   // 8005a238: packet built by _clr
     std::array<std::uint8_t, 0x100> control{}; // 8005a27c: last GP1 value per command
     std::vector<GpuCommand> commands;          // In program order
+    // The last StoreImage's words, until its caller stores them.
+    resident::HeapBlock readback;
+    std::array<std::uint8_t, 0x14> move_packet{}; // 80056978: MoveImage's packet
+    std::uint32_t reset_mask{}; // 800569e4: interrupt mask saved by _reset (80046c58)
+    std::uint32_t tim_cursor{}; // 8005a37c: the next TIM of OpenTIM/ReadTIM
 };
 
 // Interrupt environment of the dispatcher 8004b9b4 and its handlers.
@@ -312,6 +320,8 @@ struct FrameServices {
     std::deque<std::uint32_t> interrupt_masks;
     // GPU information reads (GP1 10h, then GPUREAD) by libgpu _param (80046638).
     std::deque<std::uint32_t> gpu_info;
+    // StoreImage (_drs 800462dc): the VRAM words each read-back delivers.
+    std::deque<std::vector<std::uint8_t>> vram_reads;
 };
 
 // A platform result the host did not supply: invalid input, not a game result.
@@ -321,6 +331,15 @@ class ServiceUnavailable : public std::runtime_error {
 };
 // Consumes the next result of one service queue.
 std::uint32_t take_service(std::deque<std::uint32_t> &results, const char *what);
+
+// Party sprite files (8001b044, 8001b3a8): 8004f374 marks files read ahead
+// for decoding, 8004f31c the kind of set loaded, 8004f320 the kind the map
+// needs (1 when map bits 0e-0f are set).
+struct PartySpriteLoad {
+    std::uint32_t pending{}; // 8004f374
+    std::uint32_t loaded{};  // 8004f31c
+    std::uint32_t needed{};  // 8004f320
+};
 
 struct ResidentState {
     field::EventVariables variables;
@@ -437,6 +456,59 @@ struct ResidentState {
     // Platform inputs, consumed in order; see interrupts.hpp.
     std::deque<PlatformInput> platform;
     DiscDrive drive;
+    // 8003748c releases the block 80059394 names unless 800593a0 is set;
+    // their producers are not recovered.
+    std::uint32_t w_59394{};
+    std::uint32_t w_593a0{};
+    PartySpriteLoad party_sprite_load;
+    // 80059f84: the GTE light color matrix (LR1..LB3) 80030a30 builds, with
+    // the halfword after it.
+    std::array<std::uint16_t, 10> light_colors{};
+    std::array<std::uint8_t, 3> window_color{}; // 800594d4: dialogue backing tile color
+    // 80022a0c's rectangle and pixels (800592f0, 800592f4).
+    std::array<std::uint32_t, 2> image_upload{};
+    // Stack windows code ran on inside heap blocks (80022a0c): address and
+    // size. Their bytes are callee frames, like the stack below an entry.
+    std::vector<std::pair<std::uint32_t, std::uint32_t>> switched_stacks;
+    // Bytes of allocated heap blocks that no other Program value interprets,
+    // by address; a field teardown releases them with their blocks.
+    std::map<std::uint32_t, std::vector<std::uint8_t>> heap_contents;
+};
+
+// Field reload 800a5c40. Globals whose meaning is not recovered keep their
+// original addresses as names.
+struct ReloadState {
+    // Transition quads (800a663c, 800a6408, 800a5600): zoom 800c2684 and
+    // rotation 800b00b8; their packets are the region 800b11ac..800b14a4.
+    std::int32_t zoom{};
+    field::GteVector angles{};
+    std::uint32_t fade_frames{};    // 800afd14: frames of the reload's fade-in
+    std::uint32_t stream_pending{}; // 800adb60: the field stream 80070488 started
+    std::uint32_t stream_ring{};    // 800adc14: its ring block
+    // VRAM 800a915c saves while particles pause (rectangle 800afc28, block
+    // *800afc70); 800a91f0 loads it back.
+    std::array<std::int16_t, 4> vram_rect{};
+    std::uint32_t vram_save_address{};
+    resident::HeapBlock vram_save;
+    std::array<std::int16_t, 64> particle_ids{}; // 800b0108: -1 per stopped slot
+    std::uint16_t effects_kept{}; // 800b233c: bit per effect pair 800864f0 leaves playing
+    // Loaded components (80070cc8): descriptor table 800afb10, event actor
+    // count 800adbfc, zones 800adbf4 (component 8), events 800adbf8
+    // (component 5) and geometry 800afb14 (component 2).
+    std::uint32_t descriptor_table{};
+    std::uint32_t event_actors{};
+    std::uint32_t zones_address{};
+    std::uint32_t events_address{};
+    std::uint32_t geometry_address{};
+    std::uint32_t event_bytecode{}; // 800adc00: the events' bytecode
+    // Collision tables of the loaded component 1: attributes (800afb20),
+    // triangles (800afb24) and vertices (800afb34) per layer, and the
+    // attribute table's words (800afd10).
+    std::uint32_t collision_attributes{};
+    std::array<std::uint32_t, 4> collision_triangles{};
+    std::array<std::uint32_t, 4> collision_vertices{};
+    std::uint32_t attribute_words{};
+    std::uint32_t w_adb24{}; // 800adb24: the distortion buffers 800b20b4..800b20c0 are held
 };
 
 struct FieldState {
@@ -614,6 +686,7 @@ struct FieldState {
     // A host takes them from the loop's registers at an imported frame.
     bool combination_latched{};
     bool music_saved{};
+    ReloadState reload;
 };
 
 // Resumable points of field frame 8007554c: each names the call the frame
@@ -797,10 +870,45 @@ class Program {
     void save_field_departure();
     // Field 80078494..80078558 in the main loop 80077e88: once a requested
     // map's data is read ahead and the disc and fade are idle, save the
-    // departure and reload (800a5c40, not reconstructed: MissingDependency).
-    void field_map_change_step();
+    // departure, reload (800a5c40) and reset the input queue.
+    void field_map_change_step(FrameServices &services, const ProgramObserver &observe = {});
     // The same step up to the reload call (80078540): true when it is due.
     bool start_map_change();
+    // Field 80077dac, before each field frame of the main loop and of the
+    // reload's fade-in: VSync(1), the next draw buffer, the pad drain and the
+    // play record (800a31e8).
+    void field_pre_frame(FrameServices &services);
+    // Field 80078b5c, after each field frame of the main loop and of the
+    // reload's fade-in: the RNG, the music load gate and the camera-cut
+    // countdown.
+    void field_post_frame();
+    // Field 800a6408: place and link the reload's five transition quads.
+    void reload_transition_draw();
+    // Field 800a5600: the next buffer's transition quad color.
+    void reload_transition_shade(std::uint32_t value);
+    // Field 800a5c40 from the fade-in (800a6120) to its return: start the
+    // fade, run the fade-in frames and restore what the reload suspended.
+    // `frame` is the reload's stack frame (its entry SP - 48h).
+    void field_reload_fade_in(FrameServices &services, const ProgramObserver &observe = {});
+    // One pass of that loop (800a6148..800a61c8): `shade` is the quads'
+    // 8.16 color, returned for the next pass.
+    std::int32_t field_reload_fade_frame(FrameServices &services, std::int32_t shade,
+                                         const ProgramObserver &observe = {});
+    void field_reload_finish(FrameServices &services, std::uint32_t frame);
+    // Field 800a5c40 up to its reload-type dispatch (800a5d74): stop the old
+    // field's effects, save the screen, tear the field down (800700b0) and
+    // move the read-ahead map data.
+    void field_reload_teardown(FrameServices &services, const ProgramObserver &observe = {});
+    // Field 800a5c40 from its entry, for reload type 2: the teardown, the
+    // screen fade 800a5884, the party sprites (8001b044, 8001b3a8), then the
+    // field load 80070cc8 onward. `frame` is the reload's stack frame (its
+    // entry SP - 48h). Completed stages are observable boundaries.
+    void field_reload(FrameServices &services, std::uint32_t frame,
+                      const ProgramObserver &observe = {});
+    // Field 80070cc8: load the map data read ahead (8005a4e0) as the field.
+    // `frame` is its stack frame (its entry SP - a0h).
+    void load_field(FrameServices &services, std::uint32_t frame,
+                    const ProgramObserver &observe = {});
     // Battle 80085ccc: commit and resolve an action.
     void commit_battle_action(std::uint32_t attacker, std::uint32_t targets,
                               std::uint32_t animation);
@@ -963,6 +1071,7 @@ class Program {
     void drain_pad();                                                    // 80074700
     void pointer_state();                                                // 8007ae78(1, 80065848)
     void record_play_state();                                            // 800a31e8
+    void swap_draw_buffer();                                             // 80073fe0
     std::uint32_t file_size(std::int32_t file);                          // Resident 80028738
     std::uint32_t read_size(std::int32_t file);                          // Resident 80028808
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
@@ -1025,6 +1134,62 @@ class Program {
     void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
     void draw_sync(FrameServices &services);                                            // 800445d0
+    // Reload steps (field_reload.cpp).
+    void party_record(std::uint32_t slot);       // 8009fee4
+    void vertical_sync(FrameServices &services); // VSync(0) (8004b54c)
+    // StoreImage (800448f8) into owned bytes at `destination`.
+    void store_image(FrameServices &services, std::array<std::int16_t, 4> &rect,
+                     std::uint32_t address, std::uint32_t destination,
+                     std::span<std::uint8_t> bytes);
+    void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
+                    std::int32_t x, std::int32_t y);                       // 8004495c
+    void field_teardown(FrameServices &services);                          // 800700b0
+    void reload_transition_setup();                                        // 800a663c(1, 1)
+    void reload_present(FrameServices &services);                          // 800a6924
+    void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
+    void prepare_party_sprites();                                          // 8001b044
+    void decode_party_sprites();                                           // 8001b3a8
+    // Field load steps (field_load.cpp).
+    void store_original(std::uint32_t address, std::uint32_t value, std::size_t width);
+    void identity_matrix(std::uint32_t address);                                   // 80070594
+    void reset_field_state();                                                      // 800705dc
+    void reset_camera();                                                           // 8007254c
+    void set_quad_uv(std::uint32_t packet, const std::array<std::int32_t, 8> &uv); // 8007a44c
+    void compass_record(std::uint32_t record, std::uint32_t column, std::uint32_t row,
+                        std::uint32_t style); // 8007a7f4
+    void compass_letters();                   // 8007a5c4
+    std::uint32_t load_block(std::uint32_t size, std::uint32_t mode, std::uint32_t site);
+    [[nodiscard]] std::uint8_t ram_byte(std::uint32_t address);
+    void decode_component(std::uint32_t index, std::uint32_t destination); // 8007008c
+    void load_tim_images(FrameServices &services, std::uint32_t tim);      // 800771f8
+    void load_images_across(FrameServices &services, std::uint32_t data, std::uint32_t x,
+                            std::uint32_t y, std::uint32_t frame);         // 80022a70
+    void relocate_model_group(std::uint32_t group);                        // 8002c3e8
+    void set_field_light(std::uint32_t index, std::uint32_t light);        // 80030a30
+    void setup_field_view(std::uint32_t view);                             // 8006fdec
+    void build_model_instance(std::uint32_t instance, std::uint32_t mode); // 8002cb54, 8002c8cc
+    void trim_model(std::uint32_t model);                                  // 8002c644
+    void build_shadow(std::uint32_t shadow);                               // 8007aa44
+    void create_field_actor(std::uint32_t index);                          // 80080f44
+    void load_descriptors();                                               // 80071318..800715a0
+    void draw_mode_packet(std::uint32_t packet, std::uint32_t tpage,
+                          const std::array<std::int16_t, 4> *area); // 800454dc
+    void init_dialogue_packets(std::uint32_t w);                    // 8007ee0c
+    void init_dialogue();                                           // 8007decc
+    std::vector<std::uint8_t> take_contents(std::uint32_t address, std::uint32_t size);
+    void adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes);
+    void init_field_events(const ProgramObserver &observe); // 800a28d4 (no return)
+    void reset_graph(std::uint32_t mode);                   // 80044110 ResetGraph
+    void destroy_sprite_tasks();                            // 8001c8dc
+    void flush_sprite_uploads(FrameServices &services);     // 80025044
+    // Owned bytes from `address` to the end of their owner, whatever value
+    // owns them (records, regions, resources, loaded components, allocated
+    // heap contents); empty when none does.
+    [[nodiscard]] std::span<std::uint8_t> owned_span(std::uint32_t address);
+    // Release the allocated heap block at `address` (800320e8 at `site`)
+    // with the owned bytes it holds; returns its size (zero if kept).
+    std::uint32_t release_owned_block(std::uint32_t address, std::uint32_t site);
+    void release_actor(std::uint32_t index);                       // 8008083c
     void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);

@@ -34,6 +34,11 @@ struct SpriteModelState {
 // repeated calls preserve already-relocated headers.
 void relocate_sprite_model(std::uint32_t model, const SpriteSources &sources);
 
+// Resident 8002c8cc in mode zero: the primitive packets of `model` into
+// `buffer` (model reads through `sources.resources`).
+void initialize_model_packets(std::uint32_t model, SpriteAllocation &buffer,
+                              SpriteEnvironment &environment, const SpriteSources &sources);
+
 // F5's 8002cb54 / 8002c8cc path, mode zero. Only independently recovered
 // dispatch handlers are supported; no draw, projection or rasterizer is implied.
 void construct_sprite_model(SpriteWindow sprite, std::uint32_t model,

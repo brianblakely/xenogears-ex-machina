@@ -33,6 +33,8 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_move.cpp
   src/reconstruction/field_dialogue.cpp
   src/reconstruction/field_transition.cpp
+  src/reconstruction/field_reload.cpp
+  src/reconstruction/field_load.cpp
   src/reconstruction/original_layout.cpp
   src/reconstruction/battle.cpp
   src/reconstruction/battle_ai.cpp
@@ -92,6 +94,9 @@ if(BUILD_TESTING)
   add_executable(test-program tests/test_program.cpp)
   target_link_libraries(test-program PRIVATE xem-reconstruction)
   add_test(NAME connected-program COMMAND test-program)
+  add_executable(test-field-reload tests/test_field_reload.cpp)
+  target_link_libraries(test-field-reload PRIVATE xem-reconstruction)
+  add_test(NAME field-reload-reconstruction COMMAND test-field-reload)
   add_test(NAME analysis-execution
     COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tests/test_execution.py"
       "$<TARGET_FILE:xem-analysis-runner>")

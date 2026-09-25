@@ -134,6 +134,12 @@ void packets(std::uint32_t model, SpriteAllocation &buffer, SpriteEnvironment &e
 }
 } // namespace
 
+void initialize_model_packets(std::uint32_t model, SpriteAllocation &buffer,
+                              SpriteEnvironment &environment, const SpriteSources &sources) {
+    input(sources.models != nullptr, "Model packets require the model renderer state");
+    packets(model, buffer, environment, sources);
+}
+
 void relocate_sprite_model(std::uint32_t model, const SpriteSources &sources) {
     observe(sources, "sprite_model_relocation", 0x8002c59c);
     const auto flags = read(sources, model, 2);
