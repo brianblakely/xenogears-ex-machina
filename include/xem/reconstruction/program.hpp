@@ -461,6 +461,13 @@ struct ResidentState {
     std::uint32_t battle_wave{};    // 800595ac: the wave bank 800b853c loads
     // 80000010, low RAM: 8001cc18 reads it as the generation of a null owner.
     std::uint32_t null_owner_generation{};
+    // 800694f8: while set, 80070f40 starts the sequence at 80062648 after
+    // 800b81bc (800397fc); its producer is not recovered.
+    std::uint8_t b_694f8{};
+    // Battle windows (8008f8f4): a word that selects blending for their
+    // glyphs (800595a0: 80076b00 texture page bit 40; 80077454 GetTPage's
+    // abr). Their backing quads take window_color.
+    std::uint32_t window_blend{};
     // The scene files 800379d8 reads (directory 15 files 2n+6 and 2n+7): the
     // stage file (80059470), a word it clears (80059520), and the scene data
     // after the second file's first word (800658c8 and 8005949c); the list
@@ -781,6 +788,7 @@ enum class BattleStartPresentation : std::uint8_t {
     swirl_open,    // 800b7424: the swirl block's geometry
     swirl_draw,    // 800b6f0c, 800b7160: one frame of the swirl's primitives
     swirl_show,    // PutDrawEnv, PutDispEnv and DrawOTag of the frame
+    camera,        // 800bc404: frame the camera (camera state and GTE only)
 };
 using BattleStartPresent = std::function<void(BattleStartPresentation)>;
 
@@ -1101,6 +1109,13 @@ class Program {
     // 80071188..80071278: the opening and the setup frames.
     void battle_setup_frames(FrameServices &services, const BattleStartPresent &present,
                              const ProgramObserver &observe);
+    // 80070f40 after 800b81bc up to 80077990: the fade tasks (800b39c0), the
+    // sequence of 800694f8 (800397fc) and the scene data pointers.
+    void battle_opening();
+    // 80077990: the palette rows read back, window glyphs and draw modes.
+    void battle_opening_images(FrameServices &services);
+    // 8007819c: the two message windows and the four pairs of text quads.
+    void battle_opening_windows();
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.
@@ -1380,6 +1395,17 @@ class Program {
     void setup_battle_party(battle::Battle &battle, FrameServices &services,
                             std::uint32_t stack);     // 801e5384
     void setup_battle_panels(battle::Battle &battle); // 801e6290, 801e62b8
+    // 800b39c0(time, mode, r, g, b): start or retarget the fade task.
+    void start_battle_fade(battle::Battle &battle, std::uint32_t time, std::uint32_t mode,
+                           std::uint32_t red, std::uint32_t green, std::uint32_t blue);
+    void step_battle_fade(battle::Battle &battle, std::uint32_t task); // 800b36bc
+    // 8008f8f4(id, x, y, w, h, deferred, frame): window `id` (0-7): its block
+    // (800d2e38, 5a8h bytes) and placement record (800d2d90, eh bytes) when
+    // UI +b0+id is clear, with their primitives (80077454); then its frame
+    // built at once (8008f6e4) or, when deferred, its placement recorded.
+    void open_battle_window(battle::Battle &battle, std::uint32_t id, std::int16_t x,
+                            std::int16_t y, std::int16_t w, std::int16_t h, bool deferred,
+                            bool frame);
     std::uint32_t unpack_battle_item(battle::Battle &battle, std::uint32_t item,
                                      std::uint32_t mode); // 80032e88
     void release_battle_block(battle::Battle &battle, std::uint32_t address,

@@ -19,6 +19,7 @@ from tools.analysis.memory_case import (
     platform_inputs,
     superseded_bytes,
     visible_registers,
+    vram_read_lines,
 )
 
 
@@ -356,6 +357,25 @@ if __name__ == "__main__":
 
 
 class FastComparisonTests(unittest.TestCase):
+    def test_vram_read_backs_come_from_the_image_after_the_call(self) -> None:
+        ram = bytearray(0x200000)
+        ram[0xC3EA4:0xC3EA8] = (0x80110000).to_bytes(4, "little")
+        for index in range(16):
+            at = 0x110000 + 0x8970 + (index % 4) * 0x630 + (index // 4) * 0x18C
+            ram[at : at + 0x18C] = bytes([index]) * 0x18C
+
+        class Snapshots:
+            def read(self, row):
+                return bytes(ram), b"", b""
+
+        entry = {"hook": "op-77990", "event": 1}
+        lines = vram_read_lines({"hook": "op-camera", "event": 2}, Snapshots(), entry)
+        self.assertEqual(len(lines), 16)
+        # Call order: each row once, then the next copy.
+        self.assertEqual(lines[1], "vram_read 63 " + "01" * 0x18C)
+        self.assertEqual(lines[4], "vram_read 63 " + "04" * 0x18C)
+        self.assertEqual(vram_read_lines({"hook": "op-camera", "event": 1}, Snapshots(), entry), [])
+
     def test_differing_positions_match_a_byte_scan(self) -> None:
         a = bytes(range(256)) * 16
         b = bytearray(a)

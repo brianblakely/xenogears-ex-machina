@@ -140,11 +140,20 @@ void Program::battle_load(std::uint32_t mode, FrameServices &services, std::uint
 
 // 80071188..80071278: the opening (fades, 80077990, the camera, 8007819c)
 // and the battle frames 800716d8 until the setup task sets 800ccc58.
-void Program::battle_setup_frames(FrameServices &, const BattleStartPresent &,
-                                  const ProgramObserver &) {
-    throw MissingDependency({"battle_setup_frames", 0x8007118c, {}, {}},
+void Program::battle_setup_frames(FrameServices &services, const BattleStartPresent &present,
+                                  const ProgramObserver &observe) {
+    battle_opening();
+    battle_opening_images(services);
+    observed(observe, *this, "battle_opening_images", 0x8007121c);
+    // 800bc404(*800d39dc) frames the camera (camera state and GTE only).
+    present(BattleStartPresentation::camera);
+    battle_opening_windows();
+    observed(observe, *this, "battle_opening_windows", 0x80071248);
+    // 800716d8 until 800ccc58: the task runner 800be790 with the setup
+    // module's loader task (801e6fec) and the fades (800b36bc).
+    throw MissingDependency({"battle_setup_frames", 0x800716d8, {}, {}},
                             "symbol:battle-setup-frames", false,
-                            "The opening and the setup frames of 80070f40 are not reconstructed");
+                            "The battle frames' task runner 800be790 is not reconstructed");
 }
 
 // 80070f40 up to its first call of 800723e0. `stack` is the stack pointer

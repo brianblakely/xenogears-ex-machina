@@ -835,6 +835,9 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.battle_spacer; });
     add_resident("battle_5959c", 0x8005959c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5959c; });
+    add_resident("window_blend", 0x800595a0, 4,
+                 [](Program &p) -> auto & { return p.resident.window_blend; });
+    add_resident("b_694f8", 0x800694f8, 1, [](Program &p) -> auto & { return p.resident.b_694f8; });
     add_resident("battle_wave", 0x800595ac, 4,
                  [](Program &p) -> auto & { return p.resident.battle_wave; });
     add_resident("null_owner_generation", 0x80000010, 4,
