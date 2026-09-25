@@ -280,13 +280,14 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
     observed(observe, *this, {"field_between_frames", 0x800782dc, {}, {}});
 }
 
-// 80078b5c: advance rand (8003fa38); 8004f308 at -1 asks 80085c90.
+// 80078b5c: advance rand (8003fa38); 8004f308 at -1 takes the music
+// load's next step (80085c90) for the requested music (8004f324).
 void Program::field_post_frame() {
     auto &state = loaded(*this);
     resident.random_seed = resident.random_seed * 0x41c64e6dU + 12345U;
+    deliver_arrivals(0x80078b88); // Recorded before the music poll's call
     if (s32(resident.music.gate) == -1)
-        unrecovered("field_music_step", 0x80078b88, "symbol:field-80085c90",
-                    "The music step 80085c90 is not recovered");
+        resident.music.gate = poll_music(resident.music.requested);
     if (state.camera_cut != 0)
         --state.camera_cut;
 }

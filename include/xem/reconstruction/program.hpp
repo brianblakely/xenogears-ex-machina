@@ -805,11 +805,34 @@ class Program {
     // pending interrupt the dispatcher enables, until none is pending.
     // Asynchronous register reads come from resident.platform.
     void interrupt_dispatch();
+    // Deliver the interrupt arrivals at the front of the platform input: a
+    // host ending an imported call whose remaining arrivals all came before
+    // its return.
+    void deliver_pending_arrivals();
     // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
     // driver flags the event handler loaded). Returns 0.
     std::uint32_t sound_tick(std::uint32_t event);
     // Resident 8001b66c: stop the playing sequence and forget the loaded pair.
     void stop_music();
+    // Field 80085c90: one step of loading music `id` (the main loop passes
+    // 8004f324 while 8004f308 is -1 and stores the result there): -1 while
+    // the wave bank streams, its sequence is read or the disc is busy, 0 once
+    // the sequence plays. SPU uploads become HardwareWrite commands; waits
+    // for SPU and disc transfers take the next interrupt arrivals.
+    std::uint32_t poll_music(std::uint32_t id);
+    // Field 800859dc: the wave stream's chunk callback (A0 the chunk).
+    void consume_music_chunk(std::uint32_t chunk);
+    // Resident 800380d0: create a wave bank from the header staged at
+    // `header` (`bytes` staged) in `mode` (0 its own SPU address, else fixed
+    // at that address, -1 dynamic), start uploading the staged samples and
+    // link it last on the wave bank list; returns it.
+    std::uint32_t load_wave_bank(std::uint32_t header, std::uint32_t bytes, std::uint32_t mode);
+    // Resident 80039850: create and link a sequence over the event data at
+    // `data`; returns it.
+    std::uint32_t open_sequence(std::uint32_t data);
+    // Resident 80039a80: (re)start a sequence at `volume`, fading over
+    // `frames` ticks when nonzero (8003a89c).
+    void start_sequence(std::uint32_t sequence, std::uint32_t volume, std::uint32_t frames);
     // Resident 800386c4: select a sound output mode (resident::SoundMode) and
     // reapply every volume it affects; the reverb output volume goes to the
     // SPU (libspu 8004e574) as hardware writes. The CD mix 8003885c (driver
@@ -1179,6 +1202,17 @@ class Program {
     void change_music(field::EventContext &context); // Field 8008f76c (primary 75)
     void load_music(std::uint32_t id);               // Field 80085b20
     void release_shared_wave();                      // Field 80086024
+    // The music load's calls (field_music.cpp) and the resident sound calls
+    // they reach (sound_load.cpp, sound_tick.cpp).
+    class Music;
+    void release_music_buffer(std::uint32_t address, std::uint32_t call_site);   // 800320e8
+    std::uint32_t continue_wave_upload(std::uint32_t data, std::uint32_t bytes); // 8003827c
+    void spu_transfer(std::uint32_t spu, std::uint32_t ram, std::uint32_t size,
+                      std::uint32_t callback);                      // 8003bc10
+    std::int32_t sound_wait(std::uint32_t flags);                   // 8003bdfc
+    void spu_reverb_depth(std::uint16_t left, std::uint16_t right); // 8004e574
+    void sequence_volume(std::uint32_t sequence, std::uint32_t volume,
+                         std::uint32_t frames); // 8003a89c
     // Map changes: field 800932d0 (primary 98), 8009744c and 8009a514.
     void request_map_change(field::FieldWorld &world);
     [[nodiscard]] std::int32_t facing_octant() const;

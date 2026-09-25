@@ -22,11 +22,13 @@ using MusicResource = std::uint32_t;
 struct MusicStreamState {
     MusicResource descriptor{}; // field 800adbb8
     MusicResource next_chunk{}; // field 800adbbc
-    std::uint32_t consumer{};   // field 800afea4: original address of the chunk callback
-    // Original indirect callback at 800afea4 takes the chunk in A0. The caller
-    // registers its actual consumer; missing callbacks fail explicitly.
-    std::function<void(MusicResource)> consume_chunk;
+    // Field 800afea4: original address of the chunk callback, which the
+    // stream step calls indirectly with the chunk in A0 (MusicCalls).
+    std::uint32_t consumer{};
 };
+
+// The fixed sequence input buffer (80062648) the deferred read fills.
+inline constexpr MusicResource sequence_buffer = 0x80062648;
 
 struct MusicLoadState {
     std::uint32_t gate{};                   // 8004f308; committed by the caller
@@ -46,7 +48,6 @@ struct MusicLoadState {
     std::uint16_t shared_release_flag{};    // 8004f384
     std::uint32_t deferred_sequence_read{}; // 800afc54
 
-    MusicResource sequence_input{};     // original fixed buffer 80062648
     MusicResource current_sequence{};   // 80062528
     MusicResource wave_staging{};       // 800c3a1c
     MusicResource shared_staging{};     // 800b00e0
@@ -57,13 +58,14 @@ struct MusicLoadState {
     MusicStreamState stream;
 };
 
-// These are unresolved original *game calls*, not interchangeable PS1 platform
-// services. An actual runtime must recover their implementations. A test double
-// validates only the caller's policy; it cannot establish media completion.
-// Pure virtual functions deliberately prevent silent successful defaults.
-class UnrecoveredMusicCalls {
+// The original game calls the music load makes. Program connects them to its
+// recovered resident code (field_music.cpp); a test double validates only the
+// caller's policy. Pure virtual functions prevent silent successful defaults.
+class MusicCalls {
   public:
-    virtual ~UnrecoveredMusicCalls() = default;
+    virtual ~MusicCalls() = default;
+    // The indirect call through 800afea4 (`consumer`) with the chunk in A0.
+    virtual void consume_stream_chunk(std::uint32_t consumer, MusicResource chunk) = 0;
     virtual MusicResource next_stream_chunk() = 0; // resident 80028b14
     virtual MusicResource allocate_stream_buffer(std::uint32_t blocks,
                                                  std::uint32_t allocation_mode) = 0; // 8002a260
@@ -90,36 +92,32 @@ class UnrecoveredMusicCalls {
 };
 
 // Original 80085560 and 800854d0. The allocation mode is forwarded in A1
-// through 8002a260 into 80031bdc; the callback remains owned by stream state,
-// and `consumer` is its original address stored at 800afea4.
+// through 8002a260 into 80031bdc; `consumer` is the chunk callback's original
+// address stored at 800afea4.
 // BattleRequestState owns the shared activity gate at 800adb2c.
 void start_music_stream(MusicStreamState &state, BattleRequestState &request, std::uint32_t file,
-                        std::uint32_t allocation_mode, std::uint32_t consumer,
-                        std::function<void(MusicResource)> consume_chunk,
-                        UnrecoveredMusicCalls &calls);
+                        std::uint32_t allocation_mode, std::uint32_t consumer, MusicCalls &calls);
 [[nodiscard]] std::uint32_t poll_music_stream(MusicStreamState &state, BattleRequestState &request,
-                                              UnrecoveredMusicCalls &calls);
+                                              MusicCalls &calls);
 // Original field 80085c3c: up to five streaming steps; inverts the stream's
 // finished sentinel into the poller's pending/complete convention.
-[[nodiscard]] std::uint32_t finish_music_wave_chunks(MusicStreamState &state,
-                                                     BattleRequestState &request,
-                                                     UnrecoveredMusicCalls &calls);
+[[nodiscard]] std::uint32_t
+finish_music_wave_chunks(MusicStreamState &state, BattleRequestState &request, MusicCalls &calls);
 // Original callback 800859dc. Views are the caller's actual resource storage;
 // token values are not cast to host pointers. The original copies 16 bytes at
 // a time, including when the input and staging ranges overlap.
 void consume_music_wave_chunk(MusicLoadState &state, MusicResource chunk,
                               std::span<const std::uint8_t, 2048> input,
-                              std::span<std::uint8_t, 8192> staging, UnrecoveredMusicCalls &calls);
-void start_shared_music_wave(MusicLoadState &state, UnrecoveredMusicCalls &calls);
-[[nodiscard]] std::uint32_t finish_shared_music_wave(MusicLoadState &state,
-                                                     UnrecoveredMusicCalls &calls);
+                              std::span<std::uint8_t, 8192> staging, MusicCalls &calls);
+void start_shared_music_wave(MusicLoadState &state, MusicCalls &calls);
+[[nodiscard]] std::uint32_t finish_shared_music_wave(MusicLoadState &state, MusicCalls &calls);
 // Original field 80085c90..80085ee8. Does not commit state.gate.
 [[nodiscard]] std::uint32_t poll_music_load(MusicLoadState &state, BattleRequestState &request,
-                                            MusicSelection selection, UnrecoveredMusicCalls &calls);
+                                            MusicSelection selection, MusicCalls &calls);
 // Only the music statement at 80078b6c..80078b94, not the whole update function
 // (whose RNG advance and cooldown decrement have separate owners).
 void update_music_load_gate(MusicLoadState &state, BattleRequestState &request,
-                            MusicSelection selection, UnrecoveredMusicCalls &calls);
+                            MusicSelection selection, MusicCalls &calls);
 // The recovered FE/A2 route consumes this same authoritative state.
 void execute_music_extended_event(EventContext &context, std::uint8_t opcode,
                                   const MusicLoadState &state);

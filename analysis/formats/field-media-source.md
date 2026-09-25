@@ -67,15 +67,16 @@ indices execute the original no-operation branches. Pending and active flags
 retain their exact sentinel/equality comparisons; stale resource tokens are not
 inventively cleared after release.
 
-`UnrecoveredMusicCalls` names remaining original game-specific calls explicitly.
-These include resident CD ring/read wrappers, memory ownership, wave transfer,
-SMDS sequence creation/start/resume/configuration and audio-service waits. They
-are **not** a claim that all remaining work is a platform backend. Pure virtual
-methods have no successful defaults, and a missing stream consumer fails
-explicitly. Test doubles exercise the recovered caller contract but do not
-validate those callees. Original wave/sample/sequence decoding, playback,
-Mono/Stereo/Wide, stop/replacement lifetimes and required FMV behavior remain
-required recovery work.
+`MusicCalls` names the original game calls the load makes, including the
+indirect chunk callback through `800afea4`. `Program::Music`
+(`src/reconstruction/field_music.cpp`) connects each one to recovered resident
+code: the CD ring and reads, the heap, the wave bank load and upload
+(`800380d0`, `8003827c`), the SPU transfer wait (`8003bdfc`) and sequence
+creation and start (`80039850`, `80039a80`, `8003a89c`) in
+`src/reconstruction/sound_load.cpp`. The shared wave bank (`80085fb8`,
+`80085f30`) and a kept sequence's resume (`80039b68`) stop with
+`MissingDependency`. Pure virtual methods have no successful defaults; test
+doubles exercise the caller contract only.
 
 ## Validation and limits
 

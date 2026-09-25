@@ -87,8 +87,14 @@ void import_menu_block(reconstruction::Program &program, const OriginalMemory &m
 // drive service reads; empty when the case needs none.
 void load_platform(reconstruction::Program &program, const char *platform, const char *disc);
 // Attaches the RAM that interrupt-context disc callbacks read: the active
-// stream ring header and the list of a list read.
+// stream ring header and the list of a list read. While a music wave bank
+// streams (8004f354 1) it also attaches the stream buffer (header and
+// payload) until the stream ends, and the wave staging block (800c3a1c).
 void attach_interrupt_memory(reconstruction::Program &program, const OriginalMemory &memory);
+// Adds `size` bytes at `address` that a disc read placed and a call reads
+// (as a disc transfer block).
+void import_disc_data(reconstruction::Program &program, const OriginalMemory &memory,
+                      std::uint32_t address, std::uint32_t size);
 
 // Owns the bytes of allocated heap blocks that no other Program value owns,
 // as resident heap contents: a field teardown releases whole blocks.

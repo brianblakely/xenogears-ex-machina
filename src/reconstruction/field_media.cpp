@@ -1,26 +1,20 @@
 #include "xem/reconstruction/field_media.hpp"
 
 #include <algorithm>
-#include <utility>
 
 namespace xem::reconstruction::field {
 
 // EVID-REF-018; qualified field overlay identity is event_source_overlay_sha256.
 void start_music_stream(MusicStreamState &state, BattleRequestState &request, std::uint32_t file,
-                        std::uint32_t allocation_mode, std::uint32_t consumer,
-                        std::function<void(MusicResource)> consume_chunk,
-                        UnrecoveredMusicCalls &calls) {
-    if (!consume_chunk)
-        throw EventError("Music stream requires its recovered chunk consumer");
+                        std::uint32_t allocation_mode, std::uint32_t consumer, MusicCalls &calls) {
     request.menu_gate = 1;
     state.descriptor = calls.allocate_stream_buffer(8, allocation_mode);
     calls.read_file(file, state.descriptor, 0, 0x100);
     state.consumer = consumer;
-    state.consume_chunk = std::move(consume_chunk);
 }
 
 std::uint32_t poll_music_stream(MusicStreamState &state, BattleRequestState &request,
-                                UnrecoveredMusicCalls &calls) {
+                                MusicCalls &calls) {
     state.next_chunk = calls.next_stream_chunk();
     if (state.next_chunk == 0) {
         // The original rechecks next_chunk after the disc call. Preserve that
@@ -31,15 +25,13 @@ std::uint32_t poll_music_stream(MusicStreamState &state, BattleRequestState &req
             return music_pending;
         }
     } else {
-        if (!state.consume_chunk)
-            throw EventError("Music stream chunk consumer is unrecovered");
-        state.consume_chunk(state.next_chunk);
+        calls.consume_stream_chunk(state.consumer, state.next_chunk);
     }
     return 0;
 }
 
 std::uint32_t finish_music_wave_chunks(MusicStreamState &state, BattleRequestState &request,
-                                       UnrecoveredMusicCalls &calls) {
+                                       MusicCalls &calls) {
     for (unsigned i = 0; i < 5; ++i) {
         if (poll_music_stream(state, request, calls) == music_pending)
             return 0;
@@ -49,7 +41,7 @@ std::uint32_t finish_music_wave_chunks(MusicStreamState &state, BattleRequestSta
 
 void consume_music_wave_chunk(MusicLoadState &state, MusicResource chunk,
                               std::span<const std::uint8_t, 2048> input,
-                              std::span<std::uint8_t, 8192> staging, UnrecoveredMusicCalls &calls) {
+                              std::span<std::uint8_t, 8192> staging, MusicCalls &calls) {
     const auto copy_chunk = [&](std::size_t offset) {
         for (std::size_t i = 0; i < input.size(); i += 16) {
             // Four word loads precede four stores in each original iteration.
@@ -76,7 +68,7 @@ void consume_music_wave_chunk(MusicLoadState &state, MusicResource chunk,
 }
 
 // Original 80085fb8..80086020, including directory restoration after the read.
-void start_shared_music_wave(MusicLoadState &state, UnrecoveredMusicCalls &calls) {
+void start_shared_music_wave(MusicLoadState &state, MusicCalls &calls) {
     calls.select_directory(0x1c, 0);
     const auto size = calls.file_size(3);
     state.shared_staging = calls.allocate_buffer(size, 1);
@@ -86,7 +78,7 @@ void start_shared_music_wave(MusicLoadState &state, UnrecoveredMusicCalls &calls
 }
 
 // Original 80085f30..80085fb4. The two shared-wave owners receive the same object.
-std::uint32_t finish_shared_music_wave(MusicLoadState &state, UnrecoveredMusicCalls &calls) {
+std::uint32_t finish_shared_music_wave(MusicLoadState &state, MusicCalls &calls) {
     if (calls.disc_busy() != 0)
         return music_pending;
     const auto wave = calls.load_shared_wave(state.shared_staging, 0);
@@ -101,7 +93,7 @@ std::uint32_t finish_shared_music_wave(MusicLoadState &state, UnrecoveredMusicCa
 }
 
 std::uint32_t poll_music_load(MusicLoadState &state, BattleRequestState &request,
-                              MusicSelection selection, UnrecoveredMusicCalls &calls) {
+                              MusicSelection selection, MusicCalls &calls) {
     if (selection.sequence == 255)
         throw EventError("Music poll requires a source-qualified selector, not the stop sentinel");
     if (state.wave_pending == 1) {
@@ -125,7 +117,7 @@ std::uint32_t poll_music_load(MusicLoadState &state, BattleRequestState &request
     if (state.deferred_sequence_read == 1) {
         if (state.loaded_sequence != selection.sequence) {
             calls.select_directory(0x1c, 0);
-            calls.read_file(0x14U + 2U * selection.sequence, state.sequence_input, 0, 0x80);
+            calls.read_file(0x14U + 2U * selection.sequence, sequence_buffer, 0, 0x80);
             state.sequence_pending = 1;
             calls.select_directory(4, 0);
         }
@@ -136,7 +128,7 @@ std::uint32_t poll_music_load(MusicLoadState &state, BattleRequestState &request
         return music_pending;
     if (state.sequence_pending == 1) {
         if (state.reuse_sequence == 0) {
-            state.current_sequence = calls.create_sequence(state.sequence_input);
+            state.current_sequence = calls.create_sequence(sequence_buffer);
             if (state.start_parameter == music_pending) {
                 calls.start_sequence(state.current_sequence, 127, 0);
             } else {
@@ -159,7 +151,7 @@ std::uint32_t poll_music_load(MusicLoadState &state, BattleRequestState &request
 }
 
 void update_music_load_gate(MusicLoadState &state, BattleRequestState &request,
-                            MusicSelection selection, UnrecoveredMusicCalls &calls) {
+                            MusicSelection selection, MusicCalls &calls) {
     if (state.gate == music_pending)
         state.gate = poll_music_load(state, request, selection, calls);
 }

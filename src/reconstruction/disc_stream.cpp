@@ -66,10 +66,7 @@ MusicResource next_disc_stream_chunk(DiscStreamState &state,
     if (index == state.active_block_count)
         return 0;
     state.expected_sequence = static_cast<std::uint16_t>(state.expected_sequence + 1U);
-    const auto offset = count_bits * 8U + static_cast<std::uint32_t>(index) * 2048U + 36U;
-    if (offset > storage.size() || 2048U > storage.size() - offset)
-        throw EventError("Original disc stream selection exceeds its live allocation");
-    return state.ring_buffer + offset;
+    return state.ring_buffer + count_bits * 8U + static_cast<std::uint32_t>(index) * 2048U + 36U;
 }
 
 // Resident 8002945c. Interior chunk pointers alias their containing 2048-byte slot.
@@ -85,35 +82,6 @@ std::uint16_t release_disc_stream_chunk(const DiscStreamState &state,
     const auto previous = static_cast<std::uint16_t>(read(storage, offset, 2));
     write(storage, offset, 0, 2);
     return previous;
-}
-
-// Resident 8002a260: A1 is forwarded to the game allocator without alteration.
-MusicResource DiscStreamMusicCalls::allocate_stream_buffer(std::uint32_t blocks,
-                                                           std::uint32_t allocation_mode) {
-    if (std::bit_cast<std::int32_t>(blocks) < 1)
-        return 0;
-    const auto resource = allocate_buffer(blocks * 0x808U + 0x24U, allocation_mode);
-    if (resource == 0)
-        return 0;
-    auto storage = stream_buffer_storage(resource);
-    write(storage, 0, blocks, 4);
-    (void)select_disc_stream_ring(disc_stream, resource);
-    (void)reset_disc_stream_ring(disc_stream, storage);
-    return resource;
-}
-
-MusicResource DiscStreamMusicCalls::next_stream_chunk() {
-    return next_disc_stream_chunk(
-        disc_stream, disc_stream.ring_buffer == 0 ? std::span<std::uint8_t>{}
-                                                  : stream_buffer_storage(disc_stream.ring_buffer));
-}
-
-void DiscStreamMusicCalls::release_stream_chunk(MusicResource chunk) {
-    (void)release_disc_stream_chunk(disc_stream,
-                                    disc_stream.ring_buffer == 0 || chunk == 0
-                                        ? std::span<std::uint8_t>{}
-                                        : stream_buffer_storage(disc_stream.ring_buffer),
-                                    chunk);
 }
 
 } // namespace xem::reconstruction::field

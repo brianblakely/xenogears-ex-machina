@@ -16,6 +16,7 @@ from tools.analysis.memory_case import (
     image_map,
     loop_inputs,
     pairs,
+    platform_inputs,
     superseded_bytes,
     visible_registers,
 )
@@ -274,6 +275,80 @@ class MemoryCaseTests(unittest.TestCase):
         io[0xB8 + 3] = 1  # DMA3 busy in the imported page, idle in the recording
         with self.assertRaisesRegex(ValueError, "DMA3 busy"):
             loop_inputs(image, loop, {50: b""}, bytes(ram), bytes(io))
+
+    def test_music_positions_and_spu_transfer_reads(self):
+        ram = bytearray(RAM)
+        # lhu a0, 0x1aa(v1) at the SPU control read; lw v0, 0(v0) at the DMA read.
+        ram[0x4CD8C:0x4CD90] = (0x946401AA).to_bytes(4, "little")
+        ram[0x4BA34:0x4BA38] = (0x8C420000).to_bytes(4, "little")
+        ram[0x567B4:0x567B8] = (0x1F8010B8).to_bytes(4, "little")
+
+        def row(hook, cycle, v0=0, a0=0, pc=0):
+            registers = [0, 0, v0, 0, a0] + [0] * 24 + [0x801FFFC8, 0, 0, 0, 0, 0]
+            return {
+                "hook": hook,
+                "cycle_u32": cycle,
+                "subcycle_u32": 0,
+                "pc": pc,
+                "code": 0,
+                "gpr_u32": registers,
+                "load_delay": {"select": 0, "registers": [0, 0], "values": [0, 0]},
+            }
+
+        loop = [
+            row("frame-entry", 0),
+            row("loop-return", 10),
+            row("dispatch-entry", 15),
+            row("dispatch-exit", 16),
+            row("music-poll", 20),
+            row("stream-step", 30),
+            row("dispatch-entry", 40),
+            row("load-8004ba34", 41, v0=8, pc=0x8004BA38),
+            row("dispatch-exit", 42),
+            row("load-8004cd8c", 50, a0=0xC000, pc=0x8004CD90),
+            row("tick-entry", 60, v0=1),
+            row("tick-exit", 61),
+            row("loop-tail", 70),
+        ]
+        lines, counts, _, _ = loop_inputs([], loop, {15: b"", 40: b""}, bytes(ram), bytes(0x1000))
+        # The arrival before the SPU read precedes it; the tick after it
+        # keeps its stream-step point.
+        self.assertEqual(
+            lines,
+            [
+                "arrival 80078b88",
+                "arrival 800854d0",
+                "read 8004ba34 00000008",
+                "read 8004cd8c 0000c000",
+                "tick 800854d0 1",
+            ],
+        )
+        self.assertEqual(counts["spu_transfer_reads"], 1)
+
+    def test_per_call_datasync_reads_are_checked_not_supplied(self):
+        ram = bytearray(RAM)
+        ram[0x42A6C:0x42A70] = (0x8C420000).to_bytes(4, "little")
+        ram[0x567B4:0x567B8] = (0x1F8010B8).to_bytes(4, "little")
+        load = {
+            "hook": "load-80042a6c",
+            "pc": 0x80042A70,
+            "code": 0,
+            "gpr_u32": [0] * 34,
+            "load_delay": {"select": 0, "registers": [0, 0], "values": [0, 0]},
+        }
+        self.assertEqual(platform_inputs([load], bytes(ram), bytes(0x1000), None), ("", []))
+        io = bytearray(0x1000)
+        io[0xB8 + 3] = 1
+        with self.assertRaisesRegex(ValueError, "DMA3 busy"):
+            platform_inputs([load], bytes(ram), bytes(io), None)
+
+    def test_syscalls_excuse_the_bios_save_areas(self):
+        entry, exit = bytearray(RAM), bytearray(RAM)
+        exit[0xE0CC] = 1
+        result = compare(bytes(entry), bytes(exit), [], 0x80100000)
+        self.assertEqual(result["unowned_writes"], ["0x8000e0cc"])
+        result = compare(bytes(entry), bytes(exit), [], 0x80100000, syscalls=True)
+        self.assertEqual(result["unowned_writes"], [])
 
 
 if __name__ == "__main__":

@@ -123,9 +123,11 @@ RESIDENT_ENTRIES = (
     "battle_turn_view_resume",
     "battle_turn_combo_resume",
     "battle_turn_confirm_resume",
+    "sequence_open",
+    "sequence_start",
 )
 # Field entries besides the update and move phases.
-FIELD_ENTRIES = ("field_event_extended", "movie_decision")
+FIELD_ENTRIES = ("field_event_extended", "movie_decision", "music_poll", "music_chunk")
 # The field reload 800a5c40 and the steps around each field frame. Their
 # platform results are the service records inside the call (see
 # `call_services`).
@@ -489,12 +491,17 @@ def header_sector(row: dict) -> int:
     return (decimal(header[0]) * 60 + decimal(header[1])) * 75 + decimal(header[2]) - 150
 
 
-def platform_inputs(rows: list[dict], ram: bytes, arrival: str | None) -> tuple[str, list[int]]:
+def platform_inputs(
+    rows: list[dict], ram: bytes, io: bytes, arrival: str | None
+) -> tuple[str, list[int]]:
     """The runner's platform input file and the recorded delivered sectors.
 
     Load values come from the original registers after each load; nothing is
-    taken from an exit image.
+    taken from an exit image. CD_datasync's DMA3 busy reads are checked
+    against the imported I/O page, which the recovered disc status reads.
     """
+    dma3 = u32(ram, 0x800567B4) - IO_BASE
+    idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000 if 0 <= dma3 <= len(io) - 4 else None
     lines, sectors = [], []
     for row in rows:
         hook = row["hook"]
@@ -508,6 +515,9 @@ def platform_inputs(rows: list[dict], ram: bytes, arrival: str | None) -> tuple[
             code = u32(ram, site)
             require(code >> 26 in LOADS, "Load hook does not follow a load instruction")
             value = visible_registers(row)[(code >> 16) & 31]
+            if site == DATASYNC_READ:
+                require(value & 0x1000000 == idle, "DMA3 busy differs from the imported I/O page")
+                continue
             lines.append(f"read {site:08x} {value:08x}")
     if sectors:
         lines.insert(0, f"drive {sectors[0]}")
@@ -742,6 +752,7 @@ def compare(
     superseded: dict[int, tuple[int, int]] | None = None,
     arrival_stacks: tuple[int, ...] = (),
     stack_windows: tuple[tuple[int, int], ...] = (),
+    syscalls: bool = False,
 ) -> dict:
     """Exact comparison of owned bytes plus attribution of every other change.
 
@@ -780,7 +791,8 @@ def compare(
     kernel = {
         o
         for o in set(changed) | own | set(interrupt_changed)
-        if (interrupt_changed or arrival_stacks) and any(a <= o < b for a, b in KERNEL_SAVE)
+        if (interrupt_changed or arrival_stacks or syscalls)
+        and any(a <= o < b for a, b in KERNEL_SAVE)
     }
     excused = {o for o in interrupt_changed if o not in own} | kernel
     # An owned byte that only interrupt code changed belongs to the interrupt
@@ -1020,7 +1032,7 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
-            platform, recorded_sectors = platform_inputs(first["inputs"], entry, args.arrival)
+            platform, recorded_sectors = platform_inputs(first["inputs"], entry, io, args.arrival)
             if args.assume_idle_otc:
                 require(args.entry in RELOAD_ENTRIES, "Assumed reads apply to reload entries")
                 platform += "".join(
@@ -1110,6 +1122,7 @@ def run(args: argparse.Namespace) -> int:
                         if row["hook"] == args.arrival
                     ),
                     tuple(tuple(window) for window in output.get("stack_windows", [])),
+                    args.syscalls,
                 )
                 # Exact GTE control registers at exit. Interrupt handlers are
                 # not modeled; one that changed these registers would surface here.
@@ -1238,6 +1251,8 @@ def run(args: argparse.Namespace) -> int:
             "interrupts": interrupts,
             "presentation": presentation,
             "return_register": args.return_register,
+            "arrival": args.arrival,
+            "syscalls": args.syscalls,
         },
         "matched_behaviours": [
             {"changed_ranges": list(key), "calls": count} for key, count in behaviours.items()
@@ -1322,10 +1337,26 @@ ARRIVAL_POINTS = {
     "drain-call": 0x80074700,  # the pad drain (ordering unknown; delivered after it)
     "drain-return": 0x800A31E8,
     "loop-31e8": 0x80077DAC,  # 800a31e8
+    # The music load between frames (captures with these hooks record no
+    # frame-exit): up to the poll call; the poll 80085c90; each stream step
+    # 800854d0; a sequence's creation 80039850 up to its voices; the voice
+    # setup 8003b424; a sequence's start 80039a80 up to its voices; the rest
+    # of the loop from 80078b98.
+    "loop-return": 0x80078B88,
+    "music-poll": 0x80085C90,
+    "stream-step": 0x800854D0,
+    "sequence-open": 0x80039850,
+    "sequence-voices": 0x8003B424,
+    "sequence-start": 0x80039A80,
+    "loop-tail": 0x80077DB4,
 }
 # Hardware reads the code between frames consumes: ClearOTagR's DMA6 busy
 # polls. The frame's own results come from its services.
 LOOP_READS = (0x80045DE4, 0x80045E18)
+# The SPU control register read that starts an SPU DMA write (8004cd8c).
+# Outside interrupt code it is also a position: arrivals recorded before it
+# precede it (Program::spu_transfer delivers them first).
+SPU_TRANSFER_READS = (0x8004CD8C,)
 # CD_datasync's DMA3 busy read; the recovered disc status (800286cc) takes it
 # from the imported I/O page, so every recording must agree with that page.
 DATASYNC_READ = 0x80042A6C
@@ -1398,6 +1429,11 @@ def loop_inputs(
             elif site in LOOP_READS:
                 lines.append(f"read {site:08x} {value:08x}")
                 counts["loop_reads"] += 1
+            elif site in SPU_TRANSFER_READS:
+                lines += [line for item in pending for line in item]
+                pending = []
+                lines.append(f"read {site:08x} {value:08x}")
+                counts["spu_transfer_reads"] += 1
             elif site == DATASYNC_READ:
                 require(value & 0x1000000 == idle, "DMA3 busy differs from the imported I/O page")
                 counts["datasync_reads_checked"] += 1
@@ -1702,6 +1738,12 @@ def main() -> int:
         action="append",
         default=[],
         help="ENTRY:EXIT hook names bracketing interrupt-context code (repeatable)",
+    )
+    parser.add_argument(
+        "--syscalls",
+        action="store_true",
+        help="The call enters BIOS critical sections (syscalls 1 and 2); the BIOS exception "
+        "save areas the syscall exceptions write are BIOS state, not the call's",
     )
     parser.add_argument(
         "--entry-repeats",

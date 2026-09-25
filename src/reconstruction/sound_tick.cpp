@@ -10,7 +10,7 @@
 // does. SPU register stores become HardwareWrite records; SPU and root counter
 // loads are platform inputs consumed in program order. Paths not reached on
 // the frozen route stop with MissingDependency naming their address.
-#include "xem/reconstruction/program.hpp"
+#include "sound_memory.hpp"
 
 #include <limits>
 #include <string>
@@ -52,156 +52,7 @@ std::uint32_t quotient(std::uint32_t a, std::uint32_t b) {
     return u(x / y);
 }
 
-// Byte access to the driver's memory: its objects, statics, named globals and
-// read-only constants.
-class Memory {
-  public:
-    explicit Memory(SoundDriver &driver) : d(driver) {}
-    std::uint32_t get(std::uint32_t address, std::uint32_t size) {
-        if (const auto value = named(address, size))
-            return *value;
-        std::uint32_t value = 0;
-        if (typed(address, size, [&](auto &field, std::uint32_t byte, std::uint32_t i) {
-                value |= ((static_cast<std::uint32_t>(field) >> (8U * byte)) & 0xffU) << (8U * i);
-            }))
-            return value;
-        const auto *bytes = find(address, size, false);
-        for (std::uint32_t i = 0; i < size; ++i)
-            value |= static_cast<std::uint32_t>(bytes[i]) << (8U * i);
-        return value;
-    }
-    void put(std::uint32_t address, std::uint32_t value, std::uint32_t size) {
-        if (put_named(address, value, size))
-            return;
-        if (typed(address, size, [&](auto &field, std::uint32_t byte, std::uint32_t i) {
-                using Field = std::remove_reference_t<decltype(field)>;
-                const auto kept = static_cast<std::uint32_t>(field) & ~(0xffU << (8U * byte));
-                field = static_cast<Field>(kept | (((value >> (8U * i)) & 0xffU) << (8U * byte)));
-            }))
-            return;
-        auto *bytes = find(address, size, true);
-        for (std::uint32_t i = 0; i < size; ++i)
-            bytes[i] = static_cast<std::uint8_t>(value >> (8U * i));
-    }
-    std::uint32_t u8(std::uint32_t a) { return get(a, 1); }
-    std::uint32_t u16(std::uint32_t a) { return get(a, 2); }
-    std::uint32_t u32(std::uint32_t a) { return get(a, 4); }
-    void w8(std::uint32_t a, std::uint32_t v) { put(a, v, 1); }
-    void w16(std::uint32_t a, std::uint32_t v) { put(a, v, 2); }
-    void w32(std::uint32_t a, std::uint32_t v) { put(a, v, 4); }
-    SoundDriver &d;
-
-  private:
-    static std::uint8_t *in(std::map<std::uint32_t, std::vector<std::uint8_t>> &blocks,
-                            std::uint32_t address, std::uint32_t size) {
-        auto found = blocks.upper_bound(address);
-        if (found == blocks.begin())
-            return nullptr;
-        --found;
-        if (address - found->first + std::uint64_t{size} > found->second.size())
-            return nullptr;
-        return found->second.data() + (address - found->first);
-    }
-    std::uint8_t *find(std::uint32_t address, std::uint32_t size, bool write) {
-        if (auto *bytes = in(d.objects, address, size))
-            return bytes;
-        if (auto *bytes = in(d.statics, address, size))
-            return bytes;
-        if (!write) {
-            if (auto *bytes = in(d.constants, address, size))
-                return bytes;
-            if (address - resident::pitch_table_address + std::uint64_t{size} <=
-                d.pitch_tables.size())
-                return d.pitch_tables.data() + (address - resident::pitch_table_address);
-        }
-        throw SoundError("Sound driver reaches memory outside its owned objects at " +
-                         hex(address));
-    }
-    // The volume fields of the common-attribute block (8005a3c0..8005a407),
-    // which the volume setters also use, reached here by address: calls
-    // `use(field, byte of the field, byte of the access)` for each byte of
-    // the access. False when no byte is a field's; an access that is only
-    // partly one is an error.
-    template <class Use> bool typed(std::uint32_t address, std::uint32_t size, Use &&use) {
-        std::uint32_t hits = 0;
-        for (std::uint32_t i = 0; i < size; ++i) {
-            const auto at = address + i;
-            const auto visit = [&](auto &field, std::uint32_t base) {
-                if (at - base >= sizeof(field))
-                    return false;
-                use(field, at - base, i);
-                return true;
-            };
-            const auto pair = [&](std::array<std::uint16_t, 2> &fields, std::uint32_t base) {
-                return visit(fields[0], base) || visit(fields[1], base + 2);
-            };
-            hits += visit(d.commits, 0x8005a3c0) || pair(d.master_pair, 0x8005a3c4) ||
-                    pair(d.cd_pair, 0x8005a3d0) || visit(d.master, 0x8005a3e8) ||
-                    visit(d.cd, 0x8005a3ea) || visit(d.reverb, 0x8005a3ec) ||
-                    visit(d.master_level, 0x8005a3f0) || visit(d.master_step, 0x8005a3f4) ||
-                    visit(d.master_frames, 0x8005a3f8) || visit(d.master_target, 0x8005a3fa) ||
-                    visit(d.cd_level, 0x8005a3fc) || visit(d.cd_step, 0x8005a400) ||
-                    visit(d.cd_frames, 0x8005a404) || visit(d.cd_target, 0x8005a406);
-        }
-        if (hits != 0 && hits != size)
-            throw SoundError("Sound driver access straddles a driver field at " + hex(address));
-        return hits != 0;
-    }
-    std::uint32_t *word(std::uint32_t address) {
-        switch (address) {
-        case 0x80059504:
-            return &d.start_stamp;
-        case 0x80059554:
-            return &d.voice_changes;
-        case 0x800594fc:
-            return &d.voice_holds;
-        case 0x800595d8:
-            return &d.effect_block;
-        case 0x80059564:
-            return &d.sequences;
-        case 0x80059558:
-            return &d.wave_banks;
-        case 0x80059404:
-            return &d.effect_run;
-        case 0x80059440:
-            return &d.effect_banks;
-        case 0x80059410:
-            return &d.pool;
-        default:
-            if (address - 0x8006252cU < 24 * 4 && (address & 3U) == 0)
-                return &d.voice_owners[(address - 0x8006252cU) / 4];
-            return nullptr;
-        }
-    }
-    std::optional<std::uint32_t> named(std::uint32_t address, std::uint32_t size) {
-        if (address == 0x8005957c) {
-            if (size != 2)
-                throw SoundError("Sound flags read with another width");
-            return d.flags;
-        }
-        if (auto *value = word(address)) {
-            if (size != 4)
-                throw SoundError("Driver word read with another width");
-            return *value;
-        }
-        return std::nullopt;
-    }
-    bool put_named(std::uint32_t address, std::uint32_t value, std::uint32_t size) {
-        if (address == 0x8005957c) {
-            if (size != 2)
-                throw SoundError("Sound flags written with another width");
-            d.flags = static_cast<std::uint16_t>(value);
-            return true;
-        }
-        if (auto *target = word(address)) {
-            if (size != 4)
-                throw SoundError("Driver word written with another width");
-            *target = value;
-            return true;
-        }
-        return false;
-    }
-};
+using Memory = detail::SoundMemory;
 
 constexpr std::uint32_t voice_stride = 0x158;
 constexpr std::uint32_t tick_count = 0x80059540;
@@ -213,7 +64,7 @@ constexpr std::uint32_t spu_base = 0x800508e4;
 
 class Tick {
   public:
-    Tick(ResidentState &state) : resident(state), m(state.sound) {}
+    Tick(ResidentState &state) : resident(state), m(state.sound, &state.disc_transfers) {}
 
     // 8003c028; `event` is V0 at entry, the driver flags the event handler
     // loaded.
@@ -295,13 +146,7 @@ class Tick {
         if (left == 0) {
             free_pool_block(m.d, m.u32(0x800595a4));
             m.w32(0x800595a4, 0);
-            // 8004e574: reverb depth, left and right.
-            const auto depth_left = m.d.reverb_pair[0];
-            const auto depth_right = m.d.reverb_pair[1];
-            const auto base = m.d.spu_registers;
-            spu_write(base + 0x184, depth_left);
-            spu_write(base + 0x186, depth_right);
-            m.d.spu_reverb_output = {depth_left, depth_right};
+            reverb_depth(m.d.reverb_pair[0], m.d.reverb_pair[1]);
             // 8004e5a0 and 8004e6b8: delay and feedback apply only in the
             // reverb modes 7 and 8.
             if (const auto mode = s32(m.u32(0x800589b8)); mode == 7 || mode == 8)
@@ -320,11 +165,11 @@ class Tick {
     }
 
     // 8003bca0: append a transfer to the queue and start it when idle.
+    // Outside the transfer callback (flag 4 clear) the original first waits
+    // for a free entry (Program::spu_transfer) and holds a BIOS critical
+    // section around this, which keeps no Program state.
     void enqueue(std::uint32_t type, std::uint32_t spu, std::uint32_t ram, std::uint32_t size,
                  std::uint32_t callback) {
-        const auto flags = m.d.flags;
-        if ((flags & 4U) == 0)
-            missing("spu_transfer_wait", 0x8003bce4);
         auto end = (m.u16(0x800594f4) + 1U) & 0xffffU;
         if (end >= 8)
             end = 0;
@@ -338,6 +183,23 @@ class Tick {
         m.w32(entry + 16, callback);
         if ((m.d.flags & 0x10U) == 0)
             next_transfer();
+    }
+
+    // 8004e574: the reverb depth, left and right.
+    void reverb_depth(std::uint16_t left, std::uint16_t right) {
+        const auto base = m.d.spu_registers;
+        spu_write(base + 0x184, left);
+        spu_write(base + 0x186, right);
+        m.d.spu_reverb_output = {left, right};
+    }
+
+    // 8003bdbc: nonzero while six or more transfers are queued.
+    bool queue_full() {
+        auto in = m.u16(0x800594f4);
+        const auto out = m.u16(0x80059510);
+        if (in < out)
+            in += 8;
+        return s32((in & 0xffffU) - out) >= 6;
     }
 
     // 8003be68: start the next queued transfer (SPU DMA write).
@@ -401,16 +263,22 @@ class Tick {
         resident.hardware_writes.push_back({m.u32(0x80058e14), 0x01000201U, 4});
     }
 
-    // A register only software changes, read back: its last recorded write
-    // in this run, else the observed I/O page (SPU registers are not in it).
-    // `site` names the original load.
+    // A register only software changes, read back: the recorded load at
+    // `site` when the platform input supplies it next (captures that record
+    // it do so wherever it runs), else its last recorded write in this run,
+    // else the observed I/O page (SPU registers are not in it).
     std::uint32_t latch(std::uint32_t address, std::uint32_t site) {
+        const bool spu = address - 0x1f801c00U < 0x400U;
+        if (!resident.platform.empty() &&
+            resident.platform.front().kind == PlatformInput::Kind::read &&
+            resident.platform.front().site == site)
+            return platform_read(resident.platform, site, spu ? 2 : 4);
         for (auto write = resident.hardware_writes.rbegin();
              write != resident.hardware_writes.rend(); ++write)
             if (write->address == address)
                 return write->value;
         const auto offset = address - 0x1f801000U;
-        if (offset >= 0xc00U || (address & 3U) != 0)
+        if (spu || offset >= 0xc00U || (address & 3U) != 0)
             missing("unrecorded_register_read", site);
         std::uint32_t value = 0;
         for (std::uint32_t i = 0; i < 4; ++i)
@@ -1419,6 +1287,52 @@ class Tick {
 } // namespace
 
 std::uint32_t Program::sound_tick(std::uint32_t event) { return Tick(resident).run(event); }
+
+// 8003bc10: queue an SPU write transfer (type 1) of `size` bytes from RAM
+// `ram` to SPU address `spu`. Outside the transfer callback 8003bca0 first
+// waits while the queue is full; only the SPU DMA interrupt drains it.
+void Program::spu_transfer(std::uint32_t spu, std::uint32_t ram, std::uint32_t size,
+                           std::uint32_t callback) {
+    using Kind = PlatformInput::Kind;
+    if ((resident.sound.flags & 4U) == 0) {
+        while (Tick(resident).queue_full())
+            if (!deliver_interrupt())
+                throw MissingDependency({"spu_transfer_wait", 0x8003bce4, {}, {}},
+                                        "interrupt:spu-transfer-completion", false,
+                                        "Waiting for a free SPU transfer entry needs the "
+                                        "interrupt arrivals that drain the queue");
+        // Starting the transfer reads the SPU control register (8004cd8c);
+        // the arrivals recorded before that read precede it.
+        if ((resident.sound.flags & 0x10U) == 0)
+            while (!resident.platform.empty() &&
+                   (resident.platform.front().kind == Kind::interrupt ||
+                    resident.platform.front().kind == Kind::tick))
+                static_cast<void>(deliver_interrupt());
+    }
+    Tick(resident).enqueue(1, spu, ram, size, callback);
+}
+
+// 8003bdfc: with flag 10, wait until no SPU transfer is in progress; then
+// the type of the transfer in progress, or zero.
+std::int32_t Program::sound_wait(std::uint32_t flags) {
+    auto &driver = resident.sound;
+    if ((flags & 0x10U) != 0)
+        while ((driver.flags & 0x10U) != 0)
+            if (!deliver_interrupt())
+                throw MissingDependency({"sound_wait", 0x8003be08, {}, {}},
+                                        "interrupt:spu-transfer-completion", false,
+                                        "Waiting for the SPU transfers needs the interrupt "
+                                        "arrivals that complete them");
+    if ((driver.flags & 0x10U) == 0)
+        return 0;
+    Memory m(driver);
+    return s16(m.u16(m.u32(0x80059458) + m.u16(0x80059510) * 20U));
+}
+
+// 8004e574 SpuSetReverbDepth.
+void Program::spu_reverb_depth(std::uint16_t left, std::uint16_t right) {
+    Tick(resident).reverb_depth(left, right);
+}
 
 void Program::spu_transfer_completed() { Tick(resident).transfer_completed(); }
 

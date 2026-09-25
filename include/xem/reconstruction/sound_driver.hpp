@@ -104,11 +104,12 @@ struct SoundRange {
 // no volume field names (the master modes 8005a3c8..8005a3cf, the external
 // volumes, reverb and mix enables 8005a3d4..8005a3e7, and 8005a3ee), the SPU
 // transfer queue state (800594f4, 80059510), the chunked upload (800595a4
-// staging block, 800595dc SPU address, 800595e0 bytes left), and SPU library
-// state: transfer mode (800589a4, 80058e24), transfer address (80058e20),
-// wait flag (80058e58), DMA address and blocks (80058e5c, 80058e60) and
-// 80058e3c.
-inline constexpr std::array<SoundRange, 17> sound_statics{{{0x80059540, 4},
+// staging block, 800595dc SPU address, 800595e0 bytes left), the wave bank
+// upload (80059584 SPU address, 80059588 bytes left), the reverb type, delay
+// and feedback (80059409..8005940b), and SPU library state: transfer mode
+// (800589a4, 80058e24), transfer address (80058e20), wait flag (80058e58),
+// DMA address and blocks (80058e5c, 80058e60) and 80058e3c.
+inline constexpr std::array<SoundRange, 19> sound_statics{{{0x80059540, 4},
                                                            {0x800595c4, 4},
                                                            {0x8005955c, 2},
                                                            {0x800594e4, 4},
@@ -124,16 +125,18 @@ inline constexpr std::array<SoundRange, 17> sound_statics{{{0x80059540, 4},
                                                            {0x80058e24, 4},
                                                            {0x80058e3c, 4},
                                                            {0x80058e58, 4},
-                                                           {0x80058e5c, 8}}};
+                                                           {0x80058e5c, 8},
+                                                           {0x80059584, 8},
+                                                           {0x80059409, 3}}};
 // Constant tables of the resident executable: the music opcode handlers
 // (80050624), opcode operand lengths (80050824), modulation shapes
 // (800508a4), the SPU register base (800508e4), note duration and velocity
 // tables (800509b0, 80050a94) and library register bases (80056400 root
 // counters, 80058e0c DMA4 registers, 80058e1c SPU delay register), the SPU
 // address alignment (80058e2c..80058e3b), the SPU library's transfer callback
-// (80058e40), the reverb mode (800589b8), 8005940a before the reverb pair and
-// the SPU transfer queue pointer (80059458). The pitch tables and the SPU
-// register base are SoundDriver fields.
+// (80058e40), the reverb mode (800589b8), the SPU transfer queue pointer
+// (80059458) and the sound pool's end (800595e4). The pitch tables and the
+// SPU register base are SoundDriver fields.
 inline constexpr std::array<SoundRange, 12> sound_constants{{{0x80050624, 0x200},
                                                              {0x80050824, 0x80},
                                                              {0x800508a4, 0x44},
@@ -144,8 +147,8 @@ inline constexpr std::array<SoundRange, 12> sound_constants{{{0x80050624, 0x200}
                                                              {0x80058e2c, 0x10},
                                                              {0x80058e40, 4},
                                                              {0x800589b8, 4},
-                                                             {0x8005940a, 2},
-                                                             {0x80059458, 4}}};
+                                                             {0x80059458, 4},
+                                                             {0x800595e4, 4}}};
 // The SPU transfer queue at *80059458: eight 20-byte entries (type, RAM
 // address, SPU address, size, completion callback).
 inline constexpr std::uint32_t transfer_queue_bytes = 8 * 20;
