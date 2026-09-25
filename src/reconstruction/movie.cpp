@@ -538,11 +538,11 @@ void Program::mdec_out(std::uint32_t buffer, std::uint32_t words) {
 // 801d4a1c MDEC_in_sync: wait while the MDEC reports its input busy (status
 // bit 29). The polls are platform reads; 0x100000 of them time out.
 std::int32_t Program::mdec_in_sync() {
-    static_cast<void>(deliver_pending_front());
+    static_cast<void>(deliver_leading_arrivals());
     if ((platform_read(resident.platform, 0x801d4a34, 4) & 0x20000000U) == 0)
         return 0;
     for (std::uint32_t polls = 0; polls < 0x100000; ++polls) {
-        static_cast<void>(deliver_pending_front());
+        static_cast<void>(deliver_leading_arrivals());
         if ((platform_read(resident.platform, 0x801d4a90, 4) & 0x20000000U) == 0)
             return 0;
     }
@@ -552,11 +552,11 @@ std::int32_t Program::mdec_in_sync() {
 
 // 801d4ab4 MDEC_out_sync: wait while DMA1 is busy (control bit 24).
 std::int32_t Program::mdec_out_sync() {
-    static_cast<void>(deliver_pending_front());
+    static_cast<void>(deliver_leading_arrivals());
     if ((platform_read(resident.platform, 0x801d4acc, 4) & 0x01000000U) == 0)
         return 0;
     for (std::uint32_t polls = 0; polls < 0x100000; ++polls) {
-        static_cast<void>(deliver_pending_front());
+        static_cast<void>(deliver_leading_arrivals());
         if ((platform_read(resident.platform, 0x801d4b28, 4) & 0x01000000U) == 0)
             return 0;
     }

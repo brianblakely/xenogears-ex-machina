@@ -101,7 +101,14 @@ bool Program::deliver_interrupt() {
         buffers[index / buffers[0].size()][index % buffers[0].size()] =
             static_cast<std::uint8_t>(inputs.front().value);
     }
-    interrupt_dispatch();
+    in_interrupt_ = true;
+    try {
+        interrupt_dispatch();
+    } catch (...) {
+        in_interrupt_ = false;
+        throw;
+    }
+    in_interrupt_ = false;
     return true;
 }
 
@@ -110,14 +117,53 @@ void Program::deliver_pending_arrivals() {
     }
 }
 
-void Program::deliver_arrivals(std::uint32_t point) {
+bool Program::deliver_leading_arrivals() {
     using Kind = PlatformInput::Kind;
     const auto &inputs = resident.platform;
+    bool any = false;
+    while (!in_interrupt_ && !inputs.empty() && inputs.front().site == 0 &&
+           (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick)) {
+        static_cast<void>(deliver_interrupt());
+        any = true;
+    }
+    return any;
+}
+
+void Program::deliver_leading_vblanks() {
+    using Kind = PlatformInput::Kind;
+    const auto &inputs = resident.platform;
+    for (;;) {
+        if (in_interrupt_ || inputs.empty() || inputs.front().site != 0)
+            return;
+        // A sound tick that came first is taken with it.
+        if (inputs.front().kind == Kind::tick) {
+            static_cast<void>(deliver_interrupt());
+            continue;
+        }
+        if (inputs.front().kind != Kind::interrupt)
+            return;
+        // The dispatcher's first I_STAT read (8004ba34) after the pad bytes.
+        auto next = std::next(inputs.begin());
+        while (next != inputs.end() && next->kind == Kind::pad)
+            ++next;
+        if (next == inputs.end() || next->kind != Kind::read || next->site != 0x8004ba34)
+            return;
+        const auto &irq = resident.interrupts;
+        if ((next->value & irq.mask & io_latch(irq.registers[1], 2)) != 1U)
+            return;
+        static_cast<void>(deliver_interrupt());
+    }
+}
+
+void Program::deliver_arrivals(std::uint32_t point) {
+    using Kind = PlatformInput::Kind;
+    auto &inputs = resident.platform;
     while (!inputs.empty() && inputs.front().site == point &&
            (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick))
         static_cast<void>(deliver_interrupt());
-    if (!inputs.empty() && inputs.front().site == point && inputs.front().kind == Kind::pass)
-        resident.platform.pop_front();
+    // This run of the code at point ended.
+    if (!inputs.empty() && inputs.front().kind == Kind::end && inputs.front().site == point)
+        inputs.pop_front();
 }
 
 // Resident 80028738: the file's byte size (record bytes 3-6).
@@ -148,10 +194,7 @@ std::int32_t Program::read_file(std::int32_t file, std::uint32_t destination, st
     read.read_directory = read.directory;
     // 800289d0: the file's first sector (record bytes 0-2).
     read.sector = bytes(read.files, (u32(file) + read.directory - 1U) * 7U, 3, "File table");
-    // 800288ec: the size rounded up to words, as a signed MIPS quotient.
-    const auto size = s32(file_size(file));
-    const auto rounded = s32(u32(size) + 3U);
-    read.size = u32((rounded >= 0 ? rounded : s32(u32(size) + 6U)) >> 2) << 2U;
+    read.size = file_words(u32(file)); // 800288ec
     return read_setup(u32(file), destination, offset, mode);
 }
 
@@ -257,10 +300,7 @@ std::int32_t Program::read_stream(std::int32_t file, std::uint32_t ring, std::ui
     static_cast<void>(field::select_disc_stream_ring(resident.disc_stream, ring)); // 80028a94
     read.file = u32(file);
     read.sector = bytes(read.files, (u32(file) + read.directory - 1U) * 7U, 3, "File table");
-    // 800288ec: the size rounded up to words, as a signed MIPS quotient.
-    const auto size = s32(file_size(file));
-    const auto rounded = s32(u32(size) + 3U);
-    read.size = u32((rounded >= 0 ? rounded : s32(u32(size) + 6U)) >> 2) << 2U;
+    read.size = file_words(u32(file)); // 800288ec
     read.destination = ring + count * 8U + 0x24U;
     read.ring_slots = ring + 4U;
     resident.disc_error = 1;
@@ -432,6 +472,8 @@ void cd_timeout_checks(ResidentState &resident, std::uint32_t timeout) {
 // equal the reconstructed handler's.
 std::int32_t Program::cd_sync(std::array<std::uint8_t, 8> *result) {
     auto &cd = resident.cd;
+    // VSync(-1) counts the vertical blanks that arrived before this read.
+    deliver_leading_vblanks();
     resident.cd_sync_deadline = resident.vsync_counter + 0x3c0; // 8004b54c(-1)
     resident.cd_sync_polls = 0;
     resident.cd_sync_label = 0x80018eb0;
@@ -439,7 +481,7 @@ std::int32_t Program::cd_sync(std::array<std::uint8_t, 8> *result) {
         cd_timeout_checks(resident, 0x80041bf8);
         if (cd.interrupt_poll != 0)
             cd_poll();
-        const bool arrived = cd.interrupt_poll == 0 && deliver_pending_front();
+        const bool arrived = cd.interrupt_poll == 0 && deliver_leading_arrivals();
         const auto status = cd.sync_status;
         const auto &inputs = resident.platform;
         const bool polled = !inputs.empty() && inputs.front().kind == PlatformInput::Kind::read &&
@@ -1229,6 +1271,17 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
     for (auto &block : resident.music_blocks)
         if (inside(block))
             return;
+    // A file block battle memory owns (the battle setup's files).
+    if (battle) {
+        const auto found = battle->regions.upper_bound(address);
+        if (found != battle->regions.begin()) {
+            auto &[at, bytes] = *std::prev(found);
+            if (address >= at && end <= std::uint64_t{at} + bytes.size()) {
+                std::ranges::copy(data, bytes.begin() + (address - at));
+                return;
+            }
+        }
+    }
     // An allocated heap block whose bytes no other value interprets.
     if (const auto after = resident.heap_contents.upper_bound(address);
         after != resident.heap_contents.begin()) {

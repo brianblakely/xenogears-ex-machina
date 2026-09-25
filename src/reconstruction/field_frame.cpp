@@ -185,6 +185,10 @@ std::uint32_t Program::memory(std::uint32_t address, std::size_t width) const {
     address = ram_address(address);
     if (field && field->regions.contains(address, width))
         return field->regions.word(address, width);
+    if (battle && battle->contains(address, static_cast<std::uint32_t>(width)))
+        return width == 1   ? battle->u8(address)
+               : width == 2 ? battle->u16(address)
+                            : battle->u32(address);
     if (const auto bytes = resource_bytes(address, width); !bytes.empty())
         return word(bytes, 0, width);
     if (const auto bytes = record_bytes(address, width); !bytes.empty())
@@ -198,6 +202,15 @@ void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t
     address = ram_address(address);
     if (field && field->regions.contains(address, width)) {
         field->regions.put(address, value, width);
+        return;
+    }
+    if (battle && battle->contains(address, static_cast<std::uint32_t>(width))) {
+        if (width == 1)
+            battle->put8(address, value);
+        else if (width == 2)
+            battle->put16(address, value);
+        else
+            battle->put32(address, value);
         return;
     }
     if (const auto bytes = resource_bytes(address, width); !bytes.empty()) {

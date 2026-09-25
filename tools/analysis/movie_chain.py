@@ -27,14 +27,14 @@ from pathlib import Path
 
 from tools.analysis.memory_case import (
     ARRIVAL_POINTS,
-    LOOP_READS,
-    SPU_TRANSFER_READS,
     DATASYNC_READ,
     KERNEL_SAVE,
     LOAD_PREFIX,
     LOADS,
+    LOOP_READS,
     ROOT,
     SECTOR_HOOK,
+    SPU_TRANSFER_READS,
     STACK_BELOW_ENTRY,
     BatchRunner,
     Sources,
@@ -55,37 +55,167 @@ from tools.reference.instruction_trace import SnapshotReader, snapshot_path
 # (the hook's PC: a call site in the player or library, or an entry).
 MOVIE_POSITION_PCS = (
     # 800a7c58 stages.
-    0x800A7C58, 0x800A7CA8, 0x800A7CC0, 0x800A7CDC, 0x800A7CF0, 0x800A7D6C, 0x800A7D74,
-    0x800A7D7C, 0x800A7D9C, 0x800A7E0C, 0x800A7E2C, 0x800A7E44, 0x800A7E4C, 0x800A7E5C,
-    0x800A7E64, 0x800A7E88, 0x800A7EDC, 0x800A7EE4, 0x800A7EF4, 0x800A7F04, 0x800A7F0C,
-    0x800A7F14, 0x800A7F1C, 0x800A7F2C, 0x800A7F3C, 0x800A7F44, 0x800A7FD4, 0x800A8014,
-    0x800A8034, 0x800A8040, 0x800A80B4, 0x800A80BC, 0x800A80C4, 0x800A80DC, 0x800A80EC,
-    0x800A80F4, 0x800A80FC, 0x800A8104, 0x800A8148, 0x800A8150, 0x800A8158, 0x800A8174,
-    0x800A8184, 0x800A81A8, 0x800A81CC, 0x800A81DC, 0x800A8204, 0x800A820C, 0x800A8214,
-    0x800A822C, 0x800A823C, 0x800A82A8, 0x800A82B0,
+    0x800A7C58,
+    0x800A7CA8,
+    0x800A7CC0,
+    0x800A7CDC,
+    0x800A7CF0,
+    0x800A7D6C,
+    0x800A7D74,
+    0x800A7D7C,
+    0x800A7D9C,
+    0x800A7E0C,
+    0x800A7E2C,
+    0x800A7E44,
+    0x800A7E4C,
+    0x800A7E5C,
+    0x800A7E64,
+    0x800A7E88,
+    0x800A7EDC,
+    0x800A7EE4,
+    0x800A7EF4,
+    0x800A7F04,
+    0x800A7F0C,
+    0x800A7F14,
+    0x800A7F1C,
+    0x800A7F2C,
+    0x800A7F3C,
+    0x800A7F44,
+    0x800A7FD4,
+    0x800A8014,
+    0x800A8034,
+    0x800A8040,
+    0x800A80B4,
+    0x800A80BC,
+    0x800A80C4,
+    0x800A80DC,
+    0x800A80EC,
+    0x800A80F4,
+    0x800A80FC,
+    0x800A8104,
+    0x800A8148,
+    0x800A8150,
+    0x800A8158,
+    0x800A8174,
+    0x800A8184,
+    0x800A81A8,
+    0x800A81CC,
+    0x800A81DC,
+    0x800A8204,
+    0x800A820C,
+    0x800A8214,
+    0x800A822C,
+    0x800A823C,
+    0x800A82A8,
+    0x800A82B0,
     # Helpers: 800a7394, 800775f8, 800a73e8, 800a74f8, 800a708c, 800a7218,
     # 800a732c, 800a77c4.
-    0x800A739C, 0x800A73AC, 0x800A73D0, 0x80077600, 0x80077608, 0x800A7468, 0x800A7470,
-    0x800A7490, 0x800A7498, 0x800A74C0, 0x800A74D0, 0x800A7688, 0x800A76A4, 0x800A76E8,
-    0x800A76F0, 0x800A7710, 0x800A7718, 0x800A70F4, 0x800A72FC, 0x800A733C, 0x800A7360,
-    0x800A7368, 0x800A77EC, 0x800A77FC, 0x800A782C, 0x800A7834, 0x800A78EC, 0x800A78F4,
-    0x800A790C, 0x800A7914,
+    0x800A739C,
+    0x800A73AC,
+    0x800A73D0,
+    0x80077600,
+    0x80077608,
+    0x800A7468,
+    0x800A7470,
+    0x800A7490,
+    0x800A7498,
+    0x800A74C0,
+    0x800A74D0,
+    0x800A7688,
+    0x800A76A4,
+    0x800A76E8,
+    0x800A76F0,
+    0x800A7710,
+    0x800A7718,
+    0x800A70F4,
+    0x800A72FC,
+    0x800A733C,
+    0x800A7360,
+    0x800A7368,
+    0x800A77EC,
+    0x800A77FC,
+    0x800A782C,
+    0x800A7834,
+    0x800A78EC,
+    0x800A78F4,
+    0x800A790C,
+    0x800A7914,
     # Library (801d3000): poll, decode, restart, stop, close, start, 801d586c.
-    0x801D3FD0, 0x801D4014, 0x801D4050, 0x801D4090, 0x801D40D4, 0x801D3DFC, 0x801D3E54,
-    0x801D3E98, 0x801D3F08, 0x801D3F60, 0x801D41E0, 0x801D41F0, 0x801D42C4, 0x801D42D4,
-    0x801D4324, 0x801D4370, 0x801D4380, 0x801D4390, 0x801D4398, 0x801D43B8, 0x801D3930,
-    0x801D3AC4, 0x801D5888, 0x801D58E4,
+    0x801D3FD0,
+    0x801D4014,
+    0x801D4050,
+    0x801D4090,
+    0x801D40D4,
+    0x801D3DFC,
+    0x801D3E54,
+    0x801D3E98,
+    0x801D3F08,
+    0x801D3F60,
+    0x801D41E0,
+    0x801D41F0,
+    0x801D42C4,
+    0x801D42D4,
+    0x801D4324,
+    0x801D4370,
+    0x801D4380,
+    0x801D4390,
+    0x801D4398,
+    0x801D43B8,
+    0x801D3930,
+    0x801D3AC4,
+    0x801D5888,
+    0x801D58E4,
 )
 # Mode 6 (the movie mode, 800737ec): its call sites, the loop head 8007670c
 # and the dispatcher call 80073bac.
 MODE6_POSITION_PCS = (
-    0x80073834, 0x80073840, 0x8007384C, 0x80073854, 0x8007385C, 0x80073864, 0x80073870, 0x80073894,
-    0x800738A0, 0x800738B4, 0x800738BC, 0x800738E8, 0x800738F0, 0x80073990, 0x800739A8, 0x800739C0,
-    0x800739D8, 0x80073AA4, 0x80073AB4, 0x80073B84, 0x80073B8C, 0x80073B94, 0x80073BA4,
-    0x8007640C, 0x80076418, 0x80076470, 0x80076520, 0x8007654C, 0x80076560, 0x80076568,
-    0x80076570, 0x80076588, 0x800765F4, 0x80076698, 0x800766D0, 0x800766FC, 0x80076704,
-    0x80076750, 0x80076758, 0x80076760, 0x800767B8, 0x800767C0, 0x800767C8, 0x800767F0,
-    0x80076834, 0x800769BC, 0x80076ACC,
+    0x80073834,
+    0x80073840,
+    0x8007384C,
+    0x80073854,
+    0x8007385C,
+    0x80073864,
+    0x80073870,
+    0x80073894,
+    0x800738A0,
+    0x800738B4,
+    0x800738BC,
+    0x800738E8,
+    0x800738F0,
+    0x80073990,
+    0x800739A8,
+    0x800739C0,
+    0x800739D8,
+    0x80073AA4,
+    0x80073AB4,
+    0x80073B84,
+    0x80073B8C,
+    0x80073B94,
+    0x80073BA4,
+    0x8007640C,
+    0x80076418,
+    0x80076470,
+    0x80076520,
+    0x8007654C,
+    0x80076560,
+    0x80076568,
+    0x80076570,
+    0x80076588,
+    0x800765F4,
+    0x80076698,
+    0x800766D0,
+    0x800766FC,
+    0x80076704,
+    0x80076750,
+    0x80076758,
+    0x80076760,
+    0x800767B8,
+    0x800767C0,
+    0x800767C8,
+    0x800767F0,
+    0x80076834,
+    0x800769BC,
+    0x80076ACC,
 )
 MOVIE_POSITIONS = (
     {f"mv-{pc:08x}": pc for pc in MOVIE_POSITION_PCS}
@@ -97,14 +227,27 @@ MOVIE_POSITIONS = (
 MODE6_VSYNC_TABLE = 0x800773B8
 # The player's PutDrawEnv calls (positions at their jal).
 DRAW_ENVIRONMENT_CALLS = {
-    0x800A7F04, 0x800A7F3C, 0x800A80EC, 0x800A8184, 0x800A81DC, 0x800A823C, 0x80073AA4, 0x800766D0
+    0x800A7F04,
+    0x800A7F3C,
+    0x800A80EC,
+    0x800A8184,
+    0x800A81DC,
+    0x800A823C,
+    0x80073AA4,
+    0x800766D0,
 }
 # The 800a7394 frame loop's call of 80077dac: arrivals after it (during its
 # VSync(1)) follow the field chain's convention.
 FIELD_ENTRY_POINTS = {"mv-800a739c": 0x80077DB4}
 # Wait-loop loads that deliver the arrivals recorded before them.
 DELIVERING_READS = {
-    0x80042274, 0x80042420, 0x80041D28, 0x801D4A34, 0x801D4A90, 0x801D4ACC, 0x801D4B28
+    0x80042274,
+    0x80042420,
+    0x80041D28,
+    0x801D4A34,
+    0x801D4A90,
+    0x801D4ACC,
+    0x801D4B28,
 }
 # Stage boundaries: snapshot hooks.
 ENTRY_HOOK, FIRST_HOOK, HEAD_HOOK, END_HOOK, EXIT_HOOK = (
@@ -154,7 +297,7 @@ def platform_lines(
 
     # Visits of each movie position since the last line: arrivals at a point
     # that such a visit passed without taking them are separated from it by
-    # `pass` lines, one per visit.
+    # `end` lines, one per visit.
     visits = collections.Counter()
     visits_at = -1
 
@@ -164,8 +307,8 @@ def platform_lines(
             point = point_of(previous)
             require(point >= 0, f"An arrival after {previous} has no delivery point")
             if visits_at == len(lines) and visits[point]:
-                lines.extend([f"pass {point:x}"] * visits[point])
-                counts["passes"] += visits[point]
+                lines.extend([f"end {point:x}"] * visits[point])
+                counts["visit_ends"] += visits[point]
                 visits.clear()
             if kind == "tick":
                 lines.append(f"tick {point:x} {head:x}")
@@ -222,7 +365,11 @@ def platform_lines(
                 if MOVIE_POSITIONS[hook] in DRAW_ENVIRONMENT_CALLS:
                     visits[MOVIE_POSITIONS[hook] + 4] += 1
             else:
-                emit(lambda previous: ARRIVAL_POINTS.get(previous, FIELD_ENTRY_POINTS.get(previous, -1)))
+                emit(
+                    lambda previous: ARRIVAL_POINTS.get(
+                        previous, FIELD_ENTRY_POINTS.get(previous, -1)
+                    )
+                )
             last = hook
         elif hook == "alarm" and pending and MOVIE_POSITIONS.get(last) in DRAW_ENVIRONMENT_CALLS:
             # Arrivals inside PutDrawEnv before its first queue step (its
@@ -230,7 +377,7 @@ def platform_lines(
             # the call's delay slot, after reading the argument.
             point = MOVIE_POSITIONS[last] + 4
             visits[point] -= 1
-            emit(lambda previous: point)
+            emit(lambda previous, point=point: point)
             visits.clear()
             visits_at = len(lines)
             visits[point] = 1
@@ -466,9 +613,11 @@ def main() -> int:
     # An image with the movie library loaded: the loop's first head, or the
     # entry itself when the chain starts at the loop's end.
     library_hook = "m6-head" if args.mode6 else HEAD_HOOK
-    library = snapshots.read(rows[boundaries[0][1]] if args.from_end else rows[
-        next(i for i in range(start, len(rows)) if rows[i]["hook"] == library_hook)
-    ])[0]
+    library = snapshots.read(
+        rows[boundaries[0][1]]
+        if args.from_end
+        else rows[next(i for i in range(start, len(rows)) if rows[i]["hook"] == library_hook)]
+    )[0]
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
     platform, counts, sectors = platform_lines(chain_rows, entry, io, library)
     if args.from_end:
@@ -506,8 +655,10 @@ def main() -> int:
             passes = len(boundaries) - 1
         report = runner.call(
             [
-                "movie_mode_chain" if args.mode6
-                else "movie_finish_chain" if args.from_end
+                "movie_mode_chain"
+                if args.mode6
+                else "movie_finish_chain"
+                if args.from_end
                 else "movie_chain",
                 str(args.budget),
                 f"passes={passes + 1}" if truncated else "",
@@ -571,7 +722,11 @@ def main() -> int:
         "source_revision": subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
         ).stdout.strip(),
-        "entry": "movie_mode_chain" if args.mode6 else "movie_finish_chain" if args.from_end else "movie_chain",
+        "entry": "movie_mode_chain"
+        if args.mode6
+        else "movie_finish_chain"
+        if args.from_end
+        else "movie_chain",
         "entry_frame": entry_row["frontend_run"],
         "field_slot": args.field_slot,
         "boundaries": len(boundaries),

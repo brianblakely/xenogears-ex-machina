@@ -18,6 +18,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/packed_field.cpp
   src/reconstruction/field_actor.cpp
   src/reconstruction/field_battle.cpp
+  src/reconstruction/field_battle_exit.cpp
   src/reconstruction/field_control.cpp
   src/reconstruction/field_sprite.cpp
   src/reconstruction/field_sprite_factory.cpp
@@ -43,9 +44,12 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/battle_turn.cpp
   src/reconstruction/battle_formula.cpp
   src/reconstruction/battle_levels.cpp
+  src/reconstruction/battle_loader.cpp
   src/reconstruction/battle_results.cpp
   src/reconstruction/battle_rewards.cpp
   src/reconstruction/battle_rules.cpp
+  src/reconstruction/battle_setup.cpp
+  src/reconstruction/battle_start.cpp
   src/reconstruction/battle_steps.cpp
   src/reconstruction/battle_turns.cpp
   src/reconstruction/menu_equipment.cpp
@@ -54,6 +58,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/resident_heap.cpp
   src/reconstruction/sound_driver.cpp
   src/reconstruction/media.cpp
+  src/reconstruction/mode_dispatch.cpp
   src/reconstruction/field_movie.cpp
   src/reconstruction/field_movie_player.cpp
   src/reconstruction/movie.cpp
@@ -63,6 +68,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/resident_gpu.cpp
   src/reconstruction/field_gte.cpp
   src/reconstruction/gte.cpp
+  src/reconstruction/graphics_setup.cpp
   src/reconstruction/gpu.cpp
   src/reconstruction/field_frame.cpp
   src/reconstruction/field_loop.cpp
@@ -146,6 +152,12 @@ if(BUILD_TESTING)
   add_executable(test-field-gte tests/test_field_gte.cpp)
   target_link_libraries(test-field-gte PRIVATE xem-reconstruction)
   add_test(NAME field-gte-reconstruction COMMAND test-field-gte)
+  add_executable(test-battle-loader tests/test_battle_loader.cpp)
+  target_link_libraries(test-battle-loader PRIVATE xem-reconstruction)
+  add_test(NAME battle-loader-reconstruction COMMAND test-battle-loader)
+  add_executable(test-mode-dispatch tests/test_mode_dispatch.cpp)
+  target_link_libraries(test-mode-dispatch PRIVATE xem-reconstruction)
+  add_test(NAME mode-dispatch-reconstruction COMMAND test-mode-dispatch)
   add_executable(test-resident-heap tests/test_resident_heap.cpp)
   target_link_libraries(test-resident-heap PRIVATE xem-reconstruction)
   add_test(NAME resident-heap-reconstruction COMMAND test-resident-heap)
@@ -158,6 +170,9 @@ if(BUILD_TESTING)
   add_executable(test-battle tests/test_battle.cpp)
   target_link_libraries(test-battle PRIVATE xem-reconstruction)
   add_test(NAME battle-reconstruction COMMAND test-battle)
+  add_executable(test-battle-setup tests/test_battle_setup.cpp)
+  target_link_libraries(test-battle-setup PRIVATE xem-reconstruction)
+  add_test(NAME battle-setup-reconstruction COMMAND test-battle-setup)
   add_executable(test-menu tests/test_menu.cpp)
   target_link_libraries(test-menu PRIVATE xem-reconstruction)
   add_test(NAME menu-reconstruction COMMAND test-menu)

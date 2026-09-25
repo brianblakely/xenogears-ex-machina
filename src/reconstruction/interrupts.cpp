@@ -49,6 +49,8 @@ std::uint32_t platform_read(std::deque<PlatformInput> &inputs, std::uint32_t sit
                                  (inputs.empty() ? std::string("none")
                                   : inputs.front().kind == PlatformInput::Kind::interrupt
                                       ? std::string("an interrupt arrival")
+                                  : inputs.front().kind == PlatformInput::Kind::end
+                                      ? "the end of " + hex(inputs.front().site)
                                       : "the read at " + hex(inputs.front().site)));
     const auto value = inputs.front().value;
     if (width < 4) {

@@ -257,7 +257,7 @@ void Program::movie_prepare(FrameServices &services, std::uint32_t frame,
         unrecovered("movie_prepare", 0x800a7d0c, "symbol:field-movie-gear-mode",
                     "Preparing a movie with 800b2264 set (801e7fd4, 800775f8) is not "
                     "reconstructed");
-    stop_field_particles(services); // 800a9460
+    stop_particles(services); // 800a9460
     auto library = temporary;
     if (state.single_actor_mode != 2) {
         // The library file goes through VRAM (140h, 0; c0h x 100h) so that
@@ -276,7 +276,7 @@ void Program::movie_prepare(FrameServices &services, std::uint32_t frame,
     std::uint32_t image = 0;
     if (resident.w_4f370 == 0) {
         // The library's own block runs from 801d3000 up to 800adb30.
-        image = load_block((state.heap_limit & 0x00ffffffU) - 0x001d3008U, 1, 0x800a7dd4);
+        image = load_block((state.w_adb30 & 0x00ffffffU) - 0x001d3008U, 1, 0x800a7dd4);
         const auto size = file_words(movie::library_file);
         const auto source = owned_span(library);
         const auto target = owned_span(image);
@@ -617,7 +617,6 @@ void add_movie_globals(std::vector<OriginalGlobal> &table) {
     add("movie_display", 0x800adb78, 4, [](FieldState &s) -> auto & { return s.movie_display; });
     add("movie_overlay_active", 0x800afe74, 4,
         [](FieldState &s) -> auto & { return s.movie_overlay_active; });
-    add("heap_limit", 0x800adb30, 4, [](FieldState &s) -> auto & { return s.heap_limit; });
     add("movie_component_word", 0x800c2688, 4,
         [](FieldState &s) -> auto & { return s.movie_component_word; });
     add("movie_bits_read", 0x800b14a8, 4,
@@ -645,9 +644,6 @@ void add_movie_globals(std::vector<OriginalGlobal> &table) {
                  [](ResidentState &r) -> auto & { return r.cd.stream_header_mode; });
     add_resident("stall_frame", 0x8005a4b8, 2,
                  [](ResidentState &r) -> auto & { return r.disc_read.h_5a4b8; });
-    for (std::uint32_t slot = 0; slot < 3; ++slot)
-        add_resident("party_block", 0x8005a414 + 4 * slot, 4,
-                     [slot](ResidentState &r) -> auto & { return r.party_blocks[slot]; });
 }
 
 } // namespace xem::reconstruction

@@ -60,18 +60,6 @@ std::uint32_t cd_sector(const std::array<std::uint8_t, 4> &location) {
     return (decimal(location[0]) * 60U + decimal(location[1])) * 75U + decimal(location[2]) - 150U;
 }
 
-bool Program::deliver_pending_front() {
-    using Kind = PlatformInput::Kind;
-    const auto &inputs = resident.platform;
-    bool any = false;
-    while (!inputs.empty() && inputs.front().site == 0 &&
-           (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick)) {
-        static_cast<void>(deliver_interrupt());
-        any = true;
-    }
-    return any;
-}
-
 // 800284b4: the directory group (a multiple of four) and index within it of
 // the selected directory (8004fe14), both zero when none matches.
 std::array<std::uint32_t, 2> Program::current_directory() const {
@@ -155,7 +143,7 @@ std::int32_t Program::cd_command_wait(std::array<std::uint8_t, 8> *result) {
     resident.cd_sync_polls = 0;
     resident.cd_sync_label = 0x80018edc;
     const auto status = [&](std::uint32_t site) {
-        static_cast<void>(deliver_pending_front()); // Arrivals recorded before this load.
+        static_cast<void>(deliver_leading_arrivals()); // Arrivals recorded before this load.
         const auto value = platform_read(resident.platform, site, 1);
         if (value != cd.sync_status)
             throw PlatformInputError("The recorded CD command status differs from the handler's");

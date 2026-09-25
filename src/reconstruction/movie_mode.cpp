@@ -111,13 +111,13 @@ void Program::movie_mode(FrameServices &services, movie::MdecCodec &codec, std::
     const auto draw1 = environments + environment_bytes;
     const auto disp1 = environments + environment_bytes + 0x5c;
     deliver_arrivals(0x80073990);
-    set_def_draw_env(draw0, 0, 0, 0x140, 0xf0);
+    set_default_draw_environment(draw0, 0, 0, 0x140, 0xf0);
     deliver_arrivals(0x800739a8);
-    set_def_disp_env(disp0, 0, 0xf0, 0x140, 0xf0);
+    set_default_display_environment(disp0, 0, 0xf0, 0x140, 0xf0);
     deliver_arrivals(0x800739c0);
-    set_def_draw_env(draw1, 0, 0xf0, 0x140, 0xf0);
+    set_default_draw_environment(draw1, 0, 0xf0, 0x140, 0xf0);
     deliver_arrivals(0x800739d8);
-    set_def_disp_env(disp1, 0, 0, 0x140, 0xf0);
+    set_default_display_environment(disp1, 0, 0, 0x140, 0xf0);
     for (const auto e : {draw0, draw1}) {
         set_memory(e + 0x16, 1, 1); // dithering
         set_memory(e + 0x18, 1, 1); // background clear, black

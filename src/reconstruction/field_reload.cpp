@@ -122,6 +122,26 @@ void Program::field_reload_fade_in(FrameServices &services, const ProgramObserve
     }
 }
 
+// 800a91f0: while particles are paused, load the VRAM 800a915c saved back
+// and release its block.
+void Program::restore_particle_vram(FrameServices &services) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    if (state.particles_paused == 0)
+        return;
+    reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
+    state.particles_paused = 0;
+    if (reload.vram_save.bytes.empty() || reload.vram_save.address != reload.vram_save_address)
+        throw field::FieldFormatError("The saved VRAM block is not owned");
+    auto rect = reload.vram_rect;
+    static_cast<void>(load_image(rect, 0x800afc28, reload.vram_save_address, &services));
+    reload.vram_rect = rect;
+    draw_sync(services);
+    if (resident::heap_release(resident.heap, reload.vram_save, 0x800a925c) != 0)
+        throw field::FieldFormatError("The saved VRAM block was not released");
+    reload.vram_save = {};
+}
+
 // 800a63a0 onward for a reload that is not type 6: load the saved VRAM back
 // (800a91f0), reset the reload type and fade length, then reload the text
 // palettes (80077544) and coalesce the heap (80031ff8).
@@ -132,20 +152,7 @@ void Program::field_reload_finish(FrameServices &services, std::uint32_t frame) 
         throw MissingDependency({"field_reload_finish", 0x800a63ac, {}, {}},
                                 "symbol:field-reload-type-6", false,
                                 "Reload type 6 keeps its VRAM save; not recovered");
-    if (state.particles_paused != 0) {
-        // 800a91f0.
-        reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
-        state.particles_paused = 0;
-        if (reload.vram_save.bytes.empty() || reload.vram_save.address != reload.vram_save_address)
-            throw field::FieldFormatError("The saved VRAM block is not owned");
-        auto rect = reload.vram_rect;
-        static_cast<void>(load_image(rect, 0x800afc28, reload.vram_save_address, &services));
-        reload.vram_rect = rect;
-        draw_sync(services);
-        if (resident::heap_release(resident.heap, reload.vram_save, 0x800a925c) != 0)
-            throw field::FieldFormatError("The saved VRAM block was not released");
-        reload.vram_save = {};
-    }
+    restore_particle_vram(services); // 800a91f0
     state.background_mode = 2;
     reload.fade_frames = 0x20;
     state.dialogue_gate_afd04 = 0;
@@ -172,6 +179,13 @@ void Program::vertical_sync(FrameServices &services) {
         throw ServiceUnavailable("VSync(0) result");
     const auto wait = services.vblank_waits.front();
     services.vblank_waits.pop_front();
+    // The wait ended once the vertical blank counter reached the value it
+    // stores: the unpositioned arrivals up to that blank came before.
+    using Kind = PlatformInput::Kind;
+    while (!in_interrupt_ && static_cast<std::int32_t>(resident.vsync_counter - wait[1]) < 0 &&
+           !resident.platform.empty() && resident.platform.front().site == 0 &&
+           resident.platform.front().kind == Kind::interrupt)
+        static_cast<void>(deliver_interrupt());
     resident.vsync_hcount = wait[0];
     resident.vsync_previous = wait[1];
 }
@@ -220,9 +234,10 @@ void Program::move_image(FrameServices &services, const std::array<std::int16_t,
     static_cast<void>(gpu_enqueue(0x800465ec, 0x80056978, nullptr, 0x14, 0, &services));
 }
 
-// 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and VSync.
-void Program::stop_field_particles(FrameServices &services) {
-    auto &state = *field;
+// 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and
+// VSync (800775f8).
+void Program::stop_particles(FrameServices &services) {
+    auto &state = loaded(*this);
     for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
         if (state.particle_slots[slot] == 1)
             throw MissingDependency({"field_reload", 0x800a92dc, {}, {}}, "symbol:field-particles",
@@ -231,6 +246,30 @@ void Program::stop_field_particles(FrameServices &services) {
         state.reload.particle_ids[slot] = -1;
     }
     draw_and_vertical_sync(services); // 800775f8
+}
+
+// 800864f0: forget the positional emitters and stop the effect pairs whose
+// bit in 800b233c is clear.
+void Program::stop_emitters() {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    for (auto &emitter : state.emitters) {
+        emitter[1] = 0xffff;
+        emitter[0] = 0xffff;
+    }
+    for (std::uint32_t pair = 0; pair < 4; ++pair) {
+        if ((reload.effects_kept & 1U) == 0)
+            resident::stop_effect_pair(resident.sound, pair * 2);
+        reload.effects_kept = static_cast<std::uint16_t>(reload.effects_kept >> 1U);
+    }
+}
+
+// 8007ffe8: close each open dialogue window (8007f6f8).
+void Program::close_dialogues() {
+    auto &state = loaded(*this);
+    for (std::uint32_t w = 0; w < 4; ++w)
+        if (state.dialogue[w].half(0x3f6) == 0)
+            close_dialogue(w);
 }
 
 void Program::field_reload_teardown(FrameServices &services, const ProgramObserver &observe) {
@@ -256,30 +295,15 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
         throw MissingDependency({"field_reload", 0x800374a0, {}, {}}, "symbol:block-80059394",
                                 false, "The block 80059394 names is not recovered");
     resident.w_593a0 = 0;
-    stop_field_particles(services); // 800a9460
-    // 800864f0: forget the positional emitters and stop the effect pairs
-    // whose bit in 800b233c is clear.
-    for (auto &emitter : state.emitters) {
-        emitter[1] = 0xffff;
-        emitter[0] = 0xffff;
-    }
-    for (std::uint32_t pair = 0; pair < 4; ++pair) {
-        if ((reload.effects_kept & 1U) == 0)
-            resident::stop_effect_pair(resident.sound, pair * 2);
-        reload.effects_kept = static_cast<std::uint16_t>(reload.effects_kept >> 1U);
-    }
-    // 8007ffe8: close each open dialogue window (8007f6f8).
-    for (std::uint32_t w = 0; w < 4; ++w)
-        if (state.dialogue[w].half(0x3f6) == 0)
-            close_dialogue(w);
+    stop_particles(services); // 800a9460
+    stop_emitters();          // 800864f0
+    close_dialogues();        // 8007ffe8
     done("reload_suspend", 0x800a5c70);
     if (state.background_mode != 6) {
         // 800a915c: pause particles and save 40h x 100h of VRAM at (3c0, 100).
         if (state.particles_paused != 1) {
             state.particles_paused = 1;
-            heap.tag = 8; // 80032498(8, 0)
-            heap.tag_words[8] = 0;
-            heap.quiet = 0;
+            resident::heap_select_tag(heap, 8, 0); // 80032498
             auto block = resident::heap_allocate(heap, 0x8000, 1, 0x800a918c);
             if (!block)
                 throw field::FieldFormatError("The VRAM save allocation failed");
@@ -328,9 +352,7 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
     preload.address = preload_address; // 8005a4e0 keeps naming the released block
     done("reload_copy_preload", 0x800a5d14);
     if (state.background_mode != 6 && state.particles_paused == 1) {
-        heap.tag = 8;
-        heap.tag_words[8] = 0;
-        heap.quiet = 0;
+        resident::heap_select_tag(heap, 8, 0); // 80032498
         auto moved = resident::heap_allocate(heap, 0x8000, 1, 0x800a90e4);
         if (!moved)
             throw field::FieldFormatError("The VRAM save move allocation failed");
@@ -401,6 +423,13 @@ std::span<std::uint8_t> Program::owned_span(std::uint32_t address) {
         if (const auto bytes = window(saved.address, saved.bytes); !bytes.empty())
             return bytes;
     }
+    if (battle)
+        if (const auto after = battle->regions.upper_bound(address);
+            after != battle->regions.begin()) {
+            auto &[at, bytes] = *std::prev(after);
+            if (address - at < bytes.size())
+                return std::span(bytes).subspan(address - at);
+        }
     return record_block(address);
 }
 
@@ -697,8 +726,16 @@ void Program::field_teardown(FrameServices &services) {
         r.sprite_arena_cursor = r.sprite_arenas.at(buffer);
         r.sprite_arena_start = r.sprite_arenas.at(buffer);
         r.sprite_arena_end = r.sprite_arenas.at(buffer) + r.sprite_arena_bytes;
-        for (; pending != 0; pending = memory(pending + 4))
-            release(memory(pending), 0x8002513c);
+        // The release nodes lie in the arenas, whose bytes may already be
+        // the arena block's heap contents.
+        const auto node_word = [&](std::uint32_t address) {
+            std::uint32_t value = 0;
+            for (std::uint32_t b = 0; b < 4; ++b)
+                value |= static_cast<std::uint32_t>(ram_byte(address + b)) << (8U * b);
+            return value;
+        };
+        for (; pending != 0; pending = node_word(pending + 4))
+            release(node_word(pending), 0x8002513c);
         r.sprite_releases.at(buffer) = 0;
         flush_sprite_uploads(services);
         draw_sync(services);

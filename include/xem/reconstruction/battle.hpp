@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <span>
 #include <stdexcept>
 #include <vector>
 
@@ -32,6 +33,13 @@ struct BattleMemory {
     void put8(std::uint32_t address, std::uint32_t value);
     void put16(std::uint32_t address, std::uint32_t value);
     void put32(std::uint32_t address, std::uint32_t value);
+    // The bytes from `address` to the end of its region.
+    [[nodiscard]] std::span<const std::uint8_t> tail(std::uint32_t address) const;
+    // Move [address, address + size) out of its region, splitting the region
+    // (a disc read list becomes the reader's while its read runs).
+    std::vector<std::uint8_t> take(std::uint32_t address, std::uint32_t size);
+    // Whether one region holds [address, address + size).
+    [[nodiscard]] bool contains(std::uint32_t address, std::uint32_t size) const;
 };
 
 inline constexpr std::uint32_t overlay_base = 0x8006faf0;
@@ -219,11 +227,17 @@ void resume_attack_confirm(Battle &battle, ResidentState &resident, std::uint32_
 std::uint32_t direction_target(const Battle &battle, const ResidentState &resident,
                                std::uint32_t origin, std::uint32_t direction);
 
-// 80076a10 (8002675c at scale 1): build sprite `id` of the glyph table
-// (800d2f5c) as POLY_FT4 primitives at `destination` (0x50 per part, 0x28 per
-// draw buffer 800ccb34) placed at x, y; returns its part count.
+// 8002675c over the glyph table (800d2f5c; 80076a10 at scale 1000, 80076a6c
+// at 800): build sprite `id` as POLY_FT4 primitives at `destination` (0x50 per
+// part, 0x28 per draw buffer 800ccb34) placed at x, y, its part offsets and
+// sizes scaled (4.12); returns its part count.
 std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
-                         std::uint32_t x, std::uint32_t y);
+                         std::uint32_t x, std::uint32_t y, std::uint32_t scale);
+// 80026338(table, id, ...): glyph `id`'s part count, then its first part's
+// texture mode, CLUT x and y, and image x and y, as six words at `fields`.
+void glyph_fields(Battle &battle, std::uint32_t table, std::uint32_t id, std::uint32_t fields);
+// 8008ac00(count): a text image block of (count + 3) * 26 bytes (owner tag 2).
+std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::uint32_t count);
 
 // Turn-procedure helpers the attack pages share.
 void approach_route(Battle &battle, std::uint32_t actor, std::uint32_t target);    // 800877e0
@@ -240,6 +254,44 @@ bool run_reaction_script(Battle &battle, std::uint32_t slot);
 // enables menu effects.
 void play_menu_effect(ResidentState &resident, std::uint32_t id);
 void play_enabled_menu_effect(Battle &battle, ResidentState &resident, std::uint32_t id);
+
+// Battle setup. 80070f40 copies the formation record (8006f9dc, 0x20 bytes)
+// from the field's formation table (800658dc, field component 6) at the
+// selector 80059508: +0 enemy set, +1 flags, +2 scene, +4..6 party groups,
+// +8..f enemy ids (7f none), +10..17 enemy flags, +18..1f enemy groups.
+inline constexpr std::uint32_t formation_record = 0x8006f9dc;
+inline constexpr std::uint32_t formation_table = 0x800658dc;
+inline constexpr std::uint32_t formation_table_bytes = 0x210;
+// The party ids 801e4048 publishes (3 bytes).
+inline constexpr std::uint32_t battle_party_ids = 0x80059468;
+// The setup module: directory 12 file 4 (sha256 4300fdd9...), loaded at
+// 801e4000 by 8001bbac.
+inline constexpr std::uint32_t setup_module_base = 0x801e4000;
+
+// 801e5840 phase 1: participants (801e4048), formation groups and positions
+// (801e4160), enemy records and AI script pointers from the enemy data file
+// *800c3dd0 (801e4870) and the party's derived stats and flags (801e4ac0:
+// 80097d5c, 8009b098).
+void setup_participants(Battle &battle, ResidentState &resident);
+// 801e5840 phase 2: items (801e4cd0), the turn order and initial turn timers
+// (801e4e7c: 80078508, 80098af8, 8001bd40), the turn state's command tables
+// and default targets (801e5014) and the direction-arrow block (800c3e24,
+// 0xec bytes through 8008abb8).
+void setup_turns(Battle &battle, ResidentState &resident);
+// 8009892c: each member's saved command flags (800c3aa4), its gear's shield
+// adjustment (800d2d10 against +50, capped at 10), then game-data fixes
+// (8006de1a = 7, 8006edf6 bit 800 with 8006ee0e bit 2000, and the early-game
+// values while 8006ef64 < bb).
+void adjust_party(Battle &battle);
+// 80071310..800713ac: each member's position pair (800c3e0c) from its
+// character record (8006ecf4, 8006ecf6).
+void place_party(Battle &battle);
+// 80098af8: a slot's turn timer from its speed, with rand spread.
+std::uint32_t turn_timer(Battle &battle, std::uint32_t slot);
+// 8008abb8(size, mode): 80032498(2, 0), then 80031bdc; the block becomes
+// battle memory.
+std::uint32_t allocate_block(Battle &battle, ResidentState &resident, std::uint32_t size,
+                             std::uint32_t mode);
 
 // Post-battle module (directory 10 file 4, sha256 f474fd48..., loaded at
 // 801de000) and the persistent game data (8006d634, 2358 bytes) are
