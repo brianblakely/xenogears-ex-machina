@@ -602,6 +602,125 @@ void panels() {
               memory.u16(0x80059fd8 + 0x12) == 6 && memory.u32(0x80059fd8 + 0x1c) == state + 0x121,
           "Each digit message is drawn into its image by the resident text record");
 }
+// The opening after 800b81bc on invented blocks: the two fade calls, the
+// palette read-backs and glyph fields of 80077990, and the message windows
+// and text quads of 8007819c.
+void opening() {
+    xem::reconstruction::Program program;
+    auto &memory = program.battle.emplace();
+    auto &resident = program.resident;
+    constexpr std::uint32_t graphics = 0x80110000;
+    constexpr std::uint32_t ui = 0x80120000;
+    constexpr std::uint32_t table = 0x80130000;
+    memory.regions[battle::overlay_base].resize(battle::overlay_end - battle::overlay_base);
+    memory.regions[graphics].resize(0xa2b4);
+    memory.regions[ui].resize(0x10c);
+    memory.regions[table].resize(0x400);
+    memory.put32(0x800c3ea4, graphics);
+    memory.put32(0x800d2d28, ui);
+    memory.put32(0x800d2f5c, table);
+    memory.put32(0x800ccb34, 1);
+    resident.battle_scene = 0x80140000;
+    resident.sprite_tasks.head = 0x80150000;
+    resident.sprite_tasks.serial = 7;
+
+    // 800b39c0(0, 2, ff, ff, ff), then (14, 2, 0, 0, 0): a new node at
+    // 800c3c50, then a 28h-step fade to black starting from white.
+    program.battle_opening();
+    constexpr std::uint32_t node = 0x800c3c50;
+    const auto &tasks = resident.sprite_tasks;
+    check(memory.u32(0x800c3558) == node && tasks.head == node &&
+              tasks.pending_head == node + 0x1c && tasks.primary_count == 1 &&
+              tasks.auxiliary_count == 1 && tasks.serial == 9 &&
+              memory.u32(node + 0x18) == 0x80150000 && memory.u32(node + 0x10) == 7 &&
+              memory.u32(node + 0x2c) == 8 && memory.u32(node + 0x30) == 7 &&
+              memory.u32(node + 8) == 0x800b36bc && memory.u32(node + 0xc) == 0x800b383c &&
+              memory.u32(node + 0x24) == 0x800b3878 && memory.u32(node + 0x20) == node,
+          "The first fade registers its node and auxiliary task");
+    // Step 1 of 28h: (0 - ff) * 13h / 14h = -f2 from black leaves f2.
+    check(memory.u8(node + 0x45) == 0xff && memory.u8(node + 0x42) == 0 &&
+              memory.u32(node + 0x38) == 0x28 && memory.u32(node + 0x3c) == 0x27 &&
+              memory.u8(node + 0x48) == 0xf2 && memory.u8(node + 0x4a) == 0xf2,
+          "The second fade starts from white toward black");
+    check(memory.u32(0x800d3364) == 0x80140000 && memory.u32(0x800c3eb0) == 0x80140000,
+          "The scene data pointer is published");
+    // Glyph table: every id at +200, one part (see panels()).
+    for (std::uint32_t id = 0; id < 0x100; ++id)
+        memory.put16(table + 4 + id * 2, 0x200);
+    memory.put16(table + 0x200, 1);
+    for (const auto [at, value] : {std::pair{0U, 5U},
+                                   {2U, 6U},
+                                   {4U, 8U},
+                                   {6U, 16U},
+                                   {8U, 2U},
+                                   {10U, 4U},
+                                   {16U, 1U},
+                                   {18U, 0x20U},
+                                   {20U, 0x1f0U},
+                                   {22U, 0x340U},
+                                   {24U, 0x100U}})
+        memory.put16(table + 0x204 + at, value);
+    memory.put32(graphics + 0xa240, 0x1f0);
+    auto &gpu = resident.gpu;
+    gpu.services = 0x80056888;
+    gpu.functions[2] = 0x8004668c;
+    gpu.functions[7] = 0x800462dc;
+    gpu.width = 0x400;
+    gpu.height = 0x200;
+    resident.interrupts.registers[1] = 0x1f801074;
+    xem::reconstruction::FrameServices services;
+    for (std::uint32_t i = 0; i < 16; ++i) {
+        services.vblank_counts.push_back(0);
+        services.vblank_counts.push_back(0);
+        services.interrupt_masks.push_back(0);
+        services.vram_reads.emplace_back(0x18c, static_cast<std::uint8_t>(i));
+    }
+    program.battle_opening_images(services);
+    check(memory.u16(graphics + 0x8952) == 0x1ef && memory.u16(graphics + 0x896a) == 0x1ed &&
+              memory.u16(graphics + 0x8954) == 0xc6 && memory.u8(graphics + 0x8970) == 0 &&
+              memory.u8(graphics + 0x8fa0) == 1 && memory.u8(graphics + 0x8afc) == 4 &&
+              memory.u8(graphics + 0xa0a4 + 0x18b) == 15,
+          "Each palette row is read back four times");
+    check(memory.u32(graphics + 0xa24c) == 1 && memory.u32(graphics + 0xa25c) == 0x3c0 &&
+              memory.u32(graphics + 0xa260) == 0x34 && memory.u32(graphics + 0xa28c) == 0x341 &&
+              memory.u16(ui + 4) == 0x100 && memory.u16(ui + 0x10) == 0 &&
+              memory.u16(ui + 0x12) == 0x34 && memory.u16(ui + 0x20) == 0x10 &&
+              memory.u16(ui + 0x22) == 0x106 && memory.u8(0x800d3298) == 1,
+          "Window glyph fields and UI rectangles");
+    check(memory.u8(graphics + 0x8908 + 3) == 2 && memory.u8(graphics + 0x892c + 3) == 2,
+          "The four draw modes are built");
+
+    // One free heap block for the window and text blocks.
+    auto &heap = resident.heap;
+    heap.head = 0x80100008;
+    heap.headers = {{0x80100000, {0x80108008, 0}},
+                    {0x80108000, {0, xem::reconstruction::resident::heap_end_tag}}};
+    heap.held = {{0x80100008, std::vector<std::uint8_t>(0x7ff8, 0)}};
+    resident.window_color = {0x10, 0x20, 0x30};
+    resident.window_blend = 1;
+    resident.text_cluts = {0x7c00, 0x7c01};
+    program.battle_opening_windows();
+    const auto window = memory.u32(0x800d2e38 + 5 * 4);
+    check(window == 0x80100008 && memory.u32(0x800d2d90 + 5 * 4) != 0 &&
+              memory.u8(ui + 0xb5) == 0 && memory.u8(ui + 0xb4) == 0 &&
+              memory.u8(window + 0x5a4) == 1 && memory.u32(window + 0x5a0) == 4,
+          "Window 5 is allocated and built with four corner glyphs");
+    check(memory.u8(window + 0x3c0 + 4) == 0x10 && memory.u8(window + 0x3c0 + 7) == 0x3a &&
+              memory.u16(window + 0x24 + 0x3c8) == 8 && memory.u16(window + 0x24 + 0x3e2) == 0x3c,
+          "The backing quads take the window colour and the window's corners");
+    // Top edge (8008de04) of window 5 in buffer 1: x 10, y 22; u 0, v 34.
+    const auto top = window + 0x28 + 0x140;
+    check(memory.u16(top + 8) == 0x10 && memory.u16(top + 0xa) == 0x22 &&
+              memory.u16(top + 0x10) == 0x10 + 0x30 && memory.u8(top + 0x14) == 7 &&
+              memory.u8(top + 0x1d) == 0x44 && memory.u8(top + 7) == 0x2e &&
+              (memory.u16(top + 0x16) & 0x40) != 0,
+          "The top edge is two textured quads");
+    check(memory.u32(0x800d3720) == memory.u32(0x800d3780) && memory.u32(0x800d3720) != 0 &&
+              memory.u16(0x800d3718 + 0xc0 + 2) == 0xd && memory.u16(0x800d3778 + 4) == 0x3c &&
+              memory.u16(0x800d36c8 + 0xe) == 0x7c00 && memory.u16(0x800d3728 + 0xe) == 0x7c01 &&
+              memory.u8(0x800d36c8 + 0x28 + 7) == 0x2d,
+          "Four pairs of text quads share one text block per pair");
+}
 } // namespace
 
 int main() {
@@ -616,7 +735,8 @@ int main() {
         attack();
         epilogue();
         panels();
-        std::cout << "Battle actions: ten source-boundary groups passed\n";
+        opening();
+        std::cout << "Battle actions: eleven source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

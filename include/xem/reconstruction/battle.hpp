@@ -233,6 +233,9 @@ std::uint32_t direction_target(const Battle &battle, const ResidentState &reside
 // sizes scaled (4.12); returns its part count.
 std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
                          std::uint32_t x, std::uint32_t y, std::uint32_t scale);
+// 80026338(table, id, ...): glyph `id`'s part count, then its first part's
+// texture mode, CLUT x and y, and image x and y, as six words at `fields`.
+void glyph_fields(Battle &battle, std::uint32_t table, std::uint32_t id, std::uint32_t fields);
 // 8008ac00(count): a text image block of (count + 3) * 26 bytes (owner tag 2).
 std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::uint32_t count);
 

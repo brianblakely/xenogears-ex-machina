@@ -87,6 +87,9 @@ RESIDENT_ENTRIES = (
     "battle_effect_lists",
     "battle_release_setup",
     "battle_renderer_setup",
+    "battle_opening",
+    "battle_opening_images",
+    "battle_opening_windows",
     "mode_dispatch",
     "battle_mode_start",
     "battle_atb",
@@ -173,9 +176,19 @@ RELOAD_ENTRIES = (
 STEP_ENTRY, STEP_EXIT = "f-head", "f-7dac"
 FRAME_START_HCOUNT = 0x800ADB9C
 # StoreImage read-backs without a service hook: the hook after the transfer
-# completes, the word naming the destination and the byte count. 800a915c
-# saves 40h x 100h of VRAM into the block at 800afc70 before t-b.
-VRAM_READS = {"t-b": [(0x800AFC70, 0x8000)]}
+# completes, then per read-back in call order the word naming the block, the
+# destination's offset in it and the byte count. 800a915c saves 40h x 100h of
+# VRAM into the block at 800afc70 before t-b. The battle's 80077990 reads
+# four palette rows (198 x 1) four times each into the graphics block
+# (800c3ea4) before op-camera.
+VRAM_READS = {
+    "t-b": [(0x800AFC70, 0, 0x8000)],
+    "op-camera": [
+        (0x800C3EA4, 0x8970 + row * 0x630 + copy * 0x18C, 0x18C)
+        for copy in range(4)
+        for row in range(4)
+    ],
+}
 # 800a5884's five columns (800a5774) are read into one heap block, just below
 # the read-ahead block (8005a4e0), each read overwriting the last: the image
 # after them holds the fifth (bit 15 set, which 800a5774 sets again). The
@@ -292,6 +305,19 @@ def frame_services(
     return result
 
 
+def vram_read_lines(row: dict, snapshots, entry_row: dict) -> list[str]:
+    """The StoreImage read-backs a VRAM_READS hook after the call's entry
+    supplies: the destinations' bytes in its image."""
+    if row["hook"] not in VRAM_READS or row["event"] <= entry_row["event"]:
+        return []
+    ram = snapshots.read(row)[0]
+    lines = []
+    for pointer, offset, size in VRAM_READS[row["hook"]]:
+        at = (u32(ram, pointer) + offset) & 0x1FFFFF
+        lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+    return lines
+
+
 def call_services(
     rows: list[dict], snapshots, entry_row: dict, exit_row: dict, interrupts
 ) -> list[str]:
@@ -310,11 +336,7 @@ def call_services(
         if not entry_row["event"] <= row["event"] <= exit_row["event"]:
             continue
         hook = row["hook"]
-        if hook in VRAM_READS and row["event"] > entry_row["event"]:
-            ram = snapshots.read(row)[0]
-            for pointer, size in VRAM_READS[hook]:
-                at = u32(ram, pointer) & 0x1FFFFF
-                lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+        lines += vram_read_lines(row, snapshots, entry_row)
         if hook == COLUMN_READS[0] and row["event"] > entry_row["event"]:
             ram = snapshots.read(row)[0]
             _, count, size = COLUMN_READS
@@ -1106,7 +1128,7 @@ def run(args: argparse.Namespace) -> int:
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
     services, frame_keys = {}, {}
-    call_rows = trace_rows(capture) if args.entry in RELOAD_ENTRIES else []
+    call_rows = trace_rows(capture) if args.entry in RELOAD_ENTRIES or args.call_services else []
     if args.entry == "field_frame":
         services = frame_services(args.services or capture, "frame-entry", "frame-exit", interrupts)
         # Each call's frame: the latest frame entry at or before its entry record.
@@ -1246,6 +1268,12 @@ def run(args: argparse.Namespace) -> int:
                     key = row["snapshot"]["ram_sha256"]
                     require(key in services, "No service results recorded for this call")
                     lines += [line for _, line in services[key][1]]
+                    lines += [
+                        line
+                        for call_row in call_rows
+                        if row["event"] < call_row["event"] <= item["exit_row"]["event"]
+                        for line in vram_read_lines(call_row, snapshots, row)
+                    ]
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             entry_row = first["entry_row"]
             report = runner.call(

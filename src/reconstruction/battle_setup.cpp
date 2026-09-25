@@ -803,23 +803,8 @@ void Program::setup_battle_panels(battle::Battle &context) {
     // 801e5924: the gauge panels.
     for (std::uint32_t member = 0; member < 3; ++member)
         memory.put8(ui + 0x7c + member, 1);
-    // 80026338(800d2f5c, 5c, ...): glyph 5c's part count (+a234), its first
-    // part's texture mode, CLUT position and image position (+a238..+a248).
-    {
-        const auto table = memory.u32(0x800d2f5c);
-        const auto glyph = table + memory.u16(table + 4 + 0x5c * 2);
-        const auto part = glyph + 4;
-        const auto shift = memory.u16(part + 16) == 0 ? 20 : 18;
-        const auto offset = static_cast<std::int32_t>(memory.u16(part) << 16) >> shift;
-        for (const auto [at, value] :
-             {std::pair{0xa234U, memory.s16(glyph)},
-              {0xa238U, memory.s16(part + 16)},
-              {0xa23cU, memory.s16(part + 18)},
-              {0xa240U, memory.s16(part + 20)},
-              {0xa244U, s16(memory.u16(part + 22) & 0xffc0) + offset},
-              {0xa248U, s16(memory.u16(part + 24) & 0xff00) + memory.s16(part + 2)}})
-            memory.put32(graphics + at, static_cast<std::uint32_t>(value));
-    }
+    // 80026338(800d2f5c, 5c, ...): glyph 5c's fields at +a234..+a248.
+    battle::glyph_fields(context, memory.u32(0x800d2f5c), 0x5c, graphics + 0xa234);
     // GetClut 80043a58 on the rows above the glyph's CLUT.
     for (const auto [at, row] :
          {std::pair{0xa2aeU, 0}, {0xa2acU, -1}, {0xa2b2U, -2}, {0xa2b0U, -3}})
@@ -1368,6 +1353,221 @@ void Program::battle_renderer_setup(std::uint32_t task_argument) {
     set_display_mask(1);
 }
 
+// 800b39c0(time, mode, r, g, b): the fade task. Its node is battle BSS
+// (800c3c50 once 800c3558 names it; 800c3c00 in 800c3554 while 800c355c is
+// set) holding a main task (+0) and an auxiliary task (+1c). A new node is
+// registered without an owner (8001cc18) with its auxiliary task
+// (8001ca58), running 800b36bc (+8), destroyed by 800b383c (+c), the
+// auxiliary running 800b3878. A running fade starts from the colour it
+// reached (+48..4a to +45..47). +41 mode, +42..44 target colour, +38 and
+// +3c the steps (time * 2), then the first step.
+void Program::start_battle_fade(battle::Battle &context, std::uint32_t time, std::uint32_t mode,
+                                std::uint32_t red, std::uint32_t green, std::uint32_t blue) {
+    auto &memory = context.memory;
+    if (memory.u8(0x800d3638) != 0)
+        return;
+    constexpr std::uint32_t current = 0x800c3558;
+    constexpr std::uint32_t alternate = 0x800c3554;
+    std::uint32_t node = 0;
+    bool fresh = false;
+    if (memory.u8(0x800c355c) == 0) {
+        node = memory.u32(current);
+        if (node == 0) {
+            node = 0x800c3c50;
+            memory.put32(current, node);
+            fresh = true;
+        }
+    } else if (memory.u32(current) == 0) {
+        node = 0x800c3c00;
+        memory.put32(alternate, node);
+        fresh = true;
+    } else {
+        node = memory.u32(alternate);
+    }
+    auto &tasks = resident.sprite_tasks;
+    if (fresh) {
+        // 8001cc18(0, node): a null owner's generation is the word at 00000010.
+        memory.put32(node, 0);
+        memory.put32(node + 0xc, 0x8001cd94);
+        memory.put32(node + 8, 0);
+        memory.put32(node + 0x14, resident.null_owner_generation & 0x1fffffffU);
+        memory.put32(node + 0x10,
+                     (memory.u32(node + 0x10) & 0xe0000000U) | (tasks.serial & 0x1fffffffU));
+        ++tasks.serial;
+        memory.put32(node + 0x18, tasks.head);
+        tasks.head = node;
+        if (tasks.creation_flags != 0) {
+            ++tasks.active_flags;
+            memory.put32(node + 0x14, memory.u32(node + 0x14) | 0x80000000U);
+        }
+        ++tasks.primary_count;
+        // 8001ca58(node, node + 1c): the auxiliary task on the pending list.
+        const auto auxiliary = node + 0x1c;
+        memory.put32(auxiliary, node);
+        const auto serial = tasks.serial & 0x1fffffffU;
+        ++tasks.serial;
+        memory.put32(auxiliary + 0x18, tasks.pending_head);
+        tasks.pending_head = auxiliary;
+        memory.put32(auxiliary + 0x10, (memory.u32(auxiliary + 0x10) & 0xe0000000U) | serial);
+        memory.put32(auxiliary + 8, 0);
+        memory.put32(auxiliary + 0xc, 0x8001cb48);
+        ++tasks.auxiliary_count;
+        memory.put32(auxiliary + 0x14, memory.u32(node + 0x10) & 0x1fffffffU);
+        memory.put32(node + 0x14, memory.u32(node + 0x14) & 0x7fffffffU);
+        if (tasks.creation_flags != 0)
+            --tasks.active_flags;
+        memory.put32(node + 8, 0x800b36bc);      // 8001cd6c
+        memory.put32(auxiliary + 8, 0x800b3878); // 8001cd64
+        memory.put32(node + 0xc, 0x800b383c);    // 8001cd74
+        memory.put32(node + 4, node);
+        memory.put32(node + 0x20, node);
+        for (const auto at : {0x40U, 0x45U, 0x46U, 0x47U})
+            memory.put8(node + at, 0);
+    } else {
+        for (std::uint32_t i = 0; i < 3; ++i)
+            memory.put8(node + 0x45 + i, memory.u8(node + 0x48 + i));
+    }
+    memory.put8(node + 0x41, mode);
+    memory.put8(node + 0x42, red);
+    memory.put8(node + 0x43, green);
+    memory.put8(node + 0x44, blue);
+    memory.put32(node + 0x38, time << 1U);
+    memory.put32(node + 0x3c, time << 1U);
+    step_battle_fade(context, node);
+}
+
+// 800b36bc: one fade step. With steps left (+3c), the colour +48..4a moves
+// from the start (+45..47) toward the target (+42..44): the difference
+// scaled by the steps left / 2 (GTE GPF, sf 0) and divided by the total / 2
+// is taken from the target. With none left the colour is the target; a
+// black target ends the fade through the destroy callback of 800c3558.
+void Program::step_battle_fade(battle::Battle &context, std::uint32_t task) {
+    auto &memory = context.memory;
+    const auto left = static_cast<std::int32_t>(memory.u32(task + 0x3c));
+    if (left == 0) {
+        memory.put8(task + 0x49, memory.u8(task + 0x43));
+        memory.put8(task + 0x48, memory.u8(task + 0x42));
+        memory.put8(task + 0x4a, memory.u8(task + 0x44));
+        if ((memory.u8(task + 0x42) | memory.u8(task + 0x49) | memory.u8(task + 0x44)) == 0)
+            throw MissingDependency({"battle_fade", 0x800b3714, {}, {}},
+                                    "symbol:battle-fade-destroy", false,
+                                    "A finished black fade's destroy callback is not "
+                                    "reconstructed");
+        return;
+    }
+    memory.put32(task + 0x3c, static_cast<std::uint32_t>(left - 1));
+    auto &gte = resident.gte;
+    gte.set_data(8, static_cast<std::uint32_t>((left - 1) >> 1));
+    for (std::uint32_t i = 0; i < 3; ++i)
+        gte.set_data(9 + i, static_cast<std::uint32_t>(memory.u8(task + 0x42 + i)) -
+                                memory.u8(task + 0x45 + i));
+    gte.execute(0x3dU); // GPF sf=0 lm=0
+    const auto total = static_cast<std::int32_t>(memory.u32(task + 0x38)) >> 1;
+    if (total == 0)
+        throw MissingDependency({"battle_fade", 0x800b37a8, {}, {}}, "symbol:battle-fade-zero",
+                                false, "A fade step dividing by zero steps is not reconstructed");
+    for (std::uint32_t i = 0; i < 3; ++i) {
+        const auto scaled = static_cast<std::int32_t>(gte.data(9 + i)) / total;
+        memory.put8(task + 0x48 + i,
+                    (memory.u8(task + 0x42 + i) - static_cast<std::uint32_t>(scaled)) & 0xffU);
+    }
+}
+
+void Program::battle_opening() {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        start_battle_fade(context, 0, 2, 0xff, 0xff, 0xff);
+        if (memory.u8(0x800c3d48) == 0)
+            start_battle_fade(context, 0x14, 2, 0, 0, 0);
+        if (resident.b_694f8 != 0) {
+            // 800397fc(80062648, 7f, 0): 80039850 then 80039a80.
+            const auto sequence = open_sequence(0x80062648);
+            start_sequence(sequence, 0x7f, 0);
+            memory.put32(0x800c3e54, sequence);
+        }
+        memory.put32(0x800d3364, resident.battle_scene);
+        memory.put32(0x800c3eb0, resident.battle_scene);
+    });
+}
+
+// 80077990: the glyph palettes' rows read back from VRAM, the window and
+// cursor glyphs, the UI block's texture rectangles and four draw modes.
+// - Four rectangles at +8950 (x 1, 198 wide, 1 high) on the CLUT rows at
+//   +a240 - 1, +a240, - 2 and - 3, each stored (StoreImage 800448f8) four
+//   times: to +8970, +8afc, +8c88, +8e14 and on at +630 per rectangle.
+// - Glyphs 4b, 50, 4d and 4e (80026338) into +a24c, +a264, +a27c, +a294;
+//   the first two then take image (3c0, 34) and (3c8, 34).
+// - UI RECTs at +0 (0, 0, 100, 100), +8 (the page of glyph 5c), +10 and +18
+//   (8 x 10 at the first two glyphs), +20 and +28 (10 x 8 at the last two).
+// - Draw modes at +8908 and +8914 over UI +8, +8920 and +892c over UI +0,
+//   all on glyph 5c's page.
+// Then 80070f40 sets 800d3298.
+void Program::battle_opening_images(FrameServices &services) {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        const auto graphics = memory.u32(0x800c3ea4);
+        const auto rects = graphics + 0x8950;
+        const auto row = memory.u16(graphics + 0xa240);
+        for (std::uint32_t i = 0; i < 4; ++i) {
+            memory.put16(rects + i * 8, 1);
+            memory.put16(rects + i * 8 + 4, 0xc6);
+            memory.put16(rects + i * 8 + 6, 1);
+        }
+        memory.put16(rects + 2, row - 1U);
+        memory.put16(rects + 0xa, row);
+        memory.put16(rects + 0x12, row - 2U);
+        memory.put16(rects + 0x1a, row - 3U);
+        for (std::uint32_t copy = 0; copy < 4; ++copy)
+            for (std::uint32_t i = 0; i < 4; ++i) {
+                const auto rect = rects + i * 8;
+                const auto destination = graphics + 0x8970 + i * 0x630 + copy * 0x18c;
+                std::array<std::int16_t, 4> area{s16(memory.u16(rect)), s16(memory.u16(rect + 2)),
+                                                 s16(memory.u16(rect + 4)),
+                                                 s16(memory.u16(rect + 6))};
+                std::vector<std::uint8_t> words(0x18c);
+                store_image(services, area, rect, destination, words);
+                memory.put16(rect + 4, static_cast<std::uint16_t>(area[2]));
+                memory.put16(rect + 6, static_cast<std::uint16_t>(area[3]));
+                for (std::uint32_t at = 0; at < words.size(); ++at)
+                    memory.put8(destination + at, words[at]);
+            }
+        const auto table = memory.u32(0x800d2f5c);
+        for (const auto [id, fields] :
+             {std::pair{0x4bU, 0xa24cU}, {0x50U, 0xa264U}, {0x4dU, 0xa27cU}, {0x4eU, 0xa294U}})
+            battle::glyph_fields(context, table, id, graphics + fields);
+        const auto ui = memory.u32(0x800d2d28);
+        const auto word = [&](std::uint32_t offset) { return memory.u32(graphics + offset); };
+        const auto rect = [&](std::uint32_t index, std::uint32_t x, std::uint32_t y,
+                              std::uint32_t w, std::uint32_t h) {
+            memory.put16(ui + index * 8, x);
+            memory.put16(ui + index * 8 + 2, y);
+            memory.put16(ui + index * 8 + 4, w);
+            memory.put16(ui + index * 8 + 6, h);
+        };
+        rect(0, 0, 0, 0x100, 0x100);
+        memory.put32(graphics + 0xa25c, 0x3c0);
+        memory.put32(graphics + 0xa274, 0x3c8);
+        memory.put32(graphics + 0xa260, 0x34);
+        memory.put32(graphics + 0xa278, 0x34);
+        rect(1, (word(0xa244) & 0x3f) << 1, word(0xa248), 0x100, 0x100);
+        rect(2, (word(0xa25c) & 0x3f) << 1, word(0xa260), 8, 0x10);
+        rect(3, (word(0xa274) & 0x3f) << 1, word(0xa278), 8, 0x10);
+        rect(4, (word(0xa28c) & 0x3f) * 2 + 0xe, word(0xa290), 0x10, 8);
+        rect(5, (word(0xa2a4) & 0x3f) * 2 + 0xe, word(0xa2a8), 0x10, 8);
+        for (const auto [packet, area] :
+             {std::pair{0x8908U, 8U}, {0x8914U, 8U}, {0x8920U, 0U}, {0x892cU, 0U}}) {
+            const auto page =
+                gpu::texture_page(word(0xa238), 0, static_cast<std::int32_t>(word(0xa244)),
+                                  static_cast<std::int32_t>(word(0xa248)));
+            const std::array<std::int16_t, 4> window{
+                s16(memory.u16(ui + area)), s16(memory.u16(ui + area + 2)),
+                s16(memory.u16(ui + area + 4)), s16(memory.u16(ui + area + 6))};
+            draw_mode_packet(graphics + packet, page, &window);
+        }
+        memory.put8(0x800d3298, 1); // 80070f40 after the call
+    });
+}
+
 void Program::battle_adjust_party() { run_battle(battle::adjust_party); }
 
 void Program::battle_place_party() { run_battle(battle::place_party); }
@@ -1395,6 +1595,23 @@ void Program::setup_battle_phase(std::uint32_t phase, FrameServices &services,
 } // namespace xem::reconstruction
 
 namespace xem::reconstruction::battle {
+
+void glyph_fields(Battle &battle, std::uint32_t table, std::uint32_t id, std::uint32_t fields) {
+    auto &memory = battle.memory;
+    const auto glyph = table + memory.u16(table + 4 + id * 2);
+    const auto part = glyph + 4;
+    const auto shift = memory.u16(part + 16) == 0 ? 20 : 18;
+    const auto offset = static_cast<std::int32_t>(memory.u16(part) << 16) >> shift;
+    const std::array<std::int32_t, 6> values{memory.s16(glyph),
+                                             memory.s16(part + 16),
+                                             memory.s16(part + 18),
+                                             memory.s16(part + 20),
+                                             s16(memory.u16(part + 22) & 0xffc0) + offset,
+                                             s16(memory.u16(part + 24) & 0xff00) +
+                                                 memory.s16(part + 2)};
+    for (std::uint32_t i = 0; i < values.size(); ++i)
+        memory.put32(fields + i * 4, static_cast<std::uint32_t>(values.at(i)));
+}
 
 void adjust_party(Battle &battle) {
     auto &memory = battle.memory;
@@ -1453,4 +1670,288 @@ std::uint32_t allocate_block(Battle &battle, ResidentState &resident, std::uint3
     return address;
 }
 
+namespace {
+
+constexpr std::uint32_t window_blocks = 0x800d2e38; // word per window: 5a8h bytes
+constexpr std::uint32_t window_places = 0x800d2d90; // word per window: eh bytes
+constexpr std::uint32_t ui_pointer = 0x800d2d28;
+constexpr std::uint32_t draw_buffer = 0x800ccb34;
+
+// GetClut 80043a58.
+std::uint32_t clut(std::uint32_t x, std::uint32_t y) { return y << 6U | ((x >> 4U) & 0x3fU); }
+
+// 80076b00 on the POLY_FT4 at `quad`: semi-transparent (80043bfc),
+// textured (80043c24(0)), colour 80, blending bit 40 of the texture page
+// from 800595a0.
+void window_glyph_quad(BattleMemory &memory, const ResidentState &resident, std::uint32_t quad) {
+    memory.put8(quad + 7, ((memory.u8(quad + 7) | 2U) & 0xfeU));
+    for (const auto at : {4U, 5U, 6U})
+        memory.put8(quad + at, 0x80);
+    const auto page = memory.u16(quad + 0x16);
+    memory.put16(quad + 0x16, resident.window_blend != 0 ? page | 0x40U : page & 0xffbfU);
+}
+
+// 80077364(quads, set): four POLY_FT4 (SetPolyFT4, SetShadeTex(1), colour
+// ff) on the page and CLUT of glyph field set `set` (+a238 + set * 18h).
+void window_edge_quads(BattleMemory &memory, std::uint32_t quads, std::uint32_t set) {
+    const auto fields = memory.u32(0x800c3ea4) + set * 0x18;
+    const auto word = [&](std::uint32_t at) { return memory.u32(fields + at); };
+    for (std::uint32_t i = 0; i < 4; ++i) {
+        const auto quad = quads + i * 0x28;
+        memory.put8(quad + 3, 9);
+        memory.put8(quad + 7, 0x2c | 1);
+        for (const auto at : {4U, 5U, 6U})
+            memory.put8(quad + at, 0xff);
+        memory.put16(quad + 0x16,
+                     gpu::texture_page(word(0xa238), 0, static_cast<std::int32_t>(word(0xa244)),
+                                       static_cast<std::int32_t>(word(0xa248))));
+        memory.put16(quad + 0xe, clut(word(0xa23c), word(0xa240)));
+    }
+}
+
+// One edge of a window frame (8008de04, 8008e430, 8008ea70, 8008f0a8): two
+// POLY_FT4 at +base (+50 apart, this draw buffer's of each pair), each on
+// the corners `corners` (x, y) with texture corners from the glyph fields at
+// +image (u from the x field's low 6 bits * 2), then 80076b00 on both.
+struct Edge {
+    std::uint32_t base;
+    std::array<std::array<std::int32_t, 8>, 2> corners;
+    std::uint32_t image; // graphics offset of the x field; y follows at +4
+    std::int32_t u0, u1, v1;
+};
+
+void window_edge(BattleMemory &memory, const ResidentState &resident, std::uint32_t block,
+                 const Edge &edge) {
+    const auto buffer = memory.u32(draw_buffer);
+    const auto graphics = memory.u32(0x800c3ea4);
+    const auto u = static_cast<std::int32_t>((memory.u8(graphics + edge.image) & 0x3fU) * 2U);
+    const auto v = static_cast<std::int32_t>(memory.u8(graphics + edge.image + 4));
+    const std::array<std::array<std::int32_t, 2>, 4> uv{{{u + edge.u0, v},
+                                                         {u + edge.u1, v},
+                                                         {u + edge.u0, v + edge.v1},
+                                                         {u + edge.u1, v + edge.v1}}};
+    for (std::uint32_t k = 0; k < 2; ++k) {
+        const auto quad = block + buffer * 0x28 + edge.base + k * 0x50;
+        for (std::uint32_t i = 0; i < 4; ++i) {
+            memory.put16(quad + 8 + i * 8,
+                         static_cast<std::uint32_t>(edge.corners.at(k).at(i * 2)));
+            memory.put16(quad + 0xa + i * 8,
+                         static_cast<std::uint32_t>(edge.corners.at(k).at(i * 2 + 1)));
+            memory.put8(quad + 0xc + i * 8, static_cast<std::uint32_t>(uv.at(i)[0]) & 0xffU);
+            memory.put8(quad + 0xd + i * 8, static_cast<std::uint32_t>(uv.at(i)[1]) & 0xffU);
+        }
+    }
+    for (std::uint32_t k = 0; k < 2; ++k)
+        window_glyph_quad(memory, resident, block + (2 * k + buffer) * 0x28 + edge.base);
+}
+
+// A 16-bit coordinate as the original's halfword arithmetic leaves it.
+std::int32_t h16(std::int32_t value) { return static_cast<std::int16_t>(value); }
+
+// 8008f6e4(id, x, y, w, h): the window's backing quads' corners (+3c8, this
+// draw buffer's), its corner glyphs (8008dc34) and its four edges.
+void build_window(Battle &battle, const ResidentState &resident, std::uint32_t id, std::int32_t x,
+                  std::int32_t y, std::int32_t w, std::int32_t h) {
+    auto &memory = battle.memory;
+    const auto block = memory.u32(window_blocks + id * 4);
+    const auto ui = memory.u32(ui_pointer);
+    memory.put8(ui + id + 0xb0, 0);
+    const auto buffer = memory.u32(draw_buffer);
+    const auto backing = block + buffer * 0x24 + 0x3c8;
+    for (const auto [at, value] : {std::pair{0U, x},
+                                   {2U, y},
+                                   {8U, x + w},
+                                   {0xaU, y},
+                                   {0x10U, x},
+                                   {0x12U, y + h},
+                                   {0x18U, x + w},
+                                   {0x1aU, y + h}})
+        memory.put16(backing + at, static_cast<std::uint32_t>(value));
+    // 8008dc34: the corner glyphs (f0, f2, f5, f7; 4a, 4c, 4f, 51 once
+    // 800c3e4c is set) counted at +5a0, then 80076b00 on their quads.
+    const bool set = memory.u8(0x800c3e4c) != 0;
+    const std::array<std::uint32_t, 4> corners =
+        set ? std::array<std::uint32_t, 4>{0x4a, 0x4c, 0x4f, 0x51}
+            : std::array<std::uint32_t, 4>{0xf0, 0xf2, 0xf5, 0xf7};
+    const auto right = h16(x + w - 8);
+    const auto bottom = h16(y + h - 8);
+    memory.put32(block + 0x5a0, 0);
+    for (const auto [glyph, gx, gy] : {std::tuple{corners[0], x, y},
+                                       {corners[1], right, y},
+                                       {corners[2], x, bottom},
+                                       {corners[3], right, bottom}}) {
+        const auto count = memory.u32(block + 0x5a0);
+        memory.put32(block + 0x5a0, count + draw_glyph(battle, glyph, block + count * 0x50,
+                                                       static_cast<std::uint32_t>(gx),
+                                                       static_cast<std::uint32_t>(gy), 0x1000));
+    }
+    for (std::uint32_t k = 0; k < 4; ++k)
+        window_glyph_quad(memory, resident, block + (2 * k + buffer) * 0x28);
+    // Each edge is two halves of (length - 10h) / 2.
+    const auto half = [](std::int32_t length) { return h16(((length & 0xffff) - 0x10) / 2); };
+    {
+        const auto x0 = h16(x + 8);
+        const auto x1 = h16(x0 + half(w));
+        const auto x2 = h16(x1 + half(w));
+        const auto top = h16(y - 8);
+        const auto low = h16(y + 8);
+        window_edge(memory, resident, block,
+                    {0x140,
+                     {{{x0, top, x1, top, x0, low, x1, low}, {x1, top, x2, top, x1, low, x2, low}}},
+                     0xa25c,
+                     0,
+                     7,
+                     0x10}); // 8008de04: top
+        const auto top2 = h16(y + h - 8);
+        const auto low2 = h16(y + h + 8);
+        window_edge(
+            memory, resident, block,
+            {0x1e0,
+             {{{x0, top2, x1, top2, x0, low2, x1, low2}, {x1, top2, x2, top2, x1, low2, x2, low2}}},
+             0xa274,
+             -8,
+             -1,
+             0x10}); // 8008e430: bottom
+    }
+    {
+        const auto y0 = h16(y + 8);
+        const auto y1 = h16(y0 + half(h));
+        const auto y2 = h16(y1 + half(h));
+        const auto left = h16(x - 8);
+        const auto inner = h16(x + 8);
+        window_edge(memory, resident, block,
+                    {0x280,
+                     {{{left, y0, inner, y0, left, y1, inner, y1},
+                       {left, y1, inner, y1, left, y2, inner, y2}}},
+                     0xa28c,
+                     0xe,
+                     0x1e,
+                     7}); // 8008ea70: left
+        const auto left2 = h16(x + w - 8);
+        const auto inner2 = h16(x + w + 8);
+        window_edge(memory, resident, block,
+                    {0x320,
+                     {{{left2, y0, inner2, y0, left2, y1, inner2, y1},
+                       {left2, y1, inner2, y1, left2, y2, inner2, y2}}},
+                     0xa2a4,
+                     0xe,
+                     0x1e,
+                     7}); // 8008f0a8: right
+    }
+    memory.put8(block + 0x5a4, buffer);
+    memory.put8(ui + id + 0xb0, 1);
+}
+
+} // namespace
 } // namespace xem::reconstruction::battle
+
+namespace xem::reconstruction {
+
+void Program::open_battle_window(battle::Battle &context, std::uint32_t id, std::int16_t x,
+                                 std::int16_t y, std::int16_t w, std::int16_t h, bool deferred,
+                                 bool frame) {
+    using namespace battle;
+    auto &memory = context.memory;
+    id &= 0xffU;
+    if (memory.u8(memory.u32(ui_pointer) + id + 0xb0) == 0) {
+        const auto block = allocate_block(context, resident, 0x5a8, 0);
+        memory.put32(window_blocks + id * 4, block);
+        for (std::uint32_t i = 0; i < 0x5a8; ++i)
+            memory.put8(block + i, 0);
+        const auto place = allocate_block(context, resident, 0xe, 0);
+        memory.put32(window_places + id * 4, place);
+        for (std::uint32_t i = 0; i < 0xe; ++i)
+            memory.put8(place + i, 0);
+        // 80077454: the two backing quads (SetPolyG4, semi-transparent, the
+        // window colour) and their draw modes over UI RECT 0, then the four
+        // edges' quads on glyph field sets 1-4.
+        const auto graphics = memory.u32(0x800c3ea4);
+        const auto ui = memory.u32(ui_pointer);
+        for (std::uint32_t q = 0; q < 2; ++q) {
+            const auto quad = block + q * 0x24 + 0x3c0;
+            memory.put8(quad + 3, 8);
+            memory.put8(quad + 7, 0x38);
+            for (const auto at : {4U, 0xcU, 0x14U, 0x1cU})
+                for (std::uint32_t c = 0; c < 3; ++c)
+                    memory.put8(quad + at + c, resident.window_color.at(c));
+            memory.put8(quad + 7, memory.u8(quad + 7) | 2U);
+            const auto page = gpu::texture_page(
+                0, resident.window_blend, static_cast<std::int32_t>(memory.u32(graphics + 0xa25c)),
+                static_cast<std::int32_t>(memory.u32(graphics + 0xa260)));
+            const std::array<std::int16_t, 4> area{static_cast<std::int16_t>(memory.u16(ui)),
+                                                   static_cast<std::int16_t>(memory.u16(ui + 2)),
+                                                   static_cast<std::int16_t>(memory.u16(ui + 4)),
+                                                   static_cast<std::int16_t>(memory.u16(ui + 6))};
+            draw_mode_packet(block + q * 0xc + 0x408, page, &area);
+        }
+        for (std::uint32_t set = 1; set <= 4; ++set)
+            window_edge_quads(memory, block + 0x140 + (set - 1) * 0xa0, set);
+    }
+    if (deferred) {
+        const auto place = memory.u32(window_places + id * 4);
+        memory.put8(place + 0xc, id);
+        for (const auto [at, value] : {std::pair{0U, x}, {2U, y}, {4U, w}, {6U, h}})
+            memory.put16(place + at, static_cast<std::uint16_t>(value));
+        memory.put16(place + 8, 0);
+        memory.put16(place + 0xa, 0);
+        const auto ui = memory.u32(ui_pointer);
+        memory.put8(ui + id + 0xbf, 0);
+        memory.put8(ui + id + 0xb8, 1);
+        return;
+    }
+    build_window(context, resident, id, x, y, w, h);
+    if (frame)
+        throw MissingDependency({"open_battle_window", 0x8008f9f4, {}, {}}, "symbol:battle-frame",
+                                false,
+                                "A window opened with a frame (800716d8) is not reconstructed");
+}
+
+// 8007819c: windows 5 (8, 2a, 70 x 12) and 4 (20, c8, f4 x 12) built at once
+// (UI +b5 and +b4 then cleared), then four pairs of text quads: a text
+// image block (8008ac00(39h)) in 800d3720 and 800d3780 (+c0 per pair), the
+// RECT (3c0, pair * d, 3c, d) at 800d3718 copied to 800d3778, and 800780a8
+// on 800d36c8 (even line) and 800d3728 (odd line).
+void Program::battle_opening_windows() {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        open_battle_window(context, 5, 8, 0x2a, 0x70, 0x12, false, false);
+        memory.put8(memory.u32(0x800d2d28) + 0xb5, 0);
+        open_battle_window(context, 4, 0x20, 200, 0xf4, 0x12, false, false);
+        memory.put8(memory.u32(0x800d2d28) + 0xb4, 0);
+        // 800780a8(quads, line): two POLY_FT4 (colour 80, opaque, textured)
+        // on the text CLUT of the line's parity (+5c) and the texture page
+        // of its pair's row (3c0, line / 2 * d); +5d cleared.
+        const auto text_quads = [&](std::uint32_t quads, std::uint32_t line) {
+            for (std::uint32_t quad = quads; quad < quads + 0x50; quad += 0x28) {
+                memory.put8(quad + 3, 9);
+                memory.put8(quad + 7, 0x2c);
+                for (const auto at : {4U, 5U, 6U})
+                    memory.put8(quad + at, 0x80);
+                memory.put8(quad + 7, (memory.u8(quad + 7) & 0xfdU) | 1U);
+                memory.put8(quads + 0x5c, line & 1U);
+                memory.put16(quad + 0xe, resident.text_cluts.at(memory.u8(quads + 0x5c) != 0));
+                memory.put16(
+                    quad + 0x16,
+                    gpu::texture_page(0, 0, 0x3c0, static_cast<std::int32_t>(line / 2 * 0xd)));
+            }
+            memory.put8(quads + 0x5d, 0);
+        };
+        for (std::uint32_t pair = 0; pair < 4; ++pair) {
+            const auto step = pair * 0xc0;
+            const auto block = battle::allocate_text_block(context, resident, 0x39);
+            memory.put32(0x800d3720 + step, block);
+            memory.put32(0x800d3780 + step, block);
+            const auto rect = 0x800d3718 + step;
+            memory.put16(rect, 0x3c0);
+            memory.put16(rect + 2, pair * 0xd);
+            memory.put16(rect + 4, 0x3c);
+            memory.put16(rect + 6, 0xd);
+            for (std::uint32_t i = 0; i < 8; ++i)
+                memory.put8(0x800d3778 + step + i, memory.u8(rect + i));
+            text_quads(0x800d36c8 + step, pair * 2);
+            text_quads(0x800d3728 + step, pair * 2 + 1);
+        }
+    });
+}
+
+} // namespace xem::reconstruction
