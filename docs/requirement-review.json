@@ -475,7 +475,7 @@
     },
     "P02-T30": {
       "source_sha256": "6e6096a5d6f92e5cec731770ed59fd163eb6f459eb825712302ee81ccf21686b",
-      "spec_sha256": "7fa9ab459198da791733dcaeac28acf65d1834ac4088fb11e9186d2bf43b1cfe",
+      "spec_sha256": "c6e105e344461342d46005cfcef828b364102d93a3477641fe70406725010668",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -1126,7 +1126,7 @@
     },
     "P02A-T28": {
       "source_sha256": "183cd205ddfadbee28839fccac77f9c2f88e7dba0da8b2a3a8903a4bbb2aae78",
-      "spec_sha256": "d312d95545495c4992f11222e7663e296a4640194fecdad5b362249cfeadb469",
+      "spec_sha256": "2f4e720363622da36fb5d183bbd0ec585ffa7b9419492ccfddba7efa945bd505",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",

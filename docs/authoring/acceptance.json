@@ -38,7 +38,7 @@
       ],
       "stimulus": [
         "Type-check, transpile, execute, normalize, validate and export separately",
-        "Build twice with identical locked inputs; change each dependency class and check cache invalidation",
+        "Build twice with identical locked inputs; change each dependency class, rebuild and verify the output uses the revised inputs. A clean rebuild is sufficient here; dependency-cache invalidation and incremental rebuild tests belong to Phase 7.",
         "Submit bad types, JS closures, nonfinite data, missing references and unsupported instructions",
         "Run the same valid/invalid parameter corpus through Zod, exported JSON Schema and the actual native validator: unknown fields, coercion, nulls, nonfinite values, safe-integer boundaries, tagged unions, local references, nesting and size limits"
       ],
@@ -365,7 +365,7 @@
         "P02A-T33"
       ],
       "preconditions": [
-        "Shared CLI/editor transaction service with expected revision and idempotency IDs",
+        "Shared headless semantic edit/transaction service with expected revision and idempotency IDs; later graphical editors will call this service, but no graphical client is required here",
         "Active test pinned to an immutable package and protected harness"
       ],
       "stimulus": [

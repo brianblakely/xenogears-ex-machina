@@ -989,7 +989,7 @@ Attempt mutation as a gameplay client, then with explicit debug authority; requi
 
 Keep privileged control local by default, with read-only spectators, explicit trusted debug access, and authenticated opt-in remote access. Resource bounds and command cancellation must remain available even in unthrottled runs.
 
-Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.
+Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|
@@ -1870,7 +1870,7 @@ Cause geometric, load and runtime interaction failures and require complete stru
 
 Treat source generators and dependency installation as executable build code. Isolate them with OS/process-level filesystem/network/credential restrictions, controlled dependencies, separate output/temp directories, memory/work limits, and a watchdog. Node `vm` or TypeScript typing is not the isolation boundary; never expose runtime debug privileges to untrusted generators or Lua.
 
-Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.
+Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.
 
 | Test ID | Required facet | Targets | Result |
 |---|---|---|---|

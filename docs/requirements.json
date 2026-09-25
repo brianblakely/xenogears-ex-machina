@@ -9452,7 +9452,7 @@
       "phase": 2,
       "requirement": "privileged control local by default",
       "test_id": "TEST-P02-T30-F01",
-      "procedure_and_acceptance": "Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.",
+      "procedure_and_acceptance": "Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -9470,7 +9470,7 @@
       "phase": 2,
       "requirement": "read-only spectators",
       "test_id": "TEST-P02-T30-F02",
-      "procedure_and_acceptance": "Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.",
+      "procedure_and_acceptance": "Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -9488,7 +9488,7 @@
       "phase": 2,
       "requirement": "explicit trusted debug",
       "test_id": "TEST-P02-T30-F03",
-      "procedure_and_acceptance": "Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.",
+      "procedure_and_acceptance": "Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -9506,7 +9506,7 @@
       "phase": 2,
       "requirement": "authenticated opt-in remote control",
       "test_id": "TEST-P02-T30-F04",
-      "procedure_and_acceptance": "Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.",
+      "procedure_and_acceptance": "Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -9524,7 +9524,7 @@
       "phase": 2,
       "requirement": "resource bounds",
       "test_id": "TEST-P02-T30-F05",
-      "procedure_and_acceptance": "Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.",
+      "procedure_and_acceptance": "Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -9542,7 +9542,7 @@
       "phase": 2,
       "requirement": "cancellation at unlocked speed",
       "test_id": "TEST-P02-T30-F06",
-      "procedure_and_acceptance": "Exercise role matrix including untrusted Lua, spectators and competing local controllers. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation.",
+      "procedure_and_acceptance": "Exercise the Phase 2 role matrix with spectators, competing local controllers and clients lacking debug authority. Remote access requires explicit enablement/authentication; floods and unthrottled execution cannot suppress bounded control/cancellation. Reject unavailable Lua operations; actual untrusted-Lua escalation tests belong to Phase 7 P07-T14.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17525,7 +17525,7 @@
       "phase": "2A",
       "requirement": "executable generator and dependency-install threat model",
       "test_id": "TEST-P02A-T28-F01",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17543,7 +17543,7 @@
       "phase": "2A",
       "requirement": "OS or process isolation",
       "test_id": "TEST-P02A-T28-F02",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17561,7 +17561,7 @@
       "phase": "2A",
       "requirement": "filesystem restrictions",
       "test_id": "TEST-P02A-T28-F03",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17579,7 +17579,7 @@
       "phase": "2A",
       "requirement": "network restrictions",
       "test_id": "TEST-P02A-T28-F04",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17597,7 +17597,7 @@
       "phase": "2A",
       "requirement": "credential restrictions",
       "test_id": "TEST-P02A-T28-F05",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17615,7 +17615,7 @@
       "phase": "2A",
       "requirement": "controlled dependencies",
       "test_id": "TEST-P02A-T28-F06",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17633,7 +17633,7 @@
       "phase": "2A",
       "requirement": "separate output and temporary directories",
       "test_id": "TEST-P02A-T28-F07",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17651,7 +17651,7 @@
       "phase": "2A",
       "requirement": "memory and work limits",
       "test_id": "TEST-P02A-T28-F08",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17669,7 +17669,7 @@
       "phase": "2A",
       "requirement": "independent watchdog",
       "test_id": "TEST-P02A-T28-F09",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17687,7 +17687,7 @@
       "phase": "2A",
       "requirement": "Node vm and typing not isolation",
       "test_id": "TEST-P02A-T28-F10",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
@@ -17705,7 +17705,7 @@
       "phase": "2A",
       "requirement": "no runtime debug authority for generators or Lua",
       "test_id": "TEST-P02A-T28-F11",
-      "procedure_and_acceptance": "Run malicious authored fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package.",
+      "procedure_and_acceptance": "Run malicious authored-generator fixtures attempting out-of-scope reads/writes, network and credential access, dependency-install hooks, resource exhaustion and debug calls. The operating-system boundary must deny access and terminate bounded failures while preserving source/base assets and the prior package. Lua is not executed by the bridge; reject unsupported Lua execution and verify no generator can grant future gameplay-script privileges. Actual Lua isolation is tested in Phase 7.",
       "targets": [
         "arch-vulkan",
         "windows-d3d12",
