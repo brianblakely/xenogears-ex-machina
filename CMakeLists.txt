@@ -53,7 +53,10 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_movie.cpp
   src/reconstruction/field_gte.cpp
   src/reconstruction/disc_stream.cpp
-  src/reconstruction/disc_read.cpp)
+  src/reconstruction/disc_read.cpp
+  src/reconstruction/interrupts.cpp
+  src/reconstruction/gpu_queue.cpp
+  src/reconstruction/sound_tick.cpp)
 target_include_directories(xem-reconstruction PUBLIC "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(xem-reconstruction PUBLIC xem_project_options)
 
@@ -126,6 +129,9 @@ if(BUILD_TESTING)
   add_executable(test-disc-read tests/test_disc_read.cpp)
   target_link_libraries(test-disc-read PRIVATE xem-reconstruction)
   add_test(NAME disc-read-reconstruction COMMAND test-disc-read)
+  add_executable(test-interrupts tests/test_interrupts.cpp)
+  target_link_libraries(test-interrupts PRIVATE xem-reconstruction)
+  add_test(NAME interrupt-reconstruction COMMAND test-interrupts)
   add_executable(test-battle tests/test_battle.cpp)
   target_link_libraries(test-battle PRIVATE xem-reconstruction)
   add_test(NAME battle-reconstruction COMMAND test-battle)

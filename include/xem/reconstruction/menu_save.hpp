@@ -36,7 +36,8 @@ inline constexpr std::size_t gear_count = 20;   // records 11..30 (game data + 9
 inline constexpr std::size_t file_indices = 15; // file name digit 0..14 per card
 
 // Resident words the save and load read or write, owned by menu memory.
-inline constexpr std::uint32_t play_frames = 0x80059488;       // u32
+// The play counter they also store and restore (80059488) is resident state
+// (PadState::vsyncs), passed in.
 inline constexpr std::uint32_t saved_globals = 0x8005a3a0;     // 16 halfwords
 inline constexpr std::uint32_t text_state = 0x80059360;        // pointer; + 6c code table
 inline constexpr std::uint32_t text_single_limit = 0x8005934c; // word
@@ -102,7 +103,7 @@ void store_game_data(Menu &menu, std::uint32_t payload);
 // the copy of 801e4a28, and 801cb184 decoding the names back. `disc` is
 // the resident 80028530 result (u16 at the loaded directory table + 78).
 void serialize(Menu &menu, std::uint32_t payload, std::uint32_t digit, std::uint32_t disc,
-               NameScratch &scratch);
+               std::uint32_t play_frames, NameScratch &scratch);
 
 // 801cc424..801cc448: store the eight-bit sum of payload[0..1eff) at
 // payload + 1eff. Returns the full sum the loop accumulates (A1 at 801cc44c).
@@ -130,7 +131,8 @@ void restore_game_data(Menu &menu, std::uint32_t payload, std::uint32_t tables);
 
 // 801cb28c(payload): 801e4d10 with the menu's table directory, the play
 // counter from payload + 0, the globals from game + 2324, then 801cb184.
-void apply_loaded(Menu &menu, std::uint32_t payload, NameScratch &scratch);
+void apply_loaded(Menu &menu, std::uint32_t payload, std::uint32_t &play_frames,
+                  NameScratch &scratch);
 
 // Load slot selection in 801cb304 (801cb3b8..801cb3e4). Slot s (0..29) is
 // card entry m = *(801e981c + 4s) (port m / 16). 801c9bcc(1) keeps the

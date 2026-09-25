@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <fstream>
 #include <functional>
 #include <map>
 #include <sstream>
@@ -38,6 +39,7 @@ constexpr std::uint32_t field_snapshot = 0x8005a4e4;
 constexpr std::size_t field_snapshot_bytes = 0x3804;
 constexpr std::size_t disc_file_table_bytes = 0x8000;
 constexpr std::size_t disc_directory_table_bytes = 0x7a;
+constexpr std::uint32_t pad_buffers = 0x800625fc;
 
 constexpr std::size_t actor_bytes = 0x138;
 constexpr std::size_t descriptor_bytes = 0x5c;
@@ -156,6 +158,10 @@ Program import_resident(const OriginalMemory &memory) {
         read.directories = copy_of(memory.range(read.directory_table, disc_directory_table_bytes));
     if (in_ram(resident.cd.dma_services + 4, 4))
         resident.cd.dma_set_callback = memory.word(resident.cd.dma_services + 4);
+    // Read-only input of the VSync callback and the pad status check: the
+    // BIOS pad driver's receive buffers.
+    for (std::uint32_t port = 0; port < 2; ++port)
+        copy_into(resident.pad.buffers[port], memory.range(pad_buffers + port * 34, 34));
     // The game data is allocated during boot; before that there is none.
     if (game_state_loaded(resident))
         resident.game_data =
@@ -186,15 +192,16 @@ Program import_resident(const OriginalMemory &memory) {
         if (tag != 0 && tag != reconstruction::resident::heap_end_tag)
             resident.mode_block.bytes = copy_of(memory.range(block, found->second[0] - block - 8));
     }
-    // The map data read ahead (8001b484) owns its allocated block while a slot
-    // is selected.
+    // The map data read ahead (8001b484) owns its block while a slot is
+    // selected and the block is allocated (a slot can be selected while the
+    // pointer still names a released block).
     if (resident.preload_slot != 0xffffffffU) {
         const auto &block = resident.preload_block.address;
         const auto found = resident.heap.headers.find(block - 8);
-        if (found == resident.heap.headers.end() ||
-            (found->second[1] & reconstruction::resident::heap_tag_mask) == 0)
-            throw field::FieldFormatError("The read-ahead block is not an allocated heap block");
-        resident.preload_block.bytes = copy_of(memory.range(block, found->second[0] - block - 8));
+        if (found != resident.heap.headers.end() &&
+            (found->second[1] & reconstruction::resident::heap_tag_mask) != 0)
+            resident.preload_block.bytes =
+                copy_of(memory.range(block, found->second[0] - block - 8));
     }
     // Sound driver objects, each owned whole. Objects in the sound pool (the
     // 6300 bytes at 80065b0c the driver initializes with 80038ec0) end at the
@@ -238,6 +245,31 @@ Program import_resident(const OriginalMemory &memory) {
     sound_list(sound.effect_banks, 0x1c);
     sound_list(sound.wave_banks, 0x2c);
     sound_list(sound.sequences, 0);
+    for (const auto &[address, size] : reconstruction::resident::sound_statics)
+        sound.statics.emplace(address, copy_of(memory.range(address, size)));
+    for (const auto &[address, size] : reconstruction::resident::sound_constants)
+        sound.constants.emplace(address, copy_of(memory.range(address, size)));
+    // The SPU transfer queue (owned: transfers are queued and started),
+    // unless a driver object already holds it.
+    if (const auto queue = memory.word(0x80059458);
+        in_ram(queue, reconstruction::resident::transfer_queue_bytes) && !owned(queue))
+        sound.statics.emplace(
+            queue, copy_of(memory.range(queue, reconstruction::resident::transfer_queue_bytes)));
+    // Each sequence's event data (+8), a block whose third word is its byte
+    // length; the tick only reads it. Every voice's event pointer must lie
+    // inside it.
+    for (auto sequence = sound.sequences; sequence != 0; sequence = memory.word(sequence)) {
+        const auto data = memory.word(sequence + 8);
+        if (data == 0)
+            continue;
+        const auto size = memory.word(data + 8);
+        for (std::uint32_t voice = 0; voice < memory.word(sequence + 0x14, 1); ++voice) {
+            const auto at = memory.word(sequence + 0x94 + voice * 0x158 + 0x14);
+            if (at != 0 && (at < data || at - data >= size))
+                throw field::FieldFormatError("A sequence voice reads outside its event data");
+        }
+        sound.constants.emplace(data, copy_of(memory.range(data, size)));
+    }
     copy_into(sound.spu_blocks,
               memory.range(reconstruction::resident::spu_block_table, sound.spu_blocks.size()));
     sound.pitch_tables = copy_of(memory.range(reconstruction::resident::pitch_table_address,
@@ -384,6 +416,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_ring_header", read.ring.address, read.ring.bytes);
     if (!read.list.bytes.empty())
         out.bytes("disc_file_list", read.list.address, read.list.bytes);
+    if (!read.ring_payload.bytes.empty())
+        out.bytes("disc_ring_payload", read.ring_payload.address, read.ring_payload.bytes);
     for (const auto &block : resident.music_blocks)
         out.bytes("music_block", block.address, block.bytes);
     if (!resident.mode_block.bytes.empty())
@@ -396,6 +430,8 @@ void export_resident_into(const Program &program, Claims &out) {
     }
     for (const auto &[address, bytes] : resident.sound.objects)
         out.bytes("sound_object", address, bytes);
+    for (const auto &[address, bytes] : resident.sound.statics)
+        out.bytes("sound_static", address, bytes);
     out.bytes("sound_spu_blocks", reconstruction::resident::spu_block_table,
               resident.sound.spu_blocks);
     if (!resident.sound.pitch_tables.empty())
@@ -415,8 +451,107 @@ void export_resident_into(const Program &program, Claims &out) {
     }
     for (const auto &[address, held] : resident.heap.held)
         out.bytes("heap_held", address, held);
+    for (const auto &block : resident.disc_transfers)
+        out.bytes("disc_transfer", block.address, block.bytes);
 }
 } // namespace
+
+void load_platform(Program &program, const char *platform, const char *disc) {
+    auto &resident = program.resident;
+    std::ifstream lines(platform);
+    if (!lines)
+        throw field::FieldFormatError("Cannot open the platform input file");
+    const auto number = [](const std::string &text, int base) {
+        std::size_t used = 0;
+        const auto value = std::stoul(text, &used, base);
+        if (used != text.size() || value > 0xffffffffUL)
+            throw field::FieldFormatError("Malformed platform input number");
+        return static_cast<std::uint32_t>(value);
+    };
+    for (std::string kind; lines >> kind;) {
+        if (kind == "drive") {
+            std::string lba;
+            if (!(lines >> lba) || resident.drive.next)
+                throw field::FieldFormatError("Malformed or repeated drive position");
+            resident.drive.next = number(lba, 10);
+        } else if (kind == "read") {
+            std::string site, value;
+            if (!(lines >> site >> value))
+                throw field::FieldFormatError("Malformed platform read");
+            resident.platform.push_back(
+                {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
+        } else if (kind == "interrupt") {
+            resident.platform.push_back({reconstruction::PlatformInput::Kind::interrupt, 0, 0});
+        } else {
+            throw field::FieldFormatError("Unknown platform input " + kind);
+        }
+    }
+    if (!lines.eof())
+        throw field::FieldFormatError("Malformed platform input file");
+    // The drive received the Setmode libcd last recorded sending.
+    resident.drive.mode = resident.cd.mode;
+    if (disc != nullptr && *disc != 0) {
+        const std::string path = disc;
+        resident.drive.read_sector = [path](std::uint32_t lba) {
+            std::ifstream stream(path, std::ios::binary);
+            reconstruction::RawSector sector{};
+            stream.seekg(static_cast<std::streamoff>(lba) * reconstruction::raw_sector_bytes);
+            if (!stream.read(reinterpret_cast<char *>(sector.data()), sector.size()))
+                throw reconstruction::PlatformInputError("Disc image has no sector " +
+                                                         std::to_string(lba));
+            return sector;
+        };
+    }
+}
+
+void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
+    auto &resident = program.resident;
+    auto &read = resident.disc_read;
+    const auto &cd = resident.cd;
+    const auto ring = resident.disc_stream.ring_buffer;
+    const bool ring_active = cd.sync_callback == 0x8002b2f0 || cd.sync_callback == 0x8002b5d0 ||
+                             cd.dma_callback == 0x8002ba58 || cd.dma_callback == 0x8002bb50;
+    if (ring_active && ring != 0) {
+        const auto count = memory.word(ring);
+        if (count > 0x1000)
+            throw field::FieldFormatError("Active disc ring has an implausible block count");
+        const auto header_bytes = 0x24U + count * 8U;
+        read.ring = {ring, copy_of(memory.range(ring, header_bytes))};
+        read.ring_payload = {
+            ring + header_bytes,
+            copy_of(memory.range(ring + header_bytes, std::size_t{count} * 0x800))};
+    }
+    // Image data of LoadImage requests waiting in the libgpu queue.
+    auto &gpu = resident.gpu;
+    for (auto at = gpu.tail; at != gpu.head; at = (at + 1U) & 63U) {
+        const auto entry = at * 0x60U;
+        const auto word = [&](std::uint32_t offset) {
+            std::uint32_t value = 0;
+            for (std::uint32_t i = 0; i < 4; ++i)
+                value |= static_cast<std::uint32_t>(gpu.queue.at(entry + offset + i)) << (8U * i);
+            return value;
+        };
+        if (word(0) != 0x800460a0 || word(4) != 0x8006be40U + entry)
+            continue;
+        const auto size = word(0x10);
+        const auto pixels = std::size_t{size & 0xffffU} * (size >> 16U);
+        if (pixels > 1024 * 512)
+            throw field::FieldFormatError("Queued image request exceeds VRAM");
+        gpu.sources.push_back({word(8), copy_of(memory.range(word(8), (pixels + 1) / 2 * 4))});
+    }
+    if (cd.sync_callback == 0x8002ac24 && read.w_fe0c != 0) {
+        // Entries up to and including the terminating one (file or
+        // destination zero).
+        std::uint32_t entries = 0;
+        for (auto at = read.w_fe0c;; at += 8) {
+            if (++entries > 0x1000)
+                throw field::FieldFormatError("Disc read list does not terminate");
+            if (memory.word(at, 2) == 0 || memory.word(at + 4) == 0)
+                break;
+        }
+        read.list = {read.w_fe0c, copy_of(memory.range(read.w_fe0c, entries * 8))};
+    }
+}
 
 std::vector<OwnedRange> export_resident(const Program &program, OriginalMemory &memory) {
     Claims out{memory, {}, {}};
@@ -514,8 +649,8 @@ Program import_menu(const OriginalMemory &memory) {
     };
     // Resident words of the save and load, and the name codec's blocks.
     for (const auto [address, size] :
-         {std::pair{menu::play_frames, 4U}, std::pair{menu::saved_globals, 0x20U},
-          std::pair{menu::text_state, 4U}, std::pair{menu::text_single_limit, 4U}})
+         {std::pair{menu::saved_globals, 0x20U}, std::pair{menu::text_state, 4U},
+          std::pair{menu::text_single_limit, 4U}})
         regions.emplace(address, copy_of(memory.range(address, size)));
     const auto text = memory.word(menu::text_state);
     own_block(text);

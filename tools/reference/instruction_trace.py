@@ -217,8 +217,8 @@ def validate_instruction_trace(value: object) -> dict:
     integer(spec["end_frame"], "Trace end", start + 1, 36000)
     budget = integer(spec["max_callbacks"], "Trace callback budget", 1, 1_000_000)
     hooks = spec["hooks"]
-    if not isinstance(hooks, list) or not 1 <= len(hooks) <= 16:
-        raise ValueError("Instruction trace needs 1..16 hooks")
+    if not isinstance(hooks, list) or not 1 <= len(hooks) <= 64:
+        raise ValueError("Instruction trace needs 1..64 hooks")
     names, pcs = set(), set()
     for hook in hooks:
         keys(hook, {"name", "pc", "guard", "ranges"}, {"digests", "snapshot"}, "Trace hook")

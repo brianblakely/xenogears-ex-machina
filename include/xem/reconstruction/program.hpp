@@ -9,6 +9,7 @@
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/field_sprite_factory.hpp"
 #include "xem/reconstruction/field_sprite_model.hpp"
+#include "xem/reconstruction/interrupts.hpp"
 #include "xem/reconstruction/menu.hpp"
 #include "xem/reconstruction/menu_save.hpp"
 #include "xem/reconstruction/packed_field.hpp"
@@ -97,6 +98,77 @@ struct InputQueue {
     bool dequeue();
 };
 
+// Per-VSync controller and clock state (VSync callback 8003634c and callees
+// 800358bc, 80035e44, 80036220). The pad buffers are the BIOS pad driver's
+// receive buffers: platform input, read only.
+struct PadState {
+    std::uint32_t vsyncs{};   // 80059488: VSync callbacks run; the play counter saves keep
+    std::uint32_t hook{};     // 800501fc: optional per-VSync call
+    std::uint32_t debugger{}; // 80059390
+    std::uint8_t type{};      // 80059388: last controller type
+    std::array<std::array<std::uint8_t, 34>, 2> buffers{}; // 800625fc, 8006261e
+    std::array<std::uint32_t, 2> held{};                   // 80059374: last buttons per port
+    std::array<std::uint32_t, 2> repeat_delay{};           // 8005022c: VSyncs since a new press
+    // Analog bytes per port: 80059444, 8005944c, 80059430, 80059438 and
+    // 80059448, 80059450, 80059434, 8005943c.
+    std::array<std::array<std::uint8_t, 4>, 2> analog{};
+    std::array<std::uint16_t, 8> remap_bits{};  // 800501e8
+    std::array<std::uint8_t, 8> remap_index{};  // 80050238
+    std::array<std::uint8_t, 16> direction_x{}; // 8005020c: by d-pad nibble
+    std::array<std::uint8_t, 16> direction_y{}; // 8005021c
+    std::uint8_t clock_stopped{};               // 800501f8
+    // Play clock: 80059370 frames, 80059418 seconds, 80059420 minutes, 80059484 hours.
+    std::array<std::uint8_t, 4> clock{};
+    std::array<std::array<std::uint8_t, 8>, 2> actuators{}; // 8005a1bc
+};
+
+// libgpu request queue (enqueue 8004668c, execute 8004696c) and the image
+// operations the interrupt side reaches (LoadImage 80044894 / 800460a0,
+// StoreImage 800462dc, DrawOTag 800465ec).
+struct GpuState {
+    std::uint32_t services{};                  // 800568c8: service table address
+    std::array<std::uint32_t, 12> functions{}; // 80056888: the service table
+    std::uint8_t queued{};                     // 800568d1: zero runs requests at once
+    std::uint8_t debug{};                      // 800568d2: request checking level
+    std::int16_t width{};                      // 800568d4: VRAM width
+    std::int16_t height{};                     // 800568d6: VRAM height
+    std::uint32_t sync_pending{};              // 800568d8
+    std::uint32_t sync_callback{};             // 800568dc: DrawSync callback
+    // 800569a0 GP0, 800569a4 GP1/GPUSTAT, 800569a8 DMA2 address, 800569ac
+    // DMA2 block, 800569b0 DMA2 control.
+    std::array<std::uint32_t, 5> registers{};
+    std::array<std::uint32_t, 3> current{}; // 800569c4: last operation, parameter, argument
+    std::uint32_t head{};                   // 800569d4
+    std::uint32_t tail{};                   // 800569d8
+    std::uint32_t enqueue_mask{};           // 800569dc: interrupt mask saved by 8004668c
+    std::uint32_t execute_mask{};           // 800569e0: interrupt mask saved by 8004696c
+    std::uint32_t deadline{};               // 800569e8
+    std::uint32_t polls{};                  // 800569ec
+    // 8006be34: 64 requests of 60h bytes: operation, parameter pointer,
+    // argument, then the copied parameter.
+    std::array<std::uint8_t, 64 * 0x60> queue{};
+    // Image data of queued LoadImage requests: caller memory the queue
+    // refers to. Read-only input, attached by the host.
+    std::vector<resident::HeapBlock> sources;
+};
+
+// Interrupt environment of the dispatcher 8004b9b4 and its handlers.
+struct InterruptState {
+    std::uint16_t initialized{};              // 800578a4
+    std::array<std::uint32_t, 11> handlers{}; // 800578a8: one per I_STAT bit
+    std::uint16_t mask{};                     // 800578d4: bits the dispatcher serves
+    std::array<std::uint32_t, 3> registers{}; // 80058930: I_STAT, I_MASK, DPCR addresses
+    std::uint32_t unexpected{};               // 8005893c: dispatches ending with a pending bit
+    std::array<std::uint32_t, 8> vsync_callbacks{}; // 80058940
+    // 8005896c: DMA completion callbacks; channel 3 is CdState::dma_callback.
+    std::array<std::uint32_t, 7> dma_callbacks{};
+    // 800578e0: stack pointer of the exception hook's context (the setjmp
+    // buffer at 800578dc that the hook resumes, then calls 8004b9b4).
+    std::uint32_t hook_stack{};
+    std::uint32_t spu_callback{}; // 8005950c: SPU interrupt callback
+    std::uint32_t spu_count{};    // 80059514: SPU interrupts served
+};
+
 // Resident file reads (800295d8 and its setup 80029690). Globals whose
 // meaning is not recovered keep their original addresses as names.
 struct DiscReadState {
@@ -121,16 +193,28 @@ struct DiscReadState {
     std::uint32_t file{};                   // 80059f0c
     std::array<std::uint8_t, 4> location{}; // 80059f10: minute, second, sector (BCD), unused
     std::array<std::uint8_t, 4> b_59f18{};  // 80059f18: ring-mode control bytes
-    // Stream reads (80029eb0): six halfword parameters at 80059f24 + 4 * i,
-    // then state cleared per stream: 80059f3c, halfwords 80059f40/44/48 and
-    // words 80059f4c/50.
-    std::array<std::uint16_t, 6> h_59f24{};
-    std::uint32_t w_59f3c{};
-    std::array<std::uint16_t, 3> h_59f40{};
-    std::array<std::uint32_t, 2> w_59f4c{};
-    std::uint16_t h_59f60{};  // 80059f60
-    std::uint32_t requests{}; // 8005a488: CD reads issued
-    std::uint32_t w_5a4dc{};  // 8005a4dc
+    std::uint16_t h_59f60{};                // 80059f60
+    std::uint32_t requests{};               // 8005a488: CD reads issued
+    std::uint32_t w_5a4dc{};                // 8005a4dc: failed data interrupts in a row
+    // Interrupt-side read state (callbacks 8002a68c, 8002ac24, 8002b084,
+    // 8002b2f0, 8002b5d0, DMA callbacks 8002ba40, 8002ba58, 8002bb50).
+    std::uint32_t retry_reason{};           // 8004fe20
+    std::uint32_t w_fde0{};                 // 8004fde0
+    std::array<std::uint32_t, 3> skipped{}; // 8004fde4, 8004fde8, 8004fdec: unexpected sectors
+    std::uint32_t saved_callback{};         // 80059f08: callback 80040fcc replaced
+    std::array<std::uint8_t, 2> b_59f14{};  // 80059f14
+    std::array<std::uint32_t, 2> w_5a48c{}; // 8005a48c, 8005a490
+    std::array<std::uint32_t, 2> w_5a494{}; // 8005a494, 8005a498
+    std::array<std::uint32_t, 2> w_5a4a4{}; // 8005a4a4, 8005a4a8
+    std::uint32_t w_5a4b4{};                // 8005a4b4
+    // Payload of the active stream ring (after its header): count sectors of
+    // 800h bytes. Attached with the ring header.
+    resident::HeapBlock ring_payload;
+    // Image stream state (8002bb50), words at 80059f24..80059f50: record
+    // 1200 mode, x, y; record 1201 mode, x, y; records left; current x, y,
+    // width; next height pointer; strips left. Halfword fields keep their
+    // upper halves.
+    std::array<std::uint32_t, 12> image{};
     // The tables at 8004fdf0 (8000 bytes) and 8004fdf4 (7a bytes), the sizes
     // 80028230 reads them with; empty before they are loaded.
     std::vector<std::uint8_t> files;
@@ -140,17 +224,22 @@ struct DiscReadState {
     resident::HeapBlock ring;
     // The caller's list a list read (80029afc) sorts in place and keeps
     // (8004fe0c): 8-byte entries of u16 file, u16 unused, u32 destination,
-    // then the halfword of the terminating zero file.
+    // then the halfword of the terminating zero file. The list-read data
+    // callback 8002ac24 walks it.
     resident::HeapBlock list;
 };
 
 // CD library state reached by read setup: CdControl 8004111c, the command
 // writer 80042088, the sync wait 80041b3c and the DMA callback 8004c21c.
+// The interrupt handler 80042ca8 calls ready_callback for a completed command
+// and sync_callback for delivered data.
 struct CdState {
     std::uint32_t ready_callback{};         // 800564a8
     std::uint32_t sync_callback{};          // 800564ac
     std::int32_t debug{};                   // 800564b4: nonzero levels print
-    std::uint8_t status{};                  // 800564b8: last drive status
+    std::uint32_t status{};                 // 800564b8: last drive status (first response byte)
+    std::uint32_t status2{};                // 800564bc: second response byte
+    std::uint32_t shell_opened{};           // 800564c0: status bit 10 transitions to set
     std::array<std::uint8_t, 4> position{}; // 800564c4: last Setloc parameter
     std::uint8_t mode{};                    // 800564c8: last Setmode parameter
     std::uint8_t command{};                 // 800564c9: last command
@@ -168,6 +257,20 @@ struct CdState {
     std::optional<std::uint32_t> dma_set_callback; // *8005892c + 4
     std::uint32_t dma_interrupt_register{};        // 80058968: address of DICR
     std::uint32_t dma_callback{}; // 80058978: DMA channel 3 callback (table 8005896c)
+    // Interrupt side (80042ca8, 800415b4).
+    std::uint8_t end_status{};                  // 8005678a
+    std::array<std::uint8_t, 8> sync_result{};  // 8005a210: response of the last command
+    std::array<std::uint8_t, 8> ready_result{}; // 8005a218: response of the last data
+    std::array<std::uint8_t, 8> end_result{};   // 8005a220
+    std::array<std::uint32_t, 32>
+        completes{}; // 80056570: acknowledged commands that complete later
+    std::array<std::uint32_t, 32>
+        ack_updates{};             // 80056670: acknowledgements that update the status
+    std::uint32_t flag_register{}; // 8005677c: request/interrupt-flag register address
+    // Register addresses of the sector transfer 80042aa8: 800567a4 (delay),
+    // 80056780 (size), 800567a8 (DPCR), 800567ac (DMA3 address), 800567b0
+    // (DMA3 block).
+    std::array<std::uint32_t, 5> transfer_registers{};
 };
 
 // A hardware register store, in program order. Not RAM: a native service
@@ -219,10 +322,6 @@ struct ResidentState {
     std::vector<std::uint32_t> party_sprite_resources;
     field::MathTables math;
     InputQueue input_queue;
-    // Port 0 receive-buffer status and type bytes (800625fc/800625fd) that
-    // resident 80035734 classifies; written by the pad interrupt, a platform
-    // input like `io`.
-    std::array<std::uint8_t, 2> pad_status{};
     // 8005917c points at the word at 80010000; -1 there disables the debug
     // input and drawing paths.
     std::uint32_t debug_pointer{}; // 8005917c
@@ -262,6 +361,15 @@ struct ResidentState {
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
+    InterruptState interrupts;
+    PadState pad;
+    GpuState gpu;
+    // RAM that disc DMA filled and no other Program value owns (file
+    // destinations, the sector tail buffer 800596f8), by address.
+    std::vector<resident::HeapBlock> disc_transfers;
+    // Platform inputs, consumed in order; see interrupts.hpp.
+    std::deque<PlatformInput> platform;
+    DiscDrive drive;
 };
 
 struct FieldState {
@@ -430,6 +538,13 @@ class Program {
     // callbacks deliver it. Returns 0, -4 (no ring) or -3 (no such file).
     std::int32_t read_stream(std::int32_t file, std::uint32_t ring, std::uint32_t offset,
                              const std::array<std::uint16_t, 6> &parameters);
+    // Resident 8004b9b4, entered from the BIOS exception hook: serve every
+    // pending interrupt the dispatcher enables, until none is pending.
+    // Asynchronous register reads come from resident.platform.
+    void interrupt_dispatch();
+    // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
+    // driver flags the event handler loaded). Returns 0.
+    std::uint32_t sound_tick(std::uint32_t event);
     // Resident 8001b66c: stop the playing sequence and forget the loaded pair.
     void stop_music();
     // Resident 800386c4: select a sound output mode (resident::SoundMode) and
@@ -540,19 +655,66 @@ class Program {
     std::int32_t open_dialogue(field::FieldWorld &world, field::FieldPassState &pass,
                                std::uint32_t speaker, std::uint32_t mode);
     std::array<std::int32_t, 2> project_actor(std::size_t index, std::int16_t height);
-    std::uint32_t disc_busy();                  // Resident 800286cc
-    void disc_wait(std::uint32_t once);         // Resident 80028a60
+    std::uint32_t disc_busy();          // Resident 800286cc
+    void disc_wait(std::uint32_t once); // Resident 80028a60
+    // A waiting loop polls again: run the next interrupt arrival, if any.
+    bool deliver_interrupt();
     std::uint32_t file_size(std::int32_t file); // Resident 80028738
     std::uint32_t read_size(std::int32_t file); // Resident 80028808
-    void seek_file(std::int32_t file);          // Resident 8002a394
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
     std::int32_t cd_control(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter);
     std::int32_t cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                            bool nowait);            // 80042088
-    std::int32_t cd_sync();                          // 80041b3c(0, 0)
-    void cd_dma_callback(std::uint32_t function);    // 800413ec
+                            bool nowait);         // 80042088
+    std::int32_t cd_sync();                       // 80041b3c(0, 0)
+    void cd_dma_callback(std::uint32_t function); // 800413ec
+    // Interrupt context (interrupts.cpp, disc_read.cpp).
+    void interrupt_handler(std::uint32_t address); // An 800578a8 entry
+    void vsync_interrupt();                        // 8004bf78
+    void vsync_update();                           // 8003634c
+    void pad_update();                             // 800358bc
+    void dma_interrupt();                          // 8004c098
+    void dma_completed(std::uint32_t address);     // A 8005896c entry
+    void spu_interrupt();                          // 8003bfa0
+    void spu_transfer_completed();                 // 8004cb3c (sound_tick.cpp)
+    void cd_interrupt();                           // 80042ca8
+    std::uint32_t cd_getintr();                    // 800415b4
+    void cd_poll();                                // 80041c80..80041d24
+    void cd_callback(std::uint32_t address, std::uint8_t status,
+                     const std::array<std::uint8_t, 8> &result);
+    void disc_command_done(std::uint8_t status,
+                           const std::array<std::uint8_t, 8> &result); // 8002a68c
+    void disc_data(std::uint8_t status);                               // 8002b084
+    void disc_ring_data(std::uint8_t status);                          // 8002b2f0
+    void disc_list_data(std::uint8_t status);                          // 8002ac24
+    void disc_data_failed(bool counted);                               // 8002b204 and its copies
+    void disc_ring_transferred();                                      // 8002ba58
+    void disc_continue(std::uint32_t file);                            // 8002a394
+    void disc_image_transferred();                                     // 8002bb50
+    // 8004c21c through 8004b7a0: set the DMA completion callback of `channel`.
+    void set_dma_callback(std::uint32_t channel, std::uint32_t function);
+    // libgpu (gpu_queue.cpp). A rectangle is x, y, width, height.
+    // `address` is the rectangle's original (stack) address.
+    std::int32_t load_image(std::array<std::int16_t, 4> &rect, std::uint32_t address,
+                            std::uint32_t data); // 80044894
+    std::int32_t gpu_enqueue(std::uint32_t operation, std::array<std::int16_t, 4> &rect,
+                             std::uint32_t address, std::uint32_t size,
+                             std::uint32_t argument); // 8004668c
+    std::uint32_t gpu_execute();                      // 8004696c
+    // Run a queued or immediate operation; `rect` is the rectangle parameter
+    // when the caller owns it, else it lives in the queue at `parameter`.
+    std::int32_t gpu_operation(std::uint32_t operation, std::uint32_t parameter,
+                               std::array<std::int16_t, 4> *rect, std::uint32_t argument);
+    void gpu_wait_ready(std::uint32_t first, std::uint32_t again); // GPUSTAT bit 26 poll
+    [[nodiscard]] std::uint32_t ram_word(std::uint32_t address) const;
+    void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
+    // RAM that DMA fills: owned globals, else a disc transfer block.
+    void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);
+    // A register only software changes: its last recorded write, else the
+    // observed I/O page.
+    [[nodiscard]] std::uint32_t io_latch(std::uint32_t address, std::uint32_t width) const;
+    void io_write(std::uint32_t address, std::uint32_t value, std::uint32_t width);
     std::int32_t disc_idle_query();                  // Field 8008a558
     void change_music(field::EventContext &context); // Field 8008f76c (primary 75)
     void load_music(std::uint32_t id);               // Field 80085b20

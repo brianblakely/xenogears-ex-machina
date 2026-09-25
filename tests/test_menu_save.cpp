@@ -68,7 +68,6 @@ struct Sample {
         memory.regions[payload].resize(menu::payload_bytes);
         memory.regions[buffer].resize(0x2100);
         memory.regions[game_data].resize(0x2358);
-        memory.regions[menu::play_frames].resize(4);
         memory.regions[menu::saved_globals].resize(0x20);
         memory.regions[menu::text_state].resize(4);
         memory.regions[menu::text_single_limit].resize(4);
@@ -171,13 +170,12 @@ void test_serialize() {
     memory.put8(party + 0x30, 0);
     memory.put8(party + 0x31, 0xff);
     memory.put8(party + 0x32, 2);
-    memory.put32(menu::play_frames, 0x01020304);
     for (std::uint32_t i = 0; i < 0x20; ++i)
         memory.put8(menu::saved_globals + i, 0x60 + i);
     menu::NameScratch scratch{};
     scratch.fill(0x77);
     const auto before = std::vector<std::uint8_t>(memory.regions[game_data]);
-    menu::serialize(sample.context, payload, 5, 2, scratch);
+    menu::serialize(sample.context, payload, 5, 2, 0x01020304, scratch);
     const auto p = [&](std::uint32_t offset) { return memory.u8(payload + offset); };
 
     check(memory.u32(payload) == 0x01020304, "play counter at payload 0");
@@ -230,11 +228,11 @@ void test_serialize() {
                 check(p(0xe4c + i - 0x1648) == before[i], "tail at payload e4c");
 
     memory.put8(menu::disc_override, 1);
-    menu::serialize(sample.context, payload, 5, 2, scratch);
+    menu::serialize(sample.context, payload, 5, 2, 0x01020304, scratch);
     check(memory.u16(game_data + 0x19d4) == 1 && memory.u16(payload + 0xe4c + 0x38c) == 1,
           "override stores disc word 1");
     memory.put8(menu::disc_override, 0);
-    menu::serialize(sample.context, payload, 5, 0, scratch);
+    menu::serialize(sample.context, payload, 5, 0, 0x01020304, scratch);
     check(memory.u16(game_data + 0x19d4) == 0xffff, "disc 0 wraps");
 
     const auto sum = menu::seal_payload(sample.context, payload);
@@ -253,13 +251,13 @@ void test_serialize() {
           "card block is header then payload");
 
     put_name(sample, 3, "abababababab"); // Twelve codes overrun the buffer.
-    rejects([&] { menu::serialize(sample.context, payload, 5, 2, scratch); }, "long name",
-            "overruns 801cba4c");
+    rejects([&] { menu::serialize(sample.context, payload, 5, 2, 0x01020304, scratch); },
+            "long name", "overruns 801cba4c");
     put_name(sample, 3, "ab");
     auto name = memory.bytes(game_data + 4 * 20, 20);
     std::ranges::fill(name, std::uint8_t{'a'});
-    rejects([&] { menu::serialize(sample.context, payload, 5, 2, scratch); }, "unterminated name",
-            "past its known source");
+    rejects([&] { menu::serialize(sample.context, payload, 5, 2, 0x01020304, scratch); },
+            "unterminated name", "past its known source");
 }
 
 void test_check() {
@@ -344,10 +342,11 @@ void test_restore() {
         for (std::uint32_t k = 0; k < 20; ++k)
             m.put8(loaded + 0x24 + i * 20 + k, 0);
     m.put8(loaded + 0x24, 1);
-    menu::apply_loaded(sample.context, loaded, scratch);
+    std::uint32_t play_frames = 0;
+    menu::apply_loaded(sample.context, loaded, play_frames, scratch);
 
     const auto p = [&](std::uint32_t offset) { return m.u8(loaded + offset); };
-    check(m.u32(menu::play_frames) == m.u32(loaded), "play counter restored");
+    check(play_frames == m.u32(loaded), "play counter restored");
     for (std::uint32_t i = 0; i < 0x20; ++i)
         check(m.u8(menu::saved_globals + i) == p(0xe4c + 0x2324 - 0x1648 + i),
               "globals restored from game + 2324");

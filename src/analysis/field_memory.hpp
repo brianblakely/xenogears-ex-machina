@@ -55,9 +55,9 @@ struct ResourceExtent {
 // the menu overlay (801c5000), the menu state pointer word 800625a0 and the
 // heap blocks the menu actions reach through it (menu state, party list, data
 // table directory and its tables, equipment screen state, card state), the
-// resident words the save and load use (play counter 80059488, globals
-// 8005a3a0, text state pointer 80059360 and one-byte limit 8005934c) and the
-// heap blocks of the text state and its name code table.
+// resident words the save and load use (globals 8005a3a0, text state pointer
+// 80059360 and one-byte limit 8005934c; the play counter 80059488 is resident
+// state) and the heap blocks of the text state and its name code table.
 [[nodiscard]] reconstruction::Program import_menu(const OriginalMemory &memory);
 // Adds the allocated heap block containing `address` (a save or load buffer)
 // to menu memory.
@@ -74,6 +74,15 @@ void import_menu_block(reconstruction::Program &program, const OriginalMemory &m
                                                    std::span<const std::uint8_t> field_source,
                                                    std::span<const std::uint8_t> overlay,
                                                    std::span<const ResourceExtent> resources);
+
+// Supplies recorded platform inputs to the Program. `platform` has one input
+// per line: `drive LBA` (the sector the drive delivers next), `read SITE
+// VALUE` (hex) or `interrupt`. `disc` is the raw 2352-byte-sector track the
+// drive service reads; empty when the case needs none.
+void load_platform(reconstruction::Program &program, const char *platform, const char *disc);
+// Attaches the RAM that interrupt-context disc callbacks read: the active
+// stream ring header and the list of a list read.
+void attach_interrupt_memory(reconstruction::Program &program, const OriginalMemory &memory);
 
 // Writes every Program-owned original correlation back over a copy of the entry
 // image and lists the owned ranges. Comparison is performed by the caller.

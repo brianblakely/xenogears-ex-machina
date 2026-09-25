@@ -64,7 +64,7 @@ run before promoting its observations.
 
 An instruction-trace specification has `schema_version: 1`, `name`, exact
 `source_profile`, inclusive `start_frame`, exclusive `end_frame`, `max_callbacks`
-and 1..16 `hooks`. Each hook has a unique `name`, aligned original `pc`, a
+and 1..64 `hooks`. Each hook has a unique `name`, aligned original `pc`, a
 `guard` containing RAM `offset` and exact lowercase `expected` code bytes, and
 `ranges` using the RAM sampler's range forms. A range may alternatively contain
 `register`, `relative_offset` and `size` to read a RAM address from a captured

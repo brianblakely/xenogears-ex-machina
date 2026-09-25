@@ -242,8 +242,9 @@ void play_enabled_menu_effect(Battle &battle, ResidentState &resident, std::uint
 void decode_input(Battle &battle, ResidentState &resident) {
     auto &memory = battle.memory;
     auto &queue = resident.input_queue;
-    // 80035734(0): an absent pad (status ff) holds here showing a notice.
-    if (resident.pad_status[0] == 0xff)
+    // 80035734(0): an absent pad (receive status ff, 800625fc) holds here
+    // showing a notice.
+    if (resident.pad.buffers[0][0] == 0xff)
         throw BattleError("The missing-controller wait (8001fab4, 80037ee4) is not reconstructed");
     if (memory.u8(paused) != 0)
         throw BattleError("The battle pause loop (80037ee4/80037e8c) is not reconstructed");

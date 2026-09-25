@@ -177,8 +177,13 @@ void stops_explicitly() {
     auto poll = sample();
     poll.resident.disc_read.directory = 10;
     poll.resident.cd.interrupt_poll = 1;
-    stops([&] { poll.read_file(3, 0x80100000, 0, 0); }, 0x800415b4,
-          "Polling the controller is not recovered");
+    bool unsupplied = false;
+    try {
+        static_cast<void>(poll.read_file(3, 0x80100000, 0, 0));
+    } catch (const game::PlatformInputError &) {
+        unsupplied = true;
+    }
+    check(unsupplied, "Polling the controller inside an interrupt needs its register reads");
     auto timeout = sample();
     timeout.resident.disc_read.directory = 10;
     timeout.resident.vsync_counter = 0x7fffff00;
@@ -291,6 +296,7 @@ void stream_read() {
     auto &resident = program.resident;
     resident.disc_read.directory = 10;
     const std::array<std::uint16_t, 6> parameters{1, 2, 3, 4, 5, 0xffff};
+    resident.disc_read.image.fill(0xabcd1111);
     check(program.read_stream(3, ring, 0x12345, parameters) == 0, "A stream read returns zero");
     const auto &read = resident.disc_read;
     check(read.file == 3 && read.sector == 0x12345 && read.size == 0x1004 &&
@@ -300,8 +306,13 @@ void stream_read() {
               resident.disc_stream.ring_buffer == ring &&
               resident.disc_stream.active_block_count == 2,
           "The ring's payload is the destination");
-    check(read.h_59f24 == parameters && read.w_59f3c == 0 && read.w_fe0c == 0,
-          "The six parameters are stored and stream state cleared");
+    const auto &image = read.image;
+    bool stored = read.w_fe0c == 0 && image[6] == 0 && image[10] == 0 && image[11] == 0;
+    for (std::size_t i = 0; i < parameters.size(); ++i)
+        stored = stored && image[i] == (0xabcd0000U | parameters[i]);
+    for (std::size_t i = 7; i < 10; ++i)
+        stored = stored && image[i] == 0xabcd0000U;
+    check(stored, "The six parameters are stored as halfwords and stream state cleared");
     check(get(read.ring.bytes, 8, 4) == 2 && get(read.ring.bytes, 12, 4) == 0,
           "The ring's slots are reset");
     check(resident.disc_pending == 1 && resident.disc_error == 1 && read.requests == 1 &&

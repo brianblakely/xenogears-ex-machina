@@ -82,18 +82,20 @@ int main(int argc, char **argv) {
     // decoder's output range.
     std::optional<std::pair<std::uint32_t, std::vector<std::uint8_t>>> service_output;
     try {
-        if (argc != 12)
+        if (argc != 14)
             throw InputError("Usage: xem-memory-runner ENTRY BUDGET STOP RAM SCRATCHPAD "
-                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO");
+                             "FIELD_SOURCE OVERLAY RESOURCES GTE REGISTERS IO PLATFORM DISC");
         // Resident entries need no loaded field; FIELD_SOURCE, OVERLAY and
         // RESOURCES are unused. OVERLAY is the decoded field overlay image.
-        const bool resident_entry = entry == "heap_allocate" || entry == "heap_release" ||
-                                    entry == "music_stop" || entry == "disc_read_file" ||
-                                    entry == "disc_read_files" || entry == "disc_read_stream" ||
-                                    entry == "decode_block" || entry == "sound_set_mode" ||
-                                    entry == "sound_set_master" || entry == "sound_set_cd" ||
-                                    entry == "sound_update_voices" || entry == "set_next_mode" ||
-                                    entry == "field_exit" || entry == "battle_mode_exit";
+        // PLATFORM lists recorded platform inputs; DISC is the raw track the
+        // disc drive service delivers sectors from (may be empty).
+        const bool resident_entry =
+            entry == "heap_allocate" || entry == "heap_release" || entry == "music_stop" ||
+            entry == "disc_read_file" || entry == "disc_read_files" ||
+            entry == "disc_read_stream" || entry == "decode_block" || entry == "sound_set_mode" ||
+            entry == "sound_set_master" || entry == "sound_set_cd" ||
+            entry == "sound_update_voices" || entry == "set_next_mode" || entry == "field_exit" ||
+            entry == "battle_mode_exit" || entry == "interrupt_dispatch" || entry == "sound_tick";
         // Field entries beyond the update: one extended event handler, the
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision";
@@ -191,6 +193,8 @@ int main(int argc, char **argv) {
         program->resident.gte_screen = {static_cast<std::int32_t>(gte[24]),
                                         static_cast<std::int32_t>(gte[25]),
                                         static_cast<std::uint16_t>(gte[26])};
+        analysis::load_platform(*program, argv[12], argv[13]);
+        analysis::attach_interrupt_memory(*program, memory);
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -604,6 +608,10 @@ int main(int argc, char **argv) {
                 throw;
             }
             program->field.reset();
+        } else if (entry == "sound_tick") {
+            return_value = program->sound_tick(registers[2]); // 8003c028: V0 at entry
+        } else if (entry == "interrupt_dispatch") {
+            program->interrupt_dispatch(); // 8004b9b4
         } else if (entry == "music_stop") {
             program->stop_music(); // 8001b66c
         } else {
@@ -650,6 +658,11 @@ int main(int argc, char **argv) {
         status = "dependency_needs_recovery";
         reason = error.what();
         dependency = "symbol:field-return-sprite-ownership";
+    } catch (const game::PlatformInputError &error) {
+        // The recovered code asked for a platform input the original did not
+        // read at that point: its path differs from the original's.
+        status = "behavioral_divergence";
+        reason = error.what();
     } catch (const InputError &error) {
         status = "invalid_input";
         reason = error.what();
@@ -719,6 +732,11 @@ int main(int argc, char **argv) {
                   << static_cast<std::uint32_t>(
                          static_cast<std::int32_t>(static_cast<std::int16_t>(screen.h)));
     }
+    std::cout << "],\"platform_unconsumed\":" << (program ? program->resident.platform.size() : 0)
+              << ",\"delivered_sectors\":[";
+    if (program)
+        for (std::size_t i = 0; i < program->resident.drive.delivered.size(); ++i)
+            std::cout << (i ? "," : "") << program->resident.drive.delivered[i];
     std::cout << "],\"owned\":[" << owned.str() << "],\"hardware_writes\":[";
     if (program && executing)
         for (std::size_t i = 0; i < program->resident.hardware_writes.size(); ++i) {

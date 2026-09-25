@@ -1,5 +1,8 @@
 // Invented sound-driver objects exercise effect starts, voice claims and
-// releases, pair stops and pair fields. They describe no original content.
+// releases, pair stops and pair fields, and the tick (8003c028) and SPU
+// transfer callback (8004cb3c) with invented platform inputs. They describe
+// no original content.
+#include "xem/reconstruction/program.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
 #include <iostream>
@@ -189,6 +192,232 @@ void releases() {
     rejects([&] { resident::release_wave_bank(d, wav); },
             "A wave bank whose SPU block is not allocated is rejected");
 }
+
+// A Program whose driver has the statics and constants the tick reads, no
+// sequences and no claimed voices; the SPU and root counter bases are the
+// usual register pages.
+namespace game = xem::reconstruction;
+using Input = game::PlatformInput;
+game::Program tick_sample() {
+    game::Program program;
+    auto &d = program.resident.sound;
+    for (const auto &[address, size] : resident::sound_statics)
+        d.statics[address].assign(size, 0);
+    for (const auto &[address, size] : resident::sound_constants)
+        d.constants[address].assign(size, 0);
+    const auto word = [&](std::uint32_t address, std::uint32_t value) {
+        auto &bytes = d.constants.at(address);
+        for (std::uint32_t i = 0; i < 4; ++i)
+            bytes[i] = static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    auto &shapes = d.constants.at(0x800508a4);
+    for (std::uint32_t i = 0; i < 4; ++i)
+        shapes[0x40 + i] = static_cast<std::uint8_t>(0x1f801c00U >> (8U * i));
+    word(0x80056400, 0x1f801100);
+    d.spu_registers = 0x1f801c00;
+    return program;
+}
+Input read(std::uint32_t site, std::uint32_t value) { return {Input::Kind::read, site, value}; }
+std::uint32_t statics(game::Program &program, std::uint32_t address) {
+    const auto &statics = program.resident.sound.statics;
+    const auto found = std::prev(statics.upper_bound(address));
+    const auto offset = address - found->first;
+    std::uint32_t value = 0;
+    for (std::size_t i = 0; offset + i < found->second.size() && i < 4; ++i)
+        value |= static_cast<std::uint32_t>(found->second[offset + i]) << (8U * i);
+    return value;
+}
+template <typename Error, typename Call> bool raises(Call call) {
+    try {
+        call();
+    } catch (const Error &) {
+        return true;
+    }
+    return false;
+}
+
+void tick() {
+    auto skipped = tick_sample();
+    check(skipped.sound_tick(0x40) == 0 && skipped.resident.sound.start_stamp == 0,
+          "Event flag 40 skips the tick before reading the counter");
+
+    auto program = tick_sample();
+    auto &resident = program.resident;
+    resident.platform = {read(0x800406b0, 100), read(0x800406b0, 130)};
+    check(program.sound_tick(0) == 0 && resident.platform.empty(),
+          "A tick reads root counter 2 before and after its work");
+    check(resident.sound.start_stamp == 1 && statics(program, 0x80059540) == 1 &&
+              statics(program, 0x800595c4) == 30,
+          "The tick counts itself and accumulates its counter time");
+    check(resident.hardware_writes.empty(), "An idle driver writes no SPU register");
+
+    resident.platform = {read(0x800406b0, 200), read(0x800406b0, 10)};
+    static_cast<void>(program.sound_tick(0));
+    check(statics(program, 0x80059540) == 1 && statics(program, 0x800595c4) == 30,
+          "A counter that wrapped adds no time and no count");
+
+    // Key on, key off with its ADSR release, and the SPU interrupt request.
+    resident.sound.voice_holds = 0x5;
+    resident.sound.voice_changes = 0x2;
+    resident.sound.statics.at(0x8005955c)[0] = 1;
+    resident.hardware_writes.clear();
+    resident.platform = {read(0x800406b0, 0), read(0x8003eb90, 0x1234), read(0x8004d6b4, 0x8000),
+                         read(0x8004d6c4, 0x8040), read(0x800406b0, 5)};
+    static_cast<void>(program.sound_tick(0));
+    const std::vector<game::HardwareWrite> expected{
+        {0x1f801d88, 5, 2}, {0x1f801d8a, 0, 2}, {0x1f801c1a, 0x1206, 2},
+        {0x1f801d8c, 2, 2}, {0x1f801d8e, 0, 2}, {0x1f801daa, 0x8040, 2}};
+    check(resident.hardware_writes == expected && resident.sound.voice_holds == 0 &&
+              resident.sound.voice_changes == 0 && statics(program, 0x8005955c) == 0,
+          "Keys go on, released voices fade and go off, and the SPU interrupt is enabled");
+
+    auto missing = tick_sample();
+    check(raises<game::PlatformInputError>([&] { missing.sound_tick(0); }),
+          "A tick without its counter input stops");
+    auto wrong = tick_sample();
+    wrong.resident.platform = {read(0x8003eb90, 1)};
+    check(raises<game::PlatformInputError>([&] { wrong.sound_tick(0); }),
+          "A read from another site is malformed input");
+    auto wide = tick_sample();
+    wide.resident.platform = {read(0x800406b0, 0x10000)};
+    check(raises<game::PlatformInputError>([&] { wide.sound_tick(0); }),
+          "A counter value wider than its halfword load is malformed input");
+
+    // A playing sequence whose voice reads an opcode without a recovered
+    // handler stops naming that handler.
+    auto unknown = tick_sample();
+    auto &d = unknown.resident.sound;
+    constexpr std::uint32_t seq = 0x80130000;
+    d.sequences = seq;
+    auto &object = d.objects[seq];
+    object.assign(resident::voice_records + resident::voice_stride + 0x10, 0);
+    const auto put_seq = [&](std::uint32_t at, std::uint32_t value, std::uint32_t size) {
+        for (std::uint32_t i = 0; i < size; ++i)
+            object[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    put_seq(0x10, 0x8000, 2);     // playing
+    put_seq(0x14, 1, 1);          // one voice
+    put_seq(0x48, 1, 4);          // active voices
+    put_seq(0x50, 0xffffffff, 4); // one step due
+    put_seq(0x70, 1, 4);
+    put_seq(0x94, 1, 2);                         // voice active
+    put_seq(0x94 + 0x14, seq + 0x94 + 0x150, 4); // events at the object's end
+    object[0x94 + 0x150] = 0x82;
+    auto &table = d.constants.at(0x80050624);
+    for (std::uint32_t i = 0; i < 4; ++i)
+        table[2 * 4 + i] = static_cast<std::uint8_t>(0x8003cd00U >> (8U * i));
+    unknown.resident.platform = {read(0x800406b0, 0)};
+    bool named = false;
+    try {
+        static_cast<void>(unknown.sound_tick(0));
+    } catch (const game::MissingDependency &error) {
+        named = error.dependency == "symbol:8003cd00";
+    }
+    check(named, "An opcode without a recovered handler names the handler");
+}
+
+// Run one DMA interrupt whose only flagged channel is 4 (SPU), whose
+// callback is 8004cb3c, with the given SPU control register reads between
+// the DMA handler's reads.
+void spu_dma(game::Program &program, std::vector<Input> spu) {
+    auto &resident = program.resident;
+    auto &irq = resident.interrupts;
+    irq.initialized = 1;
+    irq.mask = 8;
+    irq.handlers[3] = 0x8004c098;
+    irq.registers = {0x1f801070, 0x1f801074, 0x1f8010f0};
+    irq.dma_callbacks[4] = 0x8004cb3c;
+    resident.io[0x74] = 8;
+    resident.cd.dma_interrupt_register = 0x1f8010f4;
+    resident.platform = {read(0x8004ba34, 8), read(0x8004c0c0, 0x90900000),
+                         read(0x8004c118, 0x90900000)};
+    resident.platform.insert(resident.platform.end(), spu.begin(), spu.end());
+    for (const auto &input :
+         {read(0x8004c15c, 0x00900000), read(0x8004c180, 0x00900000), read(0x8004c198, 0x00900000),
+          read(0x8004bac8, 0), read(0x8004baf0, 0)})
+        resident.platform.push_back(input);
+    program.interrupt_dispatch();
+}
+
+void transfer() {
+    auto program = tick_sample();
+    auto &resident = program.resident;
+    auto &callback = resident.sound.constants.at(0x80058e40);
+    for (std::uint32_t i = 0; i < 4; ++i)
+        callback[i] = static_cast<std::uint8_t>(0x8003bb64U >> (8U * i));
+    constexpr std::uint32_t queue = 0x80140000;
+    resident.sound.constants[queue].assign(resident::transfer_queue_bytes, 0);
+    auto &pointer = resident.sound.constants.at(0x80059458);
+    for (std::uint32_t i = 0; i < 4; ++i)
+        pointer[i] = static_cast<std::uint8_t>(queue >> (8U * i));
+    resident.sound.flags = 0x10;
+    spu_dma(program, {read(0x8004cb64, 0xc031), read(0x8004cb74, 0x20), read(0x8004cb98, 0x20),
+                      read(0x8004cb98, 0)});
+    const std::vector<game::HardwareWrite> writes{
+        {0x1f801070, 0xfff7, 2}, {0x1f8010f4, 0x10900000, 4}, {0x1f801daa, 0xc001, 2}};
+    check(resident.platform.empty() && resident.sound.flags == 0 &&
+              resident.hardware_writes == writes,
+          "The transfer callback leaves transfer mode, waits and finishes the queue step");
+
+    auto queued = tick_sample();
+    queued.resident.sound.constants.at(0x80058e40) = callback;
+    queued.resident.sound.constants[queue] = resident.sound.constants.at(queue);
+    queued.resident.sound.constants.at(0x80059458) = pointer;
+    queued.resident.sound.statics.at(0x800594f4)[0] = 1;
+    bool next = false;
+    try {
+        spu_dma(queued, {read(0x8004cb64, 0), read(0x8004cb74, 0)});
+    } catch (const game::MissingDependency &error) {
+        next = error.point.machine_address == 0x8003bf14;
+    }
+    check(next, "A queued transfer of an unrecovered type stops");
+
+    // A chunked upload continues: 900h bytes left queue one 800h chunk,
+    // which starts at once as a DMA write of 32 blocks.
+    auto upload = tick_sample();
+    auto &d = upload.resident.sound;
+    d.constants.at(0x80058e40) = callback;
+    d.statics[queue] = resident.sound.constants.at(queue);
+    d.constants.at(0x80059458) = pointer;
+    const auto put = [&](std::map<std::uint32_t, std::vector<std::uint8_t>> &blocks,
+                         std::uint32_t address, std::uint32_t value) {
+        auto found = std::prev(blocks.upper_bound(address));
+        for (std::uint32_t i = 0; i < 4; ++i)
+            found->second[address - found->first + i] =
+                static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    put(d.statics, queue + 16, 0x80038b4c); // entry 0 finished; its callback
+    put(d.statics, 0x800595a4, 0x80150000); // staging block
+    put(d.statics, 0x800595dc, 0x1010);     // SPU address
+    put(d.statics, 0x800595e0, 0x900);      // bytes left
+    put(d.constants, 0x80058e0c, 0x1f8010c0);
+    put(d.constants, 0x80058e10, 0x1f8010c4);
+    put(d.constants, 0x80058e14, 0x1f8010c8);
+    put(d.constants, 0x80058e1c, 0x1f801014);
+    put(d.constants, 0x80058e30, 3);
+    upload.resident.io[0x14] = 0x20; // SPU delay register as observed
+    d.flags = 0x10;                  // a transfer is running
+    spu_dma(upload, {read(0x8004cb64, 0xc030), read(0x8004cb74, 0)});
+    check(statics(upload, 0x800595e0) == 0x100 && statics(upload, 0x800595dc) == 0x1810 &&
+              statics(upload, 0x80059510) == 1 && statics(upload, 0x800594f4) == 1 &&
+              statics(upload, 0x80058e60) == 32 && statics(upload, 0x80058e5c) == 0x80150000,
+          "The upload queues and starts its next 800h chunk");
+    const auto &w = upload.resident.hardware_writes;
+    check(w.size() == 9 && w[3] == game::HardwareWrite{0x1f801da6, 0x202, 2} &&
+              w[4] == game::HardwareWrite{0x1f801daa, 0xc020, 2} &&
+              w[5] == game::HardwareWrite{0x1f801014, 0x20000020, 4} &&
+              w[8] == game::HardwareWrite{0x1f8010c8, 0x01000201, 4},
+          "The chunk goes to the SPU by DMA channel 4");
+
+    auto event = tick_sample();
+    bool delivered = false;
+    try {
+        spu_dma(event, {read(0x8004cb64, 0), read(0x8004cb74, 0)});
+    } catch (const game::MissingDependency &error) {
+        delivered = error.point.machine_address == 0x80040e18;
+    }
+    check(delivered, "Without a library callback the BIOS event is not reconstructed");
+}
 } // namespace
 
 int main() {
@@ -196,7 +425,9 @@ int main() {
         effect_start();
         pairs();
         releases();
-        std::cout << "Sound driver: three source-boundary groups passed\n";
+        tick();
+        transfer();
+        std::cout << "Sound driver: five source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

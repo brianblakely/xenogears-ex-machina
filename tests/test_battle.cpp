@@ -310,7 +310,7 @@ void menu() {
     auto memory = sample();
     memory.regions[0x8006d634].resize(0x2358);
     xem::reconstruction::ResidentState resident;
-    resident.pad_status = {0, 0x41};
+    resident.pad.buffers[0][1] = 0x41;
     resident.debug_pointer = 0x80010000;
     resident.debug_word = 0xffffffff;
     auto &queue = resident.input_queue;
@@ -332,10 +332,10 @@ void menu() {
     check(memory.u8(0x800d3014) == 8 && queue.count == 0 && queue.w50200 == 1 &&
               queue.ring[4][3] == 0x8000,
           "An overflowed queue is reset (keeping the ring) and decodes to 8");
-    resident.pad_status[0] = 0xff;
+    resident.pad.buffers[0][0] = 0xff;
     rejects([&] { battle::decode_input(context, resident); },
             "The missing-controller wait is an explicit dependency", "missing-controller");
-    resident.pad_status[0] = 0;
+    resident.pad.buffers[0][0] = 0;
 
     memory.put8(turn + 0x2dd, 1);
     memory.put8(0x800d3014, 2);

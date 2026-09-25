@@ -12,7 +12,7 @@ typedef void (*xem_trace_callback)(uint32_t, uint32_t, uint32_t, uint32_t, uint3
                                    const uint32_t *, const uint8_t *, const uint8_t *,
                                    const uint32_t *, const uint32_t *);
 
-static uint32_t xem_trace_pcs[16];
+static uint32_t xem_trace_pcs[64];
 static uint32_t xem_trace_pc_count;
 static uint32_t xem_trace_budget;
 static uint32_t xem_trace_seen;
@@ -28,7 +28,7 @@ XEM_TRACE_EXPORT int retro_xem_trace_configure(const uint32_t *pcs, uint32_t cou
     xem_trace_sink = 0;
     xem_trace_seen = 0;
     xem_trace_pc_count = 0;
-    if (!pcs || !callback || !count || count > 16 || !budget || budget > 1000000)
+    if (!pcs || !callback || !count || count > 64 || !budget || budget > 1000000)
         return 0;
     for (i = 0; i < count; i++) {
         if (pcs[i] & 3)

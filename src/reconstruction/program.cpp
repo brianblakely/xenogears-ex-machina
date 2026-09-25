@@ -816,7 +816,7 @@ void Program::serialize_menu_save(std::uint32_t payload, std::uint32_t digit,
                                   menu::NameScratch &scratch) {
     const auto disc = current_disc();
     with_menu(*this, [&](menu::Menu &context) {
-        menu::serialize(context, payload, digit, disc, scratch);
+        menu::serialize(context, payload, digit, disc, resident.pad.vsyncs, scratch);
     });
 }
 
@@ -844,7 +844,9 @@ void Program::restore_menu_game_data(std::uint32_t payload, std::uint32_t tables
 }
 
 void Program::apply_menu_load(std::uint32_t payload, menu::NameScratch &scratch) {
-    with_menu(*this, [&](menu::Menu &context) { menu::apply_loaded(context, payload, scratch); });
+    with_menu(*this, [&](menu::Menu &context) {
+        menu::apply_loaded(context, payload, resident.pad.vsyncs, scratch);
+    });
 }
 
 bool Program::menu_load_slot_valid(std::uint32_t mode) {

@@ -53,9 +53,9 @@ struct SoundDriver {
 
     // Output volumes. The setters (80038c68, 80038d18) either apply a level
     // at once or leave a fade (step per tick, 8.8 fixed point shifted left 8,
-    // over `frames` ticks) that the sound tick (8003c040..8003c12c, not part
-    // of this driver code) applies; the tick commits the pairs named by
-    // `commits` to the SPU. Levels are 16.16: level << 16.
+    // over `frames` ticks) that the sound tick (8003c040..8003c12c) applies;
+    // the tick commits the pairs named by `commits` to the SPU. Levels are
+    // 16.16: level << 16. The tick reaches these fields by their addresses.
     std::uint32_t commits{};                    // 8005a3c0: 3 master pair, c0 CD pair
     std::array<std::uint16_t, 2> master_pair{}; // 8005a3c4: left, right
     std::array<std::uint16_t, 2> cd_pair{};     // 8005a3d0: left, right
@@ -83,10 +83,80 @@ struct SoundDriver {
     // Read-only pitch tables (80050b78: 120 octave/semitone bytes, then from
     // 80050bf0 12 rows of 256 halfword steps), keyed from 80050b78.
     std::vector<std::uint8_t> pitch_tables;
+    // Driver statics the per-tick update (8003c028) and the SPU transfer
+    // callback (8003bb64) change, whole original ranges keyed by address
+    // (see sound_statics), and constant tables they read (sound_constants).
+    // Constants are read-only inputs; statics are owned state.
+    std::map<std::uint32_t, std::vector<std::uint8_t>> statics;
+    std::map<std::uint32_t, std::vector<std::uint8_t>> constants;
 };
 
 inline constexpr std::uint32_t pitch_table_address = 0x80050b78;
 inline constexpr std::uint32_t pitch_table_bytes = 0x1878;
+
+struct SoundRange {
+    std::uint32_t address;
+    std::uint32_t size;
+};
+// Mutable driver statics without a SoundDriver field: tick counter and time
+// (80059540, 800595c4), the pending-request flags (8005955c), the noise
+// generator (800594e4), the common-attribute bytes (8005a3c0..8005a407) that
+// no volume field names (the master modes 8005a3c8..8005a3cf, the external
+// volumes, reverb and mix enables 8005a3d4..8005a3e7, and 8005a3ee), the SPU
+// transfer queue state (800594f4, 80059510), the chunked upload (800595a4
+// staging block, 800595dc SPU address, 800595e0 bytes left), and SPU library
+// state: transfer mode (800589a4, 80058e24), transfer address (80058e20),
+// wait flag (80058e58), DMA address and blocks (80058e5c, 80058e60) and
+// 80058e3c.
+inline constexpr std::array<SoundRange, 17> sound_statics{{{0x80059540, 4},
+                                                           {0x800595c4, 4},
+                                                           {0x8005955c, 2},
+                                                           {0x800594e4, 4},
+                                                           {0x8005a3c8, 8},
+                                                           {0x8005a3d4, 0x14},
+                                                           {0x8005a3ee, 2},
+                                                           {0x800594f4, 2},
+                                                           {0x80059510, 2},
+                                                           {0x800595a4, 4},
+                                                           {0x800595dc, 8},
+                                                           {0x800589a4, 4},
+                                                           {0x80058e20, 2},
+                                                           {0x80058e24, 4},
+                                                           {0x80058e3c, 4},
+                                                           {0x80058e58, 4},
+                                                           {0x80058e5c, 8}}};
+// Constant tables of the resident executable: the music opcode handlers
+// (80050624), opcode operand lengths (80050824), modulation shapes
+// (800508a4), the SPU register base (800508e4), note duration and velocity
+// tables (800509b0, 80050a94) and library register bases (80056400 root
+// counters, 80058e0c DMA4 registers, 80058e1c SPU delay register), the SPU
+// address alignment (80058e2c..80058e3b), the SPU library's transfer callback
+// (80058e40), the reverb mode (800589b8), 8005940a before the reverb pair and
+// the SPU transfer queue pointer (80059458). The pitch tables and the SPU
+// register base are SoundDriver fields.
+inline constexpr std::array<SoundRange, 12> sound_constants{{{0x80050624, 0x200},
+                                                             {0x80050824, 0x80},
+                                                             {0x800508a4, 0x44},
+                                                             {0x800509b0, 0x1c8},
+                                                             {0x80056400, 4},
+                                                             {0x80058e0c, 0xc},
+                                                             {0x80058e1c, 4},
+                                                             {0x80058e2c, 0x10},
+                                                             {0x80058e40, 4},
+                                                             {0x800589b8, 4},
+                                                             {0x8005940a, 2},
+                                                             {0x80059458, 4}}};
+// The SPU transfer queue at *80059458: eight 20-byte entries (type, RAM
+// address, SPU address, size, completion callback).
+inline constexpr std::uint32_t transfer_queue_bytes = 8 * 20;
+
+// Helpers shared by the effect paths and the tick.
+void release_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel); // 8003e83c
+void claim_voice(SoundDriver &driver, std::uint32_t owner, std::uint32_t channel);   // 8003e724
+void load_instrument(SoundDriver &driver, std::uint32_t instrument,
+                     std::uint32_t record);                          // 8003e5bc
+std::uint32_t find_wave_bank(SoundDriver &driver, std::uint32_t id); // 800383ec
+void free_pool_block(SoundDriver &driver, std::uint32_t object);     // 80039144
 
 inline constexpr std::uint32_t spu_block_table = 0x8006f9fc;
 

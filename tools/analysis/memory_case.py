@@ -98,6 +98,8 @@ RESIDENT_ENTRIES = (
     "set_next_mode",
     "battle_mode_exit",
     "field_exit",
+    "interrupt_dispatch",
+    "sound_tick",
     "battle_turn_select",
     "battle_turn_begin",
     "battle_turn_actions_begin",
@@ -117,6 +119,15 @@ RESIDENT_ENTRIES = (
 )
 # Field entries besides the update and move phases.
 FIELD_ENTRIES = ("field_event_extended", "movie_decision")
+
+# Platform inputs. A hook named `load-SITE` sits on the instruction after the
+# original hardware load at SITE (hex); the loaded value is that load's target
+# register with pending loads committed. A hook named `sector` sits on the
+# sector-position conversion 80041534 with a four-byte range at A0: the header
+# (BCD minute, second, sector) of the sector the drive delivered.
+LOAD_PREFIX = "load-"
+SECTOR_HOOK = "sector"
+LOADS = {0x20: 1, 0x21: 2, 0x23: 4, 0x24: 1, 0x25: 2}
 
 
 def file_sha256(path: Path) -> str:
@@ -170,13 +181,16 @@ def pairs(
     outcomes: tuple[str, ...] = (),
     presentation: tuple[tuple[str, str], ...] = (),
     entry_repeats: bool = False,
-) -> list[tuple[dict, dict, list]]:
+    arrival: str | None = None,
+) -> list[tuple[dict, dict, list, list]]:
     """Adjacent entry/exit records of one call, in original order.
 
     Interrupt pairs name the entry and return hooks of interrupt-context code
     (a dispatcher or callback). Each call lists the complete interrupt
-    invocations observed between its entry and exit. Outcome hooks close a
-    call like the exit hook; they mark the branch a decision took.
+    invocations observed between its entry and exit, and its platform-input
+    records (load and sector hooks, and `arrival` hook records) outside those
+    interrupts, in order. Outcome hooks close a call like the exit hook; they
+    mark the branch a decision took.
 
     Presentation pairs bracket calls the reconstruction does not run (camera,
     text windows). They are attributed like interrupt code; a bracket that
@@ -196,9 +210,15 @@ def pairs(
     ends = {exit: entry for entry, exit in interrupts}
     # Different interrupt paths may overlap (a BIOS event callback can run
     # while the dispatcher's context is active); one path never nests itself.
-    result, pending, handlers, open_handlers = [], None, [], {}
+    result, pending, handlers, open_handlers, platform = [], None, [], {}, []
     for row in rows:
-        if row["hook"] in starts:
+        platform_row = row["hook"] != entry_hook and (
+            row["hook"].startswith(LOAD_PREFIX) or row["hook"] in (SECTOR_HOOK, arrival)
+        )
+        if platform_row:
+            if pending is not None and not open_handlers:
+                platform.append(row)
+        elif row["hook"] in starts:
             require(row["hook"] not in open_handlers, "Nested interrupt records")
             open_handlers[row["hook"]] = row
         elif row["hook"] in ends:
@@ -211,10 +231,10 @@ def pairs(
                 continue
             require(pending is None, "Nested or unmatched original entry record")
             require(not open_handlers, "Call entry inside interrupt code")
-            pending, handlers = row, []
+            pending, handlers, platform = row, [], []
         elif row["hook"] in exits and pending is not None:
             require(not open_handlers, "Call exit inside interrupt code")
-            result.append((pending, row, merge_brackets(handlers, presented)))
+            result.append((pending, row, merge_brackets(handlers, presented), platform))
             pending = None
     return result
 
@@ -242,6 +262,42 @@ def merge_brackets(handlers: list, presented: set[str]) -> list:
         else:
             merged.append((before, after))
     return merged
+
+
+def header_sector(row: dict) -> int:
+    """LBA of a delivered sector from its recorded BCD header."""
+    require(row["ranges"] and row["ranges"][0]["size"] == 4, "Sector hook lacks its header range")
+    header = bytes.fromhex(row["ranges"][0]["hex"])
+
+    def decimal(value: int) -> int:
+        return (value >> 4) * 10 + (value & 15)
+
+    return (decimal(header[0]) * 60 + decimal(header[1])) * 75 + decimal(header[2]) - 150
+
+
+def platform_inputs(rows: list[dict], ram: bytes, arrival: str | None) -> tuple[str, list[int]]:
+    """The runner's platform input file and the recorded delivered sectors.
+
+    Load values come from the original registers after each load; nothing is
+    taken from an exit image.
+    """
+    lines, sectors = [], []
+    for row in rows:
+        hook = row["hook"]
+        if hook == arrival:
+            lines.append("interrupt")
+        elif hook == SECTOR_HOOK:
+            sectors.append(header_sector(row))
+        else:
+            site = int(hook[len(LOAD_PREFIX) :], 16)
+            require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
+            code = u32(ram, site)
+            require(code >> 26 in LOADS, "Load hook does not follow a load instruction")
+            value = visible_registers(row)[(code >> 16) & 31]
+            lines.append(f"read {site:08x} {value:08x}")
+    if sectors:
+        lines.insert(0, f"drive {sectors[0]}")
+    return "".join(line + "\n" for line in lines), sectors
 
 
 PARTY_RESOURCES = 0x8005A414
@@ -336,6 +392,7 @@ def compare(
     update_changed: set[int] | None = None,
     interrupt_changed: set[int] = frozenset(),
     superseded: dict[int, tuple[int, int]] | None = None,
+    arrival_stacks: tuple[int, ...] = (),
 ) -> dict:
     """Exact comparison of owned bytes plus attribution of every other change.
 
@@ -357,16 +414,24 @@ def compare(
             require(base + i not in computed, "Overlapping owned ranges")
             computed[base + i] = value
             names[base + i] = (item["name"], item["address"], i)
-    # An entry SP of 80200000 (seen inside the mode dispatcher) is the end
-    # of RAM, not offset zero.
-    high = ((sp - 1) & 0x1FFFFF) + 1
-    low = high - STACK_BELOW_ENTRY
+    # Callee stack windows: the call's, and each arrived interrupt's (its
+    # handler runs on the stack the exception hook selects). An entry SP of
+    # 80200000 (seen inside the mode dispatcher) is the end of RAM, not
+    # offset zero.
+    windows = [
+        (((stack - 1) & 0x1FFFFF) + 1 - STACK_BELOW_ENTRY, ((stack - 1) & 0x1FFFFF) + 1)
+        for stack in sorted({sp, *arrival_stacks})
+    ]
+
+    def stacked(offset: int) -> bool:
+        return any(low <= offset < high for low, high in windows)
+
     changed = unowned_offsets(entry, exit)
     own = update_changed if update_changed is not None else set(changed)
     kernel = {
         o
         for o in set(changed) | own | set(interrupt_changed)
-        if interrupt_changed and any(a <= o < b for a, b in KERNEL_SAVE)
+        if (interrupt_changed or arrival_stacks) and any(a <= o < b for a, b in KERNEL_SAVE)
     }
     excused = {o for o in interrupt_changed if o not in own} | kernel
     # An owned byte that only interrupt code changed belongs to the interrupt
@@ -382,7 +447,7 @@ def compare(
     unowned = [
         offset
         for offset in changed
-        if offset not in computed and not low <= offset < high and offset not in excused
+        if offset not in computed and not stacked(offset) and offset not in excused
     ]
     # BIOS save-area bytes also change on exception entry, before the observed
     # dispatch hook; they are machine state, never Program state.
@@ -392,11 +457,11 @@ def compare(
         if o not in verified
         and ((o in own and o not in kernel) or (o in computed and computed[o] != entry[o]))
         # The stack below the entry SP is transient for both.
-        and not low <= o < high
+        and not stacked(o)
     )
     return {
         "owned_bytes": len(computed),
-        "changed_bytes": len([o for o in changed if not low <= o < high]),
+        "changed_bytes": len([o for o in changed if not stacked(o)]),
         "changed_ranges": sorted({names[o][0] for o in changed if o in names}),
         "mismatches": [
             {
@@ -486,6 +551,7 @@ def run(args: argparse.Namespace) -> int:
         tuple(outcomes),
         presentation,
         args.entry_repeats,
+        args.arrival,
     )
     require(calls, "No original entry/exit pairs in the capture")
     selected = calls[args.start : args.start + args.limit]
@@ -512,7 +578,7 @@ def run(args: argparse.Namespace) -> int:
     with tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory:
         work = Path(directory)
         maps = collections.Counter()
-        for index, (entry_row, exit_row, handlers) in enumerate(selected, args.start):
+        for index, (entry_row, exit_row, handlers, inputs) in enumerate(selected, args.start):
             # Read in capture order: entry, interrupt brackets, exit.
             entry, scratch, io = snapshots.read(entry_row)
             sources = None
@@ -533,6 +599,8 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
+            platform, recorded_sectors = platform_inputs(inputs, entry, args.arrival)
+            (work / "platform.txt").write_text(platform)
             process = subprocess.run(
                 [
                     str(args.runner),
@@ -549,6 +617,8 @@ def run(args: argparse.Namespace) -> int:
                     # CPU registers at entry supply arguments (A0, A1, RA).
                     ",".join(f"{value:x}" for value in visible_registers(entry_row)),
                     str(work / "io.bin"),
+                    str(work / "platform.txt"),
+                    str(args.raw) if args.raw.exists() else "",
                 ],
                 capture_output=True,
                 timeout=args.timeout,
@@ -601,6 +671,7 @@ def run(args: argparse.Namespace) -> int:
                 update_changed,
                 interrupt_changed,
                 superseded,
+                tuple(visible_registers(row)[29] for row in inputs if row["hook"] == args.arrival),
             )
             # Exact GTE rotation/translation at exit. Interrupt handlers are not
             # modeled; one that changed these registers would surface here.
@@ -611,7 +682,7 @@ def run(args: argparse.Namespace) -> int:
             if any(before["hook"] in presented for before, _ in handlers):
                 expected_gte = gte_words(entry_row)
                 bounds = [entry_row, *(row for pair in handlers for row in pair), exit_row]
-                for start_row, end_row in zip(bounds[::2], bounds[1::2]):
+                for start_row, end_row in zip(bounds[::2], bounds[1::2], strict=True):
                     if gte_words(start_row) != gte_words(end_row):
                         result["gte_segment_mismatch"] = start_row["frontend_run"]
                         result["mismatch_count"] += 1
@@ -634,23 +705,47 @@ def run(args: argparse.Namespace) -> int:
                     "original": visible_registers(exit_row)[args.return_register],
                 }
                 result["mismatch_count"] += 1
+            # Every recorded platform input must be consumed, and the drive
+            # must deliver the sectors the original received.
+            if report["platform_unconsumed"]:
+                result["platform_unconsumed"] = report["platform_unconsumed"]
+                result["mismatch_count"] += 1
+            if recorded_sectors and report["delivered_sectors"] != recorded_sectors:
+                result["sector_mismatch"] = {
+                    "computed": report["delivered_sectors"],
+                    "recorded": recorded_sectors,
+                }
+                result["mismatch_count"] += 1
             if report["gte"] != expected_gte:
                 result["gte_mismatch"] = {"computed": report["gte"], "original": expected_gte}
                 result["mismatch_count"] += 1
             # Each SPU register the call wrote must hold its last written value
-            # in the exit I/O page. Other registers (DMA, CD ports) do not read
-            # back what was written and are not compared here.
+            # in the exit I/O page, when the page records the SPU. The pinned
+            # core's recorded page does not mirror the SPU registers (they read
+            # zero in every snapshot); writes there are counted as unrecorded,
+            # not compared. Other registers (DMA, CD ports) do not read back
+            # what was written and are not compared here.
             written = {}
             for write in report.get("hardware_writes", []):
                 offset = write["address"] - IO_BASE
                 if SPU_PAGE[0] <= offset < SPU_PAGE[1]:
                     written[offset] = write
-            io_mismatches = [
-                {"address": hex(IO_BASE + offset), "computed": write["value"], "original": value}
-                for offset, write in sorted(written.items())
-                if (value := int.from_bytes(exit_io[offset : offset + write["width"]], "little"))
-                != write["value"]
-            ]
+            io_mismatches = []
+            if any(exit_io[SPU_PAGE[0] : SPU_PAGE[1]]):
+                io_mismatches = [
+                    {
+                        "address": hex(IO_BASE + offset),
+                        "computed": write["value"],
+                        "original": value,
+                    }
+                    for offset, write in sorted(written.items())
+                    if (
+                        value := int.from_bytes(exit_io[offset : offset + write["width"]], "little")
+                    )
+                    != write["value"]
+                ]
+            elif written:
+                result["spu_writes_unrecorded"] = len(written)
             result["hardware_writes"] = len(report.get("hardware_writes", []))
             if io_mismatches:
                 result["hardware_mismatch"] = io_mismatches
@@ -809,6 +904,10 @@ def main() -> int:
         "--field-slot", type=int, help="Catalog slot of a field loaded outside its map pair"
     )
     parser.add_argument("--map", type=int, help="Field source map (default: the image's map)")
+    parser.add_argument(
+        "--arrival",
+        help="Hook whose records inside a call are interrupt arrivals the call's waits deliver",
+    )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)
     parser.add_argument("--budget", type=int, default=1_000_000)

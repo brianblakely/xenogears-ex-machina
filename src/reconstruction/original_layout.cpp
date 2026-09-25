@@ -169,9 +169,6 @@ std::vector<OriginalGlobal> build() {
     add_resident("departure_594d0", 0x800594d0, 1,
                  [](Program &p) -> auto & { return p.resident.departure_594d0; });
     add("gate_adbc4", 0x800adbc4, 4, [](Program &p) -> auto & { return f(p).gate_adbc4; });
-    for (std::size_t i = 0; i < 2; ++i)
-        add_resident("pad_status", static_cast<std::uint32_t>(0x800625fc + i), 1,
-                     [i](Program &p) -> auto & { return p.resident.pad_status[i]; });
     add_resident("debug_pointer", 0x8005917c, 4,
                  [](Program &p) -> auto & { return p.resident.debug_pointer; });
     add_resident("debug_word", 0x80010000, 4,
@@ -507,16 +504,6 @@ std::vector<OriginalGlobal> build() {
     disc("disc_59f60", 0x80059f60, 2, &Read::h_59f60);
     disc("disc_requests", 0x8005a488, 4, &Read::requests);
     disc("disc_5a4dc", 0x8005a4dc, 4, &Read::w_5a4dc);
-    disc("disc_59f3c", 0x80059f3c, 4, &Read::w_59f3c);
-    for (std::uint32_t i = 0; i < 6; ++i)
-        add_resident("disc_59f24", 0x80059f24 + i * 4, 2,
-                     [i](Program &p) -> auto & { return p.resident.disc_read.h_59f24[i]; });
-    for (std::uint32_t i = 0; i < 3; ++i)
-        add_resident("disc_59f40", 0x80059f40 + i * 4, 2,
-                     [i](Program &p) -> auto & { return p.resident.disc_read.h_59f40[i]; });
-    for (std::uint32_t i = 0; i < 2; ++i)
-        add_resident("disc_59f4c", 0x80059f4c + i * 4, 4,
-                     [i](Program &p) -> auto & { return p.resident.disc_read.w_59f4c[i]; });
     for (std::uint32_t i = 0; i < 3; ++i)
         add_resident("disc_59ef8", 0x80059ef8 + i * 4, 4,
                      [i](Program &p) -> auto & { return p.resident.disc_read.w_59ef8[i]; });
@@ -535,7 +522,7 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.cd.sync_callback; });
     add_resident("cd_debug", 0x800564b4, 4,
                  [](Program &p) -> auto & { return p.resident.cd.debug; });
-    add_resident("cd_status", 0x800564b8, 1,
+    add_resident("cd_status", 0x800564b8, 4,
                  [](Program &p) -> auto & { return p.resident.cd.status; });
     add_resident("cd_mode", 0x800564c8, 1, [](Program &p) -> auto & { return p.resident.cd.mode; });
     add_resident("cd_command", 0x800564c9, 1,
@@ -725,6 +712,7 @@ std::vector<OriginalGlobal> build() {
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
     add("party_reassignment", 0x800b2268, 4,
         [](Program &p) -> auto & { return f(p).party_reassignment; });
+    add_interrupt_globals(g);
     // Remaining bytes of the regions a field-return snapshot copies.
     const auto covered = [&](std::uint32_t address) {
         return std::ranges::any_of(g, [&](const OriginalGlobal &item) {

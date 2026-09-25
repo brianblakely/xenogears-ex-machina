@@ -289,7 +289,7 @@ void store_game_data(Menu &menu, std::uint32_t payload) {
 }
 
 void serialize(Menu &menu, std::uint32_t payload, std::uint32_t digit, std::uint32_t disc,
-               NameScratch &scratch) {
+               std::uint32_t play_frames, NameScratch &scratch) {
     auto &memory = menu.memory;
     for (std::uint32_t i = 0; i < 0x20; i += 2)
         memory.put16(game_globals + i, memory.u16(saved_globals + i));
@@ -310,7 +310,7 @@ void serialize(Menu &menu, std::uint32_t payload, std::uint32_t digit, std::uint
     }
     memory.put8(payload + 0x1f, 0);
     memory.put8(payload + 0x23, digit & 0xff);
-    memory.put32(payload, memory.u32(play_frames));
+    memory.put32(payload, play_frames);
 
     // 801cbcb8: each name through a copy into a zeroed 20-byte buffer.
     const auto codec = name_codec(memory);
@@ -380,10 +380,11 @@ void restore_game_data(Menu &menu, std::uint32_t payload, std::uint32_t tables) 
     copy(memory, payload + 0x1124, game + 0x1920, 0xa38); // 8003f968
 }
 
-void apply_loaded(Menu &menu, std::uint32_t payload, NameScratch &scratch) {
+void apply_loaded(Menu &menu, std::uint32_t payload, std::uint32_t &play_frames,
+                  NameScratch &scratch) {
     restore_game_data(menu, payload, menu.tables());
     auto &memory = menu.memory;
-    memory.put32(play_frames, memory.u32(payload));
+    play_frames = memory.u32(payload);
     for (std::uint32_t i = 0; i < 0x20; i += 2)
         memory.put16(saved_globals + i, memory.u16(game_globals + i));
     decode_names(menu, scratch);
