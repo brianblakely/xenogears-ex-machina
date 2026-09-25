@@ -41,6 +41,7 @@ constexpr std::size_t field_snapshot_bytes = 0x3804;
 constexpr std::size_t disc_file_table_bytes = 0x8000;
 constexpr std::size_t disc_directory_table_bytes = 0x7a;
 constexpr std::uint32_t pad_buffers = 0x800625fc;
+constexpr std::uint32_t text_font_globals = 0x8005934c;
 
 // Field frame draw buffers: two 80f4-byte blocks (environments, ordering tables).
 constexpr std::uint32_t draw_blocks = 0x800b249c;
@@ -487,11 +488,32 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
     // (800c2698, 8008004c); later windows' lists end the window before.
     state.regions.add("dialogue_lists", field::DialogueWindow::base - 0x18,
                       copy_of(memory.range(field::DialogueWindow::base - 0x18, 0x18)));
-    // The text line records (+28) of each dialogue window in use (80034888).
-    for (std::uint32_t w = 0; w < state.dialogue.size(); ++w)
-        if (state.dialogue[w].half(field::DialogueWindow::busy) == 0)
-            own_block("dialogue_lines", memory.word(field::DialogueWindow::base +
-                                                    w * field::DialogueWindow::stride + 0x28));
+    // The heap blocks of each dialogue window in use: its text line records
+    // (+28), glyph image (+2c) and queued pages (+8c list); the window holds
+    // them until it closes (8007f6f8).
+    const auto heap_block = [&](std::uint32_t address) {
+        const auto block = resident.heap.headers.find(address - 8);
+        if (block == resident.heap.headers.end() ||
+            (block->second[1] & reconstruction::resident::heap_tag_mask) == 0)
+            throw field::FieldFormatError("Dialogue block is not an allocated heap block");
+        return reconstruction::resident::HeapBlock{
+            address, copy_of(memory.range(address, block->second[0] - 8 - address))};
+    };
+    for (std::uint32_t w = 0; w < state.dialogue.size(); ++w) {
+        if (state.dialogue[w].half(field::DialogueWindow::busy) != 0)
+            continue;
+        const auto window = field::DialogueWindow::base + w * field::DialogueWindow::stride;
+        auto &blocks = state.dialogue_blocks[w];
+        blocks.push_back(heap_block(memory.word(window + 0x28)));
+        blocks.push_back(heap_block(memory.word(window + 0x2c)));
+        for (auto page = memory.word(window + 0x8c); page != 0; page = memory.word(page))
+            blocks.push_back(heap_block(page));
+    }
+    // The text font (80034ffc): its parameters 8005934c..80059367 and the
+    // heap block holding the glyphs (*8005935c).
+    state.regions.add("text_font_globals", text_font_globals,
+                      copy_of(memory.range(text_font_globals, 0x1c)));
+    own_block("text_font", memory.word(text_font_globals + 0x10));
     return program;
 }
 

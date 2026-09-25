@@ -854,10 +854,16 @@ class Program {
     void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
     void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
     void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);
-    void frame_dialogue_timers();             // 800805f4
-    void frame_dialogue(std::uint32_t table); // 8008004c
-    void draw_dialogue_window(std::uint32_t table, std::uint32_t w, bool first);
-    void draw_dialogue_text(std::uint32_t window, std::uint32_t table,
+    void frame_dialogue_timers();                                      // 800805f4
+    void frame_dialogue(FrameServices &services, std::uint32_t table); // 8008004c
+    void draw_dialogue_window(FrameServices &services, std::uint32_t table, std::uint32_t w,
+                              bool first);
+    void close_dialogue(std::uint32_t w);                               // 8007f6f8
+    void queue_dialogue_page(std::uint32_t window, std::uint32_t text); // 80034714
+    void dialogue_glyphs(std::uint32_t window);                         // 80033df0
+    void release_dialogue_block(std::uint32_t window, std::uint32_t address,
+                                std::uint32_t call_site);
+    void draw_dialogue_text(FrameServices &services, std::uint32_t window, std::uint32_t table,
                             std::uint32_t buffer); // 80034888
     void draw_dialogue_frame(std::uint32_t table, std::uint32_t buffer,
                              std::uint32_t w); // 8007e1c0

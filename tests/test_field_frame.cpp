@@ -1,6 +1,7 @@
 // Invented registers, regions and requests exercise the geometry coprocessor
 // model, libgpu packet helpers, owned regions and frame service results used
 // by the field frame. They describe no original content or observation.
+#include "xem/reconstruction/field_text.hpp"
 #include "xem/reconstruction/gpu.hpp"
 #include "xem/reconstruction/gte.hpp"
 #include "xem/reconstruction/program.hpp"
@@ -81,6 +82,44 @@ void services() {
         [&] { static_cast<void>(game::take_service(results, "test")); },
         "A missing result is reported, never invented");
 }
+
+void text() {
+    namespace field = game::field;
+    const field::TextFont font{0xf0, 0x1000, 0x20, 4, 0x80100000, 8};
+    check(field::glyph_width(font, 0, 8) == 2 && field::glyph_width(font, 0, 0x27) == 2 &&
+              field::glyph_width(font, 0, 0x28) == 3,
+          "One-byte glyphs below the narrow count are narrow");
+    check(field::glyph_width(font, 0, 7) == 2, "Codes below the first one compare signed");
+    check(field::glyph_width(font, 0xf0, 3) == 2 && field::glyph_width(font, 0xf0, 4) == 3 &&
+              field::glyph_width(font, 0xf1, 0) == 3,
+          "Two-byte glyphs are narrow only after the lead limit itself");
+    check(field::glyph_address(font, 0, 0xa) == 0x80100000 + 2 * field::glyph_bytes,
+          "One-byte glyphs count from the first code");
+    check(field::glyph_address(font, 0xf1, 2) == 0x80100000 + 0x1000 + 0x1600 + 2 * 0x16,
+          "Two-byte glyphs use a 0x100-glyph table per lead byte after the first table");
+    check(field::glyph_address(font, 0xff, 0xff) == field::special_glyph,
+          "The pair ff ff names the resident special glyph");
+
+    std::array<std::uint16_t, field::glyph_rows> rows{};
+    rows[0] = 0x80;    // Pixel 1.
+    rows[5] = 0x10;    // Pixel 4, next to the first cell boundary.
+    rows[10] = 0x1000; // Pixel 12, clipped; only its left outline remains.
+    auto cells = field::glyph_cells(rows, false);
+    check(cells[0][0] == 0x222 && cells[1][0] == 0x212 && cells[2][0] == 0x222,
+          "A pixel is 1 with an outline of 2 around it");
+    check(cells[5][0] == 0x2000 && cells[5][1] == 0x22 && cells[6][0] == 0x2000 &&
+              cells[6][1] == 0x21 && cells[7][1] == 0x22,
+          "The outline crosses cell boundaries");
+    check(cells[10][2] == 0x2000 && cells[11][2] == 0x2000 && cells[12][2] == 0x2000,
+          "A clipped pixel leaves its left outline");
+    check(field::glyph_cells(rows, true)[1][0] == 0x848 && field::glyph_keep(true) == 0x3333 &&
+              field::glyph_keep(false) == 0xcccc,
+          "Odd lines use the upper plane");
+    rows = {};
+    rows[3] = 0xc0; // Pixels 1 and 2 overlap each other's outline.
+    cells = field::glyph_cells(rows, false);
+    check(cells[4][0] == 0x2332 && cells[3][0] == 0x2222, "Overlapping outlines are ORed");
+}
 } // namespace
 
 int main() {
@@ -88,6 +127,7 @@ int main() {
         geometry();
         packets();
         services();
+        text();
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

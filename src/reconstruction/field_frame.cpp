@@ -104,6 +104,15 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
                    ? std::span<std::uint8_t>(owned).subspan(address - base)
                    : std::span<std::uint8_t>{};
     };
+    // The loaded message table (component 7) that dialogue text reads.
+    if (field)
+        if (const auto bytes = from(field->messages_address, field->messages); !bytes.empty())
+            return bytes;
+    if (field)
+        for (const auto &blocks : field->dialogue_blocks)
+            for (const auto &block : blocks)
+                if (const auto bytes = from(block.address, block.bytes); !bytes.empty())
+                    return bytes;
     if (field)
         for (const auto &actor : field->actors) {
             if (const auto bytes = from(actor.sprite.sprite.address, actor.sprite.sprite.bytes);
@@ -649,7 +658,7 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
         done("field_frame_dialogue_timers", 0x800805f4);
         [[fallthrough]];
     case FrameStep::dialogue:
-        frame_dialogue(block() + 0x80d4U);
+        frame_dialogue(services, block() + 0x80d4U);
         done("field_frame_dialogue", 0x8008004c);
         [[fallthrough]];
     case FrameStep::vertical_sync: {

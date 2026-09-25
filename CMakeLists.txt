@@ -58,6 +58,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_models.cpp
   src/reconstruction/field_characters.cpp
   src/reconstruction/field_dialogue_draw.cpp
+  src/reconstruction/field_text.cpp
   src/reconstruction/field_view.cpp
   src/reconstruction/disc_stream.cpp
   src/reconstruction/disc_read.cpp
