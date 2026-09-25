@@ -95,11 +95,6 @@ bool Program::deliver_interrupt() {
         return false;
     const auto arrival = inputs.front();
     inputs.pop_front();
-    struct Inside {
-        std::uint32_t &depth;
-        explicit Inside(std::uint32_t &value) : depth(++value) {}
-        ~Inside() { --depth; }
-    } inside{interrupt_depth_};
     if (arrival.kind == Kind::tick) {
         static_cast<void>(sound_tick(arrival.value));
         return true;
@@ -112,12 +107,19 @@ bool Program::deliver_interrupt() {
         buffers[index / buffers[0].size()][index % buffers[0].size()] =
             static_cast<std::uint8_t>(inputs.front().value);
     }
-    interrupt_dispatch();
+    in_interrupt_ = true;
+    try {
+        interrupt_dispatch();
+    } catch (...) {
+        in_interrupt_ = false;
+        throw;
+    }
+    in_interrupt_ = false;
     return true;
 }
 
 void Program::deliver_due_arrivals() {
-    if (interrupt_depth_ == 0)
+    if (!in_interrupt_)
         while (deliver_interrupt()) {
         }
 }
@@ -129,23 +131,53 @@ void Program::deliver_pending_arrivals() {
 
 void Program::reach_position(std::uint32_t address) {
     deliver_stage_arrivals();
-    auto &inputs = resident.platform;
-    const auto next =
-        std::ranges::find(inputs, PlatformInput::Kind::position, &PlatformInput::kind);
-    if (next == inputs.end() || next->site != address)
-        return;
-    if (next != inputs.begin())
-        throw PlatformInputError("Platform input before the position " + hex(address) +
-                                 " is not consumed; next is " + hex(inputs.front().site));
-    inputs.pop_front();
+    // The run that ended at `address`: its recorded end, when there is one.
+    deliver_arrivals(address);
+}
+
+void Program::deliver_leading_arrivals() {
+    using Kind = PlatformInput::Kind;
+    const auto &inputs = resident.platform;
+    while (!in_interrupt_ && !inputs.empty() && inputs.front().site == 0 &&
+           (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick))
+        static_cast<void>(deliver_interrupt());
+}
+
+void Program::deliver_leading_vblanks() {
+    using Kind = PlatformInput::Kind;
+    const auto &inputs = resident.platform;
+    for (;;) {
+        if (in_interrupt_ || inputs.empty() || inputs.front().site != 0)
+            return;
+        // A sound tick that came first is taken with it.
+        if (inputs.front().kind == Kind::tick) {
+            static_cast<void>(deliver_interrupt());
+            continue;
+        }
+        if (inputs.front().kind != Kind::interrupt)
+            return;
+        // The dispatcher's first I_STAT read (8004ba34) after the pad bytes.
+        auto next = std::next(inputs.begin());
+        while (next != inputs.end() && next->kind == Kind::pad)
+            ++next;
+        if (next == inputs.end() || next->kind != Kind::read || next->site != 0x8004ba34)
+            return;
+        const auto &irq = resident.interrupts;
+        if ((next->value & irq.mask & io_latch(irq.registers[1], 2)) != 1U)
+            return;
+        static_cast<void>(deliver_interrupt());
+    }
 }
 
 void Program::deliver_arrivals(std::uint32_t point) {
     using Kind = PlatformInput::Kind;
-    const auto &inputs = resident.platform;
+    auto &inputs = resident.platform;
     while (!inputs.empty() && inputs.front().site == point &&
            (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick))
         static_cast<void>(deliver_interrupt());
+    // This run of the code at point ended.
+    if (!inputs.empty() && inputs.front().kind == Kind::end && inputs.front().site == point)
+        inputs.pop_front();
 }
 
 // Resident 80028738: the file's byte size (record bytes 3-6).
@@ -496,6 +528,8 @@ void cd_wait_checks(ResidentState &resident, std::uint32_t timeout) {
 // Inside an interrupt handler the wait polls the controller itself.
 std::int32_t Program::cd_sync() {
     auto &cd = resident.cd;
+    // VSync(-1) counts the vertical blanks that arrived before this read.
+    deliver_leading_vblanks();
     resident.cd_sync_deadline = resident.vsync_counter + 0x3c0; // 8004b54c(-1)
     resident.cd_sync_polls = 0;
     resident.cd_sync_label = 0x80018eb0;
@@ -1293,6 +1327,17 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
         if (address >= at && end <= std::uint64_t{at} + bytes.size()) {
             std::ranges::copy(data, bytes.begin() + (address - at));
             return;
+        }
+    }
+    // A file block battle memory owns (the battle setup's files).
+    if (battle) {
+        const auto found = battle->regions.upper_bound(address);
+        if (found != battle->regions.begin()) {
+            auto &[at, bytes] = *std::prev(found);
+            if (address >= at && end <= std::uint64_t{at} + bytes.size()) {
+                std::ranges::copy(data, bytes.begin() + (address - at));
+                return;
+            }
         }
     }
     for (auto &[at, bytes] : resident.heap.held)

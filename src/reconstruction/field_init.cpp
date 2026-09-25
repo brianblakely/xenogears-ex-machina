@@ -188,7 +188,7 @@ void Program::place_at_entry(std::size_t index, std::int32_t entry) {
         put(a, offset, direction, 2);
 }
 
-// Primary bc (800a0d3c): the bundle's first sprite for the current actor.
+// 800a0d3c (primary bc): the bundle's first sprite for the current actor.
 void Program::event_default_sprite(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
         const auto index = world.current;
@@ -202,7 +202,7 @@ void Program::event_default_sprite(field::EventContext &context) {
     });
 }
 
-// Primary 0b (800a1624): bundle sprite `operand 1` for the current actor.
+// 800a1624 (primary 0b): bundle sprite `operand 1` for the current actor.
 void Program::event_bundle_sprite(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
         const auto index = world.current;
@@ -220,7 +220,7 @@ void Program::event_bundle_sprite(field::EventContext &context) {
     });
 }
 
-// Primary 16 (800a08b8): the current actor becomes party character `operand
+// 800a08b8 (primary 16): the current actor becomes party character `operand
 // 1` (ff, fe, fd: the characters of party slots 2, 1, 0). A character in the
 // party takes its slot's sprite and, unless it is in the party, the first
 // party sprite; party members start at the map entry (variable 2).
@@ -262,8 +262,7 @@ void Program::event_party_member(field::EventContext &context) {
         put(actor.descriptor, 0x58, (word(actor.descriptor, 0x58, 2) & 0xf07fU) | 0x200U, 2);
         const auto self = static_cast<std::uint32_t>(index);
         if (slot == -1) {
-            create_actor_sprite(index,
-                                {self, 0, resident.party_sprite_resources.at(0), 1, 0, 0, 1});
+            create_actor_sprite(index, {self, 0, resident.party_sprite_blocks.at(0), 1, 0, 0, 1});
             put(a, 0, word(a, 0) | 1U);
             world.control.budget_mode = 1;
             world.control.break_requested = 1;
@@ -278,7 +277,7 @@ void Program::event_party_member(field::EventContext &context) {
             state.party_indices.at(k) = static_cast<std::int32_t>(index);
             if (state.party_reassignment == 0) {
                 create_actor_sprite(index, {self, static_cast<std::uint32_t>(slot),
-                                            resident.party_sprite_resources.at(k), 1, 0,
+                                            resident.party_sprite_blocks.at(k), 1, 0,
                                             static_cast<std::uint8_t>(slot), 1});
                 put(a, 0, (word(a, 0) | 0x400U) & ~0x300U);
             } else {
@@ -298,7 +297,7 @@ void Program::event_party_member(field::EventContext &context) {
     });
 }
 
-// Primary 1d (8009e248): place the current actor at (x, z) with height y.
+// 8009e248 (primary 1d): place the current actor at (x, z) with height y.
 void Program::event_place_height(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
         const auto index = world.current;
@@ -318,7 +317,7 @@ void Program::event_place_height(field::EventContext &context) {
     });
 }
 
-// Primary 23 (8009e040): descriptor flag 20 of the current actor.
+// 8009e040 (primary 23): descriptor flag 20 of the current actor.
 void Program::event_descriptor_hidden(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
         auto &actor = loaded(*this).actors.at(world.current);
@@ -327,7 +326,7 @@ void Program::event_descriptor_hidden(field::EventContext &context) {
     });
 }
 
-// Primary 27 (8009dc4c): stop actor `operand 1`: clear its motion, mark it
+// 8009dc4c (primary 27): stop actor `operand 1`: clear its motion, mark it
 // (+0 bit 0) and face its current direction; the current actor's idle
 // dialogue window forgets its clear.
 void Program::event_stop_actor(field::EventContext &context) {
@@ -372,7 +371,7 @@ std::int32_t Program::party_character(std::int32_t selector) const {
     }
 }
 
-// Primary e6 (80091a08): the camera's four bounds; the last is negated.
+// 80091a08 (primary e6): the camera's four bounds; the last is negated.
 void Program::event_camera_bounds(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
         auto &a = loaded(*this).actors.at(world.current).storage;
@@ -389,7 +388,7 @@ void Program::event_camera_bounds(field::EventContext &context) {
     });
 }
 
-// Primary 85 (800966b4): jump to `operand 3` unless `operand 1` is below
+// 800966b4 (primary 85): jump to `operand 3` unless `operand 1` is below
 // variable 0.
 void Program::event_branch_below(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
@@ -404,7 +403,7 @@ void Program::event_branch_below(field::EventContext &context) {
     });
 }
 
-// Primary 69 (8009ac7c -> 8009a904): face table direction `operand 1`;
+// 8009ac7c, 8009a904 (primary 69): face table direction `operand 1`;
 // before initialization completes the facing is also the resting one.
 void Program::event_face_direction(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
@@ -423,7 +422,7 @@ void Program::event_face_direction(field::EventContext &context) {
     });
 }
 
-// Primary f7 (8008e85c -> 8008e718): the random-encounter table: the gate
+// 8008e85c, 8008e718 (primary f7): the random-encounter table: the gate
 // (800b2298, kept at 800b2294), and `operand 3` distinct steps (at most 20h)
 // drawn at random below the gate + 1, each plus one, at 800b22a0.
 void Program::event_encounter_table(field::EventContext &context) {

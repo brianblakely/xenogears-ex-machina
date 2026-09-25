@@ -245,9 +245,9 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
         const auto tag = actor.storage[0x126];
         std::uint32_t resource = 0;
         if ((tag & 0x80U) == 0) {
-            if (tag >= resident.party_sprite_resources.size())
+            if (tag >= resident.party_sprite_blocks.size())
                 throw field::FieldFormatError("Missing selected party sprite resource");
-            resource = resident.party_sprite_resources[tag];
+            resource = resident.party_sprite_blocks[tag];
         } else {
             const auto base = state.sprite_bundle_address;
             resource = base + resource_word(state, base + 4U + (tag & 0x7fU) * 4U);

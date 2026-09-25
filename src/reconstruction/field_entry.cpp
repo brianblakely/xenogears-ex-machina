@@ -39,45 +39,6 @@ void Program::read_map_ahead() {
     }
 }
 
-// SetDefDrawEnv (80043928): a draw environment over (x, y, w, h).
-void Program::default_draw_env(std::uint32_t env, std::int32_t x, std::int32_t y, std::int32_t w,
-                               std::int32_t h) {
-    const auto half = [&](std::uint32_t at, std::int32_t value) {
-        set_memory(env + at, u32(value) & 0xffffU, 2);
-    };
-    half(0, x);
-    half(2, y);
-    half(4, w);
-    for (const std::uint32_t at : {0xcU, 0xeU, 0x10U, 0x12U})
-        half(at, 0);
-    for (const std::uint32_t at : {0x19U, 0x1aU, 0x1bU})
-        set_memory(env + at, 0, 1);
-    set_memory(env + 0x16, 1, 1);
-    half(6, h);
-    // Dithering (+17) below the video mode's (8004c308) line count.
-    set_memory(env + 0x17, h < (resident.video_mode != 0 ? 289 : 257) ? 1U : 0U, 1);
-    half(8, x);
-    half(0xa, y);
-    half(0x14, 10);
-    set_memory(env + 0x18, 0, 1);
-}
-
-// SetDefDispEnv (800439e0): a display environment over (x, y, w, h).
-void Program::default_disp_env(std::uint32_t env, std::int32_t x, std::int32_t y, std::int32_t w,
-                               std::int32_t h) {
-    const auto half = [&](std::uint32_t at, std::int32_t value) {
-        set_memory(env + at, u32(value) & 0xffffU, 2);
-    };
-    half(0, x);
-    half(2, y);
-    half(4, w);
-    for (const std::uint32_t at : {8U, 0xaU, 0xcU, 0xeU})
-        half(at, 0);
-    for (const std::uint32_t at : {0x11U, 0x10U, 0x13U, 0x12U})
-        set_memory(env + at, 0, 1);
-    half(6, h);
-}
-
 // 80071fb0: the display setup: the geometry defaults (80048bc4) and offset
 // (8004a12c), both draw blocks' environments (draw at +0 and +5c, display at
 // +b8), their areas (80071f64) and screen rectangles (80086d8c), black
@@ -87,26 +48,15 @@ void Program::init_display(FrameServices &services) {
     resident.sprite.rate_control = 1; // 80059198
     draw_sync(services);
     vertical_sync(services);
-    // 80048bc4 InitGeom: 8004b4ac's BIOS setup (its exception vector copy
-    // repeats the boot's) and both saved return addresses, then ZSF3, ZSF4,
-    // H, DQA, DQB and the offset.
-    resident.bios_setup_return = 0x80048bd4;
-    resident.geometry_return = 0x80071fe8;
-    auto &gte = resident.gte;
-    gte.set_control(29, 0x155);
-    gte.set_control(30, 0x100);
-    gte.set_control(26, 1000);
-    gte.set_control(27, u32(-4194));
-    gte.set_control(28, 0x1400000);
-    gte.set_control(24, 0xa0U << 16U); // 8004a12c SetGeomOffset
-    gte.set_control(25, 0x70U << 16U);
+    init_geometry(0x80071fe8);       // 80048bc4 InitGeom
+    set_geometry_offset(0xa0, 0x70); // 8004a12c SetGeomOffset
     constexpr std::uint32_t first = 0x800b249c, second = 0x800ba590;
-    default_draw_env(first, 0, 0, 0x140, 0xe0);
-    default_draw_env(second, 0, 0x100, 0x140, 0xe0);
-    default_draw_env(first + 0x5c, 0, 0, 0x140, 0xe0);
-    default_draw_env(second + 0x5c, 0, 0x100, 0x140, 0xe0);
-    default_disp_env(first + 0xb8, 0, 0x100, 0x140, 0xe0);
-    default_disp_env(second + 0xb8, 0, 0, 0x140, 0xe0);
+    set_default_draw_environment(first, 0, 0, 0x140, 0xe0);
+    set_default_draw_environment(second, 0, 0x100, 0x140, 0xe0);
+    set_default_draw_environment(first + 0x5c, 0, 0, 0x140, 0xe0);
+    set_default_draw_environment(second + 0x5c, 0, 0x100, 0x140, 0xe0);
+    set_default_display_environment(first + 0xb8, 0, 0x100, 0x140, 0xe0);
+    set_default_display_environment(second + 0xb8, 0, 0, 0x140, 0xe0);
     for (const auto block : {first, second}) { // 80071f64(0, 0, 140, e0)
         set_memory(block, 0, 2);
         set_memory(block + 2, block == first ? 0 : 0x100, 2);
@@ -234,7 +184,7 @@ void Program::field_entry(FrameServices &services, std::uint32_t frame,
     deliver_stage_arrivals();
     load_text_palette(services, frame); // 80077544
     done("entry_text_palette", 0x80078d64);
-    save_screen_vram(services); // 800a915c
+    save_particle_vram(services); // 800a915c
     done("entry_save_vram", 0x80078d6c);
     static_cast<void>(select_directory(4, 0));
     read_map_ahead(); // 800777dc
@@ -329,7 +279,7 @@ void Program::field_entry(FrameServices &services, std::uint32_t frame,
     }
     deliver_arrivals(0x80077db4); // Since the last fade frame's exit.
     done("entry_fade_in", 0x80079220);
-    restore_screen_vram(services); // 800a91f0
+    restore_particle_vram(services); // 800a91f0
     done("entry_restore_vram", 0x80079244);
     resident::heap_coalesce(resident.heap); // 80031ff8
     release_named_block();                  // 8003748c

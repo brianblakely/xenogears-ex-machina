@@ -204,6 +204,21 @@ void bind_inline(SpriteWindow sprite) {
     put(sprite.bytes, 0x24, sprite.address + 0x110);
     put(sprite.bytes, 0xec, 0);
 }
+// Under the battle platform (800222bc, 800245d8): a frame table whose
+// second byte has bit 7 clear (8001ee68) draws from (300h, 100h); otherwise
+// the image position is the sequencer's (+7c +e).
+bool platform_frames(SpriteWindow sprite, std::size_t binding, const SpriteSources &sources) {
+    return (resource(sources, get(sprite.bytes, binding) + 1, 1) >> 7) != 0;
+}
+void place_platform_image(SpriteWindow sprite, std::size_t binding, const SpriteSources &sources) {
+    if (!platform_frames(sprite, binding, sources)) {
+        put(sprite.bytes, binding + 6, 0x100, 2);
+        put(sprite.bytes, binding + 4, 0x300, 2);
+    } else {
+        const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 18);
+        put(sprite.bytes, binding + 4, get(sprite.bytes, sequencer + 0xe));
+    }
+}
 void renderer_scale(SpriteWindow sprite, std::uint16_t scale) {
     const auto pointer = get(sprite.bytes, 0x20);
     if (pointer == 0)
@@ -226,6 +241,13 @@ void apply_header(SpriteWindow sprite, std::uint32_t header, const SpriteEnviron
         if (!(word & 0x1000)) {
             for (auto at : {4U, 0U, 2U})
                 put(sprite.bytes, renderer + at, 0, 2);
+            update_sprite_matrix(sprite, sources);
+        }
+        // The battle platform scales the sprite (80022000 with 800591a8)
+        // unless the header keeps its scale, and rebuilds its matrix.
+        if (environment.platform_mode != 0) {
+            if (!(word & 0x2000))
+                renderer_scale(sprite, static_cast<std::uint16_t>(environment.platform_argument));
             update_sprite_matrix(sprite, sources);
         }
         if ((get(sprite.bytes, 0x3c) & 3) == 1) {
@@ -411,8 +433,6 @@ void invoke_sprite_callback(SpriteWindow sprite, const SpriteSources &sources) {
 void install_sprite_gravity(SpriteWindow sprite, std::uint32_t header,
                             const SpriteEnvironment &environment, const SpriteSources &sources) {
     check_window(sprite);
-    require_recovered(environment.platform_mode == 0,
-                      "Alternate sprite platform header installation is unreconstructed");
     put(sprite.bytes, 0x58, header);
     put(sprite.bytes, 0x64, header + resource(sources, header + 2, 2) + 2);
     const auto word = resource(sources, header, 2);
@@ -441,21 +461,25 @@ void bind_sprite_resource(SpriteWindow sprite, std::uint32_t pointer,
     check_window(sprite);
     if (pointer == 0)
         return;
-    require_recovered(environment.platform_mode == 0,
-                      "Alternate sprite platform resource binding is unreconstructed");
-    if (pointer == get(sprite.bytes, 0x44))
-        return;
     const auto at = inside(sprite, get(sprite.bytes, 0x24), 20);
-    const auto coordinate1 = get(sprite.bytes, at + 4);
-    const auto coordinate2 = get(sprite.bytes, at + 8);
-    put(sprite.bytes, at + 4, coordinate1);
-    put(sprite.bytes, at + 8, coordinate2);
-    put(sprite.bytes, at + 12, pointer + resource(sources, pointer + 12, 4));
-    put(sprite.bytes, at, pointer + resource(sources, pointer + 8, 4));
-    environment.binding_control = 0;
-    put(sprite.bytes, at + 16, pointer + resource(sources, pointer + 4, 4));
-    put(sprite.bytes, 0x44, pointer);
-    put(sprite.bytes, 0x3c, get(sprite.bytes, 0x3c) | 0x40000000);
+    if (pointer != get(sprite.bytes, 0x44)) {
+        const auto coordinate1 = get(sprite.bytes, at + 4);
+        const auto coordinate2 = get(sprite.bytes, at + 8);
+        put(sprite.bytes, at + 4, coordinate1);
+        put(sprite.bytes, at + 8, coordinate2);
+        put(sprite.bytes, at + 12, pointer + resource(sources, pointer + 12, 4));
+        put(sprite.bytes, at, pointer + resource(sources, pointer + 8, 4));
+        environment.binding_control = 0;
+        const auto directory = pointer + resource(sources, pointer + 4, 4);
+        put(sprite.bytes, at + 16, directory);
+        if (environment.platform_mode != 0)
+            if (const auto bits = (resource(sources, directory, 2) >> 6) & 63; bits != 0)
+                environment.platform_directory_bits = static_cast<std::uint8_t>(bits);
+        put(sprite.bytes, 0x44, pointer);
+        put(sprite.bytes, 0x3c, get(sprite.bytes, 0x3c) | 0x40000000);
+    }
+    if (environment.platform_mode != 0)
+        place_platform_image(sprite, at, sources);
 }
 
 void update_sprite_matrix(SpriteWindow sprite, const SpriteSources &sources) {
@@ -666,12 +690,19 @@ void select_sprite_animation(SpriteWindow sprite, std::int32_t animation,
     put(sprite.bytes, 0xb0,
         get(sprite.bytes, 0x44) == pointer ? get(sprite.bytes, 0xb0) & ~0x400U
                                            : get(sprite.bytes, 0xb0) | 0x400);
-    require_recovered(environment.platform_mode == 0,
-                      "Alternate sprite platform animation selection is unreconstructed");
     const auto selected_resource = animation < 0 ? get(sprite.bytes, 0x4c) : pointer;
     bind_sprite_resource(sprite, selected_resource, environment, sources);
-    put(sprite.bytes, 0xaf, static_cast<std::uint32_t>(animation), 1);
     const auto binding = inside(sprite, get(sprite.bytes, 0x24), 20);
+    if (environment.platform_mode != 0) {
+        if (animation >= 0) {
+            const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 18);
+            put(sprite.bytes, binding + 4, get(sprite.bytes, sequencer + 0xe));
+        } else if (!platform_frames(sprite, binding, sources)) {
+            put(sprite.bytes, binding + 6, 0x100, 2);
+            put(sprite.bytes, binding + 4, 0x300, 2);
+        }
+    }
+    put(sprite.bytes, 0xaf, static_cast<std::uint32_t>(animation), 1);
     const auto directory = get(sprite.bytes, binding + 16);
     const auto index = animation < 0 ? ~static_cast<std::uint32_t>(animation)
                                      : static_cast<std::uint32_t>(animation);
@@ -1175,8 +1206,6 @@ void construct_sprite(SpriteConstruction &result, SpriteAllocation incoming, std
             "Constructor requires exact 356-byte ownership");
     SpriteWindow sprite{result.sprite.address, result.sprite.bytes};
     check_window(sprite);
-    require_recovered(environment.platform_mode == 0,
-                      "Alternate platform sprite construction is unreconstructed");
     const auto emit = [&](std::string_view name, std::optional<std::uint32_t> count = {},
                           const SpriteAllocation *block = nullptr) {
         if (observe)
@@ -1191,8 +1220,14 @@ void construct_sprite(SpriteConstruction &result, SpriteAllocation incoming, std
     put(sprite.bytes, 0x3c, (get(sprite.bytes, 0x3c) & ~3U) | 1);
     put(sprite.bytes, 0x40, get(sprite.bytes, 0x40) & 0xfffe1fff);
     const auto sequencer = inside(sprite, get(sprite.bytes, 0x7c), 28);
-    put(sprite.bytes, 0xa8, get(sprite.bytes, 0xa8) | 1);
-    put(sprite.bytes, sequencer + 24, 0);
+    if (environment.platform_mode != 0) {
+        put(sprite.bytes, 0xa8, get(sprite.bytes, 0xa8) & ~1U);
+        put(sprite.bytes, sequencer + 8, 0);
+        put(sprite.bytes, sequencer + 12, 0, 2);
+    } else {
+        put(sprite.bytes, 0xa8, get(sprite.bytes, 0xa8) | 1);
+        put(sprite.bytes, sequencer + 24, 0);
+    }
     put(sprite.bytes, 0x6c, sprite.address);
     const auto variant = environment.variant & 15;
     put(sprite.bytes, 0x3c,

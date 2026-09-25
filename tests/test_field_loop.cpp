@@ -200,12 +200,121 @@ void stops() {
     } catch (const game::PlatformInputError &) {
     }
 }
+// The battle branch: a battle request with the battle's music already
+// loaded takes the first stage and the loop goes on; the second stage
+// leaves.
+void battle_branch() {
+    // Every dialogue window is closed (+3f6 ffff).
+    const auto closed = [](game::Program &p) {
+        for (auto &window : p.field->dialogue)
+            window.set_half(0x3f6, 0xffff);
+    };
+    auto program = sample();
+    closed(program);
+    auto &resident = program.resident;
+    auto &state = *program.field;
+    resident.battle_request.field_active = 0;
+    resident.preload_slot = 0xffffffffU;
+    resident.music.requested = 0x12;
+    resident.music.loaded_sequence = 0;
+    state.w_adbd0 = 1;
+    state.regions.add("field_raw", 0x800adb18, std::vector<std::uint8_t>(4));
+    state.regions.add("field_raw", 0x800adbd4, std::vector<std::uint8_t>(4));
+    game::FrameServices services;
+    services.hblank_counts = {1};
+    check(program.field_between_frames(services), "The first stage keeps the loop running");
+    check(state.w_adbd0 == 0 && state.regions.word(0x800adbd4) == 1,
+          "The first stage clears 800adbd0 and sets 800adbd4");
+    check(state.music_saved && state.saved_music == 0x12,
+          "The branch saves the playing music once");
+
+    // The second stage with 800adb18 set: no snapshot, and it leaves.
+    auto leave = sample();
+    closed(leave);
+    leave.resident.preload_slot = 0xffffffffU;
+    leave.field->regions.add("field_raw", 0x800adb18, std::vector<std::uint8_t>{1, 0, 0, 0});
+    leave.field->regions.add("field_raw", 0x800adbd4, std::vector<std::uint8_t>(4));
+    leave.resident.w_4f30c = 5;
+    check(leave.field_battle_start(), "The second stage leaves the loop");
+    check(leave.resident.w_4f30c == 5, "800adb18 skips the snapshot and its count");
+}
+
+// 8007954c(0): the departure, the music to return to and battle mode.
+void battle_exit() {
+    auto program = sample();
+    auto &resident = program.resident;
+    auto &data = resident.game_data;
+    // 800a30fc copies the bank to +1930 first: variable 1 lands at +1932.
+    resident.variables.words[1] = 0x234;
+    program.field->saved_music = 0x1d;
+    resident.mode_loaded = 1;
+    check(program.exit_field(0), "The battle exit calls the dispatcher");
+    check(resident.next_mode == 2 && resident.mode_loaded == 0xffffffffU,
+          "The battle exit selects battle mode");
+    check(resident.music.requested == 0x1d && data[0x2322] == 0x1d && data[0x2323] == 0,
+          "The saved music is the one to return to");
+    check(data[0x2320] == 0x34 && data[0x2321] == 0x02,
+          "The departure's variable 1 is the map entry kept");
+    auto kept = sample();
+    kept.resident.w_4f370 = 1;
+    check(!kept.exit_field(0) && kept.resident.next_mode == 0,
+          "8004f370 keeps the field without a mode");
+}
+
+// 8003852c: unlink an effect bank and stop its voices.
+void effect_bank() {
+    game::resident::SoundDriver driver;
+    constexpr std::uint32_t first = 0x80100000, bank = 0x80100100, effects = 0x80101000;
+    std::vector<std::uint8_t> header(0x20);
+    const auto put = [](std::vector<std::uint8_t> &bytes, std::size_t at, std::uint32_t value) {
+        for (std::size_t i = 0; i < 4; ++i)
+            bytes[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    auto other = header;
+    put(other, 0x1c, bank);
+    put(header, 0, 0x73646573);
+    put(header, 8, 0x20);
+    header[0xc] = 1;
+    header[0xd] = 1;
+    header[0x14] = 7;
+    // The words must sum to zero.
+    put(header, 0x18, 0U - (0x73646573U + 0x20U + 0x101U + 7U));
+    driver.objects[first] = other;
+    driver.objects[bank] = header;
+    auto block = std::vector<std::uint8_t>(0x94 + 0x158);
+    block[0x94] = 1;     // active
+    block[0x94 + 6] = 3; // mask bit 3
+    block[0x94 + 0xa] = 7;
+    block[0x94 + 0x27] = 2; // hardware voice 2
+    put(block, 0x48, 0xff);
+    driver.objects[effects] = block;
+    driver.effect_block = effects;
+    driver.effect_banks = first;
+    driver.voice_limit = 1;
+    driver.voice_owners[2] = effects + 0x94 + 0x30;
+    game::resident::unlink_effect_bank(driver, bank);
+    const auto &record = driver.objects[effects];
+    check(record[0x94] == 0 && record[0x48] == 0xf7, "The bank's voice stops");
+    check(driver.voice_owners[2] == 0, "Its hardware voice is released");
+    check(driver.objects[first][0x1c] == 0 && driver.objects[first][0x1f] == 0,
+          "The previous bank links past it");
+    bool refused = false;
+    try {
+        game::resident::unlink_effect_bank(driver, bank);
+    } catch (const game::resident::SoundError &) {
+        refused = true;
+    }
+    check(refused, "An unlisted bank reaches the driver's error handler");
+}
 } // namespace
 
 int main() {
     try {
         between_frames();
         stops();
+        battle_branch();
+        battle_exit();
+        effect_bank();
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

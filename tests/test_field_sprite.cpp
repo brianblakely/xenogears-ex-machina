@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <source_location>
 #include <string>
 
 namespace field = xem::reconstruction::field;
@@ -15,13 +16,15 @@ void check(bool value, const char *message) {
     if (!value)
         throw std::runtime_error(message);
 }
-template <typename Function> void rejects(Function &&function) {
+template <typename Function>
+void rejects(Function &&function, std::source_location where = std::source_location::current()) {
     try {
         function();
     } catch (const field::SpriteError &) {
         return;
     }
-    throw std::runtime_error("Unqualified sprite operation must fail explicitly");
+    throw std::runtime_error("Unqualified sprite operation must fail explicitly (line " +
+                             std::to_string(where.line()) + ")");
 }
 struct HostExecutionLimit {};
 template <typename Function> void exhausts_host_limit(Function &&function) {
@@ -245,11 +248,22 @@ void matrix_storage_and_explicit_failures() {
     check(get(bytes, 0x9e, 2) == 65535, "Incoming replay duration is explicit and signed");
     put(bytes, 0x40, 1);
     rejects([&] { field::update_sprite_matrix(sprite, fixture.sources()); });
+    // The battle platform places the bound image: from (300h, 100h) when the
+    // frame table's second byte has bit 7 clear, else at the sequencer's +e.
     result.environment.platform_mode = 1;
-    rejects([&] {
+    const auto binding = get(bytes, 0x24) - result.sprite.address;
+    const auto sequencer = get(bytes, 0x7c) - result.sprite.address;
+    put(bytes, sequencer + 0xe, 0x01c00140);
+    const auto frames = get(bytes, binding) - Fixture::resource;
+    const auto kept = fixture.data[frames + 1];
+    for (const auto flag : {0x00, 0x80}) {
+        fixture.data[frames + 1] = static_cast<std::uint8_t>(flag);
         field::bind_sprite_resource(sprite, Fixture::resource, result.environment, sources);
-    });
-    rejects([&] { field::select_sprite_animation(sprite, -1, result.environment, sources); });
+        check(flag == 0 ? get(bytes, binding + 4) == 0x01000300
+                        : get(bytes, binding + 4) == 0x01c00140,
+              "The battle platform places the bound image");
+    }
+    fixture.data[frames + 1] = kept;
     auto short_allocation = fixture.incoming;
     short_allocation.bytes.resize(355);
     rejects([&] {

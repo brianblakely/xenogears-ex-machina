@@ -382,7 +382,7 @@ int main(int argc, char **argv) {
         state.sprite_bundle_address = in.word();
         state.party_reassignment = in.word();
         for (std::size_t k = 0, n = in.count(3); k != n; ++k)
-            program.resident.party_sprite_resources.at(k) = in.word();
+            program.resident.party_sprite_blocks.at(k) = in.word();
         for (auto n = in.count(4096); n != 0; --n) {
             const auto mode = in.word();
             services.incoming.push_back({mode, in.resource()});

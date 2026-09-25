@@ -815,6 +815,14 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.mode_loaded; });
     add_resident("field_exit_5942c", 0x8005942c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5942c; });
+    add_resident("battle_entry_flag", 0x80059179, 1,
+                 [](Program &p) -> auto & { return p.resident.b_59179; });
+    add_resident("field_effect_bank", 0x8006259c, 4,
+                 [](Program &p) -> auto & { return p.resident.field_effect_bank; });
+    add_resident("w_4f32c", 0x8004f32c, 4, [](Program &p) -> auto & { return p.resident.w_4f32c; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("party_sprite_blocks", 0x8005a414 + 4 * i, 4,
+                     [i](Program &p) -> auto & { return p.resident.party_sprite_blocks[i]; });
     add_resident("field_exit_4f30c", 0x8004f30c, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f30c; });
     add_resident("field_exit_4f310", 0x8004f310, 4,
@@ -825,12 +833,34 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.w_4f2f8; });
     add_resident("field_entry_4f304", 0x8004f304, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f304; });
-    add_resident("geometry_return", 0x800569f0, 4,
-                 [](Program &p) -> auto & { return p.resident.geometry_return; });
-    add_resident("bios_setup_return", 0x800593d4, 4,
-                 [](Program &p) -> auto & { return p.resident.bios_setup_return; });
     add_resident("battle_5947c", 0x8005947c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5947c; });
+    add_resident("battle_scene", 0x8005949c, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_scene; });
+    add_resident("battle_archive", 0x800595a8, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_archive; });
+    add_resident("battle_effects", 0x800595d0, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_effects; });
+    add_resident("battle_marker", 0x80059480, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_marker; });
+    add_resident("battle_spacer", 0x800594ac, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_spacer; });
+    add_resident("battle_5959c", 0x8005959c, 1,
+                 [](Program &p) -> auto & { return p.resident.b_5959c; });
+    add_resident("window_blend", 0x800595a0, 4,
+                 [](Program &p) -> auto & { return p.resident.window_blend; });
+    add_resident("battle_wave", 0x800595ac, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_wave; });
+    add_resident("null_owner_generation", 0x80000010, 4,
+                 [](Program &p) -> auto & { return p.resident.null_owner_generation; });
+    add_resident("battle_stage", 0x80059470, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_stage; });
+    add_resident("battle_stage_b", 0x80059520, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_stage_b; });
+    add_resident("battle_scene_data", 0x800658c8, 4,
+                 [](Program &p) -> auto & { return p.resident.battle_scene_data; });
+    add_resident("scene_list_tail", 0x8005a1f0, 4,
+                 [](Program &p) -> auto & { return p.resident.scene_list_tail; });
     add_resident("vsync_counter", 0x80058960, 4,
                  [](Program &p) -> auto & { return p.resident.vsync_counter; });
     add_resident("vsync_hcount", 0x80057844, 4,
@@ -874,8 +904,12 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sprite.rate_control; });
     add_resident("sprite_platform", 0x800591ad, 1,
                  [](Program &p) -> auto & { return p.resident.sprite.platform_mode; });
+    add_resident("sprite_platform_argument", 0x800591a8, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite.platform_argument; });
     add_resident("sprite_binding", 0x800591b0, 1,
                  [](Program &p) -> auto & { return p.resident.sprite.binding_control; });
+    add_resident("sprite_platform_directory_bits", 0x800591b3, 1,
+                 [](Program &p) -> auto & { return p.resident.sprite.platform_directory_bits; });
     add_resident("sprite_variant", 0x800591b8, 4,
                  [](Program &p) -> auto & { return p.resident.sprite.variant; });
     add_resident("sprite_texture_page", 0x80059310, 4,
@@ -889,8 +923,6 @@ std::vector<OriginalGlobal> build() {
     add("snapshot_cursor", 0x800afc50, 4,
         [](Program &p) -> auto & { return f(p).snapshot_cursor; });
     for (std::uint32_t i = 0; i < 3; ++i) {
-        add_resident("party_sprite_resources", 0x8005a414 + i * 4, 4,
-                     [i](Program &p) -> auto & { return p.resident.party_sprite_resources[i]; });
         add_resident("saved_party_modes", 0x8005a408 + i * 4, 4,
                      [i](Program &p) -> auto & { return p.resident.saved_party_modes[i]; });
     }
@@ -912,7 +944,15 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.heap.last_size; });
     add_resident("heap_last_caller", 0x80059340, 4,
                  [](Program &p) -> auto & { return p.resident.heap.last_caller; });
-    for (std::size_t tag = 0; tag < 16; ++tag)
+    add_resident("heap_59334", 0x80059334, 4,
+                 [](Program &p) -> auto & { return p.resident.w_59334; });
+    add_resident("heap_59338", 0x80059338, 4,
+                 [](Program &p) -> auto & { return p.resident.w_59338; });
+    add_resident("geometry_return", 0x800569f0, 4,
+                 [](Program &p) -> auto & { return p.resident.geometry_return; });
+    add_resident("geometry_inner_return", 0x800593d4, 4,
+                 [](Program &p) -> auto & { return p.resident.geometry_inner_return; });
+    for (std::size_t tag = 0; tag < 13; ++tag)
         add_resident("heap_tag_word", static_cast<std::uint32_t>(0x80059fa4 + 4 * tag), 4,
                      [tag](Program &p) -> auto & { return p.resident.heap.tag_words[tag]; });
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
@@ -922,6 +962,8 @@ std::vector<OriginalGlobal> build() {
     // Field main loop between frames (field_loop.cpp).
     add("transition", 0x800adb38, 4, [](Program &p) -> auto & { return f(p).transition; });
     add("w_adbd0", 0x800adbd0, 4, [](Program &p) -> auto & { return f(p).w_adbd0; });
+    add("saved_music", 0x800afc78, 4, [](Program &p) -> auto & { return f(p).saved_music; });
+    add("w_adb30", 0x800adb30, 4, [](Program &p) -> auto & { return f(p).w_adb30; });
     add("gate_adbd8", 0x800adbd8, 4, [](Program &p) -> auto & { return f(p).gate_adbd8; });
     add("gate_adbe8", 0x800adbe8, 4, [](Program &p) -> auto & { return f(p).gate_adbe8; });
     add("input_mask", 0x800b217a, 2, [](Program &p) -> auto & { return f(p).input_mask; });

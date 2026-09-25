@@ -31,11 +31,10 @@ class PlatformInputError : public std::runtime_error {
 // delivers it when that code ends (Program::deliver_arrivals). `pad` entries
 // after an interrupt are the controller receive buffers (800625fc, two of
 // 22h bytes) the BIOS filled before the dispatch: site is the byte index,
-// value the byte. A `position` is where the original passed the return
-// address `site` of a call; no arrival after it is delivered before
-// recovered code completes that call (Program::reach_position).
+// value the byte. An `end` marks where one run of the original code at site
+// ended, so that arrivals are delivered at the end of the run they arrived in.
 struct PlatformInput {
-    enum class Kind : std::uint8_t { read, interrupt, tick, pad, position };
+    enum class Kind : std::uint8_t { read, interrupt, tick, pad, end };
     Kind kind{Kind::read};
     std::uint32_t site{};
     std::uint32_t value{};

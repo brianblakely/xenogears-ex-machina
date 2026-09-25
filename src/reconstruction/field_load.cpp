@@ -1010,9 +1010,9 @@ void Program::restore_field_events(const ProgramObserver &observe) {
         const auto flags = memory(state.actors[i].address + 0x134);
         std::uint32_t resource = 0;
         if ((tag & 0x80U) == 0) {
-            if (tag >= resident.party_sprite_resources.size())
+            if (tag >= resident.party_sprite_blocks.size())
                 throw field::FieldFormatError("A party sprite tag exceeds its resources");
-            resource = resident.party_sprite_resources[tag];
+            resource = resident.party_sprite_blocks[tag];
         } else {
             resource = bundle_sprite(tag & 0x7fU);
         }

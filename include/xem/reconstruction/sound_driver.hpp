@@ -43,6 +43,9 @@ struct SoundDriver {
     std::uint32_t voice_changes{};                // 80059554
     std::uint32_t voice_holds{};                  // 800594fc
     std::map<std::uint32_t, std::vector<std::uint8_t>> objects;
+    // Pool bytes no object covers that code reads or that a replaced object
+    // left (RAM keeps them until another object covers them).
+    std::map<std::uint32_t, std::vector<std::uint8_t>> held;
     // Sound-pool block headers (10 bytes before each object: flags, 0, end,
     // next allocated header at +c), keyed by header address. Freeing a block
     // only unlinks it from this list.
@@ -171,6 +174,15 @@ inline constexpr std::uint32_t voice_stride = 0x158;
 // 100 in its halfword +2.
 void set_effect_pair(SoundDriver &driver, std::uint32_t channel, std::uint32_t field,
                      std::uint32_t value);
+// 8003a094: stop every effect voice playing from `bank` (its id +14) and
+// release its hardware voice.
+void stop_bank_voices(SoundDriver &driver, std::uint32_t bank);
+// 8003852c: stop `bank`'s voices and unlink it from the effect bank list
+// (next +1c), then check its header (magic 73646573, zero word sum, version
+// 101 at +c). The BIOS DisableEvent/EnableEvent around the unlink keep no
+// Program state. A missing bank or a bad header reaches the driver's error
+// handler 8003f6b0 (SoundError).
+void unlink_effect_bank(SoundDriver &driver, std::uint32_t bank);
 // 8003a20c: stop the effect voice pair and release its hardware voices.
 void stop_effect_pair(SoundDriver &driver, std::uint32_t channel);
 // 80039f9c: when effects are enabled, start effect `id` on the voice pair of
@@ -178,6 +190,11 @@ void stop_effect_pair(SoundDriver &driver, std::uint32_t channel);
 void start_effect(SoundDriver &driver, std::uint32_t id, std::uint32_t channel,
                   std::uint32_t volume, std::uint32_t pan);
 
+// 80038428: link effect bank object `bank` last on the effect bank list after
+// its checks: no linked bank with its id (+14) unless driver flag 80, the
+// signature "seds", a zero word sum over its size (+8, 8003f684) and version
+// 101 (+c). A failed check reaches the error handler 8003f6b0 (SoundError).
+void link_effect_bank(SoundDriver &driver, std::uint32_t bank);
 // 80039db8 with the argument 801c8574 builds: when effects are enabled, start
 // effect `effect` of effect bank object `bank` (its id at +14) on two voices
 // from voice_limit - 2 (code 8000 | voice) at volume 6000, pan 4000.

@@ -91,7 +91,7 @@ std::uint32_t get(const std::vector<std::uint8_t> &bytes, std::size_t at, std::s
 void display_environments() {
     auto program = loaded_field({0}, 1);
     auto &env = program.resident.heap_contents[0x800b249c] = std::vector<std::uint8_t>(0x100, 0xaa);
-    program.default_draw_env(0x800b249c, 0, 0x100, 0x140, 0xe0);
+    program.set_default_draw_environment(0x800b249c, 0, 0x100, 0x140, 0xe0);
     check(get(env, 0, 2) == 0 && get(env, 2, 2) == 0x100 && get(env, 4, 2) == 0x140 &&
               get(env, 6, 2) == 0xe0 && get(env, 8, 2) == 0 && get(env, 0xa, 2) == 0x100,
           "SetDefDrawEnv sets the area and the offset");
@@ -100,9 +100,9 @@ void display_environments() {
               env[0x1a] == 0 && env[0x1b] == 0,
           "SetDefDrawEnv: no texture window, page 10, dithering under 257 lines, black");
     program.resident.video_mode = 1;
-    program.default_draw_env(0x800b249c, 0, 0, 0x140, 0x120);
+    program.set_default_draw_environment(0x800b249c, 0, 0, 0x140, 0x120);
     check(env[0x17] == 1, "A PAL draw environment dithers under 289 lines");
-    program.default_disp_env(0x800b249c + 0xb8, 0, 0x100, 0x140, 0xe0);
+    program.set_default_display_environment(0x800b249c + 0xb8, 0, 0x100, 0x140, 0xe0);
     check(get(env, 0xb8 + 2, 2) == 0x100 && get(env, 0xb8 + 8, 4) == 0 && env[0xb8 + 0x10] == 0 &&
               env[0xb8 + 0x13] == 0 && get(env, 0xb8 + 6, 2) == 0xe0,
           "SetDefDispEnv sets the area and clears the screen rectangle and modes");
@@ -130,22 +130,16 @@ void recorded_positions() {
     auto program = loaded_field({0}, 1);
     using Kind = game::PlatformInput::Kind;
     auto &inputs = program.resident.platform;
-    inputs = {{Kind::position, 0x80078d64, 0}, {Kind::read, 0x80045de4, 2}};
+    inputs = {{Kind::end, 0x80078d64, 0}, {Kind::read, 0x80045de4, 2}};
     program.reach_position(0x80078d64);
     check(inputs.size() == 1 && inputs.front().kind == Kind::read,
-          "A stage consumes the position recorded at its return address");
-    inputs = {{Kind::read, 0x80045de4, 2}, {Kind::position, 0x80078d6c, 0}};
-    std::string reason;
-    try {
-        program.reach_position(0x80078d6c);
-    } catch (const game::PlatformInputError &error) {
-        reason = error.what();
-    }
-    check(!reason.empty() && inputs.size() == 2,
-          "Input recorded before a position the stage reaches is a divergence");
-    inputs = {{Kind::position, 0x80078d6c, 0}};
+          "A stage consumes the end recorded at its return address");
+    inputs = {{Kind::read, 0x80045de4, 2}, {Kind::end, 0x80078d6c, 0}};
+    program.reach_position(0x80078d6c);
+    check(inputs.size() == 2, "Input recorded before a stage's end keeps it for later");
+    inputs = {{Kind::end, 0x80078d6c, 0}};
     program.reach_position(0x80078d64);
-    check(inputs.size() == 1, "Another stage's position stays for that stage");
+    check(inputs.size() == 1, "Another stage's end stays for that stage");
 }
 
 } // namespace

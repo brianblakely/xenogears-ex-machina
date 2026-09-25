@@ -76,8 +76,8 @@ void Program::clear_ordering_table(std::uint32_t table, std::uint32_t count) {
     // entry down, each entry links to the one before it; the first ends the
     // list.
     for (auto i = count; i-- > 1;)
-        set_memory(table + 4U * i, (table + 4U * (i - 1U)) & 0xffffffU);
-    set_memory(table, 0x00ffffffU);
+        store_owned(table + 4U * i, (table + 4U * (i - 1U)) & 0xffffffU, 4);
+    store_owned(table, 0x00ffffffU, 4);
     gpu_alarm(nullptr);
     constexpr std::uint32_t busy = 0x01000000U;
     deliver_due_arrivals();
@@ -88,7 +88,7 @@ void Program::clear_ordering_table(std::uint32_t table, std::uint32_t count) {
                 unrecovered("clear_ordering_table", 0x80046f30, "symbol:printf-80019964",
                             "The libgpu timeout message and reset are not reconstructed");
         } while ((platform_read(resident.platform, 0x80045e18, 4) & busy) != 0);
-    set_memory(table, 0x8005698cU & 0xffffffU);
+    store_owned(table, 0x8005698cU & 0xffffffU, 4);
 }
 
 // 8007ae78(1, 80065848) after 8007af74(1): port 2's pointer record. A mouse
@@ -197,7 +197,7 @@ void Program::record_play_state() {
     variables.write(0x22, s16(word(actor, 0x26, 2)));
 }
 
-void Program::field_between_frames(FrameServices &services, const ProgramObserver &observe) {
+bool Program::field_between_frames(FrameServices &services, const ProgramObserver &observe) {
     auto &state = loaded(*this);
     auto &request = resident.battle_request;
     auto &inputs = state.control_inputs;
@@ -214,9 +214,14 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
         // 80077e10: -1 while 800adbd0 is 1, 800b2344 is zero and the
         // controlled actor has flag 800.
         const bool waiting = state.w_adbd0 == 1 && inputs.jump_mode == 0 && (flags() & 0x800U) != 0;
-        if (!waiting)
-            unrecovered("field_battle_start", 0x80078334, "symbol:field-battle-start",
-                        "Starting a battle from the field main loop is not recovered");
+        if (!waiting && field_battle_start()) {
+            observed(observe, *this, {"field_battle_start", 0x80078abc, {}, {}});
+            // 80078abc: the loop ends; 8007954c calls the mode dispatcher.
+            if (!leave_field_for_battle(services, observe))
+                unrecovered("field_battle_exit", 0x800796e4, "symbol:field-exit-4f370",
+                            "8004f370 keeping the field after a battle exit is not recovered");
+            return false;
+        }
     }
     field_map_change_step(services, observe); // 80078494..80078558
     // 80078558: leaving the field (exit kinds 1, 2 and 3) with draw buffer 1.
@@ -264,6 +269,7 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
     field_post_frame(); // 80078b5c
     observed(observe, *this, {"field_loop_tail", 0x80078b5c, {}, {}});
     field_loop_top(services, observe);
+    return true;
 }
 
 // 80078174..800782dc: the top of the main loop, up to its frame.
@@ -332,9 +338,11 @@ void Program::field_pre_frame(FrameServices &services) {
     deliver_arrivals(0x80077dac);
 }
 
-void Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {
-    field_between_frames(services, observe);
+bool Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {
+    if (!field_between_frames(services, observe))
+        return false;
     field_frame(services, observe);
+    return true;
 }
 
 } // namespace xem::reconstruction
