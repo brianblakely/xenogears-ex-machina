@@ -1444,7 +1444,13 @@
       {"entry": "80078508", "size_instructions": 51, "executed_instructions": 51, "status": "not_reconstructed"},
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 39, "status": "reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 5, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 5,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800793f0", "size_instructions": 161, "executed_instructions": 69, "status": "reconstructed"},
@@ -2009,7 +2015,7 @@
        "size_instructions": 368,
        "executed_instructions": 295,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -2033,7 +2039,7 @@
        "size_instructions": 676,
        "executed_instructions": 450,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -2164,7 +2170,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -2473,7 +2479,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -2652,7 +2658,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -2804,7 +2816,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -2813,7 +2825,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -3362,7 +3374,13 @@
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 39, "status": "reconstructed"},
       {"entry": "8007893c", "size_instructions": 23, "executed_instructions": 16, "status": "not_reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 80, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 80,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078b34", "size_instructions": 90, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "800793f0", "size_instructions": 161, "executed_instructions": 83, "status": "reconstructed"},
       {"entry": "80079674", "size_instructions": 65, "executed_instructions": 35, "status": "reconstructed"},
@@ -3927,7 +3945,7 @@
        "size_instructions": 368,
        "executed_instructions": 295,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -3951,7 +3969,7 @@
        "size_instructions": 676,
        "executed_instructions": 449,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -4068,7 +4086,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -4210,7 +4228,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -4380,7 +4398,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -4530,7 +4554,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -4539,7 +4563,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -5077,7 +5101,13 @@
       {"entry": "80078508", "size_instructions": 51, "executed_instructions": 51, "status": "not_reconstructed"},
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 1, "status": "reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 5, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 5,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "80078e24", "size_instructions": 140, "executed_instructions": 2, "status": "not_reconstructed"},
@@ -5529,7 +5559,7 @@
        "size_instructions": 368,
        "executed_instructions": 295,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -5553,7 +5583,7 @@
        "size_instructions": 676,
        "executed_instructions": 450,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -5678,7 +5708,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -5809,7 +5839,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -5962,7 +5992,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -6110,7 +6146,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -6119,7 +6155,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -6650,7 +6686,13 @@
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 1, "status": "reconstructed"},
       {"entry": "8007893c", "size_instructions": 23, "executed_instructions": 16, "status": "not_reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 80, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 80,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078b34", "size_instructions": 90, "executed_instructions": 86, "status": "reconstructed"},
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
@@ -7196,7 +7238,7 @@
        "size_instructions": 368,
        "executed_instructions": 295,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -7220,7 +7262,7 @@
        "size_instructions": 676,
        "executed_instructions": 450,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -7347,7 +7389,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -7618,7 +7660,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -7787,7 +7829,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -7937,7 +7985,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -7946,7 +7994,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 216, "status": "reconstructed"},
@@ -8595,7 +8643,7 @@
        "size_instructions": 368,
        "executed_instructions": 316,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -8619,7 +8667,7 @@
        "size_instructions": 676,
        "executed_instructions": 478,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -8743,7 +8791,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -8845,7 +8893,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -8960,7 +9008,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -9092,7 +9146,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -9101,7 +9155,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -9677,7 +9731,7 @@
        "size_instructions": 368,
        "executed_instructions": 322,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -9701,7 +9755,7 @@
        "size_instructions": 676,
        "executed_instructions": 478,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -9828,7 +9882,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -10121,7 +10175,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -10245,7 +10299,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -10387,7 +10447,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -10396,7 +10456,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -11011,7 +11071,7 @@
        "size_instructions": 368,
        "executed_instructions": 322,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -11035,7 +11095,7 @@
        "size_instructions": 676,
        "executed_instructions": 478,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -11161,7 +11221,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -11441,7 +11501,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -11564,7 +11624,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -11701,7 +11767,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -11710,7 +11776,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -12301,7 +12367,7 @@
        "size_instructions": 368,
        "executed_instructions": 255,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {"entry": "8008399c", "size_instructions": 495, "executed_instructions": 206, "status": "reconstructed"},
@@ -12318,7 +12384,7 @@
        "size_instructions": 676,
        "executed_instructions": 477,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -12416,7 +12482,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -12696,7 +12762,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -12811,7 +12877,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -12930,7 +13002,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -12939,7 +13011,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -13474,7 +13546,7 @@
        "size_instructions": 676,
        "executed_instructions": 418,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "80085890", "size_instructions": 62, "executed_instructions": 48, "status": "not_reconstructed"},
       {"entry": "80085b20", "size_instructions": 71, "executed_instructions": 25, "status": "reconstructed"},
@@ -13750,7 +13822,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -13804,7 +13876,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "800295d8", "size_instructions": 46, "executed_instructions": 44, "status": "reconstructed"},
@@ -13872,7 +13950,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 202, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
@@ -14321,7 +14399,7 @@
        "size_instructions": 676,
        "executed_instructions": 418,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "80085890", "size_instructions": 62, "executed_instructions": 48, "status": "not_reconstructed"},
       {"entry": "80085b20", "size_instructions": 71, "executed_instructions": 25, "status": "reconstructed"},
@@ -14578,7 +14656,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -14632,7 +14710,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "800295d8", "size_instructions": 46, "executed_instructions": 44, "status": "reconstructed"},
@@ -14697,7 +14781,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 198, "status": "reconstructed"},
       {"entry": "8003c4c4", "size_instructions": 137, "executed_instructions": 86, "status": "reconstructed"},
@@ -15102,7 +15186,13 @@
       {"entry": "80078508", "size_instructions": 51, "executed_instructions": 51, "status": "not_reconstructed"},
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 39, "status": "reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 5, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 5,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800793f0", "size_instructions": 161, "executed_instructions": 69, "status": "reconstructed"},
@@ -15667,7 +15757,7 @@
        "size_instructions": 368,
        "executed_instructions": 295,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -15691,7 +15781,7 @@
        "size_instructions": 676,
        "executed_instructions": 450,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -15822,7 +15912,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -16193,7 +16283,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -16373,7 +16463,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -16528,7 +16624,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -16537,7 +16633,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -17156,7 +17252,7 @@
        "size_instructions": 368,
        "executed_instructions": 230,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {"entry": "8008399c", "size_instructions": 495, "executed_instructions": 141, "status": "reconstructed"},
@@ -17173,7 +17269,7 @@
        "size_instructions": 676,
        "executed_instructions": 418,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -17263,7 +17359,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009eb48", "size_instructions": 12, "executed_instructions": 12, "status": "reconstructed"},
       {"entry": "8009ed68", "size_instructions": 206, "executed_instructions": 160, "status": "not_reconstructed"},
@@ -17553,7 +17649,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -17629,7 +17725,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -17773,7 +17875,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 14, "status": "reconstructed"},
@@ -17782,7 +17884,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 219, "status": "reconstructed"},
@@ -18444,7 +18546,7 @@
        "size_instructions": 368,
        "executed_instructions": 230,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {"entry": "8008399c", "size_instructions": 495, "executed_instructions": 141, "status": "reconstructed"},
@@ -18461,7 +18563,7 @@
        "size_instructions": 676,
        "executed_instructions": 418,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -18551,7 +18653,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009eb48", "size_instructions": 12, "executed_instructions": 12, "status": "reconstructed"},
       {"entry": "8009ed68", "size_instructions": 206, "executed_instructions": 160, "status": "not_reconstructed"},
@@ -18841,7 +18943,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -18917,7 +19019,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -19061,7 +19169,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 14, "status": "reconstructed"},
@@ -19070,7 +19178,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 219, "status": "reconstructed"},
@@ -19638,7 +19746,13 @@
       {"entry": "80078508", "size_instructions": 51, "executed_instructions": 51, "status": "not_reconstructed"},
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 1, "status": "reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 5, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 5,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "80078e24", "size_instructions": 140, "executed_instructions": 2, "status": "not_reconstructed"},
@@ -20099,7 +20213,7 @@
        "size_instructions": 368,
        "executed_instructions": 290,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {"entry": "8008399c", "size_instructions": 495, "executed_instructions": 141, "status": "reconstructed"},
@@ -20116,7 +20230,7 @@
        "size_instructions": 676,
        "executed_instructions": 538,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -20299,7 +20413,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -20751,7 +20865,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -20906,7 +21020,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -21098,7 +21218,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 14, "status": "reconstructed"},
@@ -21107,7 +21227,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "reconstructed"},
@@ -21815,7 +21935,13 @@
       {"entry": "80078508", "size_instructions": 51, "executed_instructions": 51, "status": "not_reconstructed"},
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 1, "status": "reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 5, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 5,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "80078e24", "size_instructions": 140, "executed_instructions": 2, "status": "not_reconstructed"},
@@ -22276,7 +22402,7 @@
        "size_instructions": 368,
        "executed_instructions": 290,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {"entry": "8008399c", "size_instructions": 495, "executed_instructions": 141, "status": "reconstructed"},
@@ -22293,7 +22419,7 @@
        "size_instructions": 676,
        "executed_instructions": 538,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -22478,7 +22604,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -22930,7 +23056,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -23085,7 +23211,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -23277,7 +23409,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 14, "status": "reconstructed"},
@@ -23286,7 +23418,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "reconstructed"},
@@ -23998,7 +24130,13 @@
       {"entry": "80078508", "size_instructions": 51, "executed_instructions": 51, "status": "not_reconstructed"},
       {"entry": "80078658", "size_instructions": 98, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "800787e0", "size_instructions": 39, "executed_instructions": 1, "status": "reconstructed"},
-      {"entry": "80078998", "size_instructions": 103, "executed_instructions": 5, "status": "reconstructed_partial", "missing_paths": ["not reconstructed"]},
+      {
+       "entry": "80078998",
+       "size_instructions": 103,
+       "executed_instructions": 5,
+       "status": "reconstructed_partial",
+       "missing_paths": ["Named enemy actions (8007893c: 80078658 text, 800787e0, 8007887c) are not reconstructed"]
+      },
       {"entry": "80078d48", "size_instructions": 9, "executed_instructions": 1, "status": "not_reconstructed"},
       {"entry": "80078d6c", "size_instructions": 46, "executed_instructions": 2, "status": "not_reconstructed"},
       {"entry": "80078e24", "size_instructions": 140, "executed_instructions": 2, "status": "not_reconstructed"},
@@ -24459,7 +24597,7 @@
        "size_instructions": 368,
        "executed_instructions": 290,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {"entry": "8008399c", "size_instructions": 495, "executed_instructions": 141, "status": "reconstructed"},
@@ -24476,7 +24614,7 @@
        "size_instructions": 676,
        "executed_instructions": 538,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -24659,7 +24797,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -25111,7 +25249,7 @@
        "size_instructions": 69,
        "executed_instructions": 53,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-decode", "symbol:party-sprite-read", "symbol:party-sprite-return"]
       },
       {"entry": "8001b158", "size_instructions": 148, "executed_instructions": 132, "status": "not_reconstructed"},
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
@@ -25266,7 +25404,13 @@
       {"entry": "80028928", "size_instructions": 28, "executed_instructions": 26, "status": "not_reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -25458,7 +25602,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 14, "status": "reconstructed"},
@@ -25467,7 +25611,7 @@
        "size_instructions": 27,
        "executed_instructions": 27,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 230, "status": "reconstructed"},
@@ -26279,7 +26423,7 @@
        "size_instructions": 368,
        "executed_instructions": 321,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -26303,7 +26447,7 @@
        "size_instructions": 676,
        "executed_instructions": 449,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -26408,7 +26552,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -26501,7 +26645,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -26593,7 +26737,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -26723,7 +26873,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -26732,7 +26882,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
@@ -27284,7 +27434,7 @@
        "size_instructions": 368,
        "executed_instructions": 289,
        "status": "reconstructed_partial",
-       "missing_paths": ["Sweep projection would read the uninitialized original stack edge"]
+       "missing_paths": ["behavior:field-motion-uninitialized-edge"]
       },
       {"entry": "800831d0", "size_instructions": 9, "executed_instructions": 9, "status": "not_reconstructed"},
       {
@@ -27308,7 +27458,7 @@
        "size_instructions": 676,
        "executed_instructions": 449,
        "status": "reconstructed_partial",
-       "missing_paths": ["Position selected a layer whose normal was not queried"]
+       "missing_paths": ["behavior:field-position-uninitialized-normal"]
       },
       {"entry": "800854d0", "size_instructions": 36, "executed_instructions": 36, "status": "reconstructed"},
       {"entry": "80085560", "size_instructions": 26, "executed_instructions": 26, "status": "reconstructed"},
@@ -27413,7 +27563,7 @@
        "size_instructions": 167,
        "executed_instructions": 167,
        "status": "reconstructed_partial",
-       "missing_paths": ["Placement selected a layer whose floor was not queried"]
+       "missing_paths": ["behavior:field-snap-uninitialized-layer"]
       },
       {"entry": "8009e810", "size_instructions": 11, "executed_instructions": 11, "status": "not_reconstructed"},
       {"entry": "8009e83c", "size_instructions": 56, "executed_instructions": 56, "status": "reconstructed"},
@@ -27506,7 +27656,7 @@
        "size_instructions": 69,
        "executed_instructions": 46,
        "status": "reconstructed_partial",
-       "missing_paths": ["Waiting for the disc needs the interrupt arrivals", "symbol:party-sprite-read"]
+       "missing_paths": ["interrupt:disc-read-completion", "symbol:party-sprite-read"]
       },
       {"entry": "8001b3a8", "size_instructions": 55, "executed_instructions": 55, "status": "reconstructed_partial", "missing_paths": ["symbol:party-sprite-decode"]},
       {"entry": "8001b484", "size_instructions": 46, "executed_instructions": 38, "status": "reconstructed"},
@@ -27598,7 +27748,13 @@
       {"entry": "800288ec", "size_instructions": 15, "executed_instructions": 13, "status": "reconstructed"},
       {"entry": "800289d0", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
       {"entry": "80028a18", "size_instructions": 18, "executed_instructions": 18, "status": "reconstructed"},
-      {"entry": "80028a60", "size_instructions": 13, "executed_instructions": 13, "status": "reconstructed_partial", "missing_paths": ["arrivals that complete it"]},
+      {
+       "entry": "80028a60",
+       "size_instructions": 13,
+       "executed_instructions": 13,
+       "status": "reconstructed_partial",
+       "missing_paths": ["interrupt:disc-read-completion"]
+      },
       {"entry": "80028a94", "size_instructions": 6, "executed_instructions": 6, "status": "reconstructed"},
       {"entry": "80028aac", "size_instructions": 26, "executed_instructions": 24, "status": "reconstructed"},
       {"entry": "80028b14", "size_instructions": 211, "executed_instructions": 59, "status": "reconstructed"},
@@ -27728,7 +27884,7 @@
        "size_instructions": 9,
        "executed_instructions": 9,
        "status": "reconstructed_partial",
-       "missing_paths": ["interrupt arrivals that drain the queue"]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003bca0", "size_instructions": 71, "executed_instructions": 71, "status": "reconstructed"},
       {"entry": "8003bdbc", "size_instructions": 14, "executed_instructions": 13, "status": "reconstructed"},
@@ -27737,7 +27893,7 @@
        "size_instructions": 27,
        "executed_instructions": 17,
        "status": "reconstructed_partial",
-       "missing_paths": ["\n                                        "]
+       "missing_paths": ["interrupt:spu-transfer-completion"]
       },
       {"entry": "8003be68", "size_instructions": 78, "executed_instructions": 61, "status": "reconstructed"},
       {"entry": "8003c020", "size_instructions": 281, "executed_instructions": 205, "status": "reconstructed"},
