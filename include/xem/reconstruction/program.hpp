@@ -1055,6 +1055,13 @@ class Program {
     // 80071278 up to 8009892c: release the setup's effect bank, marker and
     // setup module blocks once the setup frames end.
     void battle_release_setup();
+    // Setup module 801e7210: the stage model, the scene data's new block and
+    // its lights (battle_setup.cpp). `stack` is the stack pointer at the
+    // call; `origin`, `colors` and `tint` are its fourth to sixth arguments
+    // (800ccb94, 800ccbb4, 800c4a39). Returns the scene data's +35e.
+    std::uint32_t battle_stage_setup(FrameServices &services, std::uint32_t stack,
+                                     std::uint32_t stage, std::uint32_t origin,
+                                     std::uint32_t colors, std::uint32_t tint);
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
     // Post-battle 801e2794: victory rewards and write-back.
@@ -1342,6 +1349,10 @@ class Program {
     // LoadImage of the rectangle at `rect` in battle memory, clamped in place.
     void load_battle_image(battle::Battle &battle, FrameServices &services, std::uint32_t rect,
                            std::uint32_t source);
+    void upload_battle_images(battle::Battle &battle, FrameServices &services, std::uint32_t images,
+                              std::uint32_t frame); // 8002dde4
+    void register_stage_model(battle::Battle &battle, FrameServices &services, std::uint32_t frame,
+                              std::uint32_t stage);                // 800a8bf0
     void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);

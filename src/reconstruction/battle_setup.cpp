@@ -1,9 +1,12 @@
 // Battle setup of the setup module (directory 12 file 4, sha256 4300fdd9...,
 // loaded at 801e4000): the phases 801e5840 runs from the intro swirl.
 #include "xem/reconstruction/battle.hpp"
+#include "xem/reconstruction/field_gte.hpp"
+#include "xem/reconstruction/field_sprite_model.hpp"
 #include "xem/reconstruction/gpu.hpp"
 #include "xem/reconstruction/program.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -68,9 +71,9 @@ void place_formation(Battle &battle, const ResidentState &resident) {
             memory.put8(present + member, 1);
             memory.put8(party_count, memory.u8(party_count) + 1);
         }
-        memory.put8(info(member),
-                    memory.u8(info(member) + 4) == 0 ? memory.u8(formation(4 + member)) & 0x7f
-                                                     : member);
+        memory.put8(info(member), memory.u8(info(member) + 4) == 0
+                                      ? memory.u8(formation(4 + member)) & 0x7f
+                                      : member);
     }
     memory.put8(party_count, memory.u8(party_count) + 0xff);
     for (std::uint32_t slot = 3; slot < combatant_slots; ++slot) {
@@ -106,7 +109,8 @@ void place_formation(Battle &battle, const ResidentState &resident) {
         if (memory.u8(info(slot) + 4) == 0) {
             const auto at = group_counts + (group + entry) * 4;
             memory.put8(info(slot) + 1, memory.u8(at));
-            memory.put8(at + 1, memory.u8(at + 1) | memory.u16(slot_bits + memory.u8(info(slot) + 1) * 2));
+            memory.put8(at + 1,
+                        memory.u8(at + 1) | memory.u16(slot_bits + memory.u8(info(slot) + 1) * 2));
             memory.put8(at, memory.u8(at) + 1);
         } else {
             memory.put8(info(slot) + 1, 0);
@@ -471,8 +475,8 @@ void setup_turn_order(Battle &battle) {
             least = memory.s16(0x800d2e06 + slot * 2);
     for (std::uint32_t slot = 0; slot < combatant_slots; ++slot)
         if (memory.u8(present + slot) != 0)
-            memory.put16(0x800d2e06 + slot * 2, memory.u16(0x800d2e06 + slot * 2) -
-                                                    static_cast<std::uint32_t>(least - 1));
+            memory.put16(0x800d2e06 + slot * 2,
+                         memory.u16(0x800d2e06 + slot * 2) - static_cast<std::uint32_t>(least - 1));
 }
 
 // 801e5014: the turn state's per-slot tables (0x40 each): command masks and
@@ -577,6 +581,374 @@ void copy(battle::BattleMemory &memory, const resident::Heap &heap, std::uint32_
     for (std::uint32_t i = 0; i < size; ++i)
         memory.put8(to + i, original_byte(memory, heap, from + i));
 }
+// 8003342c: a table's offsets (after its count) become addresses.
+void relocate_table(battle::BattleMemory &memory, std::uint32_t table) {
+    for (std::uint32_t entry = 1; entry <= memory.u32(table); ++entry)
+        memory.put32(table + entry * 4, memory.u32(table + entry * 4) + table);
+}
+
+// The stage setup 801e7210 and its callees.
+constexpr std::uint32_t stage_record = 0x800d33e4;    // 800d3368 entry 1f
+constexpr std::uint32_t primitive_table = 0x8004fe50; // resident, 17 rows of 28h
+constexpr std::uint32_t lights = 0x800c3d50;          // two 8002709c blocks
+constexpr std::uint32_t light_records = 0x800c3db4;   // two 18h-byte records (80027d64)
+
+// 80032498(4, 0): the stage's blocks take owner tag 4.
+void select_stage_tag(resident::Heap &heap) {
+    heap.tag = 4;
+    heap.tag_words[4] = 0;
+    heap.quiet = 0;
+}
+std::uint32_t allocate(battle::BattleMemory &memory, resident::Heap &heap, std::uint32_t size,
+                       std::uint32_t mode, std::uint32_t site) {
+    auto block = resident::heap_allocate(heap, size, mode, site);
+    if (!block)
+        throw battle::BattleError("A quiet null allocation in the stage setup");
+    const auto address = block->address;
+    memory.regions.emplace(address, std::move(block->bytes));
+    return address;
+}
+// 800320b8: clear a block's keep flag.
+void clear_keep(resident::Heap &heap, std::uint32_t block) {
+    const auto found = heap.headers.find(block - 8);
+    if (found == heap.headers.end())
+        throw battle::BattleError("A stage block has no heap header");
+    found->second[1] &= ~resident::heap_keep;
+}
+field::GteMatrix battle_matrix(const battle::BattleMemory &memory, std::uint32_t at) {
+    field::GteMatrix matrix{};
+    for (std::uint32_t i = 0; i < 9; ++i)
+        matrix.r[i] = s16(memory.u16(at + 2 * i));
+    matrix.pad = s16(memory.u16(at + 0x12));
+    for (std::uint32_t i = 0; i < 3; ++i)
+        matrix.t[i] = static_cast<std::int32_t>(memory.u32(at + 0x14 + 4 * i));
+    return matrix;
+}
+void put_rotation(battle::BattleMemory &memory, std::uint32_t at,
+                  const std::array<std::int16_t, 9> &rotation) {
+    for (std::uint32_t i = 0; i < 9; ++i)
+        memory.put16(at + 2 * i, static_cast<std::uint16_t>(rotation[i]));
+}
+// MULT/MFLO: the low word of a signed product.
+std::int32_t low(std::int32_t a, std::int32_t b) {
+    return static_cast<std::int32_t>(static_cast<std::uint32_t>(a) * static_cast<std::uint32_t>(b));
+}
+
+// 8002c3e8 (`relocate`) / 8002c4bc: a model group's offsets become addresses
+// (+4 bit 0 set) or offsets again (cleared): each 38h-byte model's four table
+// offsets (+18..+24) and its optional list (+2c), whose entries' two offsets
+// go from the last (index +0) down.
+void rebase_model_group(battle::BattleMemory &memory, std::uint32_t group, bool relocate) {
+    const auto flags = memory.u32(group + 4);
+    if (((flags & 1U) != 0) == relocate)
+        return;
+    memory.put32(group + 4, relocate ? flags | 1U : flags & ~1U);
+    const auto shift = [&](std::uint32_t at) {
+        memory.put32(at, relocate ? memory.u32(at) + group : memory.u32(at) - group);
+    };
+    const auto count = static_cast<std::int32_t>(memory.u32(group));
+    for (std::uint32_t k = 0; static_cast<std::int32_t>(k) < count; ++k) {
+        const auto model = group + 0x18 + 0x38 * k;
+        for (const auto at : {0U, 8U, 4U, 0xcU})
+            shift(model + at);
+        auto list = memory.u32(model + 0x14);
+        if (list == 0)
+            continue;
+        if (relocate) {
+            list += group;
+            memory.put32(model + 0x14, list);
+        }
+        if (const auto entries = memory.u32(list); entries != 0xffffffffU)
+            for (auto i = static_cast<std::int32_t>(entries); i >= 0; --i) {
+                const auto entry = list + 4 + 0xc * static_cast<std::uint32_t>(i);
+                shift(entry + 4);
+                shift(entry + 8);
+            }
+        if (!relocate)
+            memory.put32(model + 0x14, list - group);
+    }
+}
+
+// 8009eba8(group, slot): relocate the group and list its models (+10, 38h
+// apart) in a new table; the slot holds the table and the count.
+void list_models(battle::BattleMemory &memory, resident::Heap &heap, std::uint32_t group,
+                 std::uint32_t slot) {
+    select_stage_tag(heap);
+    rebase_model_group(memory, group, true);
+    const auto count = memory.u32(group);
+    const auto table = allocate(memory, heap, count << 2U, 0, 0x8009ebe0);
+    memory.put32(slot, table);
+    memory.put32(slot + 4, count);
+    for (std::uint32_t k = 0; k < count; ++k)
+        memory.put32(table + 4 * k, group + 0x10 + 0x38 * k);
+}
+
+// 8009ec4c(slot, hierarchy, 0, 0, ...): a root record and a 7ch-byte part
+// for each hierarchy pair (model, parent; ffff none) up to the first model
+// id past the slot's count; a part of a model gets its packets for both
+// buffers (8002cb54, 8002c8cc mode 0, 8003f968). `group` holds the models.
+std::uint32_t build_parts(battle::BattleMemory &memory, ResidentState &resident, std::uint32_t slot,
+                          std::uint32_t hierarchy, std::uint32_t group) {
+    auto &heap = resident.heap;
+    select_stage_tag(heap);
+    const auto listed = [&](std::uint32_t pair) {
+        const auto id = memory.u16(hierarchy + 4 * pair);
+        return id < memory.u32(slot + 4) || id == 0xffff;
+    };
+    std::uint32_t count = 0;
+    while (listed(count))
+        ++count;
+    if (count == 0)
+        throw MissingDependency({"battle_stage_setup", 0x8009ecd8, {}, {}},
+                                "symbol:battle-stage-without-parts", false,
+                                "A stage without model parts is not reconstructed");
+    const auto root = allocate(memory, heap, (count + 1) * 0x7c, 0, 0x8009ecfc);
+    const auto clear = [&](std::uint32_t part) {
+        for (const auto at : {0x56U, 0x58U})
+            memory.put16(part + at, 0);
+        for (const auto at : {0x5cU, 0x60U, 0x64U, 0x70U, 0x74U, 0x78U})
+            memory.put32(part + at, 0);
+    };
+    for (const auto at : {4U, 5U, 6U})
+        memory.put8(root + at, 1);
+    for (const auto at : {0x4cU, 0x4eU, 0x50U})
+        memory.put16(root + at, 0x1000);
+    memory.put32(root, 0);
+    memory.put8(root + 7, 0);
+    memory.put16(root + 8, 0xffff);
+    memory.put16(root + 0xa, count + 1);
+    memory.put32(root + 0x68, 0);
+    memory.put32(root + 0x6c, 0);
+    memory.put16(root + 0x54, 0);
+    clear(root);
+    const std::array resources{
+        field::SpriteResource{group, memory.tail(group)},
+        field::SpriteResource{primitive_table, memory.tail(primitive_table)}};
+    field::SpriteSources sources{};
+    sources.resources = resources;
+    sources.models = &resident.sprite_models;
+    for (std::uint32_t index = 1; index <= count; ++index) {
+        const auto id = memory.u16(hierarchy + 4 * (index - 1));
+        const auto parent = memory.u16(hierarchy + 4 * (index - 1) + 2);
+        const auto part = root + 0x7c * index;
+        memory.put32(part, parent == 0xffff ? 0 : root + 0x7c * (parent + 1U));
+        memory.put16(part + 0xa, index);
+        for (const auto at : {4U, 5U, 7U})
+            memory.put8(part + at, 1);
+        for (const auto at : {0x4cU, 0x4eU, 0x50U})
+            memory.put16(part + at, 0x1000);
+        memory.put8(part + 6, 0);
+        memory.put16(part + 0x52, 0);
+        memory.put16(part + 8, id);
+        if (id == 0xffff) {
+            memory.put32(part + 0x68, 0);
+            memory.put32(part + 0x6c, 0);
+        } else {
+            const auto model = memory.u32(memory.u32(slot) + id * 4U);
+            heap.allocation_class = 0x25; // 800324b8
+            const auto size = memory.u32(model + 0x34);
+            const auto packets = allocate(memory, heap, size * 2, 0, 0x8002cb84);
+            memory.put32(part + 0x68, packets);
+            memory.put32(part + 0x6c, packets + size);
+            auto &bytes = memory.regions.at(packets);
+            field::SpriteAllocation buffer{packets, std::move(bytes)};
+            field::initialize_model_packets(model, buffer, resident.sprite, sources);
+            bytes = std::move(buffer.bytes);
+            std::copy_n(bytes.begin(), size, bytes.begin() + size);
+        }
+        memory.put16(part + 0x54, 0);
+        clear(part);
+    }
+    return root;
+}
+
+// 801e70e8(images): relocate the image list, then the bounds of its pixel
+// sections (1101): 800d2d30/800d2d34 the least corner, 800d2d2c/800c3ea8
+// the extent.
+void texture_bounds(battle::BattleMemory &memory, std::uint32_t images) {
+    relocate_table(memory, images);
+    std::uint32_t left = 0x800;
+    std::uint32_t top = 0x800;
+    std::int32_t right = -0x800;
+    std::int32_t bottom = -0x800;
+    const auto count = static_cast<std::int32_t>(memory.u32(images));
+    for (std::uint32_t k = 0; static_cast<std::int32_t>(k) < count; ++k) {
+        const auto image = memory.u32(images + 4 + 4 * k);
+        if (memory.u16(image) != 0x1101)
+            continue;
+        const auto x = memory.u16(image + 4) + memory.u16(image + 8);
+        const auto y = memory.u16(image + 6) + memory.u16(image + 10);
+        left = std::min(left, x);
+        top = std::min(top, y);
+        right = std::max(right, static_cast<std::int32_t>(x + memory.u16(image + 12)));
+        bottom = std::max(bottom, static_cast<std::int32_t>(y + memory.u16(image + 14)));
+    }
+    memory.put16(0x800d2d30, left);
+    memory.put16(0x800d2d34, top);
+    memory.put16(0x800d2d2c, static_cast<std::uint32_t>(right) - left);
+    memory.put16(0x800c3ea8, static_cast<std::uint32_t>(bottom) - top);
+}
+
+// 800aa898(record, 800c3d0c, scripts, 0) and 800aa934(record, record,
+// 800c3d0c, 0): the record's motion state and its first script; then
+// 800aad54(record, 800c3d0c, -1, 1, 0): one step of the record's velocities
+// into the root part (its angles, then its position through the root's
+// local matrix, ApplyMatrix 80049cec, and the record's scale +1c) and the
+// script's commands, of which only the stop (0) is reconstructed.
+void start_stage_motion(battle::BattleMemory &memory, ResidentState &resident, std::uint32_t record,
+                        std::uint32_t scripts) {
+    memory.put16(record + 0x3c, 0xffff);
+    memory.put8(record + 0x5c, 0xff);
+    memory.put8(record + 0x39, 0x6b);
+    memory.put32(record + 8, scripts);
+    for (const auto at : {0xcU, 0x10U, 0x14U, 0x18U})
+        memory.put32(record + at, 0);
+    memory.put8(record + 0x2b, 0);
+    memory.put16(record + 0x98, 0xffff);
+    memory.put16(record + 0x58, 0);
+    for (const auto at : {0x35U, 0x37U, 0x38U})
+        memory.put8(record + at, 0);
+    memory.put16(record + 0x3a, 0xffff);
+    for (std::uint32_t at = 0x70; at < 0x8e; at += 2)
+        memory.put16(record + at, 0);
+    memory.put16(record + 0x8e, 1);
+    memory.put8(record + 0x36, 0);
+    memory.put16(record + 0x1e, 0xffff);
+    memory.put32(record + 0x10, memory.u32(memory.u32(record + 8)));
+    memory.put16(record + 0x42, 0);
+    memory.put16(record + 0x40, 0);
+    for (const auto at : {0x50U, 0x54U, 0x4cU})
+        memory.put32(record + at, 0);
+    memory.put8(record + 0x23, 0);
+    memory.put16(record + 0x10a, memory.u16(0x800c3e30));
+    const auto script = memory.u32(record + 0x10);
+    if (script == 0)
+        return;
+    select_stage_tag(resident.heap);
+    const auto add = [&](std::uint32_t to, std::uint32_t from) {
+        memory.put16(record + to, memory.u16(record + to) + memory.u16(record + from));
+    };
+    add(0x70, 0x76);
+    add(0x72, 0x78);
+    add(0x74, 0x7a);
+    add(0x7c, 0x82);
+    add(0x80, 0x86);
+    add(0x7e, 0x84);
+    const auto root = memory.u32(record + 4);
+    for (std::uint32_t axis = 0; axis < 3; ++axis)
+        memory.put16(root + 0x54 + 2 * axis,
+                     memory.u16(root + 0x54 + 2 * axis) +
+                         static_cast<std::uint32_t>(memory.s16(record + 0x70 + 2 * axis) >> 3));
+    field::GteVector velocity{};
+    for (std::uint32_t axis = 0; axis < 3; ++axis)
+        velocity[axis] = static_cast<std::int16_t>(
+            low(memory.s16(record + 0x7c + 2 * axis), memory.s16(root + 0x4c + 2 * axis)) >> 12);
+    auto &gte = resident.gte;
+    gte.transform.r = battle_matrix(memory, root + 0x2c).r;
+    gte.set_vector(0, velocity);
+    gte.mvmva(0, 0, 3);
+    for (std::uint32_t axis = 0; axis < 3; ++axis)
+        memory.put32(root + 0x5c + 4 * axis,
+                     static_cast<std::uint32_t>(
+                         (low(memory.s16(record + 0x1c), gte.mac(1 + axis)) >> 12) +
+                         static_cast<std::int32_t>(memory.u32(root + 0x5c + 4 * axis))));
+    if ((memory.u16(script) & 0xffU) != 0)
+        throw MissingDependency({"battle_stage_setup", 0x800ab10c, {}, {}},
+                                "symbol:battle-motion-commands", false,
+                                "Stage motion commands other than the stop are not reconstructed");
+}
+
+// 8009ef3c(root, scale): each part's local rotation from its angles
+// (RotMatrixYXZ 8004a92c when +6 is set, else 8003f738) with its position;
+// the root's placed rotation is that rotation times the diagonal scale
+// (MulMatrix0 8004920c through 1f800000), a part's without a parent its
+// local matrix. The parts' changed marks (+4, +5) end cleared.
+void pose_parts(battle::BattleMemory &memory, ResidentState &resident, std::uint32_t root,
+                std::int32_t scale) {
+    const auto &trigonometry = resident.math.trigonometry;
+    const auto rotate = [&](std::uint32_t part, std::uint32_t to) {
+        const field::GteVector angles{s16(memory.u16(part + 0x54)), s16(memory.u16(part + 0x56)),
+                                      s16(memory.u16(part + 0x58))};
+        put_rotation(memory, to,
+                     memory.u8(part + 6) != 0 ? field::rotation_matrix_yxz(angles, trigonometry)
+                                              : field::rotation_matrix(angles, trigonometry).r);
+    };
+    const auto count = memory.u16(root + 0xa);
+    for (std::uint32_t i = 0; i < 3; ++i)
+        memory.put32(root + 0x40 + 4 * i, memory.u32(root + 0x5c + 4 * i));
+    rotate(root, root + 0x2c);
+    const auto scaled = [&](std::uint32_t at) {
+        return static_cast<std::int16_t>(low(scale, memory.s16(root + at)) >> 12);
+    };
+    field::GteMatrix placed{};
+    placed.r = {scaled(0x4c), 0, 0, 0, scaled(0x4e), 0, 0, 0, scaled(0x50)};
+    const auto local = battle_matrix(memory, root + 0x2c);
+    resident.gte.transform.r = local.r;
+    field::multiply_rotation(local, placed);
+    put_rotation(memory, root + 0xc, placed.r);
+    memory.put16(root + 0x1e, static_cast<std::uint16_t>(placed.pad));
+    for (std::uint32_t i = 0; i < 3; ++i)
+        memory.put32(root + 0x20 + 4 * i, memory.u32(root + 0x40 + 4 * i));
+    for (std::uint32_t k = 1; k < count; ++k) {
+        const auto part = root + 0x7c * k;
+        if (memory.u8(part + 5) != 0) {
+            rotate(part, part + 0xc);
+            memory.put8(part + 5, 0);
+        }
+        const auto parent = memory.u32(part);
+        if (parent != 0 && memory.u8(parent + 4) == 1)
+            memory.put8(part + 4, 1);
+        if (memory.u8(part + 4) == 0)
+            continue;
+        for (std::uint32_t i = 0; i < 3; ++i)
+            memory.put32(part + 0x20 + 4 * i, memory.u32(part + 0x5c + 4 * i));
+        if (parent != 0)
+            throw MissingDependency(
+                {"battle_stage_setup", 0x8009f108, {}, {}}, "symbol:battle-part-parent", false,
+                "Stage parts under a parent (CompMatrix) are not reconstructed");
+        for (std::uint32_t at = 0; at < 0x20; at += 4)
+            memory.put32(part + 0x2c + at, memory.u32(part + 0xc + at));
+    }
+    for (std::uint32_t k = 1; k < count; ++k)
+        memory.put8(root + 0x7c * k + 4, 0);
+}
+
+// 8002709c for a light object (type 1) of the scene data: 34ch bytes of 16
+// shaded POLY_FT4 packets with the object's CLUT (+1a, +1c) and its fields
+// at +320..+34b; without fog colors +344 is zero. GetDrawEnv (80044e64)
+// copies the draw environment only into its own frame.
+std::uint32_t build_light(battle::BattleMemory &memory, resident::Heap &heap,
+                          std::uint32_t object) {
+    select_stage_tag(heap);
+    const auto field = [&](std::uint32_t at) { return memory.u16(object + at); };
+    const auto block = allocate(memory, heap, 0x34c, 0, 0x800270fc);
+    const auto tail = block + 0x320;
+    memory.put32(tail + 8, field(0x14));
+    memory.put32(tail + 0xc, field(0x16));
+    memory.put16(tail + 0x1c, field(0));
+    memory.put16(tail + 0x1e, field(4));
+    memory.put16(tail + 0x26, 0);
+    memory.put16(tail + 0x28, field(0x24));
+    memory.put16(tail + 0x2a, field(0x26));
+    memory.put16(tail + 0x20, field(8));
+    memory.put32(tail + 0x10, static_cast<std::int32_t>(memory.u32(object + 8)) < 0
+                                  ? 0U - field(0x20)
+                                  : field(0x20));
+    memory.put16(tail + 0x16, field(0x12));
+    memory.put16(tail + 0x14, field(0x10));
+    memory.put16(tail + 0x18, field(0x1e));
+    memory.put16(tail + 0x1a, field(0x12) & 0xffU); // its remainder by 100h
+    const auto clut = (field(0x1c) << 6U | (field(0x1a) >> 4U & 0x3fU)) & 0xffffU; // GetClut
+    for (std::uint32_t i = 0; i < 16; ++i) {
+        const auto packet = block + i * 0x28;
+        memory.put8(packet + 3, 9); // SetPolyFT4 80043cb0
+        memory.put8(packet + 7, 0x2c);
+        memory.put8(packet + 7, memory.u8(packet + 7) | 1); // SetShadeTex 80043c24
+        memory.put16(packet + 0xe, clut);
+    }
+    memory.put16(tail + 0x24, 0);
+    return block;
+}
 } // namespace
 
 // 80032e88(item, mode): allocate the item's size (its first word) and decode
@@ -631,6 +1003,283 @@ void Program::load_battle_image(battle::Battle &context, FrameServices &services
     memory.put16(rect + 6, static_cast<std::uint16_t>(area[3]));
 }
 
+// 8002dde4(images, 0, ...): each image section (1100 palette, 1101 pixels)
+// at its own position; `frame` is 8002dde4's stack pointer, its rectangle at
+// +10.
+void Program::upload_battle_images(battle::Battle &context, FrameServices &services,
+                                   std::uint32_t images, std::uint32_t frame) {
+    auto &memory = context.memory;
+    auto at = images + (memory.u32(images) + 1) * 4;
+    for (std::uint32_t section = 0; section < memory.u32(images); ++section) {
+        const auto kind = memory.u32(at);
+        if (kind != 0x1100 && kind != 0x1101)
+            break;
+        std::array<std::int16_t, 4> area{
+            static_cast<std::int16_t>(s16(memory.u16(at + 4)) + s16(memory.u16(at + 8))),
+            static_cast<std::int16_t>(s16(memory.u16(at + 6)) + s16(memory.u16(at + 10))),
+            s16(memory.u16(at + 12)), s16(memory.u16(at + 14))};
+        static_cast<void>(load_image(area, frame + 0x10, at + 16, &services));
+        // The next section follows the rectangle as LoadImage left it.
+        at += 16 + static_cast<std::uint32_t>(static_cast<std::int32_t>(area[2]) * area[3] * 2);
+    }
+}
+
+// 800a8bf0(1f, c4, stage, stage, 0, 0, 0, 0, 0): model record 1f (11ch
+// bytes, 800d3368) of the stage file (relocated by 8003342c: +4 images, +8
+// model group, +c hierarchy, +10 motion data): its images uploaded
+// (8002dde4) without a texture offset, the model group copied (800c3b70,
+// from the top) and listed in the first free slot of 800c3acc (8009eba8),
+// the parts (8009ec4c), two semi-transparent POLY_FT4 packets in the scene's
+// colors (+478), then the group trimmed after its first model's primitive
+// data (8002c644, 80031f70), unrelocated (8002c4bc), copied into a block of
+// its size and listed again in place of the original (8009f794, 8009eba8).
+// `frame` is 801e7210's stack pointer.
+void Program::register_stage_model(battle::Battle &context, FrameServices &services,
+                                   std::uint32_t frame, std::uint32_t stage) {
+    auto &memory = context.memory;
+    auto &heap = resident.heap;
+    select_stage_tag(heap);
+    if (memory.u32(stage_record) != 0)
+        return;
+    const auto record = allocate(memory, heap, 0x11c, 0, 0x800a8c8c);
+    relocate_table(memory, stage);
+    relocate_table(memory, memory.u32(stage + 0x10));
+    memory.put8(record + 0x62, 0);
+    memory.put8(record + 0x63, 0);
+    const auto header = memory.u32(memory.u32(stage + 0x10) + 4);
+    const auto geometry = memory.u32(stage + 8);
+    const auto hierarchy = memory.u32(stage + 0xc);
+    memory.put32(stage_record, record);
+    memory.put16(record + 0x24, memory.u16(header + 2));
+    memory.put16(record + 0x26, memory.u16(header + 4));
+    memory.put16(record + 0x28, memory.u16(header + 6));
+    memory.put8(record + 0x2a, memory.u8(header + 10));
+    memory.put16(record + 0x4a, memory.u16(header + 0xc));
+    if ((memory.u16(header + 0xc) & 0x200U) != 0)
+        throw MissingDependency({"battle_stage_setup", 0x800a8dd4, {}, {}},
+                                "symbol:battle-stage-80030988", false,
+                                "Stage models with flag 200 (80030988) are not reconstructed");
+    upload_battle_images(context, services, memory.u32(stage + 4), frame - 0xc8 - 0x48);
+    const auto size = hierarchy - geometry;
+    const auto group = allocate(memory, heap, size, 1, 0x800a8e50);
+    memory.put32(0x800c3b70, group);
+    copy(memory, heap, group, geometry, size);
+    std::uint32_t free = 0;
+    while (memory.u32(0x800c3acc + free * 8) != 0 && ++free < 0x14) {
+    }
+    memory.put32(0x800c3b6c, free);
+    const auto slot = 0x800c3acc + free * 8;
+    list_models(memory, heap, group, slot);
+    memory.put32(record, slot);
+    memory.put32(record + 4, build_parts(memory, resident, slot, hierarchy, group));
+    for (const auto at : {0x90U, 0x92U, 0x94U, 0x96U})
+        memory.put16(record + at, 0);
+    memory.put32(record + 0xac, 0);
+    for (std::uint32_t packet = 0; packet < 2; ++packet) {
+        const auto p = record + 0xb8 + packet * 0x28;
+        memory.put8(p + 3, 9); // SetPolyFT4 80043cb0
+        memory.put8(p + 7, 0x2c);
+        memory.put8(p + 7, memory.u8(p + 7) | 2); // SetSemiTrans 80043bfc
+        for (std::uint32_t c = 0; c < 3; ++c)
+            memory.put8(p + 4 + c, memory.u8(resident.battle_scene_data + 0x478 + c));
+        memory.put16(p + 0xe, 0x1ccU << 6U | 0x30U >> 4U); // GetClut(30, 1cc)
+        memory.put16(p + 0x16, gpu::texture_page(0, 2, 0x380, 0));
+        for (const auto [at, value] : {std::pair{0xcU, 0xc0U},
+                                       {0xdU, 0xc0U},
+                                       {0x14U, 0xfeU},
+                                       {0x15U, 0xc0U},
+                                       {0x1cU, 0xc0U},
+                                       {0x1dU, 0xfeU},
+                                       {0x24U, 0xfeU},
+                                       {0x25U, 0xfeU}})
+            memory.put8(p + at, value);
+    }
+    memory.put16(record + 0x1c, memory.u16(header + 8));
+    memory.put8(record + 0x10c, memory.u8(header + 0xe));
+    if (memory.u8(record + 0x10c) != 0)
+        throw MissingDependency({"battle_stage_setup", 0x800a9130, {}, {}},
+                                "symbol:battle-stage-800aa6e0", false,
+                                "Stage model records (800aa6e0) are not reconstructed");
+    memory.put8(record + 0x10e, memory.u8(header + 0x10));
+    if (memory.u8(record + 0x10e) != 0)
+        throw MissingDependency({"battle_stage_setup", 0x800a915c, {}, {}},
+                                "symbol:battle-stage-effects", false,
+                                "Stage model effect records are not reconstructed");
+    memory.put8(record + 0x10d, memory.u8(header + 0x12));
+    if (memory.u8(record + 0x10d) != 0)
+        throw MissingDependency({"battle_stage_setup", 0x800a932c, {}, {}},
+                                "symbol:battle-stage-800a7064", false,
+                                "Stage model sprites (800a7064) are not reconstructed");
+    memory.put8(record + 0x22, 0);
+    memory.put8(record + 0x20, 0x1f);
+    memory.put8(record + 0x34, 1); // entries past 10 have no slot flag (800c3eb7)
+    // 8002c644: the group keeps its models up to the first one's primitive
+    // data (+24).
+    if (const auto flags = memory.u32(group + 4); (flags & 2U) == 0) {
+        memory.put32(group + 4, flags | 2U);
+        const auto end = memory.u32(group + 0x24) - group;
+        resident::HeapBlock block{group, std::move(memory.regions.at(group))};
+        memory.regions.erase(group);
+        static_cast<void>(resident::heap_trim(heap, block, end));
+        memory.regions.emplace(group, std::move(block.bytes));
+    }
+    rebase_model_group(memory, group, false);
+    const auto kept = heap.headers.at(group - 8)[0] - group - 8; // 80031894
+    const auto models = allocate(memory, heap, kept, 0, 0x800a94b8);
+    copy(memory, heap, models, group, kept);
+    release_battle_block(context, group, 0x800a94e0);
+    // 8009f794(slot, 0): the slot's table is released.
+    if (const auto table = memory.u32(slot); table != 0) {
+        release_battle_block(context, table, 0x8009f81c);
+        memory.put32(slot, 0);
+    }
+    list_models(memory, heap, models, slot);
+    memory.put32(record + 0xa8, models);
+}
+
+// 801e7210(8005949c, 80059520 word, stage, origin, colors, tint): without a
+// stage it returns zero. Otherwise the stage globals are cleared, the stage
+// model registered (800a8bf0), its texture bounds taken (801e70e8) and its
+// parts placed from the stage's position table (+14); the scene data moves
+// into a new block (800658c8, 8005949c) and its motion section (+514,
+// relocated) starts the record's motion (800aa898, 800aa934) before the
+// parts are posed (8009ef3c); the origin (9 halfwords) and color matrix come
+// from the scene data (+464, +46c) with the GTE color matrix and back color
+// (+474); its six objects (+360, 28h each) make lights (type 1, 8002709c)
+// and set +35e (type 5), which is the result and copies the fog color
+// (+458) to `tint`; the actor and light lists (+50c, +510) are published
+// (801e7ec4). After DrawSync the stage file is released.
+std::uint32_t Program::battle_stage_setup(FrameServices &services, std::uint32_t stack,
+                                          std::uint32_t stage, std::uint32_t origin,
+                                          std::uint32_t colors, std::uint32_t tint) {
+    deliver_leading_arrivals();
+    std::uint32_t result = 0;
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        auto &heap = resident.heap;
+        const auto scene = resident.battle_scene;
+        if (stage == 0 || scene == 0)
+            return;
+        select_stage_tag(heap);
+        for (const auto address : {0x800c3e38U, 0x800c3ea0U, 0x800d3344U, 0x800d39ccU, 0x800d3348U,
+                                   lights + 4, lights, light_records + 0x18, light_records})
+            memory.put32(address, 0);
+        memory.put16(0x800d361a, 0);
+        clear_keep(heap, stage);
+        const auto frame = stack - 0xa0;
+        register_stage_model(context, services, frame, stage);
+        texture_bounds(memory, memory.u32(stage + 4));
+        const auto record = memory.u32(stage_record);
+        const auto root = memory.u32(record + 4);
+        memory.put32(0x800c3e38, root);
+        memory.put32(0x800c3e48, memory.u32(record));
+        auto position = memory.u32(stage + 0x14);
+        for (std::uint32_t k = 1; k < memory.u16(root + 0xa); ++k, position += 8) {
+            const auto part = root + 0x7c * k;
+            for (std::uint32_t axis = 0; axis < 3; ++axis)
+                memory.put32(part + 0x5c + 4 * axis,
+                             static_cast<std::uint32_t>(memory.s16(position + 2 * axis)));
+            memory.put16(part + 0x52, memory.u16(position + 6));
+        }
+        const auto size = memory.u32(scene - 4);
+        const auto data = allocate(memory, heap, size, 0, 0x801e73b8);
+        resident.battle_scene_data = data;
+        copy(memory, heap, data, scene, size);
+        clear_keep(heap, scene - 4);
+        release_battle_block(context, scene - 4, 0x801e73ec);
+        const auto actors = memory.u32(data + 0x50c) == 0 ? 0 : data + memory.u32(data + 0x50c);
+        const auto light_list = data + memory.u32(data + 0x510);
+        const auto light_entries = memory.u32(data + 0x510) == 0 ? 0 : light_list + 4;
+        const auto section = data + memory.u32(data + 0x514);
+        relocate_table(memory, section);
+        const auto table = memory.u32(section + 4);
+        start_stage_motion(memory, resident, record, section + 8);
+        pose_parts(memory, resident, root, memory.s16(record + 0x1c));
+        const auto first = table + memory.u32(table);
+        memory.put16(0x800d2fc8, memory.u16(first));
+        for (std::uint32_t i = 0; i < 3; ++i)
+            memory.put16(origin + 2 * i, memory.u16(data + 0x464 + 2 * i));
+        for (std::uint32_t at = 6; at < 0x12; at += 2)
+            memory.put16(origin + at, 0);
+        for (std::uint32_t row = 0; row < 3; ++row) {
+            memory.put16(colors + 6 * row, memory.u16(data + 0x46c + 2 * row));
+            memory.put16(colors + 6 * row + 2, 0);
+            memory.put16(colors + 6 * row + 4, 0);
+        }
+        memory.put32(0x800d2fd0, first + 2);
+        memory.put32(0x800d2fc0, colors);
+        auto &gte = resident.gte;
+        for (std::uint32_t k = 0; k < 5; ++k) // SetColorMatrix 80049f5c
+            gte.set_control(16 + k, memory.u32(colors + 4 * k));
+        for (std::uint32_t k = 0; k < 3; ++k) // SetBackColor 8004a0ec
+            gte.set_control(13 + k, memory.u8(data + 0x474 + k) << 4U);
+        std::uint32_t made = 0;
+        std::uint32_t placed = 0;
+        for (std::uint32_t k = 0; k < 6; ++k) {
+            const auto object = data + 0x360 + k * 0x28;
+            switch (memory.u16(object + 0x18)) {
+            case 1:
+            case 2:
+                if (memory.u32(lights + made * 4) == 0 && made < 2) {
+                    if (memory.u16(object + 0x18) == 2)
+                        throw MissingDependency({"battle_stage_setup", 0x801e76b8, {}, {}},
+                                                "symbol:battle-fog-light", false,
+                                                "Lights in the fog colors are not reconstructed");
+                    memory.put32(lights + made * 4, build_light(memory, heap, object));
+                }
+                ++made;
+                break;
+            case 3:
+                if (memory.u32(0x800c3ea0) == 0)
+                    throw MissingDependency({"battle_stage_setup", 0x801e7758, {}, {}},
+                                            "symbol:battle-stage-801e7914", false,
+                                            "Stage object type 3 (801e7914) is not reconstructed");
+                break;
+            case 5:
+                memory.put8(data + 0x35e, 1);
+                break;
+            case 7:
+                if (memory.u32(light_records + placed * 0x18) == 0 && placed < 2 && k + 1 < 4)
+                    throw MissingDependency({"battle_stage_setup", 0x801e77f4, {}, {}},
+                                            "symbol:battle-stage-80027d64", false,
+                                            "Stage object type 7 (80027d64) is not reconstructed");
+                ++placed;
+                break;
+            default:
+                break;
+            }
+        }
+        result = memory.u8(data + 0x35e);
+        if (result != 0 && tint != 0)
+            for (std::uint32_t c = 0; c < 3; ++c)
+                memory.put8(tint + c, memory.u8(data + 0x458 + c));
+        // 801e7ec4(actors, light entries, light count).
+        if (actors != 0 && light_entries != 0) {
+            const auto count = memory.u32(light_list);
+            memory.put32(0x800d3344, actors);
+            memory.put32(0x800d39cc, light_entries);
+            memory.put32(0x800d3348, count);
+            memory.put8(0x800d2f64, 1);
+            for (std::uint32_t i = 0;
+                 static_cast<std::int32_t>(i) < static_cast<std::int32_t>(memory.u32(0x800d3348));
+                 ++i)
+                memory.put8(memory.u32(0x800d39cc) + 0xe * i + 0xd, 0);
+            if (count == 0) {
+                memory.put32(0x800d3344, 0);
+                memory.put32(0x800d39cc, 0);
+            }
+        }
+        for (std::uint32_t i = 0; i < 4; ++i)
+            memory.put8(0x800d2d10 + i, memory.u8(resident.battle_scene_data + 0x340 + i));
+        // The uploads' completions and the frame's interrupts before DrawSync.
+        deliver_pending_arrivals();
+        draw_sync(services);
+        release_battle_block(context, stage, 0x801e78cc);
+        resident.battle_scene = data;
+    });
+    return result;
+}
+
 // 801e5384: the party (8006f368 filtered by the availability mask
 // 8006f364 & 8006f366, or the demonstration party), each member's record and
 // gear record from the game data (8006d8a0, 8006dfac; 0xa4 each), the setup
@@ -659,10 +1308,8 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
         for (; count < 3; ++count)
             memory.put8(ids + count, 0x7f);
     }
-    // 8003342c: the archive's offsets become addresses.
     const auto archive = resident.battle_archive;
-    for (std::uint32_t entry = 1; entry <= memory.u32(archive); ++entry)
-        memory.put32(archive + entry * 4, memory.u32(archive + entry * 4) + archive);
+    relocate_table(memory, archive);
     const auto item = [&](std::uint32_t offset) { return memory.u32(archive + offset); };
     for (std::uint32_t member = 0; member < 3; ++member) {
         const auto id = memory.u8(ids + member);
@@ -689,26 +1336,9 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
     block = unpack_battle_item(context, item(0xc), 1);
     copy(memory, resident.heap, 0x800d2200, block, 0x300);
     release_battle_block(context, block, 0x801e566c);
-    // 8002dde4(images, 0, ...): each image section (1100 palette, 1101
-    // pixels) at its own position; its rectangle lies in 8002dde4's frame
-    // (801e5840 -18, 801e5384 -48, 8002dde4 -48, +10).
+    // 8002dde4's frame: 801e5840 -18, 801e5384 -48, 8002dde4 -48.
     block = unpack_battle_item(context, item(8), 1);
-    {
-        const auto rect = stack - 0x98;
-        auto at = block + (memory.u32(block) + 1) * 4;
-        for (std::uint32_t section = 0; section < memory.u32(block); ++section) {
-            const auto kind = memory.u32(at);
-            if (kind != 0x1100 && kind != 0x1101)
-                break;
-            std::array<std::int16_t, 4> area{
-                static_cast<std::int16_t>(s16(memory.u16(at + 4)) + s16(memory.u16(at + 8))),
-                static_cast<std::int16_t>(s16(memory.u16(at + 6)) + s16(memory.u16(at + 10))),
-                s16(memory.u16(at + 12)), s16(memory.u16(at + 14))};
-            static_cast<void>(load_image(area, rect, at + 16, &services));
-            // The next section follows the rectangle as LoadImage left it.
-            at += 16 + static_cast<std::uint32_t>(static_cast<std::int32_t>(area[2]) * area[3] * 2);
-        }
-    }
+    upload_battle_images(context, services, block, stack - 0xa8);
     release_battle_block(context, block, 0x801e56a4);
     memory.put32(0x800d2f5c, unpack_battle_item(context, item(4), 0));
     // 80033698(0, 1f0): the text palettes (80050190) and their CLUT ids; its
@@ -758,8 +1388,9 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
             throw battle::BattleError("A portrait without a palette is not reconstructed");
         memory.put16(palette, memory.u16(glyph + 22));
         memory.put16(palette + 2, memory.u16(glyph + 24));
-        memory.put16(pixels, static_cast<std::uint32_t>(s16(memory.u16(glyph + 26) & 0xffc0) +
-                                                        offset + static_cast<std::int32_t>(member) * 6));
+        memory.put16(pixels,
+                     static_cast<std::uint32_t>(s16(memory.u16(glyph + 26) & 0xffc0) + offset +
+                                                static_cast<std::int32_t>(member) * 6));
         memory.put16(pixels + 2, static_cast<std::uint32_t>(s16(memory.u16(glyph + 28) & 0xff00) +
                                                             s16(memory.u16(glyph + 6))));
         load_battle_image(context, services, palette, palette + 8);
@@ -775,11 +1406,13 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
     // The enemy data files of the formation's enemy set.
     static_cast<void>(select_directory(0xc, 1));
     const auto set = memory.u8(battle::formation_record);
-    const auto data = battle::allocate_block(context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 2))), 0);
+    const auto data = battle::allocate_block(
+        context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 2))), 0);
     memory.put32(0x800c3dd0, data);
     memory.put32(0x800d33ec, data);
     memory.put16(0x800d33e8, set * 2 + 2);
-    const auto models = battle::allocate_block(context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 3))), 1);
+    const auto models = battle::allocate_block(
+        context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 3))), 1);
     memory.put32(0x800c3dec, models);
     memory.put32(0x800d33f4, models);
     memory.put16(0x800d33f8, 0);
@@ -793,13 +1426,13 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
 void Program::battle_prologue() {
     run_battle([&](battle::Battle &context) {
         auto &memory = context.memory;
-        for (const auto [pointer, size] : {std::pair{0x800c3ea4U, 0xa2b4U},
-                                           std::pair{0x800d2d28U, 0x10cU},
-                                           std::pair{0x800c3eacU, 0x2f8U}})
+        for (const auto [pointer, size] :
+             {std::pair{0x800c3ea4U, 0xa2b4U}, std::pair{0x800d2d28U, 0x10cU},
+              std::pair{0x800c3eacU, 0x2f8U}})
             memory.put32(pointer, battle::allocate_block(context, resident, size, 0));
-        for (const auto [pointer, size] : {std::pair{0x800c3ea4U, 0xa2b4U},
-                                           std::pair{0x800d2d28U, 0x10cU},
-                                           std::pair{0x800c3eacU, 0x2f8U}})
+        for (const auto [pointer, size] :
+             {std::pair{0x800c3ea4U, 0xa2b4U}, std::pair{0x800d2d28U, 0x10cU},
+              std::pair{0x800c3eacU, 0x2f8U}})
             for (std::uint32_t i = 0; i < size; ++i) // 8003f8e8 bzero
                 memory.put8(memory.u32(pointer) + i, 0);
         resident.b_5959c = 0;
@@ -921,7 +1554,8 @@ void Program::battle_scene_files() {
         std::uint32_t column = 0;
         for (std::uint32_t i = 0; i < 0x40; ++i)
             if (read.directories.size() >= 2 * i + 2 &&
-                static_cast<std::uint32_t>(read.directories[2 * i] | read.directories[2 * i + 1] << 8U) ==
+                static_cast<std::uint32_t>(read.directories[2 * i] | read.directories[2 * i + 1]
+                                                                         << 8U) ==
                     read.directory + 1U) {
                 row = i / 4 * 4;
                 column = i % 4;
@@ -985,10 +1619,14 @@ void Program::battle_load_prologue(std::uint32_t mode) {
     set_default_display_environment(0x800c8aec, 0, 0, 0x140, 0xe0);
     set_default_draw_environment(0x800c4a20, 0, 0, 0x140, 0xe0);
     set_default_draw_environment(0x800c8a90, 0, 0xe0, 0x140, 0xe0);
-    for (const auto [address, value] :
-         {std::pair{0x800c8af6U, 10U}, {0x800c4a86U, 10U}, {0x800c8af8U, 0x100U},
-          {0x800c4a88U, 0x100U}, {0x800c8af4U, 0U}, {0x800c4a84U, 0U}, {0x800c8afaU, 0xd8U},
-          {0x800c4a8aU, 0xd8U}})
+    for (const auto [address, value] : {std::pair{0x800c8af6U, 10U},
+                                        {0x800c4a86U, 10U},
+                                        {0x800c8af8U, 0x100U},
+                                        {0x800c4a88U, 0x100U},
+                                        {0x800c8af4U, 0U},
+                                        {0x800c4a84U, 0U},
+                                        {0x800c8afaU, 0xd8U},
+                                        {0x800c4a8aU, 0xd8U}})
         battle->put16(address, value);
 }
 
@@ -1034,8 +1672,7 @@ void Program::battle_effect_lists() {
         const auto records = memory.s16(data + 0x34a);
         memory.put16(0x800c3d08, static_cast<std::uint32_t>(records));
         memory.put16(0x800c3d0a, 0);
-        const auto block =
-            allocate(static_cast<std::uint32_t>(records + 1) * 0x7c, 0x800a2ce0);
+        const auto block = allocate(static_cast<std::uint32_t>(records + 1) * 0x7c, 0x800a2ce0);
         memory.put32(0x800c3d04, block);
         for (std::int32_t record = 0; record < memory.s16(0x800c3d08) + 1; ++record) {
             const auto at = block + static_cast<std::uint32_t>(record) * 0x7c;
@@ -1156,10 +1793,16 @@ void adjust_party(Battle &battle) {
     if ((memory.u16(0x8006ee0e) & 0x2000) != 0)
         memory.put16(0x8006edf6, memory.u16(0x8006edf6) | 0x800);
     if (memory.u16(0x8006ef64) < 0xbb) {
-        for (const auto [address, value] :
-             {std::pair{0x8006e020U, 10U}, {0x8006e0c4U, 10U}, {0x8006e72cU, 9U},
-              {0x8006e7d0U, 9U}, {0x8006e874U, 8U}, {0x8006e918U, 0xcU}, {0x8006e9bcU, 0xcU},
-              {0x8006e802U, 0x58U}, {0x8006e42bU, 0U}, {0x8006e950U, 0x28U}})
+        for (const auto [address, value] : {std::pair{0x8006e020U, 10U},
+                                            {0x8006e0c4U, 10U},
+                                            {0x8006e72cU, 9U},
+                                            {0x8006e7d0U, 9U},
+                                            {0x8006e874U, 8U},
+                                            {0x8006e918U, 0xcU},
+                                            {0x8006e9bcU, 0xcU},
+                                            {0x8006e802U, 0x58U},
+                                            {0x8006e42bU, 0U},
+                                            {0x8006e950U, 0x28U}})
             memory.put8(address, value);
     }
 }

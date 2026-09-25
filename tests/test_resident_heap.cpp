@@ -143,6 +143,25 @@ void release_and_failure() {
             "A list that leaves the owned headers is rejected");
 }
 
+// 80031f70: B keeps its first 20h bytes; a free header follows them.
+void trim() {
+    auto heap = sample();
+    std::vector<std::uint8_t> bytes(0xf8);
+    for (std::size_t i = 0; i < bytes.size(); ++i)
+        bytes[i] = static_cast<std::uint8_t>(i);
+    resident::HeapBlock b{0x80100108, bytes};
+    check(!resident::heap_trim(heap, b, 0xe8) && b.bytes.size() == 0xf8 && heap.dirty == 0 &&
+              heap.headers.size() == 4,
+          "Without room for a header and more the block stays whole");
+    check(resident::heap_trim(heap, b, 0x20) && b.bytes.size() == 0x20 && heap.dirty == 1,
+          "A trimmed block keeps its first bytes and marks the heap dirty");
+    check(heap.headers.at(0x80100100)[0] == 0x80100130 &&
+              heap.headers.at(0x80100128) == std::array<std::uint32_t, 2>{0x80100208, 0x84000000},
+          "The block now ends at a free class-21 header linking to its old next");
+    check(heap.held.at(0x80100130).size() == 0xd0 && heap.held.at(0x80100130)[0] == 0x28,
+          "The bytes after the new header become the heap's");
+}
+
 // 80031b10's restart after its release pass and coalesce.
 void restart() {
     auto heap = sample();
@@ -182,8 +201,9 @@ int main() {
     try {
         allocation_modes();
         release_and_failure();
+        trim();
         restart();
-        std::cout << "Resident heap: three source-boundary groups passed\n";
+        std::cout << "Resident heap: four source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

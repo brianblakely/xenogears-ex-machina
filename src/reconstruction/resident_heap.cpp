@@ -207,6 +207,21 @@ std::int32_t heap_release(Heap &heap, HeapBlock &block, std::uint32_t call_site)
     return 0;
 }
 
+bool heap_trim(Heap &heap, HeapBlock &block, std::uint32_t size) {
+    auto &words = header(heap, block.address - 8);
+    if (size + 0x10U >= words[0] - (block.address - 8) - 0x10U)
+        return false;
+    const auto end = block.address + size;
+    if (size > block.bytes.size())
+        throw HeapError("A trimmed block's bytes are not the caller's");
+    give(heap, end, std::vector<std::uint8_t>(block.bytes.begin() + size, block.bytes.end()));
+    block.bytes.resize(size);
+    new_header(heap, end, {words[0], 0x84000000U});
+    words[0] = end + 8;
+    heap.dirty = 1;
+    return true;
+}
+
 void heap_restart(Heap &heap, std::uint32_t address, ByteRuns &outside) {
     const auto start = address & ~3U;
     const auto first = heap.head - 8;

@@ -86,6 +86,7 @@ RESIDENT_ENTRIES = (
     "battle_load_prologue",
     "battle_effect_lists",
     "battle_release_setup",
+    "battle_stage_setup",
     "mode_dispatch",
     "battle_mode_start",
     "battle_atb",
@@ -1116,8 +1117,15 @@ def run(args: argparse.Namespace) -> int:
     elif args.call_services:
         # The call's own platform waits (outside interrupt and presentation
         # brackets), from the service hooks between its entry and exit.
+        # Interrupts delivered at their arrivals take no service results, so
+        # those their handlers recorded are not the call's either.
+        arrivals = tuple(
+            (hook, hook.removesuffix("-entry") + "-exit")
+            for hook in (args.arrival, args.arrival_ticks)
+            if hook
+        )
         services = frame_services(
-            capture, args.entry_hook, args.exit_hook, interrupts + presentation
+            capture, args.entry_hook, args.exit_hook, interrupts + presentation + arrivals
         )
     chains = [[call] for call in selected]
     decoding = (

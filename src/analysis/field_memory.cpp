@@ -876,10 +876,15 @@ Program import_battle(const OriginalMemory &memory) {
                     reconstruction::battle::formation_table_bytes},
           std::pair{reconstruction::battle::battle_party_ids, 3U},
           // The word past the mode table's BSS end that 801e5384 stores.
-          std::pair{reconstruction::battle::overlay_end, 4U}})
+          std::pair{reconstruction::battle::overlay_end, 4U},
+          // The resident primitive table the stage's model packets follow
+          // (801e7210 through 8002c8cc).
+          std::pair{0x8004fe50U, 17U * 0x28U}})
         battle.regions.emplace(address, copy_of(memory.range(address, size)));
     static_cast<void>(own_block(reconstruction::battle::setup_module_base));
-    for (const auto pointer : {0x8005949cU, 0x800595a8U, 0x800595d0U, 0x80059480U, 0x800594acU})
+    // With the stage file (80059470) the scene files 801e7210 reads.
+    for (const auto pointer :
+         {0x8005949cU, 0x800595a8U, 0x800595d0U, 0x80059480U, 0x800594acU, 0x80059470U})
         static_cast<void>(own_block(memory.word(pointer)));
     // The intro swirl's state (allocated at 800b73fc; the header records the
     // call site's word address): the setup's archive items are allocated
