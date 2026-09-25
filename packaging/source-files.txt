@@ -75,6 +75,7 @@ analysis/formats/event-control.md
 analysis/formats/field-collision-source.md
 analysis/formats/field-control.md
 analysis/formats/field-encounter-observations.md
+analysis/formats/field-frame-rendering.md
 analysis/formats/field-lifecycle.md
 analysis/formats/field-media-source.md
 analysis/formats/field-motion-source.md
