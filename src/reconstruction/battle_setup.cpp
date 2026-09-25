@@ -790,6 +790,153 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
     static_cast<void>(read_files(0));
 }
 
+// Setup phase 3: 801e6290 (801e5924, 801e5ee8) then 801e62b8 (801e5d2c,
+// 801e5e78), over the graphics block (800c3ea4) and the UI block (800d2d28).
+void Program::setup_battle_panels(battle::Battle &context) {
+    auto &memory = context.memory;
+    const auto ui = memory.u32(0x800d2d28);
+    const auto graphics = memory.u32(0x800c3ea4);
+    const auto word = [&](std::uint32_t offset) {
+        return static_cast<std::int32_t>(memory.u32(graphics + offset));
+    };
+    // 801e5924: the gauge panels.
+    for (std::uint32_t member = 0; member < 3; ++member)
+        memory.put8(ui + 0x7c + member, 1);
+    // 80026338(800d2f5c, 5c, ...): glyph 5c's part count (+a234), its first
+    // part's texture mode, CLUT position and image position (+a238..+a248).
+    {
+        const auto table = memory.u32(0x800d2f5c);
+        const auto glyph = table + memory.u16(table + 4 + 0x5c * 2);
+        const auto part = glyph + 4;
+        const auto shift = memory.u16(part + 16) == 0 ? 20 : 18;
+        const auto offset = static_cast<std::int32_t>(memory.u16(part) << 16) >> shift;
+        for (const auto [at, value] :
+             {std::pair{0xa234U, memory.s16(glyph)},
+              {0xa238U, memory.s16(part + 16)},
+              {0xa23cU, memory.s16(part + 18)},
+              {0xa240U, memory.s16(part + 20)},
+              {0xa244U, s16(memory.u16(part + 22) & 0xffc0) + offset},
+              {0xa248U, s16(memory.u16(part + 24) & 0xff00) + memory.s16(part + 2)}})
+            memory.put32(graphics + at, static_cast<std::uint32_t>(value));
+    }
+    // GetClut 80043a58 on the rows above the glyph's CLUT.
+    for (const auto [at, row] :
+         {std::pair{0xa2aeU, 0}, {0xa2acU, -1}, {0xa2b2U, -2}, {0xa2b0U, -3}})
+        memory.put16(graphics + at, static_cast<std::uint32_t>(word(0xa240) + row) << 6 |
+                                        (static_cast<std::uint32_t>(word(0xa23c) >> 4) & 0x3f));
+    const auto page =
+        gpu::texture_page(memory.u32(graphics + 0xa238), 0, word(0xa244), word(0xa248));
+    for (std::uint32_t i = 0; i < 8; ++i) {
+        // SetPolyGT4 80043cd8, SetShadeTex(0): lit 80 at the top, black below.
+        const auto quad = graphics + 0x5a0 + i * 0x34;
+        memory.put8(quad + 3, 0xc);
+        memory.put8(quad + 7, 0x3c & 0xfe);
+        for (const auto at : {4U, 5U, 6U, 0x10U, 0x11U, 0x12U})
+            memory.put8(quad + at, 0x80);
+        for (const auto at : {0x1cU, 0x1dU, 0x1eU, 0x28U, 0x29U, 0x2aU})
+            memory.put8(quad + at, 0);
+        memory.put16(quad + 0x1a, page);
+        // SetPolyG4 80043cc4: grey 4f at the top.
+        const auto shade = graphics + 0x740 + i * 0x24;
+        memory.put8(shade + 3, 8);
+        memory.put8(shade + 7, 0x38);
+        for (const auto at : {0x14U, 0x15U, 0x16U, 0x1cU, 0x1dU, 0x1eU})
+            memory.put8(shade + at, 0x4f);
+    }
+    for (std::uint32_t i = 0; i < 12; ++i) { // SetLineF2 80043d78, white
+        const auto line = graphics + 0x908 + i * 0x10;
+        memory.put8(line + 3, 3);
+        memory.put8(line + 7, 0x40);
+        for (const auto at : {4U, 5U, 6U})
+            memory.put8(line + at, 0xff);
+    }
+    // 801e5ee8: each present member's gauge glyphs (52, then 53 dimmed by
+    // 80076c34) at half scale (80076a6c), counting parts in UI +78, then its
+    // portrait (61 + member) and two digit glyphs (90, 91, parts at +1e2 and
+    // +1e3), placed from the column table 800c3254 by layout 800d3280.
+    const auto buffer = memory.u32(0x800ccb34);
+    for (std::uint32_t member = 0; member < 3; ++member) {
+        if (memory.u8(0x800c3eb6 + member * 0x1c) == 0x7f)
+            continue;
+        const auto x =
+            memory.u16(0x800c3254 + (memory.u8(0x800d3280) * 3 + member) * 2) + member * 0x60;
+        const auto gauge = graphics + member * 0x1e0;
+        const auto count = ui + 0x78 + member;
+        memory.put8(count, memory.u8(count) + battle::draw_glyph(context, 0x52,
+                                                                 gauge + memory.u8(count) * 0x50,
+                                                                 x + 0x44, 0x24, 0x800));
+        const auto first = memory.u8(count);
+        memory.put8(count, first + battle::draw_glyph(context, 0x53, gauge + first * 0x50, x + 0x44,
+                                                      0x24, 0x800));
+        for (auto part = first * 2; part < memory.u8(count) * 2; part += 2) {
+            // 80076c34: semi-transparent (80043bfc), textured (80043c24),
+            // color 40, blending mode 1 (texture page bit 40).
+            const auto sprite = gauge + (part + buffer) * 0x28;
+            memory.put8(sprite + 7, (memory.u8(sprite + 7) | 2) & 0xfe);
+            for (const auto at : {4U, 5U, 6U})
+                memory.put8(sprite + at, 0x40);
+            memory.put16(sprite + 0x16, memory.u16(sprite + 0x16) | 0x40);
+        }
+        battle::draw_glyph(context, 0x61 + member, graphics + 0x818 + member * 0x50, x + 0x1c, 0x14,
+                           0x1000);
+        const auto digits = graphics + 0x835c + member * 0x1e4;
+        memory.put8(digits + 0x1e2,
+                    battle::draw_glyph(context, 0x90, digits, x + 0x38, 0x27, 0x1000));
+        memory.put8(digits + 0x1e3,
+                    battle::draw_glyph(context, 0x91, digits + 0xa0, x + 0x3c, 0x27, 0x1000));
+        memory.put8(digits + 0x1e0, buffer);
+    }
+    memory.put8(ui + 0xa2, buffer);
+    memory.put8(ui + 0x83, buffer);
+    // 801e5d2c: two white semi-transparent quads (SetPolyF4 80043c9c) and
+    // their draw modes (SetDrawMode 800454dc, window 0, 0, 100, 100) at
+    // blending mode 2.
+    const std::array<std::int16_t, 4> window{0, 0, 0x100, 0x100};
+    for (std::uint32_t i = 0; i < 2; ++i) {
+        const auto quad = graphics + 0x63c8 + i * 0x18;
+        memory.put8(quad + 3, 5);
+        for (const auto at : {4U, 5U, 6U})
+            memory.put8(quad + at, 0xff);
+        memory.put8(quad + 7, 0x28 | 2);
+        draw_mode_packet(graphics + 0x63f8 + i * 0xc,
+                         gpu::texture_page(0, 2, word(0xa244), word(0xa248)), &window);
+    }
+    memory.put32(graphics + 0x6410, 0xff);
+    memory.put8(graphics + 0x6415, 0);
+    memory.put8(graphics + 0x6416, 0);
+    // 801e5e78: ten text images (800c3e5c, 8008ac00(4)) of messages 0-9
+    // (800338d8: the table at *(*80059360 + 48)), each drawn by 80034eac(text,
+    // image, 2, 0): the resident text record 80059fd8 set to one line three
+    // columns wide (+a; +8 its pixel width, +12 the image stride), the image
+    // (+2c), its line record 8005a068 (+28) on the even plane, up to 100
+    // glyphs (+69), then 80033df0.
+    constexpr std::uint32_t record = 0x80059fd8;
+    constexpr std::uint32_t width = 2 | 1;
+    for (std::uint32_t i = 0; i < 10; ++i) {
+        const auto image = battle::allocate_text_block(context, resident, 4);
+        memory.put32(0x800c3e5c + i * 4, image);
+        const auto table = memory.u32(memory.u32(0x80059360) + 0x48);
+        memory.put32(record + 0x1c, table + memory.u16(table + 4 + i * 2));
+        memory.put16(record, 0);
+        memory.put16(record + 2, 0);
+        memory.put16(record + 8, width << 2);
+        memory.put16(record + 0xa, width);
+        memory.put16(record + 0xc, 1);
+        memory.put16(record + 0x10, 0);
+        memory.put16(record + 0x12, width + 3);
+        memory.put32(record + 0x28, 0x8005a068);
+        memory.put32(record + 0x2c, image);
+        memory.put8(record + 0x68, 1);
+        memory.put8(record + 0x69, 100);
+        memory.put8(record + 0x6a, 0);
+        memory.put8(record + 0x6c, 0);
+        memory.put16(record + 0x84, 0);
+        memory.put16(0x8005a068 + 0x58, 0);
+        memory.put8(0x8005a068 + 0x5a, 0);
+        dialogue_glyphs(record);
+    }
+}
+
 void Program::battle_prologue() {
     run_battle([&](battle::Battle &context) {
         auto &memory = context.memory;
@@ -1121,8 +1268,8 @@ void Program::setup_battle_phase(std::uint32_t phase, FrameServices &services,
         run_battle([&](battle::Battle &context) { battle::setup_turns(context, resident); });
         break;
     case 3:
-        throw MissingDependency({"battle_setup", 0x801e6290, {}, {}}, "symbol:battle-setup-panels",
-                                false, "The panel setup phase 801e6290 is not reconstructed");
+        run_battle([&](battle::Battle &context) { setup_battle_panels(context); });
+        break;
     default:
         break;
     }

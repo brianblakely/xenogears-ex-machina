@@ -1334,7 +1334,8 @@ class Program {
     void release_actor(std::uint32_t index); // 8008083c
     // Battle setup (battle_setup.cpp).
     void setup_battle_party(battle::Battle &battle, FrameServices &services,
-                            std::uint32_t stack); // 801e5384
+                            std::uint32_t stack);     // 801e5384
+    void setup_battle_panels(battle::Battle &battle); // 801e6290, 801e62b8
     std::uint32_t unpack_battle_item(battle::Battle &battle, std::uint32_t item,
                                      std::uint32_t mode); // 80032e88
     void release_battle_block(battle::Battle &battle, std::uint32_t address,

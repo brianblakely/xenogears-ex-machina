@@ -98,14 +98,14 @@ std::uint32_t event(const Battle &battle) {
 } // namespace
 
 std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
-                         std::uint32_t x, std::uint32_t y) {
+                         std::uint32_t x, std::uint32_t y, std::uint32_t scale) {
     auto &memory = battle.memory;
     const auto table = memory.u32(glyph_table_pointer);
     const auto sprite = table + memory.u16(table + id * 2 + 4);
     const auto buffer = memory.u32(buffer_index);
-    // Scaled by 1000 (4.12): a negative product rounds toward zero.
+    // Scaled (4.12): a negative product rounds toward zero.
     const auto scaled = [&](std::uint32_t at) {
-        auto product = memory.s16(at) * 0x1000;
+        auto product = memory.s16(at) * static_cast<std::int32_t>(scale);
         if (product < 0)
             product += 0xfff;
         return static_cast<std::uint32_t>(product >> 12);
@@ -179,14 +179,6 @@ std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destina
     return static_cast<std::uint32_t>(memory.s16(sprite));
 }
 
-namespace {
-
-// 80076a10(id, destination, x, y): sprite `id` of the glyph table at scale 1.
-std::uint32_t glyph(Battle &battle, std::uint32_t id, std::uint32_t destination, std::uint32_t x,
-                    std::uint32_t y) {
-    return draw_glyph(battle, id, destination, x, y);
-}
-
 // 8008ac00(count): 80032498(2, 0) selects owner tag 2 (clearing its word and
 // the quiet flag), then 80031bdc allocates (count + 3) * 26 bytes first fit.
 std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::uint32_t count) {
@@ -201,6 +193,15 @@ std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::
     battle.memory.regions.emplace(address, std::move(block->bytes));
     return address;
 }
+
+namespace {
+
+// 80076a10(id, destination, x, y): sprite `id` of the glyph table at scale 1.
+std::uint32_t glyph(Battle &battle, std::uint32_t id, std::uint32_t destination, std::uint32_t x,
+                    std::uint32_t y) {
+    return draw_glyph(battle, id, destination, x, y, 0x1000);
+}
+
 // 800320e8 on a block battle memory owns.
 void release_block(Battle &battle, ResidentState &resident, std::uint32_t address,
                    std::uint32_t call_site) {
