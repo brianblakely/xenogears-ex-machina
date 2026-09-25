@@ -64,7 +64,7 @@ run before promoting its observations.
 
 An instruction-trace specification has `schema_version: 1`, `name`, exact
 `source_profile`, inclusive `start_frame`, exclusive `end_frame`, `max_callbacks`
-and 1..64 `hooks`. Each hook has a unique `name`, aligned original `pc`, a
+and 1..128 `hooks`. Each hook has a unique `name`, aligned original `pc`, a
 `guard` containing RAM `offset` and exact lowercase `expected` code bytes, and
 `ranges` using the RAM sampler's range forms. A range may alternatively contain
 `register`, `relative_offset` and `size` to read a RAM address from a captured
@@ -80,9 +80,17 @@ aliases are bounded independently from RAM. Such records include
 `resolved_space: "scratchpad"` and an offset within that 1 KiB. Adjacent hardware
 registers and ranges crossing the boundary are unavailable; no emulated bus
 read occurs. Direct ranges, pointer-offset ranges and digests remain RAM-only.
+A hook may add `vram: {"register": N}`: register N holds the RAM address of a
+RECT (x, y, w, h halfwords) and the record's `vram` object holds that
+rectangle's VRAM pixels (`rect`, `sha256`, `hex`) or why it is unavailable.
+The extension export `retro_xem_vram_read` copies them through the GPU plugin's
+save-state export, which first completes buffered commands; nothing is written
+to VRAM, RAM or CPU state. A capture reads at most 64 MiB of VRAM. The
+`_drs` StoreImage transfer (800462dc, A0 its RECT) is the intended hook: its
+pixels are the platform input a StoreImage read-back delivers.
 The collector and extension use one versionless interface:
-`retro_xem_trace_configure`, `retro_xem_trace_enable`, and `retro_xem_trace_count`
-(plus the coverage exports below).
+`retro_xem_trace_configure`, `retro_xem_trace_enable`, `retro_xem_trace_count`
+and `retro_xem_vram_read` (plus the coverage exports below).
 The callback always supplies both RAM and scratchpad. Build the collector and
 core from the same repository revision; missing trace exports fail before trace
 configuration. The JSON trace specification's schema version is independent of
