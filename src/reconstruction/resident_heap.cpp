@@ -207,6 +207,95 @@ std::int32_t heap_release(Heap &heap, HeapBlock &block, std::uint32_t call_site)
     return 0;
 }
 
+void heap_restart(Heap &heap, std::uint32_t address, ByteRuns &outside) {
+    const auto start = address & ~3U;
+    const auto first = heap.head - 8;
+    const auto first_words = header(heap, first);
+    const auto next = first_words[0];
+    if (start + 8 > next - 8)
+        throw HeapError("A heap restart lies past its first block");
+    for (auto at = heap.headers.upper_bound(std::min(start, first));
+         at != heap.headers.end() && at->first < next - 8; ++at)
+        if (at->first != first)
+            throw HeapError("A heap restart crosses another block header");
+    const auto header_bytes = [](const std::array<std::uint32_t, 2> &words) {
+        std::vector<std::uint8_t> bytes(8);
+        for (std::size_t i = 0; i < 8; ++i)
+            bytes[i] = static_cast<std::uint8_t>(words[i / 4] >> (8U * (i % 4)));
+        return bytes;
+    };
+    // Move [from, to) out of a byte store, whole or failing.
+    const auto take_from = [](ByteRuns &store, std::uint32_t from, std::uint32_t to) {
+        std::vector<std::uint8_t> result;
+        while (from < to) {
+            auto found = store.upper_bound(from);
+            if (found == store.begin())
+                throw HeapError("A heap restart reaches RAM no Program state holds");
+            --found;
+            const auto begin = found->first;
+            auto bytes = std::move(found->second);
+            store.erase(found);
+            if (from >= begin + bytes.size())
+                throw HeapError("A heap restart reaches RAM no Program state holds");
+            const auto end = std::min<std::uint64_t>(to, begin + bytes.size());
+            result.insert(result.end(), bytes.begin() + (from - begin),
+                          bytes.begin() + static_cast<std::ptrdiff_t>(end - begin));
+            if (from != begin)
+                store.emplace(begin, std::vector<std::uint8_t>(bytes.begin(),
+                                                               bytes.begin() + (from - begin)));
+            if (end < begin + bytes.size())
+                store.emplace(
+                    static_cast<std::uint32_t>(end),
+                    std::vector<std::uint8_t>(
+                        bytes.begin() + static_cast<std::ptrdiff_t>(end - begin), bytes.end()));
+            from = static_cast<std::uint32_t>(end);
+        }
+        return result;
+    };
+    const auto word_at = [](const std::vector<std::uint8_t> &bytes) {
+        std::uint32_t value = 0;
+        for (std::size_t i = 0; i < 4; ++i)
+            value |= static_cast<std::uint32_t>(bytes[4 + i]) << (8U * i);
+        return value;
+    };
+    std::uint32_t old_flags = 0;
+    heap.headers.erase(first);
+    if (start >= first) {
+        // The old first header and the held bytes below the new one leave the
+        // heap; the new header overwrites held bytes.
+        std::vector<std::uint8_t> below;
+        if (start == first) {
+            old_flags = first_words[1];
+        } else {
+            if (start < first + 8)
+                throw HeapError("A heap restart overlaps the old first header");
+            below = header_bytes(first_words);
+            if (start > first + 8) {
+                const auto held = take(heap, first + 8, start - first - 8);
+                below.insert(below.end(), held.begin(), held.end());
+            }
+            old_flags = word_at(take(heap, start, 8));
+        }
+        if (!below.empty()) {
+            auto &slot = outside[first];
+            if (!slot.empty())
+                throw HeapError("RAM below a heap restart is already held outside it");
+            slot = std::move(below);
+        }
+    } else {
+        // RAM below the old start joins the first block; the old header's
+        // words become its bytes.
+        auto joined = take_from(outside, start, first);
+        old_flags = word_at(joined);
+        joined.erase(joined.begin(), joined.begin() + 8);
+        const auto old_header = header_bytes(first_words);
+        joined.insert(joined.end(), old_header.begin(), old_header.end());
+        give(heap, start + 8, std::move(joined));
+    }
+    heap.headers[start] = {next, (old_flags & 0x021fffffU) | 0x84000000U};
+    heap.head = start + 8;
+}
+
 void heap_coalesce(Heap &heap) {
     auto at = heap.head - 8;
     while (tag_of(heap, at) != heap_end_tag) {

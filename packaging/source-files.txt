@@ -231,12 +231,14 @@ src/reconstruction/field_update.cpp
 src/reconstruction/field_view.cpp
 src/reconstruction/gpu.cpp
 src/reconstruction/gpu_queue.cpp
+src/reconstruction/graphics_setup.cpp
 src/reconstruction/gte.cpp
 src/reconstruction/interrupts.cpp
 src/reconstruction/media.cpp
 src/reconstruction/menu_equipment.cpp
 src/reconstruction/menu_items.cpp
 src/reconstruction/menu_save.cpp
+src/reconstruction/mode_dispatch.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
@@ -321,6 +323,7 @@ tests/test_memory_sampler.py
 tests/test_menu.cpp
 tests/test_menu_save.cpp
 tests/test_menu_save_file.py
+tests/test_mode_dispatch.cpp
 tests/test_movement_sweep.py
 tests/test_music_load.cpp
 tests/test_music_loading.py

@@ -156,18 +156,18 @@ int run_case(int argc, char **argv) {
             entry == "sound_set_master" || entry == "sound_set_cd" ||
             entry == "sound_update_voices" || entry == "set_next_mode" || entry == "field_exit" ||
             entry == "battle_mode_exit" || entry == "interrupt_dispatch" || entry == "sound_tick" ||
-            entry == "sequence_open" || entry == "sequence_start";
+            entry == "sequence_open" || entry == "sequence_start" ||
+            entry.starts_with("mode_dispatch");
         // Field entries beyond the update: one extended event handler, the
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision" ||
                                  entry == "music_poll" || entry == "music_chunk";
-        const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
-                                  entry == "battle_alive" || entry == "battle_rewards" ||
-                                  entry == "battle_reward_totals" || entry == "battle_drops" ||
-                                  entry == "battle_atb" || entry == "battle_reload" ||
-                                  entry == "battle_ai" || entry == "battle_results_step" ||
-                                  entry == "battle_setup_phase" ||
-                                  entry.starts_with("battle_turn_");
+        const bool battle_entry =
+            entry == "battle_commit" || entry == "battle_apply" || entry == "battle_alive" ||
+            entry == "battle_rewards" || entry == "battle_reward_totals" ||
+            entry == "battle_drops" || entry == "battle_atb" || entry == "battle_reload" ||
+            entry == "battle_ai" || entry == "battle_results_step" ||
+            entry == "battle_setup_phase" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -189,8 +189,9 @@ int run_case(int argc, char **argv) {
             entry == "field_reload_finish" || entry == "field_reload_teardown" ||
             entry == "field_reload" || entry == "field_load";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
+            entry != "battle_mode_start" && entry != "field_checkpoints" &&
+            !entry.starts_with("field_frame") && !resident_entry && !battle_entry && !menu_entry &&
+            !field_entry && !transition_entry && !reload_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -225,6 +226,21 @@ int run_case(int argc, char **argv) {
             if (entry == "sequence_open")
                 analysis::import_disc_data(*program, memory, registers[4],
                                            memory.word(registers[4] + 8));
+            // The dispatcher's second heap restart (at the mode table row's
+            // BSS end + 4) takes in the RAM below the heap's head, which no
+            // other Program value owns.
+            if (entry == "mode_dispatch:reinit" || entry == "mode_dispatch:sync") {
+                const auto row = 0x8001808cU + memory.word(0x80018088) * 16U;
+                const auto start = (memory.word(row + 8) + 4U) & ~3U;
+                const auto first = program->resident.heap.head - 8;
+                if (start < first) {
+                    const auto bytes = memory.range(start, first - start);
+                    program->resident.heap_outside.emplace(
+                        start, std::vector<std::uint8_t>(bytes.begin(), bytes.end()));
+                }
+            }
+        } else if (entry == "battle_mode_start") {
+            program = analysis::import_battle_overlay(memory);
         } else if (battle_entry) {
             program = analysis::import_battle(memory);
         } else if (menu_entry) {
@@ -797,6 +813,27 @@ int run_case(int argc, char **argv) {
             // 8001b758: the outcome 800c48ea and 800d3338 are read from the
             // battle overlay the returned battle leaves in RAM.
             program->finish_battle_mode(memory.ram.at(0xc48ea), memory.ram.at(0xd3338));
+        } else if (entry == "battle_mode_start") {
+            program->battle_mode_start(); // 8001b6c4 up to 80070f40
+        } else if (entry.starts_with("mode_dispatch")) {
+            // 80019acc(0) from a resumable point ("mode_dispatch:STEP") to the
+            // row call; returns the mode's function.
+            static const std::map<std::string_view, game::DispatchStep> steps{
+                {"start", game::DispatchStep::start},
+                {"heap", game::DispatchStep::heap},
+                {"wait", game::DispatchStep::wait},
+                {"sync", game::DispatchStep::sync},
+                {"reinit", game::DispatchStep::reinit}};
+            auto from = game::DispatchStep::start;
+            if (entry != "mode_dispatch") {
+                const auto found =
+                    steps.find(entry.substr(std::string_view("mode_dispatch:").size()));
+                if (!entry.starts_with("mode_dispatch:") || found == steps.end())
+                    throw InputError("Unknown mode dispatch step");
+                from = found->second;
+            }
+            return_value = program->mode_dispatch(services, from, observer);
+            program->deliver_pending_arrivals();
         } else if (entry == "set_next_mode") {
             program->set_next_mode(registers[4]); // 8001996c: A0 mode
         } else if (entry == "field_event_extended") {
@@ -865,6 +902,14 @@ int run_case(int argc, char **argv) {
     } catch (const BoundaryReached &) {
         status = "completed_boundary";
         reason = "Stopped at the requested completed library boundary";
+        // Arrivals recorded inside a dispatcher call came before its boundary.
+        if (entry.starts_with("mode_dispatch"))
+            try {
+                program->deliver_pending_arrivals();
+            } catch (const std::exception &error) {
+                status = "reconstruction_error";
+                reason = error.what();
+            }
     } catch (const HostBudget &error) {
         status = "host_budget_exhausted";
         reason = error.what();

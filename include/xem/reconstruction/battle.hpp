@@ -38,6 +38,8 @@ struct BattleMemory {
     // Move [address, address + size) out of its region, splitting the region
     // (a disc read list becomes the reader's while its read runs).
     std::vector<std::uint8_t> take(std::uint32_t address, std::uint32_t size);
+    // Whether one region holds [address, address + size).
+    [[nodiscard]] bool contains(std::uint32_t address, std::uint32_t size) const;
 };
 
 inline constexpr std::uint32_t overlay_base = 0x8006faf0;

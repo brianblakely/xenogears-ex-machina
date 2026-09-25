@@ -172,6 +172,13 @@ void Program::vertical_sync(FrameServices &services) {
         throw ServiceUnavailable("VSync(0) result");
     const auto wait = services.vblank_waits.front();
     services.vblank_waits.pop_front();
+    // The wait ended once the vertical blank counter reached the value it
+    // stores: the unpositioned arrivals up to that blank came before.
+    using Kind = PlatformInput::Kind;
+    while (!in_interrupt_ && static_cast<std::int32_t>(resident.vsync_counter - wait[1]) < 0 &&
+           !resident.platform.empty() && resident.platform.front().site == 0 &&
+           resident.platform.front().kind == Kind::interrupt)
+        static_cast<void>(deliver_interrupt());
     resident.vsync_hcount = wait[0];
     resident.vsync_previous = wait[1];
 }

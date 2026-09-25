@@ -703,6 +703,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_transfer", block.address, block.bytes);
     for (const auto &[address, bytes] : resident.heap_contents)
         out.bytes("heap_contents", address, bytes);
+    for (const auto &[address, bytes] : resident.heap_outside)
+        out.bytes("heap_outside", address, bytes);
 }
 } // namespace
 
@@ -820,13 +822,19 @@ std::vector<OwnedRange> export_resident(const Program &program, OriginalMemory &
     return std::move(out.owned);
 }
 
-Program import_battle(const OriginalMemory &memory) {
+Program import_battle_overlay(const OriginalMemory &memory) {
     auto program = import_resident(memory);
     auto &battle = program.battle.emplace();
     const auto overlay =
         memory.range(reconstruction::battle::overlay_base,
                      reconstruction::battle::overlay_end - reconstruction::battle::overlay_base);
     battle.regions.emplace(reconstruction::battle::overlay_base, copy_of(overlay));
+    return program;
+}
+
+Program import_battle(const OriginalMemory &memory) {
+    auto program = import_battle_overlay(memory);
+    auto &battle = *program.battle;
     // Allocated heap blocks the battle reaches, each owned up to the next
     // header: those containing `address`, when one does.
     const auto &headers = program.resident.heap.headers;

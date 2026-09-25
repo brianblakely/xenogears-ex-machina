@@ -76,6 +76,8 @@ RESIDENT_ENTRIES = (
     "battle_drops",
     "battle_results_step",
     "battle_setup_phase",
+    "mode_dispatch",
+    "battle_mode_start",
     "battle_atb",
     "battle_reload",
     "disc_read_file",
@@ -499,7 +501,11 @@ SERVICE_READS = (0x8004674C, 0x80046780, 0x8004618C, 0x800461C0, 0x800463C4, 0x8
 
 
 def call_platform_rows(
-    rows: list[dict], image_rows: list[dict], entry_row: dict, exit_row: dict, interrupts,
+    rows: list[dict],
+    image_rows: list[dict],
+    entry_row: dict,
+    exit_row: dict,
+    interrupts,
     own: list[dict],
 ) -> list[dict]:
     """A call's platform rows: its own capture's, plus the hardware reads that
@@ -553,13 +559,15 @@ def call_platform_rows(
 
 
 def platform_inputs(
-    rows: list[dict], ram: bytes, io: bytes, arrival: str | None
+    rows: list[dict], ram: bytes, io: bytes, arrival: str | None, pads=None
 ) -> tuple[str, list[int]]:
     """The runner's platform input file and the recorded delivered sectors.
 
     Load values come from the original registers after each load; nothing is
     taken from an exit image. CD_datasync's DMA3 busy reads are checked
     against the imported I/O page, which the recovered disc status reads.
+    `pads` reads the controller buffers the BIOS filled before an arrival
+    (from its snapshot) when the arrival hook records one.
     """
     dma3 = u32(ram, 0x800567B4) - IO_BASE
     idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000 if 0 <= dma3 <= len(io) - 4 else None
@@ -568,6 +576,8 @@ def platform_inputs(
         hook = row["hook"]
         if hook == arrival:
             lines.append("interrupt")
+            if pads is not None and "snapshot" in row:
+                lines += [f"pad {i:x} {b:x}" for i, b in enumerate(pads(row))]
         elif hook == SECTOR_HOOK:
             sectors.append(header_sector(row))
         else:
@@ -1124,7 +1134,13 @@ def run(args: argparse.Namespace) -> int:
                     interrupts + presentation,
                     inputs,
                 )
-            platform, recorded_sectors = platform_inputs(inputs, entry, io, args.arrival)
+            platform, recorded_sectors = platform_inputs(
+                inputs,
+                entry,
+                io,
+                args.arrival,
+                lambda row: snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)],
+            )
             if args.assume_idle_otc:
                 require(args.entry in RELOAD_ENTRIES, "Assumed reads apply to reload entries")
                 platform += "".join(

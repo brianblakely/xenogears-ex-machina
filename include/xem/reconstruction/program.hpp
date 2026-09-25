@@ -482,6 +482,16 @@ struct ResidentState {
     // Bytes of allocated heap blocks that no other Program value interprets,
     // by address; a field teardown releases them with their blocks.
     std::map<std::uint32_t, std::vector<std::uint8_t>> heap_contents;
+    // RAM a heap restart (80031b10) left outside the list, as it was, until
+    // another owner takes it (a restart below it, a mode's BSS).
+    resident::ByteRuns heap_outside;
+    // Written by 80031a30 after a mode's heap restart; meaning not recovered.
+    std::uint32_t w_59334{}; // 80059334
+    std::uint32_t w_59338{}; // 80059338
+    std::uint8_t b_5959c{};  // 8005959c: 1 once battle mode 8001b6c4 starts
+    // Return addresses InitGeom (800569f0) and its 8004b4ac (800593d4) save.
+    std::uint32_t geometry_return{};
+    std::uint32_t geometry_inner_return{};
 };
 
 // Field reload 800a5c40. Globals whose meaning is not recovered keep their
@@ -730,6 +740,14 @@ enum class FrameStep : std::uint8_t {
 };
 
 class Program;
+// Resumable points of the mode dispatcher 80019acc(0).
+enum class DispatchStep : std::uint8_t {
+    start,  // entry: ResetGraph, DrawSync, VSync(2)
+    heap,   // 80019b3c: the heap restart, BSS clear and the mode block load
+    wait,   // 80019b80: the disc wait, then the decode
+    sync,   // 80019b98: after the decode: DrawSync, VSync, FlushCache
+    reinit, // 80019bdc: the second heap restart up to the row call
+};
 // Read-only observation. Hosts may interrupt at a boundary; no callback supplies
 // a computed game result. References expire when the callback returns.
 using ProgramObserver = std::function<void(const Program &, SourcePoint, bool completed)>;
@@ -853,6 +871,32 @@ class Program {
     // Resident 8001996c: select the next game mode for the mode dispatcher
     // 80019acc, dropping the cached mode block when the mode changes.
     void set_next_mode(std::uint32_t mode);
+    // Resident mode dispatcher 80019acc(0) (mode_dispatch.cpp) from `from` up
+    // to its call of the next mode's function (mode table 8001808c); returns
+    // that function. Observed boundaries: mode_heap (the first heap restart
+    // 80031b10), mode_loaded (800199cc returned), mode_decode (80032eb4 is
+    // called), mode_reinit (the second 80031b10) and mode_row (the call).
+    // The battle overlay's BSS and decoded image become Program::battle.
+    std::uint32_t mode_dispatch(FrameServices &services, DispatchStep from,
+                                const ProgramObserver &observe = {});
+    // Resident 8001b6c4 (battle mode) up to its call of 80070f40: the disc
+    // wait, directory 12 and the graphics setup 8001b844.
+    void battle_mode_start();
+    // Resident libgpu/libgte setup calls (graphics_setup.cpp). Environments
+    // are addressed as the original addresses them: battle memory when it
+    // holds them, else other owned memory.
+    void set_default_display_environment(std::uint32_t environment, std::int32_t x, std::int32_t y,
+                                         std::int32_t width,
+                                         std::int32_t height); // SetDefDispEnv 800439e0
+    void set_default_draw_environment(std::uint32_t environment, std::int32_t x, std::int32_t y,
+                                      std::int32_t width,
+                                      std::int32_t height); // SetDefDrawEnv 80043928
+    // InitGeom 80048bc4 called from `return_address - 8`.
+    void init_geometry(std::uint32_t return_address);
+    void set_geometry_offset(std::int32_t x, std::int32_t y); // SetGeomOffset 8004a12c
+    void set_geometry_screen(std::int32_t h);                 // SetGeomScreen 8004a14c
+    // 8001b94c: a battle draw environment's dither, background and colour.
+    void set_battle_draw_modes(std::uint32_t environment);
     // Field extended event handler that the FE handler's table reaches for
     // actor `index`, whose working PC is the extended byte.
     void event_extended(std::size_t index, const ProgramObserver &observe = {});
@@ -1039,6 +1083,8 @@ class Program {
     [[nodiscard]] std::span<std::uint8_t> resource_bytes(std::uint32_t address,
                                                          std::size_t width) const;
     void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
+    // A byte or halfword store to battle memory when it holds it, else set_memory.
+    void store_owned(std::uint32_t address, std::uint32_t value, std::uint32_t width);
     void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
     void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);
     void frame_dialogue_timers();                                      // 800805f4
@@ -1154,6 +1200,10 @@ class Program {
     void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
     void draw_sync(FrameServices &services);                                            // 800445d0
+    // Mode dispatch (mode_dispatch.cpp).
+    void release_heap_blocks();                        // 8003223c
+    void restart_heap(std::uint32_t address);          // 80031b10
+    std::uint32_t load_mode_block(std::uint32_t mode); // 800199cc
     // Reload steps (field_reload.cpp).
     void party_record(std::uint32_t slot);       // 8009fee4
     void vertical_sync(FrameServices &services); // VSync(0) (8004b54c)
@@ -1209,7 +1259,7 @@ class Program {
     // Release the allocated heap block at `address` (800320e8 at `site`)
     // with the owned bytes it holds; returns its size (zero if kept).
     std::uint32_t release_owned_block(std::uint32_t address, std::uint32_t site);
-    void release_actor(std::uint32_t index);                       // 8008083c
+    void release_actor(std::uint32_t index); // 8008083c
     // Battle setup (battle_setup.cpp).
     void setup_battle_party(battle::Battle &battle, FrameServices &services,
                             std::uint32_t stack); // 801e5384
