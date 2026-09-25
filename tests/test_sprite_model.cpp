@@ -114,7 +114,7 @@ struct Fixture {
                   "Original relocation precedes releasing the old allocation");
             released.push_back(address);
         };
-        services.allocate = [&](std::uint32_t size, std::uint32_t mode) {
+        services.allocate = [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
             check(size == 144 && mode == 0 && allocator.allocation_class == 0x25,
                   "Double-buffer request uses original size, mode and tag");
             check(released.size() == allocation_count + 1,

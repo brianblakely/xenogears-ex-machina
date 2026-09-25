@@ -378,7 +378,8 @@ struct ResidentState {
     // initializes for a new game (empty before boot allocates it).
     std::vector<std::uint8_t> game_data;
     [[nodiscard]] std::array<std::uint8_t, 3> party_modes() const; // game data + 22b1
-    std::vector<std::uint32_t> party_sprite_resources;
+    // 8005a414: the sprite resource each party slot's files were read into.
+    std::array<std::uint32_t, 3> party_sprite_resources{};
     field::MathTables math;
     InputQueue input_queue;
     // 8005917c points at the word at 80010000; -1 there disables the debug
@@ -647,14 +648,15 @@ struct FieldState {
     std::array<std::uint16_t, 3> back_color{};       // 800afb04: lit models' background
     // Later frame steps. Gates whose drawing is not recovered keep their
     // original address as their name.
-    std::uint32_t particles_paused{};                // 800adb34
-    std::array<std::uint8_t, 64> particle_slots{};   // 800b14b0: 1 while an emitter runs
-    std::int16_t distortion{};                       // 800b2078: screen distortion active
-    std::uint32_t w_af278{};                         // 800af278: gates 800a84c0
-    std::int16_t h_b00b2{};                          // 800b00b2: with 800adb50, gates 80075484
-    std::uint32_t w_adb50{};                         // 800adb50
-    std::uint32_t w_b2264{};                         // 800b2264: gates 8007520c
-    std::uint32_t w_adb54{};                         // 800adb54: gates 800abec8
+    std::uint32_t particles_paused{};              // 800adb34
+    std::array<std::uint8_t, 64> particle_slots{}; // 800b14b0: 1 while an emitter runs
+    std::int16_t distortion{};                     // 800b2078: screen distortion active
+    std::uint32_t w_af278{};                       // 800af278: gates 800a84c0
+    std::int16_t h_b00b2{};                        // 800b00b2: with 800adb50, gates 80075484
+    std::uint32_t w_adb50{};                       // 800adb50
+    std::uint32_t w_b2264{};                       // 800b2264: gates 8007520c
+    std::uint32_t w_adb54{};                       // 800adb54: gates 800abec8
+    std::uint16_t h_afd20{}; // 800afd20: ff40 once a party member is placed; no reader recovered
     std::uint32_t dialogue_ticks{};                  // 800ade98
     std::uint32_t dialogue_cursor{};                 // 800ade94: 0..4, every fourth tick
     std::uint32_t background_mode{};                 // 800b0048: 3 copies VRAM behind cuts
@@ -959,6 +961,9 @@ class Program {
     [[nodiscard]] std::uint32_t current_disc() const;
 
   private:
+    // Platform services of the call now running events (the field load's
+    // initialization); event instructions that reach libgpu use them.
+    FrameServices *event_services_{};
     // Field frame steps (field_frame.cpp).
     void frame_emitters(std::uint32_t listener);                                    // 80086590
     void frame_fade();                                                              // 80071cb4
@@ -1074,6 +1079,7 @@ class Program {
     void swap_draw_buffer();                                             // 80073fe0
     std::uint32_t file_size(std::int32_t file);                          // Resident 80028738
     std::uint32_t read_size(std::int32_t file);                          // Resident 80028808
+    std::uint32_t file_bytes(std::int32_t file);                         // Resident 800288ec
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
@@ -1179,9 +1185,28 @@ class Program {
     std::vector<std::uint8_t> take_contents(std::uint32_t address, std::uint32_t size);
     void adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes);
     void init_field_events(const ProgramObserver &observe); // 800a28d4 (no return)
-    void reset_graph(std::uint32_t mode);                   // 80044110 ResetGraph
-    void destroy_sprite_tasks();                            // 8001c8dc
-    void flush_sprite_uploads(FrameServices &services);     // 80025044
+    // Event initialization and actor setup (field_init.cpp).
+    void create_actor_sprite(std::size_t index,
+                             const field::FieldSpriteArguments &arguments); // 80076ac0
+    void sync_actor_position(std::size_t index);                            // 800a0c94
+    [[nodiscard]] std::uint32_t bundle_sprite(std::uint32_t slot);
+    void place_at_entry(std::size_t index, std::int32_t entry); // 8009fa54
+    void event_default_sprite(field::EventContext &context);    // Primary bc
+    void event_bundle_sprite(field::EventContext &context);     // Primary 0b
+    void event_party_member(field::EventContext &context);      // Primary 16
+    void event_place_height(field::EventContext &context);      // Primary 1d
+    void event_descriptor_hidden(field::EventContext &context); // Primary 23
+    void event_stop_actor(field::EventContext &context);        // Primary 27
+    void event_camera_bounds(field::EventContext &context);     // Primary e6
+    void event_branch_below(field::EventContext &context);      // Primary 85
+    void event_face_direction(field::EventContext &context);    // Primary 69
+    void event_encounter_table(field::EventContext &context);   // Primary f7
+    // Extended actor-setup instructions; false when `extended` is not one.
+    bool event_setup_extended(field::EventContext &context, std::uint8_t extended);
+    [[nodiscard]] std::int32_t party_character(std::int32_t selector) const; // 8008cf3c
+    void reset_graph(std::uint32_t mode);                                    // 80044110 ResetGraph
+    void destroy_sprite_tasks();                                             // 8001c8dc
+    void flush_sprite_uploads(FrameServices &services);                      // 80025044
     // Owned bytes from `address` to the end of their owner, whatever value
     // owns them (records, regions, resources, loaded components, allocated
     // heap contents); empty when none does.
@@ -1197,10 +1222,12 @@ class Program {
     // observed I/O page.
     [[nodiscard]] std::uint32_t io_latch(std::uint32_t address, std::uint32_t width) const;
     void io_write(std::uint32_t address, std::uint32_t value, std::uint32_t width);
-    std::int32_t disc_idle_query();                  // Field 8008a558
-    void change_music(field::EventContext &context); // Field 8008f76c (primary 75)
-    void load_music(std::uint32_t id);               // Field 80085b20
-    void release_shared_wave();                      // Field 80086024
+    std::int32_t disc_idle_query(); // Field 8008a558
+    // Field 8008f76c (primary 75) and 8008f724 (72): 8008f7b8 with the
+    // start parameter (8004f340) -1 or 0.
+    void change_music(field::EventContext &context, std::uint32_t start_parameter);
+    void load_music(std::uint32_t id); // Field 80085b20
+    void release_shared_wave();        // Field 80086024
     // The music load's calls (field_music.cpp) and the resident sound calls
     // they reach (sound_load.cpp, sound_tick.cpp).
     class Music;

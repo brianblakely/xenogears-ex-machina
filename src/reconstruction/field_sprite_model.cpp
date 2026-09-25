@@ -191,7 +191,7 @@ void construct_sprite_model(SpriteWindow sprite, std::uint32_t model,
     const auto size = read(sources, model + 0x34);
     input(size <= 0x100000, "Original model packet allocation exceeds resource bounds");
     recovered(static_cast<bool>(sources.services->allocate), "Model allocation service is absent");
-    auto buffer = sources.services->allocate(size * 2U, 0);
+    auto buffer = sources.services->allocate(size * 2U, 0, 0x8002cb84);
     input(buffer.bytes.size() == size * 2U && (size == 0 || buffer.address != 0) &&
               static_cast<std::uint64_t>(buffer.address) + buffer.bytes.size() <= (1ULL << 32),
           "Incomplete original model allocation or incoming bytes");

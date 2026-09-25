@@ -418,8 +418,8 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
         case 0xfc:
             show_message(context);
             break;
-        case 0x75:
-            change_music(context);
+        case 0x75: // 8008f76c
+            change_music(context, 0xffffffffU);
             break;
         case 0x15: // 80093c6c: wait until the field is active and gate ADBE4 is set.
             script(context, [&](field::FieldWorld &world) {
@@ -486,6 +486,39 @@ void Program::dispatch(field::EventContext &context, std::uint8_t opcode,
             });
             break;
         }
+        case 0xbc:
+            event_default_sprite(context);
+            break;
+        case 0x0b:
+            event_bundle_sprite(context);
+            break;
+        case 0x16:
+            event_party_member(context);
+            break;
+        case 0x1d:
+            event_place_height(context);
+            break;
+        case 0x23:
+            event_descriptor_hidden(context);
+            break;
+        case 0x27:
+            event_stop_actor(context);
+            break;
+        case 0xe6:
+            event_camera_bounds(context);
+            break;
+        case 0x85:
+            event_branch_below(context);
+            break;
+        case 0x69:
+            event_face_direction(context);
+            break;
+        case 0xf7:
+            event_encounter_table(context);
+            break;
+        case 0x72: // 8008f724: 75 with start parameter 0.
+            change_music(context, 0);
+            break;
         case 0xf5: // 8009c12c: a mode-3 message window for the current actor.
             script(context, [&](field::FieldWorld &world) {
                 static_cast<void>(open_dialogue(world, context.pass,
@@ -550,6 +583,8 @@ void Program::dispatch_extended(field::EventContext &active, std::uint8_t extend
             play_sound_effect(static_cast<std::uint32_t>(id), static_cast<std::uint32_t>(channel));
             put(self, 0xcc, word(self, 0xcc, 2) + 5, 2);
         });
+    else if (event_setup_extended(active, extended))
+        ;
     else if (extended == 0x60) // 8008ec30
         script(active, [&](field::FieldWorld &world) {
             field::request_movie(world, state.movie, resident.battle_request.field_active,

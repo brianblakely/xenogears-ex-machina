@@ -1004,10 +1004,12 @@ void Program::init_field_events(const ProgramObserver &observe) {
         state.initialized_sprites = 0;
         state.event_control.budget_mode = 0;
         static_cast<void>(event_batch(i, 0xffff, observe));
-        if (state.initialized_sprites == 0)
-            throw MissingDependency({"init_field_events", 0x80076ac0, i, {}},
-                                    "symbol:field-default-sprite", false,
-                                    "The bundle's default sprite for an actor is not connected");
+        if (state.initialized_sprites != 0)
+            continue;
+        // The bundle's first sprite, tag 80, and flag 800.
+        create_actor_sprite(i, {static_cast<std::uint32_t>(i), 0, bundle_sprite(0), 0, 0, 0x80, 0});
+        auto &actor = state.actors[i];
+        set_memory(actor.address + 4, memory(actor.address + 4) | 0x800U);
     }
 }
 
@@ -1150,9 +1152,13 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
         store_original(store.address, store.value, store.width);
     observed(observe, *this, {"load_view_reset", 0x80071768, {}, {}});
     adopt_loaded_field(sizes);
+    struct Lend {
+        FrameServices *&slot;
+        ~Lend() { slot = nullptr; }
+    } lend{event_services_ = &services};
     init_field_events(observe); // 800a28d4
-    state.event_control.post_initialization = 1;
     observed(observe, *this, {"load_events", 0x80071770, {}, {}});
+    state.event_control.post_initialization = 1;
     throw MissingDependency({"load_field", 0x80071770, {}, {}}, "symbol:field-load-80070cc8", false,
                             "The field load after its events is not reconstructed");
 }

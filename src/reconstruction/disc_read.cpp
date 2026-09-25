@@ -159,6 +159,14 @@ std::int32_t Program::read_file(std::int32_t file, std::uint32_t destination, st
     return read_setup(u32(file), destination, offset, mode);
 }
 
+// Resident 800288ec: the file's byte size rounded up to words, as a signed
+// MIPS quotient.
+std::uint32_t Program::file_bytes(std::int32_t file) {
+    const auto size = s32(file_size(file));
+    const auto rounded = s32(u32(size) + 3U);
+    return u32((rounded >= 0 ? rounded : s32(u32(size) + 6U)) >> 2) << 2U;
+}
+
 // Resident 80028808: the byte size of `file` in the directory of the current
 // read (8004fe18), rounded up to words as a signed MIPS quotient.
 std::uint32_t Program::read_size(std::int32_t file) {
@@ -1230,6 +1238,15 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
     for (auto &block : resident.music_blocks)
         if (inside(block))
             return;
+    // An allocated block's raw contents (a file read into its own block).
+    auto &contents = resident.heap_contents;
+    if (const auto after = contents.upper_bound(address); after != contents.begin()) {
+        auto &[at, bytes] = *std::prev(after);
+        if (address >= at && end <= std::uint64_t{at} + bytes.size()) {
+            std::ranges::copy(data, bytes.begin() + (address - at));
+            return;
+        }
+    }
     for (auto &[at, bytes] : resident.heap.held)
         if (address < at + bytes.size() && at < end)
             throw field::FieldFormatError("Disc DMA writes into a free heap block");

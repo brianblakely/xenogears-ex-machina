@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <bit>
+#include <cstdio>
 #include <limits>
 #include <string>
 #include <unordered_set>
@@ -88,17 +89,22 @@ std::uint32_t read(std::span<const SpriteResource> sources, std::uint32_t pointe
             value = next;
         }
     }
-    require_source(value.has_value(),
-                   "Sprite read requires missing address-qualified source bytes");
+    if (!value) {
+        char text[80];
+        std::snprintf(text, sizeof text,
+                      "Sprite read requires missing address-qualified source bytes at %08x",
+                      pointer);
+        throw SpriteInputError(text);
+    }
     return *value;
 }
 std::uint32_t resource(const SpriteSources &sources, std::uint32_t pointer, std::size_t size) {
     return read(sources.resources, pointer, size);
 }
-SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size,
-                            std::uint32_t mode = 0) {
+SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size, std::uint32_t mode,
+                            std::uint32_t call_site) {
     require(static_cast<bool>(allocate), "Original sprite allocation boundary is absent");
-    auto result = allocate(size, mode);
+    auto result = allocate(size, mode, call_site);
     require(result.bytes.size() == size && valid_extent(result.address, size) &&
                 (size == 0 || result.address != 0),
             "Incomplete original sprite allocation or incoming bytes");
@@ -287,7 +293,8 @@ void create_child_sprite(SpriteWindow parent, std::uint32_t header, SpriteEnviro
                       "Child sprite renderer kind is unreconstructed");
     const auto owner = get(parent.bytes, 0x6c);
     observe(sources, "create_child_sprite", 0x80023b84);
-    tasks.nodes.push_back(allocation(sources.services->allocate, 0x140, tasks.allocation_mode));
+    tasks.nodes.push_back(
+        allocation(sources.services->allocate, 0x140, tasks.allocation_mode, 0x800233c4));
     auto &storage = tasks.nodes.back();
     const auto address = storage.address;
     auto bytes = std::span(storage.bytes);
@@ -960,7 +967,7 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
                     "Interrupted sprite upload has no represented continuation");
             require_recovered(static_cast<bool>(services.release),
                               "Sprite upload release service is not connected");
-            state.outer_stack = allocation(services.allocate, 8192, 0);
+            state.outer_stack = allocation(services.allocate, 8192, 0, 0x8001fe68);
             const auto operand = pointer + 1;
             auto delta = resource(sources, operand, 3);
             if (delta & 0x800000U)
@@ -969,7 +976,10 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
             state.resource = operand + delta;
             state.x = static_cast<std::int16_t>(signed_half(get(sprite.bytes, binding + 4, 2)));
             state.y = static_cast<std::int16_t>(signed_half(get(sprite.bytes, binding + 6, 2)));
-            state.inner_stack = allocation(services.allocate, 8192, 1);
+            state.inner_stack = allocation(services.allocate, 8192, 1, 0x8001fb40);
+            // 8001fb70: 8002dde4's three stack arguments (zero) above the
+            // switched stack pointer (+1efc).
+            std::fill_n(state.inner_stack.bytes.begin() + 0x1f0c, 12, std::uint8_t{0});
             static_cast<void>(upload_sprite_images(state.resource, state.x, state.y, sources,
                                                    services.upload_image));
             services.release(state.inner_stack.address);
@@ -1190,7 +1200,7 @@ void construct_sprite(SpriteConstruction &result, SpriteAllocation incoming, std
     const auto directory = pointer + resource(sources, pointer + 8, 4);
     const auto count = ((resource(sources, directory, 2) >> 9) & 63) * 24;
     emit("allocate-parts-before", count);
-    result.parts = allocation(allocate, count);
+    result.parts = allocation(allocate, count, 0, 0x80024474);
     auto &parts = result.parts;
     require(parts.bytes.empty() ||
                 static_cast<std::uint64_t>(parts.address) + parts.bytes.size() <= sprite.address ||
@@ -1224,7 +1234,7 @@ void create_sprite(SpriteConstruction &result, std::uint32_t pointer,
     require(result.sprite.address == 0 && result.parts.address == 0 &&
                 result.sprite.bytes.empty() && result.parts.bytes.empty(),
             "Sprite construction requires an unowned output");
-    auto incoming = allocation(allocate, sprite_bytes);
+    auto incoming = allocation(allocate, sprite_bytes, 0, 0x80024560);
     put(incoming.bytes, 0x86, sprite_bytes, 2);
     construct_sprite(result, std::move(incoming), pointer,
                      {parameters[0], parameters[1], parameters[2], parameters[3]}, environment,

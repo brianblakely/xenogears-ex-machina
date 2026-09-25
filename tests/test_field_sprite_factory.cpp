@@ -66,12 +66,12 @@ struct Fixture {
     field::SpriteSources sources() { return {regions, {}, trig, widths, {}}; }
     field::SpriteConstruction construct() {
         field::SpriteConstruction result;
-        field::construct_sprite(result, incoming, resource, {100, -1, 300, -4}, environment,
-                                sources(), [](std::uint32_t size, std::uint32_t mode) {
-                                    check(size == 48 && mode == 0, "Part allocation boundary");
-                                    return field::SpriteAllocation{
-                                        0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
-                                });
+        field::construct_sprite(
+            result, incoming, resource, {100, -1, 300, -4}, environment, sources(),
+            [](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
+                check(size == 48 && mode == 0, "Part allocation boundary");
+                return field::SpriteAllocation{0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
+            });
         return result;
     }
 };
@@ -103,7 +103,7 @@ void field_factory_and_task_boundaries() {
     sources.allocator = &heap;
     field::FieldSpriteArguments arguments{18, 2, Fixture::resource, 0, 0, 130, 1};
     std::vector<std::uint32_t> allocations, releases;
-    const auto allocate = [&](std::uint32_t size, std::uint32_t mode) {
+    const auto allocate = [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
         check(mode == 0, "Field factory allocator mode");
         allocations.push_back(size);
         if (size == 356)
@@ -211,7 +211,7 @@ void interrupted_factory_retains_ownership() {
     field::SpriteConstruction result;
     std::vector<std::uint32_t> releases;
     bool reject_replacement = false;
-    const auto allocate = [&](std::uint32_t size, std::uint32_t mode) {
+    const auto allocate = [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
         check(mode == 0, "Interrupted factory allocator mode");
         if (size == 356)
             return fixture.incoming;
@@ -456,7 +456,7 @@ void original_transport(const char *input_path, const char *output_path) {
     sources.allocator = &heap;
     std::vector<std::uint32_t> requests, released;
     std::size_t next = 0;
-    const auto allocate = [&](std::uint32_t size, std::uint32_t mode) {
+    const auto allocate = [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
         check(mode == 0 && next < allocations.size() && allocations[next].bytes.size() == size,
               "Original factory allocation extent differs");
         requests.push_back(size);

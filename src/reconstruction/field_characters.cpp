@@ -53,6 +53,10 @@ void Program::with_sprite_sources(const std::function<void(const field::SpriteSo
     std::vector<field::SpriteResource> resources;
     for (const auto &item : state.resources)
         resources.push_back({item.address, item.bytes});
+    // Allocated heap blocks no record interprets (the party sprite files a
+    // reload keeps) are readable sprite data too.
+    for (const auto &[address, bytes] : resident.heap_contents)
+        resources.push_back({address, bytes});
     std::vector<field::SpriteResource> frames;
     for (const auto &item : state.frame_list)
         frames.push_back({item.address, item.bytes});

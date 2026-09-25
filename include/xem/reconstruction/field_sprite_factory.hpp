@@ -51,8 +51,9 @@ struct FieldSpriteArguments {
 // Field 80076ac0. Borrows the actual recreated actor and its descriptor; publishes
 // owned sprite/parts into result as they are created, retaining partial state on
 // failure. Result must initially own no allocations. Mode-zero coordinates are read at
-// 800b1f78+slot*8 from sources. Existing-sprite destruction, alternate part variants, unknown VM
-// commands and task callbacks fail explicitly, never invoke behavior callbacks.
+// 800b1f78+slot*8 from sources; a mode-zero part variant builds through 80024294.
+// Existing-sprite destruction, unknown VM commands and task callbacks fail explicitly,
+// never invoke behavior callbacks.
 void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> actor,
                          std::span<std::uint8_t> descriptor, const FieldSpriteArguments &arguments,
                          FieldSpriteEnvironment &environment, const SpriteSources &sources,

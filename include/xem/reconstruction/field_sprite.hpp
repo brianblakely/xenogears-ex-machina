@@ -108,7 +108,10 @@ struct SpriteAllocation {
     std::vector<std::uint8_t> bytes;
     bool operator==(const SpriteAllocation &) const = default;
 };
-using SpriteAllocator = std::function<SpriteAllocation(std::uint32_t bytes, std::uint32_t mode)>;
+// A heap allocation (80031bdc) of `bytes` in `mode`; `call_site` is the original
+// JAL that reaches it, which the heap records with the block.
+using SpriteAllocator = std::function<SpriteAllocation(std::uint32_t bytes, std::uint32_t mode,
+                                                       std::uint32_t call_site)>;
 using SpriteReleaser = std::function<void(std::uint32_t address)>;
 struct SpriteImageUpload {
     std::array<std::int16_t, 4> rectangle;

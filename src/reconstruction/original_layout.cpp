@@ -531,6 +531,7 @@ std::vector<OriginalGlobal> build() {
     add("w_adb50", 0x800adb50, 4, [](Program &p) -> auto & { return f(p).w_adb50; });
     add("w_b2264", 0x800b2264, 4, [](Program &p) -> auto & { return f(p).w_b2264; });
     add("w_adb54", 0x800adb54, 4, [](Program &p) -> auto & { return f(p).w_adb54; });
+    add("h_afd20", 0x800afd20, 2, [](Program &p) -> auto & { return f(p).h_afd20; });
     add("dialogue_ticks", 0x800ade98, 4, [](Program &p) -> auto & { return f(p).dialogue_ticks; });
     add("dialogue_cursor", 0x800ade94, 4,
         [](Program &p) -> auto & { return f(p).dialogue_cursor; });
@@ -552,6 +553,13 @@ std::vector<OriginalGlobal> build() {
     add_resident("w_4f380", 0x8004f380, 4, [](Program &p) -> auto & { return p.resident.w_4f380; });
     add_resident("sprite_buffer", 0x800592f8, 4,
                  [](Program &p) -> auto & { return p.resident.sprite_buffer; });
+    // 8001fe64: the image list an upload (8001fb30) reads and its origin.
+    add_resident("sprite_upload_resource", 0x800592e4, 4,
+                 [](Program &p) -> auto & { return p.resident.sprite_upload.resource; });
+    add_resident("sprite_upload_x", 0x800592e8, 2,
+                 [](Program &p) -> auto & { return p.resident.sprite_upload.x; });
+    add_resident("sprite_upload_y", 0x800592ea, 2,
+                 [](Program &p) -> auto & { return p.resident.sprite_upload.y; });
     for (std::uint32_t i = 0; i < 2; ++i) {
         add_resident("sprite_uploads", 0x800594c4 + i * 4, 4,
                      [i](Program &p) -> auto & { return p.resident.sprite_uploads[i]; });
@@ -870,9 +878,12 @@ std::vector<OriginalGlobal> build() {
         [](Program &p) -> auto & { return f(p).descriptor_count; });
     add("snapshot_cursor", 0x800afc50, 4,
         [](Program &p) -> auto & { return f(p).snapshot_cursor; });
-    for (std::uint32_t i = 0; i < 3; ++i)
+    for (std::uint32_t i = 0; i < 3; ++i) {
+        add_resident("party_sprite_resources", 0x8005a414 + i * 4, 4,
+                     [i](Program &p) -> auto & { return p.resident.party_sprite_resources[i]; });
         add_resident("saved_party_modes", 0x8005a408 + i * 4, 4,
                      [i](Program &p) -> auto & { return p.resident.saved_party_modes[i]; });
+    }
     add_resident("game_state", 0x8005a39c, 4,
                  [](Program &p) -> auto & { return p.resident.game_state; });
     // Resident heap globals ($gp-relative in 80031bdc). Globals in overlay data

@@ -2,6 +2,7 @@
 #include "xem/reconstruction/field_motion.hpp"
 
 #include <bit>
+#include <cstdio>
 #include <unordered_set>
 
 namespace xem::reconstruction::field {
@@ -75,16 +76,22 @@ std::uint32_t read(std::span<const SpriteResource> sources, std::uint32_t pointe
             value = next;
         }
     }
-    require_source(value.has_value(),
-                   "Sprite read requires missing address-qualified source bytes");
+    if (!value) {
+        char text[80];
+        std::snprintf(text, sizeof text,
+                      "Sprite read requires missing address-qualified source bytes at %08x",
+                      pointer);
+        throw SpriteInputError(text);
+    }
     return *value;
 }
 std::uint32_t resource(const SpriteSources &sources, std::uint32_t pointer, std::size_t size) {
     return read(sources.resources, pointer, size);
 }
-SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size) {
+SpriteAllocation allocation(const SpriteAllocator &allocate, std::uint32_t size,
+                            std::uint32_t call_site) {
     require(static_cast<bool>(allocate), "Original sprite allocation boundary is absent");
-    auto result = allocate(size, 0);
+    auto result = allocate(size, 0, call_site);
     require(result.bytes.size() == size && valid_extent(result.address, size) &&
                 (size == 0 || result.address != 0),
             "Incomplete original sprite allocation or incoming bytes");
@@ -260,8 +267,6 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
             "Field sprite creation requires a complete actor and descriptor");
     require_recovered(!(get(descriptor, 0x58) & 0x10000),
                       "Field sprite creation requires unreconstructed existing-sprite destruction");
-    require_recovered(arguments.mode != 0 || arguments.part_variant == 0,
-                      "Alternate field sprite part constructor 80024294 is unreconstructed");
     require_recovered(sources.allocator != nullptr, "Field sprite creation requires the heap");
     const auto select_allocation_class = [&] {
         sources.allocator->tag = 8;
@@ -276,6 +281,11 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
     put(actor, 0x134, (get(actor, 0x134) & ~16U) | ((arguments.defer_initial_step & 1) << 4));
     std::array<std::int16_t, 5> parameters;
     parameters[0] = 0x100;
+    // 80024294: a part variant selects its palette row (+10h each) and is the
+    // sprite variant (800591b8) while the sprite is built.
+    const bool variant = arguments.mode == 0 && arguments.part_variant != 0;
+    if (variant)
+        parameters[0] = static_cast<std::int16_t>(0x100U + (arguments.part_variant << 4U));
     if (arguments.mode == 0) {
         const auto coordinates = 0x800b1f78U + arguments.resource_slot * 8;
         const auto second = resource(sources, coordinates + 2, 2);
@@ -292,6 +302,8 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
             static_cast<std::int16_t>(signed_half(arguments.resource_slot * 64 + 0x100));
         parameters[4] = 8;
     }
+    if (variant)
+        environment.sprite.variant = arguments.part_variant;
     try {
         create_sprite(result, arguments.resource, parameters, environment.sprite, sources, allocate,
                       observe);
@@ -301,6 +313,8 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
         throw;
     }
     environment.sprite = result.environment;
+    if (variant)
+        environment.sprite.variant = 0;
     // Both caller state and the owned construction retain the latest shared
     // environment if an animation or task dependency interrupts this call.
     struct RetainEnvironment {
@@ -318,7 +332,7 @@ void create_field_sprite(SpriteConstruction &result, std::span<std::uint8_t> act
                 "Original owned sprite part address differs");
         release(result.parts.address);
         result.parts = {};
-        result.parts = allocation(allocate, 32 * 24);
+        result.parts = allocation(allocate, 32 * 24, 0x80023374);
         require(static_cast<std::uint64_t>(result.parts.address) + result.parts.bytes.size() <=
                         sprite.address ||
                     static_cast<std::uint64_t>(sprite.address) + sprite.bytes.size() <=

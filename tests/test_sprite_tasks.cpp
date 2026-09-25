@@ -79,7 +79,7 @@ struct Fixture {
         tasks.active_flags = 3;
         tasks.creation_flags = 7;
         tasks.allocation_mode = 2;
-        services.allocate = [&](std::uint32_t size, std::uint32_t mode) {
+        services.allocate = [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
             check(size == 320 && mode == 2, "E0 exact allocation and original mode");
             ++allocations;
             return field::SpriteAllocation{child_address, std::vector<std::uint8_t>(size, 0xa5)};

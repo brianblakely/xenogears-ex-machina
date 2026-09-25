@@ -487,13 +487,13 @@ void Program::stop_music() {
 }
 
 // Field 8008f76c / 8008f7b8 (primary 75): request field music.
-void Program::change_music(field::EventContext &context) {
+void Program::change_music(field::EventContext &context, std::uint32_t start_parameter) {
     auto &music = resident.music;
     if (resident.battle_request.field_active == 0) {
         context.control.break_requested = 1;
         return;
     }
-    music.start_parameter = 0xffffffffU;
+    music.start_parameter = start_parameter;
     script(context, [&](field::FieldWorld &world) {
         auto &self = record(world, world.current);
         const auto id = u32(field::read_immediate15_or_variable(world, 1));

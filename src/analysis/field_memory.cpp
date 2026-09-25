@@ -703,6 +703,14 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_transfer", block.address, block.bytes);
     for (const auto &[address, bytes] : resident.heap_contents)
         out.bytes("heap_contents", address, bytes);
+    // Packet buffers of sprite models made in this run (8002cb54).
+    for (const auto &buffer : resident.sprite_models.buffers)
+        out.bytes("sprite_model_buffer", buffer.address, buffer.bytes);
+    // An image upload's two stacks while it runs (8001fe64, 8001fb30).
+    for (const auto *stack :
+         {&resident.sprite_upload.outer_stack, &resident.sprite_upload.inner_stack})
+        if (!stack->bytes.empty())
+            out.bytes("sprite_upload_stack", stack->address, stack->bytes);
 }
 } // namespace
 
@@ -990,6 +998,9 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes("descriptor", actor.descriptor_address, actor.descriptor);
         if (!actor.sprite.sprite.bytes.empty())
             out.bytes("sprite", actor.sprite.sprite.address, actor.sprite.sprite.bytes);
+        // Parts of a sprite made in this run (imported parts are regions).
+        if (!actor.sprite.parts.bytes.empty())
+            out.bytes("sprite_parts", actor.sprite.parts.address, actor.sprite.parts.bytes);
         if (actor.extension_110)
             out.bytes("extension_110", bytes_word(actor.storage, 0x110), *actor.extension_110);
         if (actor.extension_114)

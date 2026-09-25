@@ -76,12 +76,12 @@ struct Fixture {
     field::SpriteSources sources() { return {regions, {}, trig, widths, {}}; }
     field::SpriteConstruction construct() {
         field::SpriteConstruction result;
-        field::construct_sprite(result, incoming, resource, {100, -1, 300, -4}, environment,
-                                sources(), [](std::uint32_t size, std::uint32_t mode) {
-                                    check(size == 48 && mode == 0, "Part allocation boundary");
-                                    return field::SpriteAllocation{
-                                        0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
-                                });
+        field::construct_sprite(
+            result, incoming, resource, {100, -1, 300, -4}, environment, sources(),
+            [](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
+                check(size == 48 && mode == 0, "Part allocation boundary");
+                return field::SpriteAllocation{0x80002000, std::vector<std::uint8_t>(size, 0xa7)};
+            });
         return result;
     }
 };
@@ -93,7 +93,7 @@ void connected_creation_and_binding() {
     field::create_sprite(
         result, Fixture::resource, {100, -1, 300, -4, 12345}, fixture.environment,
         fixture.sources(),
-        [&](std::uint32_t size, std::uint32_t mode) {
+        [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
             check(mode == 0, "Original allocator mode");
             allocations.push_back(size);
             if (size == 356)
@@ -151,7 +151,7 @@ void interrupted_constructor_retains_ownership() {
     field::SpriteConstruction result;
     rejects([&] {
         field::create_sprite(result, Fixture::resource, {}, fixture.environment, fixture.sources(),
-                             [&](std::uint32_t size, std::uint32_t mode) {
+                             [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
                                  check(mode == 0, "Interrupted constructor allocator mode");
                                  if (size == 356)
                                      return fixture.incoming;
@@ -260,12 +260,12 @@ void matrix_storage_and_explicit_failures() {
     rejects([&] {
         field::SpriteConstruction partial;
         field::create_sprite(partial, Fixture::resource, {}, fixture.environment, fixture.sources(),
-                             [](auto, auto) { return field::SpriteAllocation{0, {}}; });
+                             [](auto, auto, auto) { return field::SpriteAllocation{0, {}}; });
     });
     rejects([&] {
         field::SpriteConstruction partial;
         field::construct_sprite(partial, fixture.incoming, Fixture::resource, {},
-                                fixture.environment, fixture.sources(), [&](auto size, auto) {
+                                fixture.environment, fixture.sources(), [&](auto size, auto, auto) {
                                     return field::SpriteAllocation{Fixture::address,
                                                                    std::vector<std::uint8_t>(size)};
                                 });
@@ -776,7 +776,7 @@ void original_transport(const char *input_path, const char *output_path) {
     field::SpriteSources sources{resources, list, trig, widths, duration};
     std::vector<std::uint32_t> allocations;
     std::uint32_t stage_count = 0;
-    const auto allocate = [&](std::uint32_t size, std::uint32_t mode) {
+    const auto allocate = [&](std::uint32_t size, std::uint32_t mode, std::uint32_t) {
         check(mode == 0, "Unexpected original allocation mode");
         allocations.push_back(size);
         const auto &block = operation == 2 && allocations.size() == 1 ? sprite : parts;

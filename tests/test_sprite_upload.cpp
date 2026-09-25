@@ -56,7 +56,7 @@ struct Fixture {
         put(sprite, 0x64, resource_address + 0x80);
         widths[0xfc] = 4;
         services.upload_state = &state;
-        services.allocate = [&](auto size, auto mode) {
+        services.allocate = [&](auto size, auto mode, auto) {
             check(size == 8192 && mode == allocations, "FC stack size and allocation modes");
             ++allocations;
             return field::SpriteAllocation{0x80100000 + allocations * 8192,

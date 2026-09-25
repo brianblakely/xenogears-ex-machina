@@ -381,8 +381,8 @@ int main(int argc, char **argv) {
         program.set_sprite_environment(env);
         state.sprite_bundle_address = in.word();
         state.party_reassignment = in.word();
-        for (auto n = in.count(128); n != 0; --n)
-            program.resident.party_sprite_resources.push_back(in.word());
+        for (std::size_t k = 0, n = in.count(3); k != n; ++k)
+            program.resident.party_sprite_resources.at(k) = in.word();
         for (auto n = in.count(4096); n != 0; --n) {
             const auto mode = in.word();
             services.incoming.push_back({mode, in.resource()});
@@ -489,7 +489,7 @@ int main(int argc, char **argv) {
         for (std::uint32_t i = 0; i < repeats; ++i) {
             if (selected == 0)
                 program.restore_field(
-                    [&](auto size, auto mode) { return services.allocate(size, mode); },
+                    [&](auto size, auto mode, auto) { return services.allocate(size, mode); },
                     [&](auto address) { services.release(address); }, {}, observer,
                     [&](const auto &request) { services.uploads.push_back(request); });
             else if (selected == 1)
