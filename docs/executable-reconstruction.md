@@ -113,10 +113,18 @@ Snapshot captures are expensive, so capture per route, not per function:
    bare `cmake --build`. Build presets cap compile jobs at 8 and tests at 4.
    Give a batch of comparisons to one sequential driver instead of launching
    them all at once.
-4. **No polling loops.** Don't leave `until`/`while` sleep loops watching files
+4. **Fast, exact comparisons.** `memory_case.py` keeps one
+   `xem-memory-runner --batch` process per case. Each call is still imported
+   from its own entry image, and a crash or timeout fails only that call. The
+   comparison works on sorted owned ranges and locates differing bytes in C.
+   Run evidence passes with one frozen copy of the **release** runner. The
+   debug and sanitize builds stay for tests. The benchmark in the tooling
+   change gave results identical to the per-call debug runner on every
+   compared case.
+5. **No polling loops.** Don't leave `until`/`while` sleep loops watching files
    or processes. Wait for a job by running it as a background command that exits
    when the job ends, and stop any watcher once its job is done.
-5. **Probes are disposable.** Exploratory probes, such as navigation or
+6. **Probes are disposable.** Exploratory probes, such as navigation or
    discovering button meanings, use no snapshot hooks. Delete them once a finding
    cites a shared capture. Cited captures are immutable.
 

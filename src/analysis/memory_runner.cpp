@@ -125,7 +125,8 @@ void optional(std::ostream &out, const auto &value) {
 }
 } // namespace
 
-int main(int argc, char **argv) {
+namespace {
+int run_case(int argc, char **argv) {
     std::string status = "invalid_input", reason, dependency;
     std::string_view entry = argc > 1 ? argv[1] : "unknown";
     game::SourcePoint point{"prepare_start", 0, {}, {}};
@@ -902,4 +903,31 @@ int main(int argc, char **argv) {
         std::cout << hardware_writes(*program, 0);
     std::cout << "],\"frames\":[" << frames.str() << "]}\n";
     return status == "completed_boundary" ? 0 : 1;
+}
+} // namespace
+
+int main(int argc, char **argv) {
+    // --batch: one call per standard input line, its arguments tab-separated
+    // exactly as for a single run; each call's report is one output line.
+    // Calls share nothing: each imports its own entry image.
+    if (argc == 2 && std::string_view(argv[1]) == "--batch") {
+        for (std::string line; std::getline(std::cin, line);) {
+            std::vector<std::string> fields{argv[0]};
+            for (std::size_t start = 0;;) {
+                const auto tab = line.find('\t', start);
+                fields.push_back(line.substr(start, tab - start));
+                if (tab == std::string::npos)
+                    break;
+                start = tab + 1;
+            }
+            std::vector<char *> arguments;
+            for (auto &field : fields)
+                arguments.push_back(field.data());
+            arguments.push_back(nullptr);
+            static_cast<void>(run_case(static_cast<int>(fields.size()), arguments.data()));
+            std::cout.flush();
+        }
+        return 0;
+    }
+    return run_case(argc, argv);
 }

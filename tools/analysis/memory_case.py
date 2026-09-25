@@ -10,9 +10,12 @@ the original outside the declared scratch/stack exclusions must be owned.
 from __future__ import annotations
 
 import argparse
+import bisect
 import collections
 import hashlib
 import json
+import re
+import selectors
 import struct
 import subprocess
 import tempfile
@@ -465,6 +468,131 @@ class Sources:
         return "".join(f"{address} {size}\n" for address, size in rows)
 
 
+class BatchRunner:
+    """One `xem-memory-runner --batch` process that serves a case's calls in turn.
+
+    Each call writes the single-run arguments as one tab-separated line and
+    reads that call's report line. Calls share no state in the runner. A call
+    that exceeds its time budget, or a runner that exits, yields a
+    runner_failure report for that call; the next call starts a new process.
+    """
+
+    def __init__(self, path: Path):
+        self.path = path
+        self.process: subprocess.Popen | None = None
+        self.errors = tempfile.TemporaryFile()
+
+    def __enter__(self) -> BatchRunner:
+        return self
+
+    def __exit__(self, *_: object) -> None:
+        self.stop()
+        self.errors.close()
+
+    def stop(self) -> None:
+        if self.process is not None:
+            self.process.kill()
+            self.process.wait()
+            self.process = None
+
+    def failure(self, reason: str) -> dict:
+        self.errors.seek(0)
+        tail = self.errors.read().decode(errors="replace")[-400:]
+        self.errors.seek(0)
+        self.errors.truncate()
+        return {
+            "status": "runner_failure",
+            "dependency": "",
+            "reason": reason + tail,
+            "location": None,
+        }
+
+    def call(self, arguments: list[str], timeout: float) -> dict:
+        require(
+            all("\t" not in item and "\n" not in item for item in arguments),
+            "Runner arguments cannot contain tabs or newlines",
+        )
+        if self.process is None:
+            self.process = subprocess.Popen(
+                [str(self.path), "--batch"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=self.errors,
+            )
+        self.process.stdin.write(("\t".join(arguments) + "\n").encode())
+        self.process.stdin.flush()
+        with selectors.DefaultSelector() as selector:
+            selector.register(self.process.stdout, selectors.EVENT_READ)
+            ready = selector.select(timeout)
+        if not ready:
+            self.stop()
+            return self.failure(f"runner exceeded {timeout} s: ")
+        line = self.process.stdout.readline()
+        if not line.endswith(b"\n"):
+            code = self.process.wait()
+            self.process = None
+            return self.failure(f"runner exit {code}: ")
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError:
+            self.stop()
+            return self.failure("runner wrote no report: ")
+
+
+class OwnedBytes:
+    """The runner's owned ranges as sorted, disjoint RAM spans.
+
+    Lookups bisect the span starts; comparisons check whole spans as slices
+    and visit single bytes only where a span differs. Behaves as the mapping
+    offset -> computed value it replaces.
+    """
+
+    def __init__(self, owned: list[dict]):
+        spans = sorted(
+            (item["address"] & 0x1FFFFF, bytes.fromhex(item["hex"]), item["name"], item["address"])
+            for item in owned
+        )
+        for (base, data, _, _), (following, _, _, _) in zip(spans, spans[1:], strict=False):
+            require(base + len(data) <= following, "Overlapping owned ranges")
+        self.spans = [span for span in spans if span[1]]
+        self.starts = [span[0] for span in self.spans]
+
+    def _span(self, offset: int):
+        index = bisect.bisect_right(self.starts, offset) - 1
+        if index >= 0:
+            span = self.spans[index]
+            if offset < span[0] + len(span[1]):
+                return span
+        return None
+
+    def __contains__(self, offset: int) -> bool:
+        return self._span(offset) is not None
+
+    def __len__(self) -> int:
+        return sum(len(span[1]) for span in self.spans)
+
+    def get(self, offset: int) -> int | None:
+        span = self._span(offset)
+        return None if span is None else span[1][offset - span[0]]
+
+    def name(self, offset: int) -> tuple[str, int, int]:
+        base, _, name, address = self._span(offset)
+        return name, address, offset - base
+
+    def differing(self, image: bytes):
+        """(offset, computed value) for every owned byte that differs from image."""
+        for base, data, _, _ in self.spans:
+            if image[base : base + len(data)] == data:
+                continue
+            for page in range(0, len(data), 4096):
+                chunk = data[page : page + 4096]
+                if image[base + page : base + page + len(chunk)] == chunk:
+                    continue
+                original = image[base + page : base + page + len(chunk)]
+                for i in differing_positions(chunk, original):
+                    yield base + page + i, chunk[i]
+
+
 def compare(
     entry: bytes,
     exit: bytes,
@@ -486,15 +614,7 @@ def compare(
     both, not hidden.
     """
     superseded = superseded or {}
-    computed = {}
-    names = {}
-    for item in owned:
-        data = bytes.fromhex(item["hex"])
-        base = item["address"] & 0x1FFFFF
-        for i, value in enumerate(data):
-            require(base + i not in computed, "Overlapping owned ranges")
-            computed[base + i] = value
-            names[base + i] = (item["name"], item["address"], i)
+    computed = OwnedBytes(owned)
     # Callee stack windows: the call's, and each arrived interrupt's (its
     # handler runs on the stack the exception hook selects). An entry SP of
     # 80200000 (seen inside the mode dispatcher) is the end of RAM, not
@@ -517,13 +637,11 @@ def compare(
     excused = {o for o in interrupt_changed if o not in own} | kernel
     # An owned byte that only interrupt code changed belongs to the interrupt
     # when the C++ left it at its entry value; the Program does not run handlers.
-    verified = {o for o, value in computed.items() if o in superseded and superseded[o][0] == value}
+    verified = {o for o, (value, _) in superseded.items() if computed.get(o) == value}
     mismatches = [
         (offset, value, exit[offset])
-        for offset, value in computed.items()
-        if exit[offset] != value
-        and not (offset in excused and value == entry[offset])
-        and offset not in verified
+        for offset, value in computed.differing(exit)
+        if not (offset in excused and value == entry[offset]) and offset not in verified
     ]
     unowned = [
         offset
@@ -536,20 +654,20 @@ def compare(
         o
         for o in interrupt_changed
         if o not in verified
-        and ((o in own and o not in kernel) or (o in computed and computed[o] != entry[o]))
+        and ((o in own and o not in kernel) or (o in computed and computed.get(o) != entry[o]))
         # The stack below the entry SP is transient for both.
         and not stacked(o)
     )
     return {
         "owned_bytes": len(computed),
         "changed_bytes": len([o for o in changed if not stacked(o)]),
-        "changed_ranges": sorted({names[o][0] for o in changed if o in names}),
+        "changed_ranges": sorted({computed.name(o)[0] for o in changed if o in computed}),
         "mismatches": [
             {
                 "address": hex(0x80000000 + offset),
-                "range": names[offset][0],
-                "range_address": hex(names[offset][1]),
-                "offset": hex(names[offset][2]),
+                "range": computed.name(offset)[0],
+                "range_address": hex(computed.name(offset)[1]),
+                "offset": hex(computed.name(offset)[2]),
                 "computed": computed_value,
                 "original": original,
             }
@@ -665,12 +783,22 @@ def supplied_lines(
     return lines, len(offsets)
 
 
+NONZERO = re.compile(rb"[^\x00]")
+
+
+def differing_positions(a: bytes, b: bytes) -> list[int]:
+    """Indexes where two equal-length byte strings differ, found in C."""
+    difference = int.from_bytes(a, "little") ^ int.from_bytes(b, "little")
+    return [match.start() for match in NONZERO.finditer(difference.to_bytes(len(a), "little"))]
+
+
 def unowned_offsets(entry: bytes, exit: bytes) -> list[int]:
-    # Fast path: compare 4 KiB pages first.
+    # Compare 4 KiB pages first; locate bytes only in pages that differ.
     result = []
     for page in range(0, RAM, 4096):
-        if entry[page : page + 4096] != exit[page : page + 4096]:
-            result.extend(page + i for i in range(4096) if entry[page + i] != exit[page + i])
+        a, b = entry[page : page + 4096], exit[page : page + 4096]
+        if a != b:
+            result.extend(page + i for i in differing_positions(a, b))
     return result
 
 
@@ -743,7 +871,10 @@ def run(args: argparse.Namespace) -> int:
         and file_sha256(snapshot_file) == trace.get("snapshot_file_sha256"),
         "Capture trace or snapshot file does not match its recorded digest",
     )
-    with tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory:
+    with (
+        tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
+        BatchRunner(args.runner) as runner,
+    ):
         work = Path(directory)
         maps = collections.Counter()
         index = args.start
@@ -828,9 +959,8 @@ def run(args: argparse.Namespace) -> int:
                     ]
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             entry_row = first["entry_row"]
-            process = subprocess.run(
+            report = runner.call(
                 [
-                    str(args.runner),
                     "field_frames"
                     if len(frames) > 1
                     else args.entry + (f":{args.frame_from}" if args.frame_from else ""),
@@ -850,22 +980,8 @@ def run(args: argparse.Namespace) -> int:
                     str(args.raw) if args.raw.exists() else "",
                     str(work / "services.txt"),
                 ],
-                capture_output=True,
-                timeout=args.timeout * len(frames),
-                check=False,
+                args.timeout * len(frames),
             )
-            try:
-                report = json.loads(process.stdout)
-            except json.JSONDecodeError:
-                report = {
-                    "status": "runner_failure",
-                    "dependency": "",
-                    "reason": process.stderr.decode(errors="replace")[-400:],
-                    "location": None,
-                }
-            if process.returncode not in (0, 1):
-                report["status"] = "runner_failure"
-                report["reason"] = f"runner exit {process.returncode}: " + report.get("reason", "")
             # A multi-frame run reports each completed frame; the first frame it
             # did not complete carries the run's status.
             if len(frames) > 1:

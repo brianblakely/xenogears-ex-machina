@@ -1,6 +1,7 @@
 """Synthetic memory images exercise pairing and exact full-memory comparison."""
 
 import json
+import stat
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +9,10 @@ from pathlib import Path
 from tools.analysis.memory_case import (
     RAM,
     STACK_BELOW_ENTRY,
+    BatchRunner,
+    OwnedBytes,
     compare,
+    differing_positions,
     image_map,
     pairs,
     superseded_bytes,
@@ -219,3 +223,61 @@ class MemoryCaseTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FastComparisonTests(unittest.TestCase):
+    def test_differing_positions_match_a_byte_scan(self) -> None:
+        a = bytes(range(256)) * 16
+        b = bytearray(a)
+        for i in (0, 1, 255, 2048, 4095):
+            b[i] ^= 0x5A
+        self.assertEqual(differing_positions(a, bytes(b)), [0, 1, 255, 2048, 4095])
+        self.assertEqual(differing_positions(a, a), [])
+
+    def test_owned_bytes_lookups_and_differences(self) -> None:
+        owned = [
+            {"name": "late", "address": 0x80001000, "hex": "0102"},
+            {"name": "early", "address": 0x80000010, "hex": "aabbcc"},
+        ]
+        spans = OwnedBytes(owned)
+        self.assertEqual(len(spans), 5)
+        self.assertTrue(0x11 in spans and 0x1001 in spans and 0x13 not in spans)
+        self.assertEqual(spans.get(0x12), 0xCC)
+        self.assertIsNone(spans.get(0x0F))
+        self.assertEqual(spans.name(0x1001), ("late", 0x80001000, 1))
+        image = bytearray(0x2000)
+        image[0x10:0x13] = bytes.fromhex("aabbcc")
+        image[0x1000] = 0x01
+        self.assertEqual(list(spans.differing(bytes(image))), [(0x1001, 0x02)])
+        with self.assertRaises(ValueError):
+            OwnedBytes(owned + [{"name": "overlap", "address": 0x80000012, "hex": "00"}])
+
+    def test_batch_runner_serves_calls_and_recovers_from_failures(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            runner = Path(directory) / "runner"
+            runner.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json, sys, time\n"
+                "assert sys.argv[1:] == ['--batch']\n"
+                "for line in sys.stdin:\n"
+                "    fields = line.rstrip('\\n').split('\\t')\n"
+                "    if fields[0] == 'crash':\n"
+                "        sys.exit(3)\n"
+                "    if fields[0] == 'hang':\n"
+                "        time.sleep(30)\n"
+                "    report = {'status': 'completed_boundary', 'fields': fields}\n"
+                "    print(json.dumps(report), flush=True)\n"
+            )
+            runner.chmod(runner.stat().st_mode | stat.S_IXUSR)
+            with BatchRunner(runner) as batch:
+                self.assertEqual(batch.call(["a", "", "c"], 10)["fields"], ["a", "", "c"])
+                self.assertEqual(batch.call(["b"], 10)["fields"], ["b"])
+                crashed = batch.call(["crash"], 10)
+                self.assertEqual(crashed["status"], "runner_failure")
+                self.assertIn("runner exit 3", crashed["reason"])
+                self.assertEqual(batch.call(["again"], 10)["fields"], ["again"])
+                timed_out = batch.call(["hang"], 0.5)
+                self.assertEqual(timed_out["status"], "runner_failure")
+                self.assertEqual(batch.call(["after"], 10)["fields"], ["after"])
+                with self.assertRaises(ValueError):
+                    batch.call(["tab\there"], 10)
