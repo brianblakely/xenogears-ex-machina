@@ -56,9 +56,11 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/resident_heap.cpp
   src/reconstruction/sound_driver.cpp
   src/reconstruction/media.cpp
+  src/reconstruction/mode_dispatch.cpp
   src/reconstruction/field_movie.cpp
   src/reconstruction/field_gte.cpp
   src/reconstruction/gte.cpp
+  src/reconstruction/graphics_setup.cpp
   src/reconstruction/gpu.cpp
   src/reconstruction/field_frame.cpp
   src/reconstruction/field_loop.cpp
@@ -141,6 +143,9 @@ if(BUILD_TESTING)
   add_executable(test-field-gte tests/test_field_gte.cpp)
   target_link_libraries(test-field-gte PRIVATE xem-reconstruction)
   add_test(NAME field-gte-reconstruction COMMAND test-field-gte)
+  add_executable(test-mode-dispatch tests/test_mode_dispatch.cpp)
+  target_link_libraries(test-mode-dispatch PRIVATE xem-reconstruction)
+  add_test(NAME mode-dispatch-reconstruction COMMAND test-mode-dispatch)
   add_executable(test-resident-heap tests/test_resident_heap.cpp)
   target_link_libraries(test-resident-heap PRIVATE xem-reconstruction)
   add_test(NAME resident-heap-reconstruction COMMAND test-resident-heap)

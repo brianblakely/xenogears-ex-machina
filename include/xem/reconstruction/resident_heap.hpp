@@ -60,5 +60,14 @@ struct HeapBlock {
 [[nodiscard]] std::int32_t heap_release(Heap &heap, HeapBlock &block, std::uint32_t call_site);
 // 80031ff8: merge runs of free blocks; absorbed headers become held bytes.
 void heap_coalesce(Heap &heap);
+// Bytes of RAM by address, outside every other owner.
+using ByteRuns = std::map<std::uint32_t, std::vector<std::uint8_t>>;
+// 80031b10 after its release pass and coalesce: the list restarts with a
+// free class-21 header at `address & ~3` whose next is the first block's
+// next and whose caller and keep bits are those of the word already there
+// (+4). RAM between the old and the new first header moves between the heap
+// and `outside`: the heap gives up what lies below a higher start and takes
+// in what lies below the old start.
+void heap_restart(Heap &heap, std::uint32_t address, ByteRuns &outside);
 
 } // namespace xem::reconstruction::resident

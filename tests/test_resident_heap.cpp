@@ -142,13 +142,48 @@ void release_and_failure() {
     rejects([&] { static_cast<void>(resident::heap_allocate(broken, 0x1000, 0, call_site)); },
             "A list that leaves the owned headers is rejected");
 }
+
+// 80031b10's restart after its release pass and coalesce.
+void restart() {
+    auto heap = sample();
+    resident::HeapBlock b{0x80100108, std::vector<std::uint8_t>(0xf8, 0xbb)};
+    check(resident::heap_release(heap, b, call_site) == 0, "B is released");
+    resident::heap_coalesce(heap);
+    check(heap.headers.size() == 2 && heap.headers.at(0x80100000)[0] == 0x80100308,
+          "One free block reaches the end");
+    // The word at the new header's +4 keeps its caller and keep bits.
+    auto &held = heap.held.at(0x80100008);
+    for (std::size_t i = 0; i < 4; ++i)
+        held[0x3c + i] = static_cast<std::uint8_t>(0xfe3ff123U >> (8U * i));
+    resident::ByteRuns outside;
+    resident::heap_restart(heap, 0x80100042, outside);
+    check(heap.head == 0x80100048 &&
+              heap.headers.at(0x80100040) == std::array<std::uint32_t, 2>{0x80100308, 0x861ff123U},
+          "A higher restart starts a free class-21 header with the old caller and keep bits");
+    check(!heap.headers.contains(0x80100000) && outside.at(0x80100000).size() == 0x40 &&
+              outside.at(0x80100000)[4] == 0 && outside.at(0x80100000)[7] == 0x84,
+          "The old first header and the bytes below the new one leave the heap");
+    check(heap.held.begin()->first == 0x80100048, "The held bytes start after the new header");
+    resident::heap_restart(heap, 0x80100000, outside);
+    check(heap.head == 0x80100008 && outside.empty() &&
+              heap.headers.at(0x80100000) == std::array<std::uint32_t, 2>{0x80100308, 0x84000000},
+          "A lower restart takes the RAM below the old start back in");
+    check(heap.held.size() == 1 && heap.held.at(0x80100008).size() == 0x2f8 &&
+              heap.held.at(0x80100008)[0x38] == 0x08 && heap.held.at(0x80100008)[0x3b] == 0x80,
+          "The old header's words become held bytes of the first block");
+    rejects([&] { resident::heap_restart(heap, 0x80100400, outside); },
+            "A restart past the first block is rejected");
+    rejects([&] { resident::heap_restart(heap, 0x800ff000, outside); },
+            "A restart below the start needs the RAM there");
+}
 } // namespace
 
 int main() {
     try {
         allocation_modes();
         release_and_failure();
-        std::cout << "Resident heap: two source-boundary groups passed\n";
+        restart();
+        std::cout << "Resident heap: three source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

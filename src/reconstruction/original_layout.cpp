@@ -919,6 +919,14 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.heap.last_size; });
     add_resident("heap_last_caller", 0x80059340, 4,
                  [](Program &p) -> auto & { return p.resident.heap.last_caller; });
+    add_resident("heap_59334", 0x80059334, 4,
+                 [](Program &p) -> auto & { return p.resident.w_59334; });
+    add_resident("heap_59338", 0x80059338, 4,
+                 [](Program &p) -> auto & { return p.resident.w_59338; });
+    add_resident("geometry_return", 0x800569f0, 4,
+                 [](Program &p) -> auto & { return p.resident.geometry_return; });
+    add_resident("geometry_inner_return", 0x800593d4, 4,
+                 [](Program &p) -> auto & { return p.resident.geometry_inner_return; });
     for (std::size_t tag = 0; tag < 16; ++tag)
         add_resident("heap_tag_word", static_cast<std::uint32_t>(0x80059fa4 + 4 * tag), 4,
                      [tag](Program &p) -> auto & { return p.resident.heap.tag_words[tag]; });

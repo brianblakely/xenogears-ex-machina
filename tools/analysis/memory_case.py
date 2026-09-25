@@ -83,6 +83,8 @@ RESIDENT_ENTRIES = (
     "battle_place_party",
     "battle_scene_files",
     "battle_setup_files",
+    "mode_dispatch",
+    "battle_mode_start",
     "battle_atb",
     "battle_reload",
     "disc_read_file",
