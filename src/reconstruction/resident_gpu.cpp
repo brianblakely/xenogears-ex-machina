@@ -47,8 +47,16 @@ void Program::draw_sync_polled() {
 void Program::set_def_draw_env(std::uint32_t environment, std::uint32_t x, std::uint32_t y,
                                std::uint32_t w, std::uint32_t h) {
     const auto e = environment;
-    for (const auto [offset, value] : {std::pair{0U, x}, {2U, y}, {4U, w}, {6U, h}, {8U, x},
-                                       {10U, y}, {12U, 0U}, {14U, 0U}, {16U, 0U}, {18U, 0U},
+    for (const auto [offset, value] : {std::pair{0U, x},
+                                       {2U, y},
+                                       {4U, w},
+                                       {6U, h},
+                                       {8U, x},
+                                       {10U, y},
+                                       {12U, 0U},
+                                       {14U, 0U},
+                                       {16U, 0U},
+                                       {18U, 0U},
                                        {20U, 10U}})
         set_memory(e + offset, value & 0xffffU, 2);
     set_memory(e + 22, 1, 1);

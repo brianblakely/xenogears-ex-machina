@@ -246,8 +246,8 @@ void Program::seek_file(std::int32_t file) {
 
 std::int32_t Program::file_count(std::uint32_t file) {
     const auto &read = resident.disc_read;
-    const auto size = s32(table_bytes(read.files, (file + read.directory - 1U) * 7U + 3U, 4,
-                                      "File table"));
+    const auto size =
+        s32(table_bytes(read.files, (file + read.directory - 1U) * 7U + 3U, 4, "File table"));
     return size < 0 ? static_cast<std::int16_t>(-size) : 0;
 }
 

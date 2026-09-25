@@ -81,7 +81,7 @@ void Program::movie_wait_disc(FrameServices &services, const ProgramObserver &ob
     auto &state = loaded(*this);
     for (;;) {
         deliver_arrivals(0x800a739c);
-        field_pre_frame(services); // 80077dac
+        field_pre_frame(services);      // 80077dac
         field_frame(services, observe); // 8007554c
         deliver_arrivals(0x800a73ac);
         if (disc_busy() == 0 && state.draw_buffer == 0)
@@ -113,7 +113,8 @@ void Program::movie_release_parked(FrameServices &services, std::uint32_t frame)
             std::array<std::int16_t, 4> rect{0x200, static_cast<std::int16_t>(areas[k][0]), 0x140,
                                              0x80};
             deliver_arrivals(areas[k][1]);
-            static_cast<void>(load_image(rect, frame + 0x10, memory(parked_vram + 4 * k), &services));
+            static_cast<void>(
+                load_image(rect, frame + 0x10, memory(parked_vram + 4 * k), &services));
             deliver_arrivals(areas[k][2]);
             draw_sync(services);
         }
@@ -137,8 +138,9 @@ void Program::movie_release_parked(FrameServices &services, std::uint32_t frame)
 void Program::movie_restore_parked(FrameServices &services, std::uint32_t frame) {
     auto &state = loaded(*this);
     if (state.single_actor_mode == 2)
-        unrecovered("movie_restore_parked", 0x800a7524, "symbol:field-movie-party-reload",
-                    "Reloading the party sprites after a presentation-2 movie is not reconstructed");
+        unrecovered(
+            "movie_restore_parked", 0x800a7524, "symbol:field-movie-party-reload",
+            "Reloading the party sprites after a presentation-2 movie is not reconstructed");
     deliver_arrivals(0x800a7688);
     set_memory(parked_vram, load_block(0x14000, 0, 0x800a7688));
     deliver_arrivals(0x800a76a4);
@@ -150,7 +152,8 @@ void Program::movie_restore_parked(FrameServices &services, std::uint32_t frame)
         {0x80, 0x800a7710, 0x800a7718},
     }};
     for (std::uint32_t k = 0; k < 2; ++k) {
-        std::array<std::int16_t, 4> rect{0x200, static_cast<std::int16_t>(areas[k][0]), 0x140, 0x80};
+        std::array<std::int16_t, 4> rect{0x200, static_cast<std::int16_t>(areas[k][0]), 0x140,
+                                         0x80};
         const auto block = memory(parked_vram + 4 * k);
         deliver_arrivals(areas[k][1]);
         store_image(services, rect, frame + 0x10, block, owned_span(block).first(0x14000));
@@ -167,8 +170,8 @@ void Program::movie_open_display() {
     resident::heap_select_tag(resident.heap, 4, 0);
     set_memory(movie::split_display, state.single_actor_mode == 2 ? 1U : 0U);
     deliver_arrivals(0x800a70f4);
-    static_cast<void>(movie_open(0x140, 0xe0, 0x80, 0x10, 0x20, 0x800,
-                                 state.movie.request.buffer_mark));
+    static_cast<void>(
+        movie_open(0x140, 0xe0, 0x80, 0x10, 0x20, 0x800, state.movie.request.buffer_mark));
     set_memory(start_failed, 0);
     resident::heap_select_tag(resident.heap, 8, 0);
 }
@@ -404,7 +407,7 @@ void Program::movie_finish(FrameServices &services, std::uint32_t frame,
     wait(0x800a80b4);
     sync(0x800a80bc);
     deliver_arrivals(0x800a80c4);
-    movie_close(); // 801d43b0
+    movie_close();                    // 801d43b0
     draw_and_vertical_sync(services); // 8007999c
     present(state.draw_block, 0x800a80dc, 0x800a80ec);
     wait(0x800a80f4);
@@ -636,7 +639,8 @@ void add_movie_globals(std::vector<OriginalGlobal> &table) {
                  [](ResidentState &r) -> auto & { return r.w_4f300; });
     add_resident("movie_request", 0x8004fe44, 4,
                  [](ResidentState &r) -> auto & { return r.movie_request; });
-    add_resident("cd_564cc", 0x800564cc, 4, [](ResidentState &r) -> auto & { return r.cd.w_564cc; });
+    add_resident("cd_564cc", 0x800564cc, 4,
+                 [](ResidentState &r) -> auto & { return r.cd.w_564cc; });
     add_resident("stream_header_mode", 0x8005a470, 4,
                  [](ResidentState &r) -> auto & { return r.cd.stream_header_mode; });
     add_resident("stall_frame", 0x8005a4b8, 2,

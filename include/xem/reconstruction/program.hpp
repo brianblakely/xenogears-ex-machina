@@ -940,8 +940,8 @@ class Program {
                                               const ProgramObserver &observe = {});
     void movie_finish(FrameServices &services, std::uint32_t frame,
                       const ProgramObserver &observe = {});
-    void movie_open_display();  // 800a708c
-    void movie_start_request(); // 800a7218
+    void movie_open_display();                                             // 800a708c
+    void movie_start_request();                                            // 800a7218
     void movie_decode_steps(std::uint32_t count, movie::MdecCodec &codec); // 800a732c
     // Mode 6, the movie mode (movie_mode.cpp): 800737ec plays the movie the
     // request bytes 8004fe44..47 name, then selects the next mode (8004fe46).
@@ -1182,7 +1182,7 @@ class Program {
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
     std::int32_t cd_control(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter);
     std::int32_t cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                            bool nowait, std::array<std::uint8_t, 8> *result = nullptr);         // 80042088
+                            bool nowait, std::array<std::uint8_t, 8> *result = nullptr); // 80042088
     std::int32_t cd_sync(std::array<std::uint8_t, 8> *result = nullptr); // 80041b3c(0, result)
     // Deliver the interrupt arrivals at the front of the platform input
     // (site zero: recorded before the next wait load); true if any.
@@ -1190,15 +1190,14 @@ class Program {
     void cd_dma_callback(std::uint32_t function); // 800413ec
     // Resident disc and libcd calls of the movie library (resident_disc.cpp).
     [[nodiscard]] std::array<std::uint32_t, 2> current_directory() const; // 800284b4
-    void current_directory(std::uint32_t group, std::uint32_t index);      // 800284b4
-    std::uint32_t file_sector(std::uint32_t file);                         // 800289d0
-    std::uint32_t file_words(std::uint32_t file);                          // 800288ec
-    void cancel_disc_read(std::uint32_t offset);                           // 8002a498
-    void disc_set_mode(std::uint32_t mode);                                // 8002a428
-    void seek_file(std::int32_t file);                                     // 8002a2d0
-    void cd_datasync_wait();                                               // 8004293c(0)
-    std::int32_t cd_control_wait(std::uint8_t command,
-                                 const std::array<std::uint8_t, 4> *parameter,
+    void current_directory(std::uint32_t group, std::uint32_t index);     // 800284b4
+    std::uint32_t file_sector(std::uint32_t file);                        // 800289d0
+    std::uint32_t file_words(std::uint32_t file);                         // 800288ec
+    void cancel_disc_read(std::uint32_t offset);                          // 8002a498
+    void disc_set_mode(std::uint32_t mode);                               // 8002a428
+    void seek_file(std::int32_t file);                                    // 8002a2d0
+    void cd_datasync_wait();                                              // 8004293c(0)
+    std::int32_t cd_control_wait(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
                                  std::array<std::uint8_t, 8> *result); // 80040fe4
     std::int32_t cd_control_blocking(std::uint8_t command,
                                      const std::array<std::uint8_t, 4> *parameter,
@@ -1211,42 +1210,42 @@ class Program {
     std::uint32_t movie_next_frame(std::uint32_t end, std::uint32_t header); // 801d3b00
     void movie_restart(std::uint32_t file, std::uint32_t sector, std::uint32_t channel,
                        std::uint32_t mode, const std::array<std::uint8_t, 4> *location); // 801d41ac
-    void movie_stop();                                                  // 801d4318
-    void mdec_reset(std::uint32_t mode);                                // 801d4534
-    void mdec_hardware_reset(std::uint32_t mode);                       // 801d47fc
+    void movie_stop();                                                                   // 801d4318
+    void mdec_reset(std::uint32_t mode);                                                 // 801d4534
+    void mdec_hardware_reset(std::uint32_t mode);                                        // 801d47fc
     void verify_mdec_registers();
-    void mdec_in(std::uint32_t buffer, std::uint32_t mode);             // 801d46a0
-    void mdec_in_words(std::uint32_t buffer, std::uint32_t words);      // 801d48f8
-    void mdec_out(std::uint32_t buffer, std::uint32_t words);           // 801d471c
-    std::int32_t mdec_in_sync();                                        // 801d4a1c
-    std::int32_t mdec_out_sync();                                       // 801d4ab4
-    void mdec_out_callback(std::uint32_t function);                     // 801d47d8
-    std::uint32_t vlc_size(std::uint32_t halfwords);                    // 801d4c98
+    void mdec_in(std::uint32_t buffer, std::uint32_t mode);        // 801d46a0
+    void mdec_in_words(std::uint32_t buffer, std::uint32_t words); // 801d48f8
+    void mdec_out(std::uint32_t buffer, std::uint32_t words);      // 801d471c
+    std::int32_t mdec_in_sync();                                   // 801d4a1c
+    std::int32_t mdec_out_sync();                                  // 801d4ab4
+    void mdec_out_callback(std::uint32_t function);                // 801d47d8
+    std::uint32_t vlc_size(std::uint32_t halfwords);               // 801d4c98
     bool decode_vlc(movie::MdecCodec &codec, std::uint32_t bitstream,
-                    std::uint32_t output);                              // 801d4cc8
+                    std::uint32_t output); // 801d4cc8
     void verify_stream_registers();
-    void stream_set_ring(std::uint32_t ring, std::uint32_t count);      // 801d583c
-    void stream_clear_ring();                                           // 801d5920
-    void stream_clear_slots(std::uint32_t first, std::uint32_t count);  // 801d5c34
+    void stream_set_ring(std::uint32_t ring, std::uint32_t count);     // 801d583c
+    void stream_clear_ring();                                          // 801d5920
+    void stream_clear_slots(std::uint32_t first, std::uint32_t count); // 801d5c34
     void stream_set_stream(std::uint32_t mode, std::uint32_t start, std::uint32_t end,
-                           std::uint32_t complete, std::uint32_t ended); // 801d5af4
+                           std::uint32_t complete, std::uint32_t ended);   // 801d5af4
     std::uint32_t stream_next(std::uint32_t &data, std::uint32_t &header); // 801d5c70
-    std::uint32_t stream_free(std::uint32_t data);                      // 801d5b7c
-    void stream_unset_ring();                                           // 801d5980
-    std::int32_t stream_read(std::uint32_t mode);                       // 801d586c
-    std::uint32_t stream_position(std::array<std::uint8_t, 4> &location); // 801d5a94
+    std::uint32_t stream_free(std::uint32_t data);                         // 801d5b7c
+    void stream_unset_ring();                                              // 801d5980
+    std::int32_t stream_read(std::uint32_t mode);                          // 801d586c
+    std::uint32_t stream_position(std::array<std::uint8_t, 4> &location);  // 801d5a94
     void stream_dma(std::uint32_t address, std::uint32_t words, std::uint32_t blocks,
-                    std::uint32_t control, std::uint32_t interrupt);    // 801d66f8
+                    std::uint32_t control, std::uint32_t interrupt); // 801d66f8
     // The field movie player's helpers (field_movie_player.cpp).
     void movie_frame_ready(std::uint32_t callback, std::uint32_t frame, std::uint32_t x,
-                           std::uint32_t y);                            // 800a7120
+                           std::uint32_t y); // 800a7120
     // Mode 6's helpers (movie_mode.cpp).
     void movie_mode_play(FrameServices &services, movie::MdecCodec &codec, std::uint32_t select,
                          std::uint32_t frame, const ProgramObserver &observe); // 800763bc
     void movie_mode_run(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
-                        const ProgramObserver &observe);                       // 80076488
-    void movie_mode_frame_ready(std::uint32_t frame, std::uint32_t y);        // 800768d8
-    void movie_mode_pad();                                                     // 800769a4
+                        const ProgramObserver &observe);               // 80076488
+    void movie_mode_frame_ready(std::uint32_t frame, std::uint32_t y); // 800768d8
+    void movie_mode_pad();                                             // 800769a4
     // Resident libgpu environment setup (resident_gpu.cpp).
     void set_def_draw_env(std::uint32_t environment, std::uint32_t x, std::uint32_t y,
                           std::uint32_t w, std::uint32_t h); // 80043928
@@ -1259,19 +1258,19 @@ class Program {
     // the size is not negative.
     [[nodiscard]] std::int32_t file_count(std::uint32_t file);
     void movie_wait_disc(FrameServices &services, const ProgramObserver &observe); // 800a7394
-    void movie_release_parked(FrameServices &services, std::uint32_t frame); // 800a73e8
-    void movie_restore_parked(FrameServices &services, std::uint32_t frame); // 800a74f8
-    void movie_sound_step();                                            // 80085678
-    void movie_sound_load();                                            // 80085788
-    void movie_sound_release();                                         // 80085738
-    void movie_overlay_step();                                          // 800a7948
-    void movie_overlay_load();                                          // 800acc58
-    void draw_and_vertical_sync(FrameServices &services);               // 800775f8
-    void movie_last_frame_to_15bit(FrameServices &services, std::uint32_t frame); // 800a77c4(0)
-    std::uint32_t movie_next_component();                               // 800a7744
-    void start_field_stream();                                          // 80070488
-    void finish_field_stream(FrameServices &services);                  // 80070508
-    void stop_field_particles(FrameServices &services);                 // 800a9460
+    void movie_release_parked(FrameServices &services, std::uint32_t frame);       // 800a73e8
+    void movie_restore_parked(FrameServices &services, std::uint32_t frame);       // 800a74f8
+    void movie_sound_step();                                                       // 80085678
+    void movie_sound_load();                                                       // 80085788
+    void movie_sound_release();                                                    // 80085738
+    void movie_overlay_step();                                                     // 800a7948
+    void movie_overlay_load();                                                     // 800acc58
+    void draw_and_vertical_sync(FrameServices &services);                          // 800775f8
+    void movie_last_frame_to_15bit(FrameServices &services, std::uint32_t frame);  // 800a77c4(0)
+    std::uint32_t movie_next_component();                                          // 800a7744
+    void start_field_stream();                                                     // 80070488
+    void finish_field_stream(FrameServices &services);                             // 80070508
+    void stop_field_particles(FrameServices &services);                            // 800a9460
     // Interrupt context (interrupts.cpp, disc_read.cpp).
     void interrupt_handler(std::uint32_t address); // An 800578a8 entry
     void vsync_interrupt();                        // 8004bf78

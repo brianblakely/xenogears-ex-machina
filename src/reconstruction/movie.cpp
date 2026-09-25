@@ -52,7 +52,8 @@ std::int32_t Program::movie_open(std::uint32_t width, std::uint32_t height, std:
     const auto columns = width & 0xffffU;
     const auto rows = height & 0xffffU;
     const auto product = s32(columns * rows * ((scale & 0xffffU) << 1U));
-    const auto buffer_bytes = static_cast<std::uint32_t>((product < 0 ? product + 255 : product) >> 8);
+    const auto buffer_bytes =
+        static_cast<std::uint32_t>((product < 0 ? product + 255 : product) >> 8);
     set_memory(vlc_buffers, load_block(buffer_bytes, 0, 0x801d360c));
     set_memory(vlc_buffers + 4, load_block(buffer_bytes, 0, 0x801d3620));
     set_memory(vlc_limit, limit & 0xffffU);
@@ -96,7 +97,7 @@ void Program::movie_start(const MovieStart &start) {
     if (memory(player_state, 1) == 0)
         return;
     current_directory(saved_directory, saved_directory + 4); // 800284b4
-    mdec_out_callback(0x801d30c4);                          // 801d47d8
+    mdec_out_callback(0x801d30c4);                           // 801d47d8
     set_memory(player_state, start.hold != 0 ? 2 : 1, 1);
     set_memory(restarted, 0, 1);
     set_memory(row_limit, start.rows, 2);
@@ -169,8 +170,7 @@ void Program::movie_poll(MdecCodec &codec) {
         deliver_arrivals(0x801d3fd0);
         resident::set_cd_volume(resident.sound, 0x7fff, 0x28);
     }
-    if (s32(memory(shown_frame)) >= s32(memory(end_frame)) - 3 &&
-        memory(fade_out_pending) != 0) {
+    if (s32(memory(shown_frame)) >= s32(memory(end_frame)) - 3 && memory(fade_out_pending) != 0) {
         set_memory(fade_out_pending, 0);
         deliver_arrivals(0x801d4014);
         resident::set_cd_volume(resident.sound, 0, 0x28);
@@ -187,8 +187,7 @@ void Program::movie_poll(MdecCodec &codec) {
                           memory(cd_mode), 0);
         }
     }
-    if (memory(mdec_idle, 1) != 0 || memory(frame_waiting, 1) != 0 ||
-        memory(vlc_pending) != 0) {
+    if (memory(mdec_idle, 1) != 0 || memory(frame_waiting, 1) != 0 || memory(vlc_pending) != 0) {
         deliver_arrivals(0x801d40d4);
         movie_decode(codec); // 801d3d54
     }
@@ -228,8 +227,8 @@ void Program::movie_decode(MdecCodec &codec) {
             deliver_arrivals(0x801d3dfc);
             mdec_in(memory(vlc_buffers + 4 * memory(vlc_buffer_index)), memory(color_mode));
             const auto k2 = memory(decode_display);
-            const auto size = s16(memory(slice_rects + 8 * k2 + 4, 2)) *
-                              s16(memory(slice_rects + 8 * k2 + 6, 2));
+            const auto size =
+                s16(memory(slice_rects + 8 * k2 + 4, 2)) * s16(memory(slice_rects + 8 * k2 + 6, 2));
             deliver_arrivals(0x801d3e54);
             mdec_out(memory(slice_buffers + 4 * memory(slice_buffer_index)),
                      static_cast<std::uint32_t>((size + (size < 0 ? 1 : 0)) >> 1));
@@ -309,7 +308,7 @@ void Program::movie_restart(std::uint32_t file, std::uint32_t sector, std::uint3
     resident::set_cd_volume(resident.sound, 0, 0);
     cancel_disc_read(0); // 8002a498
     deliver_arrivals(0x801d41f0);
-    disc_wait(0);        // 80028a60
+    disc_wait(0); // 80028a60
     const auto kept = current_directory();
     static_cast<void>(select_directory(memory(saved_directory), memory(saved_directory + 4)));
     set_memory(fade_in_pending, 1);
@@ -336,9 +335,9 @@ void Program::movie_restart(std::uint32_t file, std::uint32_t sector, std::uint3
 void Program::movie_stop() {
     deliver_arrivals(0x801d4324);
     resident::set_cd_volume(resident.sound, 0, 0);
-    cancel_disc_read(0);   // 8002a498
-    mdec_out_callback(0);  // 801d47d8
-    mdec_reset(0);         // 801d4534
+    cancel_disc_read(0);  // 8002a498
+    mdec_out_callback(0); // 801d47d8
+    mdec_reset(0);        // 801d4534
     set_memory(player_state, 0xff, 1);
     if (memory(host_stream, 1) != 0)
         host_file_stream(0x801d4360);
@@ -350,7 +349,7 @@ void Program::movie_stop() {
     deliver_arrivals(0x801d4390);
     disc_set_mode(0xa0); // 8002a428
     deliver_arrivals(0x801d4398);
-    disc_wait(0);        // 80028a60
+    disc_wait(0); // 80028a60
 }
 
 // 801d43b0: stop, then release the buffers and the ring.
@@ -404,11 +403,12 @@ void Program::movie_slice_decoded() {
     // The completed transfer left DMA1 idle (CHCR 1f801098 bit 24).
     resident.io[0x98 + 3] &= 0xfeU;
     if (memory(load_enabled) != 0) {
-        std::array<std::int16_t, 4> area{
-            static_cast<std::int16_t>(memory(rect, 2)), static_cast<std::int16_t>(memory(rect + 2, 2)),
-            static_cast<std::int16_t>(memory(rect + 4, 2)), static_cast<std::int16_t>(memory(rect + 6, 2))};
-        static_cast<void>(load_image(area, rect,
-                                     memory(slice_buffers + 4 * memory(slice_buffer_index)), nullptr));
+        std::array<std::int16_t, 4> area{static_cast<std::int16_t>(memory(rect, 2)),
+                                         static_cast<std::int16_t>(memory(rect + 2, 2)),
+                                         static_cast<std::int16_t>(memory(rect + 4, 2)),
+                                         static_cast<std::int16_t>(memory(rect + 6, 2))};
+        static_cast<void>(load_image(
+            area, rect, memory(slice_buffers + 4 * memory(slice_buffer_index)), nullptr));
     }
     set_memory(rect, memory(rect, 2) + memory(rect + 4, 2), 2);
     set_memory(rect + 6, rows, 2);
@@ -424,7 +424,8 @@ void Program::movie_slice_decoded() {
         const auto display = display_buffers + 8 * k;
         auto x = memory(display, 2);
         if ((memory(color_mode) & 1U) != 0) // Back to pixels: two thirds.
-            x = static_cast<std::uint32_t>((static_cast<std::int64_t>(s16(x) * 2) * 0x55555556LL) >> 32) &
+            x = static_cast<std::uint32_t>((static_cast<std::int64_t>(s16(x) * 2) * 0x55555556LL) >>
+                                           32) &
                 0xffffU;
         movie_frame_ready(callback, memory(loaded_frame, 2), x, memory(display + 2, 2));
     }
@@ -493,7 +494,7 @@ void Program::mdec_hardware_reset(std::uint32_t mode) {
 void Program::verify_mdec_registers() {
     constexpr std::array<std::uint32_t, 15> expected{
         dma0_address, dma0_block, dma0_channel, dma1_address, dma1_block,
-        dma1_channel, 0x1f8010a0, 0x1f8010a4, 0x1f8010a8, 0x1f8010b0,
+        dma1_channel, 0x1f8010a0, 0x1f8010a4,   0x1f8010a8,   0x1f8010b0,
         0x1f8010b4,   0x1f8010b8, mdec_command, mdec_control, dma_control};
     for (std::uint32_t i = 0; i < expected.size(); ++i)
         if (memory(mdec_registers + 4 * i) != expected[i])

@@ -397,7 +397,8 @@ void Program::put_draw_env(FrameServices &services, std::uint32_t environment) {
         };
         const auto w = static_cast<std::uint32_t>(clamp(clip_w, gpu.width)) & 0xffffU;
         const auto h = static_cast<std::uint32_t>(clamp(clip_h, gpu.height)) & 0xffffU;
-        const auto rgb = memory(e + 0x1b, 1) << 16U | memory(e + 0x1a, 1) << 8U | memory(e + 0x19, 1);
+        const auto rgb =
+            memory(e + 0x1b, 1) << 16U | memory(e + 0x1a, 1) << 8U | memory(e + 0x19, 1);
         auto x = static_cast<std::uint32_t>(clip_x) & 0xffffU;
         auto y = static_cast<std::uint32_t>(clip_y) & 0xffffU;
         const bool aligned = (x & 0x3fU) == 0 && (w & 0x3fU) == 0;

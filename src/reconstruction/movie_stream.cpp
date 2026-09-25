@@ -26,21 +26,21 @@ std::int32_t s16(std::uint32_t value) {
 }
 
 // Ring statics.
-constexpr std::uint32_t ring_slots = 0x801e8a14;     // the slot records
-constexpr std::uint32_t ring_count = 0x801e8a18;     // sectors
-constexpr std::uint32_t read_slot = 0x801e8a00;      // first slot of the next frame to take
-constexpr std::uint32_t frame_slot = 0x801e89fc;     // first slot of the frame being filled
-constexpr std::uint32_t write_slot = 0x801e89f8;     // slot the next sector fills
+constexpr std::uint32_t ring_slots = 0x801e8a14;      // the slot records
+constexpr std::uint32_t ring_count = 0x801e8a18;      // sectors
+constexpr std::uint32_t read_slot = 0x801e8a00;       // first slot of the next frame to take
+constexpr std::uint32_t frame_slot = 0x801e89fc;      // first slot of the frame being filled
+constexpr std::uint32_t write_slot = 0x801e89f8;      // slot the next sector fills
 constexpr std::uint32_t transfer_active = 0x801e89e8; // the last sector's DMA is running
-constexpr std::uint32_t seek_start = 0x801e8a0c;     // skip sectors until `start_frame`
+constexpr std::uint32_t seek_start = 0x801e8a0c;      // skip sectors until `start_frame`
 constexpr std::uint32_t start_frame = 0x801e89dc;
-constexpr std::uint32_t last_frame = 0x801e8a08; // frames at or past it end the stream
+constexpr std::uint32_t last_frame = 0x801e8a08;    // frames at or past it end the stream
 constexpr std::uint32_t memory_source = 0x801e8a04; // sectors come from memory, not the drive
 constexpr std::uint32_t memory_sector = 0x801e89f0;
 constexpr std::uint32_t complete_callback = 0x801e89c8;
 constexpr std::uint32_t end_callback = 0x801e89cc;
 constexpr std::uint32_t defer_during_mdec = 0x801e89c4; // 24-bit movies
-constexpr std::uint32_t channel = 0x801e89e4;           // expected STR channel (header +2 bits 10-14)
+constexpr std::uint32_t channel = 0x801e89e4; // expected STR channel (header +2 bits 10-14)
 constexpr std::uint32_t next_channel = 0x801e89d8;
 constexpr std::uint32_t frame_sectors = 0x801e89bc; // u16: sectors of the frame received
 constexpr std::uint32_t frame_number = 0x801e89b8;  // frame being received
@@ -180,8 +180,8 @@ void Program::stream_unset_ring() {
     if (resident.cd.w_564cc == 1)
         unrecovered("stream_unset_ring", 0x801d59a4, "symbol:libcd-80040ce4",
                     "The alternate callback reset (80040ce4, 80040cd0) is not reconstructed");
-    cd_dma_callback(0);               // 800413ec
-    resident.cd.sync_callback = 0;    // 80040fcc
+    cd_dma_callback(0);            // 800413ec
+    resident.cd.sync_callback = 0; // 80040fcc
     io_write(cd_index, 0, 1);
     io_write(cd_request, 0, 1);
     // ExitCriticalSection (800404e4, BIOS syscall 2).
@@ -316,8 +316,9 @@ void Program::stream_interrupt() {
         set_memory(write_slot, memory(frame_slot));
         set_memory(slot, 0, 2);
     };
-    const bool in_sequence = s16(memory(frame_sectors, 2)) == static_cast<std::int32_t>(memory(slot + 4, 2)) &&
-                             (memory(frame_number) == 0 || memory(frame_number) == memory(slot + 8, 2));
+    const bool in_sequence =
+        s16(memory(frame_sectors, 2)) == static_cast<std::int32_t>(memory(slot + 4, 2)) &&
+        (memory(frame_number) == 0 || memory(frame_number) == memory(slot + 8, 2));
     if (!in_sequence) {
         discard_frame();
         drop(6);

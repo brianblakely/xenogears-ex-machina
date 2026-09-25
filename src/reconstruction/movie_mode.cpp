@@ -32,7 +32,7 @@ constexpr std::uint32_t ending = 0x80077014;       // 1: stop; 2..5: frames unti
 constexpr std::uint32_t draw_index = 0x80077018;   // environment pair the frame went to
 constexpr std::uint32_t display_index = 0x8007701c;
 constexpr std::uint32_t no_decode = 0x80077020;
-constexpr std::uint32_t display_y = 0x80077024; // the first display buffer's y
+constexpr std::uint32_t display_y = 0x80077024;    // the first display buffer's y
 constexpr std::uint32_t keep_playing = 0x80077028; // 8004fe47
 constexpr std::uint32_t movie_index = 0x8007711c;  // 8004fe45
 constexpr std::uint32_t current_env = 0x80077120;
@@ -184,8 +184,8 @@ void Program::movie_mode_play(FrameServices &services, movie::MdecCodec &codec,
     if (!(s32(memory(movie_index)) < s16(static_cast<std::uint32_t>(count))))
         return;
     for (const auto e : {environments, environments + environment_bytes}) {
-        set_memory(e + 0x18, 0, 1);                  // no background clear
-        set_memory(e + 0x5c + 0x11, 1, 1);           // 24-bit display
+        set_memory(e + 0x18, 0, 1);        // no background clear
+        set_memory(e + 0x5c + 0x11, 1, 1); // 24-bit display
     }
     deliver_arrivals(0x80076470);
     movie_mode_run(services, codec, frame, observe);
@@ -193,8 +193,8 @@ void Program::movie_mode_play(FrameServices &services, movie::MdecCodec &codec,
 
 // 80076488: clear the screen, reopen the library, stream the movie and
 // present each frame until the frame callback or a button ends it.
-void Program::movie_mode_run(FrameServices &services, movie::MdecCodec &codec,
-                             std::uint32_t frame, const ProgramObserver &observe) {
+void Program::movie_mode_run(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
+                             const ProgramObserver &observe) {
     auto &memory_state = movie_mode_memory.value();
     memory_state.frame = {frame, std::vector<std::uint8_t>(0x308)};
     const auto rect = frame + 0xc8;
@@ -267,7 +267,8 @@ void Program::movie_mode_run(FrameServices &services, movie::MdecCodec &codec,
             const auto steps = budget / 10;
             for (std::uint32_t i = 0, slot = 1; i < steps; ++i, slot += 2) {
                 deliver_arrivals(0x80076750);
-                const auto before = take_service(services.hblank_counts, "VSync(1) before a decode");
+                const auto before =
+                    take_service(services.hblank_counts, "VSync(1) before a decode");
                 deliver_arrivals(0x80076758);
                 movie_poll(codec);
                 deliver_arrivals(0x80076760);

@@ -145,7 +145,9 @@ void slice_output() {
     program.resident.mdec_output.push_back(output);
     program.movie_slice_decoded();
     const auto &library = program.resident.heap_contents.at(movie::library_address);
-    const auto at = [&](std::uint32_t address) { return library[address - movie::library_address]; };
+    const auto at = [&](std::uint32_t address) {
+        return library[address - movie::library_address];
+    };
     check(program.resident.heap_contents.at(0x80100000) == output &&
               program.resident.mdec_output.empty(),
           "The supplied MDEC output lands in the slice buffer");

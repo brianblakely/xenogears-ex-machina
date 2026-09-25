@@ -297,8 +297,8 @@ int run_case(int argc, char **argv) {
         // A field teardown releases whole heap blocks: own all their bytes.
         // The movie player's blocks (the library image, its buffers and ring)
         // are heap blocks too.
-        if (entry == "field_reload_teardown" || entry == "field_reload" ||
-            entry == "field_load" || movie_entry || movie_mode_entry)
+        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load" ||
+            movie_entry || movie_mode_entry)
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"

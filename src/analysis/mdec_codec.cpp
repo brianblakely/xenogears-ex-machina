@@ -23,7 +23,7 @@ struct Registers {
     std::uint32_t bits{};   // the bitstream's next 32 bits, left aligned
     std::uint32_t used{};   // bits of `bits` consumed past its last refill (0-15)
     std::uint32_t quantizer{};
-    std::uint32_t block{}; // version 3: component 1-6 (Cr, Cb, then Y); 0: version 2
+    std::uint32_t block{};             // version 3: component 1-6 (Cr, Cb, then Y); 0: version 2
     std::array<std::uint32_t, 3> dc{}; // version 3 DC predictors: Cr, Cb, Y
 };
 
@@ -83,9 +83,8 @@ bool LibpressMdecCodec::decode_vlc(const Memory &memory, std::uint32_t bitstream
     const Decoder d(memory);
     Registers r;
     const auto save = [&] {
-        const std::array<std::uint32_t, 9> words{r.source,    r.output, r.bits,
-                                                 r.used,      r.quantizer, r.block,
-                                                 r.dc[0],     r.dc[1],  r.dc[2]};
+        const std::array<std::uint32_t, 9> words{r.source, r.output, r.bits,  r.used, r.quantizer,
+                                                 r.block,  r.dc[0],  r.dc[1], r.dc[2]};
         for (std::size_t i = 0; i < words.size(); ++i)
             put_context_word(context, i, words[i]);
     };
@@ -93,8 +92,12 @@ bool LibpressMdecCodec::decode_vlc(const Memory &memory, std::uint32_t bitstream
     auto next = Next::dc;
     std::uint32_t end = 0;
     if (bitstream == 0) { // Resume a bounded frame.
-        r = {context_word(context, 0), context_word(context, 1), context_word(context, 2),
-             context_word(context, 3), context_word(context, 4), context_word(context, 5),
+        r = {context_word(context, 0),
+             context_word(context, 1),
+             context_word(context, 2),
+             context_word(context, 3),
+             context_word(context, 4),
+             context_word(context, 5),
              {context_word(context, 6), context_word(context, 7), context_word(context, 8)}};
         end = r.output + limit * 2U;
         next = Next::ac;

@@ -758,7 +758,8 @@ void load_platform(Program &program, const char *platform, const char *disc) {
             std::string point;
             if (!(lines >> point))
                 throw field::FieldFormatError("Malformed platform pass");
-            resident.platform.push_back({reconstruction::PlatformInput::Kind::pass, number(point, 16), 0});
+            resident.platform.push_back(
+                {reconstruction::PlatformInput::Kind::pass, number(point, 16), 0});
         } else if (kind == "arrival" || kind == "tick" || kind == "pad") {
             // arrival POINT; tick POINT EVENT; pad INDEX BYTE (hexadecimal).
             std::string first, second = "0";
