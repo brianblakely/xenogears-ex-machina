@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "plugins.h"
+
 /* Arguments: hook, pc, code, cycle, subcycle, path, 34 CPU registers, RAM,
  * scratchpad, the 64 raw GTE words (32 data, then 32 control), and the
  * interpreter's load-delay state: selected slot, two target registers, two
@@ -13,8 +15,11 @@ typedef void (*xem_trace_callback)(uint32_t, uint32_t, uint32_t, uint32_t, uint3
                                    const uint32_t *, const uint8_t *, const uint8_t *,
                                    const uint32_t *, const uint32_t *);
 
-static uint32_t xem_trace_pcs[64];
+#define XEM_TRACE_HOOKS 128u
+static uint32_t xem_trace_pcs[XEM_TRACE_HOOKS];
 static uint32_t xem_trace_pc_count;
+/* One bit per (pc >> 2) & 0xffff: a clear bit rules the instruction out quickly. */
+static uint8_t xem_trace_filter[0x2000];
 static uint32_t xem_trace_budget;
 static uint32_t xem_trace_seen;
 static uint32_t xem_trace_active;
@@ -42,7 +47,8 @@ XEM_TRACE_EXPORT int retro_xem_trace_configure(const uint32_t *pcs, uint32_t cou
     xem_trace_sink = 0;
     xem_trace_seen = 0;
     xem_trace_pc_count = 0;
-    if (!pcs || !callback || !count || count > 64 || !budget || budget > 1000000)
+    memset(xem_trace_filter, 0, sizeof(xem_trace_filter));
+    if (!pcs || !callback || !count || count > XEM_TRACE_HOOKS || !budget || budget > 1000000)
         return 0;
     for (i = 0; i < count; i++) {
         if (pcs[i] & 3)
@@ -52,6 +58,8 @@ XEM_TRACE_EXPORT int retro_xem_trace_configure(const uint32_t *pcs, uint32_t cou
                 return 0;
         xem_trace_pcs[i] = pcs[i];
     }
+    for (i = 0; i < count; i++)
+        xem_trace_filter[(pcs[i] >> 5) & 0x1fffu] |= (uint8_t)(1u << ((pcs[i] >> 2) & 7u));
     xem_trace_pc_count = count;
     xem_trace_budget = budget;
     xem_trace_sink = callback;
@@ -64,6 +72,27 @@ XEM_TRACE_EXPORT uint32_t retro_xem_trace_count(void) { return xem_trace_seen; }
 
 XEM_TRACE_EXPORT void retro_xem_coverage_enable(uint32_t active) {
     xem_coverage_active = active != 0;
+}
+
+/* Copy the w x h VRAM rectangle at (x, y) to the host, row by row (16-bit
+ * pixels, little-endian). The GPU plugin's save-state export (the same call a
+ * save state makes) first completes buffered commands; nothing is written to
+ * VRAM, RAM or CPU state. Returns 0 for an invalid rectangle or buffer. */
+XEM_TRACE_EXPORT int retro_xem_vram_read(uint32_t x, uint32_t y, uint32_t w, uint32_t h,
+                                         uint8_t *out, uint32_t size) {
+    GPUFreeze_t header;
+    uint16_t *vram = 0;
+    uint32_t row;
+    if (!out || !w || !h || x >= 1024u || y >= 512u || w > 1024u - x || h > 512u - y ||
+        size != w * h * 2u || !GPU_freeze)
+        return 0;
+    memset(&header, 0, sizeof(header));
+    header.ulFreezeVersion = 1;
+    if (GPU_freeze(1, &header, &vram) != 1 || !vram)
+        return 0;
+    for (row = 0; row < h; row++)
+        memcpy(out + row * w * 2u, vram + (y + row) * 1024u + x, w * 2u);
+    return 1;
 }
 
 /* Copy the coverage arrays to the host in the documented layout and clear them. */
@@ -99,7 +128,8 @@ static inline void xem_trace_instruction(const psxRegisters *regs, uint32_t pc, 
             xem_coverage_last[word] = code;
         }
     }
-    if (!xem_trace_active || !xem_trace_sink || xem_trace_seen >= xem_trace_budget)
+    if (!xem_trace_active || !xem_trace_sink || xem_trace_seen >= xem_trace_budget ||
+        !(xem_trace_filter[(pc >> 5) & 0x1fffu] & (1u << ((pc >> 2) & 7u))))
         return;
     for (i = 0; i < xem_trace_pc_count; i++) {
         if (pc == xem_trace_pcs[i]) {

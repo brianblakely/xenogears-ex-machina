@@ -56,6 +56,11 @@ def scratchpad_pointer_offset(pointer: int) -> int | None:
 
 
 MAX_SNAPSHOTS = 8192
+MAX_HOOKS = 128
+# VRAM read-backs (a hook's `vram` rectangle): at most one full 1024 x 512
+# image per record and 64 MiB per capture.
+VRAM_WIDTH, VRAM_HEIGHT = 1024, 512
+MAX_VRAM_CAPTURE_BYTES = 64 * 1024 * 1024
 # The 4 KiB hardware I/O register page (1f801000) stored with each snapshot.
 IO_PAGE = 0x1000
 # A snapshot image is RAM, then the 1 KiB scratchpad, then the I/O page.
@@ -217,11 +222,16 @@ def validate_instruction_trace(value: object) -> dict:
     integer(spec["end_frame"], "Trace end", start + 1, 36000)
     budget = integer(spec["max_callbacks"], "Trace callback budget", 1, 1_000_000)
     hooks = spec["hooks"]
-    if not isinstance(hooks, list) or not 1 <= len(hooks) <= 64:
-        raise ValueError("Instruction trace needs 1..64 hooks")
+    if not isinstance(hooks, list) or not 1 <= len(hooks) <= MAX_HOOKS:
+        raise ValueError(f"Instruction trace needs 1..{MAX_HOOKS} hooks")
     names, pcs = set(), set()
     for hook in hooks:
-        keys(hook, {"name", "pc", "guard", "ranges"}, {"digests", "snapshot"}, "Trace hook")
+        keys(hook, {"name", "pc", "guard", "ranges"}, {"digests", "snapshot", "vram"}, "Trace hook")
+        if "vram" in hook:
+            # A register holding the address of a RECT (x, y, w, h halfwords)
+            # whose VRAM pixels the record reads.
+            vram = keys(hook["vram"], {"register"}, set(), "VRAM rectangle")
+            integer(vram["register"], "VRAM rectangle register", 0, 33)
         if hook.get("snapshot", True) is not True:
             raise ValueError("Trace hook snapshot must be true when present")
         pc = integer(hook["pc"], "Hook PC", 0, 0xFFFFFFFF)
@@ -370,6 +380,26 @@ def read_digests(spec: list[dict], gpr: list[int], memory: bytes) -> list[dict]:
     return result
 
 
+def vram_rectangle(hook: dict, gpr: list[int], memory: bytes) -> dict:
+    """The rectangle a hook's `vram` register points at, or why it is unavailable."""
+    pointer = gpr[hook["vram"]["register"]]
+    offset = ram_pointer_offset(pointer)
+    result = {"register_value": pointer}
+    if offset is None or offset + 8 > len(memory):
+        result["unavailable"] = "rectangle_outside_system_ram"
+        return result
+    x, y, w, h = struct.unpack_from("<4h", memory, offset)
+    result["rect"] = [x, y, w, h]
+    if not (
+        0 <= x < VRAM_WIDTH
+        and 0 <= y < VRAM_HEIGHT
+        and 0 < w <= VRAM_WIDTH - x
+        and 0 < h <= VRAM_HEIGHT - y
+    ):
+        result["unavailable"] = "rectangle_outside_vram"
+    return result
+
+
 def guarded_record(
     hook: dict, pc: int, code: int, gpr: list[int], memory: bytes, scratchpad: bytes | None = None
 ) -> dict | None:
@@ -434,6 +464,13 @@ class InstructionTrace:
             if function is None:
                 raise ValueError("Instruction tracing requires the pinned observation-trace shell")
             function.restype, function.argtypes = restype, argtypes
+        self.vram_bytes = 0
+        if any("vram" in hook for hook in spec["hooks"]):
+            reader = getattr(core, "retro_xem_vram_read", None)
+            if reader is None:
+                raise ValueError("VRAM rectangles require the pinned observation-trace core")
+            reader.restype = ct.c_int
+            reader.argtypes = [ct.c_uint32] * 4 + [ct.POINTER(ct.c_uint8), ct.c_uint32]
         configure = getattr(core, "retro_xem_trace_configure", None)
         if configure is None:
             raise ValueError("External core is missing trace configuration")
@@ -521,6 +558,8 @@ class InstructionTrace:
                     "dispatch_path": path,
                 }
             )
+            if "vram" in hook:
+                record["vram"] = self.read_vram(hook, gpr, memory)
             if hook.get("snapshot"):
                 if self.snapshots.count >= self.spec["max_snapshots"]:
                     raise ValueError("Instruction snapshot budget exhausted")
@@ -545,6 +584,24 @@ class InstructionTrace:
             self.core.retro_xem_trace_enable(0)
             self.errors.append(f"Instruction trace: {error}")
 
+    def read_vram(self, hook: dict, gpr: list[int], memory: bytes) -> dict:
+        """The core's VRAM pixels in the rectangle a hook names, row by row."""
+        result = vram_rectangle(hook, gpr, memory)
+        if "unavailable" in result:
+            return result
+        x, y, w, h = result["rect"]
+        size = w * h * 2
+        if self.vram_bytes + size > MAX_VRAM_CAPTURE_BYTES:
+            raise ValueError("VRAM read-back budget exhausted")
+        buffer = (ct.c_uint8 * size)()
+        if self.core.retro_xem_vram_read(x, y, w, h, buffer, size) != 1:
+            raise ValueError("External core rejected a VRAM read-back")
+        data = bytes(buffer)
+        self.vram_bytes += size
+        result["sha256"] = hashlib.sha256(data).hexdigest()
+        result["hex"] = data.hex()
+        return result
+
     def finish(self) -> dict:
         self.core.retro_xem_trace_enable(0)
         self.stream.close()
@@ -560,6 +617,7 @@ class InstructionTrace:
         return {
             **snapshots,
             "digest_bytes": self.digest_bytes,
+            "vram_bytes": self.vram_bytes,
             "records": self.records,
             "candidate_callbacks": candidates,
             "budget_reached": candidates == self.spec["max_callbacks"],

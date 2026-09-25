@@ -387,7 +387,7 @@ class InstructionTraceTests(unittest.TestCase):
             with self.subTest(variant=variant), self.assertRaises(ValueError):
                 validate_instruction_trace(variant)
 
-    def test_up_to_64_distinct_hooks_are_accepted(self):
+    def test_up_to_128_distinct_hooks_are_accepted(self):
         def hooks(count):
             spec = copy.deepcopy(self.spec)
             spec["max_callbacks"] = 1000
@@ -400,9 +400,92 @@ class InstructionTraceTests(unittest.TestCase):
                 spec["hooks"].append(hook)
             return spec
 
-        self.assertEqual(len(validate_instruction_trace(hooks(64))["hooks"]), 64)
-        with self.assertRaisesRegex(ValueError, "1..64 hooks"):
-            validate_instruction_trace(hooks(65))
+        self.assertEqual(len(validate_instruction_trace(hooks(128))["hooks"]), 128)
+        with self.assertRaisesRegex(ValueError, "1..128 hooks"):
+            validate_instruction_trace(hooks(129))
+
+    def vram_callback(self, rect: bytes, reader) -> tuple[dict, list[str], dict]:
+        core = self.trace_core()
+        core.retro_xem_vram_read = reader
+        spec = copy.deepcopy(self.spec)
+        spec["hooks"][0]["vram"] = {"register": 4}
+        ram = (ct.c_uint8 * MEMORY_LIMIT)()
+        ram[: len(self.memory)] = self.memory
+        ram[192:200] = rect
+        registers = (ct.c_uint32 * 34)(*self.gpr)
+        registers[4] = 0x800000C0
+        errors = []
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "trace.jsonl"
+            trace = InstructionTrace(core, spec, output, errors)
+            try:
+                trace.start_run(2)
+                callback = core.retro_xem_trace_configure.call_args.args[3]
+                scratchpad = (ct.c_uint8 * 0x2000)()
+                callback(
+                    0,
+                    self.hook["pc"],
+                    0x90420000,
+                    123,
+                    4,
+                    0,
+                    registers,
+                    ram,
+                    scratchpad,
+                    self.cop2(),
+                    self.load_delay(),
+                )
+            finally:
+                status = trace.finish()
+            text = output.read_text()
+        return (json.loads(text) if text else {}), errors, status
+
+    def test_vram_rectangles_read_the_pointed_rectangle_from_the_core(self):
+        calls = []
+
+        def reader(x, y, w, h, buffer, size):
+            calls.append((x, y, w, h, size))
+            for i in range(size):
+                buffer[i] = i & 0xFF
+            return 1
+
+        record, errors, status = self.vram_callback(struct.pack("<4h", 0x3C0, 0x100, 2, 3), reader)
+        self.assertEqual(errors, [])
+        self.assertEqual(calls, [(0x3C0, 0x100, 2, 3, 12)])
+        self.assertEqual(record["vram"]["rect"], [0x3C0, 0x100, 2, 3])
+        self.assertEqual(record["vram"]["hex"], bytes(range(12)).hex())
+        self.assertEqual(record["vram"]["sha256"], hashlib.sha256(bytes(range(12))).hexdigest())
+        self.assertEqual(status["vram_bytes"], 12)
+
+    def test_vram_rectangles_outside_vram_are_unavailable_without_a_read(self):
+        reader = Mock(return_value=1)
+        for rect in ((0x3F0, 0, 0x20, 1), (0, 0x1FF, 1, 2), (0, 0, 0, 1), (-1, 0, 1, 1)):
+            with self.subTest(rect=rect):
+                record, errors, _ = self.vram_callback(struct.pack("<4h", *rect), reader)
+                self.assertEqual(errors, [])
+                self.assertEqual(record["vram"]["unavailable"], "rectangle_outside_vram")
+        reader.assert_not_called()
+
+    def test_a_rejected_vram_read_fails_the_capture(self):
+        record, errors, status = self.vram_callback(
+            struct.pack("<4h", 0, 0, 1, 1), Mock(return_value=0)
+        )
+        self.assertEqual(record, {})
+        self.assertTrue(status["failed"])
+        self.assertIn("rejected a VRAM read-back", errors[0])
+
+    def test_vram_rectangles_need_the_core_export_and_a_register(self):
+        spec = copy.deepcopy(self.spec)
+        spec["hooks"][0]["vram"] = {"register": 4}
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            self.assertRaisesRegex(ValueError, "observation-trace core"),
+        ):
+            InstructionTrace(self.trace_core(), spec, Path(directory) / "t.jsonl", [])
+        for vram in ({}, {"register": 34}, {"register": 4, "size": 8}):
+            spec["hooks"][0]["vram"] = vram
+            with self.subTest(vram=vram), self.assertRaises(ValueError):
+                validate_instruction_trace(spec)
 
     def test_scratchpad_aliases_read_only_the_bounded_backing_bytes(self):
         scratchpad = bytearray(1024)

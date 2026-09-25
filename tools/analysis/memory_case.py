@@ -148,15 +148,6 @@ RELOAD_ENTRIES = (
 # return's image holds.
 STEP_ENTRY, STEP_EXIT = "f-head", "f-7dac"
 FRAME_START_HCOUNT = 0x800ADB9C
-# StoreImage read-backs without a service hook: the hook after the transfer
-# completes, the word naming the destination and the byte count. 800a915c
-# saves 40h x 100h of VRAM into the block at 800afc70 before t-b.
-VRAM_READS = {"t-b": [(0x800AFC70, 0x8000)]}
-# 800a5884's five columns (800a5774) are read into one heap block, just below
-# the read-ahead block (8005a4e0), each read overwriting the last: the image
-# after them holds the fifth (bit 15 set, which 800a5774 sets again). The
-# first four are overwritten before any image and are supplied with it.
-COLUMN_READS = ("r-5884", 5, 0x7000)
 
 # Platform inputs. A hook named `load-SITE` sits on the instruction after the
 # original hardware load at SITE (hex); the loaded value is that load's target
@@ -189,6 +180,18 @@ def gte_words(row: dict) -> list[int]:
 # the VSync(0) globals, each libgpu alarm's VSync(-1), the alarm polls counted
 # by DrawSync/LoadImage waits, ClearImage's GPUSTAT read, the queue's DMA busy
 # check, SetIntrMask(0)'s previous mask and GPU information reads (GPUREAD).
+def vram_line(row: dict) -> str | None:
+    """A StoreImage read-back: the VRAM pixels the core held in the rectangle
+    the transfer (_drs 800462dc) named, recorded by the trace extension at
+    that hook. Independent of every compared RAM image."""
+    if "vram" not in row:
+        return None
+    vram = row["vram"]
+    require("hex" in vram, f"VRAM read-back unavailable: {vram.get('unavailable')}")
+    data = bytes.fromhex(vram["hex"])
+    return f"vram_read {len(data) // 4:x} {vram['hex']}"
+
+
 def service_line(row: dict) -> str | None:
     hook = row["hook"]
     registers = visible_registers(row)
@@ -236,7 +239,10 @@ def frame_services(
     for line in (capture / "instruction-trace.jsonl").read_text().splitlines():
         row = json.loads(line)
         hook = row["hook"]
-        if hook in starts:
+        # A read-back belongs to the call however the queue ran the transfer.
+        if lines is not None and (item := vram_line(row)) is not None:
+            lines.append((row["cycle_u32"], item))
+        elif hook in starts:
             depth += 1
         elif hook in ends:
             depth -= 1
@@ -264,8 +270,8 @@ def call_services(
 
     The VSync(1) of 80077dac has no service hook: it is the value the step
     stores at 800adb9c, read from the image at the step's return. StoreImage
-    read-backs are the destination's bytes in the image of the first hook
-    after the transfer (VRAM_READS).
+    read-backs are the VRAM records of the transfer hook (vram_line), inside
+    or outside interrupt brackets.
     """
     starts = {entry for entry, _ in interrupts}
     ends = {exit for _, exit in interrupts}
@@ -275,16 +281,8 @@ def call_services(
         if not entry_row["event"] <= row["event"] <= exit_row["event"]:
             continue
         hook = row["hook"]
-        if hook in VRAM_READS and row["event"] > entry_row["event"]:
-            ram = snapshots.read(row)[0]
-            for pointer, size in VRAM_READS[hook]:
-                at = u32(ram, pointer) & 0x1FFFFF
-                lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
-        if hook == COLUMN_READS[0] and row["event"] > entry_row["event"]:
-            ram = snapshots.read(row)[0]
-            _, count, size = COLUMN_READS
-            at = (u32(ram, 0x8005A4E0) - 8 - size) & 0x1FFFFF
-            lines += [f"vram_read {size // 4:x} {ram[at : at + size].hex()}"] * count
+        if (item := vram_line(row)) is not None:
+            lines.append(item)
         if row["event"] == exit_row["event"]:
             continue
         if hook in starts:
@@ -1100,7 +1098,12 @@ def run(args: argparse.Namespace) -> int:
                     statuses[status] += 1
                     key = report["dependency"] or report["reason"]
                     dependencies[key].append(
-                        {"call": call, "frontend_run": frame, "location": report["location"]}
+                        {
+                            "call": call,
+                            "frontend_run": frame,
+                            "location": report["location"],
+                            "reason": report["reason"],
+                        }
                     )
                     break
                 statuses["completed_boundary"] += 1
