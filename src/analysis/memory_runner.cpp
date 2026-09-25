@@ -173,7 +173,7 @@ int run_case(int argc, char **argv) {
             entry == "battle_scene_files" || entry == "battle_setup_files" ||
             entry == "battle_load_prologue" || entry == "battle_effect_lists" ||
             entry == "battle_release_setup" || entry == "battle_renderer_setup" ||
-            entry.starts_with("battle_turn_");
+            entry == "battle_loader" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -201,9 +201,8 @@ int run_case(int argc, char **argv) {
                                        entry == "field_battle_exit";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "battle_mode_start" && entry != "field_checkpoints" &&
-            !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry &&
-            !battle_exit_entry)
+            !entry.starts_with("field_frame") && !resident_entry && !battle_entry && !menu_entry &&
+            !field_entry && !transition_entry && !reload_entry && !battle_exit_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -643,6 +642,10 @@ int run_case(int argc, char **argv) {
             program->deliver_pending_arrivals();
         } else if (entry == "battle_renderer_setup") {
             program->battle_renderer_setup(registers[4]); // 800b81bc: A0 the task's argument
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_loader") {
+            // A state of the loading task 801e6fec: A0 the task node.
+            program->battle_loader_step(registers[4], services);
             program->deliver_pending_arrivals();
         } else if (entry == "battle_scene_files") {
             program->battle_scene_files(); // 8001bb0c

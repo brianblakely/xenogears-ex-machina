@@ -190,6 +190,7 @@ src/reconstruction/battle_ai.cpp
 src/reconstruction/battle_attack.cpp
 src/reconstruction/battle_formula.cpp
 src/reconstruction/battle_levels.cpp
+src/reconstruction/battle_loader.cpp
 src/reconstruction/battle_menu.cpp
 src/reconstruction/battle_results.cpp
 src/reconstruction/battle_rewards.cpp
@@ -282,6 +283,7 @@ tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
 tests/test_battle_continuation.py
+tests/test_battle_loader.cpp
 tests/test_battle_request.py
 tests/test_collision_math.py
 tests/test_collision_query.py

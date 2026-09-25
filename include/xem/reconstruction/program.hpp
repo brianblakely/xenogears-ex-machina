@@ -1062,6 +1062,9 @@ class Program {
     // 800b81bc: the battle renderer and task setup before the main loop;
     // the setup module's task keeps `task_argument` (A0).
     void battle_renderer_setup(std::uint32_t task_argument);
+    // One battle frame's run of the loading task `node` (battle_loader.cpp):
+    // its state 801e6fec, 801e6f00, 801e6e48, 801e6d6c, 801e6d34 or 801e6c80.
+    void battle_loader_step(std::uint32_t node, FrameServices &services);
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
     // Post-battle 801e2794: victory rewards and write-back.
@@ -1347,6 +1350,28 @@ class Program {
                                      std::uint32_t mode); // 80032e88
     void release_battle_block(battle::Battle &battle, std::uint32_t address,
                               std::uint32_t call_site); // 800320e8
+    // The battle loading task (battle_loader.cpp).
+    std::uint32_t battle_block(std::uint32_t size, std::uint32_t mode, std::uint32_t site);
+    void release_battle_heap(std::uint32_t address, std::uint32_t site);
+    std::vector<std::uint8_t> take_task_bytes(std::uint32_t address, std::uint32_t size);
+    void return_task_list();
+    void register_task(std::uint32_t owner, std::uint32_t node);         // 8001cc18
+    void register_pending_task(std::uint32_t owner, std::uint32_t node); // 8001ca58
+    void unlink_task(std::uint32_t node);                                // 8001cd94
+    std::uint32_t create_task(std::uint32_t size, std::uint32_t owner, std::uint32_t update,
+                              std::uint32_t draw, std::uint32_t destroy); // 8001d1d8
+    void with_battle_sprites(const std::function<void(const field::SpriteSources &)> &call);
+    std::uint32_t create_battle_sprite_task(std::uint32_t data, std::uint32_t palette,
+                                            std::int16_t x, std::int16_t y, std::uint32_t animation,
+                                            std::uint32_t variant); // 800ba984
+    void create_slot_sprite(std::uint32_t slot, std::uint32_t index,
+                            std::uint32_t animation); // 801e67a4
+    void place_enemy_rows(FrameServices &services, std::uint32_t data,
+                          std::uint32_t frame); // 801e6314
+    void read_member_files(std::uint32_t list); // 801e693c
+    void create_member_sprites();               // 801e6ac4
+    void upload_image_sections(FrameServices &services, std::uint32_t data,
+                               std::uint32_t rect); // 8002dde4
     // LoadImage of the rectangle at `rect` in battle memory, clamped in place.
     void load_battle_image(battle::Battle &battle, FrameServices &services, std::uint32_t rect,
                            std::uint32_t source);
