@@ -1046,6 +1046,15 @@ class Program {
     // 8001bbac: the setup files (directory 12 files 2-4) by a list read, the
     // effect bank once its file has arrived, and the members' effects.
     void battle_setup_files();
+    // 800b8098 up to 8001bbac: the mode (800d36b8) and 800b8284 (geometry
+    // offset, both display and draw environments).
+    void battle_load_prologue(std::uint32_t mode);
+    // 800b8098 after the swirl up to 801e7210: the disc wait (80028a60) and
+    // 800a8b0c (effect globals and lists).
+    void battle_effect_lists();
+    // 80071278 up to 8009892c: release the setup's effect bank, marker and
+    // setup module blocks once the setup frames end.
+    void battle_release_setup();
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
     // Post-battle 801e2794: victory rewards and write-back.

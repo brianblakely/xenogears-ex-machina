@@ -1,6 +1,7 @@
 // Battle setup of the setup module (directory 12 file 4, sha256 4300fdd9...,
 // loaded at 801e4000): the phases 801e5840 runs from the intro swirl.
 #include "xem/reconstruction/battle.hpp"
+#include "xem/reconstruction/gpu.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <array>
@@ -971,6 +972,135 @@ void Program::battle_scene_files() {
         resident.battle_scene = data + 4;
         resident.battle_scene_data = data + 4;
         static_cast<void>(select_directory(row, column));
+    });
+}
+
+// 800b8098 up to its call of 8001bbac: the mode (800d36b8), then 800b8284:
+// the geometry offset and both buffers' display and draw environments, with
+// their display ranges.
+void Program::battle_load_prologue(std::uint32_t mode) {
+    battle->put8(0x800d36b8, mode);
+    set_geometry_offset(0xa0, 0xa4); // 8004a12c
+    set_default_display_environment(0x800c4a7c, 0, 0xe0, 0x140, 0xe0);
+    set_default_display_environment(0x800c8aec, 0, 0, 0x140, 0xe0);
+    set_default_draw_environment(0x800c4a20, 0, 0, 0x140, 0xe0);
+    set_default_draw_environment(0x800c8a90, 0, 0xe0, 0x140, 0xe0);
+    for (const auto [address, value] :
+         {std::pair{0x800c8af6U, 10U}, {0x800c4a86U, 10U}, {0x800c8af8U, 0x100U},
+          {0x800c4a88U, 0x100U}, {0x800c8af4U, 0U}, {0x800c4a84U, 0U}, {0x800c8afaU, 0xd8U},
+          {0x800c4a8aU, 0xd8U}})
+        battle->put16(address, value);
+}
+
+// 800a8b0c (after the swirl's final disc wait, 80028a60): the effect globals,
+// the effect lists of the scene data's counts (800a2234: +348 entries of 14h
+// bytes at 800c3d0c; 800a2ca4: +34a + 1 records of 7ch at 800c3d04, each two
+// semi-transparent POLY_FT4 packets), and the cleared tables 800c3bac,
+// 800d3368, 800c3acc and 800d330a.
+void Program::battle_effect_lists() {
+    disc_wait(0);
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        auto &heap = resident.heap;
+        memory.put32(0x800c3e88, 0);
+        memory.put16(0x800c3cf0, 0);
+        memory.put8(0x800c3d6c, 0);
+        memory.put8(0x800c3d68, 0);
+        memory.put16(0x800c3b7c, 0);
+        memory.put8(0x800c3b74, 1);
+        const auto data = resident.battle_scene_data;
+        const auto allocate = [&](std::uint32_t size, std::uint32_t site) {
+            heap.tag = 4; // 80032498(4, 0)
+            heap.tag_words[4] = 0;
+            heap.quiet = 0;
+            auto block = resident::heap_allocate(heap, size, 0, site);
+            if (!block)
+                throw battle::BattleError("A quiet null allocation in 800a8b0c");
+            const auto address = block->address;
+            memory.regions.emplace(address, std::move(block->bytes));
+            return address;
+        };
+        // 800a2234: a free list of 14h-byte entries.
+        const auto lists = memory.s16(data + 0x348);
+        if (lists > 0) {
+            memory.put16(0x800c3d12, static_cast<std::uint32_t>(lists));
+            const auto block = allocate(static_cast<std::uint32_t>(lists) * 0x14, 0x800a226c);
+            memory.put32(0x800c3d0c, block);
+            memory.put16(0x800c3d10, 0); // 800a22e8
+            for (std::uint32_t i = 0; i < memory.u16(0x800c3d12); ++i)
+                memory.put8(block + i * 0x14, 0);
+        }
+        // 800a2ca4 with 800a2d5c: records of two packets each.
+        const auto records = memory.s16(data + 0x34a);
+        memory.put16(0x800c3d08, static_cast<std::uint32_t>(records));
+        memory.put16(0x800c3d0a, 0);
+        const auto block =
+            allocate(static_cast<std::uint32_t>(records + 1) * 0x7c, 0x800a2ce0);
+        memory.put32(0x800c3d04, block);
+        for (std::int32_t record = 0; record < memory.s16(0x800c3d08) + 1; ++record) {
+            const auto at = block + static_cast<std::uint32_t>(record) * 0x7c;
+            memory.put16(at + 0x16, 0xffff);
+            memory.put16(at + 0x1e, 0);
+            for (std::uint32_t packet = 0; packet < 2; ++packet) {
+                const auto p = at + 0x2c + packet * 0x28;
+                memory.put8(p + 3, 9); // SetPolyFT4 80043cb0
+                memory.put8(p + 7, 0x2c);
+                memory.put8(p + 7, memory.u8(p + 7) | 2); // SetSemiTrans 80043bfc
+                const auto q = at + packet * 0x28;
+                memory.put16(q + 0x3a, 0x1cdU << 6U); // GetClut(0, 1cd)
+                memory.put8(q + 0x48, 0xf);
+                memory.put16(q + 0x42, gpu::texture_page(0, 1, 0x380, 0));
+                memory.put8(q + 0x38, 0);
+                memory.put8(q + 0x39, 0xc1);
+                memory.put8(q + 0x40, 0);
+                memory.put8(q + 0x41, 0xc1);
+                memory.put8(q + 0x49, 0xc1);
+                memory.put8(q + 0x50, 0xf);
+                memory.put8(q + 0x51, 0xc1);
+            }
+        }
+        for (std::uint32_t i = 0; i < 9; ++i) // 800b00d0
+            memory.put32(0x800c3bac + i * 4, 0);
+        for (std::uint32_t i = 0; i < 32; ++i)
+            memory.put32(0x800d3368 + i * 4, 0);
+        for (std::uint32_t i = 0; i <= 0x98; i += 8)
+            memory.put32(0x800c3acc + i, 0);
+        memory.put16(0x800d330a, 0);
+        memory.put16(0x800d331e, 0);
+    });
+}
+
+// 80071278..80071308, once the setup frames end: release the effect header
+// block, stop its voices (8003a094, unless mode 4) and unlink it (8003852c),
+// release the marker and the spacer that held the setup module, then
+// 80070e2c/80070eb0 (only with 800c3d48) and 800c3e4c = 1 unless 800d2fc4.
+// The original releases the bank before the driver reads it; releasing
+// leaves a block's bytes as they are, so the unlink runs first here.
+void Program::battle_release_setup() {
+    run_battle([&](battle::Battle &context) {
+        auto &memory = context.memory;
+        const auto bank = resident.battle_effects;
+        if (resident.battle_request.mode != 4)
+            resident::stop_bank_voices(resident.sound, bank);
+        resident::unlink_effect_bank(resident.sound, bank);
+        {
+            const auto found = resident.sound.objects.find(bank);
+            if (found == resident.sound.objects.end())
+                throw battle::BattleError("The effect header is not a driver object");
+            resident::HeapBlock block{bank, std::move(found->second)};
+            resident.sound.objects.erase(found);
+            if (resident::heap_release(resident.heap, block, 0x80071280) == -1)
+                resident.sound.objects.emplace(bank, std::move(block.bytes));
+        }
+        release_battle_block(context, resident.battle_marker, 0x800712c4);
+        release_battle_block(context, resident.battle_spacer, 0x800712d4);
+        if (memory.u8(0x800c3d48) != 0)
+            throw MissingDependency({"battle_release_setup", 0x80070e44, {}, {}},
+                                    "symbol:battle-801e5000-module", false,
+                                    "The 800c3d48 module paths 80070e2c and 80070eb0 are not "
+                                    "reconstructed");
+        if (memory.u8(0x800d2fc4) == 0)
+            memory.put8(0x800c3e4c, 1);
     });
 }
 

@@ -865,7 +865,8 @@ Program import_battle(const OriginalMemory &memory) {
     // formation table it selects from and the party ids 801e4048 publishes
     // (resident bytes only battle code addresses), the setup module at
     // 801e4000 and its files: the formation data (8005949c), the archive
-    // (800595a8) and the effect header (800595d0).
+    // (800595a8), the effect header (800595d0), and the marker (80059480) and
+    // spacer (800594ac) blocks that place the module.
     for (const auto [address, size] :
          {// The record and the zero word 8001bbac stores after its list.
           std::pair{reconstruction::battle::formation_record - 4, 0x24U},
@@ -878,7 +879,7 @@ Program import_battle(const OriginalMemory &memory) {
           std::pair{reconstruction::battle::overlay_end, 4U}})
         battle.regions.emplace(address, copy_of(memory.range(address, size)));
     static_cast<void>(own_block(reconstruction::battle::setup_module_base));
-    for (const auto pointer : {0x8005949cU, 0x800595a8U, 0x800595d0U})
+    for (const auto pointer : {0x8005949cU, 0x800595a8U, 0x800595d0U, 0x80059480U, 0x800594acU})
         static_cast<void>(own_block(memory.word(pointer)));
     // The intro swirl's state (allocated at 800b73fc; the header records the
     // call site's word address): the setup's archive items are allocated
