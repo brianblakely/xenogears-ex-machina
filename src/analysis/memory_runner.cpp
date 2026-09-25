@@ -175,7 +175,7 @@ int run_case(int argc, char **argv) {
             entry == "battle_release_setup" || entry == "battle_renderer_setup" ||
             entry == "battle_stage_setup" || entry == "battle_opening" ||
             entry == "battle_opening_images" || entry == "battle_opening_windows" ||
-            entry.starts_with("battle_turn_");
+            entry == "battle_loader" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -653,6 +653,10 @@ int run_case(int argc, char **argv) {
             program->deliver_pending_arrivals();
         } else if (entry == "battle_opening_windows") {
             program->battle_opening_windows(); // 8007819c
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_loader") {
+            // A state of the loading task 801e6fec: A0 the task node.
+            program->battle_loader_step(registers[4], services);
             program->deliver_pending_arrivals();
         } else if (entry == "battle_scene_files") {
             program->battle_scene_files(); // 8001bb0c

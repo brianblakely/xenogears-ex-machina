@@ -428,6 +428,13 @@ std::span<std::uint8_t> Program::owned_span(std::uint32_t address) {
         if (const auto bytes = window(saved.address, saved.bytes); !bytes.empty())
             return bytes;
     }
+    if (battle)
+        if (const auto after = battle->regions.upper_bound(address);
+            after != battle->regions.begin()) {
+            auto &[at, bytes] = *std::prev(after);
+            if (address - at < bytes.size())
+                return std::span(bytes).subspan(address - at);
+        }
     return record_block(address);
 }
 

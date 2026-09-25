@@ -816,6 +816,26 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
                 break;
         }
         read.list = {read.w_fe0c, copy_of(memory.range(read.w_fe0c, entries * 8))};
+        // A list inside a task node (the battle loading task's) is the
+        // reader's while it runs: the node keeps the rest.
+        auto &nodes = resident.sprite_tasks.nodes;
+        const auto start = read.list.address;
+        const auto end = start + static_cast<std::uint32_t>(read.list.bytes.size());
+        const auto node = std::ranges::find_if(nodes, [&](const auto &piece) {
+            return start >= piece.address && start - piece.address < piece.bytes.size();
+        });
+        if (node != nodes.end()) {
+            const auto piece_end = node->address + static_cast<std::uint32_t>(node->bytes.size());
+            if (end > piece_end)
+                throw field::FieldFormatError("A read list crosses its task node");
+            auto bytes = std::move(node->bytes);
+            const auto piece = node->address;
+            nodes.erase(node);
+            if (start != piece)
+                nodes.push_back({piece, {bytes.begin(), bytes.begin() + (start - piece)}});
+            if (end != piece_end)
+                nodes.push_back({end, {bytes.begin() + (end - piece), bytes.end()}});
+        }
     }
 }
 
@@ -929,6 +949,56 @@ Program import_battle(const OriginalMemory &memory) {
         battle.regions.emplace(address, copy_of(memory.range(address, size)));
     for (const auto pointer : {0x8005935cU, 0x80059360U})
         static_cast<void>(own_block(memory.word(pointer)));
+    // The loading task (battle_loader.cpp): the enemy set's sprite data file
+    // (800c3dec) and its copy (800d39c8), the data of each slot's sprite row
+    // (800ccbd4, 12 bytes each), the resident binding 80022224 fills
+    // (8006be10) and the facing replay's command widths (8004fc40).
+    for (const auto pointer : {0x800c3decU, 0x800d39c8U})
+        static_cast<void>(own_block(memory.word(pointer)));
+    for (std::uint32_t row = 0; row < 11; ++row)
+        static_cast<void>(own_block(memory.word(0x800ccbd4 + row * 12)));
+    for (const auto [address, size] :
+         {std::pair{0x8006be10U, 0x14U}, std::pair{0x8004fc40U, 0x100U}})
+        battle.regions.emplace(address, copy_of(memory.range(address, size)));
+    // Task nodes in the heap with the block each shares with its object (a
+    // node in battle memory is owned there); a task sprite's part blocks
+    // (renderer +2c, +30); the loading task's files (+20..+2c).
+    auto &tasks = program.resident.sprite_tasks;
+    const auto node_owned = [&](std::uint32_t address) {
+        return std::ranges::any_of(tasks.nodes, [&](const auto &piece) {
+            return address >= piece.address && address - piece.address < piece.bytes.size();
+        });
+    };
+    for (auto head : {tasks.head, tasks.pending_head})
+        for (auto node = head, visited = 0U; node != 0; node = memory.word(node + 0x18)) {
+            if (++visited > 0x1000)
+                throw field::FieldFormatError("Sprite task list does not terminate");
+            if (node_owned(node) || battle.contains(node, 0x1c))
+                continue;
+            const auto block = std::ranges::find_if(headers, [&](const auto &entry) {
+                return node >= entry.first + 8 && node < entry.second[0] - 8;
+            });
+            if (block == headers.end())
+                throw field::FieldFormatError("Sprite task node is outside the heap");
+            const auto start = block->first + 8;
+            tasks.nodes.push_back(
+                {start, copy_of(memory.range(start, block->second[0] - 8 - start))});
+        }
+    for (auto node = tasks.head; node != 0; node = memory.word(node + 0x18)) {
+        const auto state = memory.word(node + 8);
+        if (state >= 0x801e6c80 && state <= 0x801e6fec) {
+            for (std::uint32_t at = 0x20; at <= 0x2c; at += 4)
+                static_cast<void>(own_block(memory.word(node + at)));
+            continue;
+        }
+        const auto sprite = memory.word(node + 4);
+        if (sprite == 0 || !node_owned(sprite))
+            continue;
+        const auto renderer = memory.word(sprite + 0x20);
+        if (renderer != 0 && node_owned(renderer))
+            for (const auto at : {0x2cU, 0x30U})
+                static_cast<void>(own_block(memory.word(renderer + at)));
+    }
     return program;
 }
 

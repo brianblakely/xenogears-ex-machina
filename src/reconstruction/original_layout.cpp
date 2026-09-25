@@ -897,6 +897,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sprite.platform_argument; });
     add_resident("sprite_binding", 0x800591b0, 1,
                  [](Program &p) -> auto & { return p.resident.sprite.binding_control; });
+    add_resident("sprite_platform_directory_bits", 0x800591b3, 1,
+                 [](Program &p) -> auto & { return p.resident.sprite.platform_directory_bits; });
     add_resident("sprite_variant", 0x800591b8, 4,
                  [](Program &p) -> auto & { return p.resident.sprite.variant; });
     add_resident("sprite_texture_page", 0x80059310, 4,

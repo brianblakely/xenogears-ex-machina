@@ -91,6 +91,7 @@ RESIDENT_ENTRIES = (
     "battle_opening",
     "battle_opening_images",
     "battle_opening_windows",
+    "battle_loader",
     "mode_dispatch",
     "battle_mode_start",
     "battle_atb",

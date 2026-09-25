@@ -44,6 +44,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/battle_turn.cpp
   src/reconstruction/battle_formula.cpp
   src/reconstruction/battle_levels.cpp
+  src/reconstruction/battle_loader.cpp
   src/reconstruction/battle_results.cpp
   src/reconstruction/battle_rewards.cpp
   src/reconstruction/battle_rules.cpp
@@ -144,6 +145,9 @@ if(BUILD_TESTING)
   add_executable(test-field-gte tests/test_field_gte.cpp)
   target_link_libraries(test-field-gte PRIVATE xem-reconstruction)
   add_test(NAME field-gte-reconstruction COMMAND test-field-gte)
+  add_executable(test-battle-loader tests/test_battle_loader.cpp)
+  target_link_libraries(test-battle-loader PRIVATE xem-reconstruction)
+  add_test(NAME battle-loader-reconstruction COMMAND test-battle-loader)
   add_executable(test-mode-dispatch tests/test_mode_dispatch.cpp)
   target_link_libraries(test-mode-dispatch PRIVATE xem-reconstruction)
   add_test(NAME mode-dispatch-reconstruction COMMAND test-mode-dispatch)
