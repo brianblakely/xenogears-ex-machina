@@ -59,6 +59,10 @@ struct HeapBlock {
 // block, which stays with the caller; 1 for a null block in quiet mode.
 // `call_site` (ra - 8) is recorded before a non-quiet null release fails.
 [[nodiscard]] std::int32_t heap_release(Heap &heap, HeapBlock &block, std::uint32_t call_site);
+// 80031f70: when the block has room for more than a header past its first
+// `size` bytes, a free class-21 header ends it there (dirty is set) and the
+// bytes after that header become the heap's. Returns whether it did.
+bool heap_trim(Heap &heap, HeapBlock &block, std::uint32_t size);
 // 80031ff8: merge runs of free blocks; absorbed headers become held bytes.
 void heap_coalesce(Heap &heap);
 // Bytes of RAM by address, outside every other owner.

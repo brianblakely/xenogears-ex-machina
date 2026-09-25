@@ -132,14 +132,10 @@ void Program::battle_load(std::uint32_t mode, FrameServices &services, std::uint
     observed(observe, *this, "battle_swirl", 0x800b814c);
     battle_effect_lists();
     observed(observe, *this, "battle_effect_lists", 0x800b8158);
-    battle_after_scene(battle_stage_setup(services));
+    // 801e7210(8005949c, *80059520, *80059470, 800ccb94, 800ccbb4, 800c4a39).
+    battle_after_scene(battle_stage_setup(services, stack - load_frame, resident.battle_stage,
+                                          0x800ccb94, 0x800ccbb4, 0x800c4a39));
     observed(observe, *this, "battle_after_scene", 0x800b81b4);
-}
-
-// 801e7210: the stage. Its result is 800c4a38's.
-std::uint32_t Program::battle_stage_setup(FrameServices &) {
-    throw MissingDependency({"battle_stage_setup", 0x801e7210, {}, {}}, "symbol:battle-stage-setup",
-                            false, "The stage setup 801e7210 is not reconstructed");
 }
 
 // 80071188..80071278: the opening (fades, 80077990, the camera, 8007819c)

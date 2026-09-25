@@ -602,6 +602,127 @@ void panels() {
               memory.u16(0x80059fd8 + 0x12) == 6 && memory.u32(0x80059fd8 + 0x1c) == state + 0x121,
           "Each digit message is drawn into its image by the resident text record");
 }
+
+// Setup module 801e7210 over an invented stage file (no images, one model
+// without primitives, one part) and scene data (a light and the flag
+// object) in a heap of one free block and the two kept files.
+void stage_setup() {
+    namespace game = xem::reconstruction;
+    namespace resident = xem::reconstruction::resident;
+    game::Program program;
+    auto &memory = program.battle.emplace();
+    auto &state = program.resident;
+    constexpr std::uint32_t stage = 0x80110008;
+    constexpr std::uint32_t file = 0x80110108; // scene data block (size word first)
+    constexpr std::uint32_t scene = file + 4;
+    auto &heap = state.heap;
+    heap.head = 0x80100008;
+    heap.headers = {{0x80100000, {0x80110008, 0x84000000}},
+                    {0x80110000, {0x80110108, 4U << 21U | resident::heap_keep}},
+                    {0x80110100, {0x80110708, 4U << 21U | resident::heap_keep}},
+                    {0x80110700, {0, resident::heap_end_tag}}};
+    heap.held = {{0x80100008, std::vector<std::uint8_t>(0xfff8)}};
+    memory.regions[battle::overlay_base].resize(battle::overlay_end - battle::overlay_base);
+    memory.regions[0x8004fe50].resize(17 * 0x28);
+    memory.regions[stage].resize(0xf8);
+    memory.regions[file].resize(0x5f8);
+    state.math.trigonometry.assign(0x4000, 0);
+    for (std::size_t angle = 0; angle < 4096; ++angle)
+        state.math.trigonometry[angle * 4 + 3] = 0x10; // sine 0, cosine 1000h
+    // The stage: images (none), a model group, hierarchy, motion, positions.
+    for (const auto [at, value] : {std::pair{0U, 5U},
+                                   {4U, 0x20U},
+                                   {8U, 0x28U},
+                                   {0xcU, 0xa8U},
+                                   {0x10U, 0xb0U},
+                                   {0x14U, 0xd0U}})
+        memory.put32(stage + at, value);
+    const auto group = stage + 0x28;
+    memory.put32(group, 1);
+    for (const auto [at, value] :
+         {std::pair{0x18U, 0x48U}, {0x1cU, 0x48U}, {0x20U, 0x48U}, {0x24U, 0x40U}, {0x44U, 8U}})
+        memory.put32(group + at, value);
+    memory.put16(stage + 0xa8, 0); // model 0 without a parent
+    memory.put16(stage + 0xaa, 0xffff);
+    memory.put16(stage + 0xac, 5); // past the model count
+    memory.put32(stage + 0xb0, 1);
+    memory.put32(stage + 0xb4, 8);
+    memory.put16(stage + 0xb8 + 8, 0x1000); // motion header: scale
+    for (const auto [at, value] : {std::pair{0U, 10U}, {2U, 20U}, {4U, 30U}, {6U, 7U}})
+        memory.put16(stage + 0xd0 + at, value);
+    // The scene data: its size, objects, colors and sections.
+    memory.put32(file, 0x520);
+    memory.put8(scene + 0x340, 9);
+    memory.put16(scene + 0x360 + 0x18, 1); // a light: CLUT (200, 1f0)
+    memory.put16(scene + 0x360 + 0x1a, 0x200);
+    memory.put16(scene + 0x360 + 0x1c, 0x1f0);
+    memory.put16(scene + 0x360 + 0x12, 0x123);
+    memory.put16(scene + 0x388 + 0x18, 5); // sets +35e
+    for (std::uint32_t c = 0; c < 3; ++c) {
+        memory.put8(scene + 0x458 + c, 0x40 + c);
+        memory.put16(scene + 0x46c + 2 * c, 0x100 * (c + 1));
+        memory.put8(scene + 0x474 + c, c + 1);
+        memory.put8(scene + 0x478 + c, 0x20 + c);
+    }
+    memory.put16(scene + 0x464, 0x55);
+    for (const auto [at, value] : {std::pair{0x4c0U, 2U},
+                                   {0x4c4U, 0x10U},
+                                   {0x4c8U, 0x18U},
+                                   {0x4d0U, 4U},
+                                   {0x4e0U, 1U},
+                                   {0x50cU, 0x4f8U},
+                                   {0x510U, 0x4e0U},
+                                   {0x514U, 0x4c0U}})
+        memory.put32(scene + at, value);
+    memory.put16(scene + 0x4d4, 0x1234);
+    memory.put8(scene + 0x4e4 + 0xd, 0xff);
+    state.battle_scene = scene;
+    state.battle_scene_data = scene;
+    game::FrameServices services;
+    check(program.battle_stage_setup(services, 0x801ffe00, 0, 0x800ccb94, 0x800ccbb4, 0x800c4a39) ==
+                  0 &&
+              memory.u32(0x800d33e4) == 0,
+          "Without a stage the setup returns zero at once");
+    services.vblank_counts = {0x100};
+    services.alarm_polls = {0};
+    check(program.battle_stage_setup(services, 0x801ffe00, stage, 0x800ccb94, 0x800ccbb4,
+                                     0x800c4a39) == 1,
+          "The flag object's +35e is the result");
+    const auto data = state.battle_scene;
+    check(data != scene && state.battle_scene_data == data && memory.u16(data + 0x4d4) == 0x1234 &&
+              memory.u8(0x800c4a39) == 0x40 && memory.u8(0x800c4a3b) == 0x42 &&
+              memory.u8(0x800d2d10) == 9,
+          "The scene data moves to a new block and gives the fog color");
+    const auto record = memory.u32(0x800d33e4);
+    const auto root = memory.u32(record + 4);
+    check(memory.u32(0x800c3e38) == root && memory.u16(root + 0xa) == 2 &&
+              memory.u32(root + 0x7c + 0x5c) == 10 && memory.u32(root + 0x7c + 0x64) == 30 &&
+              memory.u16(root + 0x7c + 0x52) == 7 && memory.u32(root + 0x7c + 0x2c) == 0x1000,
+          "The part takes its position and its unrotated local matrix");
+    check(memory.u32(record) == 0x800c3acc && memory.u32(0x800c3ad0) == 1 &&
+              memory.u32(memory.u32(0x800c3acc)) == memory.u32(record + 0xa8) + 0x10 &&
+              heap.headers.at(memory.u32(record + 0xa8) - 8)[0] == memory.u32(record + 0xa8) + 0x48,
+          "The trimmed model group is copied and listed in the first slot");
+    check(memory.u8(record + 0xb8 + 4) == 0x20 && memory.u8(record + 0xb8 + 7) == 0x2e &&
+              memory.u16(record + 0xb8 + 0xe) == (0x1ccU << 6U | 3U),
+          "The record's packets take the old scene data's colors");
+    const auto light = memory.u32(0x800c3d50);
+    check(light != 0 && memory.u8(light + 7) == 0x2d &&
+              memory.u16(light + 0xe) == (0x1f0U << 6U | 0x20U) &&
+              memory.u16(light + 0x33a) == 0x23 && memory.u16(light + 0x344) == 0,
+          "A light object makes shaded packets with its CLUT");
+    check(memory.u16(0x800ccb94) == 0x55 && memory.u16(0x800ccbb4) == 0x100 &&
+              memory.u16(0x800ccbba) == 0x200 && state.gte.control(16) == 0x100 &&
+              state.gte.control(13) == 0x10 && state.gte.control(15) == 0x30 &&
+              memory.u16(0x800d2fc8) == 0x1234,
+          "The origin, color matrix and back color come from the scene data");
+    check(memory.u32(0x800d3344) == data + 0x4f8 && memory.u32(0x800d3348) == 1 &&
+              memory.u8(data + 0x4e4 + 0xd) == 0 && memory.u8(0x800d2f64) == 1,
+          "The actor and light lists are published with the lights cleared");
+    check(heap.headers.at(stage - 8)[1] == 0x84000000 && !memory.regions.contains(stage) &&
+              !memory.regions.contains(file),
+          "The stage file and the old scene data are released");
+}
 } // namespace
 
 int main() {
@@ -616,7 +737,8 @@ int main() {
         attack();
         epilogue();
         panels();
-        std::cout << "Battle actions: ten source-boundary groups passed\n";
+        stage_setup();
+        std::cout << "Battle actions: eleven source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

@@ -1073,6 +1073,13 @@ class Program {
     // 800b81bc: the battle renderer and task setup before the main loop;
     // the setup module's task keeps `task_argument` (A0).
     void battle_renderer_setup(std::uint32_t task_argument);
+    // Setup module 801e7210: the stage model, the scene data's new block and
+    // its lights (battle_setup.cpp). `stack` is the stack pointer at the
+    // call; `origin`, `colors` and `tint` are its fourth to sixth arguments
+    // (800ccb94, 800ccbb4, 800c4a39). Returns the scene data's +35e.
+    std::uint32_t battle_stage_setup(FrameServices &services, std::uint32_t stack,
+                                     std::uint32_t stage, std::uint32_t origin,
+                                     std::uint32_t colors, std::uint32_t tint);
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
     // Battle 80070f40 up to its first call of the turn procedure 800723e0,
@@ -1091,8 +1098,6 @@ class Program {
     // The other draw environment becomes current and its ordering table is
     // cleared (800b7870, 800b88c4).
     void swap_battle_draw_buffer();
-    // 801e7210: the stage; returns its result.
-    std::uint32_t battle_stage_setup(FrameServices &services);
     // 80071188..80071278: the opening and the setup frames.
     void battle_setup_frames(FrameServices &services, const BattleStartPresent &present,
                              const ProgramObserver &observe);
@@ -1382,6 +1387,10 @@ class Program {
     // LoadImage of the rectangle at `rect` in battle memory, clamped in place.
     void load_battle_image(battle::Battle &battle, FrameServices &services, std::uint32_t rect,
                            std::uint32_t source);
+    void upload_battle_images(battle::Battle &battle, FrameServices &services, std::uint32_t images,
+                              std::uint32_t frame); // 8002dde4
+    void register_stage_model(battle::Battle &battle, FrameServices &services, std::uint32_t frame,
+                              std::uint32_t stage);                // 800a8bf0
     void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);

@@ -173,6 +173,7 @@ int run_case(int argc, char **argv) {
             entry == "battle_scene_files" || entry == "battle_setup_files" ||
             entry == "battle_load_prologue" || entry == "battle_effect_lists" ||
             entry == "battle_release_setup" || entry == "battle_renderer_setup" ||
+            entry == "battle_stage_setup" ||
             entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
@@ -201,9 +202,8 @@ int run_case(int argc, char **argv) {
                                        entry == "field_battle_exit";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "battle_mode_start" && entry != "field_checkpoints" &&
-            !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry &&
-            !battle_exit_entry)
+            !entry.starts_with("field_frame") && !resident_entry && !battle_entry && !menu_entry &&
+            !field_entry && !transition_entry && !reload_entry && !battle_exit_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -646,6 +646,16 @@ int run_case(int argc, char **argv) {
             program->deliver_pending_arrivals();
         } else if (entry == "battle_scene_files") {
             program->battle_scene_files(); // 8001bb0c
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_stage_setup") {
+            // 801e7210: A0 8005949c, A2 the stage, A3 and the caller's stack
+            // words SP + 10 and + 14 the origin, colors and tint.
+            if (registers[4] != 0x8005949cU)
+                throw InputError("The stage setup's scene pointer is not 8005949c");
+            const auto sp = registers[29];
+            return_value =
+                program->battle_stage_setup(services, sp, registers[6], registers[7],
+                                            memory.word(sp + 0x10), memory.word(sp + 0x14));
             program->deliver_pending_arrivals();
         } else if (entry == "battle_adjust_party") {
             program->battle_adjust_party(); // 8009892c
