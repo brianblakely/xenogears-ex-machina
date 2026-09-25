@@ -434,9 +434,17 @@ struct ResidentState {
     resident::HeapBlock mode_block;
     std::uint32_t mode_loaded{}; // 800592c0: -1 once the next mode differs
     // Field exit 8007954c globals whose meaning is not recovered.
-    std::uint8_t b_5942c{};  // 8005942c: cleared on every exit
-    std::uint32_t w_4f30c{}; // 8004f30c
-    std::uint32_t w_4f310{}; // 8004f310
+    std::uint8_t b_5942c{}; // 8005942c: cleared on every exit
+    // Leaving a field for battle (field_battle_exit.cpp): the battle-entry
+    // flag 800798bc sets, the field's effect bank 80085988 unlinks (8006259c),
+    // 8004f32c it resets and the party sprite blocks 80077d2c releases
+    // (8005a414).
+    std::uint8_t b_59179{};                             // 80059179
+    std::uint32_t field_effect_bank{};                  // 8006259c
+    std::uint32_t w_4f32c{};                            // 8004f32c
+    std::array<std::uint32_t, 3> party_sprite_blocks{}; // 8005a414
+    std::uint32_t w_4f30c{};                            // 8004f30c
+    std::uint32_t w_4f310{};                            // 8004f310
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
@@ -686,6 +694,8 @@ struct FieldState {
     // Field main loop 80077e88 between frames (field_loop.cpp).
     std::uint32_t transition{};     // 800adb38: nonzero runs the 800a5924 transition
     std::uint32_t w_adbd0{};        // 800adbd0: read by the branch after a battle request
+    std::uint32_t saved_music{};    // 800afc78: music the battle branch saved (8004f324)
+    std::uint32_t w_adb30{};        // 800adb30: a block the loop's exit releases
     std::uint32_t gate_adbd8{};     // 800adbd8: zero leaves the field (exit kind 3)
     std::uint32_t gate_adbe8{};     // 800adbe8: zero leaves the field (exit kind 2)
     std::uint16_t input_mask{};     // 800b217a: buttons of port 1 the drain keeps
@@ -796,9 +806,27 @@ class Program {
     // (buffer swap, ordering tables, the pad drain 80074700 and 800a31e8).
     // `services` supplies 80077dac's VSync(1). Branches whose callees are not
     // recovered stop with MissingDependency.
-    void field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
-    // One main-loop iteration: the code between frames, then the frame.
-    void field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
+    // Returns false where the loop leaves the field for battle mode: the
+    // original then calls the mode dispatcher 80019acc(0) (8007954c).
+    bool field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
+    // One main-loop iteration: the code between frames, then the frame;
+    // false (and no frame) when the loop left the field.
+    bool field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
+    // The loop's battle branch (80078334..80078494): true when it leaves
+    // (80078abc), false after the battle music's first step (800adbd0 1).
+    bool field_battle_start();
+    // Field 800700b0: reset the GPU, destroy the sprite tasks, flush both
+    // sprite buffers and release the field's actors, models and components.
+    void field_teardown(FrameServices &services);
+    // 80078abc up to the teardown 800700b0 (field_battle_exit.cpp).
+    void field_battle_leave(FrameServices &services);
+    // 80078b04..80078b2c after the teardown; `block` is *800adb30.
+    void field_battle_release(std::uint32_t block);
+    // 80078abc..80078b34: leave, tear down, release and exit (8007954c(0));
+    // true where the original calls the mode dispatcher 80019acc(0).
+    bool leave_field_for_battle(FrameServices &services, const ProgramObserver &observe = {});
+    // Field 800a3f4c: save the field-return snapshot.
+    void save_field_return();
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -1196,7 +1224,10 @@ class Program {
                      std::span<std::uint8_t> bytes);
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
                     std::int32_t x, std::int32_t y);                       // 8004495c
-    void field_teardown(FrameServices &services);                          // 800700b0
+    void stop_particles(FrameServices &services);                          // 800a9460
+    void stop_emitters();                                                  // 800864f0
+    void close_dialogues();                                                // 8007ffe8
+    void restore_particle_vram(FrameServices &services);                   // 800a91f0
     void reload_transition_setup();                                        // 800a663c(1, 1)
     void reload_present(FrameServices &services);                          // 800a6924
     void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
@@ -1242,7 +1273,7 @@ class Program {
     // Release the allocated heap block at `address` (800320e8 at `site`)
     // with the owned bytes it holds; returns its size (zero if kept).
     std::uint32_t release_owned_block(std::uint32_t address, std::uint32_t site);
-    void release_actor(std::uint32_t index);                       // 8008083c
+    void release_actor(std::uint32_t index); // 8008083c
     // Battle setup (battle_setup.cpp).
     void setup_battle_party(battle::Battle &battle, FrameServices &services,
                             std::uint32_t stack); // 801e5384

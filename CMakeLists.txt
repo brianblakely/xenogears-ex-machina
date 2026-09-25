@@ -18,6 +18,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/packed_field.cpp
   src/reconstruction/field_actor.cpp
   src/reconstruction/field_battle.cpp
+  src/reconstruction/field_battle_exit.cpp
   src/reconstruction/field_control.cpp
   src/reconstruction/field_sprite.cpp
   src/reconstruction/field_sprite_factory.cpp
