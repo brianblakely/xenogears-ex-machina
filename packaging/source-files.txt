@@ -195,6 +195,7 @@ src/reconstruction/battle_results.cpp
 src/reconstruction/battle_rewards.cpp
 src/reconstruction/battle_rules.cpp
 src/reconstruction/battle_setup.cpp
+src/reconstruction/battle_start.cpp
 src/reconstruction/battle_steps.cpp
 src/reconstruction/battle_turn.cpp
 src/reconstruction/battle_turns.cpp
@@ -283,6 +284,7 @@ tests/test_baseline.py
 tests/test_battle.cpp
 tests/test_battle_continuation.py
 tests/test_battle_request.py
+tests/test_battle_setup.cpp
 tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_disc_read.cpp

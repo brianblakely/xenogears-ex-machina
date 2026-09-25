@@ -48,6 +48,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/battle_rewards.cpp
   src/reconstruction/battle_rules.cpp
   src/reconstruction/battle_setup.cpp
+  src/reconstruction/battle_start.cpp
   src/reconstruction/battle_steps.cpp
   src/reconstruction/battle_turns.cpp
   src/reconstruction/menu_equipment.cpp
@@ -158,6 +159,9 @@ if(BUILD_TESTING)
   add_executable(test-battle tests/test_battle.cpp)
   target_link_libraries(test-battle PRIVATE xem-reconstruction)
   add_test(NAME battle-reconstruction COMMAND test-battle)
+  add_executable(test-battle-setup tests/test_battle_setup.cpp)
+  target_link_libraries(test-battle-setup PRIVATE xem-reconstruction)
+  add_test(NAME battle-setup-reconstruction COMMAND test-battle-setup)
   add_executable(test-menu tests/test_menu.cpp)
   target_link_libraries(test-menu PRIVATE xem-reconstruction)
   add_test(NAME menu-reconstruction COMMAND test-menu)

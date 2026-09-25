@@ -408,14 +408,13 @@ void Program::set_display_mask(std::uint32_t mask) {
     auto &gpu = resident.gpu;
     if (gpu.debug >= 2)
         gpu_print(0x80044574);
+    // Disabling forgets the last PutDispEnv (80047178 fills it with ff).
     if (mask == 0)
-        throw MissingDependency({"set_display_mask", 0x80044588, {}, {}},
-                                "symbol:libgpu-display-copy", false,
-                                "Clearing the display environment copy is not recovered");
+        gpu.display_environment.fill(0xff);
     if (gpu.services != 0x80056888 || gpu.functions[4] != 0x80046560)
         throw MissingDependency({"set_display_mask", 0x800445b0, {}, {}}, "symbol:gpu-services",
                                 false, "Only the observed libgpu control service is recovered");
-    constexpr std::uint32_t command = 0x03000000U;
+    const std::uint32_t command = mask != 0 ? 0x03000000U : 0x03000001U;
     gpu.control[command >> 24U] = static_cast<std::uint8_t>(command);
     gpu.commands.push_back({GpuCommand::Kind::control, {}, 0, command});
 }

@@ -773,6 +773,17 @@ enum class DispatchStep : std::uint8_t {
 // a computed game result. References expire when the callback returns.
 using ProgramObserver = std::function<void(const Program &, SourcePoint, bool completed)>;
 
+// What the battle's start draws and the reconstruction does not: each is
+// observed where the original runs it (battle_start.cpp).
+enum class BattleStartPresentation : std::uint8_t {
+    swirl_capture, // 800b7870: the screen through a 30000h block (StoreImage
+                   // 800448f8, bit 15 on each pixel, LoadImage 80044894)
+    swirl_open,    // 800b7424: the swirl block's geometry
+    swirl_draw,    // 800b6f0c, 800b7160: one frame of the swirl's primitives
+    swirl_show,    // PutDrawEnv, PutDispEnv and DrawOTag of the frame
+};
+using BattleStartPresent = std::function<void(BattleStartPresentation)>;
+
 // A single owner for reusable recovered behavior. No case files, expectations,
 // host clocks, presentation, or CPU emulation belong here. All borrowed views are
 // constructed for a call; moving this object cannot leave internal dangling spans.
@@ -1064,6 +1075,27 @@ class Program {
     void battle_renderer_setup(std::uint32_t task_argument);
     // 80071310 up to the main loop's first 800723e0: the party positions.
     void battle_place_party();
+    // Battle 80070f40 up to its first call of the turn procedure 800723e0,
+    // the steps above connected (battle_start.cpp). `stack` is the stack
+    // pointer at 80070f40; `present` observes what the start draws.
+    void battle_start(FrameServices &services, std::uint32_t stack,
+                      const BattleStartPresent &present, const ProgramObserver &observe);
+    // 800b8098: the load, from 800b8284 to the stage's result.
+    void battle_load(std::uint32_t mode, FrameServices &services, std::uint32_t stack,
+                     const BattleStartPresent &present, const ProgramObserver &observe);
+    // 800b7870: the intro swirl, which runs the setup phases and the scene
+    // files as the disc allows. `stack` is the stack pointer in 800b7870's
+    // body (the phases' 801e5840 stack pointer).
+    void battle_swirl(FrameServices &services, std::uint32_t stack,
+                      const BattleStartPresent &present);
+    // The other draw environment becomes current and its ordering table is
+    // cleared (800b7870, 800b88c4).
+    void swap_battle_draw_buffer();
+    // 801e7210: the stage; returns its result.
+    std::uint32_t battle_stage_setup(FrameServices &services);
+    // 80071188..80071278: the opening and the setup frames.
+    void battle_setup_frames(FrameServices &services, const BattleStartPresent &present,
+                             const ProgramObserver &observe);
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.

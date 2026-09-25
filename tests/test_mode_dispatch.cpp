@@ -203,7 +203,10 @@ void renderer() {
     pending.battle->put32(0x800c3684, 0x80150000);
     missing([&] { pending.battle_renderer_setup(0); }, "A pending camera callback stops");
     auto masked = renderer_program();
-    missing([&] { masked.set_display_mask(0); }, "Masking the display stops");
+    masked.set_display_mask(0);
+    check(masked.resident.gpu.commands.back().value == 0x03000001U &&
+              masked.resident.gpu.display_environment[0] == 0xff,
+          "Masking the display disables it and forgets the last environment");
 }
 } // namespace
 
