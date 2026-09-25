@@ -594,7 +594,9 @@ int run_case(int argc, char **argv) {
                     throw InputError("Unsupported turn step");
             });
         } else if (entry == "battle_setup_phase") {
-            program->setup_battle_phase(registers[4]); // 801e5840: A0 phase
+            // 801e5840: A0 phase; its callees place LoadImage rectangles below SP.
+            program->setup_battle_phase(registers[4], services, registers[29]);
+            program->deliver_pending_arrivals();
         } else if (entry == "battle_atb") {
             program->tick_battle_timers(); // 8007171c
         } else if (entry == "battle_reload") {

@@ -245,6 +245,26 @@ void BattleMemory::put32(std::uint32_t address, std::uint32_t value) {
     for (std::uint32_t i = 0; i < 4; ++i)
         bytes[i] = static_cast<std::uint8_t>(value >> (8U * i));
 }
+std::span<const std::uint8_t> BattleMemory::tail(std::uint32_t address) const {
+    const auto *start = byte_at(const_cast<BattleMemory *>(this)->regions, address, 1);
+    const auto found = std::prev(regions.upper_bound(address));
+    return {start, found->second.size() - (address - found->first)};
+}
+std::vector<std::uint8_t> BattleMemory::take(std::uint32_t address, std::uint32_t size) {
+    static_cast<void>(byte_at(regions, address, size));
+    auto node = regions.extract(std::prev(regions.upper_bound(address)));
+    auto &bytes = node.mapped();
+    const auto offset = address - node.key();
+    std::vector<std::uint8_t> taken(bytes.begin() + offset, bytes.begin() + offset + size);
+    if (offset + size < bytes.size())
+        regions.emplace(address + size,
+                        std::vector<std::uint8_t>(bytes.begin() + offset + size, bytes.end()));
+    if (offset != 0) {
+        bytes.resize(offset);
+        regions.insert(std::move(node));
+    }
+    return taken;
+}
 
 std::uint32_t Battle::rand() {
     const auto step = field::advance_field_random(seed);

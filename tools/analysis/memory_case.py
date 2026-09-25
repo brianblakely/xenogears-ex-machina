@@ -492,6 +492,66 @@ def header_sector(row: dict) -> int:
     return (decimal(header[0]) * 60 + decimal(header[1])) * 75 + decimal(header[2]) - 150
 
 
+# libgpu reads a call's services already report (queue-busy's DMA2 check,
+# the ready wait before a request runs, LoadImage's and StoreImage's GPUSTAT
+# waits, whose polls the alarm-state hooks count).
+SERVICE_READS = (0x8004674C, 0x80046780, 0x8004618C, 0x800461C0, 0x800463C4, 0x800463F8)
+
+
+def call_platform_rows(
+    rows: list[dict], image_rows: list[dict], entry_row: dict, exit_row: dict, interrupts,
+    own: list[dict],
+) -> list[dict]:
+    """A call's platform rows: its own capture's, plus the hardware reads that
+    a capture of the same execution recorded between the call's entry and exit
+    cycles outside the call's interrupt brackets, in cycle order. Reads both
+    captures hook come from the image capture alone.
+
+    Every interrupt hook both captures record inside the span must coincide:
+    captures of one execution share cycle counts.
+    """
+    start = entry_row["cycle_u32"]
+    span = (exit_row["cycle_u32"] - start) % (1 << 32)
+
+    def offset(row: dict) -> tuple[int, int]:
+        return (row["cycle_u32"] - start) % (1 << 32), row.get("subcycle_u32", 0)
+
+    hooked = {row["hook"] for row in image_rows}
+    shared = {"dispatch-entry", "dispatch-exit", "tick-entry", "tick-exit"}
+    starts = {entry for entry, _ in interrupts}
+    ends = {exit for _, exit in interrupts}
+    extra, marks, depth, handling = [], [], 0, 0
+    for row in rows:
+        if offset(row)[0] > span:
+            continue
+        hook = row["hook"]
+        if hook in shared:
+            marks.append((hook, row["cycle_u32"]))
+        # Interrupt code (delivered arrivals included) supplies its own
+        # reads; the call's service reads come from its services.
+        handling += hook in ("dispatch-entry", "tick-entry")
+        handling -= hook in ("dispatch-exit", "tick-exit")
+        if hook in starts:
+            depth += 1
+        elif hook in ends:
+            depth -= 1
+        elif (
+            depth == 0
+            and hook.startswith(LOAD_PREFIX)
+            and hook not in hooked
+            and (handling > 0 or int(hook[len(LOAD_PREFIX) :], 16) not in SERVICE_READS)
+        ):
+            extra.append(row)
+    names = {hook for hook, _ in marks}
+    image_marks = [
+        (row["hook"], row["cycle_u32"])
+        for row in image_rows
+        if row["hook"] in names and offset(row)[0] <= span
+    ]
+    require(image_marks == marks, "The platform capture is not the image capture's execution")
+    return sorted(own + extra, key=offset)
+
+
 def platform_inputs(
     rows: list[dict], ram: bytes, io: bytes, arrival: str | None
 ) -> tuple[str, list[int]]:
@@ -982,7 +1042,26 @@ def run(args: argparse.Namespace) -> int:
         # A call in a frame that began before the capture window has no
         # recorded services; it is not comparable.
         selected = [call for call in selected if frame_keys.get(id(call[0])) is not None]
+    elif args.call_services:
+        # The call's own platform waits (outside interrupt and presentation
+        # brackets), from the service hooks between its entry and exit.
+        services = frame_services(
+            capture, args.entry_hook, args.exit_hook, interrupts + presentation
+        )
     chains = [[call] for call in selected]
+    # Hardware reads the image capture did not hook, from a capture of the
+    # same execution (--platform) that did.
+    platform_rows = None
+    if args.platform:
+        platform_trace = json.loads((args.platform / "observation.json").read_text())[
+            "instruction_trace"
+        ]
+        require(
+            not platform_trace.get("failed") and not platform_trace.get("budget_reached"),
+            "Platform capture trace failed or reached its budget",
+        )
+        platform_rows = trace_rows(args.platform)
+        image_rows = trace_rows(capture)
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     require(not trace.get("failed"), "Capture instruction trace failed")
     # The trace and snapshot files must be the ones the capture recorded.
@@ -1035,7 +1114,17 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
-            platform, recorded_sectors = platform_inputs(first["inputs"], entry, io, args.arrival)
+            inputs = first["inputs"]
+            if platform_rows is not None:
+                inputs = call_platform_rows(
+                    platform_rows,
+                    image_rows,
+                    first["entry_row"],
+                    first["exit_row"],
+                    interrupts + presentation,
+                    inputs,
+                )
+            platform, recorded_sectors = platform_inputs(inputs, entry, io, args.arrival)
             if args.assume_idle_otc:
                 require(args.entry in RELOAD_ENTRIES, "Assumed reads apply to reload entries")
                 platform += "".join(
@@ -1061,6 +1150,10 @@ def run(args: argparse.Namespace) -> int:
                     ]
                 if args.entry in RELOAD_ENTRIES:
                     lines += call_services(call_rows, snapshots, row, item["exit_row"], interrupts)
+                elif args.call_services:
+                    key = row["snapshot"]["ram_sha256"]
+                    require(key in services, "No service results recorded for this call")
+                    lines += [line for _, line in services[key][1]]
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             entry_row = first["entry_row"]
             report = runner.call(
@@ -1731,6 +1824,12 @@ def main() -> int:
     parser.add_argument(
         "--frame-from", help="field_frame step to resume at (the entry hook's call site)"
     )
+    parser.add_argument(
+        "--call-services",
+        action="store_true",
+        help="Service results of the call's own platform waits come from the capture's "
+        "service hooks between its entry and exit",
+    )
     parser.add_argument("--entry-hook", default="update-entry")
     parser.add_argument("--exit-hook", default="update-return")
     parser.add_argument("--stop", default="", help="Completed library boundary to stop at")
@@ -1789,7 +1888,8 @@ def main() -> int:
         "--platform",
         type=Path,
         help="Capture of the same execution with the main-loop hooks, interrupt arrivals and "
-        "their hardware reads (multi-frame runs)",
+        "their hardware reads (multi-frame runs), or with the hardware reads a call makes "
+        "outside interrupt code that the image capture did not hook (single calls)",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

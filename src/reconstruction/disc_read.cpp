@@ -107,13 +107,28 @@ bool Program::deliver_interrupt() {
         buffers[index / buffers[0].size()][index % buffers[0].size()] =
             static_cast<std::uint8_t>(inputs.front().value);
     }
-    interrupt_dispatch();
+    in_interrupt_ = true;
+    try {
+        interrupt_dispatch();
+    } catch (...) {
+        in_interrupt_ = false;
+        throw;
+    }
+    in_interrupt_ = false;
     return true;
 }
 
 void Program::deliver_pending_arrivals() {
     while (deliver_interrupt()) {
     }
+}
+
+void Program::deliver_leading_arrivals() {
+    using Kind = PlatformInput::Kind;
+    const auto &inputs = resident.platform;
+    while (!in_interrupt_ && !inputs.empty() && inputs.front().site == 0 &&
+           inputs.front().kind == Kind::interrupt)
+        static_cast<void>(deliver_interrupt());
 }
 
 void Program::deliver_arrivals(std::uint32_t point) {
@@ -440,6 +455,8 @@ void cd_wait_checks(ResidentState &resident, std::uint32_t timeout) {
 // Inside an interrupt handler the wait polls the controller itself.
 std::int32_t Program::cd_sync() {
     auto &cd = resident.cd;
+    // VSync(-1) counts the vertical blanks that arrived before this read.
+    deliver_leading_arrivals();
     resident.cd_sync_deadline = resident.vsync_counter + 0x3c0; // 8004b54c(-1)
     resident.cd_sync_polls = 0;
     resident.cd_sync_label = 0x80018eb0;

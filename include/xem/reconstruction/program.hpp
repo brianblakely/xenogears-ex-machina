@@ -817,6 +817,10 @@ class Program {
     // host ending an imported call whose remaining arrivals all came before
     // its return.
     void deliver_pending_arrivals();
+    // Deliver the unpositioned interrupt arrivals at the front of the
+    // platform input: a call's code about to make a recorded hardware read
+    // that the original made after them.
+    void deliver_leading_arrivals();
     // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
     // driver flags the event handler loaded). Returns 0.
     std::uint32_t sound_tick(std::uint32_t event);
@@ -934,8 +938,12 @@ class Program {
     // state (the turn procedure's steps in battle.hpp).
     void run_battle(const std::function<void(battle::Battle &)> &step);
     // Setup module 801e5840: one phase of the setup the intro swirl 800b7870
-    // runs (battle.hpp): 1 participants and formation, 2 items and turns.
-    void setup_battle_phase(std::uint32_t phase);
+    // runs: 0 the party records, archive contents, VRAM uploads and the
+    // enemy data read (801e5384), 1 participants and formation, 2 items and
+    // turns (battle.hpp). `services` supplies the uploads' platform results;
+    // `stack` is the stack pointer at 801e5840, below which the original's
+    // callees keep the rectangles they pass to LoadImage.
+    void setup_battle_phase(std::uint32_t phase, FrameServices &services, std::uint32_t stack);
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.
@@ -1202,6 +1210,16 @@ class Program {
     // with the owned bytes it holds; returns its size (zero if kept).
     std::uint32_t release_owned_block(std::uint32_t address, std::uint32_t site);
     void release_actor(std::uint32_t index);                       // 8008083c
+    // Battle setup (battle_setup.cpp).
+    void setup_battle_party(battle::Battle &battle, FrameServices &services,
+                            std::uint32_t stack); // 801e5384
+    std::uint32_t unpack_battle_item(battle::Battle &battle, std::uint32_t item,
+                                     std::uint32_t mode); // 80032e88
+    void release_battle_block(battle::Battle &battle, std::uint32_t address,
+                              std::uint32_t call_site); // 800320e8
+    // LoadImage of the rectangle at `rect` in battle memory, clamped in place.
+    void load_battle_image(battle::Battle &battle, FrameServices &services, std::uint32_t rect,
+                           std::uint32_t source);
     void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);
@@ -1256,6 +1274,8 @@ class Program {
     void
     sprite_call(std::size_t index,
                 const std::function<void(field::SpriteWindow, const field::SpriteSources &)> &call);
+    // Set while a delivered arrival's interrupt code runs.
+    bool in_interrupt_{};
 };
 
 } // namespace xem::reconstruction

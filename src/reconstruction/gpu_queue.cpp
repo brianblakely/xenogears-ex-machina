@@ -160,6 +160,9 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
     put(queue, entry, operation);
     gpu.head = (gpu.head + 1U) & 63U;
     io_write(mask_register, gpu.enqueue_mask, 2);
+    // An interrupt recorded before the runner's first read was taken once
+    // the mask was restored.
+    deliver_leading_arrivals();
     static_cast<void>(gpu_execute());
     return static_cast<std::int32_t>((gpu.head - gpu.tail) & 63U);
 }

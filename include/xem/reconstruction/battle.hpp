@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include <map>
+#include <span>
 #include <stdexcept>
 #include <vector>
 
@@ -32,6 +33,11 @@ struct BattleMemory {
     void put8(std::uint32_t address, std::uint32_t value);
     void put16(std::uint32_t address, std::uint32_t value);
     void put32(std::uint32_t address, std::uint32_t value);
+    // The bytes from `address` to the end of its region.
+    [[nodiscard]] std::span<const std::uint8_t> tail(std::uint32_t address) const;
+    // Move [address, address + size) out of its region, splitting the region
+    // (a disc read list becomes the reader's while its read runs).
+    std::vector<std::uint8_t> take(std::uint32_t address, std::uint32_t size);
 };
 
 inline constexpr std::uint32_t overlay_base = 0x8006faf0;

@@ -862,11 +862,22 @@ Program import_battle(const OriginalMemory &memory) {
          {std::pair{reconstruction::battle::formation_record, 0x20U},
           std::pair{reconstruction::battle::formation_table,
                     reconstruction::battle::formation_table_bytes},
-          std::pair{reconstruction::battle::battle_party_ids, 3U}})
+          std::pair{reconstruction::battle::battle_party_ids, 3U},
+          // The word past the mode table's BSS end that 801e5384 stores.
+          std::pair{reconstruction::battle::overlay_end, 4U}})
         battle.regions.emplace(address, copy_of(memory.range(address, size)));
     static_cast<void>(own_block(reconstruction::battle::setup_module_base));
     for (const auto pointer : {0x8005949cU, 0x800595a8U, 0x800595d0U})
         static_cast<void>(own_block(memory.word(pointer)));
+    // The intro swirl's state (allocated at 800b73fc; the header records the
+    // call site's word address): the setup's archive items are allocated
+    // just below it and their copies read past their ends into it.
+    for (const auto &[at, header] : headers)
+        if ((header[1] & reconstruction::resident::heap_tag_mask) != 0 &&
+            (header[1] & reconstruction::resident::heap_tag_mask) !=
+                reconstruction::resident::heap_end_tag &&
+            (header[1] & 0x1fffffU) == (0x800b73fcU & 0x7fffffU) >> 2)
+            static_cast<void>(own_block(at + 8));
     // The battle scene's formation data (pointer 800d3364, copied from
     // resident 8005949c): positions and the slot-relation table at +140.
     static_cast<void>(own_block(memory.word(0x800d3364)));

@@ -542,12 +542,256 @@ void setup_turns(Battle &battle, ResidentState &resident) {
 } // namespace xem::reconstruction::battle
 
 namespace xem::reconstruction {
+namespace {
+std::int16_t s16(std::uint32_t value) { return static_cast<std::int16_t>(value); }
+// 800288ec: a byte size rounded up to words, as a signed MIPS quotient.
+std::uint32_t word_size(std::uint32_t size) {
+    const auto rounded = static_cast<std::int32_t>(size + 3U);
+    const auto adjusted = rounded >= 0 ? rounded : static_cast<std::int32_t>(size + 6U);
+    return static_cast<std::uint32_t>(adjusted >> 2) << 2U;
+}
+// A byte as the original reads it: battle memory, else a heap header or the
+// bytes the heap holds (a copy past the end of a block reads its neighbour).
+std::uint32_t original_byte(const battle::BattleMemory &memory, const resident::Heap &heap,
+                            std::uint32_t address) {
+    const auto region = memory.regions.upper_bound(address);
+    if (region != memory.regions.begin() &&
+        address - std::prev(region)->first < std::prev(region)->second.size())
+        return memory.u8(address);
+    if (const auto header = heap.headers.upper_bound(address); header != heap.headers.begin()) {
+        const auto &[at, words] = *std::prev(header);
+        if (address - at < 8)
+            return (words[(address - at) / 4] >> (8U * ((address - at) % 4))) & 0xffU;
+    }
+    if (const auto held = heap.held.upper_bound(address); held != heap.held.begin()) {
+        const auto &[at, bytes] = *std::prev(held);
+        if (address - at < bytes.size())
+            return bytes[address - at];
+    }
+    throw battle::BattleError("A setup copy reads memory no Program state owns");
+}
+// 8003f99c memmove (forward: the copies here do not overlap).
+void copy(battle::BattleMemory &memory, const resident::Heap &heap, std::uint32_t to,
+          std::uint32_t from, std::uint32_t size) {
+    for (std::uint32_t i = 0; i < size; ++i)
+        memory.put8(to + i, original_byte(memory, heap, from + i));
+}
+} // namespace
 
-void Program::setup_battle_phase(std::uint32_t phase) {
+// 80032e88(item, mode): allocate the item's size (its first word) and decode
+// it there (80032eb4).
+std::uint32_t Program::unpack_battle_item(battle::Battle &context, std::uint32_t item,
+                                          std::uint32_t mode) {
+    auto &memory = context.memory;
+    const auto size = memory.u32(item);
+    auto block = resident::heap_allocate(resident.heap, size, mode, 0x80032e94);
+    if (!block)
+        throw battle::BattleError("A quiet null allocation in 80032e88 is not reconstructed");
+    // The decoder reads a flag past an item that ends its block: the next
+    // heap header.
+    const auto tail = memory.tail(item);
+    std::vector<std::uint8_t> source(tail.begin(), tail.end());
+    for (std::uint32_t i = 0; i < 8; ++i)
+        source.push_back(static_cast<std::uint8_t>(original_byte(
+            memory, resident.heap, item + static_cast<std::uint32_t>(tail.size()) + i)));
+    const auto decoded = field::decode_packed_block(source);
+    if (decoded.data.size() != size || block->bytes.size() < size)
+        throw battle::BattleError("An archive item decodes to another size than it declares");
+    std::ranges::copy(decoded.data, block->bytes.begin());
+    const auto address = block->address;
+    memory.regions.emplace(address, std::move(block->bytes));
+    return address;
+}
+
+void Program::release_battle_block(battle::Battle &context, std::uint32_t address,
+                                   std::uint32_t call_site) {
+    resident::HeapBlock block{address, {}};
+    if (address != 0) {
+        const auto found = context.memory.regions.find(address);
+        if (found == context.memory.regions.end())
+            throw battle::BattleError("A released block is not battle memory");
+        block.bytes = std::move(found->second);
+        context.memory.regions.erase(found);
+    }
+    if (resident::heap_release(resident.heap, block, call_site) == -1)
+        context.memory.regions.emplace(address, std::move(block.bytes)); // kept
+}
+
+void Program::load_battle_image(battle::Battle &context, FrameServices &services,
+                                std::uint32_t rect, std::uint32_t source) {
+    auto &memory = context.memory;
+    std::array<std::int16_t, 4> area{s16(memory.u16(rect)), s16(memory.u16(rect + 2)),
+                                     s16(memory.u16(rect + 4)), s16(memory.u16(rect + 6))};
+    static_cast<void>(load_image(area, rect, source, &services));
+    memory.put16(rect + 4, static_cast<std::uint16_t>(area[2]));
+    memory.put16(rect + 6, static_cast<std::uint16_t>(area[3]));
+}
+
+// 801e5384: the party (8006f368 filtered by the availability mask
+// 8006f364 & 8006f366, or the demonstration party), each member's record and
+// gear record from the game data (8006d8a0, 8006dfac; 0xa4 each), the setup
+// archive's contents (relocated in place by 8003342c), the uploads of its
+// images (8002dde4, 80033698, 80078310), then the enemy data files of the
+// formation's enemy set (directory 13 files 2n+2 and 2n+3) by a list read.
+void Program::setup_battle_party(battle::Battle &context, FrameServices &services,
+                                 std::uint32_t stack) {
+    auto &memory = context.memory;
+    constexpr std::uint32_t ids = 0x800d2d24;
+    const bool demo = (memory.u8(battle::formation_record + 1) & 0x10) != 0;
+    memory.put8(0x800d3294, demo ? 1 : 0);
+    const auto available = memory.u16(0x8006f364) & memory.u16(0x8006f366);
+    if (demo) {
+        memory.put8(ids + 1, 10);
+        memory.put8(ids + 2, 10);
+        memory.put8(ids, memory.u8(0x8006f368) & 0x7f);
+    } else {
+        std::uint32_t count = 0;
+        for (std::uint32_t candidate = 0; candidate < 3; ++candidate) {
+            const auto id = memory.u8(0x8006f368 + candidate);
+            // 80089c9c: the character's bit (800c3448) within the mask.
+            if (id < 0x10 && (memory.u16(0x800c3448 + id * 2) & available & 0x7ff) != 0)
+                memory.put8(ids + count++, id & 0x7f);
+        }
+        for (; count < 3; ++count)
+            memory.put8(ids + count, 0x7f);
+    }
+    // 8003342c: the archive's offsets become addresses.
+    const auto archive = resident.battle_archive;
+    for (std::uint32_t entry = 1; entry <= memory.u32(archive); ++entry)
+        memory.put32(archive + entry * 4, memory.u32(archive + entry * 4) + archive);
+    const auto item = [&](std::uint32_t offset) { return memory.u32(archive + offset); };
+    for (std::uint32_t member = 0; member < 3; ++member) {
+        const auto id = memory.u8(ids + member);
+        if (id == 0x7f)
+            continue;
+        const auto record = 0x800ccce8 + member * battle::record_stride;
+        copy(memory, resident.heap, record, 0x8006d8a0 + id * 0xa4, 0xa4);
+        if (memory.u8(0x800d3294) != 0 && member - 1 < 2)
+            memory.put8(record + 0xa0, 0x11);
+        auto gear = memory.u8(record + 0xa0);
+        if (gear == 0xff)
+            gear = 0;
+        copy(memory, resident.heap, record + 0xa4, 0x8006dfac + gear * 0xa4, 0xa4);
+        auto block = unpack_battle_item(context, item(id * 4 + 0x14), 1);
+        copy(memory, resident.heap, 0x800cdd40 + member * 0x5f0, block, 0x5f0);
+        release_battle_block(context, block, 0x801e55cc);
+        block = unpack_battle_item(context, item(gear * 4 + 0x44), 1);
+        copy(memory, resident.heap, 0x800cef10 + member * 0x690, block, 0x690);
+        release_battle_block(context, block, 0x801e55f8);
+    }
+    auto block = unpack_battle_item(context, item(0x10), 1);
+    copy(memory, resident.heap, 0x800d02c0, block, 8000);
+    release_battle_block(context, block, 0x801e5644);
+    block = unpack_battle_item(context, item(0xc), 1);
+    copy(memory, resident.heap, 0x800d2200, block, 0x300);
+    release_battle_block(context, block, 0x801e566c);
+    // 8002dde4(images, 0, ...): each image section (1100 palette, 1101
+    // pixels) at its own position; its rectangle lies in 8002dde4's frame
+    // (801e5840 -18, 801e5384 -48, 8002dde4 -48, +10).
+    block = unpack_battle_item(context, item(8), 1);
+    {
+        const auto rect = stack - 0x98;
+        auto at = block + (memory.u32(block) + 1) * 4;
+        for (std::uint32_t section = 0; section < memory.u32(block); ++section) {
+            const auto kind = memory.u32(at);
+            if (kind != 0x1100 && kind != 0x1101)
+                break;
+            std::array<std::int16_t, 4> area{
+                static_cast<std::int16_t>(s16(memory.u16(at + 4)) + s16(memory.u16(at + 8))),
+                static_cast<std::int16_t>(s16(memory.u16(at + 6)) + s16(memory.u16(at + 10))),
+                s16(memory.u16(at + 12)), s16(memory.u16(at + 14))};
+            static_cast<void>(load_image(area, rect, at + 16, &services));
+            // The next section follows the rectangle as LoadImage left it.
+            at += 16 + static_cast<std::uint32_t>(static_cast<std::int32_t>(area[2]) * area[3] * 2);
+        }
+    }
+    release_battle_block(context, block, 0x801e56a4);
+    memory.put32(0x800d2f5c, unpack_battle_item(context, item(4), 0));
+    // 80033698(0, 1f0): the text palettes (80050190) and their CLUT ids; its
+    // rectangle lies in its frame (801e5384 -48 -28, +10).
+    {
+        std::array<std::int16_t, 4> area{0, 0x1f0, 0x20, 1};
+        static_cast<void>(load_image(area, stack - 0x78, 0x80050190, &services));
+        resident.text_cluts[0] = static_cast<std::uint16_t>(0x1f0U << 6U | 0U);
+        resident.text_cluts[1] = static_cast<std::uint16_t>(0x1f0U << 6U | 1U);
+    }
+    memory.put32(0x800d329c, unpack_battle_item(context, item(0x40), 0));
+    // 80078310(portraits, 61): each member's portrait image (0x460 apart;
+    // 0xb for the demonstration's members 1 and 2) placed by its glyph
+    // (80026338 over the glyph table 800d2f5c, id 61 + member).
+    block = unpack_battle_item(context, item(0x90), 1);
+    for (std::uint32_t member = 0; member < 3; ++member) {
+        auto id = memory.u8(ids + member);
+        if (id == 0x7f)
+            continue;
+        if (memory.u8(0x800d3294) != 0 && member - 1 < 2)
+            id = 0xb;
+        resident.gpu.tim_cursor = block + id * 0x460; // OpenTIM
+        // ReadTIM (80047518): magic 10, flags, then the palette and pixel
+        // blocks, each a length word and a rectangle.
+        const auto tim = resident.gpu.tim_cursor;
+        if (memory.u32(tim) != 0x10)
+            throw battle::BattleError("A portrait is not a TIM image");
+        if (resident.gpu.debug == 2)
+            throw MissingDependency({"read_tim", 0x80047570, {}, {}}, "symbol:printf-80019964",
+                                    false, "libgpu debug messages are not reconstructed");
+        auto at = tim + 8;
+        std::uint32_t palette = 0;
+        std::uint32_t words = 0;
+        if ((memory.u32(tim + 4) & 8) != 0) {
+            palette = at + 4;
+            words = memory.u32(at) >> 2;
+            at += words << 2;
+        }
+        const auto pixels = at + 4;
+        resident.gpu.tim_cursor += (words + (memory.u32(at) >> 2) + 2) * 4;
+        // 80026338: the glyph's rectangle fields.
+        const auto table = memory.u32(0x800d2f5c);
+        const auto glyph = table + memory.u16(table + 4 + (0x61 + member) * 2);
+        const auto shift = memory.u16(glyph + 20) == 0 ? 20 : 18;
+        const auto offset = static_cast<std::int32_t>(memory.u16(glyph + 4) << 16) >> shift;
+        if (palette == 0)
+            throw battle::BattleError("A portrait without a palette is not reconstructed");
+        memory.put16(palette, memory.u16(glyph + 22));
+        memory.put16(palette + 2, memory.u16(glyph + 24));
+        memory.put16(pixels, static_cast<std::uint32_t>(s16(memory.u16(glyph + 26) & 0xffc0) +
+                                                        offset + static_cast<std::int32_t>(member) * 6));
+        memory.put16(pixels + 2, static_cast<std::uint32_t>(s16(memory.u16(glyph + 28) & 0xff00) +
+                                                            s16(memory.u16(glyph + 6))));
+        load_battle_image(context, services, palette, palette + 8);
+        load_battle_image(context, services, pixels, pixels + 8);
+        draw_sync(services);
+    }
+    release_battle_block(context, block, 0x801e56fc);
+    block = unpack_battle_item(context, item(0x94), 1);
+    copy(memory, resident.heap, 0x800d2500, block + 800, 0x300);
+    release_battle_block(context, block, 0x801e5724);
+    memory.put32(0x800d39f0, unpack_battle_item(context, item(0x98), 0));
+    release_battle_block(context, archive, 0x801e5748);
+    // The enemy data files of the formation's enemy set.
+    static_cast<void>(select_directory(0xc, 1));
+    const auto set = memory.u8(battle::formation_record);
+    const auto data = battle::allocate_block(context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 2))), 0);
+    memory.put32(0x800c3dd0, data);
+    memory.put32(0x800d33ec, data);
+    memory.put16(0x800d33e8, set * 2 + 2);
+    const auto models = battle::allocate_block(context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 3))), 1);
+    memory.put32(0x800c3dec, models);
+    memory.put32(0x800d33f4, models);
+    memory.put16(0x800d33f8, 0);
+    memory.put32(0x800d33fc, 0);
+    memory.put16(0x800d33f0, set * 2 + 3);
+    // 80029afc(800d33e8, 0, 80): the list is the reader's while it runs.
+    resident.disc_read.list = {0x800d33e8, memory.take(0x800d33e8, 0x12)};
+    static_cast<void>(read_files(0));
+}
+
+void Program::setup_battle_phase(std::uint32_t phase, FrameServices &services,
+                                 std::uint32_t stack) {
     switch (phase & 0xff) {
     case 0:
-        throw MissingDependency({"battle_setup", 0x801e5384, {}, {}}, "symbol:battle-setup-party",
-                                false, "The party setup phase 801e5384 is not reconstructed");
+        run_battle([&](battle::Battle &context) { setup_battle_party(context, services, stack); });
+        break;
     case 1:
         run_battle([&](battle::Battle &context) { battle::setup_participants(context, resident); });
         break;
