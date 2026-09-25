@@ -60,5 +60,11 @@ struct HeapBlock {
 [[nodiscard]] std::int32_t heap_release(Heap &heap, HeapBlock &block, std::uint32_t call_site);
 // 80031ff8: merge runs of free blocks; absorbed headers become held bytes.
 void heap_coalesce(Heap &heap);
+// 80032498(tag, word): tag new blocks with `tag`, store its word and leave
+// quiet mode.
+void heap_select_tag(Heap &heap, std::uint32_t tag, std::uint32_t word);
+// 800320a4 (keep) and 800320b8 (release allowed): the keep flag of the
+// block whose data starts at `block`.
+void heap_set_keep(Heap &heap, std::uint32_t block, bool keep);
 
 } // namespace xem::reconstruction::resident

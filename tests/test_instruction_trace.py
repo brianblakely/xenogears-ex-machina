@@ -387,7 +387,7 @@ class InstructionTraceTests(unittest.TestCase):
             with self.subTest(variant=variant), self.assertRaises(ValueError):
                 validate_instruction_trace(variant)
 
-    def test_up_to_64_distinct_hooks_are_accepted(self):
+    def test_up_to_256_distinct_hooks_are_accepted(self):
         def hooks(count):
             spec = copy.deepcopy(self.spec)
             spec["max_callbacks"] = 1000
@@ -400,9 +400,9 @@ class InstructionTraceTests(unittest.TestCase):
                 spec["hooks"].append(hook)
             return spec
 
-        self.assertEqual(len(validate_instruction_trace(hooks(64))["hooks"]), 64)
-        with self.assertRaisesRegex(ValueError, "1..64 hooks"):
-            validate_instruction_trace(hooks(65))
+        self.assertEqual(len(validate_instruction_trace(hooks(256))["hooks"]), 256)
+        with self.assertRaisesRegex(ValueError, "1..256 hooks"):
+            validate_instruction_trace(hooks(257))
 
     def test_scratchpad_aliases_read_only_the_bounded_backing_bytes(self):
         scratchpad = bytearray(1024)

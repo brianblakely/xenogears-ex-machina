@@ -107,6 +107,13 @@ void DiscDrive::data_ready() {
     if (!read_sector)
         throw PlatformInputError("A data-ready interrupt arrives without a disc image service");
     buffer = read_sector(*next);
+    // With XA-ADPCM enabled (Setmode bit 6), audio sectors (subheader
+    // submode bit 2) go to the SPU instead of the data buffer; general CD
+    // controller behavior. They raise no data-ready interrupt.
+    while ((mode & 0x40U) != 0 && ((*buffer)[18] & 0x04U) != 0) {
+        ++*next;
+        buffer = read_sector(*next);
+    }
     cursor = 0;
     delivered.push_back(*next);
     ++*next;
@@ -389,6 +396,12 @@ void Program::dma_completed(std::uint32_t address) {
         break;
     case 0x8004cb3c:
         spu_transfer_completed();
+        break;
+    case 0x801d30c4: // The movie library's MDEC output (movie.cpp).
+        movie_slice_decoded();
+        break;
+    case 0x801d5a04: // The movie stream's last-sector DMA (movie_stream.cpp).
+        stream_frame_complete();
         break;
     default:
         unknown("dma_callback", 0x8004c138, address);

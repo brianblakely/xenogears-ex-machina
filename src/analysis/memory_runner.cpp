@@ -1,6 +1,7 @@
 // Runs a recovered field entry from an original RAM image. The image is the
 // only game-state input; expected exit images never reach this process.
 #include "field_memory.hpp"
+#include "mdec_codec.hpp"
 
 #include "xem/reconstruction/resident_heap.hpp"
 
@@ -161,6 +162,10 @@ int run_case(int argc, char **argv) {
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision" ||
                                  entry == "music_poll" || entry == "music_chunk";
+        // The field movie player 800a7c58 run as a chain of stage boundaries
+        // from its entry ("movie_chain") or from its loop's end
+        // ("movie_finish_chain", 800a80b4).
+        const bool movie_entry = entry == "movie_chain" || entry == "movie_finish_chain";
         const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
                                   entry == "battle_alive" || entry == "battle_rewards" ||
                                   entry == "battle_reward_totals" || entry == "battle_drops" ||
@@ -189,7 +194,8 @@ int run_case(int argc, char **argv) {
             entry == "field_reload" || entry == "field_load";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
+            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry &&
+            !movie_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -279,7 +285,10 @@ int run_case(int argc, char **argv) {
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
         // A field teardown releases whole heap blocks: own all their bytes.
-        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load")
+        // The movie player's blocks (the library image, its buffers and ring)
+        // are heap blocks too.
+        if (entry == "field_reload_teardown" || entry == "field_reload" ||
+            entry == "field_load" || movie_entry)
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
@@ -376,6 +385,47 @@ int run_case(int argc, char **argv) {
                 program->field_frame(sections[k], observer);
                 report("exit", written);
             }
+        } else if (movie_entry) {
+            // Every stage boundary's exported state is reported; the chain
+            // ends where the loop's decision ends the movie, or after
+            // `budget` passes. S2 at a resumed entry is the library block.
+            analysis::LibpressMdecCodec codec;
+            services.mdec = &codec;
+            program->field->movie_library = registers[18];
+            const auto report = [&](std::string_view boundary, std::size_t written) {
+                frames << (frames.tellp() > 0 ? "," : "") << "{\"boundary\":" << quote(boundary)
+                       << ",\"gte\":[" << gte_controls(*program) << "],\"owned\":["
+                       << owned_ranges(*program) << "],\"hardware_writes\":["
+                       << hardware_writes(*program, written) << "]}";
+            };
+            auto written = program->resident.hardware_writes.size();
+            const auto stage = [&](std::string_view boundary) {
+                report(boundary, written);
+                written = program->resident.hardware_writes.size();
+            };
+            // The player's frame: SP - 28h at its entry, SP inside it.
+            const auto frame = entry == "movie_chain" ? registers[29] - 0x28 : registers[29];
+            if (entry == "movie_chain") {
+                program->movie_prepare(services, frame, observer);
+                stage("prepared");
+                program->movie_first_frame(services, codec);
+                stage("first_frame");
+                // STOP "passes=N" ends the chain after N stage reports of the
+                // loop (the first frame's head, then N - 1 passes).
+                const auto limit = stop.starts_with("passes=")
+                                       ? std::stoul(std::string(stop.substr(7)))
+                                       : 0xffffffffUL;
+                for (std::uint32_t pass = 1;; ++pass) {
+                    if (pass == limit)
+                        throw BoundaryReached{};
+                    const auto step = program->movie_pass(services, codec, observer);
+                    stage(step == field::MovieStep::next_frame ? "pass" : "ended");
+                    if (step != field::MovieStep::next_frame)
+                        break;
+                }
+            }
+            program->movie_finish(services, frame, observer);
+            stage("finished");
         } else if (entry.starts_with("field_frame")) {
             // "field_frame" or "field_frame:STEP" resumes at a frame step.
             static const std::map<std::string_view, game::FrameStep> steps{

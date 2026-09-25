@@ -248,9 +248,13 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
         if ((repeats() & 0x100U) != 0 && state.pass.input_updated == 1)
             unrecovered("field_action", 0x80078978, "symbol:field-800aba98",
                         "The action of button 100 (800aba98) is not recovered");
-        if (state.disc_idle_known != 0 && state.draw_buffer == 1)
-            unrecovered("field_movie", 0x800789a8, "symbol:field-movie-800a7c58",
-                        "Playing a requested movie from the main loop is not recovered");
+        if (state.disc_idle_known != 0 && state.draw_buffer == 1) {
+            // 800789a8: the requested movie (field_movie_player.cpp).
+            if (services.mdec == nullptr)
+                throw ServiceUnavailable("The MDEC codec service of a requested movie");
+            play_movie(services, field_loop_stack - 0x28, *services.mdec, observe);
+            state.disc_idle_known = 0;
+        }
         if (inputs.jump_contact != 0xff && state.draw_buffer == 0 && (flags() & 0x1800U) == 0)
             unrecovered("field_menu", 0x80078a28, "symbol:field-menu-800799d4",
                         "Opening the field menu (8007ffe8, 800799d4) is not recovered");

@@ -56,6 +56,16 @@ void request_movie(FieldWorld &world, MovieState &movie, std::uint32_t field_act
     set_pc(world, pc(world) + 9);
 }
 
+void wait_movie_started(FieldWorld &world, std::uint32_t &started) {
+    world.control.break_requested = 1;
+    if (started == 0) {
+        set_pc(world, pc(world) - 1);
+        return;
+    }
+    started = 0;
+    set_pc(world, pc(world) + 1);
+}
+
 MoviePad movie_pad(const MovieState &movie, std::int32_t presentation, std::int32_t marker) {
     if (marker == 0)
         return presentation == 2 ? MoviePad::keep : MoviePad::drain;

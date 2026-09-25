@@ -220,6 +220,19 @@ void Program::move_image(FrameServices &services, const std::array<std::int16_t,
     static_cast<void>(gpu_enqueue(0x800465ec, 0x80056978, nullptr, 0x14, 0, &services));
 }
 
+// 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and VSync.
+void Program::stop_field_particles(FrameServices &services) {
+    auto &state = *field;
+    for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
+        if (state.particle_slots[slot] == 1)
+            throw MissingDependency({"field_reload", 0x800a92dc, {}, {}}, "symbol:field-particles",
+                                    false, "Releasing an active particle emitter is not recovered");
+        state.particle_slots[slot] = 0;
+        state.reload.particle_ids[slot] = -1;
+    }
+    draw_and_vertical_sync(services); // 800775f8
+}
+
 void Program::field_reload_teardown(FrameServices &services, const ProgramObserver &observe) {
     auto &state = loaded(*this);
     auto &reload = state.reload;
@@ -243,16 +256,7 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
         throw MissingDependency({"field_reload", 0x800374a0, {}, {}}, "symbol:block-80059394",
                                 false, "The block 80059394 names is not recovered");
     resident.w_593a0 = 0;
-    // 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and VSync.
-    for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
-        if (state.particle_slots[slot] == 1)
-            throw MissingDependency({"field_reload", 0x800a92dc, {}, {}}, "symbol:field-particles",
-                                    false, "Releasing an active particle emitter is not recovered");
-        state.particle_slots[slot] = 0;
-        reload.particle_ids[slot] = -1;
-    }
-    draw_sync(services);
-    vertical_sync(services);
+    stop_field_particles(services); // 800a9460
     // 800864f0: forget the positional emitters and stop the effect pairs
     // whose bit in 800b233c is clear.
     for (auto &emitter : state.emitters) {

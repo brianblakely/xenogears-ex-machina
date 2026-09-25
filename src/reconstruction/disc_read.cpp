@@ -54,22 +54,16 @@ std::string hex(std::uint32_t value) {
         text[static_cast<std::size_t>(i)] = digits[value & 15U];
     return text;
 }
-// 80041430 CdIntToPos: minute, second and sector (BCD) after 150 lead-in sectors.
+// 80041430 CdIntToPos, keeping the location's fourth byte.
 std::array<std::uint8_t, 4> position(std::uint32_t sector, std::uint8_t unused) {
-    const auto frames = s32(sector + 150U);
-    const auto seconds = frames / 75;
-    const auto bcd = [](std::int32_t value) {
-        return static_cast<std::uint8_t>(value / 10 * 16 + value % 10);
-    };
-    return {bcd(seconds / 60), bcd(seconds % 60), bcd(frames % 75), unused};
+    auto location = cd_position(sector);
+    location[3] = unused;
+    return location;
 }
 // 80041534 CdPosToInt of a sector header's minute, second and sector.
 std::uint32_t sector_of(std::uint32_t header) {
-    const auto decimal = [&](std::uint32_t shift) {
-        const auto value = (header >> shift) & 0xffU;
-        return (value >> 4U) * 10U + (value & 15U);
-    };
-    return (decimal(0) * 60U + decimal(8)) * 75U + decimal(16) - 150U;
+    return cd_sector({static_cast<std::uint8_t>(header), static_cast<std::uint8_t>(header >> 8U),
+                      static_cast<std::uint8_t>(header >> 16U), 0});
 }
 } // namespace
 
@@ -422,23 +416,19 @@ void cd_timeout_checks(ResidentState &resident, std::uint32_t timeout) {
         throw MissingDependency({"cd_sync_timeout", timeout, {}, {}}, "symbol:libcd-timeout-reset",
                                 false, "The CD sync timeout and reset path is not reconstructed");
 }
-// One pass of the 80042088 wait before it reads the status byte.
-void cd_wait_checks(ResidentState &resident, std::uint32_t timeout) {
-    cd_timeout_checks(resident, timeout);
-    if (resident.cd.interrupt_poll != 0)
-        throw MissingDependency({"cd_interrupt_poll", 0x80042380, {}, {}},
-                                "symbol:cd-command-wait-poll", false,
-                                "The command writer's controller polling is not reconstructed");
-}
 [[noreturn]] void cd_interrupt_wait(std::uint32_t address) {
     throw MissingDependency({"cd_interrupt_wait", address, {}, {}}, "interrupt:cd-command", false,
                             "The CD command status arrives by interrupt");
 }
 } // namespace
 
-// 80041b3c(0, 0): wait for the last command's status (2 complete, 5 error).
-// Inside an interrupt handler the wait polls the controller itself.
-std::int32_t Program::cd_sync() {
+// 80041b3c CdSync(0, result): wait for the last command's status (2
+// complete, 5 error), which becomes 2; the response is copied. Inside an
+// interrupt handler the wait polls the controller itself; elsewhere each
+// pass takes the interrupt arrivals recorded before its load of the status
+// byte (80041d28), whose recorded value, when the capture records it, must
+// equal the reconstructed handler's.
+std::int32_t Program::cd_sync(std::array<std::uint8_t, 8> *result) {
     auto &cd = resident.cd;
     resident.cd_sync_deadline = resident.vsync_counter + 0x3c0; // 8004b54c(-1)
     resident.cd_sync_polls = 0;
@@ -447,12 +437,20 @@ std::int32_t Program::cd_sync() {
         cd_timeout_checks(resident, 0x80041bf8);
         if (cd.interrupt_poll != 0)
             cd_poll();
+        const bool arrived = cd.interrupt_poll == 0 && deliver_pending_front();
         const auto status = cd.sync_status;
+        const auto &inputs = resident.platform;
+        if (!inputs.empty() && inputs.front().kind == PlatformInput::Kind::read &&
+            inputs.front().site == 0x80041d28 &&
+            platform_read(resident.platform, 0x80041d28, 1) != status)
+            throw PlatformInputError("The recorded CD sync status differs from the handler's");
         if (status == 2 || status == 5) {
             cd.sync_status = 2;
+            if (result != nullptr)
+                *result = cd.sync_result;
             return status;
         }
-        if (cd.interrupt_poll == 0)
+        if (cd.interrupt_poll == 0 && !arrived)
             cd_interrupt_wait(0x80041d88);
     }
 }
@@ -473,7 +471,7 @@ void Program::cd_poll() {
 
 // 80042088: send a command and its parameters to the controller.
 std::int32_t Program::cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                                 bool nowait) {
+                                 bool nowait, std::array<std::uint8_t, 8> *result) {
     auto &cd = resident.cd;
     if (cd.debug >= 2)
         printf_call(0x800420e4);
@@ -512,12 +510,7 @@ std::int32_t Program::cd_command(std::uint8_t command, const std::array<std::uin
     resident.drive.command(command, sent);
     if (nowait)
         return 0;
-    // 80042250: the status was just cleared, so completion needs an interrupt.
-    resident.cd_sync_deadline = resident.vsync_counter + 0x3c0;
-    resident.cd_sync_polls = 0;
-    resident.cd_sync_label = 0x80018edc;
-    cd_wait_checks(resident, 0x800422f0);
-    cd_interrupt_wait(0x80042428);
+    return cd_command_wait(result); // 80042250 (resident_disc.cpp)
 }
 
 // 80042ca8: serve the controller until it reports nothing, then restore
@@ -622,6 +615,9 @@ void Program::cd_callback(std::uint32_t address, std::uint8_t status,
         break;
     case 0x8002ac24:
         disc_list_data(status);
+        break;
+    case 0x801d5900: // The movie library's stream ring (movie_stream.cpp).
+        stream_interrupt();
         break;
     default:
         throw MissingDependency({"cd_callback", 0x80042d18, {}, {}}, "symbol:" + hex(address),
@@ -1230,6 +1226,15 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
     for (auto &block : resident.music_blocks)
         if (inside(block))
             return;
+    // An allocated heap block whose bytes no other value interprets.
+    if (const auto after = resident.heap_contents.upper_bound(address);
+        after != resident.heap_contents.begin()) {
+        auto &[at, bytes] = *std::prev(after);
+        if (address >= at && end <= std::uint64_t{at} + bytes.size()) {
+            std::ranges::copy(data, bytes.begin() + (address - at));
+            return;
+        }
+    }
     for (auto &[at, bytes] : resident.heap.held)
         if (address < at + bytes.size() && at < end)
             throw field::FieldFormatError("Disc DMA writes into a free heap block");

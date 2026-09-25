@@ -555,6 +555,12 @@ void Program::dispatch_extended(field::EventContext &active, std::uint8_t extend
             field::request_movie(world, state.movie, resident.battle_request.field_active,
                                  state.single_actor_mode, state.disc_idle_known);
         });
+    else if (extended == 0x61) // 8008e9f8
+        script(active, [&](field::FieldWorld &world) {
+            auto started = memory(0x800adb7c);
+            field::wait_movie_started(world, started);
+            set_memory(0x800adb7c, started);
+        });
     else
         script(active, [&](auto &world) { field::execute_script_extended(world, extended); });
 }
