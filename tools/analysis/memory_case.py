@@ -457,8 +457,10 @@ def pairs(
     # while the dispatcher's context is active); one path never nests itself.
     result, pending, handlers, open_handlers, platform = [], None, [], {}, []
     for row in rows:
-        platform_row = row["hook"] != entry_hook and (
-            is_load_hook(row["hook"]) or row["hook"] in (SECTOR_HOOK, arrival, arrival_ticks)
+        platform_row = row["hook"] not in (entry_hook, exit_hook) and (
+            is_load_hook(row["hook"])
+            or row["hook"] in (SECTOR_HOOK, arrival, arrival_ticks)
+            or (arrival is not None and row["hook"] == DECODE_EXIT_HOOK)
         )
         if platform_row:
             if pending is not None and not open_handlers:
@@ -592,8 +594,11 @@ def call_platform_rows(
 
 
 # An arrival recorded inside a decode (80032eb4, between the image capture's
-# dec-entry and dec-exit records) is delivered where the decode ends.
+# dec-entry and dec-exit records) is delivered where the decode ends. Each
+# decode's end is an input of its own, so that an arrival is delivered at the
+# end of the decode it arrived in.
 DECODE_END = 0x80032F4C
+DECODE_EXIT_HOOK = "dec-exit"
 
 
 def decode_arrivals(image_rows: list[dict], arrivals: tuple) -> set[int]:
@@ -638,6 +643,8 @@ def platform_inputs(
         elif ticks is not None and hook == ticks:
             point = DECODE_END if row["event"] in decoding else 0
             lines.append(f"tick {point:x} {visible_registers(row)[2]:x}")
+        elif hook == DECODE_EXIT_HOOK:
+            lines.append(f"end {DECODE_END:x}")
         elif hook == SECTOR_HOOK:
             sectors.append(header_sector(row))
         else:

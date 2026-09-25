@@ -159,10 +159,13 @@ void Program::deliver_leading_vblanks() {
 
 void Program::deliver_arrivals(std::uint32_t point) {
     using Kind = PlatformInput::Kind;
-    const auto &inputs = resident.platform;
+    auto &inputs = resident.platform;
     while (!inputs.empty() && inputs.front().site == point &&
            (inputs.front().kind == Kind::interrupt || inputs.front().kind == Kind::tick))
         static_cast<void>(deliver_interrupt());
+    // This run of the code at point ended.
+    if (!inputs.empty() && inputs.front().kind == Kind::end && inputs.front().site == point)
+        inputs.pop_front();
 }
 
 // Resident 80028738: the file's byte size (record bytes 3-6).
