@@ -32,7 +32,10 @@ def plan_sources(text: str) -> dict:
     sources = {
         "tasks": {},
         "exits": {},
-        "early_exits": {},
+        "checked_tasks": {},
+        "phase_goals": {},
+        "prerequisites": {},
+        "completion_rule": "",
         "phases": [],
         "boundaries": [],
         "tables": {},
@@ -49,15 +52,25 @@ def plan_sources(text: str) -> dict:
             if phase in sources["phases"]:
                 raise ValueError(f"Duplicate plan phase: {phase}")
             sources["phases"].append(phase)
-        if match := re.match(r"- \[[ x]\] (.+)", line):
+        if match := re.match(r"- \[([ x])\] (.+)", line):
             if phase is None:
                 raise ValueError("Plan task precedes its phase")
             task += 1
-            sources["tasks"][f"{phase}-T{task:02}"] = match[1]
+            key = f"{phase}-T{task:02}"
+            sources["tasks"][key] = match[2]
+            sources["checked_tasks"][key] = match[1] == "x"
+        if line.startswith("**Goal:** ") and phase is not None:
+            sources["phase_goals"][phase] = line.removeprefix("**Goal:** ")
+        if line.startswith("**Prerequisite:** ") and phase is not None:
+            sources["prerequisites"][phase] = line.removeprefix("**Prerequisite:** ")
+        if line.startswith("**Completion rule:** "):
+            sources["completion_rule"] = line
         if line.startswith("**Exit criterion:** "):
+            if phase in sources["exits"]:
+                raise ValueError(f"Duplicate phase exit: {phase}")
             sources["exits"][phase] = line.removeprefix("**Exit criterion:** ")
-        if line.startswith("**Early exit criterion,"):
-            sources["early_exits"][phase] = line
+        if line.startswith("**Early exit criterion"):
+            raise ValueError("Early exits are not supported; complete the phase checklist")
         if phase is None and line.startswith("- **"):
             sources["boundaries"].append(line[2:])
         if line.startswith("**Foundational requirement:**"):
@@ -116,8 +129,17 @@ def build_matrix(root: Path = ROOT) -> dict:
     if review.get("schema_version") != 1 or review["tasks"].keys() != specs.keys():
         raise ValueError("Requirement coverage review omits tasks or uses an unknown schema")
     for key, spec in specs.items():
+        targets = review["tasks"][key].get("targets")
+        if (
+            not isinstance(targets, list)
+            or not targets
+            or any(not isinstance(target, str) or not target for target in targets)
+            or len(targets) != len(set(targets))
+        ):
+            raise ValueError(f"Requirement lacks explicit reviewed targets: {key}")
         expected = {
             "source_sha256": hashlib.sha256(sources["tasks"][key].encode()).hexdigest(),
+            "targets": targets,
             "spec_sha256": hashlib.sha256(
                 json.dumps(spec, sort_keys=True, ensure_ascii=False).encode()
             ).hexdigest(),
@@ -139,7 +161,7 @@ def build_matrix(root: Path = ROOT) -> dict:
                     "requirement": facet,
                     "test_id": f"TEST-{facet_id}",
                     "procedure_and_acceptance": spec["procedure"],
-                    "targets": ["repository"] if phase == 0 else target_scope(source_id),
+                    "targets": list(review["tasks"][source_id]["targets"]),
                     "status": result.get("status", "defined"),
                     "evidence": result.get("evidence", []),
                 }
@@ -164,64 +186,10 @@ def build_matrix(root: Path = ROOT) -> dict:
     }
 
 
-def target_scope(source_id: str) -> list[str]:
-    if source_id.startswith("P01-"):
-        return ["original-reference-analysis"]
-    if source_id.startswith("P02A-") and 35 <= int(source_id.split("-T")[1]) <= 39:
-        return ["arch-vulkan", "arch-headless"]
-    if source_id in {"P02-T04", "P03-T01", "P03-T09", "P03-T10", "P03-T11", "P03-T12", "P13-T01"}:
-        if source_id in {"P03-T09", "P03-T10", "P03-T11", "P03-T12"}:
-            return ["arch-vulkan", "arch-headless"]
-        return ["arch-vulkan"]
-    if source_id in {"P06-T03", "P13-T02"}:
-        return ["windows-d3d12"]
-    if source_id == "P13-T03":
-        return ["macos-metal"]
-    targets = ["arch-vulkan", "windows-d3d12", "macos-metal"]
-    if (
-        source_id.startswith("P02-")
-        and 14 <= int(source_id[5:]) <= 41
-        or source_id.startswith("P02A-")
-        or source_id.startswith("P07-")
-        and int(source_id[5:]) >= 15
-        or source_id.startswith("P11-")
-        and int(source_id[5:]) >= 13
-        or source_id == "P12-T11"
-        or source_id.startswith("P13-")
-        and int(source_id[5:]) >= 19
-        or source_id
-        in {
-            "P02-T01",
-            "P02-T08",
-            "P02-T09",
-            "P02-T10",
-            "P02-T11",
-            "P02-T12",
-            "P02-T13",
-            "P02-T42",
-            "P02-T46",
-            "P02-T47",
-            "P04-T13",
-            "P04-T14",
-            "P06-T13",
-            "P06-T14",
-            "P07-T13",
-            "P07-T14",
-            "P08-T12",
-            "P08-T13",
-            "P08-T14",
-            "P09-T18",
-            "P10-T23",
-            "P11-T12",
-            "P12-T10",
-            "P13-T06",
-            "P13-T07",
-            "P13-T08",
-            "P13-T09",
-        }
-    ):
-        targets += ["arch-headless", "windows-headless", "macos-headless"]
-    return targets
+def target_scope(source_id: str, root: Path = ROOT) -> list[str]:
+    """Return explicit reviewed targets; moving a task must not change its target scope."""
+    review = json.loads((root / "docs/requirement-review.json").read_text())
+    return list(review["tasks"][source_id]["targets"])
 
 
 def markdown(data: dict) -> str:
@@ -258,15 +226,16 @@ def markdown(data: dict) -> str:
             lines.append("")
         if phase in data["source_snapshot"]["exits"]:
             lines += ["Exit gate: " + data["source_snapshot"]["exits"][phase], ""]
-        if phase in data["source_snapshot"]["early_exits"]:
-            lines += [data["source_snapshot"]["early_exits"][phase], ""]
     lines += [
         "## Crosscutting sources and default policy",
         "",
         "`docs/traceability.json` maps every project boundary, foundational native-agent and",
-        "agent-authoring contract row, selected authoring-stack responsibility, early gate,",
+        "agent-authoring contract row, selected authoring-stack responsibility, completion rule,",
         "required-feature row, keyboard default, execution rule and release checkpoint to tests.",
-        "`docs/requirement-review.json` binds reviewed source text to facet specifications;",
+        (
+            "`docs/requirement-review.json` binds reviewed source text, "
+            "facets and explicit target scope;"
+        ),
         "`docs/requirements-migration.json` preserves the earlier evidence and task mapping.",
         "`docs/defaults.json` records prescribed defaults and leaves other choices undecided.",
         "`docs/platforms.json` separates declared target plans from executed platform coverage.",

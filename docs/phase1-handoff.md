@@ -1,5 +1,7 @@
 # Phase 0 evidence and Phase 1 handoff
 
+Phase ownership: complete every slice-scoped Phase 1 checklist item and its original-evidence acceptance before native Phase 2 work begins. Reuse the recovered library in the runtime; remaining whole-game recovery is Phase 4 work, not an unfinished Phase 1 exit.
+
 This is the starting handoff. See [current Phase 1 progress](phase1-progress.md)
 for subsequent source reconstruction, original-data comparisons and open work.
 The [current source and state handoff](../analysis/formats/field-lifecycle.md)

@@ -8,233 +8,339 @@
         "WASD",
         "arrow keys"
       ],
-      "source": "P06-T04",
-      "facets": [
-        "F02",
-        "F03"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F02",
+            "F03"
+          ]
+        }
       ]
     },
     {
       "setting": "run",
       "value": "Shift",
-      "source": "P06-T04",
-      "facets": [
-        "F04"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F04"
+          ]
+        }
       ]
     },
     {
       "setting": "jump",
       "value": "Space",
-      "source": "P06-T04",
-      "facets": [
-        "F06"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F06"
+          ]
+        }
       ]
     },
     {
       "setting": "confirm",
       "value": "Enter",
-      "source": "P06-T04",
-      "facets": [
-        "F07"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F07"
+          ]
+        }
       ]
     },
     {
       "setting": "cancel/back",
       "value": "Backspace",
-      "source": "P06-T04",
-      "facets": [
-        "F08"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F08"
+          ]
+        }
       ]
     },
     {
       "setting": "camera left",
       "value": "Q",
-      "source": "P06-T04",
-      "facets": [
-        "F09"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F09"
+          ]
+        }
       ]
     },
     {
       "setting": "camera right",
       "value": "E",
-      "source": "P06-T04",
-      "facets": [
-        "F10"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F10"
+          ]
+        }
       ]
     },
     {
       "setting": "game menu",
       "value": "Tab",
-      "source": "P06-T04",
-      "facets": [
-        "F11"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F11"
+          ]
+        }
       ]
     },
     {
       "setting": "app menu",
       "value": "Esc",
-      "source": "P06-T04",
-      "facets": [
-        "F12"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F12"
+          ]
+        }
       ]
     },
     {
       "setting": "first-person toggle",
       "value": "V",
-      "source": "P06-T04",
-      "facets": [
-        "F13"
+      "sources": [
+        {
+          "source": "P06-T04",
+          "facets": [
+            "F13"
+          ]
+        }
       ]
     },
     {
       "setting": "optional culling",
       "value": "off for legacy visibility, distance, frustum, occlusion and back-face culling",
-      "source": "P05-T13",
-      "facets": [
-        "F01",
-        "F02",
-        "F03",
-        "F04",
-        "F05",
-        "F06"
+      "sources": [
+        {
+          "source": "P05-T13",
+          "facets": [
+            "F01",
+            "F02",
+            "F03",
+            "F04",
+            "F05",
+            "F06"
+          ]
+        }
       ]
     },
     {
       "setting": "random encounters in the evidence-backed platforming-area list",
       "value": "off; bosses, mandatory and scripted encounters preserved",
-      "source": "P09-T07",
-      "facets": [
-        "F01",
-        "F02",
-        "F03",
-        "F04"
+      "sources": [
+        {
+          "source": "P09-T07",
+          "facets": [
+            "F01",
+            "F02",
+            "F03",
+            "F04"
+          ]
+        }
       ]
     },
     {
       "setting": "world/UI filtering",
       "value": "independent controls",
-      "source": "P05-T14",
-      "facets": [
-        "F01",
-        "F02"
+      "sources": [
+        {
+          "source": "P05-T14",
+          "facets": [
+            "F01",
+            "F02"
+          ]
+        }
       ]
     },
     {
       "setting": "FMV mode availability",
       "value": "Original and Enhanced choices with per-video original fallback",
-      "source": "P10-T09",
-      "facets": [
-        "F01",
-        "F02",
-        "F03",
-        "F04"
+      "sources": [
+        {
+          "source": "P10-T09",
+          "facets": [
+            "F01",
+            "F02",
+            "F03",
+            "F04"
+          ]
+        }
       ]
     },
     {
       "setting": "base game dependencies",
       "value": "no third-party mod or content pack required",
-      "source": "P13-T16",
-      "facets": [
-        "F02",
-        "F04",
-        "F05"
+      "sources": [
+        {
+          "source": "P13-T16",
+          "facets": [
+            "F02",
+            "F04",
+            "F05"
+          ]
+        }
       ]
     },
     {
       "setting": "visual profile",
       "value": "Modern; each supported PS1 quirk is available but off",
-      "source": "P05-T02",
-      "facets": [
-        "F01",
-        "F02",
-        "F03",
-        "F04",
-        "F05",
-        "F06"
+      "sources": [
+        {
+          "source": "P05-T02",
+          "facets": [
+            "F01",
+            "F02",
+            "F03",
+            "F04",
+            "F05",
+            "F06"
+          ]
+        }
       ]
     },
     {
       "setting": "Wide headphone surround availability",
       "value": "optional; original Mono, Stereo and undecoded Wide retained; previous mode restored on disable",
-      "source": "P10-T16",
-      "facets": [
-        "F01",
-        "F02",
-        "F03",
-        "F04",
-        "F05",
-        "F06"
+      "sources": [
+        {
+          "source": "P10-T16",
+          "facets": [
+            "F01",
+            "F02",
+            "F03",
+            "F04",
+            "F05",
+            "F06"
+          ]
+        }
       ]
     },
     {
       "setting": "headless image stream",
       "value": "off",
-      "source": "P02-T42",
-      "facets": [
-        "F01"
+      "sources": [
+        {
+          "source": "P02-T47",
+          "facets": [
+            "F01"
+          ]
+        }
       ]
     },
     {
       "setting": "agent control access",
       "value": "local; spectators read-only; trusted debug explicitly enabled",
-      "source": "P02-T25",
-      "facets": [
-        "F01",
-        "F02",
-        "F03"
+      "sources": [
+        {
+          "source": "P02-T30",
+          "facets": [
+            "F01",
+            "F02",
+            "F03"
+          ]
+        }
       ]
     },
     {
       "setting": "headless simulation speed",
       "value": "explicit selection required at session creation",
-      "source": "P13-T15",
-      "facets": [
-        "F13"
+      "sources": [
+        {
+          "source": "P13-T15",
+          "facets": [
+            "F13"
+          ]
+        }
       ]
     },
     {
       "setting": "authoring language and composition",
       "value": "TypeScript functions first; optional custom TSX only after equivalent function-based builds pass",
-      "source": "P02A-T01",
-      "facets": [
-        "F01",
-        "F06",
-        "F07",
-        "F08"
+      "sources": [
+        {
+          "source": "P02A-T01",
+          "facets": [
+            "F01",
+            "F06",
+            "F07"
+          ]
+        },
+        {
+          "source": "P07-T15",
+          "facets": [
+            "F04"
+          ]
+        }
       ]
     },
     {
       "setting": "authoring transport",
       "value": "local CLI and versioned JSON-RPC over stdio/IPC; MCP adapter optional",
-      "source": "P02A-T29",
-      "facets": [
-        "F01",
-        "F02",
-        "F09",
-        "F10"
+      "sources": [
+        {
+          "source": "P02A-T24",
+          "facets": [
+            "F01",
+            "F02",
+            "F09",
+            "F10"
+          ]
+        }
       ]
     },
     {
       "setting": "authoring preview after rebuild",
       "value": "restart the scenario initially; incremental reload only at validated safe boundaries",
-      "source": "P02A-T34",
-      "facets": [
-        "F04",
-        "F05",
-        "F06",
-        "F07"
+      "sources": [
+        {
+          "source": "P02A-T29",
+          "facets": [
+            "F04",
+            "F05"
+          ]
+        },
+        {
+          "source": "P07-T10",
+          "facets": [
+            "F06",
+            "F07"
+          ]
+        }
       ]
     },
     {
       "setting": "prebuilt authored content requirements",
       "value": "native gameplay requires no Node.js, Qt/QML, browser or external modeling application",
-      "source": "P13-T19",
-      "facets": [
-        "F06",
-        "F07",
-        "F08",
-        "F09",
-        "F10"
+      "sources": [
+        {
+          "source": "P13-T19",
+          "facets": [
+            "F06",
+            "F07",
+            "F08",
+            "F09",
+            "F10"
+          ]
+        }
       ]
     }
   ],

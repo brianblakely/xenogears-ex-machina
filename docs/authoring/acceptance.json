@@ -24,13 +24,13 @@
   "gates": [
     {
       "id": "AUTHOR-BUILD",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
         "P02A-T01",
         "P02A-T03",
         "P02A-T04",
         "P02A-T10",
-        "P02A-T27"
+        "P02A-T22"
       ],
       "preconditions": [
         "Pinned function-based SDK/compiler and complete reviewed dependency closure",
@@ -59,14 +59,16 @@
         "shared parameter/schema parity corpus and per-validator outcomes"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-ISOLATION",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
-        "P02A-T33",
-        "P02A-T39"
+        "P02A-T28",
+        "P02A-T34"
       ],
       "preconditions": [
         "Host-specific OS sandbox or disposable VM and independent supervisor implemented",
@@ -93,11 +95,13 @@
         "supervisor terminal records"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-PACKAGE",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
         "P02A-T02",
         "P02A-T06",
@@ -129,21 +133,23 @@
         "corruption corpus outcomes"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-GEOMETRY",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
         "P02A-T05",
         "P02A-T12",
         "P02A-T13",
+        "P02A-T14",
+        "P02A-T15",
         "P02A-T16",
         "P02A-T17",
         "P02A-T18",
-        "P02A-T19",
-        "P02A-T20",
-        "P02A-T21"
+        "P02A-T19"
       ],
       "preconditions": [
         "Project-owned solid/surface/arbitrary/imported adapters and documented coordinate/collision conversions",
@@ -170,13 +176,15 @@
         "optional native material/collision overlays"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-MINIMAL",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
-        "P02A-T35"
+        "P02A-T30"
       ],
       "preconditions": [
         "Function-based TypeScript SDK with box/door and pickup operations; no imported geometry",
@@ -198,14 +206,15 @@
         "interaction/reward assertions"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-TWO-ROOM",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
-        "P02A-T14",
-        "P02A-T36"
+        "P02A-T31"
       ],
       "preconditions": [
         "Minimal native bridge passed; original authored fixtures licensed for distribution",
@@ -228,15 +237,20 @@
         "optional native captures"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite.",
+      "regression_tasks": [
+        "P07-T17"
+      ]
     },
     {
       "id": "AUTHOR-MIXED-ASSETS",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
         "P02A-T09",
         "P02A-T12",
-        "P02A-T36"
+        "P02A-T31"
       ],
       "preconditions": [
         "Two-room source-only variant retained independently",
@@ -261,16 +275,18 @@
         "native run results"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-PLAY",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
-        "P02A-T27",
-        "P02A-T29",
-        "P02A-T37",
-        "P02A-T39"
+        "P02A-T22",
+        "P02A-T24",
+        "P02A-T32",
+        "P02A-T34"
       ],
       "preconditions": [
         "An ordinary agent can discover documented capabilities, exact IDs, schemas and runnable examples",
@@ -296,16 +312,18 @@
         "save/load and re-entry results"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-REPAIR",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
-        "P02A-T20",
-        "P02A-T32",
-        "P02A-T38",
-        "P02A-T39"
+        "P02A-T18",
+        "P02A-T27",
+        "P02A-T33",
+        "P02A-T34"
       ],
       "preconditions": [
         "Known failing blocked-arch source revision and unchanged protected traversal test",
@@ -332,17 +350,19 @@
         "measured requested arch geometry and native clearance"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-REVISION",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
         "P02A-T03",
-        "P02A-T30",
-        "P02A-T31",
-        "P02A-T34",
-        "P02A-T38"
+        "P02A-T25",
+        "P02A-T26",
+        "P02A-T29",
+        "P02A-T33"
       ],
       "preconditions": [
         "Shared CLI/editor transaction service with expected revision and idempotency IDs",
@@ -367,17 +387,19 @@
         "snapshot invalidation report"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-EVENT-STATE",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
-        "P02A-T22",
-        "P02A-T23",
-        "P02A-T24",
-        "P02A-T26",
-        "P02A-T37"
+        "P02A-T20",
+        "P02-T16",
+        "P02A-T21",
+        "P02-T17",
+        "P02A-T32"
       ],
       "preconditions": [
         "Small closed native vocabulary for triggers, doors, dialogue, pickups, conditions and tick waits",
@@ -402,16 +424,18 @@
         "replay hashes"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-DELIVERY",
-      "milestone": "early",
+      "milestone": "bridge",
       "tasks": [
         "P02A-T06",
         "P02A-T10",
-        "P02A-T38",
-        "P02A-T41"
+        "P02A-T33",
+        "P02A-T35"
       ],
       "preconditions": [
         "Successful protected run of immutable package and reviewed redistribution inputs",
@@ -436,72 +460,81 @@
         "reproduction and replay results"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": "2A",
+      "scope": "Phase 2A completes this gate for the finite ordinary-TypeScript two-room bridge using completed Phase 2 native services. Broader SDK/TSX/Lua and graphical-client work is not a prerequisite."
     },
     {
       "id": "AUTHOR-TOWN",
       "milestone": "expanded",
       "tasks": [
-        "P02A-T15",
-        "P02A-T25",
-        "P02A-T28",
-        "P02A-T40",
-        "P02A-T41",
+        "P07-T18",
+        "P07-T19",
+        "P02A-T23",
+        "P07-T20",
+        "P02A-T35",
         "P07-T01",
+        "P07-T23",
+        "P07-T24",
+        "P07-T25",
+        "P07-T26",
+        "P07-T27",
         "P07-T15",
         "P07-T16",
-        "P07-T17",
-        "P07-T18",
-        "P07-T19"
+        "P07-T21",
+        "P07-T22"
       ],
       "preconditions": [
-        "Early bridge gates passed and Phase 7 deterministic Lua extension API implemented",
+        "Phase 2A bridge fully completed and Phase 7 deterministic Lua extension API implemented",
         "Supported battle/quest capabilities declared without invented original semantics"
       ],
       "stimulus": [
         "Agent authors/revises a small town or dungeon with branching quest, optional encounter, custom Lua and failure/retry paths",
-        "Test reference validity, analyzable graph reachability, gameplay, saves/rewind, rewards and presentation separately",
+        "Test reference validity, analyzable graph reachability, gameplay, ordinary saves/exact snapshots, rewards and presentation separately",
         "Run multiple seeds/player policies for declared balance observations"
       ],
       "acceptance": [
         "Legal native completion and failure/retry paths pass with source and stable IDs preserved",
         "Lua tasks/errors/state participate in native introspection, permissions, snapshots and scheduler",
-        "No duplicated reward or lost quest progress after save/rewind/re-entry",
+        "No duplicated reward or lost quest progress after save/exact-snapshot/re-entry",
         "Graph checks do not claim proof of arbitrary scripts or balance; seed/policy and human-time assumptions are reported"
       ],
       "artifacts": [
         "town/dungeon source",
         "quest/Lua inspection traces",
         "per-policy run manifests",
-        "save/rewind/retry results",
+        "save/snapshot/retry results",
         "presentation review"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": 7,
+      "regression_tasks": [
+        "P08-T13"
+      ],
+      "scope": "Phase 7 proves the expanded town/dungeon SDK, Lua and ordinary save/exact-snapshot behavior. Phase 8 separately verifies player rewind with the same examples."
     },
     {
-      "id": "AUTHOR-EDITORS",
+      "id": "AUTHOR-LEVEL-EDITORS",
       "milestone": "expanded",
       "tasks": [
-        "P02A-T27",
-        "P02A-T29",
-        "P02A-T30",
+        "P02A-T22",
+        "P02A-T24",
+        "P02A-T25",
         "P11-T01",
-        "P12-T01",
         "P11-T13",
         "P11-T14",
         "P11-T15",
         "P11-T16",
-        "P11-T17",
-        "P12-T11"
+        "P11-T17"
       ],
       "preconditions": [
-        "Shared source/compiler/validation services and graphical editor clients implemented",
+        "The completed shared source/compiler/validation services and Phase 11 level/cutscene editor clients",
         "Handwritten components and parameterized source with unrelated human edits"
       ],
       "stimulus": [
         "Perform equivalent agent and graphical edits, build and test the resulting content",
-        "Exercise undo, revision conflicts and targeted edits to levels/cutscenes/battles/minigames",
+        "Exercise undo, revision conflicts and targeted edits to levels/cutscenes",
         "Round-trip supported parameter edits while retaining custom code"
       ],
       "acceptance": [
@@ -518,7 +551,44 @@
         "native family scenario results"
       ],
       "status": "defined",
-      "evidence": []
+      "evidence": [],
+      "owner_phase": 11,
+      "scope": "Complete source-preserving level and cutscene graphical editing in Phase 11; no Phase 12 rules editor is required."
+    },
+    {
+      "id": "AUTHOR-RULE-EDITORS",
+      "milestone": "expanded",
+      "tasks": [
+        "P12-T01",
+        "P12-T11",
+        "P12-T12"
+      ],
+      "preconditions": [
+        "Completed Phase 11 shared editor shell/services and Phase 12 battle/minigame graphical clients",
+        "Handwritten components and parameterized source with unrelated human edits"
+      ],
+      "stimulus": [
+        "Perform equivalent agent and graphical edits, build and test the resulting content",
+        "Exercise undo, revision conflicts and targeted edits to battles/minigames",
+        "Round-trip supported parameter edits while retaining custom code"
+      ],
+      "acceptance": [
+        "Every content operation has the same headless semantic service and validation behavior",
+        "Graphical panels do not own private game/compiler contracts or silently flatten source into generated data",
+        "Unrelated custom code and stable IDs survive supported edits; arbitrary TypeScript round-trip remains explicitly unsupported",
+        "Each implemented content family remains natively playable, inspectable and testable without engine C++ rebuilds"
+      ],
+      "artifacts": [
+        "equivalent client transactions",
+        "source-preservation diff",
+        "undo/conflict results",
+        "shared build hashes",
+        "native family scenario results"
+      ],
+      "status": "defined",
+      "evidence": [],
+      "owner_phase": 12,
+      "scope": "Complete battle/minigame graphical editing in Phase 12 using the already-completed shared editor foundation."
     }
   ]
 }

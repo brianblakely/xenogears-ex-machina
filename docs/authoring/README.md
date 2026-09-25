@@ -3,10 +3,26 @@
 This is the Phase 0 design and dependency qualification, not an implemented SDK.
 No `xem-content` command, source editor, isolated build service, authored-package
 loader or playable authored world exists yet. The [machine-readable contract](contract.json)
-and [acceptance gates](acceptance.json) specify what Phases 2A–3 and 7 must prove.
+and [acceptance gates](acceptance.json) specify what sequential Phases 2A, 3 and 7 must prove.
 Passing the repository tests proves specification integrity only. The independent
 original-game evidence and [native-agent contract](../agent/README.md) still govern
 the underlying game; generated examples cannot supply an original-behavior oracle.
+
+## Sequential milestone ownership
+
+Phase 2 completes the shared native field, event, persistence and agent services.
+Phase 2A then completes the ordinary-TypeScript two-room bridge, all bridge gates,
+and its entire checklist before Phase 3 integrates the original-game slice.
+Phase 7 owns the expanded component catalog/SDK, TSX adapter, Lua authoring,
+incremental reload and town/dungeon demonstration. Phase 8 adds actual player
+rewind tests. Phase 11 completes level/cutscene graphical clients; Phase 12
+completes battle/minigame graphical clients with a separate acceptance gate.
+There is no early phase exit or broader Phase 2A checklist left open afterward.
+
+The contract below describes the eventual shared product. A gate's `owner_phase`
+and `tasks` identify its initial executable scope; `regression_tasks` identify
+later extensions, not hidden prerequisites. Unavailable operations remain explicit
+until the owning sequential checklist implements and verifies them.
 
 ## Selected stack and separately reviewed dependencies
 
@@ -150,7 +166,7 @@ Structured diagnostics contain code, stage, severity, source span, object/operat
 IDs, expected/observed values and a reproducible scenario. Missing source attribution
 is an explicit diagnostic limit, not a fabricated location.
 
-The [early gates](acceptance.json) require both a minimal wall/door/pickup and a
+The [Phase 2A bridge gates](acceptance.json) require both a minimal wall/door/pickup and a
 two-room environment with an arch, elevation, custom object, dialogue and a one-time
 reward. Generate that geometry from source without imports. Test a separate variant
 with a redistributable model, and local original references when qualified. Walk

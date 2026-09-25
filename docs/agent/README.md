@@ -1,5 +1,12 @@
 # Native agent contract 0.1
 
+Execution ownership follows the sequential plan. Phase 2 proves the complete
+minimum native field/event/persistence and agent foundation; Phase 3 adds the
+original slice's battle/menu/media integration; Phase 4 completes every original
+subsystem; Phase 7 implements Lua. Acceptance gates list their initial owner and
+separate later regression tasks. Unavailable families are explicit errors, not
+empty successful implementations. No later checklist is an earlier phase exit.
+
 This is the Phase 0 architecture specification. `xem-baseline` still implements
 only help/version; no native game, agent server, debug service or spectator is
 implemented. The schemas and public tests below validate this contract, not

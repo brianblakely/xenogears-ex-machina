@@ -1,4 +1,4 @@
-"""Reject missing Phase 1 proof domains and false deferred-work completion."""
+"""Reject missing Phase 1 proof domains and false checklist completion."""
 
 from __future__ import annotations
 
@@ -21,33 +21,25 @@ class Phase1SliceGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "missing or changed required proof"):
             validate_structure(matrix)
 
-    def test_dropped_broad_facet_is_rejected(self) -> None:
+    def test_dropped_slice_facet_is_rejected(self) -> None:
         matrix = build_matrix()
         matrix["phase1_slice"]["facet_dispositions"].pop()
-        with self.assertRaisesRegex(ValueError, "dropped or unknown broad facet"):
+        with self.assertRaisesRegex(ValueError, "dropped or unknown slice facet"):
             validate_structure(matrix)
 
-    def test_deferred_facet_cannot_be_passed(self) -> None:
+    def test_phase1_facet_cannot_be_deferred(self) -> None:
         matrix = build_matrix()
-        deferred = next(
-            d["facet"]
-            for d in matrix["phase1_slice"]["facet_dispositions"]
-            if d["disposition"] == "deferred"
-        )
-        next(r for r in matrix["requirements"] if r["id"] == deferred)["status"] = "passed"
-        with self.assertRaisesRegex(ValueError, "deferred facet cannot be passed"):
+        disposition = matrix["phase1_slice"]["facet_dispositions"][0]
+        disposition["disposition"] = "deferred"
+        with self.assertRaisesRegex(ValueError, "every Phase 1 facet is required"):
             validate_structure(matrix)
 
-    def test_deferred_task_cannot_be_checked(self) -> None:
+    def test_partial_slice_task_cannot_be_checked(self) -> None:
         matrix = build_matrix()
-        deferred = next(
-            d["facet"]
-            for d in matrix["phase1_slice"]["facet_dispositions"]
-            if d["disposition"] == "deferred"
-        )
-        task = deferred.rsplit("-", 1)[0]
+        missing = matrix["phase1_slice"]["facet_dispositions"][0]["facet"]
+        task = missing.rsplit("-", 1)[0]
         for row in matrix["requirements"]:
-            if row["source_id"] == task and row["id"] != deferred:
+            if row["source_id"] == task and row["id"] != missing:
                 row["status"] = "passed"
         text = (ROOT / "plan.md").read_text()
         original = matrix["source_snapshot"]["tasks"][task]
@@ -84,7 +76,7 @@ class Phase1SliceGateTests(unittest.TestCase):
         self.assertEqual(target_scope("P02-T04"), ["arch-vulkan"])
         self.assertEqual(target_scope("P06-T03"), ["windows-d3d12"])
         self.assertEqual(target_scope("P13-T03"), ["macos-metal"])
-        self.assertEqual(target_scope("P04-T01"), ["arch-vulkan", "windows-d3d12", "macos-metal"])
+        self.assertEqual(target_scope("P04-T05"), ["arch-vulkan", "windows-d3d12", "macos-metal"])
 
 
 if __name__ == "__main__":

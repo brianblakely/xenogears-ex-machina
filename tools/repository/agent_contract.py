@@ -355,8 +355,22 @@ def validate(root: Path, matrix: dict) -> dict:
     acceptance = read(root, "docs/agent/acceptance.json")
     gates = {gate["id"]: gate for gate in acceptance["gates"]}
     require(len(gates) == len(acceptance["gates"]), "duplicate acceptance gate")
+    order = matrix["source_snapshot"]["phases"]
     for gate in gates.values():
         require(gate["tasks"] and set(gate["tasks"]) <= tasks.keys(), "unmapped native gate")
+        owner = "P" + str(gate["owner_phase"]).zfill(2)
+        require(owner in order, "unknown native gate phase owner")
+        require(
+            all(order.index(task.split("-T")[0]) <= order.index(owner) for task in gate["tasks"]),
+            "native gate requires a later phase task",
+        )
+        require(
+            all(
+                task in tasks and order.index(task.split("-T")[0]) > order.index(owner)
+                for task in gate.get("regression_tasks", [])
+            ),
+            "native regression task must belong to a later phase",
+        )
         require(
             all(gate.get(key) for key in ("preconditions", "stimulus", "acceptance", "artifacts")),
             "gate lacks an executable acceptance obligation",
@@ -370,6 +384,11 @@ def validate(root: Path, matrix: dict) -> dict:
             acceptance[key] and set(acceptance[key]) <= gates.keys(), "missing architecture gate"
         )
     require(acceptance["phase3_required"] == ["GATE-FIRST-SLICE"], "first-slice gate omitted")
+    require(
+        all(gates[key]["owner_phase"] == 2 for key in acceptance["phase2_required"]),
+        "Phase 2 native gate moved to a later owner",
+    )
+    require(gates["GATE-FIRST-SLICE"]["owner_phase"] == 3, "first-slice gate owner changed")
     first_slice = gates["GATE-FIRST-SLICE"]
     phase3_exit = next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == 3)
     require(
@@ -406,6 +425,8 @@ def validate(root: Path, matrix: dict) -> dict:
         require(current.get(key) == result, f"historical result reassigned or lost: {key}")
     for key, result in history["authoring_expansion"]["preserved_results"].items():
         require(current.get(key) == result, f"pre-authoring result reassigned or lost: {key}")
+    for key, result in history["sequential_phases"]["preserved_results"].items():
+        require(current.get(key) == result, f"sequential plan lost original evidence: {key}")
     return {
         "specified_methods": len(methods),
         "native_acceptance_gates_defined": len(gates),

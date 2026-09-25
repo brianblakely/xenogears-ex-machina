@@ -2,7 +2,7 @@
   "schema_version": 1,
   "contract_version": "0.1.0",
   "implementation_status": "specified_not_implemented",
-  "scope": "Phase 0 source/build/runtime and untrusted-build requirements; dependency qualification is not SDK or native execution.",
+  "scope": "Project-wide source/build/runtime contract. Phase 2 supplies native prerequisites; Phase 2A completes the finite TypeScript bridge; Phase 7 completes the expanded SDK/Lua; Phase 8 verifies player rewind; Phases 11 and 12 complete their respective graphical clients. These phases execute sequentially.",
   "authoritative_sources": ["typescript", "explicit_json_parameters", "lua_modules", "source_assets"],
   "derived_outputs": ["world_ir", "normalized_meshes", "collision_data", "event_instructions", "glb_assets", "content_package", "source_maps", "build_report"],
   "source_identity": {
@@ -108,7 +108,7 @@
     "captures": "optional_native_renderer",
     "statuses": ["passed", "failed", "timed_out", "cancelled", "unsupported"],
     "run_artifacts": ["source_revision", "toolchain_hash", "engine_version", "package_hash", "harness_hash", "seed", "initial_state", "setup_provenance", "ordered_actions", "applied_ticks", "state_hashes", "assertions", "coverage", "diagnostics", "terminal_result", "replay", "optional_captures"],
-    "early_gate_ids": ["AUTHOR-BUILD", "AUTHOR-ISOLATION", "AUTHOR-PACKAGE", "AUTHOR-GEOMETRY", "AUTHOR-MINIMAL", "AUTHOR-TWO-ROOM", "AUTHOR-MIXED-ASSETS", "AUTHOR-PLAY", "AUTHOR-REPAIR", "AUTHOR-REVISION", "AUTHOR-EVENT-STATE", "AUTHOR-DELIVERY"],
-    "expanded_gate_ids": ["AUTHOR-TOWN", "AUTHOR-EDITORS"]
+    "bridge_gate_ids": ["AUTHOR-BUILD", "AUTHOR-ISOLATION", "AUTHOR-PACKAGE", "AUTHOR-GEOMETRY", "AUTHOR-MINIMAL", "AUTHOR-TWO-ROOM", "AUTHOR-MIXED-ASSETS", "AUTHOR-PLAY", "AUTHOR-REPAIR", "AUTHOR-REVISION", "AUTHOR-EVENT-STATE", "AUTHOR-DELIVERY"],
+    "expanded_gate_ids": ["AUTHOR-TOWN", "AUTHOR-LEVEL-EDITORS", "AUTHOR-RULE-EDITORS"]
   }
 }
