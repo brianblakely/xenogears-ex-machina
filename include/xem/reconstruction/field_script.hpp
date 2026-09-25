@@ -188,6 +188,8 @@ void execute_script_extended(FieldWorld &world, std::uint8_t opcode);
                                          std::uint32_t flags, std::uint32_t bit);
 // Field 8009cdb4: ff/fe/fd select party slots, fb the current actor.
 [[nodiscard]] std::int32_t resolve_script_actor(const FieldWorld &world, std::uint32_t offset);
+// 80071e58: start fading channel 0 back in over `frames` frames, once.
+void begin_fade_out(FieldFade &fade, std::int32_t frames);
 // Field 80099a04: GTE Square0 of signed halfword components, sum, 80048c4c.
 [[nodiscard]] std::int32_t script_distance(std::int32_t dx, std::int32_t dy, std::int32_t dz,
                                            std::span<const std::int16_t> square_root);

@@ -444,17 +444,7 @@ void start_fade_out(FieldWorld &world) {
     auto &fade = world.fade;
     auto &channel = fade.channels[0];
     prepare_fade(channel);
-    const auto frames = immediate15_or_variable(world, 1);
-    if (fade.started != 0) {
-        fade.started = 0;
-        if (fade.mode == 2) {
-            if (frames == 0)
-                throw EventError("Original fade division by zero is not a recovered result");
-            const auto rate = static_cast<std::uint32_t>(-0x10000 / frames);
-            channel.words = {0xff00, 0xff00, 0xff00, rate, rate, rate};
-            channel.halves = {2, 1, static_cast<std::uint16_t>(frames)};
-        }
-    }
+    begin_fade_out(fade, immediate15_or_variable(world, 1));
     set_pc(world, pc(world) + 3U);
 }
 
@@ -492,6 +482,20 @@ void arithmetic(FieldWorld &world, bool divide) {
     set_pc(world, pc(world) + 6U);
 }
 } // namespace
+
+void begin_fade_out(FieldFade &fade, std::int32_t frames) {
+    auto &channel = fade.channels[0];
+    if (fade.started != 0) {
+        fade.started = 0;
+        if (fade.mode == 2) {
+            if (frames == 0)
+                throw EventError("Original fade division by zero is not a recovered result");
+            const auto rate = static_cast<std::uint32_t>(-0x10000 / frames);
+            channel.words = {0xff00, 0xff00, 0xff00, rate, rate, rate};
+            channel.halves = {2, 1, static_cast<std::uint16_t>(frames)};
+        }
+    }
+}
 
 std::int32_t resolve_script_actor(const FieldWorld &world, std::uint32_t offset) {
     const auto selector = world.program.byte(pc(world) + offset);

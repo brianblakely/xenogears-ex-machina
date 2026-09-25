@@ -376,6 +376,18 @@ Program import_field(const OriginalMemory &memory, std::span<const std::uint8_t>
     // the draw-mode packets (twelve bytes each, 16 per buffer).
     state.regions.add("compass", 0x800b06bc, copy_of(memory.range(0x800b06bc, 0x19 * 0x70)));
     state.regions.add("draw_modes", 0x800b1df4, copy_of(memory.range(0x800b1df4, 0x180)));
+    // The field reload's transition quads: draw modes, packets and corners.
+    state.regions.add("reload_transition", 0x800b11ac,
+                      copy_of(memory.range(0x800b11ac, 0x800b14a4 - 0x800b11ac)));
+    // While particles pause (800adb34), the VRAM 800a915c saved: its heap block.
+    if (auto &reload = state.reload; state.particles_paused == 1) {
+        const auto header = resident.heap.headers.find(reload.vram_save_address - 8);
+        if (header == resident.heap.headers.end())
+            throw field::FieldFormatError("The saved VRAM is not a heap block");
+        reload.vram_save = {reload.vram_save_address,
+                            copy_of(memory.range(reload.vram_save_address,
+                                                 header->second[0] - 8 - reload.vram_save_address))};
+    }
     // The sprite system's per-buffer arenas (packets and upload nodes).
     for (const auto arena : resident.sprite_arenas)
         if (arena != 0)
@@ -607,6 +619,8 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("heap_held", address, held);
     for (const auto &block : resident.disc_transfers)
         out.bytes("disc_transfer", block.address, block.bytes);
+    for (const auto &[address, bytes] : resident.heap_contents)
+        out.bytes("heap_contents", address, bytes);
 }
 } // namespace
 
@@ -830,6 +844,36 @@ std::vector<OwnedRange> export_menu(const Program &program, OriginalMemory &memo
     return std::move(out.owned);
 }
 
+void import_heap_contents(Program &program, const OriginalMemory &memory) {
+    auto scratch = memory;
+    const auto owned =
+        program.field ? export_field(program, scratch) : export_resident(program, scratch);
+    std::map<std::uint32_t, std::uint32_t> claimed; // start -> end
+    for (const auto &range : owned)
+        claimed.emplace(range.address, range.address + static_cast<std::uint32_t>(range.size));
+    auto &resident = program.resident;
+    for (const auto &[header, words] : resident.heap.headers) {
+        const auto tag = words[1] & reconstruction::resident::heap_tag_mask;
+        if (tag == 0 || tag == reconstruction::resident::heap_end_tag)
+            continue;
+        const auto end = words[0] - 8;
+        auto at = header + 8;
+        // Claims are disjoint: walk the ones that overlap the block.
+        auto claim = claimed.upper_bound(at);
+        if (claim != claimed.begin() && std::prev(claim)->second > at)
+            --claim;
+        while (at < end) {
+            const auto next = claim != claimed.end() && claim->first < end ? claim->first : end;
+            if (next > at)
+                resident.heap_contents[at] = copy_of(memory.range(at, next - at));
+            if (claim == claimed.end() || claim->first >= end)
+                break;
+            at = std::max(at, claim->second);
+            ++claim;
+        }
+    }
+}
+
 std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &memory) {
     if (!program.field)
         throw field::FieldFormatError("Export requires field state");
@@ -857,9 +901,11 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
     }
     out.bytes("variables", variable_bank, variables);
     out.bytes("history_ring", history_ring, state.history_ring);
-    out.bytes("collision_component", state.collision_address, state.collision_component);
+    if (!state.collision_component.empty())
+        out.bytes("collision_component", state.collision_address, state.collision_component);
     out.bytes("replay_widths", replay_widths, state.replay_widths);
-    out.bytes("messages", state.messages_address, state.messages);
+    if (!state.messages.empty())
+        out.bytes("messages", state.messages_address, state.messages);
     for (const auto &blocks : state.dialogue_blocks)
         for (const auto &block : blocks)
             out.bytes("dialogue_block", block.address, block.bytes);
@@ -869,6 +915,8 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes(region.name, address, region.bytes);
     for (const auto &piece : state.pieces)
         out.bytes("descriptor", piece.address, piece.descriptor);
+    if (const auto &saved = state.reload.vram_save; !saved.bytes.empty())
+        out.bytes("vram_save", saved.address, saved.bytes);
     for (const auto &node : resident.sprite_tasks.nodes)
         out.bytes("sprite_task_block", node.address, node.bytes);
     if (state.published_actor) {

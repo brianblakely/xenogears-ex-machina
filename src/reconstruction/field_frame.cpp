@@ -162,6 +162,12 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
         if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
             !bytes.empty())
             return bytes;
+    // Allocated heap bytes no other value interprets.
+    if (const auto after = resident.heap_contents.upper_bound(address);
+        after != resident.heap_contents.begin())
+        if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
+            !bytes.empty())
+            return bytes;
     return {};
 }
 

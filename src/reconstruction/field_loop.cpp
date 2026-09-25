@@ -159,10 +159,9 @@ void Program::record_play_state() {
     save_field_departure(); // 800a30fc
     resident.w_4f2f4 = 0;
     ++resident.w_4f318;
-    for (std::size_t slot = 0; slot < 3; ++slot)
+    for (std::uint32_t slot = 0; slot < 3; ++slot)
         if (data[0x22b1 + slot] == 1)
-            unrecovered("record_play_state", 0x8009fee4, "symbol:field-8009fee4",
-                        "The party member record of 8009fee4 is not recovered");
+            party_record(slot); // 8009fee4
     auto &variables = resident.variables;
     // Every 31st call steps variable 10 (low byte to 60, then the high byte),
     // or counts it down when 8004f328 has bit 4; bit 80 stops it.
@@ -261,13 +260,7 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
             resident.b_59171 = static_cast<std::uint8_t>(state.script_flag_b236c);
         }
     }
-    // 80078b5c: advance rand (8003fa38); 8004f308 at -1 asks 80085c90.
-    resident.random_seed = resident.random_seed * 0x41c64e6dU + 12345U;
-    if (s32(resident.music.gate) == -1)
-        unrecovered("field_music_step", 0x80078b88, "symbol:field-80085c90",
-                    "The music step 80085c90 is not recovered");
-    if (state.camera_cut != 0)
-        --state.camera_cut;
+    field_post_frame(); // 80078b5c
     observed(observe, *this, {"field_loop_tail", 0x80078b5c, {}, {}});
     // 80078174: 80035734(0) is zero without a controller in port 1.
     if (resident.pad.buffers[0][0] == 0xff)
@@ -283,10 +276,27 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
     if (resident.input_queue.current[0] == 0x90c)
         unrecovered("soft_reset", 0x80019cb8, "symbol:soft-reset-80019cd0",
                     "The soft reset (80019cd0) is not recovered");
-    // 80077dac.
-    state.frame_start_hcount = take_service(services.hblank_counts, "VSync(1) in 80077dac");
-    deliver_arrivals(0x80077db4);
-    // 80073fe0 -> 80073f50: swap the draw buffer and clear its tables.
+    field_pre_frame(services); // 80077dac
+    observed(observe, *this, {"field_between_frames", 0x800782dc, {}, {}});
+}
+
+// 80078b5c: advance rand (8003fa38); 8004f308 at -1 asks 80085c90.
+void Program::field_post_frame() {
+    auto &state = loaded(*this);
+    resident.random_seed = resident.random_seed * 0x41c64e6dU + 12345U;
+    if (s32(resident.music.gate) == -1)
+        unrecovered("field_music_step", 0x80078b88, "symbol:field-80085c90",
+                    "The music step 80085c90 is not recovered");
+    if (state.camera_cut != 0)
+        --state.camera_cut;
+}
+
+// 80073fe0 -> 80073f50: swap the draw buffer and clear its tables.
+void Program::swap_draw_buffer() {
+    auto &state = loaded(*this);
+    if (state.event_control.diagnostic_suppression == 0)
+        unrecovered("swap_draw_buffer", 0x80073f64, "symbol:break-80073f64",
+                    "The diagnostic build's break is not a recovered result");
     const auto buffer = s32(state.draw_buffer) + 1;
     state.draw_buffer = static_cast<std::uint32_t>(buffer % 2);
     state.draw_block = 0x800b249cU + 0x80f4U * state.draw_buffer;
@@ -294,13 +304,22 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
     clear_ordering_table(state.draw_block + 0xccU, 0x1000);
     if (state.w_adb4c != 0)
         clear_ordering_table(state.draw_block + 0x40d0U, 0x1000);
+}
+
+void Program::field_pre_frame(FrameServices &services) {
+    auto &state = loaded(*this);
+    state.frame_start_hcount = take_service(services.hblank_counts, "VSync(1) in 80077dac");
+    deliver_arrivals(0x80077db4);
+    swap_draw_buffer(); // 80073fe0
     deliver_arrivals(0x80077dcc);
     drain_pad();
     deliver_arrivals(0x80074700);
     deliver_arrivals(0x800a31e8);
+    if (state.event_control.diagnostic_suppression == 0)
+        unrecovered("field_pre_frame", 0x80077df0, "symbol:field-debug-80281b00",
+                    "The diagnostic overlay call 80281b00 is not recovered");
     record_play_state();
     deliver_arrivals(0x80077dac);
-    observed(observe, *this, {"field_between_frames", 0x800782dc, {}, {}});
 }
 
 void Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {

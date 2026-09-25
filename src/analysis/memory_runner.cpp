@@ -32,6 +32,22 @@ std::vector<std::uint8_t> read_file(const char *path, std::size_t maximum) {
         throw InputError(std::string("Oversized input ") + path);
     return bytes;
 }
+std::vector<std::uint8_t> unhex(std::string_view text) {
+    if (text.size() % 2 != 0)
+        throw InputError("Odd hexadecimal byte string");
+    std::vector<std::uint8_t> bytes;
+    bytes.reserve(text.size() / 2);
+    const auto digit = [](char c) -> std::uint8_t {
+        if (c >= '0' && c <= '9')
+            return static_cast<std::uint8_t>(c - '0');
+        if (c >= 'a' && c <= 'f')
+            return static_cast<std::uint8_t>(c - 'a' + 10);
+        throw InputError("Malformed hexadecimal byte string");
+    };
+    for (std::size_t i = 0; i < text.size(); i += 2)
+        bytes.push_back(static_cast<std::uint8_t>(digit(text[i]) << 4U | digit(text[i + 1])));
+    return bytes;
+}
 std::string hex(std::span<const std::uint8_t> bytes) {
     constexpr char digits[] = "0123456789abcdef";
     std::string result;
@@ -162,9 +178,16 @@ int run_case(int argc, char **argv) {
         const bool transition_entry = entry == "field_save" || entry == "field_preload" ||
                                       entry == "field_map_change_step" ||
                                       entry == "field_map_change_start";
+        // The field reload 800a5c40 and the steps around each field frame.
+        const bool reload_entry = entry == "field_pre_frame" || entry == "field_post_frame" ||
+                                  entry == "field_reload_draw" || entry == "field_reload_shade" ||
+                                  entry == "field_reload_fade_in" ||
+                                  entry == "field_reload_fade_frame" ||
+                                  entry == "field_reload_finish" ||
+                                  entry == "field_reload_teardown";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry)
+            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -239,6 +262,9 @@ int run_case(int argc, char **argv) {
         std::ranges::copy(io, program->resident.io.begin());
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
+        // A field teardown releases whole heap blocks: own all their bytes.
+        if (entry == "field_reload_teardown")
+            analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
         // line starts the next main-loop iteration of "field_frames": the
@@ -275,6 +301,13 @@ int run_case(int argc, char **argv) {
                     services.interrupt_masks.push_back(first);
                 else if (name == "gpu_info")
                     services.gpu_info.push_back(first);
+                else if (name == "vram_read") {
+                    // "vram_read WORDS HEX": the read-back's bytes.
+                    std::string text;
+                    if (!(fields >> text) || text.size() != std::size_t{first} * 8U)
+                        throw InputError("Malformed VRAM read-back");
+                    services.vram_reads.push_back(unhex(text));
+                }
                 else
                     throw InputError("Unknown service result " + name);
             }
@@ -375,6 +408,27 @@ int run_case(int argc, char **argv) {
             // 8001b484: A0 map data id, A1 slot.
             return_value =
                 static_cast<std::uint32_t>(program->preload_field(registers[4], registers[5]));
+        } else if (entry == "field_pre_frame") {
+            program->field_pre_frame(services); // 80077dac
+        } else if (entry == "field_post_frame") {
+            program->field_post_frame(); // 80078b5c
+        } else if (entry == "field_reload_draw") {
+            program->reload_transition_draw(); // 800a6408
+        } else if (entry == "field_reload_shade") {
+            // 800a5600(S1 >> 16): the argument is formed in the call's delay slot.
+            program->reload_transition_shade(
+                static_cast<std::uint32_t>(static_cast<std::int32_t>(registers[17]) >> 16));
+        } else if (entry == "field_reload_fade_in") {
+            program->field_reload_fade_in(services, observer); // 800a6120..800a63a0
+        } else if (entry == "field_reload_fade_frame") {
+            // One pass from the loop head 800a6148; S1 holds the shade.
+            return_value = static_cast<std::uint32_t>(program->field_reload_fade_frame(
+                services, static_cast<std::int32_t>(registers[17]), observer));
+        } else if (entry == "field_reload_teardown") {
+            program->field_reload_teardown(services, observer); // From 800a5c40
+        } else if (entry == "field_reload_finish") {
+            // 800a63a0..800a6400; SP is the reload's frame.
+            program->field_reload_finish(services, registers[29]);
         } else if (entry == "field_map_change_step") {
             program->field_map_change_step(); // 80078494..80078558 of 80077e88
         } else if (entry == "field_map_change_start") {

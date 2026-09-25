@@ -60,6 +60,19 @@ const OriginalRegions::Region *OriginalRegions::find(std::uint32_t address, std:
     return &found->second;
 }
 
+std::span<std::uint8_t> OriginalRegions::span(std::uint32_t address) {
+    std::uint32_t offset = 0;
+    const auto *region = find(address, 1, offset);
+    if (region == nullptr)
+        return {};
+    return std::span(const_cast<Region *>(region)->bytes).subspan(offset);
+}
+
+void OriginalRegions::remove(std::uint32_t address, std::size_t size) {
+    regions_.erase(regions_.lower_bound(address),
+                   regions_.lower_bound(address + static_cast<std::uint32_t>(size)));
+}
+
 bool OriginalRegions::contains(std::uint32_t address, std::size_t width) const {
     std::uint32_t offset = 0;
     return find(address, width, offset) != nullptr;

@@ -126,6 +126,28 @@ RESIDENT_ENTRIES = (
 )
 # Field entries besides the update and move phases.
 FIELD_ENTRIES = ("field_event_extended", "movie_decision")
+# The field reload 800a5c40 and the steps around each field frame. Their
+# platform results are the service records inside the call (see
+# `call_services`).
+RELOAD_ENTRIES = (
+    "field_pre_frame",
+    "field_post_frame",
+    "field_reload_draw",
+    "field_reload_shade",
+    "field_reload_fade_in",
+    "field_reload_fade_frame",
+    "field_reload_finish",
+    "field_reload_teardown",
+)
+# 80077dac in the reload's fade-in loop: the loop head before it and the
+# return after it. Its VSync(1) result goes straight to 800adb9c, which the
+# return's image holds.
+STEP_ENTRY, STEP_EXIT = "f-head", "f-7dac"
+FRAME_START_HCOUNT = 0x800ADB9C
+# StoreImage read-backs without a service hook: the hook after the transfer
+# completes, the word naming the destination and the byte count. 800a915c
+# saves 40h x 100h of VRAM into the block at 800afc70 before t-b.
+VRAM_READS = {"t-b": (0x800AFC70, 0x8000)}
 
 # Platform inputs. A hook named `load-SITE` sits on the instruction after the
 # original hardware load at SITE (hex); the loaded value is that load's target
@@ -171,6 +193,10 @@ def service_line(row: dict) -> str | None:
     if hook == "vsync0-return":
         hcount, counter = range_words("vsync-state")
         return f"vblank_wait {hcount:x} {counter:x}"
+    if hook == "vsync0-wait":
+        # Inside VSync (8004b674) after a wait: 80057848 is stored and V1
+        # holds root counter 1, stored next at 80057844.
+        return f"vblank_wait {registers[3]:x} {range_words('vsync-state')[1]:x}"
     if hook == "alarm":
         return f"vblank {registers[2]:x}"
     if hook in ("sync-return", "dws-return"):
@@ -220,6 +246,99 @@ def frame_services(
     if lines is not None:
         result[key] = (start, lines)
     return result
+
+
+def call_services(
+    rows: list[dict], snapshots, entry_row: dict, exit_row: dict, interrupts
+) -> list[str]:
+    """Service results of one call, in order, outside interrupt brackets.
+
+    The VSync(1) of 80077dac has no service hook: it is the value the step
+    stores at 800adb9c, read from the image at the step's return. StoreImage
+    read-backs are the destination's bytes in the image of the first hook
+    after the transfer (VRAM_READS).
+    """
+    starts = {entry for entry, _ in interrupts}
+    ends = {exit for _, exit in interrupts}
+    clears = otc_alarms(rows, entry_row, exit_row, interrupts)
+    lines, depth = [], 0
+    for index, row in enumerate(rows):
+        if not entry_row["event"] <= row["event"] <= exit_row["event"]:
+            continue
+        hook = row["hook"]
+        if hook in VRAM_READS and row["event"] > entry_row["event"]:
+            pointer, size = VRAM_READS[hook]
+            ram = snapshots.read(row)[0]
+            at = u32(ram, pointer) & 0x1FFFFF
+            lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+        if row["event"] == exit_row["event"]:
+            continue
+        if hook in starts:
+            depth += 1
+        elif hook in ends:
+            depth -= 1
+        elif depth == 0:
+            if hook == STEP_ENTRY:
+                after = next((r for r in rows[index + 1 :] if r["hook"] == STEP_EXIT), None)
+                require(after is not None, "A pre-frame step has no recorded return")
+                ram = snapshots.read(after)[0]
+                lines.append(f"hblank {u32(ram, FRAME_START_HCOUNT & 0x1FFFFF):x}")
+            # ClearOTagR's alarm reads VSync(-1) itself.
+            if row["event"] in clears:
+                continue
+            item = service_line(row)
+            if item is not None:
+                lines.append(item)
+    return lines
+
+
+def otc_alarms(rows: list[dict], entry_row: dict, exit_row: dict, interrupts) -> set[int]:
+    """Events of the call's libgpu alarms that belong to ClearOTagR (80044ad8).
+
+    Each draw-buffer swap (80073fe0) clears its tables back to back: first
+    from 80073f50, then from 80073fe0 itself, a frame of 18h higher, with no
+    other service between them. The alarm hook records no caller, so these
+    runs of consecutive alarms identify the clears.
+    """
+    starts = {entry for entry, _ in interrupts}
+    ends = {exit for _, exit in interrupts}
+    services, depth = [], 0
+    for row in rows:
+        if not entry_row["event"] <= row["event"] < exit_row["event"]:
+            continue
+        if row["hook"] in starts:
+            depth += 1
+        elif row["hook"] in ends:
+            depth -= 1
+        elif depth == 0 and service_line(row) is not None:
+            services.append(row)
+    clears = set()
+    for k in range(len(services) - 1):
+        low, high = services[k], services[k + 1]
+        if not (
+            low["hook"] == high["hook"] == "alarm"
+            and visible_registers(high)[29] == visible_registers(low)[29] + 0x18
+        ):
+            continue
+        clears.update({low["event"], high["event"]})
+        # A third clear (the second model table) repeats the frame before it.
+        if (
+            k + 2 < len(services)
+            and services[k + 2]["hook"] == "alarm"
+            and visible_registers(services[k + 2])[29] == visible_registers(high)[29]
+        ):
+            clears.add(services[k + 2]["event"])
+    return clears
+
+
+def assumed_otc_reads(rows: list[dict], entry_row: dict, exit_row: dict, interrupts) -> list[str]:
+    """One idle DMA6 busy read (80045de4) per ClearOTagR of the call.
+
+    The shared reload capture records no hardware loads; with
+    --assume-idle-otc each ordering-table clear's first busy poll is supplied
+    as idle, which the zero poll count after every clear agrees with.
+    """
+    return ["read 80045de4 00000000"] * len(otc_alarms(rows, entry_row, exit_row, interrupts))
 
 
 def visible_registers(row: dict) -> list[int]:
@@ -273,7 +392,9 @@ def pairs(
     that is presentation.
 
     With `entry_repeats` the entry hook is a loop head: its repeated records
-    inside a call belong to that call.
+    inside a call belong to that call. An entry hook that is also the exit
+    hook heads a loop whose passes are the calls; an outcome hook ends the
+    last pass.
     """
     interrupts = tuple(interrupts) + tuple(presentation)
     presented = {entry for entry, _ in presentation}
@@ -302,6 +423,12 @@ def pairs(
             if pending is not None:
                 handlers.append((entry, row))
         elif row["hook"] == entry_hook:
+            # An entry hook that is also the exit hook heads a loop: each
+            # pass closes the previous one.
+            if entry_hook == exit_hook and pending is not None:
+                require(not open_handlers, "Call exit inside interrupt code")
+                result.append((pending, row, merge_brackets(handlers, presented), platform))
+                pending = None
             if entry_repeats and pending is not None:
                 continue
             require(pending is None, "Nested or unmatched original entry record")
@@ -800,6 +927,7 @@ def run(args: argparse.Namespace) -> int:
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
     services, frame_keys = {}, {}
+    call_rows = trace_rows(capture) if args.entry in RELOAD_ENTRIES else []
     if args.entry == "field_frame":
         services = frame_services(args.services or capture, "frame-entry", "frame-exit", interrupts)
         # Each call's frame: the latest frame entry at or before its entry record.
@@ -868,6 +996,14 @@ def run(args: argparse.Namespace) -> int:
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
             platform, recorded_sectors = platform_inputs(first["inputs"], entry, args.arrival)
+            if args.assume_idle_otc:
+                require(args.entry in RELOAD_ENTRIES, "Assumed reads apply to reload entries")
+                platform += "".join(
+                    line + "\n"
+                    for line in assumed_otc_reads(
+                        call_rows, first["entry_row"], first["exit_row"], interrupts
+                    )
+                )
             (work / "platform.txt").write_text(platform)
             lines = []
             for item in frames:
@@ -883,6 +1019,10 @@ def run(args: argparse.Namespace) -> int:
                         for cycle, line in services[key][1]
                         if (cycle - start) % (1 << 32) >= (row["cycle_u32"] - start) % (1 << 32)
                     ]
+                if args.entry in RELOAD_ENTRIES:
+                    lines += call_services(
+                        call_rows, snapshots, row, item["exit_row"], interrupts
+                    )
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             entry_row = first["entry_row"]
             report = runner.call(
@@ -1083,6 +1223,7 @@ def run(args: argparse.Namespace) -> int:
         "field_slot": args.field_slot,
         "outcomes": outcomes,
         "stop": args.stop,
+        "assumed_idle_otc_reads": args.assume_idle_otc,
         "calls_available": len(calls),
         "calls_selected": len(selected),
         "matched": matched,
@@ -1515,6 +1656,7 @@ def main() -> int:
             "field_frame",
             *RESIDENT_ENTRIES,
             *FIELD_ENTRIES,
+            *RELOAD_ENTRIES,
         ),
         required=True,
     )
@@ -1590,6 +1732,11 @@ def main() -> int:
         type=int,
         default=0,
         help="Bytes of callee frames a resumed entry lies inside; its stack exclusion ends there",
+    )
+    parser.add_argument(
+        "--assume-idle-otc",
+        action="store_true",
+        help="Supply each ClearOTagR's unrecorded DMA6 busy read as idle (reload entries)",
     )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()

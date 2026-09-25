@@ -84,6 +84,10 @@ void load_platform(reconstruction::Program &program, const char *platform, const
 // stream ring header and the list of a list read.
 void attach_interrupt_memory(reconstruction::Program &program, const OriginalMemory &memory);
 
+// Owns the bytes of allocated heap blocks that no other Program value owns,
+// as resident heap contents: a field teardown releases whole blocks.
+void import_heap_contents(reconstruction::Program &program, const OriginalMemory &memory);
+
 // Writes every Program-owned original correlation back over a copy of the entry
 // image and lists the owned ranges. Comparison is performed by the caller.
 [[nodiscard]] std::vector<OwnedRange> export_field(const reconstruction::Program &program,
