@@ -486,6 +486,16 @@ void Program::stop_music() {
     music.completed = 0;
 }
 
+// Field 80085eec: stop and release the cached sequence (8004f2fc).
+void Program::release_cached_sequence() {
+    auto &music = resident.music;
+    if (music.cached_sequence == 0)
+        return;
+    resident::stop_sequence(resident.sound, music.cached_sequence);    // 80039c4c
+    resident::release_sequence(resident.sound, music.cached_sequence); // 800399d4
+    music.cached_sequence = 0;
+}
+
 // Field 8008f76c / 8008f7b8 (primary 75): request field music.
 void Program::change_music(field::EventContext &context, std::uint32_t start_parameter) {
     auto &music = resident.music;
@@ -498,11 +508,7 @@ void Program::change_music(field::EventContext &context, std::uint32_t start_par
         auto &self = record(world, world.current);
         const auto id = u32(field::read_immediate15_or_variable(world, 1));
         if (world.control.post_initialization == 0) {
-            if (music.cached_sequence != 0) { // 80085eec: stop and release the cached sequence.
-                resident::stop_sequence(resident.sound, music.cached_sequence);
-                resident::release_sequence(resident.sound, music.cached_sequence);
-                music.cached_sequence = 0;
-            }
+            release_cached_sequence(); // 80085eec
             if (id != music.requested) {
                 stop_music();
                 music.gate = 0xffffffffU;

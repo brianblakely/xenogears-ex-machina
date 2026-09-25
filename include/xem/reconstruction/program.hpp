@@ -356,7 +356,6 @@ struct ResidentState {
     field::SpriteHeapControls sprite_heap{};
     resident::Heap heap;
     field::SpriteModelState sprite_models{};
-    std::uint32_t field_return_mode{};
     // Original snapshot and original resource identities, not native persistence.
     // The resident snapshot storage is at 8005a4e4 (0x3804 bytes).
     field::original::Bytes field_snapshot;
@@ -438,6 +437,12 @@ struct ResidentState {
     std::uint32_t w_4f30c{}; // 8004f30c
     std::uint32_t w_4f310{}; // 8004f310
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
+    // Field entry 80078d44 globals whose meaning is not recovered.
+    std::uint32_t w_4f2f8{}; // 8004f2f8: zero converts the screen first (800a77c4); set after
+    std::uint32_t w_4f304{}; // 8004f304: nonzero restores a saved sound state
+    // Return addresses InitGeom (80048bc4) and its BIOS setup (8004b4ac) keep.
+    std::uint32_t geometry_return{};   // 800569f0
+    std::uint32_t bios_setup_return{}; // 800593d4
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
     // Field main loop (field_loop.cpp) globals whose meaning is not recovered.
@@ -782,6 +787,17 @@ class Program {
     void field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
     // One main-loop iteration: the code between frames, then the frame.
     void field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
+    // 80078d44, the field entry, from its caller's stack frame (the main
+    // loop's SP - 30h), then the main loop up to its first frame.
+    void field_entry(FrameServices &services, std::uint32_t frame,
+                     const ProgramObserver &observe = {});
+    void field_loop_start(FrameServices &services, const ProgramObserver &observe = {});
+    void field_loop_top(FrameServices &services, const ProgramObserver &observe = {});
+    void default_draw_env(std::uint32_t env, std::int32_t x, std::int32_t y, std::int32_t w,
+                          std::int32_t h); // 80043928 SetDefDrawEnv
+    void default_disp_env(std::uint32_t env, std::int32_t x, std::int32_t y, std::int32_t w,
+                          std::int32_t h); // 800439e0 SetDefDispEnv
+    void show_reassigned_party();          // 800ad898
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -808,6 +824,9 @@ class Program {
     // The end of a field reload or load stage, or a VSync(0) outside a
     // frame: the arrivals recorded since the previous one (site 8004b674).
     void deliver_stage_arrivals() { deliver_arrivals(0x8004b674); }
+    // A stage completed at the return address `address`: its arrivals, then
+    // the position that ends them when the platform input records one.
+    void reach_position(std::uint32_t address);
     // Deliver the interrupt arrivals at the front of the platform input: a
     // host ending an imported call whose remaining arrivals all came before
     // its return.
@@ -1157,12 +1176,17 @@ class Program {
     void store_image(FrameServices &services, std::array<std::int16_t, 4> &rect,
                      std::uint32_t address, std::uint32_t destination);
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
-                    std::int32_t x, std::int32_t y);                       // 8004495c
-    void field_teardown(FrameServices &services);                          // 800700b0
-    void reload_transition_setup();                                        // 800a663c(1, 1)
-    void reload_present(FrameServices &services);                          // 800a6924
-    void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
-    void start_field_stream();                                             // 80070488
+                    std::int32_t x, std::int32_t y);                           // 8004495c
+    void save_screen_vram(FrameServices &services);                            // 800a915c
+    void restore_screen_vram(FrameServices &services);                         // 800a91f0
+    void load_text_palette(FrameServices &services, std::uint32_t caller);     // 80077544
+    void copy_screen(FrameServices &services, std::int32_t x, std::int32_t y); // 800a476c
+    void release_named_block();                                                // 8003748c
+    void field_teardown(FrameServices &services);                              // 800700b0
+    void reload_transition_setup();                                            // 800a663c(1, 1)
+    void reload_present(FrameServices &services);                              // 800a6924
+    void reload_screen_fade(FrameServices &services, std::uint32_t frame);     // 800a5884(1, 1)
+    void start_field_stream();                                                 // 80070488
     // 80078c5c; `frame` is its stack frame (its entry SP - 20h).
     void brighten_text_strip(FrameServices &services, std::uint32_t frame);
     void prepare_party_sprites(); // 8001b044
@@ -1196,10 +1220,18 @@ class Program {
     void init_dialogue();                                           // 8007decc
     std::vector<std::uint8_t> take_contents(std::uint32_t address, std::uint32_t size);
     void adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes);
-    void init_field_events(const ProgramObserver &observe); // 800a28d4 (no return)
-    void finish_field_load(const ProgramObserver &observe); // 80071770..80071a5c
-    void prepare_model_instances();                         // 80073e38
-    void place_party_at_leader();                           // 80077268
+    void init_field_events(const ProgramObserver &observe);    // 800a28d4
+    void restore_field_events(const ProgramObserver &observe); // 800a28d4 after a return
+    void restore_actor_data(const ProgramObserver &observe);   // 800a2714
+    void scale_actor_rotation(std::uint32_t index);            // 80072254
+    void finish_field_load(const ProgramObserver &observe);    // 80071770..80071a5c
+    void prepare_model_instances();                            // 80073e38
+    void place_party_at_leader();                              // 80077268
+    void read_map_ahead();                                     // 800777dc
+    void init_display(FrameServices &services);                // 80071fb0
+    void run_actor0_script(std::uint32_t entry, const ProgramObserver &observe); // 800a22ac
+    void adjust_after_return(const ProgramObserver &observe);                    // 800a24c4
+    void release_cached_sequence();                                              // 80085eec
     // Event initialization and actor setup (field_init.cpp).
     void create_actor_sprite(std::size_t index,
                              const field::FieldSpriteArguments &arguments); // 80076ac0

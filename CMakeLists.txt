@@ -34,6 +34,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_dialogue.cpp
   src/reconstruction/field_transition.cpp
   src/reconstruction/field_reload.cpp
+  src/reconstruction/field_entry.cpp
   src/reconstruction/field_init.cpp
   src/reconstruction/field_load.cpp
   src/reconstruction/original_layout.cpp

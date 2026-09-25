@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <iostream>
 #include <map>
+#include <set>
 #include <sstream>
 
 namespace game = xem::reconstruction;
@@ -186,7 +187,7 @@ int run_case(int argc, char **argv) {
             entry == "field_reload_draw" || entry == "field_reload_shade" ||
             entry == "field_reload_fade_in" || entry == "field_reload_fade_frame" ||
             entry == "field_reload_finish" || entry == "field_reload_teardown" ||
-            entry == "field_reload" || entry == "field_load";
+            entry == "field_reload" || entry == "field_load" || entry == "field_entry_frames";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
             !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
@@ -237,8 +238,9 @@ int run_case(int argc, char **argv) {
                 analysis::import_menu_block(*program, memory, registers[4]);
             else if (entry == "menu_save_seal" || entry == "menu_load_check")
                 analysis::import_menu_block(*program, memory, registers[20]);
-        } else if (entry == "field_load") {
-            // Between the reload's teardown and the load: no field is loaded.
+        } else if (entry == "field_load" || entry == "field_entry_frames") {
+            // Between the reload's teardown and the load, or at the field
+            // entry (80078d44): no field is loaded.
             program =
                 analysis::import_unloaded_field(memory, read_file(argv[7], analysis::ram_bytes));
         } else {
@@ -281,13 +283,16 @@ int run_case(int argc, char **argv) {
         // A field teardown releases whole heap blocks: own all their bytes
         // (main-loop chains may reach one through a map change).
         if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load" ||
-            entry == "field_frames")
+            entry == "field_frames" || entry == "field_entry_frames")
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
         // line starts the next main-loop iteration of "field_frames": the
         // code between frames, then the frame.
         std::vector<game::FrameServices> sections(1);
+        // "stage ADDR" lines name completed operations (their original
+        // address) whose state a multi-frame run also reports.
+        std::set<std::uint32_t> stages;
         {
             std::ifstream lines(argv[14]);
             if (!lines)
@@ -298,6 +303,11 @@ int run_case(int argc, char **argv) {
                 std::uint32_t first = 0, second = 0;
                 if (line == "frame") {
                     sections.emplace_back();
+                    continue;
+                }
+                if (line.starts_with("stage ")) {
+                    stages.insert(
+                        static_cast<std::uint32_t>(std::stoul(line.substr(6), nullptr, 16)));
                     continue;
                 }
                 if (!(fields >> name >> std::hex >> first))
@@ -329,8 +339,8 @@ int run_case(int argc, char **argv) {
                     throw InputError("Unknown service result " + name);
             }
         }
-        if (sections.size() != 1 && entry != "field_frames")
-            throw InputError("Only field_frames takes several frame sections");
+        if (sections.size() != 1 && entry != "field_frames" && entry != "field_entry_frames")
+            throw InputError("Only frame chains take several frame sections");
         auto &services = sections.front();
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
@@ -353,12 +363,14 @@ int run_case(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_update") {
             program->field_update(observer);
-        } else if (entry == "field_frames") {
+        } else if (entry == "field_frames" || entry == "field_entry_frames") {
             // Consecutive main-loop iterations from one import: the first
             // frame, then per section the code between frames and the next
             // frame. Every boundary's exported state is reported; nothing
             // observed enters between them. The loop's s4 and s5 come from
-            // the registers at the imported frame's entry.
+            // the registers at the imported frame's entry. From the field
+            // entry's call (80078154), the entry 80078d44 and the loop's
+            // first pass precede the first frame.
             auto &state = *program->field;
             state.combination_latched = registers[20] != 0;
             state.music_saved = registers[21] != 0;
@@ -373,14 +385,29 @@ int run_case(int argc, char **argv) {
                            << ']';
                 frames << "]}";
             };
+            // Stages are reported inside the field entry only.
+            bool staging = false;
+            const game::ProgramObserver staged = [&](const game::Program &at_program,
+                                                     game::SourcePoint at, bool completed) {
+                observer(at_program, at, completed);
+                if (staging && completed && stages.contains(at.machine_address))
+                    report("stage", program->resident.hardware_writes.size());
+            };
             for (std::size_t k = 0; k < sections.size(); ++k) {
                 auto written = program->resident.hardware_writes.size();
-                if (k != 0) {
-                    program->field_between_frames(sections[k], observer);
+                if (k == 0 && entry == "field_entry_frames") {
+                    staging = true;
+                    program->field_entry(sections[k], registers[29] - 0x30, staged);
+                    staging = false;
+                    program->field_loop_start(sections[k], staged);
+                    report("entry", written);
+                    written = program->resident.hardware_writes.size();
+                } else if (k != 0) {
+                    program->field_between_frames(sections[k], staged);
                     report("entry", written);
                     written = program->resident.hardware_writes.size();
                 }
-                program->field_frame(sections[k], observer);
+                program->field_frame(sections[k], staged);
                 report("exit", written);
             }
         } else if (entry.starts_with("field_frame")) {

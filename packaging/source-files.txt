@@ -208,6 +208,7 @@ src/reconstruction/field_control.cpp
 src/reconstruction/field_dialogue.cpp
 src/reconstruction/field_dialogue_draw.cpp
 src/reconstruction/field_disassembler.cpp
+src/reconstruction/field_entry.cpp
 src/reconstruction/field_events.cpp
 src/reconstruction/field_frame.cpp
 src/reconstruction/field_gte.cpp

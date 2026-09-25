@@ -821,6 +821,14 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.w_4f310; });
     add_resident("field_exit_4f370", 0x8004f370, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f370; });
+    add_resident("field_entry_4f2f8", 0x8004f2f8, 4,
+                 [](Program &p) -> auto & { return p.resident.w_4f2f8; });
+    add_resident("field_entry_4f304", 0x8004f304, 4,
+                 [](Program &p) -> auto & { return p.resident.w_4f304; });
+    add_resident("geometry_return", 0x800569f0, 4,
+                 [](Program &p) -> auto & { return p.resident.geometry_return; });
+    add_resident("bios_setup_return", 0x800593d4, 4,
+                 [](Program &p) -> auto & { return p.resident.bios_setup_return; });
     add_resident("battle_5947c", 0x8005947c, 1,
                  [](Program &p) -> auto & { return p.resident.b_5947c; });
     add_resident("vsync_counter", 0x80058960, 4,
@@ -874,6 +882,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sprite.texture_page; });
     add_resident("sprite_texture_mode", 0x80050108, 4,
                  [](Program &p) -> auto & { return p.resident.sprite.texture_mode; });
+    add("initialized_sprites", 0x800afc74, 4,
+        [](Program &p) -> auto & { return f(p).initialized_sprites; });
     add("descriptor_count", 0x800afb0c, 4,
         [](Program &p) -> auto & { return f(p).descriptor_count; });
     add("snapshot_cursor", 0x800afc50, 4,

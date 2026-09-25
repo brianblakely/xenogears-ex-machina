@@ -244,7 +244,7 @@ void sound_effect_dispatch() {
 void original_snapshot_ownership() {
     game::Program program;
     program.field = std::make_unique<game::FieldState>();
-    program.resident.field_return_mode = 1;
+    program.resident.w_4f30c = 1;
     program.resident.variables.unsigned_bitmap[0] = 3;
     program.resident.random_seed = 93;
     field::original::FieldCaptureInput capture{};

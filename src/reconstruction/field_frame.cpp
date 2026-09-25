@@ -135,6 +135,10 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
     for (const auto &node : resident.sprite_tasks.nodes)
         if (const auto bytes = from(node.address, node.bytes); !bytes.empty())
             return bytes;
+    // Sprite models' packet buffers (8002cb54).
+    for (const auto &buffer : resident.sprite_models.buffers)
+        if (const auto bytes = from(buffer.address, buffer.bytes); !bytes.empty())
+            return bytes;
     // Music blocks, the cached mode block and the read-ahead block.
     for (const auto &block : resident.music_blocks)
         if (const auto bytes = from(block.address, block.bytes); !bytes.empty())

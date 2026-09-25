@@ -263,6 +263,14 @@ void Program::field_between_frames(FrameServices &services, const ProgramObserve
     }
     field_post_frame(); // 80078b5c
     observed(observe, *this, {"field_loop_tail", 0x80078b5c, {}, {}});
+    field_loop_top(services, observe);
+}
+
+// 80078174..800782dc: the top of the main loop, up to its frame.
+void Program::field_loop_top(FrameServices &services, const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    const auto &inputs = state.control_inputs;
+    const auto repeats = [&] { return memory(0x800c3900, 2); }; // port 1 presses and repeats
     // 80078174: 80035734(0) is zero without a controller in port 1.
     if (resident.pad.buffers[0][0] == 0xff)
         unrecovered("field_controller_wait", 0x80078184, "symbol:field-controller-wait",

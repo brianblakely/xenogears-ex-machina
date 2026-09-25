@@ -738,6 +738,12 @@ void load_platform(Program &program, const char *platform, const char *disc) {
                 throw field::FieldFormatError("Malformed platform read");
             resident.platform.push_back(
                 {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
+        } else if (kind == "position") {
+            std::string site;
+            if (!(lines >> site))
+                throw field::FieldFormatError("Malformed platform position");
+            resident.platform.push_back(
+                {reconstruction::PlatformInput::Kind::position, number(site, 16), 0});
         } else if (kind == "interrupt") {
             resident.platform.push_back({reconstruction::PlatformInput::Kind::interrupt, 0, 0});
         } else if (kind == "arrival" || kind == "tick" || kind == "pad") {

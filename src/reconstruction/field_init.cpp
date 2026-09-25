@@ -6,6 +6,7 @@
 #include "xem/reconstruction/field_sprite_factory.hpp"
 #include "xem/reconstruction/program.hpp"
 
+#include <algorithm>
 #include <bit>
 
 namespace xem::reconstruction {
@@ -52,6 +53,9 @@ void Program::create_actor_sprite(std::size_t index, const field::FieldSpriteArg
         auto block = resident::heap_allocate(resident.heap, bytes, mode, site);
         if (!block || block->bytes.size() != bytes)
             throw field::FieldFormatError("A sprite allocation failed");
+        // 8001fe64 and 8001fb30 each run on a stack at +1efc of their block.
+        if (site == 0x8001fe68 || site == 0x8001fb40)
+            resident.switched_stacks.push_back({block->address + 0x1f00 - 0x800, 0x804});
         return field::SpriteAllocation{block->address, std::move(block->bytes)};
     };
     auto &upload = resident.sprite_upload;
@@ -77,15 +81,16 @@ void Program::create_actor_sprite(std::size_t index, const field::FieldSpriteArg
             throw MissingDependency({"create_actor_sprite", 0x80044894, index, {}},
                                     "platform:event-gpu-services", false,
                                     "An event's LoadImage needs its caller's platform services");
-        // 8001fe64 and 8001fb30 each run on a stack at +1efc of a 2000h block;
-        // 8002dde4's rectangle is at +10 of its 48h-byte frame.
-        for (const auto *stack : {&upload.outer_stack, &upload.inner_stack})
-            resident.switched_stacks.push_back({stack->address + 0x1f00 - 0x800, 0x804});
+        // 8002dde4's rectangle is at +10 of its 48h-byte frame on the inner
+        // stack.
         auto rect = request.rectangle;
         static_cast<void>(load_image(rect, upload.inner_stack.address + 0x1efc - 0x48 + 0x10,
                                      request.source_address, event_services_));
     };
     field::SpriteServices services{allocate, release, upload_image, &upload};
+    std::vector<std::uint32_t> models;
+    for (const auto &buffer : resident.sprite_models.buffers)
+        models.push_back(buffer.address);
     with_sprite_sources(
         [&](const field::SpriteSources &input) {
             auto sources = input;
@@ -101,6 +106,20 @@ void Program::create_actor_sprite(std::size_t index, const field::FieldSpriteArg
             set_sprite_environment(environment);
         },
         index);
+    // A new model buffer's second half is a copy of its first (8002cb54),
+    // including what stack frames left in bytes the packets do not write.
+    for (const auto &buffer : resident.sprite_models.buffers) {
+        if (std::ranges::find(models, buffer.address) != models.end())
+            continue;
+        const auto half = static_cast<std::uint32_t>(buffer.bytes.size() / 2);
+        const auto windows = resident.switched_stacks;
+        for (const auto &[low, size] : windows) {
+            const auto from = std::max(low, buffer.address);
+            const auto to = std::min(low + size, buffer.address + half);
+            if (from < to)
+                resident.switched_stacks.push_back({from + half, to - from});
+        }
+    }
 }
 
 // Field 800a0c94: the current actor's descriptor and sprite take its position.

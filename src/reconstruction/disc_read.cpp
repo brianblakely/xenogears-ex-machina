@@ -127,6 +127,19 @@ void Program::deliver_pending_arrivals() {
     }
 }
 
+void Program::reach_position(std::uint32_t address) {
+    deliver_stage_arrivals();
+    auto &inputs = resident.platform;
+    const auto next =
+        std::ranges::find(inputs, PlatformInput::Kind::position, &PlatformInput::kind);
+    if (next == inputs.end() || next->site != address)
+        return;
+    if (next != inputs.begin())
+        throw PlatformInputError("Platform input before the position " + hex(address) +
+                                 " is not consumed; next is " + hex(inputs.front().site));
+    inputs.pop_front();
+}
+
 void Program::deliver_arrivals(std::uint32_t point) {
     using Kind = PlatformInput::Kind;
     const auto &inputs = resident.platform;

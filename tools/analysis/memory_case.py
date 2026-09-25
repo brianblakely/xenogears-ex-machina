@@ -1318,6 +1318,47 @@ def run(args: argparse.Namespace) -> int:
     return 0 if matched == len(selected) else 1
 
 
+# The field entry's stage hooks: each on the return address of one of its
+# calls (80078d44), compared where the recovered entry completes that call.
+ENTRY_STAGES = (
+    "e-7544",
+    "e-915c",
+    "e-77dc",
+    "e-75f8",
+    "e-71fb0",
+    "e-5884",
+    "e-wait",
+    "e-load",
+    "e-stream",
+    "e-waitend",
+    "e-a24c4",
+    "e-music",
+    "e-31e8",
+    "e-fade",
+    "e-91f0",
+    "e-exit",
+)
+# The field load's (80070cc8) stage hooks, compared likewise.
+LOAD_STAGES = (
+    "l-entry",
+    "l-a",
+    "l-b",
+    "l-c",
+    "l-d",
+    "l-e",
+    "l-f",
+    "l-g",
+    "l-h",
+    "l-i",
+    "l-j",
+    "l-k",
+    "l-l",
+    "l-m",
+    "l-n",
+    "l-exit",
+)
+
+
 # Multi-frame runs: the field main loop 80077e88 between frames. Each
 # interrupt arrival is delivered where the recovered code reaches the point
 # that follows the last position hook before it (Program::deliver_arrivals):
@@ -1392,6 +1433,10 @@ ARRIVAL_POINTS = {
     },
     "r-fadein": 0x80077DB4,
     "reload-exit": 0x80077DB4,
+    # The field entry 80078d44 from its call (m-d44): its stages as the
+    # reload's; after it, the main loop's top as between frames.
+    **{hook: 0x8004B674 for hook in ("m-d44", *ENTRY_STAGES)},
+    "m-after": 0x80077DB4,
 }
 # VSync(0) (8004b674) after its wait: inside a field frame the frame's own
 # VSync(0) step (as vsync0-return); elsewhere, like a reload stage.
@@ -1420,6 +1465,10 @@ SPU_TRANSFER_READS = (0x8004CD8C,)
 DATASYNC_READ = 0x80042A6C
 PAD_BUFFERS = (0x625FC, 0x44)
 MAIN_LOOP_RETURN = 0x800782E4
+# The field entry's fade-in frames return to 80079178; a completed frame is
+# reported at its call (8007554c).
+ENTRY_FRAME_RETURN = 0x80079178
+FRAME_CALL = 0x8007554C
 
 
 def trace_rows(capture: Path) -> list[dict]:
@@ -1455,6 +1504,8 @@ def loop_inputs(
             require(block is None, "A position hook inside interrupt code")
             lines += [line for item in pending for line in item]
             pending, last = [], hook
+            if hook in ENTRY_STAGES or hook in LOAD_STAGES:
+                lines.append(f"position {row['pc']:x}")
             if hook == "frame-entry":
                 in_frame = True
             elif hook == "frame-exit":
@@ -1607,19 +1658,31 @@ def run_frames(args: argparse.Namespace) -> int:
         for entry, *_ in calls
         if visible_registers(entry)[31] != MAIN_LOOP_RETURN
     )
-    selected = main[args.start : args.start + args.limit]
-    chains, results = (
-        [selected[i : i + args.frames] for i in range(0, len(selected), args.frames)],
-        [],
-    )
+    if args.field_entry:
+        # From the call of the field entry: the main-loop frames after it.
+        starts = [row for row in image_rows if row["hook"] == args.field_entry]
+        require(starts, "The capture has no field entry record")
+        chains = [
+            (row, [call for call in main if call[0]["event"] > row["event"]][: args.frames])
+            for row in starts[args.start : args.start + args.limit]
+        ]
+    else:
+        selected = main[args.start : args.start + args.limit]
+        chains = [
+            (chain[0][0], chain)
+            for chain in (
+                selected[i : i + args.frames] for i in range(0, len(selected), args.frames)
+            )
+        ]
+    results = []
     loaded_sources: dict[int, Sources] = {}
     with (
         tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
         BatchRunner(args.runner) as runner,
     ):
         work = Path(directory)
-        for chain in chains:
-            entry_row, last_exit = chain[0][0], chain[-1][1]
+        for entry_row, chain in chains:
+            last_exit = chain[-1][1]
             entry, scratch, io = snapshots.read(entry_row)
             start, end = entry_row["cycle_u32"], last_exit["cycle_u32"]
 
@@ -1652,6 +1715,29 @@ def run_frames(args: argparse.Namespace) -> int:
                 (("dispatch-entry", "dispatch-exit"), ("tick-entry", "tick-exit")),
             )
             service_counts["frame"] = 0
+            # The entry's stages and the exits of its fade-in frames (their
+            # completion is reported at the frame's call site, 8007554c).
+            stages = (
+                [
+                    row
+                    for row in image_rows
+                    if inside(row)
+                    and (
+                        row["hook"] in ENTRY_STAGES
+                        or row["hook"] in LOAD_STAGES
+                        or (
+                            row["hook"] == "frame-exit"
+                            and visible_registers(row)[31] == ENTRY_FRAME_RETURN
+                        )
+                    )
+                ]
+                if args.field_entry
+                else []
+            )
+            lines = [
+                f"stage {FRAME_CALL if row['hook'] == 'frame-exit' else row['pc']:x}"
+                for row in stages
+            ] + lines
             map_id = image_map(entry) if args.map is None else args.map
             if map_id not in loaded_sources:
                 loaded_sources[map_id] = Sources(args.raw, map_id, args.field_slot)
@@ -1666,7 +1752,7 @@ def run_frames(args: argparse.Namespace) -> int:
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             report = runner.call(
                 [
-                    "field_frames",
+                    "field_entry_frames" if args.field_entry else "field_frames",
                     str(args.budget * len(chain)),
                     "",
                     str(work / "ram.bin"),
@@ -1685,9 +1771,9 @@ def run_frames(args: argparse.Namespace) -> int:
             )
             outputs = report.get("frames", [])
             sp = visible_registers(entry_row)[29] + args.frame_above
-            boundaries = []
+            boundaries = [("stage", row) for row in stages]
             for k, (frame_entry, frame_exit, _, _) in enumerate(chain):
-                boundaries += [] if k == 0 else [("entry", frame_entry)]
+                boundaries += [] if k == 0 and not args.field_entry else [("entry", frame_entry)]
                 boundaries.append(("exit", frame_exit))
             compared, first_divergence = [], None
             for (kind, row), output in zip(boundaries, outputs, strict=False):
@@ -1745,6 +1831,7 @@ def run_frames(args: argparse.Namespace) -> int:
             results.append(
                 {
                     "first_frame": entry_row["frontend_run"],
+                    "import_hook": entry_row["hook"],
                     "frames": len(chain),
                     "boundaries": len(boundaries),
                     "boundaries_completed": len(outputs),
@@ -1784,7 +1871,7 @@ def run_frames(args: argparse.Namespace) -> int:
         "source_revision": subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
         ).stdout.strip(),
-        "entry": "field_frames",
+        "entry": "field_entry_frames" if args.field_entry else "field_frames",
         "tolerance": "exact at every frame entry and exit; owned bytes and every unowned "
         "original write since the import",
         "exclusions": {
@@ -1913,6 +2000,11 @@ def main() -> int:
         type=Path,
         help="Capture of the same execution with the main-loop hooks, interrupt arrivals and "
         "their hardware reads (multi-frame runs)",
+    )
+    parser.add_argument(
+        "--field-entry",
+        help="Hook at the call of the field entry 80078d44: multi-frame runs import there and "
+        "compare the entry's stages before the main-loop frames",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

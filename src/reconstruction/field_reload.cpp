@@ -132,37 +132,90 @@ void Program::field_reload_finish(FrameServices &services, std::uint32_t frame) 
         throw MissingDependency({"field_reload_finish", 0x800a63ac, {}, {}},
                                 "symbol:field-reload-type-6", false,
                                 "Reload type 6 keeps its VRAM save; not recovered");
-    if (state.particles_paused != 0) {
-        // 800a91f0.
-        reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
-        state.particles_paused = 0;
-        if (reload.vram_save.bytes.empty() || reload.vram_save.address != reload.vram_save_address)
-            throw field::FieldFormatError("The saved VRAM block is not owned");
-        auto rect = reload.vram_rect;
-        static_cast<void>(load_image(rect, 0x800afc28, reload.vram_save_address, &services));
-        reload.vram_rect = rect;
-        draw_sync(services);
-        if (resident::heap_release(resident.heap, reload.vram_save, 0x800a925c) != 0)
-            throw field::FieldFormatError("The saved VRAM block was not released");
-        reload.vram_save = {};
-    }
+    restore_screen_vram(services); // 800a91f0
     state.background_mode = 2;
     reload.fade_frames = 0x20;
     state.dialogue_gate_afd04 = 0;
-    // 80077544: without the diagnostic build, 80033698(100, f0) loads the
-    // text palette row and stores both palettes' CLUT ids.
-    if (state.event_control.diagnostic_suppression == 0)
-        throw MissingDependency({"field_reload_finish", 0x80077558, {}, {}},
+    load_text_palette(services, frame); // 80077544
+    resident::heap_coalesce(resident.heap);
+}
+
+// 800a915c: pause the particles and save 40h x 100h of VRAM at (3c0, 100)
+// into a heap block (800afc70), once.
+void Program::save_screen_vram(FrameServices &services) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    if (state.particles_paused == 1)
+        return;
+    state.particles_paused = 1;
+    auto &heap = resident.heap;
+    heap.tag = 8; // 80032498(8, 0)
+    heap.tag_words[8] = 0;
+    heap.quiet = 0;
+    auto block = resident::heap_allocate(heap, 0x8000, 1, 0x800a918c);
+    if (!block)
+        throw field::FieldFormatError("The VRAM save allocation failed");
+    reload.vram_save = std::move(*block);
+    reload.vram_save_address = reload.vram_save.address;
+    reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
+    auto rect = reload.vram_rect;
+    store_image(services, rect, 0x800afc28, reload.vram_save.address);
+    reload.vram_rect = rect;
+    draw_sync(services);
+}
+
+// 800a91f0: load the saved VRAM back and release its block; the particles
+// resume.
+void Program::restore_screen_vram(FrameServices &services) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    if (state.particles_paused == 0)
+        return;
+    reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
+    state.particles_paused = 0;
+    if (reload.vram_save.bytes.empty() || reload.vram_save.address != reload.vram_save_address)
+        throw field::FieldFormatError("The saved VRAM block is not owned");
+    auto rect = reload.vram_rect;
+    static_cast<void>(load_image(rect, 0x800afc28, reload.vram_save_address, &services));
+    reload.vram_rect = rect;
+    draw_sync(services);
+    if (resident::heap_release(resident.heap, reload.vram_save, 0x800a925c) != 0)
+        throw field::FieldFormatError("The saved VRAM block was not released");
+    reload.vram_save = {};
+}
+
+// 80077544: without the diagnostic build, 80033698(100, f0) loads the text
+// palette row and stores both palettes' CLUT ids. `caller` is the caller's
+// stack pointer: the rectangle is on 80033698's stack (-38h, -28h, +10h).
+void Program::load_text_palette(FrameServices &services, std::uint32_t caller) {
+    if (loaded(*this).event_control.diagnostic_suppression == 0)
+        throw MissingDependency({"load_text_palette", 0x80077558, {}, {}},
                                 "symbol:field-debug-8003747c", false,
                                 "The diagnostic capture setup is not recovered");
     std::array<std::int16_t, 4> rect{0x100, 0xf0, 0x20, 1};
-    // The rectangle is on 80033698's stack: frame - 38h (80077544) - 28h + 10h.
-    static_cast<void>(load_image(rect, frame - 0x38U - 0x28U + 0x10U, 0x80050190, &services));
+    static_cast<void>(load_image(rect, caller - 0x38U - 0x28U + 0x10U, 0x80050190, &services));
     const auto clut = [](std::uint32_t x, std::uint32_t y) { // 80043a58 GetClut
         return static_cast<std::uint16_t>(y << 6U | (x >> 4U & 0x3fU));
     };
     resident.text_cluts = {clut(0x100, 0xf0), clut(0x110, 0xf0)};
-    resident::heap_coalesce(resident.heap);
+}
+
+// 800a476c(x, y): copy the displayed 140h x e0h screen to (x, y), then
+// DrawSync and VSync (800775f8).
+void Program::copy_screen(FrameServices &services, std::int32_t x, std::int32_t y) {
+    resident.gte.screen.h = 0x200; // SetGeomScreen
+    move_image(services, {0, 0, 0x140, 0xe0}, x, y);
+    draw_sync(services);
+    vertical_sync(services);
+}
+
+// 8003748c: release the block 80059394 names unless 800593a0 is set.
+void Program::release_named_block() {
+    if (resident.w_59394 != 0)
+        throw MissingDependency({"release_named_block", 0x800374a0, {}, {}},
+                                "symbol:block-80059394", false,
+                                "The block 80059394 names is not recovered");
+    resident.w_593a0 = 0;
 }
 
 // VSync(0): wait for the next vertical blank; libetc keeps root counter 1
@@ -232,11 +285,7 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
             throw field::FieldFormatError("Reload block has no heap header");
         return found->second[1];
     };
-    // 8003748c: release the block 80059394 names (unless 800593a0 is set).
-    if (resident.w_59394 != 0)
-        throw MissingDependency({"field_reload", 0x800374a0, {}, {}}, "symbol:block-80059394",
-                                false, "The block 80059394 names is not recovered");
-    resident.w_593a0 = 0;
+    release_named_block(); // 8003748c
     // 800a9460: stop the 64 particle emitters (800a92ac), then DrawSync and VSync.
     for (std::size_t slot = 0; slot < state.particle_slots.size(); ++slot) {
         if (state.particle_slots[slot] == 1)
@@ -264,31 +313,9 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
             close_dialogue(w);
     done("reload_suspend", 0x800a5c70);
     if (state.background_mode != 6) {
-        // 800a915c: pause particles and save 40h x 100h of VRAM at (3c0, 100).
-        if (state.particles_paused != 1) {
-            state.particles_paused = 1;
-            heap.tag = 8; // 80032498(8, 0)
-            heap.tag_words[8] = 0;
-            heap.quiet = 0;
-            auto block = resident::heap_allocate(heap, 0x8000, 1, 0x800a918c);
-            if (!block)
-                throw field::FieldFormatError("The VRAM save allocation failed");
-            reload.vram_save = std::move(*block);
-            reload.vram_save_address = reload.vram_save.address;
-            reload.vram_rect = {0x3c0, 0x100, 0x40, 0x100};
-            auto rect = reload.vram_rect;
-            store_image(services, rect, 0x800afc28, reload.vram_save.address);
-            reload.vram_rect = rect;
-            draw_sync(services);
-        }
-        if (state.background_mode != 4) {
-            // 800a4748 -> 800a476c(2c0, 100): copy the displayed 140h x e0h
-            // screen to (2c0, 100), then DrawSync and VSync.
-            resident.gte.screen.h = 0x200; // SetGeomScreen
-            move_image(services, {0, 0, 0x140, 0xe0}, 0x2c0, 0x100);
-            draw_sync(services);
-            vertical_sync(services);
-        }
+        save_screen_vram(services); // 800a915c
+        if (state.background_mode != 4)
+            copy_screen(services, 0x2c0, 0x100); // 800a4748
     }
     draw_sync(services);
     done("reload_save_screen", 0x800a5cb0);

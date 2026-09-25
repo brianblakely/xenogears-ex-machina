@@ -92,14 +92,14 @@ field::ControlActor FieldActor::control() const {
 field::FieldSpriteEnvironment Program::sprite_environment() const {
     if (!field)
         throw field::FieldFormatError("Sprite environment requires a field");
-    return {resident.sprite,      resident.field_return_mode,
+    return {resident.sprite,      resident.w_4f30c,
             field->sprite_gate,   field->initialized_sprites,
             resident.sprite_heap, resident.sprite_tasks};
 }
 void Program::set_sprite_environment(const field::FieldSpriteEnvironment &environment) {
     auto &state = loaded(*this);
     resident.sprite = environment.sprite;
-    resident.field_return_mode = environment.return_mode;
+    resident.w_4f30c = environment.return_mode;
     state.sprite_gate = environment.field_gate;
     state.initialized_sprites = environment.initialized_count;
     resident.sprite_heap = environment.heap;
@@ -209,7 +209,7 @@ void Program::restore_field(const field::SpriteAllocator &allocate,
                             const ProgramObserver &observe,
                             const field::SpriteImageUploader &upload_image) {
     auto &state = loaded(*this);
-    if (resident.field_return_mode == 0)
+    if (resident.w_4f30c == 0)
         throw MissingDependency({"initialize_field_events", 0x800a28d4, {}, {}},
                                 "symbol:field-event-initialization", false,
                                 "Fresh event initialization is a different original branch");

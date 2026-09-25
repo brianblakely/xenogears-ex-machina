@@ -28,11 +28,11 @@ void observed(const ProgramObserver &observe, const Program &program, SourcePoin
     if (observe)
         observe(program, point, true);
 }
-// A completed load stage: the arrivals since the previous one, then the
-// observer.
+// A completed load stage: the arrivals since the previous one (up to its
+// recorded position), then the observer.
 void stage(Program &program, const ProgramObserver &observe, std::string_view operation,
            std::uint32_t address) {
-    program.deliver_stage_arrivals();
+    program.reach_position(address);
     observed(observe, program, {operation, address, {}, {}});
 }
 // Constant stores of the field reset 800705dc, in program order.
@@ -583,10 +583,19 @@ void Program::build_model_instance(std::uint32_t instance, std::uint32_t mode) {
     const auto packets = load_block(size * 2U, 0, 0x8002cb84);
     set_memory(instance + 8, packets);
     set_memory(instance + 0xc, packets + size);
-    if (mode != 0)
-        throw MissingDependency({"build_model_instance", 0x8002c920, {}, {}},
-                                "symbol:field-model-mode", false,
-                                "Model packets other than mode zero are not recovered");
+    // 8002c8cc: another mode keeps an auxiliary block (+30h bytes, +18) and
+    // passes the primitive handlers a variant, which the recovered ones
+    // (8002d0e4, 8002d984) do not read; model flag 2 records the variant
+    // after a first build (flag 1).
+    if (mode != 0) {
+        const auto flags = memory(model, 2);
+        if ((flags & 1U) == 0 && memory(model + 0x30) != 0)
+            throw MissingDependency({"build_model_instance", 0x8002c920, {}, {}},
+                                    "symbol:field-model-auxiliary", false,
+                                    "Model auxiliary blocks are not recovered");
+        if ((mode == 2 || mode == 3) && (flags & 3U) == 1)
+            set_memory(model, flags | 2U, 2);
+    }
     auto &state = loaded(*this);
     std::vector<field::SpriteResource> resources;
     for (const auto &resource : state.resources)
@@ -976,6 +985,52 @@ void Program::adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes) {
         state.regions.add("sprite_arena", arena, take_contents(arena, resident.sprite_arena_bytes));
 }
 
+// 800a28d4 after a return (8004f30c set): the saved field state (800a3474;
+// actor extensions in blocks of their own, 800a3a40 and 800a3b00), then each
+// event actor's sprite from its saved factory arguments (80076ac0): a party
+// sprite (8005a414) or, with tag bit 80, one of the bundle's.
+void Program::restore_field_events(const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    restore_field_data(
+        [&](std::size_t, std::span<const std::uint8_t> contents) {
+            const auto size = static_cast<std::uint32_t>(contents.size());
+            const auto site = size == 12 ? 0x800a3a40U : 0x800a3b00U;
+            const auto block = resident::heap_allocate(resident.heap, size, 0, site);
+            if (!block)
+                throw field::FieldFormatError("An actor extension allocation failed");
+            return block->address;
+        },
+        observe);
+    if (state.reload.event_actors != state.actors.size())
+        throw field::FieldFormatError("The event actors differ from the owned actors");
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        const auto &a = state.actors[i].storage;
+        const auto tag = a[0x126];
+        const auto mode = memory(state.actors[i].address + 0x130);
+        const auto flags = memory(state.actors[i].address + 0x134);
+        std::uint32_t resource = 0;
+        if ((tag & 0x80U) == 0) {
+            if (tag >= resident.party_sprite_resources.size())
+                throw field::FieldFormatError("A party sprite tag exceeds its resources");
+            resource = resident.party_sprite_resources[tag];
+        } else {
+            resource = bundle_sprite(tag & 0x7fU);
+        }
+        create_actor_sprite(i, {static_cast<std::uint32_t>(i), a[0x127], resource,
+                                (mode >> 28U) & 3U, flags & 15U, tag, (flags >> 4U) & 1U});
+        const auto auxiliary = memory(state.actors[i].address + 0x12e, 2) & 3U;
+        if ((tag & 0x80U) != 0 && (auxiliary == 1 || auxiliary == 2))
+            throw MissingDependency({"restore_field_events", 0x800a2a7c, i, {}},
+                                    "symbol:sprite-auxiliary-8002303c", false,
+                                    "A restored sprite's auxiliary parts (8002303c) are not "
+                                    "recovered");
+    }
+    if (state.party_reassignment != 0)
+        throw MissingDependency({"restore_field_events", 0x800a2bd8, {}, {}},
+                                "symbol:field-return-party-reassignment", false,
+                                "Swapping reassigned party sprites on a return is not recovered");
+}
+
 // 800a28d4 without a return (8004f30c clear): variable 10 and the party
 // ids (800a30b4); each actor starts at its script 2 entry (flag 04000000 when
 // that entry is empty), then at its script 0 entry; then each actor runs its
@@ -983,10 +1038,10 @@ void Program::adopt_loaded_field(const std::array<std::uint32_t, 9> &sizes) {
 // bundle's default sprite (80076ac0) and flag 800.
 void Program::init_field_events(const ProgramObserver &observe) {
     auto &state = loaded(*this);
-    if (resident.w_4f30c != 0)
-        throw MissingDependency({"init_field_events", 0x800a28f4, {}, {}},
-                                "symbol:field-return-800a3474", false,
-                                "The field return branch is restore_field, not connected here");
+    if (resident.w_4f30c != 0) {
+        restore_field_events(observe);
+        return;
+    }
     auto &variables = resident.variables;
     variables.write(0x10, 0);
     for (std::uint32_t slot = 0; slot < 3; ++slot) // 800a30b4
@@ -1023,7 +1078,7 @@ void Program::init_field_events(const ProgramObserver &observe) {
 
 void Program::load_field(FrameServices &services, std::uint32_t frame,
                          const ProgramObserver &observe) {
-    deliver_stage_arrivals();
+    stage(*this, observe, "load_entry", 0x80070cc8);
     reset_field_state();
     stage(*this, observe, "load_reset", 0x80070d1c);
     // The bundle's first 100h bytes (its header) to 800b1f78.
@@ -1255,6 +1310,53 @@ void Program::place_party_at_leader() {
         field_history(static_cast<std::size_t>(state.controlled_actor));
 }
 
+// 800a2714: after a return, each event actor's saved file (+124 unless -1)
+// read again and bound to its sprite (800a2780, 80021bf0), the checkpoint
+// pass (800a3c8c), the distortion's restart (800a484c), variable 10 and the
+// party ids (800a30b4), then each actor's scaled rotation (80072254).
+void Program::restore_actor_data(const ProgramObserver &observe) {
+    auto &state = loaded(*this);
+    if (resident.w_4f30c == 0)
+        return;
+    for (std::size_t i = 0; i < state.actors.size(); ++i) {
+        static_cast<void>(select_directory(4, 0));
+        if (static_cast<std::int16_t>(memory(state.actors[i].address + 0x124, 2)) != -1)
+            throw MissingDependency({"restore_actor_data", 0x800a2780, i, {}},
+                                    "symbol:field-return-actor-file", false,
+                                    "Reading an actor's saved file again (800a2780, 80021bf0) is "
+                                    "not recovered");
+    }
+    checkpoint_pass(observe); // 800a3c8c
+    if (state.distortion != 0)
+        throw MissingDependency({"restore_actor_data", 0x800a2868, {}, {}},
+                                "symbol:field-distortion-800a484c", false,
+                                "Restarting the screen distortion (800a484c) is not recovered");
+    auto &variables = resident.variables;
+    variables.write(0x10, 0);                      // 800a3074(10, 0)
+    for (std::uint32_t slot = 0; slot < 3; ++slot) // 800a30b4
+        variables.write(static_cast<std::uint16_t>(0x3e + 2 * slot), state.party_characters[slot]);
+    for (std::uint32_t i = 0; i < state.actors.size(); ++i)
+        scale_actor_rotation(i); // 80072254
+}
+
+// 80072254(i): the descriptor's rotation (8003f738 of +50 into +0c) scaled
+// by the actor's scale (+f4, +f6, +f8; 80049dcc).
+void Program::scale_actor_rotation(std::uint32_t index) {
+    auto &state = loaded(*this);
+    const auto descriptor = state.reload.descriptor_table + 0x5c * index;
+    const auto actor = memory(descriptor + 0x4c);
+    const auto half = [&](std::uint32_t address) {
+        return static_cast<std::int16_t>(memory(address, 2));
+    };
+    auto m = field::rotation_matrix(
+        {half(descriptor + 0x50), half(descriptor + 0x52), half(descriptor + 0x54)},
+        resident.math.trigonometry);
+    field::scale_matrix(m, {half(actor + 0xf4), half(actor + 0xf6), half(actor + 0xf8)});
+    for (std::uint32_t k = 0; k < 9; ++k)
+        set_memory(descriptor + 0xc + 2 * k, static_cast<std::uint16_t>(m.r[k]), 2);
+    set_memory(descriptor + 0xc + 0x12, static_cast<std::uint16_t>(m.pad), 2);
+}
+
 // 80071770..80071a5c: after the events: the sprite view, the camera target
 // at the followed actor, each descriptor's rotation, the model instances,
 // the party at its leader, the model-table join and each placed actor's
@@ -1297,11 +1399,7 @@ void Program::finish_field_load(const ProgramObserver &observe) {
         throw MissingDependency({"finish_field_load", 0x80077884, {}, {}}, "symbol:field-801e7fd4",
                                 false, "The 801e7fd4 module's resources are not recovered");
     stage(*this, observe, "load_module", 0x80071944);
-    // 800a2714 acts only on a return.
-    if (resident.w_4f30c != 0)
-        throw MissingDependency({"finish_field_load", 0x800a2734, {}, {}},
-                                "symbol:field-return-800a2714", false,
-                                "The return's actor data reload is not connected here");
+    restore_actor_data(observe); // 800a2714
     stage(*this, observe, "load_return_data", 0x8007194c);
     resident.preload_slot = 0xffffffffU;
     resident.preload_id = 0xffffffffU;

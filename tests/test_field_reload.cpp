@@ -81,6 +81,73 @@ void idle_map_change() {
           "No map change is due: the step neither reads ahead nor reloads");
 }
 
+std::uint32_t get(const std::vector<std::uint8_t> &bytes, std::size_t at, std::size_t width = 4) {
+    std::uint32_t value = 0;
+    for (std::size_t i = 0; i < width; ++i)
+        value |= static_cast<std::uint32_t>(bytes.at(at + i)) << (8U * i);
+    return value;
+}
+
+void display_environments() {
+    auto program = loaded_field({0}, 1);
+    auto &env = program.resident.heap_contents[0x800b249c] = std::vector<std::uint8_t>(0x100, 0xaa);
+    program.default_draw_env(0x800b249c, 0, 0x100, 0x140, 0xe0);
+    check(get(env, 0, 2) == 0 && get(env, 2, 2) == 0x100 && get(env, 4, 2) == 0x140 &&
+              get(env, 6, 2) == 0xe0 && get(env, 8, 2) == 0 && get(env, 0xa, 2) == 0x100,
+          "SetDefDrawEnv sets the area and the offset");
+    check(get(env, 0xc, 4) == 0 && get(env, 0x10, 4) == 0 && get(env, 0x14, 2) == 10 &&
+              env[0x16] == 1 && env[0x17] == 1 && env[0x18] == 0 && env[0x19] == 0 &&
+              env[0x1a] == 0 && env[0x1b] == 0,
+          "SetDefDrawEnv: no texture window, page 10, dithering under 257 lines, black");
+    program.resident.video_mode = 1;
+    program.default_draw_env(0x800b249c, 0, 0, 0x140, 0x120);
+    check(env[0x17] == 1, "A PAL draw environment dithers under 289 lines");
+    program.default_disp_env(0x800b249c + 0xb8, 0, 0x100, 0x140, 0xe0);
+    check(get(env, 0xb8 + 2, 2) == 0x100 && get(env, 0xb8 + 8, 4) == 0 && env[0xb8 + 0x10] == 0 &&
+              env[0xb8 + 0x13] == 0 && get(env, 0xb8 + 6, 2) == 0xe0,
+          "SetDefDispEnv sets the area and clears the screen rectangle and modes");
+}
+
+void reassigned_party() {
+    auto program = loaded_field({0}, 2);
+    auto &state = *program.field;
+    state.reload.descriptor_table = 0x80120000;
+    auto &table = program.resident.heap_contents[0x80120000] = std::vector<std::uint8_t>(2 * 0x5c);
+    put(table, 0x5c + 0x4c, 0x80130000);
+    auto &actor = program.resident.heap_contents[0x80130000] = std::vector<std::uint8_t>(0x138);
+    put(actor, 0, 0x501);
+    state.party_indices = {1, 255, 255};
+    program.resident.game_data.assign(game::game_data_bytes, 0);
+    program.resident.game_data[0x22b1] = 1;
+    program.show_reassigned_party();
+    check(get(actor, 0) == 0x501, "Without a reassignment 800ad898 changes nothing");
+    state.party_reassignment = 1;
+    program.show_reassigned_party();
+    check(get(actor, 0) == 0x201, "A reassigned member of mode 1 is shown (200, not 100 or 400)");
+}
+
+void recorded_positions() {
+    auto program = loaded_field({0}, 1);
+    using Kind = game::PlatformInput::Kind;
+    auto &inputs = program.resident.platform;
+    inputs = {{Kind::position, 0x80078d64, 0}, {Kind::read, 0x80045de4, 2}};
+    program.reach_position(0x80078d64);
+    check(inputs.size() == 1 && inputs.front().kind == Kind::read,
+          "A stage consumes the position recorded at its return address");
+    inputs = {{Kind::read, 0x80045de4, 2}, {Kind::position, 0x80078d6c, 0}};
+    std::string reason;
+    try {
+        program.reach_position(0x80078d6c);
+    } catch (const game::PlatformInputError &error) {
+        reason = error.what();
+    }
+    check(!reason.empty() && inputs.size() == 2,
+          "Input recorded before a position the stage reaches is a divergence");
+    inputs = {{Kind::position, 0x80078d6c, 0}};
+    program.reach_position(0x80078d64);
+    check(inputs.size() == 1, "Another stage's position stays for that stage");
+}
+
 } // namespace
 
 int main() {
@@ -88,7 +155,10 @@ int main() {
         transition_shade();
         teardown_dependencies();
         idle_map_change();
-        std::cout << "3 field reload groups passed\n";
+        display_environments();
+        reassigned_party();
+        recorded_positions();
+        std::cout << "6 field reload groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;
