@@ -150,10 +150,9 @@ std::vector<OriginalGlobal> build() {
         add_resident("input_other", input_other[i], 2,
                      [i](Program &p) -> auto & { return p.resident.input_queue.other[i]; });
         for (std::size_t slot = 0; slot < 16; ++slot)
-            add_resident("input_ring", static_cast<std::uint32_t>(0x8005a0fc + 0x20 * i + 2 * slot),
-                         2, [i, slot](Program &p) -> auto & {
-                             return p.resident.input_queue.ring[i][slot];
-                         });
+            add_resident(
+                "input_ring", static_cast<std::uint32_t>(0x8005a0fc + 0x20 * i + 2 * slot), 2,
+                [i, slot](Program &p) -> auto & { return p.resident.input_queue.ring[i][slot]; });
     }
     add_resident("field_map", 0x8004f34c, 4,
                  [](Program &p) -> auto & { return p.resident.field_map; });

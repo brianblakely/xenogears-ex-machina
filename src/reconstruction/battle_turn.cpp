@@ -9,24 +9,24 @@ namespace {
 
 // The turn procedure addresses the records absolutely from 800ccce8.
 constexpr std::uint32_t fixed_record_base = 0x800ccce8;
-constexpr std::uint32_t present = 0x800d2dcc;     // u8 per slot
-constexpr std::uint32_t ready = 0x800d2de4;       // u8 per slot; 1 = ready
-constexpr std::uint32_t turn_order = 0x800d2dd8;  // u8 slot per position
+constexpr std::uint32_t present = 0x800d2dcc;      // u8 per slot
+constexpr std::uint32_t ready = 0x800d2de4;        // u8 per slot; 1 = ready
+constexpr std::uint32_t turn_order = 0x800d2dd8;   // u8 slot per position
 constexpr std::uint32_t order_cursor = 0x800d2dd7; // u8 position
-constexpr std::uint32_t forced_turn = 0x800d2dc0; // u8 slot + 1
-constexpr std::uint32_t all_enemies = 0x800d39e0; // u16 mask for 80072324
-constexpr std::uint32_t timer = 0x800d2e06;       // u16 per slot
+constexpr std::uint32_t forced_turn = 0x800d2dc0;  // u8 slot + 1
+constexpr std::uint32_t all_enemies = 0x800d39e0;  // u16 mask for 80072324
+constexpr std::uint32_t timer = 0x800d2e06;        // u16 per slot
 constexpr std::uint32_t timer_reload = 0x800d2df0; // u16 per slot
-constexpr std::uint32_t atb_enabled = 0x800d3298; // u8
-constexpr std::uint32_t slot_info = 0x800c3eb4;   // 0x1c bytes per slot; +0 group, +3 flag
+constexpr std::uint32_t atb_enabled = 0x800d3298;  // u8
+constexpr std::uint32_t slot_info = 0x800c3eb4;    // 0x1c bytes per slot; +0 group, +3 flag
 constexpr std::uint32_t slot_info_stride = 0x1c;
-constexpr std::uint32_t slot_bits = 0x800c3448;  // u16 per slot
-constexpr std::uint32_t slot_flags = 0x800d32a1; // u8, 8 bytes per slot
-constexpr std::uint32_t action_list = 0x800d2e5c; // 8-byte entries
-constexpr std::uint32_t targets = 0x800d2c94;     // u16 committed target mask
-constexpr std::uint32_t outcome = 0x800c48ea;     // u8
-constexpr std::uint32_t route = 0x800c48ec;       // 9 points of 6 bytes
-constexpr std::uint32_t candidates = 0x800c3e90;  // u8 x 12: default-target order
+constexpr std::uint32_t slot_bits = 0x800c3448;       // u16 per slot
+constexpr std::uint32_t slot_flags = 0x800d32a1;      // u8, 8 bytes per slot
+constexpr std::uint32_t action_list = 0x800d2e5c;     // 8-byte entries
+constexpr std::uint32_t targets = 0x800d2c94;         // u16 committed target mask
+constexpr std::uint32_t outcome = 0x800c48ea;         // u8
+constexpr std::uint32_t route = 0x800c48ec;           // 9 points of 6 bytes
+constexpr std::uint32_t candidates = 0x800c3e90;      // u8 x 12: default-target order
 constexpr std::uint32_t candidate_count = 0x800d3274; // u8
 constexpr std::uint32_t formation_pointer = 0x800d3364;
 constexpr std::uint32_t ui_state_pointer = 0x800d2d28;
@@ -38,10 +38,10 @@ constexpr std::uint32_t events_done = 0x2db;
 constexpr std::uint32_t default_target = 0x3c; // u8 per slot, 0x40 apart
 
 // Result accumulation (80085350/80085454): running code and amount per slot.
-constexpr std::uint32_t running_code = 0x800d2d5c; // u8 x 11
+constexpr std::uint32_t running_code = 0x800d2d5c;   // u8 x 11
 constexpr std::uint32_t running_amount = 0x800d2d70; // u16 x 11
-constexpr std::uint32_t damage = 0x800d2c54;       // u32 x 11 (record base + 5f6c)
-constexpr std::uint32_t result_code = 0x800d2c88;  // u8 x 11 (record base + 5fa0)
+constexpr std::uint32_t damage = 0x800d2c54;         // u32 x 11 (record base + 5f6c)
+constexpr std::uint32_t result_code = 0x800d2c88;    // u8 x 11 (record base + 5fa0)
 
 // Presentation event queue: 0x48-byte slots from 800c3fe8.
 constexpr std::uint32_t events = 0x800c3fe8;
@@ -195,7 +195,8 @@ void plan_route(Battle &battle, std::uint32_t actor, std::uint32_t target) {
     memory.put16(route + 2, memory.u16(info(actor) + 0xc));
     for (std::uint32_t step = 1; step < 8; ++step) {
         const auto formation = memory.u32(formation_pointer);
-        const auto list = formation + group(battle, actor) * 0x40 + group(battle, target) * 8 + 0x140;
+        const auto list =
+            formation + group(battle, actor) * 0x40 + group(battle, target) * 8 + 0x140;
         const auto point = memory.u8(list + step);
         if (point == 0xff)
             break;
@@ -435,9 +436,14 @@ std::uint32_t prepare_turn(Battle &battle) {
     const auto buffer = memory.u32(0x800ccb34);
     const auto x = memory.u16(0x800c3254 + (memory.u8(0x800d3280) * 3 + slot) * 2) + slot * 0x60;
     const auto marker = graphics + buffer * 0x18 + 0x63d0;
-    for (const auto [offset, value] :
-         {std::pair{0U, x + 0x10}, {2U, 8U}, {4U, x + 0x28}, {6U, 8U}, {8U, x + 0x10}, {10U, 0x20U},
-          {12U, x + 0x28}, {14U, 0x20U}})
+    for (const auto [offset, value] : {std::pair{0U, x + 0x10},
+                                       {2U, 8U},
+                                       {4U, x + 0x28},
+                                       {6U, 8U},
+                                       {8U, x + 0x10},
+                                       {10U, 0x20U},
+                                       {12U, x + 0x28},
+                                       {14U, 0x20U}})
         memory.put16(marker + offset, value);
     memory.put8(graphics + 0x6414, buffer);
     memory.put8(graphics + 0x6415, 1);
@@ -473,10 +479,10 @@ void count_down_statuses(Battle &battle, std::uint32_t slot) {
     struct Timed {
         std::uint32_t offset, bit, counter;
     };
-    for (const auto [offset, bit, index] : {Timed{0x84, 0x8000, 4}, Timed{0x84, 0x4000, 5},
-                                            Timed{0x84, 0x2000, 6}, Timed{0x84, 0x1000, 7},
-                                            Timed{0x84, 0x800, 8}, Timed{0x88, 0x8000, 9},
-                                            Timed{0x88, 0x4000, 10}, Timed{0x88, 0x1000, 11}}) {
+    for (const auto [offset, bit, index] :
+         {Timed{0x84, 0x8000, 4}, Timed{0x84, 0x4000, 5}, Timed{0x84, 0x2000, 6},
+          Timed{0x84, 0x1000, 7}, Timed{0x84, 0x800, 8}, Timed{0x88, 0x8000, 9},
+          Timed{0x88, 0x4000, 10}, Timed{0x88, 0x1000, 11}}) {
         if ((memory.u32(record + offset) & (bit << 16 | bit)) == bit && tick(index))
             clear(offset, bit);
     }

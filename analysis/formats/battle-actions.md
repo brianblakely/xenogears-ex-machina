@@ -110,6 +110,17 @@ writes the party back to persistent data (`8009be0c`) and sets the outcome to
 `40`; a failure only ends the member's menu. Defense sets the record's `+15a`
 bit 1 and command index 0.
 
+On the enemy-turns input every step matches its original exit image: 70
+turn starts, party preparations (with the branch taken), target orderings,
+settles and finishes, 24 action-queue resets and executor runs, 20 resumed
+executor runs, and 1,377 of 1,378 selections; the remaining selection and two
+of 2,012 input decodes contain interrupt code and match in a capture that
+brackets it (32 selections, 270 decodes and ATB ticks). The escape input
+matches all 618 decodes and 483 page steps, including both escape attempts (a
+failed and a successful roll); the encounter input matches all 2,092 decodes.
+Every page 1, 3 and 9 step of the three inputs matches; the attack pages are
+the explicit dependencies above.
+
 A party defeat was observed with an analysis probe: two fingerprinted setup
 writes lower the persistent HP of characters 0 and 2 to 1 before field entry
 (the scenario becomes an `analysis_probe`; it is not progression). With the

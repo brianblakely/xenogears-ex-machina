@@ -321,8 +321,8 @@ void menu() {
     std::uint32_t seed = 1;
     battle::Battle context{memory, seed};
     battle::decode_input(context, resident);
-    check(memory.u8(0x800d3014) == 2 && memory.u8(0x800c3e29) == 2 &&
-              memory.u8(0x800c3e28) == 1 && queue.count == 0 && queue.read == 4,
+    check(memory.u8(0x800d3014) == 2 && memory.u8(0x800c3e29) == 2 && memory.u8(0x800c3e28) == 1 &&
+              queue.count == 0 && queue.read == 4,
           "A queued button decodes to its face code and becomes the latest face button");
     battle::decode_input(context, resident);
     check(memory.u8(0x800d3014) == 8, "An empty queue decodes to 8");

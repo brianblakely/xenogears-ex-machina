@@ -11,11 +11,11 @@ constexpr std::uint32_t fixed_record_base = 0x800ccce8;
 constexpr std::uint32_t command_code = 0x800d3014; // u8: decoded menu input
 constexpr std::uint32_t face_code = 0x800c3e29;    // u8: latest face-button code
 constexpr std::uint32_t previous_face = 0x800c3e28;
-constexpr std::uint32_t paused = 0x800c3444;       // u8
-constexpr std::uint32_t outcome = 0x800c48ea;      // u8
+constexpr std::uint32_t paused = 0x800c3444;          // u8
+constexpr std::uint32_t outcome = 0x800c48ea;         // u8
 constexpr std::uint32_t effects_enabled = 0x800d366c; // u8: gates 8008aa74
 // Turn-state (800c3eac block) offsets.
-constexpr std::uint32_t page = 0x2dd;        // command page
+constexpr std::uint32_t page = 0x2dd; // command page
 constexpr std::uint32_t events_done = 0x2db;
 constexpr std::uint32_t menu_done = 0x2de;
 constexpr std::uint32_t repeat_armed = 0x2f6; // a second press of the same face button
@@ -52,8 +52,8 @@ bool debug_enabled(const ResidentState &resident) {
 
 // A face button (code 0-3) press on a page that moves to `target` on a
 // repeated press (the 2f6/800c3e29 pair) unless `blocked`.
-void repeat_or_move(Battle &battle, ResidentState &resident, std::uint32_t face,
-                    bool blocked, std::uint32_t target) {
+void repeat_or_move(Battle &battle, ResidentState &resident, std::uint32_t face, bool blocked,
+                    std::uint32_t target) {
     if (battle.memory.u8(turn_state(battle) + repeat_armed) == 0 ||
         battle.memory.u8(face_code) != face) {
         set_repeat(battle, 1);
@@ -323,8 +323,8 @@ void menu_step(Battle &battle, ResidentState &resident, std::uint32_t member) {
     default:
         if (current - 1 >= 0x65)
             return;
-        throw BattleError(std::format("Command page {:#x} (table 8006fe7c) is not reconstructed",
-                                      current));
+        throw BattleError(
+            std::format("Command page {:#x} (table 8006fe7c) is not reconstructed", current));
     }
 }
 
