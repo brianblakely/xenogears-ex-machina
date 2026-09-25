@@ -1338,6 +1338,26 @@ ENTRY_STAGES = (
     "e-91f0",
     "e-exit",
 )
+# The main loop leaving the field for a battle (80078334..80078b30): its
+# stage hooks, each on a return address, compared likewise.
+EXIT_STAGES = (
+    "b-start",
+    "b-ffe8",
+    "b-return",
+    "x-98bc",
+    "x-91f0",
+    "x-31e8",
+    "x-9460",
+    "x-64f0",
+    "x-ffe8",
+    "x-sync",
+    "x-00b0",
+    "x-7d2c",
+    "x-5988",
+    "x-release",
+    "x-exit",
+    "x-dispatch",
+)
 # The field load's (80070cc8) stage hooks, compared likewise.
 LOAD_STAGES = (
     "l-entry",
@@ -1435,7 +1455,7 @@ ARRIVAL_POINTS = {
     "reload-exit": 0x80077DB4,
     # The field entry 80078d44 from its call (m-d44): its stages as the
     # reload's; after it, the main loop's top as between frames.
-    **{hook: 0x8004B674 for hook in ("m-d44", *ENTRY_STAGES)},
+    **{hook: 0x8004B674 for hook in ("m-d44", *ENTRY_STAGES, *EXIT_STAGES)},
     "m-after": 0x80077DB4,
 }
 # VSync(0) (8004b674) after its wait: inside a field frame the frame's own
@@ -1504,7 +1524,7 @@ def loop_inputs(
             require(block is None, "A position hook inside interrupt code")
             lines += [line for item in pending for line in item]
             pending, last = [], hook
-            if hook in ENTRY_STAGES or hook in LOAD_STAGES:
+            if hook in ENTRY_STAGES or hook in LOAD_STAGES or hook in EXIT_STAGES:
                 lines.append(f"position {row['pc']:x}")
             if hook == "frame-entry":
                 in_frame = True
@@ -1683,6 +1703,17 @@ def run_frames(args: argparse.Namespace) -> int:
         work = Path(directory)
         for entry_row, chain in chains:
             last_exit = chain[-1][1]
+            # A chain that leaves the field ends at the exit's last stage.
+            leaving = []
+            if args.field_exit:
+                later = [row for row in image_rows if row["event"] > last_exit["event"]]
+                for row in later:
+                    if row["hook"] == "frame-entry":
+                        break
+                    if row["hook"] in EXIT_STAGES:
+                        leaving.append(row)
+                require(leaving, "The chain's last frame is not followed by the field's exit")
+                last_exit = leaving[-1]
             entry, scratch, io = snapshots.read(entry_row)
             start, end = entry_row["cycle_u32"], last_exit["cycle_u32"]
 
@@ -1710,7 +1741,7 @@ def run_frames(args: argparse.Namespace) -> int:
             )
             lines, service_counts = chain_services(
                 service_rows,
-                [exit for _, exit, _, _ in chain],
+                [exit for _, exit, _, _ in chain] + leaving[-1:],
                 inside,
                 (("dispatch-entry", "dispatch-exit"), ("tick-entry", "tick-exit")),
             )
@@ -1732,7 +1763,7 @@ def run_frames(args: argparse.Namespace) -> int:
                     )
                 ]
                 if args.field_entry
-                else []
+                else leaving
             )
             lines = [
                 f"stage {FRAME_CALL if row['hook'] == 'frame-exit' else row['pc']:x}"
@@ -1775,6 +1806,7 @@ def run_frames(args: argparse.Namespace) -> int:
             for k, (frame_entry, frame_exit, _, _) in enumerate(chain):
                 boundaries += [] if k == 0 and not args.field_entry else [("entry", frame_entry)]
                 boundaries.append(("exit", frame_exit))
+            boundaries.sort(key=lambda item: item[1]["event"])
             compared, first_divergence = [], None
             for (kind, row), output in zip(boundaries, outputs, strict=False):
                 require(output["boundary"] == kind, "Runner boundaries out of order")
@@ -1839,7 +1871,7 @@ def run_frames(args: argparse.Namespace) -> int:
                     "frames_matched": frames_matched,
                     "status": report["status"],
                     "stopped_at": None
-                    if complete
+                    if complete and report["status"] == "completed_boundary"
                     else {
                         "dependency": report.get("dependency"),
                         "reason": report.get("reason"),
@@ -2005,6 +2037,12 @@ def main() -> int:
         "--field-entry",
         help="Hook at the call of the field entry 80078d44: multi-frame runs import there and "
         "compare the entry's stages before the main-loop frames",
+    )
+    parser.add_argument(
+        "--field-exit",
+        action="store_true",
+        help="Multi-frame runs end with the main loop leaving the field after the last frame "
+        "(a battle start) and compare the exit's stages",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

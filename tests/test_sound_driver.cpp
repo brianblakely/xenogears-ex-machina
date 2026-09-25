@@ -420,6 +420,41 @@ void transfer() {
 }
 } // namespace
 
+// An effect bank's release stops its playing voices, unlinks it and checks
+// its signature: 'sesd', a zero word sum over its length and version 101.
+void effect_bank_release() {
+    auto d = sample();
+    d.voice_limit = 12;
+    const auto sign = [&](std::uint32_t signature) {
+        put(d, bank, signature, 4);
+        put(d, bank + 8, 0x20, 4);
+        put(d, bank + 0xc, 0x101, 2);
+        put(d, bank + 0x14, 0, 2);
+        put(d, bank + 4, 0, 4);
+        std::uint32_t sum = 0;
+        for (std::uint32_t at = 0; at < 0x20; at += 4)
+            sum += get(d, bank + at, 4);
+        put(d, bank + 4, 0U - sum, 4);
+    };
+    sign(0x73646573);
+    put(d, record(10), 0x8001, 2); // Playing effect 1 of bank 0 (+0a).
+    put(d, record(10) + 0xa, 0, 2);
+    put(d, record(11), 0x8001, 2);
+    put(d, record(11) + 0xa, 3, 2); // Another bank's effect.
+    put(d, block + 0x48, (1U << 7U) | (1U << 9U), 4);
+    d.voice_owners[3] = record(10) + 0x30;
+    resident::release_effect_bank(d, bank);
+    check(d.effect_banks == 0 && get(d, record(10), 2) == 0 && get(d, record(11), 2) == 0x8001 &&
+              get(d, block + 0x48, 4) == (1U << 9U) && d.voice_owners[3] == 0,
+          "The bank's voices stop, the others play on, and the list empties");
+    rejects([&] { resident::release_effect_bank(d, bank); },
+            "A bank off the list is driver error 10");
+    d.effect_banks = bank;
+    sign(0x73657365);
+    rejects([&] { resident::release_effect_bank(d, bank); },
+            "A bank without its signature is driver error b");
+}
+
 int main() {
     try {
         effect_start();
@@ -427,7 +462,8 @@ int main() {
         releases();
         tick();
         transfer();
-        std::cout << "Sound driver: five source-boundary groups passed\n";
+        effect_bank_release();
+        std::cout << "Sound driver: six source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

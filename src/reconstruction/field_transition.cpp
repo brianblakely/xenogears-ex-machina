@@ -27,13 +27,14 @@ FieldState &loaded(Program &program) {
 }
 } // namespace
 
-// 8009744c: the controlled actor's facing (+106) as an octant, offset by two.
+// 8009744c: the controlled actor's facing (+106) as an octant, offset by two;
+// the actor through its descriptor (+4c), whose table a torn-down field
+// leaves in released memory.
 std::int32_t Program::facing_octant() const {
     const auto &state = *field;
-    const auto controlled = static_cast<std::size_t>(state.controlled_actor);
-    if (controlled >= state.actors.size())
-        throw field::FieldFormatError("Facing octant requires the controlled actor's record");
-    const auto facing = static_cast<std::int16_t>(half(state.actors[controlled].storage, 0x106));
+    const auto descriptor =
+        state.reload.descriptor_table + 0x5cU * static_cast<std::uint32_t>(state.controlled_actor);
+    const auto facing = static_cast<std::int16_t>(memory(memory(descriptor + 0x4c) + 0x106, 2));
     return (((facing + 0x100) >> 9) + 2) & 7;
 }
 

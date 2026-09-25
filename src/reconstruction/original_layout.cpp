@@ -825,6 +825,9 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.w_4f2f8; });
     add_resident("field_entry_4f304", 0x8004f304, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f304; });
+    add_resident("field_effect_bank", 0x8006259c, 4,
+                 [](Program &p) -> auto & { return p.resident.field_effect_bank; });
+    add_resident("w_4f32c", 0x8004f32c, 4, [](Program &p) -> auto & { return p.resident.w_4f32c; });
     add_resident("geometry_return", 0x800569f0, 4,
                  [](Program &p) -> auto & { return p.resident.geometry_return; });
     add_resident("bios_setup_return", 0x800593d4, 4,
@@ -922,6 +925,10 @@ std::vector<OriginalGlobal> build() {
     // Field main loop between frames (field_loop.cpp).
     add("transition", 0x800adb38, 4, [](Program &p) -> auto & { return f(p).transition; });
     add("w_adbd0", 0x800adbd0, 4, [](Program &p) -> auto & { return f(p).w_adbd0; });
+    add("w_adbd4", 0x800adbd4, 4, [](Program &p) -> auto & { return f(p).w_adbd4; });
+    add("w_adb18", 0x800adb18, 4, [](Program &p) -> auto & { return f(p).w_adb18; });
+    add("saved_music", 0x800afc78, 4, [](Program &p) -> auto & { return f(p).saved_music; });
+    add("exit_block", 0x800adb30, 4, [](Program &p) -> auto & { return f(p).exit_block; });
     add("gate_adbd8", 0x800adbd8, 4, [](Program &p) -> auto & { return f(p).gate_adbd8; });
     add("gate_adbe8", 0x800adbe8, 4, [](Program &p) -> auto & { return f(p).gate_adbe8; });
     add("input_mask", 0x800b217a, 2, [](Program &p) -> auto & { return f(p).input_mask; });
@@ -944,6 +951,7 @@ std::vector<OriginalGlobal> build() {
     add_resident("w_4f318", 0x8004f318, 4, [](Program &p) -> auto & { return p.resident.w_4f318; });
     add_resident("w_4f328", 0x8004f328, 4, [](Program &p) -> auto & { return p.resident.w_4f328; });
     add_resident("b_59171", 0x80059171, 1, [](Program &p) -> auto & { return p.resident.b_59171; });
+    add_resident("b_59179", 0x80059179, 1, [](Program &p) -> auto & { return p.resident.b_59179; });
     for (std::uint32_t i = 0; i < 5; ++i)
         add_resident("pointer", 0x80065848 + 4 * i, 4,
                      [i](Program &p) -> auto & { return p.resident.pointer[i]; });

@@ -440,6 +440,10 @@ struct ResidentState {
     // Field entry 80078d44 globals whose meaning is not recovered.
     std::uint32_t w_4f2f8{}; // 8004f2f8: zero converts the screen first (800a77c4); set after
     std::uint32_t w_4f304{}; // 8004f304: nonzero restores a saved sound state
+    // The field's sound effect bank (8006259c), released by 80085988, which
+    // sets 8004f32c to -1.
+    std::uint32_t field_effect_bank{};
+    std::uint32_t w_4f32c{};
     // Return addresses InitGeom (80048bc4) and its BIOS setup (8004b4ac) keep.
     std::uint32_t geometry_return{};   // 800569f0
     std::uint32_t bios_setup_return{}; // 800593d4
@@ -450,6 +454,7 @@ struct ResidentState {
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
     std::uint32_t w_4f328{}; // 8004f328: bit 80 stops variable 10, bit 4 counts it down
     std::uint8_t b_59171{};  // 80059171: 800b236c when triangle opens the menu
+    std::uint8_t b_59179{};  // 80059179: the menu character 800798bc selects
     // 80065848: 8007ae78's pointer record for port 2 (x, y, buttons, dx, dy).
     std::array<std::int32_t, 5> pointer{};
     InterruptState interrupts;
@@ -549,6 +554,9 @@ struct FieldState {
     std::array<std::int32_t, 3> party_indices{255, 255, 255};
     // Scheduler publication (800afd1c/800b0078/800b06b8): the last eligible actor.
     std::optional<std::size_t> published_actor;
+    // The publication a teardown leaves in RAM once its actor is gone:
+    // index, actor and descriptor addresses.
+    std::optional<std::array<std::uint32_t, 3>> published_left;
     std::int32_t controlled_actor{};               // 800b226c
     std::array<std::int32_t, 4> triangle_counts{}; // 800afb44: active triangles per layer
     std::int16_t layer_count{};                    // 800afb54
@@ -674,6 +682,10 @@ struct FieldState {
     // Field main loop 80077e88 between frames (field_loop.cpp).
     std::uint32_t transition{};     // 800adb38: nonzero runs the 800a5924 transition
     std::uint32_t w_adbd0{};        // 800adbd0: read by the branch after a battle request
+    std::uint32_t w_adbd4{};        // 800adbd4: the battle music started before the battle
+    std::uint32_t w_adb18{};        // 800adb18: nonzero skips the field-return snapshot
+    std::uint32_t saved_music{};    // 800afc78: the field music to resume after a battle
+    std::uint32_t exit_block{};     // 800adb30: a block the loop's exit releases
     std::uint32_t gate_adbd8{};     // 800adbd8: zero leaves the field (exit kind 3)
     std::uint32_t gate_adbe8{};     // 800adbe8: zero leaves the field (exit kind 2)
     std::uint16_t input_mask{};     // 800b217a: buttons of port 1 the drain keeps
@@ -784,7 +796,15 @@ class Program {
     // (buffer swap, ordering tables, the pad drain 80074700 and 800a31e8).
     // `services` supplies 80077dac's VSync(1). Branches whose callees are not
     // recovered stop with MissingDependency.
-    void field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
+    // False when the loop left the field (a battle started).
+    bool field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
+    bool start_battle(const ProgramObserver &observe); // 80078334..80078494
+    void leave_field_loop(FrameServices &services, std::uint32_t kind,
+                          const ProgramObserver &observe); // 80078abc..80078b30
+    void select_menu_character();                          // 800798bc
+    void release_party_sprites();                          // 80077d2c
+    void release_sound_bank();                             // 80085988
+    void save_field_return();                              // 800a3f4c
     // One main-loop iteration: the code between frames, then the frame.
     void field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
     // 80078d44, the field entry, from its caller's stack frame (the main
@@ -1177,6 +1197,9 @@ class Program {
                      std::uint32_t address, std::uint32_t destination);
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
                     std::int32_t x, std::int32_t y);                           // 8004495c
+    void stop_particles(FrameServices &services);                              // 800a9460
+    void stop_field_effects();                                                 // 800864f0
+    void close_dialogues();                                                    // 8007ffe8
     void save_screen_vram(FrameServices &services);                            // 800a915c
     void restore_screen_vram(FrameServices &services);                         // 800a91f0
     void load_text_palette(FrameServices &services, std::uint32_t caller);     // 80077544

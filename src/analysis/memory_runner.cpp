@@ -385,25 +385,32 @@ int run_case(int argc, char **argv) {
                            << ']';
                 frames << "]}";
             };
-            // Stages are reported inside the field entry only.
-            bool staging = false;
+            // A completed frame (its call, 8007554c) is a stage inside the
+            // field entry only; the entry's fade-in frames.
+            bool entering = false;
             const game::ProgramObserver staged = [&](const game::Program &at_program,
                                                      game::SourcePoint at, bool completed) {
                 observer(at_program, at, completed);
-                if (staging && completed && stages.contains(at.machine_address))
+                if (completed && stages.contains(at.machine_address) &&
+                    (entering || at.machine_address != 0x8007554c))
                     report("stage", program->resident.hardware_writes.size());
             };
             for (std::size_t k = 0; k < sections.size(); ++k) {
                 auto written = program->resident.hardware_writes.size();
                 if (k == 0 && entry == "field_entry_frames") {
-                    staging = true;
+                    entering = true;
                     program->field_entry(sections[k], registers[29] - 0x30, staged);
-                    staging = false;
+                    entering = false;
                     program->field_loop_start(sections[k], staged);
                     report("entry", written);
                     written = program->resident.hardware_writes.size();
                 } else if (k != 0) {
-                    program->field_between_frames(sections[k], staged);
+                    // A loop that leaves the field (a battle start) ends the run.
+                    if (!program->field_between_frames(sections[k], staged)) {
+                        if (k + 1 != sections.size())
+                            throw InputError("Frame sections follow the field's exit");
+                        break;
+                    }
                     report("entry", written);
                     written = program->resident.hardware_writes.size();
                 }

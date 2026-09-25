@@ -180,6 +180,12 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
         if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
             !bytes.empty())
             return bytes;
+    // Released heap bytes the heap holds: code reads what they still contain.
+    if (const auto after = resident.heap.held.upper_bound(address);
+        after != resident.heap.held.begin())
+        if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
+            !bytes.empty())
+            return bytes;
     return {};
 }
 

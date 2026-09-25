@@ -84,9 +84,30 @@ std::uint32_t pool_allocate(Memory &m, std::uint32_t size, bool top) {
     std::erase_if(d.pool_headers, [&](const auto &entry) {
         return entry.first < end && place < entry.first + 16U;
     });
-    std::erase_if(d.objects, [&](const auto &entry) {
-        return entry.first < end && place < entry.first + entry.second.size();
-    });
+    // Bytes of the replaced objects and earlier held bytes outside the new
+    // block stay held; inside it they are the new object's.
+    std::map<std::uint32_t, std::vector<std::uint8_t>> kept;
+    const auto keep_outside = [&](std::uint32_t at, const std::vector<std::uint8_t> &bytes) {
+        const auto last = std::uint64_t{at} + bytes.size();
+        if (at < place)
+            kept[at].assign(bytes.begin(),
+                            bytes.begin() + static_cast<std::ptrdiff_t>(
+                                                std::min<std::uint64_t>(last, place) - at));
+        if (last > end)
+            kept[static_cast<std::uint32_t>(std::max<std::uint64_t>(at, end))].assign(
+                bytes.end() - static_cast<std::ptrdiff_t>(last - std::max<std::uint64_t>(at, end)),
+                bytes.end());
+    };
+    for (auto *owners : {&d.objects, &d.held})
+        for (auto entry = owners->begin(); entry != owners->end();) {
+            if (entry->first < end && place < entry->first + entry->second.size()) {
+                keep_outside(entry->first, entry->second);
+                entry = owners->erase(entry);
+            } else {
+                ++entry;
+            }
+        }
+    d.held.merge(kept);
     const auto next = header(before)[3];
     d.pool_headers[place] = {2, 0, object + size, next};
     header(before)[3] = place;
