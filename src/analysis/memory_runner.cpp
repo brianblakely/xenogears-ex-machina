@@ -161,13 +161,12 @@ int run_case(int argc, char **argv) {
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision" ||
                                  entry == "music_poll" || entry == "music_chunk";
-        const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
-                                  entry == "battle_alive" || entry == "battle_rewards" ||
-                                  entry == "battle_reward_totals" || entry == "battle_drops" ||
-                                  entry == "battle_atb" || entry == "battle_reload" ||
-                                  entry == "battle_ai" || entry == "battle_results_step" ||
-                                  entry == "battle_setup_phase" ||
-                                  entry.starts_with("battle_turn_");
+        const bool battle_entry =
+            entry == "battle_commit" || entry == "battle_apply" || entry == "battle_alive" ||
+            entry == "battle_rewards" || entry == "battle_reward_totals" ||
+            entry == "battle_drops" || entry == "battle_atb" || entry == "battle_reload" ||
+            entry == "battle_ai" || entry == "battle_results_step" ||
+            entry == "battle_setup_phase" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -189,10 +188,10 @@ int run_case(int argc, char **argv) {
             entry == "field_reload_finish" || entry == "field_reload_teardown" ||
             entry == "field_reload" || entry == "field_load";
         // The field main loop leaving for battle (80078334..8007954c).
-        const bool battle_exit_entry =
-            entry == "field_battle_start" || entry == "field_battle_leave" ||
-            entry == "field_teardown" || entry == "field_battle_release" ||
-            entry == "field_battle_exit";
+        const bool battle_exit_entry = entry == "field_battle_start" ||
+                                       entry == "field_battle_leave" || entry == "field_teardown" ||
+                                       entry == "field_battle_release" ||
+                                       entry == "field_battle_exit";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
             entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
             !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry &&

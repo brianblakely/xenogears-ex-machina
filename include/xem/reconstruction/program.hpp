@@ -434,17 +434,17 @@ struct ResidentState {
     resident::HeapBlock mode_block;
     std::uint32_t mode_loaded{}; // 800592c0: -1 once the next mode differs
     // Field exit 8007954c globals whose meaning is not recovered.
-    std::uint8_t b_5942c{};  // 8005942c: cleared on every exit
+    std::uint8_t b_5942c{}; // 8005942c: cleared on every exit
     // Leaving a field for battle (field_battle_exit.cpp): the battle-entry
     // flag 800798bc sets, the field's effect bank 80085988 unlinks (8006259c),
     // 8004f32c it resets and the party sprite blocks 80077d2c releases
     // (8005a414).
-    std::uint8_t b_59179{};                         // 80059179
-    std::uint32_t field_effect_bank{};              // 8006259c
-    std::uint32_t w_4f32c{};                        // 8004f32c
+    std::uint8_t b_59179{};                             // 80059179
+    std::uint32_t field_effect_bank{};                  // 8006259c
+    std::uint32_t w_4f32c{};                            // 8004f32c
     std::array<std::uint32_t, 3> party_sprite_blocks{}; // 8005a414
-    std::uint32_t w_4f30c{}; // 8004f30c
-    std::uint32_t w_4f310{}; // 8004f310
+    std::uint32_t w_4f30c{};                            // 8004f30c
+    std::uint32_t w_4f310{};                            // 8004f310
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
@@ -1191,10 +1191,10 @@ class Program {
                      std::span<std::uint8_t> bytes);
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
                     std::int32_t x, std::int32_t y);                       // 8004495c
-    void stop_particles(FrameServices &services); // 800a9460
-    void stop_emitters();                         // 800864f0
-    void close_dialogues();                       // 8007ffe8
-    void restore_particle_vram(FrameServices &services); // 800a91f0
+    void stop_particles(FrameServices &services);                          // 800a9460
+    void stop_emitters();                                                  // 800864f0
+    void close_dialogues();                                                // 8007ffe8
+    void restore_particle_vram(FrameServices &services);                   // 800a91f0
     void reload_transition_setup();                                        // 800a663c(1, 1)
     void reload_present(FrameServices &services);                          // 800a6924
     void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
@@ -1240,7 +1240,7 @@ class Program {
     // Release the allocated heap block at `address` (800320e8 at `site`)
     // with the owned bytes it holds; returns its size (zero if kept).
     std::uint32_t release_owned_block(std::uint32_t address, std::uint32_t site);
-    void release_actor(std::uint32_t index);                       // 8008083c
+    void release_actor(std::uint32_t index); // 8008083c
     // Battle setup (battle_setup.cpp).
     void setup_battle_party(battle::Battle &battle, FrameServices &services,
                             std::uint32_t stack); // 801e5384

@@ -73,9 +73,8 @@ void Program::save_field_return() {
     state.snapshot_cursor = 0x8005a4e4U + static_cast<std::uint32_t>(result.bytes_used);
     // 800379c8 prints the snapshot's extent in a diagnostic build.
     if (state.event_control.diagnostic_suppression == 0)
-        throw MissingDependency({"save_field_return", 0x800a4728, {}, {}},
-                                "symbol:printf-800379c8", false,
-                                "The diagnostic snapshot message is not reconstructed");
+        throw MissingDependency({"save_field_return", 0x800a4728, {}, {}}, "symbol:printf-800379c8",
+                                false, "The diagnostic snapshot message is not reconstructed");
 }
 
 // 80078334..80078494 of 80077e88, reached with draw buffer 1, the disc idle

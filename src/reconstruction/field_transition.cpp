@@ -69,8 +69,8 @@ void Program::save_field_departure() {
         std::uint32_t record = 0;
         for (std::uint32_t i = 0; i < 4; ++i)
             record |= static_cast<std::uint32_t>(ram_byte(descriptor + 0x4c + i)) << (8U * i);
-        const auto facing = static_cast<std::int16_t>(ram_byte(record + 0x106) |
-                                                      ram_byte(record + 0x107) << 8U);
+        const auto facing =
+            static_cast<std::int16_t>(ram_byte(record + 0x106) | ram_byte(record + 0x107) << 8U);
         variables.write(6, (((facing + 0x100) >> 9) + 2) & 7);
     }
     variables.write(8, camera_heading_octant());
