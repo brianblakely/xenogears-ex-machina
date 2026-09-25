@@ -227,11 +227,14 @@ void resume_attack_confirm(Battle &battle, ResidentState &resident, std::uint32_
 std::uint32_t direction_target(const Battle &battle, const ResidentState &resident,
                                std::uint32_t origin, std::uint32_t direction);
 
-// 80076a10 (8002675c at scale 1): build sprite `id` of the glyph table
-// (800d2f5c) as POLY_FT4 primitives at `destination` (0x50 per part, 0x28 per
-// draw buffer 800ccb34) placed at x, y; returns its part count.
+// 8002675c over the glyph table (800d2f5c; 80076a10 at scale 1000, 80076a6c
+// at 800): build sprite `id` as POLY_FT4 primitives at `destination` (0x50 per
+// part, 0x28 per draw buffer 800ccb34) placed at x, y, its part offsets and
+// sizes scaled (4.12); returns its part count.
 std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
-                         std::uint32_t x, std::uint32_t y);
+                         std::uint32_t x, std::uint32_t y, std::uint32_t scale);
+// 8008ac00(count): a text image block of (count + 3) * 26 bytes (owner tag 2).
+std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::uint32_t count);
 
 // Turn-procedure helpers the attack pages share.
 void approach_route(Battle &battle, std::uint32_t actor, std::uint32_t target);    // 800877e0

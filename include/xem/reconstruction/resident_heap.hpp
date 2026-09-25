@@ -31,9 +31,10 @@ struct Heap {
     std::uint32_t quiet{};                // 80059330: failures return zero
     std::uint32_t last_size{};            // 8005933c
     std::uint32_t last_caller{};          // 80059340: caller return address - 8
-    // 80059fa4: a word per owner tag; 80032498(tag, word) selects the tag,
-    // stores its word and clears `quiet`.
-    std::array<std::uint32_t, 16> tag_words{};
+    // 80059fa4: a word per owner tag (0-12; resident 80034eac's text record
+    // follows at 80059fd8); 80032498(tag, word) selects the tag, stores its
+    // word and clears `quiet`.
+    std::array<std::uint32_t, 13> tag_words{};
     std::map<std::uint32_t, std::array<std::uint32_t, 2>> headers; // address -> next, flags
     std::map<std::uint32_t, std::vector<std::uint8_t>> held;       // heap-owned byte ranges
 };

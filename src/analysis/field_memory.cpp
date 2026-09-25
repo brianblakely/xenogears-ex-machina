@@ -907,6 +907,15 @@ Program import_battle(const OriginalMemory &memory) {
     for (std::uint32_t window = 0; window < 8; ++window)
         for (const auto table : {0x800d2e38U, 0x800d2d90U})
             static_cast<void>(own_block(memory.word(table + window * 4)));
+    // Resident text (80034eac): the font parameters 8005934c..80059367, the
+    // glyph block (*8005935c), the text state block holding the message
+    // table (*80059360), and the text record 80059fd8 with its line record
+    // (8005a068, 0x60 bytes).
+    for (const auto [address, size] :
+         {std::pair{0x8005934cU, 0x1cU}, std::pair{0x80059fd8U, 0xf0U}})
+        battle.regions.emplace(address, copy_of(memory.range(address, size)));
+    for (const auto pointer : {0x8005935cU, 0x80059360U})
+        static_cast<void>(own_block(memory.word(pointer)));
     return program;
 }
 

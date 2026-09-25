@@ -927,7 +927,7 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.geometry_return; });
     add_resident("geometry_inner_return", 0x800593d4, 4,
                  [](Program &p) -> auto & { return p.resident.geometry_inner_return; });
-    for (std::size_t tag = 0; tag < 16; ++tag)
+    for (std::size_t tag = 0; tag < 13; ++tag)
         add_resident("heap_tag_word", static_cast<std::uint32_t>(0x80059fa4 + 4 * tag), 4,
                      [tag](Program &p) -> auto & { return p.resident.heap.tag_words[tag]; });
     add("sprite_gate", 0x800b218e, 2, [](Program &p) -> auto & { return f(p).sprite_gate; });
