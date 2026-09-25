@@ -58,6 +58,12 @@ per-action arrays follow the records: damage `+5f6c` (u32 per slot), result code
 | `80072240` to `80072254` | `finish_turn` | Turn-timer reload, ATB enabled again |
 | `80089ccc` | `decode_input` (`battle_menu.cpp`) | Menu input: dequeue resident pad entries (`80035cdc`); `800594a4` bits `2000/4000/8000/1000` give codes 0-3 (remembered in `800c3e29`/`800c3e28`), `8005948c` bits `20/40/80/10` give 4-7, `100` d, `800` e; 8 when nothing, ff once the battle ends; menu effects `4c/4d/4e` through `80039db8` |
 | `80080160` dispatch (table `8006fe7c`), `80081504`, `8008115c`, `80082504` (+ `8009aa44`, `8009a9d0`, `8009be0c`) | `menu_step`, `defend`, `try_escape`, `write_back_party` | Command pages 1, 3 and 9 with the decoded code: face codes move between pages (items with a nonzero availability halfword beep `4f`; some need a second press of the same button), confirm on page 3 defends, on page 9 tries to escape |
+| `800811b8` (+ `80087a38`, `80085d34`, `800879a8`, `800877e0`, `80084a7c`, `800841e0`, `80077698`) | `enter_attack_page`, `resume_attack_entry` (`battle_attack.cpp`) | Page 1's attack item: AP sprites, event reset, route, then (after the attack model `800b89fc`) the attack target (the default target when it is a candidate, else the first candidate), the four direction-arrow `POLY_G3` pairs, page 5 |
+| `80081b58` (+ `8008189c`, `80084854` over `ratan2` `8004b32c`, `80085eb4`, `80080b64`, `8009413c`) | `attack_page`, `resume_attack_view`, `direction_target` | Page 5: arrow flags from the nearest candidate in each screen direction, codes 0-3 retarget, 4/6/7 cost 3/1/2 AP (blocked items beep), too little AP beeps, 5 cancels or closes; page `64` (`80080838`) sets `+2e2 = ff` and stops while `+2e1` is set |
+| `800819a4`, `800861d0` (+ `8008ac00`), `80087af0` (+ `80087edc`, `80085388`, `80085ccc`, `80079840`, `80079ab0`, `80085c88`) | `resume_combo`, `confirm_attack`, `resume_attack_confirm`, `run_reaction_script` | Confirmation: the target fixed and approach event `fd`, the combo history `+2cc` and its pattern (`800c3160`) with the known-deathblow tests, three text blocks (tag 2 via `80032498`), the combo step (`800c34b3`), commit, the attacked enemy's memory (`800d3400 + e*40`), its reaction script, result application, the turn timer from table `800c31d4`, and the close (`fe`) when no AP remain |
+| `8002675c` via `80076a10` | `draw_glyph` | A glyph-table sprite (`800d2f5c`) as `POLY_FT4` parts (`SetPolyFT4`, `GetTPage`, `GetClut`) in the draw buffer `800ccb34` |
+| `801e1fb8` screens between frames (+ `8008fa60`) | `result_screen_step` (`battle_results.cpp`) | The summary, experience, level-up and gold/items screens' Cross waits and flags (UI `+a0`, `+a1`, `+ac`, `+b0..b2`, `+cf`), and window closes releasing each window's two blocks (`800d2e38`, `800d2d90`) |
+| resident `8001b758` to `8001b82c` (+ `8001ac94`, `8001996c`) | `Program::finish_battle_mode` | After the battle: outcomes 1, `40`, `21` select mode 6 (`800d3338`), 2 (`8005947c`) or 1/3 by the map selector `8006f94e`; defeat (`81`) clears `8004f30c` and selects mode 1 with selector `1ea` and `8006f950..954` cleared; `800594f8 = 1` unless `8005947c` |
 
 Explicit failures remain for paths the original leaves undefined (uninitialized
 stack reads in `80096fbc`/`80097610`) and for code not yet reconstructed: the
@@ -102,10 +108,24 @@ that call (`80078c64`) and a resumed step starts at its return (`80078c6c`),
 continuing the same entry with the executor's registers; its comparison
 excludes the 40-byte frame of `80078b34` that the entry lies inside
 (`--frame-above 40`). The party menu `80080160` is compared per frame at its
-page dispatch (`800807c8` to `80080930`) and per decode call; pages whose
-handling spans frames (the attack page entry from page 1 and the attack page 5
-with its camera, direction targeting through `ratan2` and combo execution) fail
-explicitly. The escape decision is one rand draw: `rand() % 100 < 50` succeeds,
+page dispatch (`800807c8` to `80080930`) and per decode call.
+
+The attack pages keep presentation out in two ways. The camera `800bc404`
+and the target cursor camera `800bcd98` run inside a step and are bracketed
+like interrupt code (`memory_case --presentation`): bytes only they change are
+theirs, and every segment of original code between them must leave the GTE
+rotation and translation unchanged, while the C++ keeps the entry values.
+Calls whose effects later code depends on end the step and a resume entry
+continues after them: the attack model `800b89fc` (it spans frames and runs
+the logic tick; resume at `80087ac0`), the target text `80093b08` (it
+allocates and releases heap blocks; resume at its return `80094134`), the
+combo's camera `800bcd98(0)` in `800819a4` (it releases heap blocks; resume at
+`800819e4`) and the frame inside `800861d0` (resume at `80086b34`, a loop head
+whose repeats belong to the step: `--entry-repeats`). Glyph sprites are built
+in C++ (their part count sets UI `+7b` and `+5d81`). The route selects every
+attack with Cross, so the direction codes 0-3 run only inside the per-frame
+arrow flags; a known deathblow's name (`80086028`), the model reset of a
+cancel (`800b8da4`) and a reaction that queues actions fail explicitly. The escape decision is one rand draw: `rand() % 100 < 50` succeeds,
 writes the party back to persistent data (`8009be0c`) and sets the outcome to
 `40`; a failure only ends the member's menu. Defense sets the record's `+15a`
 bit 1 and command index 0.
@@ -118,8 +138,24 @@ of 2,012 input decodes contain interrupt code and match in a capture that
 brackets it (32 selections, 270 decodes and ATB ticks). The escape input
 matches all 618 decodes and 483 page steps, including both escape attempts (a
 failed and a successful roll); the encounter input matches all 2,092 decodes.
-Every page 1, 3 and 9 step of the three inputs matches; the attack pages are
-the explicit dependencies above.
+Every page 1, 3, 9 and `64` step of the three inputs matches; on those
+captures (no presentation brackets) the attack entries and page 5 steps stop
+at their first presentation call. A shared encounter capture with the
+brackets and resume hooks (frames 6570-8130) matches every attack step: all
+1,100 page steps (4 up to the attack model, 504 up to the target text, 592
+complete), 504 continuations after the target text (500 idle frames and 4
+confirmations up to the combo camera), 4 combo continuations and 4
+confirmations after the frame (commit, reaction script and results), and all
+4 attack page entries after the model (one contains a CD interrupt and
+matches in a short capture that brackets it).
+
+The result screens are compared between frames (from the frame routine's
+return to its next call, the result being the next call's return address):
+1,545 of 1,644 steps match, all Cross waits (651 summary, 279 experience, 306
+level-up, 302 gold/items frames), the flag steps and the window closes. The
+99 others stop explicitly at screen contents: the damage count (sound
+`80039e60`), level-up and item windows, learned skills, the summary steps and
+the loading waits around the module.
 
 A party defeat was observed with an analysis probe: two fingerprinted setup
 writes lower the persistent HP of characters 0 and 2 to 1 before field entry
@@ -128,7 +164,9 @@ enemy-turns input the second enemy attack knocks out the last member; the alive
 update sets the outcome `81`. The resident battle mode (`8001b758`) then clears
 `8004f30c`, selects mode 1 with the persistent map selector `8006f94e = 1ea`
 (`8001996c`), and the game enters map 490, the memory-card load screen. That
-epilogue is observed, not reconstructed.
+epilogue (`Program::finish_battle_mode`) matches its original exit image on
+the defeat probe and after the encounter's victory; the escape outcome `40`
+takes the victory branch.
 
 The post-battle module is
 directory `10` file 4 (sha256 `f474fd48...`), byte-identical to RAM after
