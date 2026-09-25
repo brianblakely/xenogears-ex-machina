@@ -1141,6 +1141,11 @@ class Program {
     void relocate_model_group(std::uint32_t group);                   // 8002c3e8
     void set_field_light(std::uint32_t index, std::uint32_t light);   // 80030a30
     void setup_field_view(std::uint32_t view);                        // 8006fdec
+    void build_model_instance(std::uint32_t instance, std::uint32_t mode); // 8002cb54, 8002c8cc
+    void trim_model(std::uint32_t model);                                  // 8002c644
+    void build_shadow(std::uint32_t shadow);                               // 8007aa44
+    void create_field_actor(std::uint32_t index);                          // 80080f44
+    void load_descriptors();                                               // 80071318..800715a0
     void reset_graph(std::uint32_t mode);         // 80044110 ResetGraph
     void destroy_sprite_tasks();                  // 8001c8dc
     void flush_sprite_uploads(FrameServices &services); // 80025044

@@ -4,6 +4,7 @@
 // addresses name correlations only; owned records are Program state.
 #include "xem/reconstruction/field_actor.hpp"
 #include "xem/reconstruction/field_gte.hpp"
+#include "xem/reconstruction/field_sprite_model.hpp"
 #include "xem/reconstruction/field_view.hpp"
 #include "xem/reconstruction/original_layout.hpp"
 #include "xem/reconstruction/packed_field.hpp"
@@ -635,6 +636,165 @@ void Program::setup_field_view(std::uint32_t view) {
     gte.transform = matrix(0x800afa64); // SetRotMatrix, SetTransMatrix
 }
 
+// 8002cb54, 8002c8cc (mode zero) and the copy for the second buffer: a
+// model instance's packet buffers (class 25h), one per draw buffer.
+void Program::build_model_instance(std::uint32_t instance, std::uint32_t mode) {
+    auto &heap = resident.heap;
+    const auto model = memory(instance + 4);
+    heap.allocation_class = 0x25; // 800324b8
+    const auto size = memory(model + 0x34);
+    const auto packets = load_block(size * 2U, 0, 0x8002cb84);
+    set_memory(instance + 8, packets);
+    set_memory(instance + 0xc, packets + size);
+    if (mode != 0)
+        throw MissingDependency({"build_model_instance", 0x8002c920, {}, {}},
+                                "symbol:field-model-mode", false,
+                                "Model packets other than mode zero are not recovered");
+    auto &state = loaded(*this);
+    std::vector<field::SpriteResource> resources;
+    for (const auto &resource : state.resources)
+        resources.push_back({resource.address, resource.bytes});
+    const auto geometry = state.reload.geometry_address;
+    resources.push_back({geometry, resident.heap_contents.at(geometry)});
+    field::SpriteSources sources{};
+    sources.resources = resources;
+    sources.models = &resident.sprite_models;
+    auto &contents = resident.heap_contents.at(packets);
+    field::SpriteAllocation buffer{packets, std::move(contents)};
+    field::initialize_model_packets(model, buffer, resident.sprite, sources);
+    contents = std::move(buffer.bytes);
+    // 8003f968: the second buffer copies the first.
+    std::copy_n(contents.begin(), size, contents.begin() + size);
+}
+
+// 8002c644 with 80031f70: mark the model trimmed (+4 bit 1) and, when the
+// pseudo-block before it (-8) has room, end it after the model's data.
+void Program::trim_model(std::uint32_t model) {
+    const auto flags = memory(model + 4);
+    if ((flags & 2U) != 0)
+        return;
+    const auto size = memory(model + 0x24) - model;
+    set_memory(model + 4, flags | 2U);
+    const auto next = memory(model - 8);
+    if (size + 16U < next - (model - 8U) - 16U)
+        throw MissingDependency({"trim_model", 0x80031fa8, {}, {}}, "symbol:heap-trim-80031f70",
+                                false, "Trimming a model's pseudo-block is not recovered");
+}
+
+// 8007aa44: an actor's ground shadow: a 30h-wide square quad (semi-
+// transparent, abr 2) and its packet for both buffers.
+void Program::build_shadow(std::uint32_t shadow) {
+    const auto packet = shadow + 0x20;
+    set_memory(packet + 3, 9, 1); // SetPolyFT4 (80043cb0)
+    set_memory(packet + 7, 0x2c, 1);
+    constexpr std::array<std::int16_t, 12> corners{0x18, 0, 0x18, -0x18, 0, 0x18,
+                                                   0x18, 0, -0x18, -0x18, 0, -0x18};
+    for (std::uint32_t i = 0; i < 4; ++i)
+        for (std::uint32_t axis = 0; axis < 3; ++axis)
+            set_memory(shadow + 8 * i + 2 * axis, static_cast<std::uint16_t>(corners[3 * i + axis]),
+                       2);
+    for (std::uint32_t c = 4; c < 7; ++c)
+        set_memory(packet + c, 0x80, 1);
+    set_memory(packet + 0x16, gpu::texture_page(0, 2, 0x280, 0x1e0), 2);
+    set_memory(packet + 0xe, (0xf3U << 6U) | (0x100U >> 4U & 0x3fU), 2); // GetClut(100, f3)
+    set_memory(packet + 7, memory(packet + 7, 1) | 2U, 1);              // SetSemiTrans(1)
+    set_quad_uv(packet, {0, 0xe0, 0xf, 0xe0, 0, 0xef, 0xf, 0xef});
+    for (std::uint32_t at = 0; at < 0x28; at += 4)
+        set_memory(shadow + 0x48 + at, memory(packet + at));
+}
+
+// 80080f44(index): event actor `index`'s record (138h bytes, cleared), its
+// defaults (80080a74) and its ground shadow (8007aa44).
+void Program::create_field_actor(std::uint32_t index) {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    if (s32_of(index) >= s32_of(reload.event_actors))
+        return;
+    set_memory(0x800b2180, memory(0x800b2180) + 1);
+    const auto descriptor = reload.descriptor_table + 0x5cU * index;
+    const auto actor = load_block(0x138, 0, 0x80080f88);
+    set_memory(descriptor + 0x4c, actor);
+    for (std::uint32_t at = 0; at < 0x138; at += 4)
+        set_memory(actor + at, 0);
+    set_memory(descriptor + 0x5a, 0, 2);
+    if ((memory(descriptor + 0x58, 2) & 0x2000U) != 0)
+        throw MissingDependency({"create_field_actor", 0x80081028, {}, {}},
+                                "symbol:field-model-animation", false,
+                                "Actors of animated models are not recovered");
+    // 80080a74.
+    field::original::ActorDefaults defaults{};
+    std::ranges::copy(owned_span(actor).first(0x138), defaults.actor.begin());
+    std::ranges::copy(owned_span(descriptor).first(0x5c), defaults.descriptor.begin());
+    defaults.seed = resident.random_seed;
+    for (std::size_t i = 0; i < 4; ++i)
+        defaults.triangle_counts[i] = u32_of(state.triangle_counts[i]);
+    defaults = field::original::initialize_actor_defaults(defaults, state.layer_count, state.collision,
+                                                          resident.math.reciprocal);
+    if (defaults.queried_layers == 0)
+        throw MissingDependency({"create_field_actor", 0x80080a74, {}, {}},
+                                "state:actor-defaults-stack", false,
+                                "Without a queried layer the defaults read uninitialized stack");
+    resident.random_seed = defaults.seed;
+    std::ranges::copy(defaults.actor, owned_span(actor).begin());
+    std::ranges::copy(defaults.descriptor, owned_span(descriptor).begin());
+    for (std::size_t i = 0; i < 4; ++i)
+        state.triangle_counts[i] = s32_of(defaults.triangle_counts[i]);
+    const auto shadow = load_block(0x70, 0, 0x800810a8);
+    set_memory(descriptor + 8, shadow);
+    build_shadow(shadow);
+}
+
+// 80071318..800715a0: the descriptors (5ch each) from the bundle's 10h-byte
+// records: flags, auxiliary halfwords, position; a model instance for each
+// descriptor without flag 40, then the event actors (80080f44).
+void Program::load_descriptors() {
+    auto &state = loaded(*this);
+    auto &reload = state.reload;
+    const auto bundle = resident.preload_block.address;
+    const auto count = memory(bundle + 0x18c, 2);
+    state.descriptor_count = count;
+    reload.descriptor_table = load_block(count * 0x5cU, 0, 0x80071344);
+    for (std::uint32_t at = 0; at < count * 0x5cU; at += 4)
+        set_memory(reload.descriptor_table + at, 0);
+    auto &heap = resident.heap;
+    for (std::uint32_t i = 0; i < count; ++i) {
+        const auto record = bundle + 0x190 + 0x10 * i;
+        const auto descriptor = reload.descriptor_table + 0x5c * i;
+        set_memory(descriptor + 0x58, memory(record, 2), 2);
+        set_memory(descriptor + 0x50, memory(record + 2, 2), 2);
+        set_memory(descriptor + 0x52, memory(record + 4, 2), 2);
+        set_memory(descriptor + 0x54, memory(record + 6, 2), 2);
+        for (std::uint32_t axis = 0; axis < 3; ++axis) {
+            const auto value = memory(record + 8 + 2 * axis, 2);
+            set_memory(descriptor + 0x20 + 4 * axis, value);
+            set_memory(descriptor + 0x40 + 4 * axis, value);
+        }
+        const auto flags = memory(descriptor + 0x58, 2);
+        if ((flags & 0x40U) == 0) {
+            const auto instance = load_block(0x24, 0, 0x80071454);
+            set_memory(descriptor, instance);
+            const auto geometry = reload.geometry_address;
+            const auto group = geometry + memory(geometry + 4 + 4 * memory(record + 0xe, 2));
+            set_memory(instance + 4, group + 0x10);
+            build_model_instance(instance, (flags & 0xcU) >> 2U);
+            if ((flags & 0x2000U) != 0) {
+                heap.tag = 3; // 80032498(3, 0)
+                heap.tag_words[3] = 0;
+                heap.quiet = 0;
+                throw MissingDependency({"load_descriptors", 0x800303c8, {}, {}},
+                                        "symbol:field-model-animation", false,
+                                        "Animated model instances (800303c8) are not recovered");
+            }
+            trim_model(memory(instance + 4));
+        } else {
+            set_memory(descriptor + 0x58, flags | 0x20U, 2);
+            for (const auto at : {0x50U, 0x52U, 0x54U})
+                set_memory(descriptor + at, 0, 2);
+        }
+        create_field_actor(i);
+    }
+}
+
 void Program::load_field(FrameServices &services, std::uint32_t frame,
                          const ProgramObserver &observe) {
     reset_field_state();
@@ -706,6 +866,8 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
         set_memory(0x800afb34 + 4 * i, collision + memory(collision + 0x1c + 8 * i));
     }
     set_memory(0x800afd10, u32_of(s32_of(memory(0x800afb24) - memory(0x800afb20)) >> 2));
+    state.collision = field::parse_collision_package(
+        std::span(resident.heap_contents.at(collision)).first(size(1)));
     // Component 3: the sprite bundle.
     state.sprite_bundle_address = load_block(size(3) + 0x10, 0, 0x800712b8);
     decode_component(3, state.sprite_bundle_address);
@@ -713,8 +875,10 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
         set_memory(address, 1, 2);
     setup_field_view(bundle + 0x154);
     observed(observe, *this, {"load_components", 0x80071318, {}, {}});
-    throw MissingDependency({"load_field", 0x80071318, {}, {}}, "symbol:field-load-80070cc8",
-                            false, "The field load after its components is not reconstructed");
+    load_descriptors();
+    observed(observe, *this, {"load_descriptors", 0x800715a0, {}, {}});
+    throw MissingDependency({"load_field", 0x800715a0, {}, {}}, "symbol:field-load-80070cc8",
+                            false, "The field load after its descriptors is not reconstructed");
 }
 
 } // namespace xem::reconstruction
