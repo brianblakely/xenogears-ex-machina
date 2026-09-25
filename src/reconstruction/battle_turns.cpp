@@ -96,6 +96,10 @@ std::uint32_t turn_timer_value(Battle &battle, std::uint32_t slot) {
 
 } // namespace
 
+std::uint32_t turn_timer(Battle &battle, std::uint32_t slot) {
+    return turn_timer_value(battle, slot);
+}
+
 void atb_tick(Battle &battle) {
     auto &memory = battle.memory;
     if (memory.u8(atb_enabled) == 0) {

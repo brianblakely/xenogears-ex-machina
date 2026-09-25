@@ -434,12 +434,48 @@ struct ResidentState {
     resident::HeapBlock mode_block;
     std::uint32_t mode_loaded{}; // 800592c0: -1 once the next mode differs
     // Field exit 8007954c globals whose meaning is not recovered.
-    std::uint8_t b_5942c{};  // 8005942c: cleared on every exit
-    std::uint32_t w_4f30c{}; // 8004f30c
-    std::uint32_t w_4f310{}; // 8004f310
+    std::uint8_t b_5942c{}; // 8005942c: cleared on every exit
+    // Leaving a field for battle (field_battle_exit.cpp): the battle-entry
+    // flag 800798bc sets, the field's effect bank 80085988 unlinks (8006259c),
+    // 8004f32c it resets and the party sprite blocks 80077d2c releases
+    // (8005a414).
+    std::uint8_t b_59179{};                             // 80059179
+    std::uint32_t field_effect_bank{};                  // 8006259c
+    std::uint32_t w_4f32c{};                            // 8004f32c
+    std::array<std::uint32_t, 3> party_sprite_blocks{}; // 8005a414
+    std::uint32_t w_4f30c{};                            // 8004f30c
+    std::uint32_t w_4f310{};                            // 8004f310
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
+    // Battle setup files (8001bbac, 800379d8): the formation data the scene
+    // file holds (8005949c), the setup archive (directory 12 file 3,
+    // 800595a8), the effect header (file 2, 800595d0) and the two blocks that
+    // place the setup module at 801e4000 (80059480, 800594ac).
+    std::uint32_t battle_scene{};   // 8005949c
+    std::uint32_t battle_archive{}; // 800595a8
+    std::uint32_t battle_effects{}; // 800595d0
+    std::uint32_t battle_marker{};  // 80059480
+    std::uint32_t battle_spacer{};  // 800594ac
+    std::uint8_t b_5959c{};         // 8005959c: 8001b6c4 sets it, 80070f40 clears it
+    std::uint32_t battle_wave{};    // 800595ac: the wave bank 800b853c loads
+    // 80000010, low RAM: 8001cc18 reads it as the generation of a null owner.
+    std::uint32_t null_owner_generation{};
+    // 800694f8: while set, 80070f40 starts the sequence at 80062648 after
+    // 800b81bc (800397fc); its producer is not recovered.
+    std::uint8_t b_694f8{};
+    // Battle windows (8008f8f4): a word that selects blending for their
+    // glyphs (800595a0: 80076b00 texture page bit 40; 80077454 GetTPage's
+    // abr). Their backing quads take window_color.
+    std::uint32_t window_blend{};
+    // The scene files 800379d8 reads (directory 15 files 2n+6 and 2n+7): the
+    // stage file (80059470), a word it clears (80059520), and the scene data
+    // after the second file's first word (800658c8 and 8005949c); the list
+    // read's zero destination word after its terminator (8005a1f0).
+    std::uint32_t battle_stage{};      // 80059470
+    std::uint32_t battle_stage_b{};    // 80059520
+    std::uint32_t battle_scene_data{}; // 800658c8
+    std::uint32_t scene_list_tail{};   // 8005a1f0
     // Field main loop (field_loop.cpp) globals whose meaning is not recovered.
     std::uint32_t w_4f2f4{}; // 8004f2f4: cleared by 800a31e8
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
@@ -473,6 +509,15 @@ struct ResidentState {
     // Bytes of allocated heap blocks that no other Program value interprets,
     // by address; a field teardown releases them with their blocks.
     std::map<std::uint32_t, std::vector<std::uint8_t>> heap_contents;
+    // RAM a heap restart (80031b10) left outside the list, as it was, until
+    // another owner takes it (a restart below it, a mode's BSS).
+    resident::ByteRuns heap_outside;
+    // Written by 80031a30 after a mode's heap restart; meaning not recovered.
+    std::uint32_t w_59334{}; // 80059334
+    std::uint32_t w_59338{}; // 80059338
+    // Return addresses InitGeom (800569f0) and its 8004b4ac (800593d4) save.
+    std::uint32_t geometry_return{};
+    std::uint32_t geometry_inner_return{};
 };
 
 // Field reload 800a5c40. Globals whose meaning is not recovered keep their
@@ -668,6 +713,8 @@ struct FieldState {
     // Field main loop 80077e88 between frames (field_loop.cpp).
     std::uint32_t transition{};     // 800adb38: nonzero runs the 800a5924 transition
     std::uint32_t w_adbd0{};        // 800adbd0: read by the branch after a battle request
+    std::uint32_t saved_music{};    // 800afc78: music the battle branch saved (8004f324)
+    std::uint32_t w_adb30{};        // 800adb30: a block the loop's exit releases
     std::uint32_t gate_adbd8{};     // 800adbd8: zero leaves the field (exit kind 3)
     std::uint32_t gate_adbe8{};     // 800adbe8: zero leaves the field (exit kind 2)
     std::uint16_t input_mask{};     // 800b217a: buttons of port 1 the drain keeps
@@ -721,9 +768,29 @@ enum class FrameStep : std::uint8_t {
 };
 
 class Program;
+// Resumable points of the mode dispatcher 80019acc(0).
+enum class DispatchStep : std::uint8_t {
+    start,  // entry: ResetGraph, DrawSync, VSync(2)
+    heap,   // 80019b3c: the heap restart, BSS clear and the mode block load
+    wait,   // 80019b80: the disc wait, then the decode
+    sync,   // 80019b98: after the decode: DrawSync, VSync, FlushCache
+    reinit, // 80019bdc: the second heap restart up to the row call
+};
 // Read-only observation. Hosts may interrupt at a boundary; no callback supplies
 // a computed game result. References expire when the callback returns.
 using ProgramObserver = std::function<void(const Program &, SourcePoint, bool completed)>;
+
+// What the battle's start draws and the reconstruction does not: each is
+// observed where the original runs it (battle_start.cpp).
+enum class BattleStartPresentation : std::uint8_t {
+    swirl_capture, // 800b7870: the screen through a 30000h block (StoreImage
+                   // 800448f8, bit 15 on each pixel, LoadImage 80044894)
+    swirl_open,    // 800b7424: the swirl block's geometry
+    swirl_draw,    // 800b6f0c, 800b7160: one frame of the swirl's primitives
+    swirl_show,    // PutDrawEnv, PutDispEnv and DrawOTag of the frame
+    camera,        // 800bc404: frame the camera (camera state and GTE only)
+};
+using BattleStartPresent = std::function<void(BattleStartPresentation)>;
 
 // A single owner for reusable recovered behavior. No case files, expectations,
 // host clocks, presentation, or CPU emulation belong here. All borrowed views are
@@ -778,9 +845,27 @@ class Program {
     // (buffer swap, ordering tables, the pad drain 80074700 and 800a31e8).
     // `services` supplies 80077dac's VSync(1). Branches whose callees are not
     // recovered stop with MissingDependency.
-    void field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
-    // One main-loop iteration: the code between frames, then the frame.
-    void field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
+    // Returns false where the loop leaves the field for battle mode: the
+    // original then calls the mode dispatcher 80019acc(0) (8007954c).
+    bool field_between_frames(FrameServices &services, const ProgramObserver &observe = {});
+    // One main-loop iteration: the code between frames, then the frame;
+    // false (and no frame) when the loop left the field.
+    bool field_loop_step(FrameServices &services, const ProgramObserver &observe = {});
+    // The loop's battle branch (80078334..80078494): true when it leaves
+    // (80078abc), false after the battle music's first step (800adbd0 1).
+    bool field_battle_start();
+    // Field 800700b0: reset the GPU, destroy the sprite tasks, flush both
+    // sprite buffers and release the field's actors, models and components.
+    void field_teardown(FrameServices &services);
+    // 80078abc up to the teardown 800700b0 (field_battle_exit.cpp).
+    void field_battle_leave(FrameServices &services);
+    // 80078b04..80078b2c after the teardown; `block` is *800adb30.
+    void field_battle_release(std::uint32_t block);
+    // 80078abc..80078b34: leave, tear down, release and exit (8007954c(0));
+    // true where the original calls the mode dispatcher 80019acc(0).
+    bool leave_field_for_battle(FrameServices &services, const ProgramObserver &observe = {});
+    // Field 800a3f4c: save the field-return snapshot.
+    void save_field_return();
     // Resident 800295d8: start reading `file` of the selected directory into
     // `destination`; returns 0, or -3 (no such file) and -4 (empty ring).
     // Waiting for an earlier read, host-file reads and CD waits that need an
@@ -808,6 +893,13 @@ class Program {
     // host ending an imported call whose remaining arrivals all came before
     // its return.
     void deliver_pending_arrivals();
+    // Deliver the unpositioned interrupt arrivals at the front of the
+    // platform input: a call's code about to make a recorded hardware read
+    // that the original made after them.
+    void deliver_leading_arrivals();
+    // The same for leading arrivals that serve the vertical blank alone: a
+    // call-level VSync(-1) read counts them.
+    void deliver_leading_vblanks();
     // Resident 8003c028, the sound driver tick; `event` is V0 at entry (the
     // driver flags the event handler loaded). Returns 0.
     std::uint32_t sound_tick(std::uint32_t event);
@@ -840,6 +932,33 @@ class Program {
     // Resident 8001996c: select the next game mode for the mode dispatcher
     // 80019acc, dropping the cached mode block when the mode changes.
     void set_next_mode(std::uint32_t mode);
+    // Resident mode dispatcher 80019acc(0) (mode_dispatch.cpp) from `from` up
+    // to its call of the next mode's function (mode table 8001808c); returns
+    // that function. Observed boundaries: mode_heap (the first heap restart
+    // 80031b10), mode_loaded (800199cc returned), mode_decode (80032eb4 is
+    // called), mode_reinit (the second 80031b10) and mode_row (the call).
+    // The battle overlay's BSS and decoded image become Program::battle.
+    std::uint32_t mode_dispatch(FrameServices &services, DispatchStep from,
+                                const ProgramObserver &observe = {});
+    // Resident 8001b6c4 (battle mode) up to its call of 80070f40: the disc
+    // wait, directory 12 and the graphics setup 8001b844.
+    void battle_mode_start();
+    // Resident libgpu/libgte setup calls (graphics_setup.cpp). Environments
+    // are addressed as the original addresses them: battle memory when it
+    // holds them, else other owned memory.
+    void set_default_display_environment(std::uint32_t environment, std::int32_t x, std::int32_t y,
+                                         std::int32_t width,
+                                         std::int32_t height); // SetDefDispEnv 800439e0
+    void set_default_draw_environment(std::uint32_t environment, std::int32_t x, std::int32_t y,
+                                      std::int32_t width,
+                                      std::int32_t height); // SetDefDrawEnv 80043928
+    // InitGeom 80048bc4 called from `return_address - 8`.
+    void init_geometry(std::uint32_t return_address);
+    void set_geometry_offset(std::int32_t x, std::int32_t y); // SetGeomOffset 8004a12c
+    void set_geometry_screen(std::int32_t h);                 // SetGeomScreen 8004a14c
+    // 8001b94c: a battle draw environment's dither, background and colour.
+    void set_battle_draw_modes(std::uint32_t environment);
+    void set_display_mask(std::uint32_t mask); // SetDispMask 80044534
     // Field extended event handler that the FE handler's table reaches for
     // actor `index`, whose working PC is the extended byte.
     void event_extended(std::size_t index, const ProgramObserver &observe = {});
@@ -924,6 +1043,82 @@ class Program {
     // A battle step over battle memory with the resident game data and rand
     // state (the turn procedure's steps in battle.hpp).
     void run_battle(const std::function<void(battle::Battle &)> &step);
+    // Setup module 801e5840: one phase of the setup the intro swirl 800b7870
+    // runs: 0 the party records, archive contents, VRAM uploads and the
+    // enemy data read (801e5384), 1 participants and formation, 2 items and
+    // turns (battle.hpp). `services` supplies the uploads' platform results;
+    // `stack` is the stack pointer at 801e5840, below which the original's
+    // callees keep the rectangles they pass to LoadImage.
+    void setup_battle_phase(std::uint32_t phase, FrameServices &services, std::uint32_t stack);
+    // Battle 80070f40 up to its call of 800b8098: the turn, UI and graphics
+    // state blocks (800c3eac, 800d2d28, 800c3ea4, through 8008abb8), the menu
+    // input and music globals, then the formation record 8006f9dc from the
+    // field's formation table (800658dc) at the selector 80059508. The event
+    // battle (8005947c), the post-battle module (800594f8) and debug paths
+    // stop with MissingDependency.
+    void battle_prologue();
+    // 80071168..80071184: the alive mask (8007252c), then 800c3e4c = 2.
+    void battle_after_load();
+    // 800b8190..800b81b4: 801e7210's result into 800c4a38 and 800a5e9c.
+    void battle_after_scene(std::uint32_t result);
+    // 8009892c: the party adjustments (battle.hpp).
+    void battle_adjust_party();
+    // 8001bb0c (800379d8): allocate the formation scene's stage and scene
+    // data files and start their list read.
+    void battle_scene_files();
+    // 8001bbac: the setup files (directory 12 files 2-4) by a list read, the
+    // effect bank once its file has arrived, and the members' effects.
+    void battle_setup_files();
+    // 800b8098 up to 8001bbac: the mode (800d36b8) and 800b8284 (geometry
+    // offset, both display and draw environments).
+    void battle_load_prologue(std::uint32_t mode);
+    // 800b8098 after the swirl up to 801e7210: the disc wait (80028a60) and
+    // 800a8b0c (effect globals and lists).
+    void battle_effect_lists();
+    // 80071278 up to 8009892c: release the setup's effect bank, marker and
+    // setup module blocks once the setup frames end.
+    void battle_release_setup();
+    // 800b81bc: the battle renderer and task setup before the main loop;
+    // the setup module's task keeps `task_argument` (A0).
+    void battle_renderer_setup(std::uint32_t task_argument);
+    // Setup module 801e7210: the stage model, the scene data's new block and
+    // its lights (battle_setup.cpp). `stack` is the stack pointer at the
+    // call; `origin`, `colors` and `tint` are its fourth to sixth arguments
+    // (800ccb94, 800ccbb4, 800c4a39). Returns the scene data's +35e.
+    std::uint32_t battle_stage_setup(FrameServices &services, std::uint32_t stack,
+                                     std::uint32_t stage, std::uint32_t origin,
+                                     std::uint32_t colors, std::uint32_t tint);
+    // One battle frame's run of the loading task `node` (battle_loader.cpp):
+    // its state 801e6fec, 801e6f00, 801e6e48, 801e6d6c, 801e6d34 or 801e6c80.
+    void battle_loader_step(std::uint32_t node, FrameServices &services);
+    // 80071310 up to the main loop's first 800723e0: the party positions.
+    void battle_place_party();
+    // Battle 80070f40 up to its first call of the turn procedure 800723e0,
+    // the steps above connected (battle_start.cpp). `stack` is the stack
+    // pointer at 80070f40; `present` observes what the start draws.
+    void battle_start(FrameServices &services, std::uint32_t stack,
+                      const BattleStartPresent &present, const ProgramObserver &observe);
+    // 800b8098: the load, from 800b8284 to the stage's result.
+    void battle_load(std::uint32_t mode, FrameServices &services, std::uint32_t stack,
+                     const BattleStartPresent &present, const ProgramObserver &observe);
+    // 800b7870: the intro swirl, which runs the setup phases and the scene
+    // files as the disc allows. `stack` is the stack pointer in 800b7870's
+    // body (the phases' 801e5840 stack pointer).
+    void battle_swirl(FrameServices &services, std::uint32_t stack,
+                      const BattleStartPresent &present);
+    // The other draw environment becomes current and its ordering table is
+    // cleared (800b7870, 800b88c4).
+    void swap_battle_draw_buffer();
+    // 80071188..80071278: the opening and the setup frames.
+    void battle_setup_frames(FrameServices &services, const BattleStartPresent &present,
+                             const ProgramObserver &observe);
+    // 80070f40 after 800b81bc up to 80077990: the fade tasks (800b39c0), the
+    // sequence of 800694f8 (800397fc) and the scene data pointers.
+    void battle_opening();
+    // 80077990: the palette rows read back, window glyphs and draw modes.
+    void battle_opening_images(FrameServices &services);
+    // 8007819c: the two message windows and the four pairs of text quads.
+    void battle_opening_windows();
     // Post-battle 801e2794: victory rewards and write-back.
     void grant_battle_rewards();
     // Post-battle 801e2280 up to 801e23d4: experience pool and gold.
@@ -1019,6 +1214,8 @@ class Program {
     [[nodiscard]] std::span<std::uint8_t> resource_bytes(std::uint32_t address,
                                                          std::size_t width) const;
     void set_memory(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
+    // A store to battle memory when it holds it, else set_memory.
+    void store_owned(std::uint32_t address, std::uint32_t value, std::uint32_t width);
     void add_primitive(std::uint32_t table_entry, std::uint32_t packet); // addPrim
     void add_primitives(std::uint32_t table, std::uint32_t first, std::uint32_t last);
     void frame_dialogue_timers();                                      // 800805f4
@@ -1134,6 +1331,10 @@ class Program {
     void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
     void draw_sync(FrameServices &services);                                            // 800445d0
+    // Mode dispatch (mode_dispatch.cpp).
+    void release_heap_blocks();                        // 8003223c
+    void restart_heap(std::uint32_t address);          // 80031b10
+    std::uint32_t load_mode_block(std::uint32_t mode); // 800199cc
     // Reload steps (field_reload.cpp).
     void party_record(std::uint32_t slot);       // 8009fee4
     void vertical_sync(FrameServices &services); // VSync(0) (8004b54c)
@@ -1143,7 +1344,10 @@ class Program {
                      std::span<std::uint8_t> bytes);
     void move_image(FrameServices &services, const std::array<std::int16_t, 4> &rect,
                     std::int32_t x, std::int32_t y);                       // 8004495c
-    void field_teardown(FrameServices &services);                          // 800700b0
+    void stop_particles(FrameServices &services);                          // 800a9460
+    void stop_emitters();                                                  // 800864f0
+    void close_dialogues();                                                // 8007ffe8
+    void restore_particle_vram(FrameServices &services);                   // 800a91f0
     void reload_transition_setup();                                        // 800a663c(1, 1)
     void reload_present(FrameServices &services);                          // 800a6924
     void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
@@ -1189,7 +1393,55 @@ class Program {
     // Release the allocated heap block at `address` (800320e8 at `site`)
     // with the owned bytes it holds; returns its size (zero if kept).
     std::uint32_t release_owned_block(std::uint32_t address, std::uint32_t site);
-    void release_actor(std::uint32_t index);                       // 8008083c
+    void release_actor(std::uint32_t index); // 8008083c
+    // Battle setup (battle_setup.cpp).
+    void setup_battle_party(battle::Battle &battle, FrameServices &services,
+                            std::uint32_t stack);     // 801e5384
+    void setup_battle_panels(battle::Battle &battle); // 801e6290, 801e62b8
+    // 800b39c0(time, mode, r, g, b): start or retarget the fade task.
+    void start_battle_fade(battle::Battle &battle, std::uint32_t time, std::uint32_t mode,
+                           std::uint32_t red, std::uint32_t green, std::uint32_t blue);
+    void step_battle_fade(battle::Battle &battle, std::uint32_t task); // 800b36bc
+    // 8008f8f4(id, x, y, w, h, deferred, frame): window `id` (0-7): its block
+    // (800d2e38, 5a8h bytes) and placement record (800d2d90, eh bytes) when
+    // UI +b0+id is clear, with their primitives (80077454); then its frame
+    // built at once (8008f6e4) or, when deferred, its placement recorded.
+    void open_battle_window(battle::Battle &battle, std::uint32_t id, std::int16_t x,
+                            std::int16_t y, std::int16_t w, std::int16_t h, bool deferred,
+                            bool frame);
+    std::uint32_t unpack_battle_item(battle::Battle &battle, std::uint32_t item,
+                                     std::uint32_t mode); // 80032e88
+    void release_battle_block(battle::Battle &battle, std::uint32_t address,
+                              std::uint32_t call_site); // 800320e8
+    // The battle loading task (battle_loader.cpp).
+    std::uint32_t battle_block(std::uint32_t size, std::uint32_t mode, std::uint32_t site);
+    void release_battle_heap(std::uint32_t address, std::uint32_t site);
+    std::vector<std::uint8_t> take_task_bytes(std::uint32_t address, std::uint32_t size);
+    void return_task_list();
+    void register_task(std::uint32_t owner, std::uint32_t node);         // 8001cc18
+    void register_pending_task(std::uint32_t owner, std::uint32_t node); // 8001ca58
+    void unlink_task(std::uint32_t node);                                // 8001cd94
+    std::uint32_t create_task(std::uint32_t size, std::uint32_t owner, std::uint32_t update,
+                              std::uint32_t draw, std::uint32_t destroy); // 8001d1d8
+    void with_battle_sprites(const std::function<void(const field::SpriteSources &)> &call);
+    std::uint32_t create_battle_sprite_task(std::uint32_t data, std::uint32_t palette,
+                                            std::int16_t x, std::int16_t y, std::uint32_t animation,
+                                            std::uint32_t variant); // 800ba984
+    void create_slot_sprite(std::uint32_t slot, std::uint32_t index,
+                            std::uint32_t animation); // 801e67a4
+    void place_enemy_rows(FrameServices &services, std::uint32_t data,
+                          std::uint32_t frame); // 801e6314
+    void read_member_files(std::uint32_t list); // 801e693c
+    void create_member_sprites();               // 801e6ac4
+    void upload_image_sections(FrameServices &services, std::uint32_t data,
+                               std::uint32_t rect); // 8002dde4
+    // LoadImage of the rectangle at `rect` in battle memory, clamped in place.
+    void load_battle_image(battle::Battle &battle, FrameServices &services, std::uint32_t rect,
+                           std::uint32_t source);
+    void upload_battle_images(battle::Battle &battle, FrameServices &services, std::uint32_t images,
+                              std::uint32_t frame); // 8002dde4
+    void register_stage_model(battle::Battle &battle, FrameServices &services, std::uint32_t frame,
+                              std::uint32_t stage);                // 800a8bf0
     void cd_get_sector(std::uint32_t buffer, std::uint32_t words); // 800413ac / 80042aa8
     // RAM that DMA fills: owned globals, else a disc transfer block.
     void dma_store(std::uint32_t address, std::span<const std::uint8_t> bytes);
@@ -1244,6 +1496,8 @@ class Program {
     void
     sprite_call(std::size_t index,
                 const std::function<void(field::SpriteWindow, const field::SpriteSources &)> &call);
+    // Set while a delivered arrival's interrupt code runs.
+    bool in_interrupt_{};
 };
 
 } // namespace xem::reconstruction

@@ -2,6 +2,8 @@
 
 #include "xem/reconstruction/field_actor.hpp"
 
+#include <format>
+
 namespace xem::reconstruction::battle {
 namespace {
 
@@ -207,7 +209,8 @@ std::uint8_t *byte_at(std::map<std::uint32_t, std::vector<std::uint8_t>> &region
         if (address - found->first + std::uint64_t{size} <= found->second.size())
             return found->second.data() + (address - found->first);
     }
-    throw BattleError("Battle code reaches memory outside its owned regions");
+    throw BattleError(
+        std::format("Battle code reaches memory outside its owned regions at {:08x}", address));
 }
 
 } // namespace
@@ -242,6 +245,31 @@ void BattleMemory::put32(std::uint32_t address, std::uint32_t value) {
     auto *bytes = byte_at(regions, address, 4);
     for (std::uint32_t i = 0; i < 4; ++i)
         bytes[i] = static_cast<std::uint8_t>(value >> (8U * i));
+}
+bool BattleMemory::contains(std::uint32_t address, std::uint32_t size) const {
+    const auto found = regions.upper_bound(address);
+    return found != regions.begin() && address - std::prev(found)->first + std::uint64_t{size} <=
+                                           std::prev(found)->second.size();
+}
+std::span<const std::uint8_t> BattleMemory::tail(std::uint32_t address) const {
+    const auto *start = byte_at(const_cast<BattleMemory *>(this)->regions, address, 1);
+    const auto found = std::prev(regions.upper_bound(address));
+    return {start, found->second.size() - (address - found->first)};
+}
+std::vector<std::uint8_t> BattleMemory::take(std::uint32_t address, std::uint32_t size) {
+    static_cast<void>(byte_at(regions, address, size));
+    auto node = regions.extract(std::prev(regions.upper_bound(address)));
+    auto &bytes = node.mapped();
+    const auto offset = address - node.key();
+    std::vector<std::uint8_t> taken(bytes.begin() + offset, bytes.begin() + offset + size);
+    if (offset + size < bytes.size())
+        regions.emplace(address + size,
+                        std::vector<std::uint8_t>(bytes.begin() + offset + size, bytes.end()));
+    if (offset != 0) {
+        bytes.resize(offset);
+        regions.insert(std::move(node));
+    }
+    return taken;
 }
 
 std::uint32_t Battle::rand() {

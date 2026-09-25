@@ -703,6 +703,10 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("disc_transfer", block.address, block.bytes);
     for (const auto &[address, bytes] : resident.heap_contents)
         out.bytes("heap_contents", address, bytes);
+    for (const auto &node : resident.sprite_tasks.nodes)
+        out.bytes("sprite_task_block", node.address, node.bytes);
+    for (const auto &[address, bytes] : resident.heap_outside)
+        out.bytes("heap_outside", address, bytes);
 }
 } // namespace
 
@@ -730,6 +734,12 @@ void load_platform(Program &program, const char *platform, const char *disc) {
                 throw field::FieldFormatError("Malformed platform read");
             resident.platform.push_back(
                 {reconstruction::PlatformInput::Kind::read, number(site, 16), number(value, 16)});
+        } else if (kind == "end") {
+            std::string site;
+            if (!(lines >> site))
+                throw field::FieldFormatError("Malformed platform end");
+            resident.platform.push_back(
+                {reconstruction::PlatformInput::Kind::end, number(site, 16), 0});
         } else if (kind == "interrupt") {
             resident.platform.push_back({reconstruction::PlatformInput::Kind::interrupt, 0, 0});
         } else if (kind == "arrival" || kind == "tick" || kind == "pad") {
@@ -806,6 +816,26 @@ void attach_interrupt_memory(Program &program, const OriginalMemory &memory) {
                 break;
         }
         read.list = {read.w_fe0c, copy_of(memory.range(read.w_fe0c, entries * 8))};
+        // A list inside a task node (the battle loading task's) is the
+        // reader's while it runs: the node keeps the rest.
+        auto &nodes = resident.sprite_tasks.nodes;
+        const auto start = read.list.address;
+        const auto end = start + static_cast<std::uint32_t>(read.list.bytes.size());
+        const auto node = std::ranges::find_if(nodes, [&](const auto &piece) {
+            return start >= piece.address && start - piece.address < piece.bytes.size();
+        });
+        if (node != nodes.end()) {
+            const auto piece_end = node->address + static_cast<std::uint32_t>(node->bytes.size());
+            if (end > piece_end)
+                throw field::FieldFormatError("A read list crosses its task node");
+            auto bytes = std::move(node->bytes);
+            const auto piece = node->address;
+            nodes.erase(node);
+            if (start != piece)
+                nodes.push_back({piece, {bytes.begin(), bytes.begin() + (start - piece)}});
+            if (end != piece_end)
+                nodes.push_back({end, {bytes.begin() + (end - piece), bytes.end()}});
+        }
     }
 }
 
@@ -820,13 +850,19 @@ std::vector<OwnedRange> export_resident(const Program &program, OriginalMemory &
     return std::move(out.owned);
 }
 
-Program import_battle(const OriginalMemory &memory) {
+Program import_battle_overlay(const OriginalMemory &memory) {
     auto program = import_resident(memory);
     auto &battle = program.battle.emplace();
     const auto overlay =
         memory.range(reconstruction::battle::overlay_base,
                      reconstruction::battle::overlay_end - reconstruction::battle::overlay_base);
     battle.regions.emplace(reconstruction::battle::overlay_base, copy_of(overlay));
+    return program;
+}
+
+Program import_battle(const OriginalMemory &memory) {
+    auto program = import_battle_overlay(memory);
+    auto &battle = *program.battle;
     // Allocated heap blocks the battle reaches, each owned up to the next
     // header: those containing `address`, when one does.
     const auto &headers = program.resident.heap.headers;
@@ -846,13 +882,47 @@ Program import_battle(const OriginalMemory &memory) {
         return false;
     };
     // Battle setup (80070f40) allocates UI and graphics state, UI state and
-    // turn/menu state.
+    // turn/menu state; before it runs the cleared pointers name nothing.
     for (const auto pointer : {0x800c3ea4U, 0x800d2d28U, 0x800c3eacU})
-        if (!own_block(memory.word(pointer)))
+        if (memory.word(pointer) != 0 && !own_block(memory.word(pointer)))
             throw field::FieldFormatError("Battle state pointer does not name a heap block");
     // The enemy data file holding the enemy AI scripts (pointer 800c3dd0, set
     // by aux4 801e4958).
     static_cast<void>(own_block(memory.word(0x800c3dd0)));
+    // Battle setup: the formation record 80070f40 selects, the field's
+    // formation table it selects from and the party ids 801e4048 publishes
+    // (resident bytes only battle code addresses), the setup module at
+    // 801e4000 and its files: the formation data (8005949c), the archive
+    // (800595a8), the effect header (800595d0), and the marker (80059480) and
+    // spacer (800594ac) blocks that place the module.
+    for (const auto [address, size] :
+         {// The record and the zero word 8001bbac stores after its list.
+          std::pair{reconstruction::battle::formation_record - 4, 0x24U},
+          // 8001bbac's party effects per mode (3 bytes each, modes 0-5).
+          std::pair{0x8004f388U, 0x12U},
+          std::pair{reconstruction::battle::formation_table,
+                    reconstruction::battle::formation_table_bytes},
+          std::pair{reconstruction::battle::battle_party_ids, 3U},
+          // The word past the mode table's BSS end that 801e5384 stores.
+          std::pair{reconstruction::battle::overlay_end, 4U},
+          // The resident primitive table the stage's model packets follow
+          // (801e7210 through 8002c8cc).
+          std::pair{0x8004fe50U, 17U * 0x28U}})
+        battle.regions.emplace(address, copy_of(memory.range(address, size)));
+    static_cast<void>(own_block(reconstruction::battle::setup_module_base));
+    // With the stage file (80059470) the scene files 801e7210 reads.
+    for (const auto pointer :
+         {0x8005949cU, 0x800595a8U, 0x800595d0U, 0x80059480U, 0x800594acU, 0x80059470U})
+        static_cast<void>(own_block(memory.word(pointer)));
+    // The intro swirl's state (allocated at 800b73fc; the header records the
+    // call site's word address): the setup's archive items are allocated
+    // just below it and their copies read past their ends into it.
+    for (const auto &[at, header] : headers)
+        if ((header[1] & reconstruction::resident::heap_tag_mask) != 0 &&
+            (header[1] & reconstruction::resident::heap_tag_mask) !=
+                reconstruction::resident::heap_end_tag &&
+            (header[1] & 0x1fffffU) == (0x800b73fcU & 0x7fffffU) >> 2)
+            static_cast<void>(own_block(at + 8));
     // The battle scene's formation data (pointer 800d3364, copied from
     // resident 8005949c): positions and the slot-relation table at +140.
     static_cast<void>(own_block(memory.word(0x800d3364)));
@@ -870,6 +940,65 @@ Program import_battle(const OriginalMemory &memory) {
     for (std::uint32_t window = 0; window < 8; ++window)
         for (const auto table : {0x800d2e38U, 0x800d2d90U})
             static_cast<void>(own_block(memory.word(table + window * 4)));
+    // Resident text (80034eac): the font parameters 8005934c..80059367, the
+    // glyph block (*8005935c), the text state block holding the message
+    // table (*80059360), and the text record 80059fd8 with its line record
+    // (8005a068, 0x60 bytes).
+    for (const auto [address, size] :
+         {std::pair{0x8005934cU, 0x1cU}, std::pair{0x80059fd8U, 0xf0U}})
+        battle.regions.emplace(address, copy_of(memory.range(address, size)));
+    for (const auto pointer : {0x8005935cU, 0x80059360U})
+        static_cast<void>(own_block(memory.word(pointer)));
+    // The loading task (battle_loader.cpp): the enemy set's sprite data file
+    // (800c3dec) and its copy (800d39c8), the data of each slot's sprite row
+    // (800ccbd4, 12 bytes each), the resident binding 80022224 fills
+    // (8006be10) and the facing replay's command widths (8004fc40).
+    for (const auto pointer : {0x800c3decU, 0x800d39c8U})
+        static_cast<void>(own_block(memory.word(pointer)));
+    for (std::uint32_t row = 0; row < 11; ++row)
+        static_cast<void>(own_block(memory.word(0x800ccbd4 + row * 12)));
+    for (const auto [address, size] :
+         {std::pair{0x8006be10U, 0x14U}, std::pair{0x8004fc40U, 0x100U}})
+        battle.regions.emplace(address, copy_of(memory.range(address, size)));
+    // Task nodes in the heap with the block each shares with its object (a
+    // node in battle memory is owned there); a task sprite's part blocks
+    // (renderer +2c, +30); the loading task's files (+20..+2c).
+    auto &tasks = program.resident.sprite_tasks;
+    const auto node_owned = [&](std::uint32_t address) {
+        return std::ranges::any_of(tasks.nodes, [&](const auto &piece) {
+            return address >= piece.address && address - piece.address < piece.bytes.size();
+        });
+    };
+    for (auto head : {tasks.head, tasks.pending_head})
+        for (auto node = head, visited = 0U; node != 0; node = memory.word(node + 0x18)) {
+            if (++visited > 0x1000)
+                throw field::FieldFormatError("Sprite task list does not terminate");
+            if (node_owned(node) || battle.contains(node, 0x1c))
+                continue;
+            const auto block = std::ranges::find_if(headers, [&](const auto &entry) {
+                return node >= entry.first + 8 && node < entry.second[0] - 8;
+            });
+            if (block == headers.end())
+                throw field::FieldFormatError("Sprite task node is outside the heap");
+            const auto start = block->first + 8;
+            tasks.nodes.push_back(
+                {start, copy_of(memory.range(start, block->second[0] - 8 - start))});
+        }
+    for (auto node = tasks.head; node != 0; node = memory.word(node + 0x18)) {
+        const auto state = memory.word(node + 8);
+        if (state >= 0x801e6c80 && state <= 0x801e6fec) {
+            for (std::uint32_t at = 0x20; at <= 0x2c; at += 4)
+                static_cast<void>(own_block(memory.word(node + at)));
+            continue;
+        }
+        const auto sprite = memory.word(node + 4);
+        if (sprite == 0 || !node_owned(sprite))
+            continue;
+        const auto renderer = memory.word(sprite + 0x20);
+        if (renderer != 0 && node_owned(renderer))
+            for (const auto at : {0x2cU, 0x30U})
+                static_cast<void>(own_block(memory.word(renderer + at)));
+    }
     return program;
 }
 
@@ -1018,8 +1147,6 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
         out.bytes("descriptor", piece.address, piece.descriptor);
     if (const auto &saved = state.reload.vram_save; !saved.bytes.empty())
         out.bytes("vram_save", saved.address, saved.bytes);
-    for (const auto &node : resident.sprite_tasks.nodes)
-        out.bytes("sprite_task_block", node.address, node.bytes);
     if (state.published_actor) {
         const auto &actor = state.actors.at(*state.published_actor);
         memory.put(published_index, static_cast<std::uint32_t>(*state.published_actor));

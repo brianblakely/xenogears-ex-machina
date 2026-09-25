@@ -75,6 +75,25 @@ RESIDENT_ENTRIES = (
     "battle_reward_totals",
     "battle_drops",
     "battle_results_step",
+    "battle_setup_phase",
+    "battle_prologue",
+    "battle_after_load",
+    "battle_after_scene",
+    "battle_adjust_party",
+    "battle_place_party",
+    "battle_scene_files",
+    "battle_setup_files",
+    "battle_load_prologue",
+    "battle_effect_lists",
+    "battle_release_setup",
+    "battle_renderer_setup",
+    "battle_stage_setup",
+    "battle_opening",
+    "battle_opening_images",
+    "battle_opening_windows",
+    "battle_loader",
+    "mode_dispatch",
+    "battle_mode_start",
     "battle_atb",
     "battle_reload",
     "disc_read_file",
@@ -127,7 +146,17 @@ RESIDENT_ENTRIES = (
     "sequence_start",
 )
 # Field entries besides the update and move phases.
-FIELD_ENTRIES = ("field_event_extended", "movie_decision", "music_poll", "music_chunk")
+FIELD_ENTRIES = (
+    "field_event_extended",
+    "movie_decision",
+    "music_poll",
+    "music_chunk",
+    "field_battle_start",
+    "field_battle_leave",
+    "field_teardown",
+    "field_battle_release",
+    "field_battle_exit",
+)
 # The field reload 800a5c40 and the steps around each field frame. Their
 # platform results are the service records inside the call (see
 # `call_services`).
@@ -149,9 +178,19 @@ RELOAD_ENTRIES = (
 STEP_ENTRY, STEP_EXIT = "f-head", "f-7dac"
 FRAME_START_HCOUNT = 0x800ADB9C
 # StoreImage read-backs without a service hook: the hook after the transfer
-# completes, the word naming the destination and the byte count. 800a915c
-# saves 40h x 100h of VRAM into the block at 800afc70 before t-b.
-VRAM_READS = {"t-b": [(0x800AFC70, 0x8000)]}
+# completes, then per read-back in call order the word naming the block, the
+# destination's offset in it and the byte count. 800a915c saves 40h x 100h of
+# VRAM into the block at 800afc70 before t-b. The battle's 80077990 reads
+# four palette rows (198 x 1) four times each into the graphics block
+# (800c3ea4) before op-camera.
+VRAM_READS = {
+    "t-b": [(0x800AFC70, 0, 0x8000)],
+    "op-camera": [
+        (0x800C3EA4, 0x8970 + row * 0x630 + copy * 0x18C, 0x18C)
+        for copy in range(4)
+        for row in range(4)
+    ],
+}
 # 800a5884's five columns (800a5774) are read into one heap block, just below
 # the read-ahead block (8005a4e0), each read overwriting the last: the image
 # after them holds the fifth (bit 15 set, which 800a5774 sets again). The
@@ -166,6 +205,17 @@ COLUMN_READS = ("r-5884", 5, 0x7000)
 LOAD_PREFIX = "load-"
 SECTOR_HOOK = "sector"
 LOADS = {0x20: 1, 0x21: 2, 0x23: 4, 0x24: 1, 0x25: 2}
+
+
+def is_load_hook(hook: str) -> bool:
+    """`load-` and the eight hexadecimal digits of the load's address (other
+    hook names may start with `load-` too)."""
+    site = hook[len(LOAD_PREFIX) :]
+    return (
+        hook.startswith(LOAD_PREFIX)
+        and len(site) == 8
+        and all(c in "0123456789abcdef" for c in site)
+    )
 
 
 def file_sha256(path: Path) -> str:
@@ -257,6 +307,19 @@ def frame_services(
     return result
 
 
+def vram_read_lines(row: dict, snapshots, entry_row: dict) -> list[str]:
+    """The StoreImage read-backs a VRAM_READS hook after the call's entry
+    supplies: the destinations' bytes in its image."""
+    if row["hook"] not in VRAM_READS or row["event"] <= entry_row["event"]:
+        return []
+    ram = snapshots.read(row)[0]
+    lines = []
+    for pointer, offset, size in VRAM_READS[row["hook"]]:
+        at = (u32(ram, pointer) + offset) & 0x1FFFFF
+        lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+    return lines
+
+
 def call_services(
     rows: list[dict], snapshots, entry_row: dict, exit_row: dict, interrupts
 ) -> list[str]:
@@ -275,11 +338,7 @@ def call_services(
         if not entry_row["event"] <= row["event"] <= exit_row["event"]:
             continue
         hook = row["hook"]
-        if hook in VRAM_READS and row["event"] > entry_row["event"]:
-            ram = snapshots.read(row)[0]
-            for pointer, size in VRAM_READS[hook]:
-                at = u32(ram, pointer) & 0x1FFFFF
-                lines.append(f"vram_read {size // 4:x} {ram[at : at + size].hex()}")
+        lines += vram_read_lines(row, snapshots, entry_row)
         if hook == COLUMN_READS[0] and row["event"] > entry_row["event"]:
             ram = snapshots.read(row)[0]
             _, count, size = COLUMN_READS
@@ -390,6 +449,7 @@ def pairs(
     presentation: tuple[tuple[str, str], ...] = (),
     entry_repeats: bool = False,
     arrival: str | None = None,
+    arrival_ticks: str | None = None,
 ) -> list[tuple[dict, dict, list, list]]:
     """Adjacent entry/exit records of one call, in original order.
 
@@ -422,8 +482,10 @@ def pairs(
     # while the dispatcher's context is active); one path never nests itself.
     result, pending, handlers, open_handlers, platform = [], None, [], {}, []
     for row in rows:
-        platform_row = row["hook"] != entry_hook and (
-            row["hook"].startswith(LOAD_PREFIX) or row["hook"] in (SECTOR_HOOK, arrival)
+        platform_row = row["hook"] not in (entry_hook, exit_hook) and (
+            is_load_hook(row["hook"])
+            or row["hook"] in (SECTOR_HOOK, arrival, arrival_ticks)
+            or (arrival is not None and row["hook"] == DECODE_EXIT_HOOK)
         )
         if platform_row:
             if pending is not None and not open_handlers:
@@ -491,14 +553,107 @@ def header_sector(row: dict) -> int:
     return (decimal(header[0]) * 60 + decimal(header[1])) * 75 + decimal(header[2]) - 150
 
 
+# libgpu reads a call's services already report (queue-busy's DMA2 check,
+# the ready wait before a request runs, LoadImage's and StoreImage's GPUSTAT
+# waits, whose polls the alarm-state hooks count).
+SERVICE_READS = (0x8004674C, 0x80046780, 0x8004618C, 0x800461C0, 0x800463C4, 0x800463F8)
+
+
+def call_platform_rows(
+    rows: list[dict],
+    image_rows: list[dict],
+    entry_row: dict,
+    exit_row: dict,
+    interrupts,
+    own: list[dict],
+    hooked: set[str],
+) -> list[dict]:
+    """A call's platform rows: its own capture's, plus the hardware reads that
+    a capture of the same execution recorded between the call's entry and exit
+    cycles outside the call's interrupt brackets, in cycle order. Reads both
+    captures hook (`hooked`: the image capture's and earlier platform
+    captures') come from those alone.
+
+    Every interrupt hook both captures record inside the span must coincide:
+    captures of one execution share cycle counts.
+    """
+    start = entry_row["cycle_u32"]
+    span = (exit_row["cycle_u32"] - start) % (1 << 32)
+
+    def offset(row: dict) -> tuple[int, int]:
+        return (row["cycle_u32"] - start) % (1 << 32), row.get("subcycle_u32", 0)
+
+    shared = {"dispatch-entry", "dispatch-exit", "tick-entry", "tick-exit"}
+    starts = {entry for entry, _ in interrupts}
+    ends = {exit for _, exit in interrupts}
+    extra, marks, depth, handling = [], [], 0, 0
+    for row in rows:
+        if offset(row)[0] > span:
+            continue
+        hook = row["hook"]
+        if hook in shared:
+            marks.append((hook, row["cycle_u32"]))
+        # Interrupt code (delivered arrivals included) supplies its own
+        # reads; the call's service reads come from its services.
+        handling += hook in ("dispatch-entry", "tick-entry")
+        handling -= hook in ("dispatch-exit", "tick-exit")
+        if hook in starts:
+            depth += 1
+        elif hook in ends:
+            depth -= 1
+        elif (
+            depth == 0
+            and is_load_hook(hook)
+            and hook not in hooked
+            and (handling > 0 or int(hook[len(LOAD_PREFIX) :], 16) not in SERVICE_READS)
+        ):
+            extra.append(row)
+    names = {hook for hook, _ in marks}
+    image_marks = [
+        (row["hook"], row["cycle_u32"])
+        for row in image_rows
+        if row["hook"] in names and offset(row)[0] <= span
+    ]
+    require(image_marks == marks, "The platform capture is not the image capture's execution")
+    return sorted(own + extra, key=offset)
+
+
+# An arrival recorded inside a decode (80032eb4, between the image capture's
+# dec-entry and dec-exit records) is delivered where the decode ends. Each
+# decode's end is an input of its own, so that an arrival is delivered at the
+# end of the decode it arrived in.
+DECODE_END = 0x80032F4C
+DECODE_EXIT_HOOK = "dec-exit"
+
+
+def decode_arrivals(image_rows: list[dict], arrivals: tuple) -> set[int]:
+    """Events of the arrivals recorded between a dec-entry and its dec-exit."""
+    inside, events = False, set()
+    for row in image_rows:
+        if row["hook"] == "dec-entry":
+            inside = True
+        elif row["hook"] == "dec-exit":
+            inside = False
+        elif inside and row["hook"] in arrivals:
+            events.add(row["event"])
+    return events
+
+
 def platform_inputs(
-    rows: list[dict], ram: bytes, io: bytes, arrival: str | None
+    rows: list[dict],
+    ram: bytes,
+    io: bytes,
+    arrival: str | None,
+    decoding: set[int] = frozenset(),
+    pads: dict[int, bytes] | None = None,
+    ticks: str | None = None,
 ) -> tuple[str, list[int]]:
     """The runner's platform input file and the recorded delivered sectors.
 
     Load values come from the original registers after each load; nothing is
     taken from an exit image. CD_datasync's DMA3 busy reads are checked
     against the imported I/O page, which the recovered disc status reads.
+    Arrivals inside a decode carry the decode's end as their position.
     """
     dma3 = u32(ram, 0x800567B4) - IO_BASE
     idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000 if 0 <= dma3 <= len(io) - 4 else None
@@ -506,7 +661,15 @@ def platform_inputs(
     for row in rows:
         hook = row["hook"]
         if hook == arrival:
-            lines.append("interrupt")
+            lines.append(f"arrival {DECODE_END:x}" if row["event"] in decoding else "interrupt")
+            # The controller buffers the BIOS filled before the dispatch.
+            if pads is not None and row["event"] in pads:
+                lines += [f"pad {i:x} {b:x}" for i, b in enumerate(pads[row["event"]])]
+        elif ticks is not None and hook == ticks:
+            point = DECODE_END if row["event"] in decoding else 0
+            lines.append(f"tick {point:x} {visible_registers(row)[2]:x}")
+        elif hook == DECODE_EXIT_HOOK:
+            lines.append(f"end {DECODE_END:x}")
         elif hook == SECTOR_HOOK:
             sectors.append(header_sector(row))
         else:
@@ -950,6 +1113,7 @@ def run(args: argparse.Namespace) -> int:
         presentation,
         args.entry_repeats,
         args.arrival,
+        args.arrival_ticks,
     )
     require(calls, "No original entry/exit pairs in the capture")
     selected = calls[args.start : args.start + args.limit]
@@ -966,7 +1130,7 @@ def run(args: argparse.Namespace) -> int:
     behaviours = collections.Counter()
     opcodes = collections.Counter()  # Event opcodes entered by matched calls only.
     services, frame_keys = {}, {}
-    call_rows = trace_rows(capture) if args.entry in RELOAD_ENTRIES else []
+    call_rows = trace_rows(capture) if args.entry in RELOAD_ENTRIES or args.call_services else []
     if args.entry == "field_frame":
         services = frame_services(args.services or capture, "frame-entry", "frame-exit", interrupts)
         # Each call's frame: the latest frame entry at or before its entry record.
@@ -981,7 +1145,36 @@ def run(args: argparse.Namespace) -> int:
         # A call in a frame that began before the capture window has no
         # recorded services; it is not comparable.
         selected = [call for call in selected if frame_keys.get(id(call[0])) is not None]
+    elif args.call_services:
+        # The call's own platform waits (outside interrupt and presentation
+        # brackets), from the service hooks between its entry and exit.
+        # Interrupts delivered at their arrivals take no service results, so
+        # those their handlers recorded are not the call's either.
+        arrivals = tuple(
+            (hook, hook.removesuffix("-entry") + "-exit")
+            for hook in (args.arrival, args.arrival_ticks)
+            if hook
+        )
+        services = frame_services(
+            capture, args.entry_hook, args.exit_hook, interrupts + presentation + arrivals
+        )
     chains = [[call] for call in selected]
+    decoding = (
+        decode_arrivals(trace_rows(capture), (args.arrival, args.arrival_ticks))
+        if args.arrival or args.arrival_ticks
+        else set()
+    )
+    # Hardware reads the image capture did not hook, from captures of the
+    # same execution that did (--call-platform, in order of precedence).
+    platform_rows = []
+    for path in args.call_platform:
+        platform_trace = json.loads((path / "observation.json").read_text())["instruction_trace"]
+        require(
+            not platform_trace.get("failed") and not platform_trace.get("budget_reached"),
+            "Platform capture trace failed or reached its budget",
+        )
+        platform_rows.append(trace_rows(path))
+    image_rows = trace_rows(capture) if platform_rows else []
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     require(not trace.get("failed"), "Capture instruction trace failed")
     # The trace and snapshot files must be the ones the capture recorded.
@@ -1034,7 +1227,27 @@ def run(args: argparse.Namespace) -> int:
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
             (work / "resources.txt").write_text("" if resident else sources.manifest(entry))
-            platform, recorded_sectors = platform_inputs(first["inputs"], entry, io, args.arrival)
+            inputs = first["inputs"]
+            hooked = {row["hook"] for row in image_rows}
+            for rows in platform_rows:
+                inputs = call_platform_rows(
+                    rows,
+                    image_rows,
+                    first["entry_row"],
+                    first["exit_row"],
+                    interrupts + presentation,
+                    inputs,
+                    hooked,
+                )
+                hooked |= {row["hook"] for row in rows}
+            pads = {
+                row["event"]: snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)]
+                for row in inputs
+                if row["hook"] == args.arrival and "snapshot" in row
+            }
+            platform, recorded_sectors = platform_inputs(
+                inputs, entry, io, args.arrival, decoding, pads, args.arrival_ticks
+            )
             if args.assume_idle_otc:
                 require(args.entry in RELOAD_ENTRIES, "Assumed reads apply to reload entries")
                 platform += "".join(
@@ -1060,6 +1273,16 @@ def run(args: argparse.Namespace) -> int:
                     ]
                 if args.entry in RELOAD_ENTRIES:
                     lines += call_services(call_rows, snapshots, row, item["exit_row"], interrupts)
+                elif args.call_services:
+                    key = row["snapshot"]["ram_sha256"]
+                    require(key in services, "No service results recorded for this call")
+                    lines += [line for _, line in services[key][1]]
+                    lines += [
+                        line
+                        for call_row in call_rows
+                        if row["event"] < call_row["event"] <= item["exit_row"]["event"]
+                        for line in vram_read_lines(call_row, snapshots, row)
+                    ]
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             entry_row = first["entry_row"]
             report = runner.call(
@@ -1119,7 +1342,7 @@ def run(args: argparse.Namespace) -> int:
                     tuple(
                         visible_registers(row)[29]
                         for row in item["inputs"]
-                        if row["hook"] == args.arrival
+                        if row["hook"] in (args.arrival, args.arrival_ticks)
                     ),
                     tuple(tuple(window) for window in output.get("stack_windows", [])),
                     args.syscalls,
@@ -1417,7 +1640,7 @@ def loop_inputs(
         elif hook == SECTOR_HOOK:
             require(block is not None, "Sector delivered outside interrupt code")
             sectors.append(header_sector(row))
-        elif hook.startswith(LOAD_PREFIX):
+        elif is_load_hook(hook):
             site = int(hook[len(LOAD_PREFIX) :], 16)
             require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
             code = u32(ram, site)
@@ -1730,6 +1953,17 @@ def main() -> int:
     parser.add_argument(
         "--frame-from", help="field_frame step to resume at (the entry hook's call site)"
     )
+    parser.add_argument(
+        "--arrival-ticks",
+        help="Hook whose records inside a call are sound tick arrivals (V0 the tick's event) "
+        "the call's waits deliver",
+    )
+    parser.add_argument(
+        "--call-services",
+        action="store_true",
+        help="Service results of the call's own platform waits come from the capture's "
+        "service hooks between its entry and exit",
+    )
     parser.add_argument("--entry-hook", default="update-entry")
     parser.add_argument("--exit-hook", default="update-return")
     parser.add_argument("--stop", default="", help="Completed library boundary to stop at")
@@ -1789,6 +2023,14 @@ def main() -> int:
         type=Path,
         help="Capture of the same execution with the main-loop hooks, interrupt arrivals and "
         "their hardware reads (multi-frame runs)",
+    )
+    parser.add_argument(
+        "--call-platform",
+        type=Path,
+        action="append",
+        default=[],
+        help="Capture of the same execution with hardware reads a call makes that the image "
+        "capture did not hook (single calls; repeatable, earlier captures take precedence)",
     )
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--limit", type=int, default=1 << 30)

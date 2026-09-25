@@ -31,9 +31,10 @@ struct Heap {
     std::uint32_t quiet{};                // 80059330: failures return zero
     std::uint32_t last_size{};            // 8005933c
     std::uint32_t last_caller{};          // 80059340: caller return address - 8
-    // 80059fa4: a word per owner tag; 80032498(tag, word) selects the tag,
-    // stores its word and clears `quiet`.
-    std::array<std::uint32_t, 16> tag_words{};
+    // 80059fa4: a word per owner tag (0-12; resident 80034eac's text record
+    // follows at 80059fd8); 80032498(tag, word) selects the tag, stores its
+    // word and clears `quiet`.
+    std::array<std::uint32_t, 13> tag_words{};
     std::map<std::uint32_t, std::array<std::uint32_t, 2>> headers; // address -> next, flags
     std::map<std::uint32_t, std::vector<std::uint8_t>> held;       // heap-owned byte ranges
 };
@@ -58,7 +59,20 @@ struct HeapBlock {
 // block, which stays with the caller; 1 for a null block in quiet mode.
 // `call_site` (ra - 8) is recorded before a non-quiet null release fails.
 [[nodiscard]] std::int32_t heap_release(Heap &heap, HeapBlock &block, std::uint32_t call_site);
+// 80031f70: when the block has room for more than a header past its first
+// `size` bytes, a free class-21 header ends it there (dirty is set) and the
+// bytes after that header become the heap's. Returns whether it did.
+bool heap_trim(Heap &heap, HeapBlock &block, std::uint32_t size);
 // 80031ff8: merge runs of free blocks; absorbed headers become held bytes.
 void heap_coalesce(Heap &heap);
+// Bytes of RAM by address, outside every other owner.
+using ByteRuns = std::map<std::uint32_t, std::vector<std::uint8_t>>;
+// 80031b10 after its release pass and coalesce: the list restarts with a
+// free class-21 header at `address & ~3` whose next is the first block's
+// next and whose caller and keep bits are those of the word already there
+// (+4). RAM between the old and the new first header moves between the heap
+// and `outside`: the heap gives up what lies below a higher start and takes
+// in what lies below the old start.
+void heap_restart(Heap &heap, std::uint32_t address, ByteRuns &outside);
 
 } // namespace xem::reconstruction::resident

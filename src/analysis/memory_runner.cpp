@@ -156,17 +156,26 @@ int run_case(int argc, char **argv) {
             entry == "sound_set_master" || entry == "sound_set_cd" ||
             entry == "sound_update_voices" || entry == "set_next_mode" || entry == "field_exit" ||
             entry == "battle_mode_exit" || entry == "interrupt_dispatch" || entry == "sound_tick" ||
-            entry == "sequence_open" || entry == "sequence_start";
+            entry == "sequence_open" || entry == "sequence_start" ||
+            entry.starts_with("mode_dispatch");
         // Field entries beyond the update: one extended event handler, the
         // movie loop's decision.
         const bool field_entry = entry == "field_event_extended" || entry == "movie_decision" ||
                                  entry == "music_poll" || entry == "music_chunk";
-        const bool battle_entry = entry == "battle_commit" || entry == "battle_apply" ||
-                                  entry == "battle_alive" || entry == "battle_rewards" ||
-                                  entry == "battle_reward_totals" || entry == "battle_drops" ||
-                                  entry == "battle_atb" || entry == "battle_reload" ||
-                                  entry == "battle_ai" || entry == "battle_results_step" ||
-                                  entry.starts_with("battle_turn_");
+        const bool battle_entry =
+            entry == "battle_commit" || entry == "battle_apply" || entry == "battle_alive" ||
+            entry == "battle_rewards" || entry == "battle_reward_totals" ||
+            entry == "battle_drops" || entry == "battle_atb" || entry == "battle_reload" ||
+            entry == "battle_ai" || entry == "battle_results_step" ||
+            entry == "battle_setup_phase" || entry == "battle_prologue" ||
+            entry == "battle_after_load" || entry == "battle_after_scene" ||
+            entry == "battle_adjust_party" || entry == "battle_place_party" ||
+            entry == "battle_scene_files" || entry == "battle_setup_files" ||
+            entry == "battle_load_prologue" || entry == "battle_effect_lists" ||
+            entry == "battle_release_setup" || entry == "battle_renderer_setup" ||
+            entry == "battle_stage_setup" || entry == "battle_opening" ||
+            entry == "battle_opening_images" || entry == "battle_opening_windows" ||
+            entry == "battle_loader" || entry.starts_with("battle_turn_");
         const bool menu_save_entry = entry == "menu_save_serialize" || entry == "menu_save_file" ||
                                      entry == "menu_save_seal" || entry == "menu_save_store" ||
                                      entry == "menu_names_decode" || entry == "menu_load_check" ||
@@ -187,9 +196,15 @@ int run_case(int argc, char **argv) {
             entry == "field_reload_fade_in" || entry == "field_reload_fade_frame" ||
             entry == "field_reload_finish" || entry == "field_reload_teardown" ||
             entry == "field_reload" || entry == "field_load";
+        // The field main loop leaving for battle (80078334..8007954c).
+        const bool battle_exit_entry = entry == "field_battle_start" ||
+                                       entry == "field_battle_leave" || entry == "field_teardown" ||
+                                       entry == "field_battle_release" ||
+                                       entry == "field_battle_exit";
         if (entry != "field_event_pass" && entry != "field_update" && entry != "field_move" &&
-            entry != "field_checkpoints" && !entry.starts_with("field_frame") && !resident_entry &&
-            !battle_entry && !menu_entry && !field_entry && !transition_entry && !reload_entry)
+            entry != "battle_mode_start" && entry != "field_checkpoints" &&
+            !entry.starts_with("field_frame") && !resident_entry && !battle_entry && !menu_entry &&
+            !field_entry && !transition_entry && !reload_entry && !battle_exit_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -224,6 +239,21 @@ int run_case(int argc, char **argv) {
             if (entry == "sequence_open")
                 analysis::import_disc_data(*program, memory, registers[4],
                                            memory.word(registers[4] + 8));
+            // The dispatcher's second heap restart (at the mode table row's
+            // BSS end + 4) takes in the RAM below the heap's head, which no
+            // other Program value owns.
+            if (entry == "mode_dispatch:reinit" || entry == "mode_dispatch:sync") {
+                const auto row = 0x8001808cU + memory.word(0x80018088) * 16U;
+                const auto start = (memory.word(row + 8) + 4U) & ~3U;
+                const auto first = program->resident.heap.head - 8;
+                if (start < first) {
+                    const auto bytes = memory.range(start, first - start);
+                    program->resident.heap_outside.emplace(
+                        start, std::vector<std::uint8_t>(bytes.begin(), bytes.end()));
+                }
+            }
+        } else if (entry == "battle_mode_start") {
+            program = analysis::import_battle_overlay(memory);
         } else if (battle_entry) {
             program = analysis::import_battle(memory);
         } else if (menu_entry) {
@@ -237,7 +267,8 @@ int run_case(int argc, char **argv) {
                 analysis::import_menu_block(*program, memory, registers[4]);
             else if (entry == "menu_save_seal" || entry == "menu_load_check")
                 analysis::import_menu_block(*program, memory, registers[20]);
-        } else if (entry == "field_load") {
+        } else if (entry == "field_load" || entry == "field_battle_release" ||
+                   entry == "field_battle_exit") {
             // Between the reload's teardown and the load: no field is loaded.
             program =
                 analysis::import_unloaded_field(memory, read_file(argv[7], analysis::ram_bytes));
@@ -279,7 +310,8 @@ int run_case(int argc, char **argv) {
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
         // A field teardown releases whole heap blocks: own all their bytes.
-        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load")
+        if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load" ||
+            entry == "field_teardown" || entry == "field_battle_release")
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
@@ -592,6 +624,61 @@ int run_case(int argc, char **argv) {
                 else
                     throw InputError("Unsupported turn step");
             });
+        } else if (entry == "battle_prologue") {
+            program->battle_prologue(); // 80070f40 up to 800b8098
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_after_load") {
+            program->battle_after_load(); // 800b8098's return up to 800b81bc
+        } else if (entry == "battle_after_scene") {
+            program->battle_after_scene(registers[2]); // 801e7210's return: V0
+        } else if (entry == "battle_setup_files") {
+            program->battle_setup_files(); // 8001bbac
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_load_prologue") {
+            program->battle_load_prologue(registers[4]); // 800b8098: A0 mode
+        } else if (entry == "battle_effect_lists") {
+            program->battle_effect_lists(); // 800b7870 return up to 801e7210
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_release_setup") {
+            program->battle_release_setup(); // 80071278 up to 8009892c
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_renderer_setup") {
+            program->battle_renderer_setup(registers[4]); // 800b81bc: A0 the task's argument
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_opening") {
+            program->battle_opening(); // 8007118c up to 80077990
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_opening_images") {
+            program->battle_opening_images(services); // 80077990
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_opening_windows") {
+            program->battle_opening_windows(); // 8007819c
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_loader") {
+            // A state of the loading task 801e6fec: A0 the task node.
+            program->battle_loader_step(registers[4], services);
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_scene_files") {
+            program->battle_scene_files(); // 8001bb0c
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_stage_setup") {
+            // 801e7210: A0 8005949c, A2 the stage, A3 and the caller's stack
+            // words SP + 10 and + 14 the origin, colors and tint.
+            if (registers[4] != 0x8005949cU)
+                throw InputError("The stage setup's scene pointer is not 8005949c");
+            const auto sp = registers[29];
+            return_value =
+                program->battle_stage_setup(services, sp, registers[6], registers[7],
+                                            memory.word(sp + 0x10), memory.word(sp + 0x14));
+            program->deliver_pending_arrivals();
+        } else if (entry == "battle_adjust_party") {
+            program->battle_adjust_party(); // 8009892c
+        } else if (entry == "battle_place_party") {
+            program->battle_place_party(); // 8009892c's return up to 800723e0
+        } else if (entry == "battle_setup_phase") {
+            // 801e5840: A0 phase; its callees place LoadImage rectangles below SP.
+            program->setup_battle_phase(registers[4], services, registers[29]);
+            program->deliver_pending_arrivals();
         } else if (entry == "battle_atb") {
             program->tick_battle_timers(); // 8007171c
         } else if (entry == "battle_reload") {
@@ -792,6 +879,27 @@ int run_case(int argc, char **argv) {
             // 8001b758: the outcome 800c48ea and 800d3338 are read from the
             // battle overlay the returned battle leaves in RAM.
             program->finish_battle_mode(memory.ram.at(0xc48ea), memory.ram.at(0xd3338));
+        } else if (entry == "battle_mode_start") {
+            program->battle_mode_start(); // 8001b6c4 up to 80070f40
+        } else if (entry.starts_with("mode_dispatch")) {
+            // 80019acc(0) from a resumable point ("mode_dispatch:STEP") to the
+            // row call; returns the mode's function.
+            static const std::map<std::string_view, game::DispatchStep> steps{
+                {"start", game::DispatchStep::start},
+                {"heap", game::DispatchStep::heap},
+                {"wait", game::DispatchStep::wait},
+                {"sync", game::DispatchStep::sync},
+                {"reinit", game::DispatchStep::reinit}};
+            auto from = game::DispatchStep::start;
+            if (entry != "mode_dispatch") {
+                const auto found =
+                    steps.find(entry.substr(std::string_view("mode_dispatch:").size()));
+                if (!entry.starts_with("mode_dispatch:") || found == steps.end())
+                    throw InputError("Unknown mode dispatch step");
+                from = found->second;
+            }
+            return_value = program->mode_dispatch(services, from, observer);
+            program->deliver_pending_arrivals();
         } else if (entry == "set_next_mode") {
             program->set_next_mode(registers[4]); // 8001996c: A0 mode
         } else if (entry == "field_event_extended") {
@@ -818,6 +926,20 @@ int run_case(int argc, char **argv) {
                                                     : "\"next_frame\"")
                 << ",\"vertical_blank_waits\":" << waits.count << '}';
             result = out.str();
+        } else if (entry == "field_battle_start") {
+            // 80078334: S5 records that 800afc78 was saved.
+            program->field->music_saved = registers[21] != 0;
+            program->field_battle_start();
+        } else if (entry == "field_battle_leave") {
+            program->field_battle_leave(services); // 80078abc up to 800700b0
+        } else if (entry == "field_teardown") {
+            program->field_teardown(services); // 800700b0
+        } else if (entry == "field_battle_release") {
+            program->field_battle_release(program->field->w_adb30); // 80078b04..80078b2c
+        } else if (entry == "field_battle_exit") {
+            // 8007954c(0), up to its call of the mode dispatcher 80019acc.
+            if (!program->exit_field(0))
+                throw std::runtime_error("8004f370 keeps the field; the dispatcher is not called");
         } else if (entry == "field_exit") {
             // 8007954c: A0 kind; 1 where it calls the mode dispatcher 80019acc.
             // The exit follows the field's teardown (its actors' storage is
@@ -860,6 +982,14 @@ int run_case(int argc, char **argv) {
     } catch (const BoundaryReached &) {
         status = "completed_boundary";
         reason = "Stopped at the requested completed library boundary";
+        // Arrivals recorded inside a dispatcher call came before its boundary.
+        if (entry.starts_with("mode_dispatch"))
+            try {
+                program->deliver_pending_arrivals();
+            } catch (const std::exception &error) {
+                status = "reconstruction_error";
+                reason = error.what();
+            }
     } catch (const HostBudget &error) {
         status = "host_budget_exhausted";
         reason = error.what();

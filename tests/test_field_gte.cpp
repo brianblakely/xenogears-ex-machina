@@ -49,6 +49,20 @@ void rotations() {
     const auto mixed = field::rotation_matrix({3, 3, 3}, trig);
     check(mixed.r[2] == 100 && mixed.r[8] == ((-200 * -200) >> 12),
           "Y sine and X/Y cosine products follow the original entry order");
+    // RotMatrixYXZ: X by a quarter turn either way; a negative angle takes
+    // the table at its magnitude with the sine negated.
+    check(field::rotation_matrix_yxz({0, 0, 0}, trig) == identity.r,
+          "RotMatrixYXZ of zero angles is the identity");
+    check(field::rotation_matrix_yxz({1024, 0, 0}, trig) ==
+              std::array<std::int16_t, 9>{4096, 0, 0, 0, 0, -4096, 0, 4096, 0},
+          "RotMatrixYXZ places the X sine in the original entries");
+    check(field::rotation_matrix_yxz({-1024, 0, 0}, trig) ==
+              std::array<std::int16_t, 9>{4096, 0, 0, 0, 0, 4096, 0, -4096, 0},
+          "RotMatrixYXZ negates the sine of a negative angle");
+    const auto yxz = field::rotation_matrix_yxz({0, 3, 1024}, trig);
+    check(yxz[0] == ((-200 * 0) >> 12) + 0 && yxz[1] == -((-200 * 4096) >> 12) && yxz[2] == 100 &&
+              yxz[3] == 4096 && yxz[8] == -200,
+          "RotMatrixYXZ combines Y and Z in the original entry order");
 }
 
 void matrix_products() {

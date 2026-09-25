@@ -58,7 +58,21 @@ void Program::save_field_departure() {
     auto &variables = resident.variables;
     variables.write(0x44, resident.departure_5941c);
     variables.write(0x46, resident.departure_594d0);
-    variables.write(6, facing_octant());
+    // After a teardown (a battle exit) the controlled actor's record is
+    // freed memory, which the original still reads through the descriptor
+    // table.
+    if (static_cast<std::size_t>(state.controlled_actor) < state.actors.size()) {
+        variables.write(6, facing_octant());
+    } else {
+        const auto descriptor = state.reload.descriptor_table +
+                                static_cast<std::uint32_t>(state.controlled_actor) * 0x5cU;
+        std::uint32_t record = 0;
+        for (std::uint32_t i = 0; i < 4; ++i)
+            record |= static_cast<std::uint32_t>(ram_byte(descriptor + 0x4c + i)) << (8U * i);
+        const auto facing =
+            static_cast<std::int16_t>(ram_byte(record + 0x106) | ram_byte(record + 0x107) << 8U);
+        variables.write(6, (((facing + 0x100) >> 9) + 2) & 7);
+    }
     variables.write(8, camera_heading_octant());
     variables.write(0x24, static_cast<std::int16_t>(state.camera.elevation));
     variables.write(0x3c, static_cast<std::int32_t>(resident.field_map));

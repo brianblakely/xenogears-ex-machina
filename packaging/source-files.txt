@@ -191,10 +191,13 @@ src/reconstruction/battle_ai.cpp
 src/reconstruction/battle_attack.cpp
 src/reconstruction/battle_formula.cpp
 src/reconstruction/battle_levels.cpp
+src/reconstruction/battle_loader.cpp
 src/reconstruction/battle_menu.cpp
 src/reconstruction/battle_results.cpp
 src/reconstruction/battle_rewards.cpp
 src/reconstruction/battle_rules.cpp
+src/reconstruction/battle_setup.cpp
+src/reconstruction/battle_start.cpp
 src/reconstruction/battle_steps.cpp
 src/reconstruction/battle_turn.cpp
 src/reconstruction/battle_turns.cpp
@@ -202,6 +205,7 @@ src/reconstruction/disc_read.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
+src/reconstruction/field_battle_exit.cpp
 src/reconstruction/field_characters.cpp
 src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp
@@ -231,12 +235,14 @@ src/reconstruction/field_update.cpp
 src/reconstruction/field_view.cpp
 src/reconstruction/gpu.cpp
 src/reconstruction/gpu_queue.cpp
+src/reconstruction/graphics_setup.cpp
 src/reconstruction/gte.cpp
 src/reconstruction/interrupts.cpp
 src/reconstruction/media.cpp
 src/reconstruction/menu_equipment.cpp
 src/reconstruction/menu_items.cpp
 src/reconstruction/menu_save.cpp
+src/reconstruction/mode_dispatch.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
@@ -279,7 +285,9 @@ tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
 tests/test_battle_continuation.py
+tests/test_battle_loader.cpp
 tests/test_battle_request.py
+tests/test_battle_setup.cpp
 tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_disc_read.cpp
@@ -321,6 +329,7 @@ tests/test_memory_sampler.py
 tests/test_menu.cpp
 tests/test_menu_save.cpp
 tests/test_menu_save_file.py
+tests/test_mode_dispatch.cpp
 tests/test_movement_sweep.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
