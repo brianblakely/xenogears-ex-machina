@@ -1010,6 +1010,7 @@ std::vector<OriginalGlobal> build() {
                      [i](Program &p) -> auto & { return p.resident.pointer[i]; });
     add_interrupt_globals(g);
     add_reload_globals(g);
+    add_movie_globals(g);
     // Remaining bytes of the regions a field-return snapshot copies.
     const auto covered = [&](std::uint32_t address) {
         return std::ranges::any_of(g, [&](const OriginalGlobal &item) {

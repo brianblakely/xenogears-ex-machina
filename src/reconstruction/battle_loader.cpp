@@ -43,12 +43,6 @@ std::int32_t s16(std::uint32_t value) { return static_cast<std::int16_t>(value);
 std::uint32_t u32(std::int32_t value) { return static_cast<std::uint32_t>(value); }
 std::uint32_t placement(std::uint32_t slot) { return placements + slot * placement_stride; }
 std::uint32_t row(std::uint32_t index) { return sprite_rows + index * 12; }
-// 800288ec: a byte size rounded up to words, as a signed MIPS quotient.
-std::uint32_t word_size(std::uint32_t size) {
-    const auto rounded = static_cast<std::int32_t>(size + 3U);
-    const auto adjusted = rounded >= 0 ? rounded : static_cast<std::int32_t>(size + 6U);
-    return static_cast<std::uint32_t>(adjusted >> 2) << 2U;
-}
 MissingDependency missing(const char *operation, std::uint32_t address, const char *symbol,
                           const char *reason) {
     return MissingDependency({operation, address, {}, {}}, symbol, false, reason);
@@ -397,8 +391,7 @@ void Program::read_member_files(std::uint32_t list) {
         const auto entry = list + entries * 8;
         ++entries;
         set_memory(entry, file, 2);
-        const auto block =
-            battle_block(word_size(file_size(static_cast<std::int32_t>(file))), 0, 0x801e69cc);
+        const auto block = battle_block(file_words(file), 0, 0x801e69cc);
         set_memory(entry + 4, block);
         set_memory(row(member), block);
         set_memory(row(member) + 8, 0);
@@ -472,16 +465,16 @@ void Program::battle_loader_step(std::uint32_t node, FrameServices &services) {
         create_member_sprites();
         // The battle files 1-3 of directory 2c by a list read at +50.
         const auto list = node + 0x50;
-        const auto images = battle_block(word_size(file_size(1)), 1, 0x801e6f44);
+        const auto images = battle_block(file_words(1), 1, 0x801e6f44);
         set_memory(list + 4, images);
         set_memory(node + 0x28, images);
         set_memory(list, 1, 2);
-        const auto shared = battle_block(word_size(file_size(2)), 0, 0x801e6f68);
+        const auto shared = battle_block(file_words(2), 0, 0x801e6f68);
         set_memory(node + 0x5c, shared);
         set_memory(node + 0x24, shared);
         set_memory(0x800d2d54, shared);
         set_memory(list + 8, 2, 2);
-        const auto effects = battle_block(word_size(file_size(3)), 0, 0x801e6f94);
+        const auto effects = battle_block(file_words(3), 0, 0x801e6f94);
         set_memory(node + 0x64, effects);
         set_memory(node + 0x2c, effects);
         set_memory(list + 0x10, 3, 2);

@@ -596,7 +596,7 @@ bool Program::event_setup_extended(field::EventContext &context, std::uint8_t ex
             const auto id = field::read_immediate15_or_variable(world, 1);
             static_cast<void>(select_directory(4, 0));
             const auto file = id + 0x77a;
-            const auto size = file_bytes(file); // 800288ec
+            const auto size = file_words(u32(file)); // 800288ec
             put(a, 0x124, u32(file), 2);
             const auto block = load_block(size + 8, 0, 0x8008adb4);
             put(a, 0x120, block);

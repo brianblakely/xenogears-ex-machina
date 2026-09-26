@@ -332,4 +332,20 @@ void heap_coalesce(Heap &heap) {
     heap.dirty = 0;
 }
 
+void heap_select_tag(Heap &heap, std::uint32_t tag, std::uint32_t word) {
+    if (tag >= heap.tag_words.size())
+        throw HeapError("Heap owner tag outside its word table");
+    heap.tag = static_cast<std::uint16_t>(tag);
+    heap.tag_words[tag] = word;
+    heap.quiet = 0;
+}
+
+void heap_set_keep(Heap &heap, std::uint32_t block, bool keep) {
+    const auto header = heap.headers.find(block - 8);
+    if (header == heap.headers.end())
+        throw HeapError("The keep flag names a block without a heap header");
+    auto &flags = header->second[1];
+    flags = keep ? flags | heap_keep : flags & ~heap_keep;
+}
+
 } // namespace xem::reconstruction::resident

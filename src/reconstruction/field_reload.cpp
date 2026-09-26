@@ -170,9 +170,7 @@ void Program::save_particle_vram(FrameServices &services) {
         return;
     state.particles_paused = 1;
     auto &heap = resident.heap;
-    heap.tag = 8; // 80032498(8, 0)
-    heap.tag_words[8] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 8, 0); // 80032498
     auto block = resident::heap_allocate(heap, 0x8000, 1, 0x800a918c);
     if (!block)
         throw field::FieldFormatError("The VRAM save allocation failed");
@@ -285,8 +283,7 @@ void Program::stop_particles(FrameServices &services) {
         state.particle_slots[slot] = 0;
         state.reload.particle_ids[slot] = -1;
     }
-    draw_sync(services);
-    vertical_sync(services);
+    draw_and_vertical_sync(services); // 800775f8
 }
 
 // 800864f0: forget the positional emitters and stop the effect pairs whose
@@ -369,9 +366,7 @@ void Program::field_reload_teardown(FrameServices &services, const ProgramObserv
     preload.address = preload_address; // 8005a4e0 keeps naming the released block
     done("reload_copy_preload", 0x800a5d14);
     if (state.background_mode != 6 && state.particles_paused == 1) {
-        heap.tag = 8;
-        heap.tag_words[8] = 0;
-        heap.quiet = 0;
+        resident::heap_select_tag(heap, 8, 0); // 80032498
         auto moved = resident::heap_allocate(heap, 0x8000, 1, 0x800a90e4);
         if (!moved)
             throw field::FieldFormatError("The VRAM save move allocation failed");
@@ -1017,18 +1012,6 @@ void Program::decode_party_sprites() {
         static_cast<void>(release_owned_block(file, 0x8001b438));
     }
     load.pending = 0;
-}
-
-// 80070488: start streaming the map's image file (map * 2 + b9 of the
-// selected directory 4) into a four-block ring, once.
-void Program::start_field_stream() {
-    auto &reload = loaded(*this).reload;
-    if (reload.stream_pending != 0)
-        return;
-    reload.stream_pending = 1;
-    reload.stream_ring = allocate_disc_ring(4, 1);
-    static_cast<void>(
-        read_stream(s32(((resident.field_map & 0xfffU) << 1U) + 0xb9U), reload.stream_ring, 0, {}));
 }
 
 // 80078c5c: with 800b2344 set, the 100h x 20h VRAM strip at (0, 1e0) gets

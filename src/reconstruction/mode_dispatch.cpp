@@ -157,9 +157,7 @@ std::uint32_t Program::mode_dispatch(FrameServices &services, DispatchStep from,
     case DispatchStep::heap:
         restart_heap(row.bss_end + 0x800);
         // 80019c7c: 80032498(10, 0).
-        resident.heap.tag = 10;
-        resident.heap.tag_words[10] = 0;
-        resident.heap.quiet = 0;
+        resident::heap_select_tag(resident.heap, 10, 0); // 80032498
         if (row.loaded == 0)
             throw MissingDependency({"mode_dispatch", 0x80019bd0, {}, {}}, "symbol:mode-resident",
                                     false, "Modes without an overlay are not reconstructed");

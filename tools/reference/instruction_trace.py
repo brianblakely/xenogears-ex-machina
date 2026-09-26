@@ -56,7 +56,11 @@ def scratchpad_pointer_offset(pointer: int) -> int | None:
 
 
 MAX_SNAPSHOTS = 8192
-MAX_HOOKS = 128
+# Hooks the trace extension watches (nix/reference-trace.h XEM_TRACE_HOOKS)
+# and the bound on one hook's record payload times the callback budget.
+MAX_HOOKS = 256
+MAX_PAYLOAD_BYTES = 16 * 1024 * 1024 * 1024
+MAX_RANGE_RECORDS = 16_000_000
 # VRAM read-backs (a hook's `vram` rectangle): at most one full 1024 x 512
 # image per record and 64 MiB per capture.
 VRAM_WIDTH, VRAM_HEIGHT = 1024, 512
@@ -288,7 +292,7 @@ def validate_instruction_trace(value: object) -> dict:
             raise ValueError("Trace hook names must be unique")
         names.add(hook["name"])
         payload = 34 * 4 + 32 + sum(item["size"] for item in ranges)
-        if payload * budget > 64 * 1024 * 1024 or len(ranges) * budget > 1_000_000:
+        if payload * budget > MAX_PAYLOAD_BYTES or len(ranges) * budget > MAX_RANGE_RECORDS:
             raise ValueError("Instruction trace exceeds payload or range-record budget")
         if "digests" in hook:
             validate_digests(hook["digests"], budget)

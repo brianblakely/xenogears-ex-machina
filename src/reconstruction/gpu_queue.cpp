@@ -394,11 +394,31 @@ void Program::put_draw_env(FrameServices &services, std::uint32_t environment) {
                                              s16(memory(e + 0x10, 2)), s16(memory(e + 0x12, 2))};
     set_memory(packet + 0x14, gpu::texture_window(&window));
     set_memory(packet + 0x18, 0xe6000000U);
-    if (memory(e + 0x18, 1) != 0)
-        throw MissingDependency({"put_draw_env", 0x80045800, {}, {}},
-                                "symbol:libgpu-environment-background", false,
-                                "Drawing environments with a background fill are not recovered");
-    set_memory(packet + 3, 6, 1);
+    std::uint32_t words = 6;
+    if (memory(e + 0x18, 1) != 0) {
+        // 80045800: clear the drawing area with the background color: a
+        // VRAM fill (02) when 64-pixel aligned, else a tile (60) placed
+        // relative to the drawing offset. The size is clamped to VRAM.
+        const auto clamp = [](std::int32_t value, std::int16_t limit) {
+            return value < 0 ? 0 : limit - 1 < value ? limit - 1 : value;
+        };
+        const auto w = static_cast<std::uint32_t>(clamp(clip_w, gpu.width)) & 0xffffU;
+        const auto h = static_cast<std::uint32_t>(clamp(clip_h, gpu.height)) & 0xffffU;
+        const auto rgb =
+            memory(e + 0x1b, 1) << 16U | memory(e + 0x1a, 1) << 8U | memory(e + 0x19, 1);
+        auto x = static_cast<std::uint32_t>(clip_x) & 0xffffU;
+        auto y = static_cast<std::uint32_t>(clip_y) & 0xffffU;
+        const bool aligned = (x & 0x3fU) == 0 && (w & 0x3fU) == 0;
+        if (!aligned) {
+            x = (x - memory(e + 8, 2)) & 0xffffU;
+            y = (y - memory(e + 0xa, 2)) & 0xffffU;
+        }
+        set_memory(packet + 0x1c, (aligned ? 0x02000000U : 0x60000000U) | rgb);
+        set_memory(packet + 0x20, y << 16U | x);
+        set_memory(packet + 0x24, h << 16U | w);
+        words = 9;
+    }
+    set_memory(packet + 3, words, 1);
     set_memory(packet, memory(packet) | 0xffffffU);
     static_cast<void>(gpu_enqueue(send_op, packet, nullptr, 0, 0, &services));
     for (std::uint32_t i = 0; i < gpu.draw_environment.size(); ++i)
@@ -447,9 +467,30 @@ void Program::put_disp_env(std::uint32_t environment) {
     bool screen_same = true;
     for (std::uint32_t i = 8; i < 0x10; i += 2)
         screen_same = screen_same && previous(i) == memory(e + i, 2);
-    if (!screen_same)
-        throw MissingDependency({"put_disp_env", 0x80044fd8, {}, {}}, "symbol:libgpu-display-range",
-                                false, "Changing display ranges are not recovered");
+    if (!screen_same) {
+        // 80044fd8: the screen range as GPU display ranges (GP1 06, 07):
+        // horizontal in dot clocks from 608, vertical from line 16 (19 in
+        // PAL), a zero size meaning the full 2560 clocks or 240 lines, all
+        // clamped to the visible area.
+        set_memory(e + 0x12, resident.video_mode, 1); // GetVideoMode (8004c308)
+        const bool pal = (resident.video_mode & 0xffU) != 0;
+        const auto sx = s16(memory(e + 8, 2));
+        const auto sy = s16(memory(e + 0xa, 2));
+        const auto sw = s16(memory(e + 0xc, 2));
+        const auto sh = s16(memory(e + 0xe, 2));
+        auto x1 = sx * 10 + 608;
+        auto y1 = sy + (pal ? 19 : 16);
+        auto x2 = sw != 0 ? x1 + sw * 10 : x1 + 2560;
+        auto y2 = sh != 0 ? y1 + sh : y1 + 240;
+        x1 = x1 < 500 ? 500 : x1 < 3291 ? x1 : 3290;
+        x2 = x2 < x1 + 80 ? x1 + 80 : x2 < 3291 ? x2 : 3290;
+        y1 = y1 < 16 ? 16 : pal ? (y1 < 311 ? y1 : 310) : (y1 < 257 ? y1 : 256);
+        y2 = y2 < y1 + 2 ? y1 + 2 : pal ? (y2 < 313 ? y2 : 312) : (y2 < 259 ? y2 : 258);
+        control(0x06000000U | (static_cast<std::uint32_t>(x2) & 0xfffU) << 12U |
+                (static_cast<std::uint32_t>(x1) & 0xfffU));
+        control(0x07000000U | (static_cast<std::uint32_t>(y2) & 0x3ffU) << 10U |
+                (static_cast<std::uint32_t>(y1) & 0x3ffU));
+    }
     bool mode_same = previous(0x10) == memory(e + 0x10, 2) && previous(0x12) == memory(e + 0x12, 2);
     for (std::uint32_t i = 0; i < 8; i += 2)
         mode_same = mode_same && previous(i) == memory(e + i, 2);

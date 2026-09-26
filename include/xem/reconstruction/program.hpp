@@ -14,6 +14,7 @@
 #include "xem/reconstruction/interrupts.hpp"
 #include "xem/reconstruction/menu.hpp"
 #include "xem/reconstruction/menu_save.hpp"
+#include "xem/reconstruction/movie.hpp"
 #include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
@@ -225,6 +226,7 @@ struct DiscReadState {
     std::array<std::uint32_t, 2> w_5a494{}; // 8005a494, 8005a498
     std::array<std::uint32_t, 2> w_5a4a4{}; // 8005a4a4, 8005a4a8
     std::uint32_t w_5a4b4{};                // 8005a4b4
+    std::uint16_t h_5a4b8{};                // 8005a4b8: frame of a stalled movie stream
     // Payload of the active stream ring (after its header): count sectors of
     // 800h bytes. Attached with the ring header.
     resident::HeapBlock ring_payload;
@@ -289,6 +291,12 @@ struct CdState {
     // 80056780 (size), 800567a8 (DPCR), 800567ac (DMA3 address), 800567b0
     // (DMA3 block).
     std::array<std::uint32_t, 5> transfer_registers{};
+    // 800564cc: 1 selects the alternate callback reset of the movie stream
+    // ring (80040ce4, 80040cd0).
+    std::uint32_t w_564cc{};
+    // 8005a470: 1 while stream sectors arrive without their headers (a
+    // Setmode without whole sectors, 801d586c).
+    std::uint32_t stream_header_mode{};
 };
 
 // A hardware register store, in program order. Not RAM: a native service
@@ -321,6 +329,8 @@ struct FrameServices {
     std::deque<std::uint32_t> interrupt_masks;
     // GPU information reads (GP1 10h, then GPUREAD) by libgpu _param (80046638).
     std::deque<std::uint32_t> gpu_info;
+    // The codec a movie the field plays decodes with (movie.hpp).
+    movie::MdecCodec *mdec{};
 };
 
 // A platform result the host did not supply: invalid input, not a game result.
@@ -330,6 +340,11 @@ class ServiceUnavailable : public std::runtime_error {
 };
 // Consumes the next result of one service queue.
 std::uint32_t take_service(std::deque<std::uint32_t> &results, const char *what);
+
+// 80041430 CdIntToPos: a logical sector as BCD minute, second and sector
+// after the 150 lead-in sectors (byte 3 zero); 80041534 CdPosToInt back.
+[[nodiscard]] std::array<std::uint8_t, 4> cd_position(std::uint32_t sector);
+[[nodiscard]] std::uint32_t cd_sector(const std::array<std::uint8_t, 4> &location);
 
 // Party sprite files (8001b044, 8001b3a8): 8004f374 marks files read ahead
 // for decoding, 8004f31c the kind of set loaded, 8004f320 the kind the map
@@ -436,9 +451,10 @@ struct ResidentState {
     // flag 800798bc sets, the field's effect bank 80085988 unlinks (8006259c),
     // 8004f32c it resets and the party sprite blocks 80077d2c releases
     // (8005a414).
-    std::uint8_t b_59179{};                             // 80059179
-    std::uint32_t field_effect_bank{};                  // 8006259c
-    std::uint32_t w_4f32c{};                            // 8004f32c
+    std::uint8_t b_59179{};            // 80059179
+    std::uint32_t field_effect_bank{}; // 8006259c
+    std::uint32_t w_4f32c{};           // 8004f32c
+    // The movie player parks slots 1 and 2 in VRAM while a movie plays.
     std::array<std::uint32_t, 3> party_sprite_blocks{}; // 8005a414
     std::uint32_t w_4f30c{};                            // 8004f30c
     std::uint32_t w_4f310{};                            // 8004f310
@@ -452,6 +468,10 @@ struct ResidentState {
     std::uint32_t w_62524{};           // 80062524: the field start's copy of 800595ac
     // 80065afc: each party slot's sprite file read ahead (packed, 8001aeb8).
     std::array<std::uint32_t, 3> party_sprite_files{};
+    std::uint32_t w_4f300{}; // 8004f300: field drawing over a movie (800a7948, 800acc58)
+    // 8004fe44..47: the movie mode's request (kind and flag, movie, next
+    // mode, keep playing through Circle and Start).
+    std::uint32_t movie_request{};
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
     // Battle setup files (8001bbac, 800379d8): the formation data the scene
@@ -494,6 +514,13 @@ struct ResidentState {
     std::vector<resident::HeapBlock> disc_transfers;
     // Platform inputs, consumed in order; see interrupts.hpp.
     std::deque<PlatformInput> platform;
+    // The MDEC's decoded output that DMA1 delivers into RAM, one transfer
+    // each, in order: a hardware result (movie.hpp), consumed by the
+    // transfer's completion callback.
+    std::deque<std::vector<std::uint8_t>> mdec_output;
+    // The slice buffers' bytes after an MDEC reset stopped a running output
+    // transfer, by buffer address: what the MDEC wrote before it stopped.
+    std::map<std::uint32_t, std::vector<std::uint8_t>> mdec_aborted;
     DiscDrive drive;
     // 8003748c releases the block 80059394 names unless 800593a0 is set;
     // their producers are not recovered.
@@ -725,8 +752,9 @@ struct FieldState {
     // 800c2690, 800c2692: cleared by the text image load.
     std::uint16_t w_c2690{};
     std::uint16_t w_c2692{};
-    std::uint32_t saved_music{};    // 800afc78: music the battle branch saved (8004f324)
-    std::uint32_t w_adb30{};        // 800adb30: a block the loop's exit releases
+    std::uint32_t saved_music{}; // 800afc78: music the battle branch saved (8004f324)
+    std::uint32_t
+        w_adb30{}; // 800adb30: a block the loop's exit releases; a movie's library ends there
     std::uint32_t gate_adbd8{};     // 800adbd8: zero leaves the field (exit kind 3)
     std::uint32_t gate_adbe8{};     // 800adbe8: zero leaves the field (exit kind 2)
     std::uint16_t input_mask{};     // 800b217a: buttons of port 1 the drain keeps
@@ -745,6 +773,15 @@ struct FieldState {
     // A host takes them from the loop's registers at an imported frame.
     bool combination_latched{};
     bool music_saved{};
+    // The movie player 800a7c58 (field_movie_player.cpp).
+    std::uint32_t movie_frame_pending{};  // 800b00e4: the first frame is not loaded yet
+    std::uint32_t movie_display{};        // 800adb78: 1 when the last frame went to y 0
+    std::uint32_t movie_overlay_active{}; // 800afe74: 800a7948 draws over the movie
+    std::uint32_t movie_component_word{}; // 800c2688: 800a7744's current word
+    std::uint32_t movie_bits_read{};      // 800b14a8: components 800a7744 returned
+    // The library block the player holds in s2 across its loop; a host
+    // resuming the player takes it from that register.
+    std::uint32_t movie_library{};
     ReloadState reload;
 };
 
@@ -815,6 +852,14 @@ class Program {
     std::optional<battle::BattleMemory> battle;
     // Menu-mode memory while the menu overlay is loaded.
     std::optional<menu::MenuMemory> menu;
+    // Mode 6 (the movie mode, movie_mode.cpp) while its overlay is loaded:
+    // the overlay image with its statics (8006faf0..80077458) and the
+    // player's stack frame (80076488), whose rectangle ClearImage reads.
+    struct MovieModeMemory {
+        resident::HeapBlock overlay;
+        resident::HeapBlock frame;
+    };
+    std::optional<MovieModeMemory> movie_mode_memory;
 
     [[nodiscard]] field::FieldSpriteEnvironment sprite_environment() const;
     void set_sprite_environment(const field::FieldSpriteEnvironment &environment);
@@ -907,6 +952,9 @@ class Program {
     // callbacks deliver it. Returns 0, -4 (no ring) or -3 (no such file).
     std::int32_t read_stream(std::int32_t file, std::uint32_t ring, std::uint32_t offset,
                              const std::array<std::uint16_t, 6> &parameters);
+    // Resident 8002a260: a heap block of `blocks` stream sectors that becomes
+    // the owned disc ring (disc_read.ring and ring_payload); 0 when none.
+    std::uint32_t allocate_stream_ring(std::uint32_t blocks, std::uint32_t mode);
     // Resident 8004b9b4, entered from the BIOS exception hook: serve every
     // pending interrupt the dispatcher enables, until none is pending.
     // Asynchronous register reads come from resident.platform.
@@ -923,8 +971,8 @@ class Program {
     void deliver_pending_arrivals();
     // Deliver the unpositioned interrupt arrivals at the front of the
     // platform input: a call's code about to make a recorded hardware read
-    // that the original made after them.
-    void deliver_leading_arrivals();
+    // that the original made after them. True if any was delivered.
+    bool deliver_leading_arrivals();
     // The same for leading arrivals that serve the vertical blank alone: a
     // call-level VSync(-1) read counts them.
     void deliver_leading_vblanks();
@@ -995,6 +1043,59 @@ class Program {
     // Field 800a7f78..800a80b0 once that drain has run: the loop's decision.
     // A skip applies the CD fade and the five waits before returning.
     field::MovieStep movie_decision(field::MovieServices &services);
+    // The movie library at 801d3000 (movie.hpp, movie.cpp, movie_stream.cpp).
+    // 801d3538: open it for a `width` x `height` movie; 0, or -1 without a ring.
+    std::int32_t movie_open(std::uint32_t width, std::uint32_t height, std::uint32_t scale,
+                            std::uint32_t slice, std::uint32_t sectors, std::uint32_t limit,
+                            std::uint32_t mode);
+    // 801d37cc's arguments: the movie file of the selected directory, its
+    // first sector, first and last frames, CD-XA channel, select bits (1: XA
+    // audio of `channel`, 2: no real-time audio), hold (loop at the end),
+    // the display buffers' corners (x, y of each), the most rows a slice
+    // loads and the frame callback.
+    struct MovieStart {
+        std::uint32_t file{};
+        std::uint32_t sector{};
+        std::uint32_t first_frame{};
+        std::uint32_t last_frame{};
+        std::uint32_t channel{};
+        std::uint32_t select{};
+        std::uint32_t hold{};
+        std::array<std::uint32_t, 4> area{};
+        std::uint32_t rows{};
+        std::uint32_t callback{};
+    };
+    void movie_start(const MovieStart &start);
+    // 801d3f7c: one decode step; the frame's variable-length decode is the
+    // codec service.
+    void movie_poll(movie::MdecCodec &codec);
+    void movie_close(); // 801d43b0
+    // Interrupt-context callbacks of the library.
+    void movie_slice_decoded();   // 801d30c4: MDEC output DMA done
+    void stream_interrupt();      // 801d5900 -> 801d5d54: a stream sector
+    void stream_frame_complete(); // 801d5a04: a frame's last sector transferred
+    // The field movie player 800a7c58 (field_movie_player.cpp) and its
+    // stages. `frame` is the player's stack frame (its entry SP - 28h).
+    void play_movie(FrameServices &services, std::uint32_t frame, movie::MdecCodec &codec,
+                    const ProgramObserver &observe = {});
+    void movie_prepare(FrameServices &services, std::uint32_t frame,
+                       const ProgramObserver &observe = {});
+    void movie_first_frame(FrameServices &services, movie::MdecCodec &codec);
+    [[nodiscard]] field::MovieStep movie_pass(FrameServices &services, movie::MdecCodec &codec,
+                                              const ProgramObserver &observe = {});
+    void movie_finish(FrameServices &services, std::uint32_t frame,
+                      const ProgramObserver &observe = {});
+    void movie_open_display();                                             // 800a708c
+    void movie_start_request();                                            // 800a7218
+    void movie_decode_steps(std::uint32_t count, movie::MdecCodec &codec); // 800a732c
+    // Mode 6, the movie mode (movie_mode.cpp): 800737ec plays the movie the
+    // request bytes 8004fe44..47 name, then selects the next mode (8004fe46).
+    // The mode dispatcher it enters last (80019acc) is not reconstructed;
+    // the call returns before it. `frame` is 80076488's stack frame (its
+    // entry SP - 308h). The observer sees "movie_mode_head" at each pass of
+    // the player loop (8007670c).
+    void movie_mode(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
+                    const ProgramObserver &observe = {});
     // Field 8007954c: leave the field. Kind 3 (a map change to the mode in
     // 800b0064) returns true where the original calls the mode dispatcher
     // 80019acc(0), which the caller runs next; false when 8004f370 keeps the
@@ -1305,16 +1406,92 @@ class Program {
     void swap_draw_buffer();                                             // 80073fe0
     std::uint32_t file_size(std::int32_t file);                          // Resident 80028738
     std::uint32_t read_size(std::int32_t file);                          // Resident 80028808
-    std::uint32_t file_bytes(std::int32_t file);                         // Resident 800288ec
-    std::uint32_t allocate_disc_ring(std::uint32_t blocks, std::uint32_t mode); // Resident 8002a260
     std::int32_t read_setup(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                             std::uint32_t mode);         // Resident 80029690
     std::int32_t select_ring(std::uint32_t destination); // 80029740..800297a4, 80029858..800298c4
     std::int32_t cd_control(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter);
     std::int32_t cd_command(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
-                            bool nowait);         // 80042088
-    std::int32_t cd_sync();                       // 80041b3c(0, 0)
-    void cd_dma_callback(std::uint32_t function); // 800413ec
+                            bool nowait, std::array<std::uint8_t, 8> *result = nullptr); // 80042088
+    std::int32_t cd_sync(std::array<std::uint8_t, 8> *result = nullptr); // 80041b3c(0, result)
+    void cd_dma_callback(std::uint32_t function);                        // 800413ec
+    // Resident disc and libcd calls of the movie library (resident_disc.cpp).
+    [[nodiscard]] std::array<std::uint32_t, 2> current_directory() const; // 800284b4
+    void current_directory(std::uint32_t group, std::uint32_t index);     // 800284b4
+    std::uint32_t file_sector(std::uint32_t file);                        // 800289d0
+    std::uint32_t file_words(std::uint32_t file);                         // 800288ec
+    void cancel_disc_read(std::uint32_t offset);                          // 8002a498
+    void disc_set_mode(std::uint32_t mode);                               // 8002a428
+    void seek_file(std::int32_t file);                                    // 8002a2d0
+    void cd_datasync_wait();                                              // 8004293c(0)
+    std::int32_t cd_control_wait(std::uint8_t command, const std::array<std::uint8_t, 4> *parameter,
+                                 std::array<std::uint8_t, 8> *result); // 80040fe4
+    std::int32_t cd_control_blocking(std::uint8_t command,
+                                     const std::array<std::uint8_t, 4> *parameter,
+                                     std::array<std::uint8_t, 8> *result); // 80041248
+    std::int32_t cd_command_wait(std::array<std::uint8_t, 8> *result);     // 80042250
+    std::uint32_t cd_ready(std::array<std::uint8_t, 8> &result);           // 80041dbc(1)
+    void draw_sync_polled(); // 800445d0 in interrupt context (resident_gpu.cpp)
+    // The movie library (movie.cpp, movie_stream.cpp).
+    void movie_decode(movie::MdecCodec &codec);                              // 801d3d54
+    std::uint32_t movie_next_frame(std::uint32_t end, std::uint32_t header); // 801d3b00
+    void movie_restart(std::uint32_t file, std::uint32_t sector, std::uint32_t channel,
+                       std::uint32_t mode, const std::array<std::uint8_t, 4> *location); // 801d41ac
+    void movie_stop();                                                                   // 801d4318
+    void mdec_reset(std::uint32_t mode);                                                 // 801d4534
+    void mdec_hardware_reset(std::uint32_t mode);                                        // 801d47fc
+    void verify_mdec_registers();
+    void mdec_in(std::uint32_t buffer, std::uint32_t mode);        // 801d46a0
+    void mdec_in_words(std::uint32_t buffer, std::uint32_t words); // 801d48f8
+    void mdec_out(std::uint32_t buffer, std::uint32_t words);      // 801d471c
+    std::int32_t mdec_in_sync();                                   // 801d4a1c
+    std::int32_t mdec_out_sync();                                  // 801d4ab4
+    void mdec_out_callback(std::uint32_t function);                // 801d47d8
+    std::uint32_t vlc_size(std::uint32_t halfwords);               // 801d4c98
+    bool decode_vlc(movie::MdecCodec &codec, std::uint32_t bitstream,
+                    std::uint32_t output); // 801d4cc8
+    void verify_stream_registers();
+    void stream_set_ring(std::uint32_t ring, std::uint32_t count);     // 801d583c
+    void stream_clear_ring();                                          // 801d5920
+    void stream_clear_slots(std::uint32_t first, std::uint32_t count); // 801d5c34
+    void stream_set_stream(std::uint32_t mode, std::uint32_t start, std::uint32_t end,
+                           std::uint32_t complete, std::uint32_t ended);   // 801d5af4
+    std::uint32_t stream_next(std::uint32_t &data, std::uint32_t &header); // 801d5c70
+    std::uint32_t stream_free(std::uint32_t data);                         // 801d5b7c
+    void stream_unset_ring();                                              // 801d5980
+    std::int32_t stream_read(std::uint32_t mode);                          // 801d586c
+    std::uint32_t stream_position(std::array<std::uint8_t, 4> &location);  // 801d5a94
+    void stream_dma(std::uint32_t address, std::uint32_t words, std::uint32_t blocks,
+                    std::uint32_t control, std::uint32_t interrupt); // 801d66f8
+    // The field movie player's helpers (field_movie_player.cpp).
+    void movie_frame_ready(std::uint32_t callback, std::uint32_t frame, std::uint32_t x,
+                           std::uint32_t y); // 800a7120
+    // Mode 6's helpers (movie_mode.cpp).
+    void movie_mode_play(FrameServices &services, movie::MdecCodec &codec, std::uint32_t select,
+                         std::uint32_t frame, const ProgramObserver &observe); // 800763bc
+    void movie_mode_run(FrameServices &services, movie::MdecCodec &codec, std::uint32_t frame,
+                        const ProgramObserver &observe);               // 80076488
+    void movie_mode_frame_ready(std::uint32_t frame, std::uint32_t y); // 800768d8
+    void movie_mode_pad();                                             // 800769a4
+    // Resident libgpu environment setup (resident_gpu.cpp).
+    void set_disp_mask(std::uint32_t mask); // 80044534
+    // 8003569c(port): the port's buttons from its controller buffer.
+    [[nodiscard]] std::uint32_t pad_buttons(std::size_t port);
+    // 80028928(file): a directory entry's negative size as a count; 0 when
+    // the size is not negative.
+    [[nodiscard]] std::int32_t file_count(std::uint32_t file);
+    void movie_wait_disc(FrameServices &services, const ProgramObserver &observe); // 800a7394
+    void movie_release_parked(FrameServices &services, std::uint32_t frame);       // 800a73e8
+    void movie_restore_parked(FrameServices &services, std::uint32_t frame);       // 800a74f8
+    void movie_sound_step();                                                       // 80085678
+    void movie_sound_load();                                                       // 80085788
+    void movie_sound_release();                                                    // 80085738
+    void movie_overlay_step();                                                     // 800a7948
+    void movie_overlay_load();                                                     // 800acc58
+    void draw_and_vertical_sync(FrameServices &services);                          // 800775f8
+    void movie_last_frame_to_15bit(FrameServices &services, std::uint32_t frame);  // 800a77c4(0)
+    std::uint32_t movie_next_component();                                          // 800a7744
+    void start_field_stream();                                                     // 80070488
+    void finish_field_stream(FrameServices &services);                             // 80070508
     // Interrupt context (interrupts.cpp, disc_read.cpp).
     void interrupt_handler(std::uint32_t address); // An 800578a8 entry
     void vsync_interrupt();                        // 8004bf78
@@ -1385,7 +1562,6 @@ class Program {
     void load_text_palette(FrameServices &services, std::uint32_t caller);     // 80077544
     void copy_screen(FrameServices &services, std::int32_t x, std::int32_t y); // 800a476c
     void release_named_block();                                                // 8003748c
-    void start_field_stream();                                                 // 80070488
     // 80078c5c; `frame` is its stack frame (its entry SP - 20h).
     void brighten_text_strip(FrameServices &services, std::uint32_t frame);
     void stop_particles(FrameServices &services);                          // 800a9460
@@ -1434,7 +1610,6 @@ class Program {
     void finish_field_load(const ProgramObserver &observe);    // 80071770..80071a5c
     void prepare_model_instances();                            // 80073e38
     void place_party_at_leader();                              // 80077268
-    void settle_display(FrameServices &services);              // 8007999c
     void load_field_effect_bank();                             // 80085890
     void allocate_party_sprites();                             // 80077c88
     void load_tim_at(FrameServices &services, std::uint32_t tim, std::int32_t x, std::int32_t y,

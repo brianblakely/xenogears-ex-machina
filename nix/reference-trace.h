@@ -15,11 +15,14 @@ typedef void (*xem_trace_callback)(uint32_t, uint32_t, uint32_t, uint32_t, uint3
                                    const uint32_t *, const uint8_t *, const uint8_t *,
                                    const uint32_t *, const uint32_t *);
 
-#define XEM_TRACE_HOOKS 128u
+#define XEM_TRACE_HOOKS 256u
 static uint32_t xem_trace_pcs[XEM_TRACE_HOOKS];
 static uint32_t xem_trace_pc_count;
-/* One bit per (pc >> 2) & 0xffff: a clear bit rules the instruction out quickly. */
-static uint8_t xem_trace_filter[0x2000];
+/* One bit per aligned word of the 8 MiB KUSEG/KSEG0/KSEG1 RAM window: the
+ * words a hook watches. Hooked PCs are distinct aligned system-RAM
+ * addresses, so the bit decides a fetch before the hook list is searched. */
+#define XEM_TRACE_FILTER_WORDS 0x200000u
+static uint8_t xem_trace_filter[XEM_TRACE_FILTER_WORDS / 8u];
 static uint32_t xem_trace_budget;
 static uint32_t xem_trace_seen;
 static uint32_t xem_trace_active;
@@ -58,8 +61,10 @@ XEM_TRACE_EXPORT int retro_xem_trace_configure(const uint32_t *pcs, uint32_t cou
                 return 0;
         xem_trace_pcs[i] = pcs[i];
     }
-    for (i = 0; i < count; i++)
-        xem_trace_filter[(pcs[i] >> 5) & 0x1fffu] |= (uint8_t)(1u << ((pcs[i] >> 2) & 7u));
+    for (i = 0; i < count; i++) {
+        const uint32_t word = (pcs[i] & 0x7fffffu) >> 2;
+        xem_trace_filter[word >> 3] |= (uint8_t)(1u << (word & 7u));
+    }
     xem_trace_pc_count = count;
     xem_trace_budget = budget;
     xem_trace_sink = callback;
@@ -128,9 +133,13 @@ static inline void xem_trace_instruction(const psxRegisters *regs, uint32_t pc, 
             xem_coverage_last[word] = code;
         }
     }
-    if (!xem_trace_active || !xem_trace_sink || xem_trace_seen >= xem_trace_budget ||
-        !(xem_trace_filter[(pc >> 5) & 0x1fffu] & (1u << ((pc >> 2) & 7u))))
+    if (!xem_trace_active || !xem_trace_sink || xem_trace_seen >= xem_trace_budget)
         return;
+    {
+        const uint32_t word = (pc & 0x7fffffu) >> 2;
+        if (!(xem_trace_filter[word >> 3] & (1u << (word & 7u))))
+            return;
+    }
     for (i = 0; i < xem_trace_pc_count; i++) {
         if (pc == xem_trace_pcs[i]) {
             const uint32_t load_delay[5] = {regs->dloadSel, regs->dloadReg[0], regs->dloadReg[1],

@@ -23,21 +23,13 @@ void unrecovered(std::string_view operation, std::uint32_t address, const char *
 }
 } // namespace
 
-// 8007999c: DrawSync and VSync (800775f8), then the BIOS instruction cache
-// flush in a critical section (800404d4, 80040454, 800404e4), which holds no
-// Program state.
-void Program::settle_display(FrameServices &services) {
-    draw_sync(services);
-    vertical_sync(services);
-}
-
 // 80085890: the field's effect bank (file a8 of directory 4) in a block
 // kept from the heap's coalescing (8006259c): read from the disc, or copied
 // (8003f968) from the copy a battle kept (8005a4bc), which is released; then
 // opened in the sound driver (80038428) once the SPU is idle (8003bdfc).
 void Program::load_field_effect_bank() {
     static_cast<void>(select_directory(4, 0));
-    const auto size = file_bytes(0xa8);
+    const auto size = file_words(0xa8);
     const auto bank = load_block(size, 0, 0x800858b8);
     resident.field_effect_bank = bank;
     const auto keep = [&](std::uint32_t address) -> std::uint32_t & {
@@ -71,9 +63,7 @@ void Program::load_field_effect_bank() {
 // kept from coalescing.
 void Program::allocate_party_sprites() {
     auto &heap = resident.heap;
-    heap.tag = 8; // 80032498(8, 0)
-    heap.tag_words[8] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 8, 0); // 80032498
     constexpr std::array<std::uint32_t, 3> sites{0x80077ca8, 0x80077cc4, 0x80077cdc};
     for (std::size_t i = 0; i < 3; ++i)
         resident.party_sprite_blocks[i] = load_block(0x14000, 0, sites[i]);
@@ -160,7 +150,7 @@ void Program::load_text_images(FrameServices &services) {
         return heap.headers.at(address - 8)[1];
     };
     if (resident.w_4f344 == 0) {
-        const auto size = file_bytes(0xa7);
+        const auto size = file_words(0xa7);
         resident.text_images = load_block(size, 1, 0x80077658);
         keep(resident.text_images) |= resident::heap_keep; // 800320a4
         static_cast<void>(read_file(0xa7, resident.text_images, 0, 0x80));
@@ -210,15 +200,13 @@ void Program::field_mode_start(FrameServices &services, const ProgramObserver &o
     auto &heap = resident.heap;
     const auto release_build = resident.debug_word == 0xffffffffU;
     state.event_control.diagnostic_suppression = release_build ? 1 : 0;
-    settle_display(services); // 8007999c
+    draw_and_vertical_sync(services); // 8007999c; FlushCache touches no RAM
     if (!release_build)
         unrecovered("field_mode_start", 0x80077ef8, "symbol:field-debug-800444d8",
                     "The diagnostic build's setup (800444d8, 80280000) is not recovered");
     music.active_shared_wave = music.shared_wave;
     resident.w_62524 = resident.battle_wave; // 800595ac
-    heap.tag = 8;                            // 80032498(8, 0)
-    heap.tag_words[8] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 8, 0);   // 80032498
     if (resident.w_4f30c == 0)
         for (const std::uint32_t at : {0x8006fac4U, 0x8006fac0U, 0x8006fabcU})
             set_memory(at, 0xff);
@@ -237,9 +225,7 @@ void Program::field_mode_start(FrameServices &services, const ProgramObserver &o
     state.w_adb7c = 0;
     state.fade.mode = 2;
     // 800775c0.
-    heap.tag = 8;
-    heap.tag_words[8] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 8, 0); // 80032498
     static_cast<void>(select_directory(4, 0));
     init_pointer(); // 80071ee8
     resident.game_state = 0x8006d634;

@@ -62,6 +62,12 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/media.cpp
   src/reconstruction/mode_dispatch.cpp
   src/reconstruction/field_movie.cpp
+  src/reconstruction/field_movie_player.cpp
+  src/reconstruction/movie.cpp
+  src/reconstruction/movie_stream.cpp
+  src/reconstruction/movie_mode.cpp
+  src/reconstruction/resident_disc.cpp
+  src/reconstruction/resident_gpu.cpp
   src/reconstruction/field_gte.cpp
   src/reconstruction/gte.cpp
   src/reconstruction/graphics_setup.cpp
@@ -85,7 +91,8 @@ add_executable(xem-analysis-runner src/analysis/main.cpp)
 target_link_libraries(xem-analysis-runner PRIVATE xem-reconstruction)
 add_executable(xem-event-disassembler src/analysis/event_disassembler.cpp)
 target_link_libraries(xem-event-disassembler PRIVATE xem-reconstruction)
-add_executable(xem-memory-runner src/analysis/memory_runner.cpp src/analysis/field_memory.cpp)
+add_executable(xem-memory-runner src/analysis/memory_runner.cpp src/analysis/field_memory.cpp
+  src/analysis/mdec_codec.cpp)
 target_link_libraries(xem-memory-runner PRIVATE xem-reconstruction)
 
 find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)

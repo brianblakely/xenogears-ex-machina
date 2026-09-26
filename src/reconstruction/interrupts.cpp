@@ -109,6 +109,13 @@ void DiscDrive::data_ready() {
     if (!read_sector)
         throw PlatformInputError("A data-ready interrupt arrives without a disc image service");
     buffer = read_sector(*next);
+    // With XA-ADPCM enabled (Setmode bit 6), audio sectors (subheader
+    // submode bit 2) go to the SPU instead of the data buffer; general CD
+    // controller behavior. They raise no data-ready interrupt.
+    while ((mode & 0x40U) != 0 && ((*buffer)[18] & 0x04U) != 0) {
+        ++*next;
+        buffer = read_sector(*next);
+    }
     cursor = 0;
     delivered.push_back(*next);
     ++*next;
@@ -277,6 +284,21 @@ void Program::vsync_update() {
                                 "The debugger break of 8003634c is not reconstructed");
 }
 
+// 8003569c: buttons of a digital (40), analog (50) or 70 controller; zero
+// for a failed or other transfer.
+std::uint32_t Program::pad_buttons(std::size_t port) {
+    auto &pad = resident.pad;
+    const auto &buffer = pad.buffers.at(port);
+    pad.type = 0;
+    if (buffer[0] != 0)
+        return 0;
+    pad.type = buffer[1] & 0xf0U;
+    if (pad.type != 0x40 && pad.type != 0x50 && pad.type != 0x70)
+        return 0;
+    return (~static_cast<std::uint32_t>(buffer[3]) & 0xffU) |
+           ((static_cast<std::uint32_t>(buffer[2]) << 8U) ^ 0xff00U);
+}
+
 // 800358bc: both controller ports.
 void Program::pad_update() {
     auto &pad = resident.pad;
@@ -287,16 +309,7 @@ void Program::pad_update() {
     };
     for (std::size_t port = 0; port < 2; ++port) {
         const auto &buffer = pad.buffers[port];
-        // 8003569c: buttons of a digital (40), analog (50) or 70 controller;
-        // zero for a failed or other transfer.
-        std::uint32_t buttons = 0;
-        pad.type = 0;
-        if (buffer[0] == 0) {
-            pad.type = buffer[1] & 0xf0U;
-            if (pad.type == 0x40 || pad.type == 0x50 || pad.type == 0x70)
-                buttons = (~static_cast<std::uint32_t>(buffer[3]) & 0xffU) |
-                          ((static_cast<std::uint32_t>(buffer[2]) << 8U) ^ 0xff00U);
-        }
+        const auto buttons = pad_buttons(port);
         current[port] = static_cast<std::uint16_t>(buttons);
         // 800357c0: keep the high byte, then map each remapped bit.
         const auto raw = s16(buttons);
@@ -391,6 +404,12 @@ void Program::dma_completed(std::uint32_t address) {
         break;
     case 0x8004cb3c:
         spu_transfer_completed();
+        break;
+    case 0x801d30c4: // The movie library's MDEC output (movie.cpp).
+        movie_slice_decoded();
+        break;
+    case 0x801d5a04: // The movie stream's last-sector DMA (movie_stream.cpp).
+        stream_frame_complete();
         break;
     default:
         unknown("dma_callback", 0x8004c138, address);

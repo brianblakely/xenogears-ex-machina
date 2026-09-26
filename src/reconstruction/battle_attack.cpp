@@ -183,9 +183,7 @@ std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destina
 // the quiet flag), then 80031bdc allocates (count + 3) * 26 bytes first fit.
 std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::uint32_t count) {
     auto &heap = resident.heap;
-    heap.tag = 2;
-    heap.tag_words[2] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 2, 0); // 80032498
     auto block = resident::heap_allocate(heap, (count + 3) * 26, 0, 0x8008ac34);
     if (!block)
         throw BattleError("A quiet null text-block allocation (8008ac00) is not reconstructed");

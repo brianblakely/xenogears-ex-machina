@@ -549,12 +549,6 @@ void setup_turns(Battle &battle, ResidentState &resident) {
 namespace xem::reconstruction {
 namespace {
 std::int16_t s16(std::uint32_t value) { return static_cast<std::int16_t>(value); }
-// 800288ec: a byte size rounded up to words, as a signed MIPS quotient.
-std::uint32_t word_size(std::uint32_t size) {
-    const auto rounded = static_cast<std::int32_t>(size + 3U);
-    const auto adjusted = rounded >= 0 ? rounded : static_cast<std::int32_t>(size + 6U);
-    return static_cast<std::uint32_t>(adjusted >> 2) << 2U;
-}
 // A byte as the original reads it: battle memory, else a heap header or the
 // bytes the heap holds (a copy past the end of a block reads its neighbour).
 std::uint32_t original_byte(const battle::BattleMemory &memory, const resident::Heap &heap,
@@ -593,12 +587,6 @@ constexpr std::uint32_t primitive_table = 0x8004fe50; // resident, 17 rows of 28
 constexpr std::uint32_t lights = 0x800c3d50;          // two 8002709c blocks
 constexpr std::uint32_t light_records = 0x800c3db4;   // two 18h-byte records (80027d64)
 
-// 80032498(4, 0): the stage's blocks take owner tag 4.
-void select_stage_tag(resident::Heap &heap) {
-    heap.tag = 4;
-    heap.tag_words[4] = 0;
-    heap.quiet = 0;
-}
 std::uint32_t allocate(battle::BattleMemory &memory, resident::Heap &heap, std::uint32_t size,
                        std::uint32_t mode, std::uint32_t site) {
     auto block = resident::heap_allocate(heap, size, mode, site);
@@ -607,13 +595,6 @@ std::uint32_t allocate(battle::BattleMemory &memory, resident::Heap &heap, std::
     const auto address = block->address;
     memory.regions.emplace(address, std::move(block->bytes));
     return address;
-}
-// 800320b8: clear a block's keep flag.
-void clear_keep(resident::Heap &heap, std::uint32_t block) {
-    const auto found = heap.headers.find(block - 8);
-    if (found == heap.headers.end())
-        throw battle::BattleError("A stage block has no heap header");
-    found->second[1] &= ~resident::heap_keep;
 }
 field::GteMatrix battle_matrix(const battle::BattleMemory &memory, std::uint32_t at) {
     field::GteMatrix matrix{};
@@ -673,7 +654,7 @@ void rebase_model_group(battle::BattleMemory &memory, std::uint32_t group, bool 
 // apart) in a new table; the slot holds the table and the count.
 void list_models(battle::BattleMemory &memory, resident::Heap &heap, std::uint32_t group,
                  std::uint32_t slot) {
-    select_stage_tag(heap);
+    resident::heap_select_tag(heap, 4, 0); // 80032498
     rebase_model_group(memory, group, true);
     const auto count = memory.u32(group);
     const auto table = allocate(memory, heap, count << 2U, 0, 0x8009ebe0);
@@ -690,7 +671,7 @@ void list_models(battle::BattleMemory &memory, resident::Heap &heap, std::uint32
 std::uint32_t build_parts(battle::BattleMemory &memory, ResidentState &resident, std::uint32_t slot,
                           std::uint32_t hierarchy, std::uint32_t group) {
     auto &heap = resident.heap;
-    select_stage_tag(heap);
+    resident::heap_select_tag(heap, 4, 0); // 80032498
     const auto listed = [&](std::uint32_t pair) {
         const auto id = memory.u16(hierarchy + 4 * pair);
         return id < memory.u32(slot + 4) || id == 0xffff;
@@ -824,7 +805,7 @@ void start_stage_motion(battle::BattleMemory &memory, ResidentState &resident, s
     const auto script = memory.u32(record + 0x10);
     if (script == 0)
         return;
-    select_stage_tag(resident.heap);
+    resident::heap_select_tag(resident.heap, 4, 0); // 80032498
     const auto add = [&](std::uint32_t to, std::uint32_t from) {
         memory.put16(record + to, memory.u16(record + to) + memory.u16(record + from));
     };
@@ -919,7 +900,7 @@ void pose_parts(battle::BattleMemory &memory, ResidentState &resident, std::uint
 // copies the draw environment only into its own frame.
 std::uint32_t build_light(battle::BattleMemory &memory, resident::Heap &heap,
                           std::uint32_t object) {
-    select_stage_tag(heap);
+    resident::heap_select_tag(heap, 4, 0); // 80032498
     const auto field = [&](std::uint32_t at) { return memory.u16(object + at); };
     const auto block = allocate(memory, heap, 0x34c, 0, 0x800270fc);
     const auto tail = block + 0x320;
@@ -1038,7 +1019,7 @@ void Program::register_stage_model(battle::Battle &context, FrameServices &servi
                                    std::uint32_t frame, std::uint32_t stage) {
     auto &memory = context.memory;
     auto &heap = resident.heap;
-    select_stage_tag(heap);
+    resident::heap_select_tag(heap, 4, 0); // 80032498
     if (memory.u32(stage_record) != 0)
         return;
     const auto record = allocate(memory, heap, 0x11c, 0, 0x800a8c8c);
@@ -1160,12 +1141,12 @@ std::uint32_t Program::battle_stage_setup(FrameServices &services, std::uint32_t
         const auto scene = resident.battle_scene;
         if (stage == 0 || scene == 0)
             return;
-        select_stage_tag(heap);
+        resident::heap_select_tag(heap, 4, 0); // 80032498
         for (const auto address : {0x800c3e38U, 0x800c3ea0U, 0x800d3344U, 0x800d39ccU, 0x800d3348U,
                                    lights + 4, lights, light_records + 0x18, light_records})
             memory.put32(address, 0);
         memory.put16(0x800d361a, 0);
-        clear_keep(heap, stage);
+        resident::heap_set_keep(heap, stage, false); // 800320b8
         const auto frame = stack - 0xa0;
         register_stage_model(context, services, frame, stage);
         texture_bounds(memory, memory.u32(stage + 4));
@@ -1185,7 +1166,7 @@ std::uint32_t Program::battle_stage_setup(FrameServices &services, std::uint32_t
         const auto data = allocate(memory, heap, size, 0, 0x801e73b8);
         resident.battle_scene_data = data;
         copy(memory, heap, data, scene, size);
-        clear_keep(heap, scene - 4);
+        resident::heap_set_keep(heap, scene - 4, false); // 800320b8
         release_battle_block(context, scene - 4, 0x801e73ec);
         const auto actors = memory.u32(data + 0x50c) == 0 ? 0 : data + memory.u32(data + 0x50c);
         const auto light_list = data + memory.u32(data + 0x510);
@@ -1406,13 +1387,11 @@ void Program::setup_battle_party(battle::Battle &context, FrameServices &service
     // The enemy data files of the formation's enemy set.
     static_cast<void>(select_directory(0xc, 1));
     const auto set = memory.u8(battle::formation_record);
-    const auto data = battle::allocate_block(
-        context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 2))), 0);
+    const auto data = battle::allocate_block(context, resident, file_words(set * 2 + 2), 0);
     memory.put32(0x800c3dd0, data);
     memory.put32(0x800d33ec, data);
     memory.put16(0x800d33e8, set * 2 + 2);
-    const auto models = battle::allocate_block(
-        context, resident, word_size(file_size(static_cast<std::int32_t>(set * 2 + 3))), 1);
+    const auto models = battle::allocate_block(context, resident, file_words(set * 2 + 3), 1);
     memory.put32(0x800c3dec, models);
     memory.put32(0x800d33f4, models);
     memory.put16(0x800d33f8, 0);
@@ -1617,9 +1596,7 @@ void Program::battle_setup_files() {
     run_battle([&](battle::Battle &context) {
         auto &memory = context.memory;
         auto &heap = resident.heap;
-        heap.tag = 2; // 80032498(2, 0)
-        heap.tag_words[2] = 0;
-        heap.quiet = 0;
+        resident::heap_select_tag(heap, 2, 0); // 80032498
         static_cast<void>(select_directory(0xc, 0));
         const auto allocate = [&](std::uint32_t size, std::uint32_t site) {
             auto block = resident::heap_allocate(heap, size, 1, site);
@@ -1631,8 +1608,8 @@ void Program::battle_setup_files() {
         };
         resident.battle_marker = allocate(4, 0x8001bbdc);
         resident.battle_spacer = allocate(resident.battle_marker + 0x7fe1c000U, 0x8001bbf4);
-        resident.battle_effects = allocate(word_size(file_size(2)), 0x8001bc14);
-        resident.battle_archive = allocate(word_size(file_size(3)), 0x8001bc2c);
+        resident.battle_effects = allocate(file_words(2), 0x8001bc14);
+        resident.battle_archive = allocate(file_words(3), 0x8001bc2c);
         auto &read = resident.disc_read;
         std::vector<std::uint8_t> list(0x1a);
         if (read.list.address == 0x8006f9bc && read.list.bytes.size() >= 0x1a)
@@ -1695,9 +1672,7 @@ void Program::battle_scene_files() {
             }
         static_cast<void>(select_directory(0xc, 3));
         auto &heap = resident.heap;
-        heap.tag = 4; // 80032498(4, 0)
-        heap.tag_words[4] = 0;
-        heap.quiet = 0;
+        resident::heap_select_tag(heap, 4, 0); // 80032498
         // 80028928(5): a negative record size is a count (its negated low
         // halfword).
         const auto record = static_cast<std::int32_t>(file_size(5));
@@ -1708,11 +1683,12 @@ void Program::battle_scene_files() {
                                     "symbol:battle-scene-missing", false,
                                     "A scene past the scene count is not reconstructed");
         const auto allocate = [&](std::int32_t file, std::uint32_t site) {
-            auto block = resident::heap_allocate(heap, word_size(file_size(file)), 1, site);
+            auto block = resident::heap_allocate(heap, file_words(static_cast<std::uint32_t>(file)),
+                                                 1, site);
             if (!block)
                 throw battle::BattleError("A quiet null allocation in 800379d8");
             const auto address = block->address;
-            heap.headers.at(address - 8)[1] |= resident::heap_keep; // 800320a4
+            resident::heap_set_keep(heap, address, true); // 800320a4
             memory.regions.emplace(address, std::move(block->bytes));
             return address;
         };
@@ -1780,9 +1756,7 @@ void Program::battle_effect_lists() {
         memory.put8(0x800c3b74, 1);
         const auto data = resident.battle_scene_data;
         const auto allocate = [&](std::uint32_t size, std::uint32_t site) {
-            heap.tag = 4; // 80032498(4, 0)
-            heap.tag_words[4] = 0;
-            heap.quiet = 0;
+            resident::heap_select_tag(heap, 4, 0); // 80032498
             auto block = resident::heap_allocate(heap, size, 0, site);
             if (!block)
                 throw battle::BattleError("A quiet null allocation in 800a8b0c");
@@ -2299,9 +2273,7 @@ void place_party(Battle &battle) {
 std::uint32_t allocate_block(Battle &battle, ResidentState &resident, std::uint32_t size,
                              std::uint32_t mode) {
     auto &heap = resident.heap;
-    heap.tag = 2; // 80032498(2, 0)
-    heap.tag_words[2] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 2, 0); // 80032498
     auto block = resident::heap_allocate(heap, size, mode, 0x8008abe0);
     if (!block)
         throw BattleError("A quiet null allocation (8008abb8) is not reconstructed");

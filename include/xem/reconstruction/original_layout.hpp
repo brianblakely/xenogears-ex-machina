@@ -28,6 +28,7 @@ struct OriginalGlobal {
 void add_interrupt_globals(std::vector<OriginalGlobal> &table);
 void add_gpu_globals(std::vector<OriginalGlobal> &table);    // gpu_queue.cpp
 void add_reload_globals(std::vector<OriginalGlobal> &table); // field_reload.cpp
+void add_movie_globals(std::vector<OriginalGlobal> &table);  // field_movie_player.cpp
 
 struct OriginalRegion {
     std::uint32_t address;

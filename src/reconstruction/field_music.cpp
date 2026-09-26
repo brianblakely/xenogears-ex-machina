@@ -40,11 +40,8 @@ class Program::Music final : public field::MusicCalls {
             music_call(consumer);
         program.consume_music_chunk(chunk);
     }
-    // Resident 8002a260: allocate count * 808 + 24 bytes, store the count,
-    // then select (80028a94) and reset (80028aac) the ring. The header is
-    // the ring the disc reads fill; the payload after it holds the chunks.
     field::MusicResource allocate_stream_buffer(std::uint32_t blocks, std::uint32_t mode) override {
-        return program.allocate_disc_ring(blocks, mode);
+        return program.allocate_stream_ring(blocks, mode);
     }
     // Resident 80028b14 and 8002945c on the owned ring header. A stream
     // step (800854d0) starts with 80028b14: arrivals recorded since the poll

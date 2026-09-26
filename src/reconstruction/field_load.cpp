@@ -724,9 +724,7 @@ void Program::load_descriptors() {
             set_memory(instance + 4, group + 0x10);
             build_model_instance(instance, (flags & 0xcU) >> 2U);
             if ((flags & 0x2000U) != 0) {
-                heap.tag = 3; // 80032498(3, 0)
-                heap.tag_words[3] = 0;
-                heap.quiet = 0;
+                resident::heap_select_tag(heap, 3, 0); // 80032498
                 throw MissingDependency({"load_descriptors", 0x800303c8, {}, {}},
                                         "symbol:field-model-animation", false,
                                         "Animated model instances (800303c8) are not recovered");
@@ -1182,9 +1180,7 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     if (resident::heap_release(heap, preload, 0x800715e4) != 0)
         throw field::FieldFormatError("The read-ahead bundle was not released");
     preload.address = preload_address;
-    heap.tag = 5; // 80032498(5, 0)
-    heap.tag_words[5] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 5, 0); // 80032498
     // 80024f64(3c00, 0): both sprite arenas in one block, no pending uploads
     // or releases, an empty frame list.
     auto &r = resident;
@@ -1202,9 +1198,7 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     tasks.auxiliary_count = 0;
     tasks.wait_count = 0;
     stage(*this, observe, "load_sprite_system", 0x8007160c);
-    heap.tag = 8; // 80032498(8, 0)
-    heap.tag_words[8] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 8, 0); // 80032498
     // 80077844: two rotation matrices.
     constexpr std::array<std::int16_t, 9> identity{0x800, 0, 0, 0x800, 0, 0, 0x800, 0, 0};
     constexpr std::array<std::int16_t, 9> tilt{0x1f8, -4033, -504, 0, 0, 0, 0, 0, 0};
@@ -1373,9 +1367,7 @@ void Program::finish_field_load(const ProgramObserver &observe) {
         throw MissingDependency({"finish_field_load", 0x80071828, {}, {}}, "symbol:field-8002709c",
                                 false, "The 800b0080 object (8002709c) is not recovered");
     auto &heap = resident.heap;
-    heap.tag = 8; // 80032498(8, 0)
-    heap.tag_words[8] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 8, 0); // 80032498
     const auto followed = reload.descriptor_table + 0x5cU * state.followed_actor;
     for (std::uint32_t axis = 0; axis < 3; ++axis)
         set_memory(0x800af8c0 + 4 * axis, memory(followed + 0x20 + 4 * axis) << 16U);

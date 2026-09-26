@@ -382,12 +382,15 @@ class InstructionTraceTests(unittest.TestCase):
         variants.append(duplicate)
         excessive = copy.deepcopy(self.spec)
         excessive["max_callbacks"] = 1_000_000
+        excessive["hooks"][0]["ranges"] = [
+            {"name": f"direct-{i}", "offset": 130, "size": 4} for i in range(17)
+        ]
         variants.append(excessive)
         for variant in variants:
             with self.subTest(variant=variant), self.assertRaises(ValueError):
                 validate_instruction_trace(variant)
 
-    def test_up_to_128_distinct_hooks_are_accepted(self):
+    def test_up_to_256_distinct_hooks_are_accepted(self):
         def hooks(count):
             spec = copy.deepcopy(self.spec)
             spec["max_callbacks"] = 1000
@@ -400,9 +403,9 @@ class InstructionTraceTests(unittest.TestCase):
                 spec["hooks"].append(hook)
             return spec
 
-        self.assertEqual(len(validate_instruction_trace(hooks(128))["hooks"]), 128)
-        with self.assertRaisesRegex(ValueError, "1..128 hooks"):
-            validate_instruction_trace(hooks(129))
+        self.assertEqual(len(validate_instruction_trace(hooks(256))["hooks"]), 256)
+        with self.assertRaisesRegex(ValueError, "1..256 hooks"):
+            validate_instruction_trace(hooks(257))
 
     def vram_callback(self, rect: bytes, reader) -> tuple[dict, list[str], dict]:
         core = self.trace_core()
