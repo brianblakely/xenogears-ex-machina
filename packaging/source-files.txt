@@ -87,6 +87,7 @@ analysis/formats/music-loading.md
 analysis/formats/packed-field.md
 analysis/formats/planar-motion.md
 analysis/formats/service-boundaries.md
+analysis/formats/sound-modes.md
 analysis/formats/sprite-animation.md
 analysis/formats/sprite-construction.md
 analysis/formats/sprite-return.md
@@ -307,6 +308,7 @@ tests/test_active_motion_trace.py
 tests/test_actor_defaults.py
 tests/test_agent_contract.py
 tests/test_animation_trace.py
+tests/test_audio_modes.py
 tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
@@ -396,6 +398,7 @@ tools/analysis/active_motion_trace.py
 tools/analysis/actor_defaults.py
 tools/analysis/animation_trace.py
 tools/analysis/arithmetic.py
+tools/analysis/audio_modes.py
 tools/analysis/battle_continuation.py
 tools/analysis/battle_request.py
 tools/analysis/collision_math.py
