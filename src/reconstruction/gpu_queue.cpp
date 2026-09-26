@@ -147,14 +147,26 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
     set_dma_callback(2, queue_runner);
     const auto entry = gpu.head * entry_bytes;
     std::span<std::uint8_t> queue(gpu.queue);
-    if (size == 0 || rect == nullptr)
-        throw MissingDependency({"gpu_enqueue", 0x80046894, {}, {}}, "symbol:gpu-uncopied-request",
-                                false, "Requests without a copied rectangle are not recovered");
-    const std::array<std::uint32_t, 2> words{pack((*rect)[0], (*rect)[1]),
-                                             pack((*rect)[2], (*rect)[3])};
-    for (std::uint32_t i = 0; i < (size >> 2U); ++i)
-        put(queue, entry + 0xc + 4 * i, words.at(i));
-    put(queue, entry + 4, queue_base + entry + 0xc);
+    if (size == 0) {
+        // 80046894: a request without a parameter copy keeps its pointer.
+        put(queue, entry + 4, parameter);
+    } else {
+        // The parameter's (size + 3) / 4 words go into the entry: the
+        // caller's rectangle, or the words at `parameter` (a packet).
+        const auto count = static_cast<std::uint32_t>(static_cast<std::int32_t>(size + 3U) >> 2);
+        for (std::uint32_t i = 0; i < count; ++i) {
+            std::uint32_t word = 0;
+            if (rect != nullptr) {
+                if (i >= 2)
+                    throw field::FieldFormatError("A rectangle request copies more than 8 bytes");
+                word = i == 0 ? pack((*rect)[0], (*rect)[1]) : pack((*rect)[2], (*rect)[3]);
+            } else {
+                word = memory(parameter + 4 * i);
+            }
+            put(queue, entry + 0xc + 4 * i, word);
+        }
+        put(queue, entry + 4, queue_base + entry + 0xc);
+    }
     put(queue, entry + 8, argument);
     put(queue, entry, operation);
     gpu.head = (gpu.head + 1U) & 63U;
@@ -174,7 +186,7 @@ void Program::gpu_wait_ready(std::uint32_t first, std::uint32_t again) {
 
 // 8004696c: run queued requests while DMA2 is idle; when the queue empties,
 // run the DrawSync callback once.
-std::uint32_t Program::gpu_execute() {
+std::uint32_t Program::gpu_execute(FrameServices *services) {
     auto &gpu = resident.gpu;
     const auto chcr = [&](std::uint32_t site) {
         deliver_due_arrivals();
@@ -195,7 +207,7 @@ std::uint32_t Program::gpu_execute() {
             const auto operation = get(queue, entry);
             const auto parameter = get(queue, entry + 4);
             const auto argument = get(queue, entry + 8);
-            static_cast<void>(gpu_operation(operation, parameter, nullptr, argument, nullptr));
+            static_cast<void>(gpu_operation(operation, parameter, nullptr, argument, services));
             gpu.current = {get(queue, entry), get(queue, entry + 4), get(queue, entry + 8)};
             gpu.tail = (gpu.tail + 1U) & 63U;
         } while (gpu.head != gpu.tail && !chcr(0x80046b90));
@@ -298,18 +310,24 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
 // _clr (80045e44): send a fill packet built in libgpu's packet buffer
 // (8005a238) for the rectangle at `rect` in owned memory, clamped in place.
 void Program::clear_operation(std::uint32_t rect, std::uint32_t color, FrameServices *services) {
-    if (services == nullptr)
-        throw MissingDependency({"gpu_clear_image", 0x80045e44, {}, {}}, "symbol:gpu-clear-image",
-                                false, "ClearImage outside a field frame is not recovered");
     auto &gpu = resident.gpu;
     const auto w = clamp_extent(s16(memory(rect + 4, 2)), gpu.width, true);
     set_memory(rect + 4, static_cast<std::uint16_t>(w), 2);
     const auto h = clamp_extent(s16(memory(rect + 6, 2)), gpu.height, true);
     set_memory(rect + 6, static_cast<std::uint16_t>(h), 2);
-    const auto status = take_service(services->gpu_status, "GPUSTAT read by ClearImage");
+    const bool aligned =
+        (memory(rect, 2) & 0x3fU) == 0 && (static_cast<std::uint32_t>(w) & 0x3fU) == 0;
+    // A clear the queue runs from the DMA2 interrupt reads GPUSTAT as a
+    // platform read at its load (80046030, the aligned path).
+    if (services == nullptr && !aligned)
+        throw MissingDependency({"gpu_clear_image", 0x80045e44, {}, {}}, "symbol:gpu-clear-image",
+                                false, "An unaligned ClearImage outside a frame is not recovered");
+    const auto status = services != nullptr
+                            ? take_service(services->gpu_status, "GPUSTAT read by ClearImage")
+                            : platform_read(resident.platform, 0x80046030, 4);
     const auto mode = 0xe1000000U | (color >> 31U) << 10U | (status & 0x7ffU);
     std::vector<std::uint32_t> packet;
-    if ((memory(rect, 2) & 0x3fU) == 0 && (static_cast<std::uint32_t>(w) & 0x3fU) == 0) {
+    if (aligned) {
         // Aligned: a VRAM fill.
         packet = {0x05ffffffU,  0xe6000000U,     mode, 0x02000000U | (color & 0xffffffU),
                   memory(rect), memory(rect + 4)};
@@ -518,9 +536,9 @@ void Program::put_disp_env(std::uint32_t environment) {
         gpu.display_environment[i] = static_cast<std::uint8_t>(memory(e + i, 1));
 }
 
-// DrawSync(0) (800445d0) -> _sync (80046db4): wait for an empty queue and an
-// idle GPU; the waits poll the alarm.
-void Program::draw_sync(FrameServices &services) {
+// DrawSync(0) (800445d0) -> _sync (80046db4): run the queue (8004696c) until
+// it is empty, then wait for an idle GPU; the waits poll the alarm.
+void Program::draw_sync(FrameServices &services, const std::function<void()> &arrivals) {
     auto &gpu = resident.gpu;
     if (gpu.debug >= 2)
         gpu_print(0x800445f0);
@@ -531,8 +549,18 @@ void Program::draw_sync(FrameServices &services) {
     // the queue too) come first.
     while (gpu.head != gpu.tail) {
         deliver_due_arrivals();
-        if (gpu.head != gpu.tail)
-            static_cast<void>(gpu_execute());
+        if (arrivals)
+            arrivals();
+        if (gpu.head == gpu.tail)
+            break;
+        static_cast<void>(gpu_execute(&services));
+        // 80046f30: on a timeout it prints, resets the GPU and DrawSync
+        // returns -1.
+        if (static_cast<std::int32_t>(gpu.deadline) <
+                static_cast<std::int32_t>(resident.vsync_counter) ||
+            0xf0000 < static_cast<std::int32_t>(gpu.polls++))
+            throw MissingDependency({"draw_sync", 0x80046ddc, {}, {}}, "symbol:libgpu-timeout",
+                                    false, "A DrawSync timeout is not recovered");
     }
     gpu.polls = take_service(services.alarm_polls, "DrawSync alarm polls");
 }

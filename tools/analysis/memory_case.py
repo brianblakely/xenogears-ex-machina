@@ -329,7 +329,12 @@ def vram_read_lines(row: dict, snapshots, entry_row: dict) -> list[str]:
 
 
 def call_services(
-    rows: list[dict], snapshots, entry_row: dict, exit_row: dict, interrupts
+    rows: list[dict],
+    snapshots,
+    entry_row: dict,
+    exit_row: dict,
+    interrupts,
+    clears: set[int] | None = None,
 ) -> list[str]:
     """Service results of one call, in order, outside interrupt brackets.
 
@@ -340,7 +345,8 @@ def call_services(
     """
     starts = {entry for entry, _ in interrupts}
     ends = {exit for _, exit in interrupts}
-    clears = otc_alarms(rows, entry_row, exit_row, interrupts)
+    if clears is None:
+        clears = otc_alarms(rows, entry_row, exit_row, interrupts)
     lines, depth = [], 0
     for index, row in enumerate(rows):
         if not entry_row["event"] <= row["event"] <= exit_row["event"]:
@@ -921,6 +927,8 @@ def compare(
     arrival_stacks: tuple[int, ...] = (),
     stack_windows: tuple[tuple[int, int], ...] = (),
     syscalls: bool = False,
+    stack_below: int = STACK_BELOW_ENTRY,
+    kernel_save: tuple[tuple[int, int], ...] = KERNEL_SAVE,
 ) -> dict:
     """Exact comparison of owned bytes plus attribution of every other change.
 
@@ -939,7 +947,7 @@ def compare(
     # 80200000 (seen inside the mode dispatcher) is the end of RAM, not
     # offset zero.
     windows = [
-        (((stack - 1) & 0x1FFFFF) + 1 - STACK_BELOW_ENTRY, ((stack - 1) & 0x1FFFFF) + 1)
+        (((stack - 1) & 0x1FFFFF) + 1 - stack_below, ((stack - 1) & 0x1FFFFF) + 1)
         for stack in sorted({sp, *arrival_stacks})
     ]
     # Stacks the code switched to inside heap blocks (80022a0c): their frames
@@ -962,7 +970,7 @@ def compare(
         o
         for o in set(changed) | own | set(interrupt_changed)
         if (interrupt_changed or arrival_stacks or syscalls)
-        and any(a <= o < b for a, b in KERNEL_SAVE)
+        and any(a <= o < b for a, b in kernel_save)
     }
     excused = {o for o in interrupt_changed if o not in own} | kernel
     # An owned byte that only interrupt code changed belongs to the interrupt
@@ -2163,6 +2171,359 @@ def run_frames(args: argparse.Namespace) -> int:
     )
 
 
+# Menu overlay runs (menu::Overlay through "menu_call:ADDR"). A capture with
+# the menu session and frame hooks records one execution. Each interrupt
+# arrival is labelled with the number of overlay events before it: frame
+# entries, frame VSync(0) returns and service results outside interrupt code
+# (menu::Overlay::catch_up delivers it once the C++ has passed as many).
+MENU_POSITIONS = ("frame-entry", "frame-vsync", "menu-sound")
+MENU_BRACKETS = (("dispatch-entry", "dispatch-exit"), ("tick-entry", "tick-exit"))
+# The menu's callee frames reach deeper below the entry SP than a field update.
+MENU_STACK_BELOW = 0x1800
+# The BIOS exception save area as interrupts taken inside menu code write it:
+# the thread control block's 32 register words (80008550..800085cf; general
+# PS1 BIOS layout, the field's KERNEL_SAVE covers the last 13), since menu
+# code interrupted in more registers; and the BIOS words libcard's kernel
+# patches (8004e8d8, 8004e990 inside InitCARD) exchange with the game; and
+# the four kernel bytes the card BIOS services change on the card routes
+# (the only kernel bytes outside these ranges that change between menu frames
+# of the p1shared save and load captures), BIOS state behind the CardBios
+# contract.
+MENU_KERNEL_SAVE = (
+    (0x4D98, 0x4DA4),
+    (0x7264, 0x7265),
+    (0x7500, 0x7501),
+    (0x7528, 0x752A),
+    (0x8550, 0x85D0),
+    (0xE028, 0xE0A4),
+) + KERNEL_SAVE[1:]
+
+
+def menu_otc_alarms(rows: list[dict], entry_row: dict, exit_row: dict) -> set[int]:
+    """Events of the alarms of the menu frame's ClearOTagR (80044ad8): the
+    alarm immediately followed, outside interrupt code, by that call's DMA6
+    busy read (80045de4). ClearOTagR reads VSync(-1) itself; no service."""
+    starts = {entry for entry, _ in MENU_BRACKETS}
+    ends = {exit for _, exit in MENU_BRACKETS}
+    clears, depth, alarm = set(), 0, None
+    for row in rows:
+        if not entry_row["event"] <= row["event"] <= exit_row["event"]:
+            continue
+        if row["hook"] in starts:
+            depth += 1
+        elif row["hook"] in ends:
+            depth -= 1
+        elif depth == 0:
+            if alarm is not None and row["hook"] == f"{LOAD_PREFIX}{LOOP_READS[0]:08x}":
+                clears.add(alarm)
+            alarm = row["event"] if row["hook"] == "alarm" else None
+    return clears
+
+
+def menu_inputs(
+    rows: list[dict], ram: bytes, io: bytes, clears: set[int]
+) -> tuple[list[str], dict, list[int], set[int]]:
+    """Platform input lines of one menu run: arrivals labelled by the overlay
+    events before them, with the pad buffers the BIOS filled before each
+    dispatch (the dispatch hook's range), sound ticks, delivered sectors and
+    hardware reads. `clears` are ClearOTagR's alarm records (no service)."""
+    dma3 = u32(ram, 0x800567B4) - IO_BASE
+    idle = struct.unpack_from("<I", io, dma3)[0] & 0x1000000
+    lines, pending, block, events = [], [], None, 0
+    counts = collections.Counter()
+    sectors, stacks = [], set()
+    for row in rows:
+        hook = row["hook"]
+        if block is None and (
+            hook in MENU_POSITIONS or (service_line(row) is not None and row["event"] not in clears)
+        ):
+            events += 1
+            lines += [line for item in pending for line in item]
+            pending = []
+        if hook in ("dispatch-entry", "tick-entry"):
+            require(block is None, "Nested arrival")
+            point = events
+            stacks.add(visible_registers(row)[29])
+            if hook == "tick-entry":
+                block = [f"tick {point:x} {visible_registers(row)[2]:x}"]
+                counts["tick_arrivals"] += 1
+            else:
+                pad = bytes.fromhex(next(r["hex"] for r in row["ranges"] if r["name"] == "pad"))
+                block = [f"arrival {point:x}"] + [f"pad {i:x} {b:x}" for i, b in enumerate(pad)]
+                counts["interrupt_arrivals"] += 1
+                counts["pad_bytes"] += len(pad)
+        elif hook in ("dispatch-exit", "tick-exit"):
+            require(block is not None, "Interrupt exit without its arrival")
+            pending.append(block)
+            block = None
+        elif hook == SECTOR_HOOK:
+            require(block is not None, "Sector delivered outside interrupt code")
+            sectors.append(header_sector(row))
+        elif hook == "clear-status-b" and block is not None:
+            # A queued ClearImage the DMA2 interrupt runs: its GPUSTAT load.
+            block.append(f"read {QUEUED_CLEAR_STATUS:08x} {visible_registers(row)[4]:08x}")
+            counts["interrupt_reads"] += 1
+        elif hook.startswith(LOAD_PREFIX):
+            site = int(hook[len(LOAD_PREFIX) :], 16)
+            require(row["pc"] == site + 4, "Load hook is not on the instruction after its load")
+            code = u32(ram, site)
+            require(code >> 26 in LOADS, "Load hook does not follow a load instruction")
+            value = visible_registers(row)[(code >> 16) & 31]
+            if site == DATASYNC_READ:
+                require(value & 0x1000000 == idle, "DMA3 busy differs from the imported I/O page")
+                counts["datasync_reads_checked"] += 1
+                continue
+            if block is not None:
+                block.append(f"read {site:08x} {value:08x}")
+                counts["interrupt_reads"] += 1
+            else:
+                lines += [line for item in pending for line in item]
+                pending = []
+                lines.append(f"read {site:08x} {value:08x}")
+                counts["reads"] += 1
+    require(block is None, "The run ends inside interrupt code")
+    lines += [line for item in pending for line in item]
+    if sectors:
+        lines.insert(0, f"drive {sectors[0]}")
+    return lines, dict(counts), sectors, stacks
+
+
+# Card BIOS results of a menu run, recorded at the return sites of the
+# overlay's BIOS calls ("bios-KIND-SITE", V0; directory entries and read
+# buffers as a register-relative range and a snapshot), 801c881c's return ("card-wait", the
+# event that fired), the snapshot at 801d9b08's return ("card-events", the
+# four event descriptors OpenEvent returned, stored at card state + 4fec,
+# 4ff0, 4ff4, 4ff8) and the Kanji ROM rows ("rom-801e670c", the first of
+# each row's eight reads). Results the menu discards are not recorded.
+CARD_EVENTS = (0x4FEC, 0x4FF0, 0x4FF4, 0x4FF8)
+CARD_READ_BUFFERS = {"bios-read-801c9068": 17, "bios-read-801cb680": 16}
+# The five words libcard's kernel patch (8004e990, inside InitCARD) leaves at
+# 8004e960, from the same snapshot.
+CARD_PATCH = 0x8004E960
+# ClearImage's GPUSTAT load (80046030, _clr's aligned path); the clear-status-b
+# hook after it records the value.
+QUEUED_CLEAR_STATUS = 0x80046030
+
+
+def card_lines(rows: list[dict], snapshots) -> list[str]:
+    lines, previous = [], None
+    for row in rows:
+        hook = row["hook"]
+        v0 = visible_registers(row)[2]
+        ranges = {r["name"]: bytes.fromhex(r["hex"]) for r in row.get("ranges", [])}
+        if hook == "card-wait":
+            lines.append(f"card wait {v0:x}")
+        elif hook == "card-events":
+            ram = snapshots.read(row)[0]
+            block = u32(ram, u32(ram, 0x800625A0) + 0x32C)
+            lines += [f"card open_event {u32(ram, block + offset):x}" for offset in CARD_EVENTS]
+            patch = ram[CARD_PATCH & 0x1FFFFF : (CARD_PATCH & 0x1FFFFF) + 20]
+            lines.append(f"card init 0 {patch.hex()}")
+        elif hook.startswith("bios-"):
+            kind = hook.split("-")[1]
+            if kind in ("first", "next"):
+                entry = ranges["dir"].hex() if v0 != 0 else ""
+                lines.append(f"card {kind} {v0:x} {entry}".rstrip())
+            elif kind == "read":
+                # The bytes read, from the return's snapshot at the buffer
+                # (S1 in 801c9038, S0 in 801cb304).
+                count = v0 if v0 < 0x80000000 else 0
+                buffer = visible_registers(row)[CARD_READ_BUFFERS[hook]] & 0x1FFFFF
+                data = snapshots.read(row)[0][buffer : buffer + count]
+                lines.append(f"card read {v0:x} {data.hex()}".rstrip())
+            else:
+                lines.append(f"card {kind} {v0:x}")
+        elif hook == "rom-801e670c" and previous != hook:
+            lines.append(f"card rom {v0:x}")  # lhu v0,0(v1)
+        if hook.startswith("rom-"):
+            previous = hook
+        elif hook.startswith(("bios-", "card-")):
+            previous = None
+    return lines
+
+
+def run_menu(args: argparse.Namespace) -> int:
+    """One menu overlay call from its entry snapshot, compared at every later
+    menu frame entry (and at its return when the capture holds it). Nothing
+    observed enters the run except the declared platform inputs and service
+    results recorded in the same capture."""
+    capture = args.capture
+    require(args.function, "menu_call needs --function")
+    address = int(args.function, 16)
+    trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
+    snapshot_file = snapshot_path(capture / "instruction-trace.jsonl")
+    require(not trace.get("failed") and not trace.get("budget_reached"), "Capture trace failed")
+    require(
+        file_sha256(capture / "instruction-trace.jsonl") == trace.get("trace_sha256")
+        and file_sha256(snapshot_file) == trace.get("snapshot_file_sha256"),
+        "Capture trace or snapshot file does not match its recorded digest",
+    )
+    snapshots = SnapshotReader(snapshot_file)
+    rows = trace_rows(capture)
+    entries = [i for i, row in enumerate(rows) if row["hook"] == args.entry_hook]
+    require(len(entries) > args.start, "No such entry record")
+    first = entries[args.start]
+    # The run covers the rows up to the call's exit (or the capture's end).
+    last = len(rows) - 1
+    for i in range(first + 1, len(rows)):
+        if rows[i]["hook"] == args.exit_hook:
+            last = i
+            break
+    frames = [i for i in range(first + 1, last + 1) if rows[i]["hook"] == "frame-entry"]
+    frames = frames[: args.limit]
+    end = frames[-1] if frames and rows[last]["hook"] != args.exit_hook else last
+    if frames and end == frames[-1]:
+        span = rows[first:end]
+    else:
+        span = rows[first : last + 1]
+    entry_row = rows[first]
+    entry, scratch, io = snapshots.read(entry_row)
+    clears = menu_otc_alarms(rows, entry_row, rows[end])
+    platform, counts, sectors, stacks = menu_inputs(span, entry, io, clears)
+    services = call_services(rows, snapshots, entry_row, rows[end], MENU_BRACKETS, clears)
+    services += card_lines(span, snapshots)
+    with (
+        tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
+        BatchRunner(args.runner) as runner,
+    ):
+        work = Path(directory)
+        (work / "ram.bin").write_bytes(entry)
+        (work / "scratch.bin").write_bytes(scratch)
+        (work / "io.bin").write_bytes(io)
+        (work / "empty").write_bytes(b"")
+        (work / "platform.txt").write_text("".join(line + "\n" for line in platform))
+        (work / "services.txt").write_text("".join(line + "\n" for line in services))
+        sound = any(row["hook"] == "menu-sound" for row in span)
+        report = runner.call(
+            [
+                f"menu_call:{address:08x}" + (":sound" if sound else ""),
+                str(args.budget),
+                "",
+                str(work / "ram.bin"),
+                str(work / "scratch.bin"),
+                str(work / "empty"),
+                str(work / "empty"),
+                str(work / "empty"),
+                ",".join(f"{value:x}" for value in entry_row["cop2_u32"]),
+                ",".join(f"{value:x}" for value in visible_registers(entry_row)),
+                str(work / "io.bin"),
+                str(work / "platform.txt"),
+                str(args.raw) if args.raw.exists() else "",
+                str(work / "services.txt"),
+            ],
+            args.timeout,
+        )
+    sp = visible_registers(entry_row)[29]
+    compared, divergence = [], None
+    outputs = [o for o in report.get("frames", []) if o["boundary"] == "frame_entry"]
+    for k, (index, output) in enumerate(zip(frames, outputs, strict=False)):
+        row = rows[index]
+        image = snapshots.read(row)[0]
+        result = compare(
+            entry,
+            image,
+            output["owned"],
+            sp,
+            arrival_stacks=tuple(stacks),
+            stack_below=MENU_STACK_BELOW,
+            kernel_save=MENU_KERNEL_SAVE,
+        )
+        ok = not (result["mismatch_count"] or result["unowned_count"])
+        compared.append(
+            {
+                "frame": k,
+                "frontend_run": row["frontend_run"],
+                "matched": ok,
+                "owned_bytes": result["owned_bytes"],
+                "changed_bytes": result["changed_bytes"],
+                "mismatch_count": result["mismatch_count"],
+                "unowned_count": result["unowned_count"],
+            }
+        )
+        if not ok:
+            divergence = {"frame": k, "frontend_run": row["frontend_run"], **result}
+            break
+    exit_result = None
+    if (
+        divergence is None
+        and rows[last]["hook"] == args.exit_hook
+        and report["status"] == "completed_boundary"
+    ):
+        image = snapshots.read(rows[last])[0]
+        result = compare(
+            entry,
+            image,
+            report["owned"],
+            sp,
+            arrival_stacks=tuple(stacks),
+            stack_below=MENU_STACK_BELOW,
+            kernel_save=MENU_KERNEL_SAVE,
+        )
+        exit_result = {
+            k: result[k]
+            for k in ("owned_bytes", "changed_bytes", "mismatch_count", "unowned_count")
+        }
+        if result["mismatch_count"] or result["unowned_count"]:
+            divergence = {"exit": True, **result}
+        elif report.get("platform_unconsumed"):
+            divergence = {"platform_unconsumed": report["platform_unconsumed"]}
+    matched = sum(1 for item in compared if item["matched"])
+    summary = {
+        "capture": {"path": str(capture), "trace_sha256": trace["trace_sha256"]},
+        "runner_sha256": file_sha256(args.runner),
+        "tool_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "source_revision": subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
+        ).stdout.strip(),
+        "entry": f"menu_call:{address:08x}",
+        "entry_hook": args.entry_hook,
+        "entry_frontend_run": entry_row["frontend_run"],
+        "tolerance": "exact at every menu frame entry and at the return; owned bytes and every "
+        "unowned original write since the import",
+        "exclusions": {
+            "stack_below_entry_sp": MENU_STACK_BELOW,
+            "stack_below_arrival_sp": MENU_STACK_BELOW,
+            "bios_save_areas_and_pad_buffers": [[hex(a), hex(b)] for a, b in MENU_KERNEL_SAVE],
+            "scratchpad": "not compared",
+        },
+        "status": report["status"],
+        "stopped_at": None
+        if report["status"] == "completed_boundary"
+        else {
+            "dependency": report.get("dependency"),
+            "reason": report.get("reason"),
+            "location": report.get("location"),
+        },
+        "frames_recorded": len(frames),
+        "frames_reported": len(outputs),
+        "frames_matched": matched,
+        "exit": exit_result,
+        "first_divergence": divergence,
+        "platform_inputs": counts,
+        "service_results": dict(collections.Counter(line.split()[0] for line in services)),
+        "supplied_state_bytes": 0,
+        "frame_results": compared,
+    }
+    text = json.dumps(summary, indent=1)
+    if args.report:
+        require(not args.report.exists(), "Reports are never overwritten")
+        args.report.write_text(text + "\n")
+    print(
+        json.dumps(
+            [
+                summary["status"],
+                len(frames),
+                len(outputs),
+                matched,
+                (summary["stopped_at"] or {}).get("dependency"),
+                bool(divergence),
+                exit_result is not None,
+            ]
+        )
+    )
+    return 0 if divergence is None and matched == len(outputs) and outputs else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--capture", type=Path, required=True)
@@ -2180,6 +2541,7 @@ def main() -> int:
             "field_map_change_step",
             "field_map_change_start",
             "field_frame",
+            "menu_call",
             *RESIDENT_ENTRIES,
             *FIELD_ENTRIES,
             *RELOAD_ENTRIES,
@@ -2294,9 +2656,14 @@ def main() -> int:
         action="store_true",
         help="Supply each ClearOTagR's unrecorded DMA6 busy read as idle (reload entries)",
     )
+    parser.add_argument(
+        "--function", help="menu_call: the overlay entry address the capture's entry hook heads"
+    )
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
     with host_slot("compare"):
+        if args.entry == "menu_call":
+            return run_menu(args)
         return run_frames(args) if args.frames > 1 else run(args)
 
 

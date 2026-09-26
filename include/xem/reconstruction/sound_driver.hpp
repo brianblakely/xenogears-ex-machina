@@ -35,7 +35,10 @@ struct SoundDriver {
     std::uint32_t pool{};         // 80059410: first sound-pool block header
     std::uint32_t start_stamp{};  // 80059504: copied into each started voice (+0c)
     std::uint32_t voice_limit{};  // 80059478; 80039db8 starts effects at voice limit - 2
-    std::uint32_t system_bank{};  // 8005919c: effect bank of the battle menu effects
+    // 80059544: voices below the effect block's count (+14) less this word
+    // are the lowest an effect voice search (8003a65c) takes.
+    std::uint32_t effect_reserve{};
+    std::uint32_t system_bank{}; // 8005919c: effect bank of the battle menu effects
     // Hardware voice bookkeeping: the owner (a voice record + 30) of each of
     // the 24 voices, voices marked when claimed or released, and voices cleared
     // when claimed or released.
@@ -199,6 +202,10 @@ void link_effect_bank(SoundDriver &driver, std::uint32_t bank);
 // effect `effect` of effect bank object `bank` (its id at +14) on two voices
 // from voice_limit - 2 (code 8000 | voice) at volume 6000, pan 4000.
 void start_bank_effect(SoundDriver &driver, std::uint32_t bank, std::uint32_t effect);
+
+// 80039e60: when effects are enabled, start effect `id` (bank id << 16 |
+// effect) on the voice pair 8003a65c finds, at volume 6000, pan 4000.
+void start_effect_on_free_pair(SoundDriver &driver, std::uint32_t id);
 
 // 80039c4c: stop a sequence (clear flag 8000) and release its voices.
 void stop_sequence(SoundDriver &driver, std::uint32_t sequence);

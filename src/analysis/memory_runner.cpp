@@ -3,6 +3,7 @@
 #include "field_memory.hpp"
 #include "mdec_codec.hpp"
 
+#include "xem/reconstruction/menu_overlay.hpp"
 #include "xem/reconstruction/resident_heap.hpp"
 
 #include <fstream>
@@ -128,6 +129,101 @@ void optional(std::ostream &out, const auto &value) {
 } // namespace
 
 namespace {
+// Card BIOS results recorded in the same original execution ("card KIND
+// VALUE [HEX]" service lines, in call order per kind). Results the menu
+// discards (critical sections, event close/enable/undeliver, the card file
+// system setup) are not recorded; their calls only count.
+class RecordedCardBios final : public game::menu::CardBios {
+  public:
+    void add(const std::string &kind, std::uint32_t value, std::vector<std::uint8_t> bytes) {
+        results_[kind].push_back({value, std::move(bytes)});
+    }
+    [[nodiscard]] std::size_t unconsumed() const {
+        std::size_t count = 0;
+        for (const auto &[kind, queue] : results_)
+            count += queue.size();
+        return count;
+    }
+    void bu_init() override {}
+    std::uint32_t open_event(std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t) override {
+        return take("open_event").value;
+    }
+    std::uint32_t close_event(std::uint32_t) override { return 1; }
+    std::uint32_t test_event(std::uint32_t) override {
+        // "card wait CODE": 801c881c returned CODE, the index of the event
+        // that fired among the polls new card, error, done, timeout.
+        auto &queue = results_["wait"];
+        if (queue.empty())
+            throw game::ServiceUnavailable("card event wait result");
+        static constexpr std::array<std::uint32_t, 4> order{3, 1, 0, 2};
+        const auto fired = queue.front().value;
+        const auto polled = order[poll_++ % 4];
+        if (polled != fired)
+            return 0;
+        poll_ = 0;
+        queue.pop_front();
+        return 1;
+    }
+    std::uint32_t enable_event(std::uint32_t) override { return 1; }
+    void undeliver_event(std::uint32_t, std::uint32_t) override {}
+    std::uint32_t enter_critical_section() override { return 1; }
+    void exit_critical_section() override {}
+    std::uint32_t open(std::string_view, std::uint32_t) override { return take("open").value; }
+    ReadResult read(std::uint32_t, std::uint32_t) override {
+        auto result = take("read");
+        return {result.value, std::move(result.bytes)};
+    }
+    std::uint32_t write(std::uint32_t, std::span<const std::uint8_t>) override {
+        return take("write").value;
+    }
+    std::uint32_t close(std::uint32_t fd) override { return fd; }
+    std::uint32_t format(std::string_view) override { return take("format").value; }
+    std::optional<DirectoryEntry> first_file(std::string_view) override { return entry("first"); }
+    std::optional<DirectoryEntry> next_file() override { return entry("next"); }
+    std::uint32_t rename(std::string_view, std::string_view) override {
+        return take("rename").value;
+    }
+    std::uint32_t erase(std::string_view) override { return 1; }
+    std::uint32_t kanji_address(std::uint32_t) override { return take("kanji").value; }
+    std::uint32_t rom_halfword(std::uint32_t) override { return take("rom").value; }
+    std::uint32_t card_info(std::uint32_t) override { return take("info").value; }
+    CardPatch init_card(std::uint32_t) override {
+        auto result = take("init");
+        CardPatch bytes{};
+        if (result.bytes.size() != bytes.size())
+            throw InputError("A recorded card patch is not 20 bytes");
+        std::ranges::copy(result.bytes, bytes.begin());
+        return bytes;
+    }
+    void start_card() override {}
+
+  private:
+    struct Result {
+        std::uint32_t value;
+        std::vector<std::uint8_t> bytes;
+    };
+    Result take(const std::string &kind) {
+        auto &queue = results_[kind];
+        if (queue.empty())
+            throw game::ServiceUnavailable("card BIOS " + kind + " result");
+        auto result = std::move(queue.front());
+        queue.pop_front();
+        return result;
+    }
+    std::optional<DirectoryEntry> entry(const std::string &kind) {
+        auto result = take(kind);
+        if (result.value == 0)
+            return std::nullopt;
+        if (result.bytes.size() != std::tuple_size_v<DirectoryEntry>)
+            throw InputError("A recorded directory entry is not 40 bytes");
+        DirectoryEntry bytes{};
+        std::ranges::copy(result.bytes, bytes.begin());
+        return bytes;
+    }
+    std::map<std::string, std::deque<Result>> results_;
+    std::uint32_t poll_{};
+};
+
 int run_case(int argc, char **argv) {
     std::string status = "invalid_input", reason, dependency;
     std::string_view entry = argc > 1 ? argv[1] : "unknown";
@@ -195,6 +291,9 @@ int run_case(int argc, char **argv) {
         const bool menu_entry = entry == "menu_item_effect" || entry == "menu_item_use" ||
                                 entry == "menu_equip_swap" || entry == "menu_equip_bonus" ||
                                 entry == "menu_equip_stats" || menu_save_entry;
+        // "menu_call:ADDR": the menu overlay function at ADDR (menu::Overlay),
+        // entered with the recorded argument registers and caller stack words.
+        const bool overlay_entry = entry.starts_with("menu_call:");
         const bool transition_entry = entry == "field_save" || entry == "field_preload" ||
                                       entry == "field_map_change_step" ||
                                       entry == "field_map_change_start";
@@ -215,7 +314,7 @@ int run_case(int argc, char **argv) {
             entry != "battle_mode_start" && entry != "field_checkpoints" &&
             !entry.starts_with("field_frame") && !resident_entry && !battle_entry && !menu_entry &&
             !field_entry && !transition_entry && !reload_entry && !battle_exit_entry &&
-            !movie_entry && !movie_mode_entry)
+            !movie_entry && !movie_mode_entry && !overlay_entry)
             throw InputError("Unsupported memory-image entry");
         const auto hex_words = [](const char *text, std::size_t count, const char *message) {
             std::vector<std::uint32_t> values;
@@ -274,6 +373,8 @@ int run_case(int argc, char **argv) {
             program = analysis::import_battle_overlay(memory);
         } else if (battle_entry) {
             program = analysis::import_battle(memory);
+        } else if (overlay_entry) {
+            program = analysis::import_menu_mode(memory);
         } else if (menu_entry) {
             program = analysis::import_menu(memory);
             // The save payload (A0; S4 at the seal) and the load buffer (S4
@@ -346,6 +447,7 @@ int run_case(int argc, char **argv) {
         // "stage ADDR" lines name completed operations (their original
         // address) whose state a multi-frame run also reports.
         std::set<std::uint32_t> stages;
+        RecordedCardBios card_bios;
         {
             std::ifstream lines(argv[14]);
             if (!lines)
@@ -361,6 +463,17 @@ int run_case(int argc, char **argv) {
                 if (line.starts_with("stage ")) {
                     stages.insert(
                         static_cast<std::uint32_t>(std::stoul(line.substr(6), nullptr, 16)));
+                    continue;
+                }
+                if (line.starts_with("card ")) {
+                    // "card KIND VALUE [HEX]": a recorded card BIOS result.
+                    std::istringstream card(line.substr(5));
+                    std::string kind, text;
+                    std::uint32_t value = 0;
+                    if (!(card >> kind >> std::hex >> value))
+                        throw InputError("Malformed card service line");
+                    card >> text;
+                    card_bios.add(kind, value, unhex(text));
                     continue;
                 }
                 if (!(fields >> name >> std::hex >> first))
@@ -831,6 +944,36 @@ int run_case(int argc, char **argv) {
         } else if (entry == "battle_drops") {
             // 801e1444: A0 ids, A1 counts, A2 categories.
             program->add_battle_drops(registers[4], registers[5], registers[6]);
+        } else if (overlay_entry) {
+            std::size_t used = 0;
+            // "menu_call:ADDR:sound": the capture hooks the menu sound 801c8574.
+            auto text = std::string(entry.substr(10));
+            const bool sound_positions = text.ends_with(":sound");
+            if (sound_positions)
+                text.resize(text.size() - 6);
+            const auto address = static_cast<std::uint32_t>(std::stoul(text, &used, 16));
+            if (used != text.size())
+                throw InputError("menu_call needs a hexadecimal entry address");
+            const auto sp = registers[29];
+            // A0..A3, then the caller's stack words from SP + 10.
+            std::vector<std::uint32_t> arguments{registers[4], registers[5], registers[6],
+                                                 registers[7]};
+            for (std::uint32_t k = 0; k < 8; ++k)
+                arguments.push_back(memory.word(sp + 0x10 + 4 * k));
+            game::menu::Overlay overlay(*program, services, sp, &card_bios);
+            overlay.sound_positions = sound_positions;
+            // Each frame entry's exported state (menu memory holds the game
+            // data while the overlay runs).
+            overlay.boundary = [&](std::string_view boundary) {
+                const auto owned_now = owned_ranges(*program);
+                frames << (frames.tellp() > 0 ? "," : "") << "{\"boundary\":" << quote(boundary)
+                       << ",\"events\":" << overlay.events() << ",\"gte\":["
+                       << gte_controls(*program) << "],\"owned\":[" << owned_now
+                       << "],\"hardware_writes\":[]}";
+            };
+            overlay.set_stack_image(memory.range(sp - game::menu::Overlay::stack_bytes,
+                                                 game::menu::Overlay::stack_bytes));
+            return_value = overlay.call(address, arguments);
         } else if (entry == "menu_item_effect") {
             // 801e31c0: A0 table directory, A1 character, A2 item.
             return_value =
@@ -1183,7 +1326,7 @@ int run_case(int argc, char **argv) {
             owned = owned_ranges(*program, service_output);
         } catch (const std::exception &error) {
             status = "reconstruction_error";
-            reason = std::string("Export failed: ") + error.what();
+            reason = std::string("Export failed: ") + error.what() + " (after: " + reason + ')';
             owned.clear();
         }
     }

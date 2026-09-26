@@ -256,6 +256,7 @@ struct DiscReadState {
 struct CdState {
     std::uint32_t ready_callback{};         // 800564a8
     std::uint32_t sync_callback{};          // 800564ac
+    std::uint32_t read_callback{};          // 80056844: CdReadCallback (8004373c)
     std::int32_t debug{};                   // 800564b4: nonzero levels print
     std::uint32_t status{};                 // 800564b8: last drive status (first response byte)
     std::uint32_t status2{};                // 800564bc: second response byte
@@ -452,7 +453,7 @@ struct ResidentState {
     // 8004f32c it resets and the party sprite blocks 80077d2c releases
     // (8005a414).
     std::uint8_t b_59179{};            // 80059179
-    std::uint32_t field_effect_bank{}; // 8006259c
+    std::uint32_t field_effect_bank{}; // 8006259c: the field (and menu) effect bank block
     std::uint32_t w_4f32c{};           // 8004f32c
     // The movie player parks slots 1 and 2 in VRAM while a movie plays.
     std::array<std::uint32_t, 3> party_sprite_blocks{}; // 8005a414
@@ -504,6 +505,11 @@ struct ResidentState {
     std::uint32_t w_4f318{}; // 8004f318: 800a31e8 frames since variable 10 last stepped
     std::uint32_t w_4f328{}; // 8004f328: bit 80 stops variable 10, bit 4 counts it down
     std::uint8_t b_59171{};  // 80059171: 800b236c when triangle opens the menu
+    // Menu overlay (menu_overlay.hpp) globals.
+    std::uint8_t menu_mode{};       // 80059460: 0 field menu, 2 title file screen, 6 other
+    std::uint8_t menu_cursor{};     // 800594cc: field menu cursor kept between openings
+    std::uint8_t menu_effects{};    // 80059178: nonzero loads the menu's effect bank
+    std::uint32_t menu_resources{}; // 8005945c: resource block the menu unpacks and frees
     // 80065848: 8007ae78's pointer record for port 2 (x, y, buttons, dx, dy).
     std::array<std::int32_t, 5> pointer{};
     InterruptState interrupts;
@@ -817,6 +823,9 @@ enum class FrameStep : std::uint8_t {
 };
 
 class Program;
+namespace menu {
+class Overlay;
+}
 // Resumable points of the mode dispatcher 80019acc(0).
 enum class DispatchStep : std::uint8_t {
     start,  // entry: ResetGraph, DrawSync, VSync(2)
@@ -1289,6 +1298,8 @@ class Program {
     // Outside interrupt code, the arrivals recorded before the next
     // hardware read: code that polls hardware observes them first.
     void deliver_due_arrivals();
+    // The menu overlay (menu_overlay.hpp) runs on the Program's services.
+    friend class menu::Overlay;
     // Field frame steps (field_frame.cpp).
     void frame_emitters(std::uint32_t listener);                                    // 80086590
     void frame_fade();                                                              // 80071cb4
@@ -1530,7 +1541,9 @@ class Program {
     std::int32_t gpu_enqueue(std::uint32_t operation, std::uint32_t parameter,
                              std::array<std::int16_t, 4> *rect, std::uint32_t size,
                              std::uint32_t argument, FrameServices *services); // 8004668c
-    std::uint32_t gpu_execute();                                               // 8004696c
+    // `services` supply the results of a request run from the main flow
+    // (DrawSync's drain); a request run from the DMA2 interrupt has none.
+    std::uint32_t gpu_execute(FrameServices *services = nullptr); // 8004696c
     // Run a queued or immediate operation; `rect` is the rectangle parameter
     // when the caller holds it, else it lives in the queue at `parameter`.
     std::int32_t gpu_operation(std::uint32_t operation, std::uint32_t parameter,
@@ -1543,7 +1556,8 @@ class Program {
     void draw_otag(FrameServices &services, std::uint32_t table);                       // 80044bd0
     void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
-    void draw_sync(FrameServices &services);                                            // 800445d0
+    // `arrivals` delivers the interrupts that arrive while the queue drains.
+    void draw_sync(FrameServices &services, const std::function<void()> &arrivals = {}); // 800445d0
     // Mode dispatch (mode_dispatch.cpp).
     void release_heap_blocks();                        // 8003223c
     void restart_heap(std::uint32_t address);          // 80031b10

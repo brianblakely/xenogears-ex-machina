@@ -698,7 +698,8 @@ void export_resident_into(const Program &program, Claims &out) {
             out.memory.put(address + 4 * i, header[i]);
         out.claim("sound_pool_header", address, 16);
     }
-    if (game_state_loaded(resident))
+    // While the menu overlay runs, menu memory holds the game data.
+    if (game_state_loaded(resident) && !resident.game_data.empty())
         out.bytes("game_data", resident.game_state, resident.game_data);
     for (const auto &[address, header] : resident.heap.headers) {
         out.memory.put(address, header[0]);
@@ -1095,6 +1096,43 @@ Program import_menu(const OriginalMemory &memory) {
         own_block(screen);
     if (const auto card = memory.word(state + menu::state_card); card != 0)
         own_block(card);
+    return program;
+}
+
+Program import_menu_mode(const OriginalMemory &memory) {
+    namespace menu = reconstruction::menu;
+    auto program = import_resident(memory);
+    auto &regions = program.menu.emplace().regions;
+    // The save's globals, the menu state pointer, the text font parameters
+    // (8005934c..80059367, including the text state pointer 80059360) and
+    // the text layout window 80059fd8..8005a0c7 that 80034eac fills and the
+    // five words libcard's kernel patch exchanges at 8004e960.
+    for (const auto [address, size] :
+         {std::pair{menu::saved_globals, 0x20U}, std::pair{menu::state_pointer, 4U},
+          std::pair{text_font_globals, 0x1cU}, std::pair{0x80059fd8U, 0xf0U},
+          std::pair{0x8004e960U, 0x14U}})
+        regions.emplace(address, copy_of(memory.range(address, size)));
+    // Ranges resident values already own.
+    auto scratch = memory;
+    std::map<std::uint32_t, std::uint32_t> claimed; // start -> end
+    for (const auto &range : export_resident(program, scratch))
+        claimed.emplace(range.address, range.address + static_cast<std::uint32_t>(range.size));
+    const auto overlaps = [&](std::uint32_t begin, std::uint32_t end) {
+        auto next = claimed.lower_bound(begin);
+        if (next != claimed.end() && next->first < end)
+            return true;
+        return next != claimed.begin() && std::prev(next)->second > begin;
+    };
+    for (const auto &[header, words] : program.resident.heap.headers) {
+        const auto tag = words[1] & reconstruction::resident::heap_tag_mask;
+        if (tag == 0 || tag == reconstruction::resident::heap_end_tag)
+            continue;
+        const auto begin = header + 8;
+        const auto end = words[0] - 8;
+        if (end <= begin || overlaps(begin, end))
+            continue;
+        regions.emplace(begin, copy_of(memory.range(begin, end - begin)));
+    }
     return program;
 }
 

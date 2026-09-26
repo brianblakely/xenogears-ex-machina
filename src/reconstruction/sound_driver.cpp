@@ -388,6 +388,68 @@ void start_bank_effect(SoundDriver &driver, std::uint32_t bank, std::uint32_t ef
                         0x4000);
 }
 
+namespace {
+
+// 8003a65c: stop the effect voices playing `id`, then find `count` adjacent
+// voices for a new effect. Candidates step down by `count` from voice_limit -
+// (count + 2) while the group's active bits (+48) are set and the voice is
+// above the lowest allowed (+14 less 80059544); the first free group wins,
+// else the candidate with the oldest start stamp (+0c) among those whose
+// priority byte (+7) is below 21h.
+std::uint32_t find_effect_voices(SoundDriver &driver, std::uint32_t id, std::uint32_t count) {
+    const auto effects = driver.effect_block;
+    if (driver.voice_limit == 0)
+        throw SoundError("An effect voice search over no voices is not recovered");
+    for (std::uint32_t index = 0; index < driver.voice_limit; ++index) {
+        const auto record = voice(driver, index);
+        if ((u16(driver, record) & 1) == 0 || u32(driver, record + 8) != id)
+            continue;
+        put16(driver, record, 0);
+        put32(driver, effects + 0x48, u32(driver, effects + 0x48) & ~bit(u8(driver, record + 6)));
+        release_voice(driver, record + 0x30, u8(driver, record + 0x27));
+    }
+    const auto lowest = u8(driver, effects + 0x14) - driver.effect_reserve;
+    auto index = driver.voice_limit - (count + 2);
+    const auto group = 0xffffffffU >> ((32 - count) & 31U);
+    auto bits = group << (index & 31U);
+    const auto active = u32(driver, effects + 0x48);
+    if ((active & bits) == 0)
+        return index;
+    auto oldest = 0xffffffffU;
+    std::optional<std::uint32_t> chosen;
+    for (;;) {
+        const auto record = voice(driver, index);
+        const auto stamp = u32(driver, record + 0xc);
+        bits >>= count & 31U;
+        if (stamp < oldest && u8(driver, record + 7) < 0x21) {
+            oldest = stamp;
+            chosen = index;
+        }
+        if (bits < group || lowest >= index)
+            break;
+        index -= count;
+        if ((active & bits) == 0)
+            return index;
+    }
+    // Without a candidate the original returns its caller's s6.
+    if (!chosen)
+        throw SoundError("An effect voice search without a candidate is not recovered");
+    return *chosen;
+}
+
+} // namespace
+
+void start_effect_on_free_pair(SoundDriver &driver, std::uint32_t id) {
+    if ((driver.flags & 0x800) == 0)
+        return;
+    const auto channel = find_effect_voices(driver, id, 2);
+    driver.effect_run = 2;
+    // (channel | 2000), sign-extended from 16 bits.
+    const auto code = static_cast<std::uint32_t>(
+        static_cast<std::int16_t>(static_cast<std::uint16_t>(channel | 0x2000)));
+    start_effect_voices(driver, code, id, 0x6000, 0x4000);
+}
+
 void stop_sequence(SoundDriver &driver, std::uint32_t sequence) {
     if (sequence == 0)
         throw SoundError("Stopping a null sequence reaches the driver error handler 8003f6b0");

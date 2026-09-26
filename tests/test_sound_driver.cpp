@@ -133,6 +133,48 @@ void effect_start() {
             "A pair beyond the effect block is rejected");
 }
 
+// 80039e60: the voice search stops voices playing the id, then takes the
+// first free pair below voice_limit - 4, else the oldest-stamped candidate.
+void free_pair() {
+    auto d = sample();
+    d.voice_limit = 12;
+    resident::start_effect_on_free_pair(d, 1);
+    check(d.effect_run == 2 && get(d, record(8) + 8, 4) == 1 && get(d, record(8) + 7, 1) == 0x20,
+          "With voices 8 and 9 free the effect starts there");
+
+    auto busy = sample();
+    busy.voice_limit = 12;
+    put(busy, block + 0x48, 0x320, 4);
+    put(busy, record(3), 1, 2);
+    put(busy, record(3) + 8, 1, 4);
+    put(busy, record(3) + 6, 5, 1);
+    resident::start_effect_on_free_pair(busy, 1);
+    check(get(busy, record(3), 2) == 0 && get(busy, record(6) + 8, 4) == 1 &&
+              get(busy, record(8) + 8, 4) == 0,
+          "A voice playing the id stops and the next free pair below takes the effect");
+
+    auto full = sample();
+    full.voice_limit = 12;
+    put(full, block + 0x48, 0xffffffff, 4);
+    put(full, block + 0x14, 4, 1);
+    put(full, record(8) + 0xc, 0x50, 4);
+    put(full, record(6) + 0xc, 0x10, 4);
+    put(full, record(6) + 7, 0x21, 1);
+    put(full, record(4) + 0xc, 0x60, 4);
+    resident::start_effect_on_free_pair(full, 1);
+    check(get(full, record(8) + 0xc, 4) == 0x1234 && get(full, record(6) + 8, 4) == 0,
+          "With every pair busy the oldest candidate below priority 21 is taken");
+
+    auto disabled = sample();
+    disabled.voice_limit = 12;
+    disabled.flags = 0;
+    resident::start_effect_on_free_pair(disabled, 1);
+    check(disabled.effect_run == 0, "The search waits for flag 800");
+    auto none = sample();
+    rejects([&] { resident::start_effect_on_free_pair(none, 1); },
+            "A search over no voices is rejected");
+}
+
 void pairs() {
     auto d = sample();
     put(d, record(10), 1, 2);
@@ -423,11 +465,12 @@ void transfer() {
 int main() {
     try {
         effect_start();
+        free_pair();
         pairs();
         releases();
         tick();
         transfer();
-        std::cout << "Sound driver: five source-boundary groups passed\n";
+        std::cout << "Sound driver: six source-boundary groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

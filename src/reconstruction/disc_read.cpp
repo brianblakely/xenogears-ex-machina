@@ -1283,13 +1283,15 @@ void Program::dma_store(std::uint32_t address, std::span<const std::uint8_t> dat
     for (auto &block : resident.music_blocks)
         if (inside(block))
             return;
-    // An allocated block's raw contents (a file read into its own block).
-    auto &contents = resident.heap_contents;
-    if (const auto after = contents.upper_bound(address); after != contents.begin()) {
-        auto &[at, bytes] = *std::prev(after);
-        if (address >= at && end <= std::uint64_t{at} + bytes.size()) {
-            std::ranges::copy(data, bytes.begin() + (address - at));
-            return;
+    // A menu-mode heap block (menu memory regions).
+    if (menu) {
+        auto &regions = menu->regions;
+        if (auto after = regions.upper_bound(address); after != regions.begin()) {
+            auto &[at, bytes] = *std::prev(after);
+            if (end <= std::uint64_t{at} + bytes.size()) {
+                std::ranges::copy(data, bytes.begin() + (address - at));
+                return;
+            }
         }
     }
     // A file block battle memory owns (the battle setup's files).

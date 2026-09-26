@@ -31,6 +31,8 @@ bool targeted(const Menu &menu, std::uint32_t targets, std::uint32_t slot) {
 // 801c8574: when the menu plays sounds, sound effect `id` of the menu's
 // effect bank (state + 2e4) through 80039db8.
 void play_sound(Menu &menu, std::uint32_t id) {
+    if (menu.entering_sound)
+        menu.entering_sound();
     if (menu.memory.u8(menu.state() + state_sound) == 0)
         return;
     resident::start_bank_effect(menu.sound, menu.memory.u32(menu.state() + state_effect_bank), id);

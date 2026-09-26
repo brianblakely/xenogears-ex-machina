@@ -57,6 +57,17 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/menu_equipment.cpp
   src/reconstruction/menu_items.cpp
   src/reconstruction/menu_save.cpp
+  src/reconstruction/menu_card.cpp
+  src/reconstruction/menu_core.cpp
+  src/reconstruction/menu_equip.cpp
+  src/reconstruction/menu_fieldmenu.cpp
+  src/reconstruction/menu_screens.cpp
+  src/reconstruction/menu_text.cpp
+  src/reconstruction/menu_windows.cpp
+  src/reconstruction/menu_overlay.cpp
+  src/reconstruction/menu_overlay_dispatch.cpp
+  src/reconstruction/resident_text.cpp
+  src/reconstruction/resident_gte.cpp
   src/reconstruction/resident_heap.cpp
   src/reconstruction/sound_driver.cpp
   src/reconstruction/media.cpp
@@ -178,6 +189,9 @@ if(BUILD_TESTING)
   add_executable(test-menu tests/test_menu.cpp)
   target_link_libraries(test-menu PRIVATE xem-reconstruction)
   add_test(NAME menu-reconstruction COMMAND test-menu)
+  add_executable(test-menu-overlay tests/test_menu_overlay.cpp)
+  target_link_libraries(test-menu-overlay PRIVATE xem-reconstruction)
+  add_test(NAME menu-overlay-reconstruction COMMAND test-menu-overlay)
   add_executable(test-menu-save tests/test_menu_save.cpp)
   target_link_libraries(test-menu-save PRIVATE xem-reconstruction)
   add_test(NAME menu-save-reconstruction COMMAND test-menu-save)

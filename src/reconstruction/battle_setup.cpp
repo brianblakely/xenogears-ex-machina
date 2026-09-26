@@ -5,6 +5,7 @@
 #include "xem/reconstruction/field_sprite_model.hpp"
 #include "xem/reconstruction/gpu.hpp"
 #include "xem/reconstruction/program.hpp"
+#include "xem/reconstruction/resident_text.hpp"
 
 #include <algorithm>
 #include <array>
@@ -577,8 +578,8 @@ void copy(battle::BattleMemory &memory, const resident::Heap &heap, std::uint32_
 }
 // 8003342c: a table's offsets (after its count) become addresses.
 void relocate_table(battle::BattleMemory &memory, std::uint32_t table) {
-    for (std::uint32_t entry = 1; entry <= memory.u32(table); ++entry)
-        memory.put32(table + entry * 4, memory.u32(table + entry * 4) + table);
+    battle::ResidentView view{memory};
+    static_cast<void>(resident::relocate_offsets(view, table));
 }
 
 // The stage setup 801e7210 and its callees.

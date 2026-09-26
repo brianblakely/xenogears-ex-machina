@@ -1018,6 +1018,9 @@ class Tick {
         case 0x8003d340: // b0
             m.w16(voice, m.u16(voice) | 0x800U);
             return at;
+        case 0x8003d358: // b1 clears b0's flag
+            m.w16(voice, m.u16(voice) & 0xf7ffU);
+            return at;
         case 0x8003d370: // b2 frequency modulation on
         case 0x8003d3a4: // b3 off
             if ((m.u8(voice + 0x27) & 1U) != 0) {
@@ -1075,6 +1078,16 @@ class Tick {
             m.w16(voice + 0x6e, m.u16(voice + 0x6e) + (u(s8(m.u8(at))) << 5U));
             m.w16(voice + 2, m.u16(voice + 2) | 0x200U);
             return at + 1;
+        case 0x8003d79c: // d2 detune change in steps of 8
+            m.w16(voice + 0x6e, m.u16(voice + 0x6e) + (u(s8(m.u8(at))) << 3U));
+            m.w16(voice + 2, m.u16(voice + 2) | 0x200U);
+            return at + 1;
+        case 0x8003d7c8: { // d3 detune change by a halfword (signed high byte first)
+            const auto change = (u(s8(m.u8(at))) << 8U) + m.u8(at + 1);
+            m.w16(voice + 2, m.u16(voice + 2) | 0x200U);
+            m.w16(voice + 0x6e, m.u16(voice + 0x6e) + change);
+            return at + 2;
+        }
         case 0x8003d7fc: { // d4 pitch slide
             const auto steps = m.u8(at);
             const auto distance = u(s8(m.u8(at + 1))) << 24U;
@@ -1127,6 +1140,19 @@ class Tick {
             m.w16(voice + 0x74, m.u8(at) << 8U);
             m.w16(voice + 2, m.u16(voice + 2) | 0x100U);
             return at + 1;
+        case 0x8003dee4: { // ea pan slide: over `steps` ticks toward a signed pan byte
+            const auto steps = m.u8(at);
+            const auto current = u(s8(static_cast<std::uint8_t>(m.u16(voice + 0x74) >> 8U)));
+            const auto change = u(s8(m.u8(at + 1))) - current;
+            if (steps != 0 && change != 0) {
+                const auto distance = change << 8U;
+                m.w16(voice + 0x92, distance);
+                m.w16(voice + 0x98, steps);
+                m.w16(voice + 4, m.u16(voice + 4) | 0x10U);
+                m.w16(voice + 0x90, quotient(distance, steps));
+            }
+            return at + 2;
+        }
         case 0x8003df3c: // eb pan modulation fade
             return lfo_fade(at, voice, 2);
         case 0x8003e04c: // ed pan modulation

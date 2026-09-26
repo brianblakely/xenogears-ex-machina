@@ -4,6 +4,7 @@
 #include "xem/reconstruction/field_gte.hpp"
 #include "xem/reconstruction/program.hpp"
 #include "xem/reconstruction/resident_heap.hpp"
+#include "xem/reconstruction/resident_text.hpp"
 
 #include <algorithm>
 #include <bit>
@@ -418,7 +419,22 @@ std::int32_t Program::open_dialogue(field::FieldWorld &world, field::FieldPassSt
         window.set_half(layout_flags, static_cast<std::uint16_t>(window.half(layout_flags) | 0x20));
     window.bytes.at(0x68) = state.text_speed == 8 ? 1 : 2;
     // 80033728: the message's address in the loaded table.
-    put(window.bytes, 0x90, state.messages_address + word(table, message * 2U + 4U, 2));
+    class ProgramMemory final : public resident::Memory {
+      public:
+        explicit ProgramMemory(Program &owner) : owner_(owner) {}
+        [[nodiscard]] std::uint32_t read(std::uint32_t address,
+                                         std::uint32_t width) const override {
+            return owner_.memory(address, width);
+        }
+        void write(std::uint32_t address, std::uint32_t value, std::uint32_t width) override {
+            owner_.set_memory(address, value, width);
+        }
+
+      private:
+        Program &owner_;
+    };
+    put(window.bytes, 0x90,
+        resident::offset_table_entry(ProgramMemory{*this}, state.messages_address, message));
     window.set_half(Window::busy, 0);
     put(window.bytes, 0x10, word(window.bytes, 0x10, 2) | 2U, 2);
     window.set_half(Window::owner, static_cast<std::uint16_t>(owner));

@@ -709,6 +709,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.cd.ready_callback; });
     add_resident("cd_sync_callback", 0x800564ac, 4,
                  [](Program &p) -> auto & { return p.resident.cd.sync_callback; });
+    add_resident("cd_read_callback", 0x80056844, 4,
+                 [](Program &p) -> auto & { return p.resident.cd.read_callback; });
     add_resident("cd_debug", 0x800564b4, 4,
                  [](Program &p) -> auto & { return p.resident.cd.debug; });
     add_resident("cd_status", 0x800564b8, 4,
@@ -758,6 +760,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.sound.start_stamp; });
     add_resident("sound_voice_limit", 0x80059478, 4,
                  [](Program &p) -> auto & { return p.resident.sound.voice_limit; });
+    add_resident("sound_effect_reserve", 0x80059544, 4,
+                 [](Program &p) -> auto & { return p.resident.sound.effect_reserve; });
     add_resident("sound_system_bank", 0x8005919c, 4,
                  [](Program &p) -> auto & { return p.resident.sound.system_bank; });
     add_resident("sound_voice_changes", 0x80059554, 4,
@@ -954,6 +958,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.geometry_return; });
     add_resident("geometry_inner_return", 0x800593d4, 4,
                  [](Program &p) -> auto & { return p.resident.geometry_inner_return; });
+    // Owner tags 0..12: the resident text layout window 80059fd8 (80034eac)
+    // follows the thirteenth word, and no caller selects a higher tag.
     for (std::size_t tag = 0; tag < 13; ++tag)
         add_resident("heap_tag_word", static_cast<std::uint32_t>(0x80059fa4 + 4 * tag), 4,
                      [tag](Program &p) -> auto & { return p.resident.heap.tag_words[tag]; });
@@ -1005,6 +1011,14 @@ std::vector<OriginalGlobal> build() {
     add_resident("w_4f318", 0x8004f318, 4, [](Program &p) -> auto & { return p.resident.w_4f318; });
     add_resident("w_4f328", 0x8004f328, 4, [](Program &p) -> auto & { return p.resident.w_4f328; });
     add_resident("b_59171", 0x80059171, 1, [](Program &p) -> auto & { return p.resident.b_59171; });
+    add_resident("menu_mode", 0x80059460, 1,
+                 [](Program &p) -> auto & { return p.resident.menu_mode; });
+    add_resident("menu_cursor", 0x800594cc, 1,
+                 [](Program &p) -> auto & { return p.resident.menu_cursor; });
+    add_resident("menu_effects", 0x80059178, 1,
+                 [](Program &p) -> auto & { return p.resident.menu_effects; });
+    add_resident("menu_resources", 0x8005945c, 4,
+                 [](Program &p) -> auto & { return p.resident.menu_resources; });
     for (std::uint32_t i = 0; i < 5; ++i)
         add_resident("pointer", 0x80065848 + 4 * i, 4,
                      [i](Program &p) -> auto & { return p.resident.pointer[i]; });

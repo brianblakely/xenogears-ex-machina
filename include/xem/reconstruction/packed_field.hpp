@@ -5,6 +5,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <stdexcept>
 #include <vector>
@@ -43,6 +44,12 @@ struct PackedBlock {
 // whatever memory lies there or never stop.
 PackedBlock decode_packed_in_memory(std::span<std::uint8_t> memory, std::uint32_t base,
                                     std::uint32_t source, std::uint32_t destination);
+// The same decoder over any byte store: `source(i)` reads packed byte i
+// (the u32le output length is bytes 0..3), `put(i, value)` writes output byte
+// i and `output(i)` reads it back. Failures are as in decode_packed_in_memory.
+PackedBlock decode_packed_through(const std::function<std::uint8_t(std::size_t)> &source,
+                                  const std::function<void(std::size_t, std::uint8_t)> &put,
+                                  const std::function<std::uint8_t(std::size_t)> &output);
 
 struct FieldComponent {
     std::uint32_t index{};

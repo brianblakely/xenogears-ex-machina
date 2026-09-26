@@ -6,6 +6,7 @@
 #include "xem/reconstruction/battle.hpp"
 #include "xem/reconstruction/field_collision.hpp"
 #include "xem/reconstruction/program.hpp"
+#include "xem/reconstruction/resident_text.hpp"
 
 #include <cstdint>
 #include <format>
@@ -100,83 +101,9 @@ std::uint32_t event(const Battle &battle) {
 std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
                          std::uint32_t x, std::uint32_t y, std::uint32_t scale) {
     auto &memory = battle.memory;
-    const auto table = memory.u32(glyph_table_pointer);
-    const auto sprite = table + memory.u16(table + id * 2 + 4);
-    const auto buffer = memory.u32(buffer_index);
-    // Scaled (4.12): a negative product rounds toward zero.
-    const auto scaled = [&](std::uint32_t at) {
-        auto product = memory.s16(at) * static_cast<std::int32_t>(scale);
-        if (product < 0)
-            product += 0xfff;
-        return static_cast<std::uint32_t>(product >> 12);
-    };
-    for (std::uint32_t part = 0; part != static_cast<std::uint32_t>(memory.s16(sprite)); ++part) {
-        const auto source = sprite + 4 + part * 0x1c;
-        const auto primitive = destination + part * 0x50 + buffer * 0x28;
-        const auto left = scaled(source + 8);
-        const auto top = scaled(source + 10);
-        const auto width = scaled(source + 4);
-        const auto height = scaled(source + 6);
-        memory.put8(primitive + 3, 9); // SetPolyFT4 80043cb0
-        memory.put8(primitive + 7, 0x2c);
-        memory.put8(primitive + 7, memory.u8(primitive + 7) & 0xfd); // SetSemiTrans(0)
-        memory.put8(primitive + 7, memory.u8(primitive + 7) | 1);    // SetShadeTex(1)
-        // GetTPage 80043a1c (abr 0) and GetClut 80043a58.
-        const auto page_x = static_cast<std::uint32_t>(memory.s16(source + 22));
-        const auto page_y = static_cast<std::uint32_t>(memory.s16(source + 24));
-        memory.put16(primitive + 22,
-                     (static_cast<std::uint32_t>(memory.s16(source + 16)) & 3) << 7 |
-                         (page_y & 0x100) >> 4 | (page_x & 0x3ff) >> 6 | (page_y & 0x200) << 2);
-        memory.put16(primitive + 14,
-                     static_cast<std::uint32_t>(memory.s16(source + 20)) << 6 |
-                         (static_cast<std::uint32_t>(memory.s16(source + 18) >> 4) & 0x3f));
-        auto u = memory.u16(source);
-        auto v = memory.u16(source + 2);
-        auto w = memory.u16(source + 4);
-        auto h = memory.u16(source + 6);
-        const auto near_x = x + left;
-        const auto far_x = width + near_x;
-        if (memory.u8(source + 26) == 0) {
-            for (const auto [offset, value] :
-                 {std::pair{8U, near_x}, {16U, far_x}, {24U, near_x}, {32U, far_x}})
-                memory.put16(primitive + offset, value);
-        } else { // mirrored: u starts one lower
-            for (const auto [offset, value] :
-                 {std::pair{8U, far_x}, {16U, near_x}, {24U, far_x}, {32U, near_x}})
-                memory.put16(primitive + offset, value);
-            u -= 1;
-            if (((u << 16) & 0x80000000U) != 0) {
-                u = 0;
-                w -= 1;
-            }
-        }
-        const auto near_y = y + top;
-        const auto far_y = height + near_y;
-        if (memory.u8(source + 27) == 0) {
-            for (const auto [offset, value] :
-                 {std::pair{10U, near_y}, {18U, near_y}, {26U, far_y}, {34U, far_y}})
-                memory.put16(primitive + offset, value);
-        } else {
-            for (const auto [offset, value] :
-                 {std::pair{10U, far_y}, {18U, far_y}, {26U, near_y}, {34U, near_y}})
-                memory.put16(primitive + offset, value);
-            v -= 1;
-            if (((v << 16) & 0x80000000U) != 0) {
-                v = 0;
-                h -= 1;
-            }
-        }
-        for (const auto [offset, value] : {std::pair{12U, u},
-                                           {13U, v},
-                                           {20U, u + w},
-                                           {21U, v},
-                                           {28U, u},
-                                           {29U, v + h},
-                                           {36U, u + w},
-                                           {37U, v + h}})
-            memory.put8(primitive + offset, value);
-    }
-    return static_cast<std::uint32_t>(memory.s16(sprite));
+    ResidentView view{memory};
+    return resident::sheet_quads(view, memory.u32(glyph_table_pointer), id, destination,
+                                 memory.u32(buffer_index), x, y, scale);
 }
 
 // 8008ac00(count): 80032498(2, 0) selects owner tag 2 (clearing its word and

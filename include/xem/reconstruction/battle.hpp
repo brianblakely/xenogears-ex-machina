@@ -1,5 +1,7 @@
 #pragma once
 
+#include "xem/reconstruction/resident_memory.hpp"
+
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -40,6 +42,28 @@ struct BattleMemory {
     std::vector<std::uint8_t> take(std::uint32_t address, std::uint32_t size);
     // Whether one region holds [address, address + size).
     [[nodiscard]] bool contains(std::uint32_t address, std::uint32_t size) const;
+};
+
+// Battle memory as resident::Memory for the shared resident routines.
+class ResidentView final : public resident::Memory {
+  public:
+    explicit ResidentView(BattleMemory &memory) : memory_(memory) {}
+    [[nodiscard]] std::uint32_t read(std::uint32_t address, std::uint32_t width) const override {
+        return width == 1   ? memory_.u8(address)
+               : width == 2 ? memory_.u16(address)
+                            : memory_.u32(address);
+    }
+    void write(std::uint32_t address, std::uint32_t value, std::uint32_t width) override {
+        if (width == 1)
+            memory_.put8(address, value);
+        else if (width == 2)
+            memory_.put16(address, value);
+        else
+            memory_.put32(address, value);
+    }
+
+  private:
+    BattleMemory &memory_;
 };
 
 inline constexpr std::uint32_t overlay_base = 0x8006faf0;
