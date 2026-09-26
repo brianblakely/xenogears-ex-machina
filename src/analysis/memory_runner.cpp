@@ -196,7 +196,8 @@ int run_case(int argc, char **argv) {
             entry == "field_reload_draw" || entry == "field_reload_shade" ||
             entry == "field_reload_fade_in" || entry == "field_reload_fade_frame" ||
             entry == "field_reload_finish" || entry == "field_reload_teardown" ||
-            entry == "field_reload" || entry == "field_load" || entry == "field_entry_frames";
+            entry == "field_reload" || entry == "field_load" || entry == "field_entry_frames" ||
+            entry == "field_mode_frames";
         // The field main loop leaving for battle (80078334..8007954c).
         const bool battle_exit_entry = entry == "field_battle_start" ||
                                        entry == "field_battle_leave" || entry == "field_teardown" ||
@@ -269,7 +270,8 @@ int run_case(int argc, char **argv) {
             else if (entry == "menu_save_seal" || entry == "menu_load_check")
                 analysis::import_menu_block(*program, memory, registers[20]);
         } else if (entry == "field_load" || entry == "field_battle_release" ||
-                   entry == "field_battle_exit" || entry == "field_entry_frames") {
+                   entry == "field_battle_exit" || entry == "field_entry_frames" ||
+                   entry == "field_mode_frames") {
             // Between the reload's teardown and the load, or at the field
             // entry (80078d44): no field is loaded.
             program =
@@ -315,7 +317,8 @@ int run_case(int argc, char **argv) {
         // (main-loop chains may reach one through a map change).
         if (entry == "field_reload_teardown" || entry == "field_reload" || entry == "field_load" ||
             entry == "field_teardown" || entry == "field_battle_release" ||
-            entry == "field_frames" || entry == "field_entry_frames")
+            entry == "field_frames" || entry == "field_entry_frames" ||
+            entry == "field_mode_frames")
             analysis::import_heap_contents(*program, memory);
         // Platform results for a field frame, one "name value..." per line
         // (hexadecimal), in the order the original consumed them. A "frame"
@@ -371,7 +374,8 @@ int run_case(int argc, char **argv) {
                     throw InputError("Unknown service result " + name);
             }
         }
-        if (sections.size() != 1 && entry != "field_frames" && entry != "field_entry_frames")
+        if (sections.size() != 1 && entry != "field_frames" && entry != "field_entry_frames" &&
+            entry != "field_mode_frames")
             throw InputError("Only frame chains take several frame sections");
         auto &services = sections.front();
         executing = true;
@@ -395,7 +399,8 @@ int run_case(int argc, char **argv) {
             result = out.str();
         } else if (entry == "field_update") {
             program->field_update(observer);
-        } else if (entry == "field_frames" || entry == "field_entry_frames") {
+        } else if (entry == "field_frames" || entry == "field_entry_frames" ||
+                   entry == "field_mode_frames") {
             // Consecutive main-loop iterations from one import: the first
             // frame, then per section the code between frames and the next
             // frame. Every boundary's exported state is reported; nothing
@@ -427,9 +432,16 @@ int run_case(int argc, char **argv) {
             };
             for (std::size_t k = 0; k < sections.size(); ++k) {
                 auto written = program->resident.hardware_writes.size();
-                if (k == 0 && entry == "field_entry_frames") {
+                if (k == 0 && entry != "field_frames") {
+                    // From the field mode's start (80077e88, frame 38h) or
+                    // from its entry call: 80078d44's frame is 30h below.
                     staging = true;
-                    program->field_entry(sections[k], registers[29] - 0x30, staged);
+                    auto loop = registers[29];
+                    if (entry == "field_mode_frames") {
+                        loop -= 0x38;
+                        program->field_mode_start(sections[k], staged);
+                    }
+                    program->field_entry(sections[k], loop - 0x30, staged);
                     staging = false;
                     program->field_loop_start(sections[k], staged);
                     report("entry", written);

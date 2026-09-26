@@ -446,6 +446,12 @@ struct ResidentState {
     // Field entry 80078d44 globals whose meaning is not recovered.
     std::uint32_t w_4f2f8{}; // 8004f2f8: zero converts the screen first (800a77c4); set after
     std::uint32_t w_4f304{}; // 8004f304: nonzero restores a saved sound state
+    std::uint32_t effect_bank_cache{}; // 8005a4bc: a copy of the effect bank a battle kept
+    std::uint32_t text_images{};       // 8005a4a0: the field's text image file
+    std::uint32_t w_4f344{};           // 8004f344: nonzero while the text images are read
+    std::uint32_t w_62524{};           // 80062524: the field start's copy of 800595ac
+    // 80065afc: each party slot's sprite file read ahead (packed, 8001aeb8).
+    std::array<std::uint32_t, 3> party_sprite_files{};
     // 8005947c: nonzero keeps the battle epilogue on mode 2 and 800594f8 clear.
     std::uint8_t b_5947c{};
     // Battle setup files (8001bbac, 800379d8): the formation data the scene
@@ -709,8 +715,16 @@ struct FieldState {
     std::uint32_t w_adb4c{};                         // 800adb4c: joins the second model table
     std::int16_t ot_depth{};                         // 800b21d4: model table entries joined
     // Field main loop 80077e88 between frames (field_loop.cpp).
-    std::uint32_t transition{};     // 800adb38: nonzero runs the 800a5924 transition
-    std::uint32_t w_adbd0{};        // 800adbd0: read by the branch after a battle request
+    std::uint32_t transition{}; // 800adb38: nonzero runs the 800a5924 transition
+    std::uint32_t w_adbd0{};    // 800adbd0: read by the branch after a battle request
+    std::uint32_t w_adc10{};    // 800adc10: cleared by the field mode's start
+    std::uint32_t w_adb7c{};    // 800adb7c: cleared by the field mode's start
+    // 800c3a44, 800c3a4c, 800c3a50, 800c3a54: the pointer's bounds (left, top,
+    // right, bottom), scaled by its divisors.
+    std::array<std::int32_t, 4> pointer_bounds{};
+    // 800c2690, 800c2692: cleared by the text image load.
+    std::uint16_t w_c2690{};
+    std::uint16_t w_c2692{};
     std::uint32_t saved_music{};    // 800afc78: music the battle branch saved (8004f324)
     std::uint32_t w_adb30{};        // 800adb30: a block the loop's exit releases
     std::uint32_t gate_adbd8{};     // 800adbd8: zero leaves the field (exit kind 3)
@@ -869,6 +883,9 @@ class Program {
     void field_entry(FrameServices &services, std::uint32_t frame,
                      const ProgramObserver &observe = {});
     void field_loop_start(FrameServices &services, const ProgramObserver &observe = {});
+    // 80077e88..80078154: the field mode's start before its entry.
+    void field_mode_start(FrameServices &services, const ProgramObserver &observe = {});
+    void init_pointer(); // 80071ee8
     void field_loop_top(FrameServices &services, const ProgramObserver &observe = {});
     void show_reassigned_party(); // 800ad898
     // Resident 800295d8: start reading `file` of the selected directory into
@@ -1379,7 +1396,8 @@ class Program {
     void reload_present(FrameServices &services);                          // 800a6924
     void reload_screen_fade(FrameServices &services, std::uint32_t frame); // 800a5884(1, 1)
     void prepare_party_sprites();                                          // 8001b044
-    void decode_party_sprites();                                           // 8001b3a8
+    void decode_party_sprites();
+    void wait_disc_idle(); // 8001ad1c                                           // 8001b3a8
     // Field load steps (field_load.cpp).
     void store_original(std::uint32_t address, std::uint32_t value, std::size_t width);
     void identity_matrix(std::uint32_t address);                                   // 80070594
@@ -1416,8 +1434,15 @@ class Program {
     void finish_field_load(const ProgramObserver &observe);    // 80071770..80071a5c
     void prepare_model_instances();                            // 80073e38
     void place_party_at_leader();                              // 80077268
-    void read_map_ahead();                                     // 800777dc
-    void init_display(FrameServices &services);                // 80071fb0
+    void settle_display(FrameServices &services);              // 8007999c
+    void load_field_effect_bank();                             // 80085890
+    void allocate_party_sprites();                             // 80077c88
+    void load_tim_at(FrameServices &services, std::uint32_t tim, std::int32_t x, std::int32_t y,
+                     std::int32_t clut_x, std::int32_t clut_y, std::int32_t clut_w,
+                     std::int32_t clut_h);                                       // 80070340
+    void load_text_images(FrameServices &services);                              // 80077620
+    void read_map_ahead();                                                       // 800777dc
+    void init_display(FrameServices &services);                                  // 80071fb0
     void run_actor0_script(std::uint32_t entry, const ProgramObserver &observe); // 800a22ac
     void adjust_after_return(const ProgramObserver &observe);                    // 800a24c4
     void release_cached_sequence();                                              // 80085eec

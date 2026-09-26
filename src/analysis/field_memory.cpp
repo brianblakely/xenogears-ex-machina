@@ -305,14 +305,13 @@ Program import_resident(const OriginalMemory &memory) {
 namespace {
 // Field words and records the field load (80070cc8) and the reload write
 // whose meaning is not recovered, owned as raw regions: address and size.
-constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 16> field_raw{{
+constexpr std::array<std::pair<std::uint32_t, std::uint32_t>, 15> field_raw{{
     {0x8006f990, 12}, // party slots of a field return (800a28d4)
     {0x800adb0c, 4},
     {0x800adb18, 4},
     {0x800adb3c, 4},
     {0x800adb44, 4},
     {0x800adb6c, 4},
-    {0x800adb7c, 4},
     {0x800adb8c, 4},
     {0x800adbd4, 4},
     {0x800afe84, 4},

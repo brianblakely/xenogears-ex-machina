@@ -126,6 +126,21 @@ void reassigned_party() {
     check(get(actor, 0) == 0x201, "A reassigned member of mode 1 is shown (200, not 100 or 400)");
 }
 
+void pointer_setup() {
+    auto program = loaded_field({0}, 1);
+    program.init_pointer();
+    const auto &state = *program.field;
+    check(state.pointer_pads[0] == 0x800625fc && state.pointer_pads[1] == 0x8006261e &&
+              state.pointer_divisors[0] == 3 && state.pointer_divisors[1] == 4,
+          "80071ee8 reads both pad buffers with divisors 3 and 4");
+    check(state.pointer_bounds[0] == 0 && state.pointer_bounds[1] == 0xa * 4 &&
+              state.pointer_bounds[2] == 0x12c * 3 && state.pointer_bounds[3] == 0xdc * 4,
+          "The last bounds (0..12c, a..dc) stay, scaled by the divisors");
+    check(state.pointer_x[0] == 0x50 * 3 && state.pointer_y[0] == 0x64 * 4 &&
+              state.pointer_x[1] == 0xfa * 3 && state.pointer_y[1] == 0x64 * 4,
+          "Both ports start at their scaled positions");
+}
+
 void recorded_positions() {
     auto program = loaded_field({0}, 1);
     using Kind = game::PlatformInput::Kind;
@@ -152,7 +167,8 @@ int main() {
         display_environments();
         reassigned_party();
         recorded_positions();
-        std::cout << "6 field reload groups passed\n";
+        pointer_setup();
+        std::cout << "7 field reload groups passed\n";
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

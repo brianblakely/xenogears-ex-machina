@@ -207,6 +207,8 @@ std::vector<OriginalGlobal> build() {
                  [](Program &p) -> auto & { return p.resident.music.shared_release_started; });
     add_resident("music_shared_release_flag", 0x8004f384, 2,
                  [](Program &p) -> auto & { return p.resident.music.shared_release_flag; });
+    add_resident("music_shared_wave", 0x80059560, 4,
+                 [](Program &p) -> auto & { return p.resident.music.shared_wave; });
     add_resident("music_active_shared_wave", 0x8006251c, 4,
                  [](Program &p) -> auto & { return p.resident.music.active_shared_wave; });
     // Field-overlay music globals.
@@ -962,6 +964,23 @@ std::vector<OriginalGlobal> build() {
     // Field main loop between frames (field_loop.cpp).
     add("transition", 0x800adb38, 4, [](Program &p) -> auto & { return f(p).transition; });
     add("w_adbd0", 0x800adbd0, 4, [](Program &p) -> auto & { return f(p).w_adbd0; });
+    add("w_adc10", 0x800adc10, 4, [](Program &p) -> auto & { return f(p).w_adc10; });
+    add("w_adb7c", 0x800adb7c, 4, [](Program &p) -> auto & { return f(p).w_adb7c; });
+    const std::array<std::uint32_t, 4> bounds{0x800c3a44, 0x800c3a4c, 0x800c3a50, 0x800c3a54};
+    for (std::size_t i = 0; i < 4; ++i)
+        add("pointer_bounds", bounds[i], 4,
+            [i](Program &p) -> auto & { return f(p).pointer_bounds[i]; });
+    add("w_c2690", 0x800c2690, 2, [](Program &p) -> auto & { return f(p).w_c2690; });
+    add("w_c2692", 0x800c2692, 2, [](Program &p) -> auto & { return f(p).w_c2692; });
+    add_resident("effect_bank_cache", 0x8005a4bc, 4,
+                 [](Program &p) -> auto & { return p.resident.effect_bank_cache; });
+    add_resident("text_images", 0x8005a4a0, 4,
+                 [](Program &p) -> auto & { return p.resident.text_images; });
+    add_resident("w_4f344", 0x8004f344, 4, [](Program &p) -> auto & { return p.resident.w_4f344; });
+    add_resident("w_62524", 0x80062524, 4, [](Program &p) -> auto & { return p.resident.w_62524; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("party_sprite_files", 0x80065afc + 4 * i, 4,
+                     [i](Program &p) -> auto & { return p.resident.party_sprite_files[i]; });
     add("saved_music", 0x800afc78, 4, [](Program &p) -> auto & { return f(p).saved_music; });
     add("w_adb30", 0x800adb30, 4, [](Program &p) -> auto & { return f(p).w_adb30; });
     add("gate_adbd8", 0x800adbd8, 4, [](Program &p) -> auto & { return f(p).gate_adbd8; });

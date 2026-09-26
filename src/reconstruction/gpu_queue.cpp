@@ -266,10 +266,11 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
         gpu.vram_reads.pop_front();
         if (data.size() != static_cast<std::size_t>(words) * 4U)
             throw field::FieldFormatError("VRAM read-back size differs from its rectangle");
-        const auto destination = owned_span(argument);
-        if (destination.size() < data.size())
-            throw field::FieldFormatError("A VRAM read-back's destination is not owned");
-        std::ranges::copy(data, destination.begin());
+        // The destination is an owned block or Program globals.
+        if (const auto destination = owned_span(argument); destination.size() >= data.size())
+            std::ranges::copy(data, destination.begin());
+        else
+            write_original(*this, argument, data);
         gpu.commands.push_back({GpuCommand::Kind::store_image, r, argument, 0});
         return 0;
     }

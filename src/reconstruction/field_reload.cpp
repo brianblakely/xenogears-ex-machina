@@ -3,6 +3,7 @@
 // correlations only; owned records are Program state.
 #include "xem/reconstruction/field_script.hpp"
 #include "xem/reconstruction/original_layout.hpp"
+#include "xem/reconstruction/packed_field.hpp"
 #include "xem/reconstruction/program.hpp"
 
 #include <algorithm>
@@ -949,17 +950,13 @@ void Program::reload_screen_fade(FrameServices &services, std::uint32_t frame) {
 // reload mode (8004f30c) takes 8001b158.
 void Program::prepare_party_sprites() {
     auto &load = resident.party_sprite_load;
-    // 8001ad1c: poll the disc status, then 80028a60(0).
-    while (disc_busy() != 0)
-        if (!deliver_interrupt())
-            throw MissingDependency({"prepare_party_sprites", 0x8001ad24, {}, {}},
-                                    "interrupt:disc-read-completion", false,
-                                    "Waiting for the disc needs the interrupt arrivals");
-    disc_wait(0);
-    if (load.pending == 1)
-        throw MissingDependency({"prepare_party_sprites", 0x8001b08c, {}, {}},
-                                "symbol:party-sprite-decode", false,
-                                "Decoding read-ahead party sprites first is not recovered");
+    wait_disc_idle(); // 8001ad1c
+    if (load.pending == 1) {
+        // The files read ahead are decoded first; a return keeps them.
+        decode_party_sprites(); // 8001b3a8
+        if (resident.w_4f30c != 0)
+            return;
+    }
     if (resident.w_4f30c != 0)
         throw MissingDependency({"prepare_party_sprites", 0x8001b158, {}, {}},
                                 "symbol:party-sprite-return", false,
@@ -972,12 +969,54 @@ void Program::prepare_party_sprites() {
             "symbol:party-sprite-read", false, "Reading another party sprite set is not recovered");
 }
 
-// 8001b3a8: decode the party sprite files read ahead (8004f374).
+// 8001ad1c: poll the disc status until it is idle, then 80028a60(0).
+void Program::wait_disc_idle() {
+    while (disc_busy() != 0)
+        if (!deliver_interrupt())
+            throw MissingDependency({"wait_disc_idle", 0x8001ad24, {}, {}},
+                                    "interrupt:disc-read-completion", false,
+                                    "Waiting for the disc needs the interrupt arrivals");
+    disc_wait(0);
+}
+
+// 8001b3a8: with files read ahead (8004f374), once the disc is idle each
+// slot's sprite block (8005a414) is unkept and, for a party member
+// (80062590 not ff), its packed file (80065afc) is unkept, decoded into the
+// block (80032eb4) and released.
 void Program::decode_party_sprites() {
-    if (resident.party_sprite_load.pending != 0)
-        throw MissingDependency({"decode_party_sprites", 0x8001b3d4, {}, {}},
-                                "symbol:party-sprite-decode", false,
-                                "Decoding read-ahead party sprites is not recovered");
+    auto &load = resident.party_sprite_load;
+    if (load.pending == 0)
+        return;
+    wait_disc_idle(); // 8001ad1c
+    auto &heap = resident.heap;
+    const auto unkeep = [&](std::uint32_t address) { // 800320b8
+        const auto header = heap.headers.find(address - 8);
+        if (header == heap.headers.end())
+            throw field::FieldFormatError("A party sprite block has no heap header");
+        header->second[1] &= ~resident::heap_keep;
+    };
+    const auto &state = loaded(*this);
+    for (std::size_t slot = 0; slot < 3; ++slot) {
+        const auto block = resident.party_sprite_blocks[slot];
+        unkeep(block);
+        if (state.party_characters[slot] == 0xff)
+            continue;
+        const auto file = resident.party_sprite_files[slot];
+        unkeep(file);
+        // The decoder reads its final flag past a file that ends its block.
+        const auto &packed = resident.heap_contents.at(file);
+        std::vector<std::uint8_t> source(packed.begin(), packed.end());
+        const auto end = file + static_cast<std::uint32_t>(packed.size());
+        for (std::uint32_t i = 0; i < 0x40; ++i)
+            source.push_back(ram_byte(end + i));
+        const auto decoded = field::decode_packed_block(source, 0x200000);
+        const auto target = owned_span(block);
+        if (decoded.data.size() > target.size())
+            throw field::FieldFormatError("A decoded party sprite file overruns its block");
+        std::ranges::copy(decoded.data, target.begin());
+        static_cast<void>(release_owned_block(file, 0x8001b438));
+    }
+    load.pending = 0;
 }
 
 // 80070488: start streaming the map's image file (map * 2 + b9 of the

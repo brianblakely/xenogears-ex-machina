@@ -1549,8 +1549,10 @@ def run(args: argparse.Namespace) -> int:
 
 
 # The field entry's stage hooks: each on the return address of one of its
-# calls (80078d44), compared where the recovered entry completes that call.
+# calls (80078d44), compared where the recovered entry completes that call;
+# from the field mode's start (m-entry), the entry's call (m-d44) first.
 ENTRY_STAGES = (
+    "m-d44",
     "e-7544",
     "e-915c",
     "e-77dc",
@@ -1665,7 +1667,7 @@ ARRIVAL_POINTS = {
     "reload-exit": 0x80077DB4,
     # The field entry 80078d44 from its call (m-d44): its stages as the
     # reload's; after it, the main loop's top as between frames.
-    **{hook: 0x8004B674 for hook in ("m-d44", *ENTRY_STAGES)},
+    **{hook: 0x8004B674 for hook in ("m-entry", *ENTRY_STAGES)},
     "m-after": 0x80077DB4,
 }
 # VSync(0) (8004b674) after its wait: inside a field frame the frame's own
@@ -1734,8 +1736,12 @@ def loop_inputs(
             require(block is None, "A position hook inside interrupt code")
             lines += [line for item in pending for line in item]
             pending, last = [], hook
-            if hook in ENTRY_STAGES or hook in LOAD_STAGES:
+            if (hook in ENTRY_STAGES or hook in LOAD_STAGES) and not row.get("imported"):
                 lines.append(f"end {row['pc']:x}")
+            elif hook == VSYNC0_WAIT and not in_frame and point == VSYNC0_POINTS[1]:
+                # A VSync(0) outside a frame delivered the stage arrivals
+                # before it; later ones wait for the next.
+                lines.append(f"end {point:x}")
             if hook == "frame-entry":
                 in_frame = True
             elif hook == "frame-exit":
@@ -1906,6 +1912,14 @@ def run_frames(args: argparse.Namespace) -> int:
         ]
     results = []
     loaded_sources: dict[int, Sources] = {}
+    # From the field mode's start (80077e88) or from the call of its entry.
+    runner_entry = (
+        "field_mode_frames"
+        if args.field_entry == "m-entry"
+        else "field_entry_frames"
+        if args.field_entry
+        else "field_frames"
+    )
     with (
         tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
         BatchRunner(args.runner) as runner,
@@ -1914,6 +1928,11 @@ def run_frames(args: argparse.Namespace) -> int:
         for entry_row, chain in chains:
             last_exit = chain[-1][1]
             entry, scratch, io = snapshots.read(entry_row)
+            # The import hook itself is no position or stage.
+            for rows in (image_rows, loop_rows):
+                for row in rows:
+                    if row["event"] == entry_row["event"]:
+                        row["imported"] = True
             start, end = entry_row["cycle_u32"], last_exit["cycle_u32"]
 
             first_run, last_run = entry_row["frontend_run"], last_exit["frontend_run"]
@@ -1952,6 +1971,7 @@ def run_frames(args: argparse.Namespace) -> int:
                     row
                     for row in image_rows
                     if inside(row)
+                    and not row.get("imported")
                     and (
                         row["hook"] in ENTRY_STAGES
                         or row["hook"] in LOAD_STAGES
@@ -1977,12 +1997,15 @@ def run_frames(args: argparse.Namespace) -> int:
             (work / "ram.bin").write_bytes(entry)
             (work / "scratch.bin").write_bytes(scratch)
             (work / "io.bin").write_bytes(io)
-            (work / "resources.txt").write_text(sources.manifest(entry))
+            # An import before the field loads (the mode start) has no resources.
+            (work / "resources.txt").write_text(
+                "" if runner_entry == "field_mode_frames" else sources.manifest(entry)
+            )
             (work / "platform.txt").write_text("".join(line + "\n" for line in platform))
             (work / "services.txt").write_text("".join(line + "\n" for line in lines))
             report = runner.call(
                 [
-                    "field_entry_frames" if args.field_entry else "field_frames",
+                    runner_entry,
                     str(args.budget * len(chain)),
                     "",
                     str(work / "ram.bin"),
@@ -2101,7 +2124,7 @@ def run_frames(args: argparse.Namespace) -> int:
         "source_revision": subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True, check=False
         ).stdout.strip(),
-        "entry": "field_entry_frames" if args.field_entry else "field_frames",
+        "entry": runner_entry,
         "tolerance": "exact at every frame entry and exit; owned bytes and every unowned "
         "original write since the import",
         "exclusions": {
