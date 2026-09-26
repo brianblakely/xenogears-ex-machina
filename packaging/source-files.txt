@@ -86,6 +86,7 @@ analysis/formats/movement-sweep.md
 analysis/formats/music-loading.md
 analysis/formats/packed-field.md
 analysis/formats/planar-motion.md
+analysis/formats/rendering-behavior.md
 analysis/formats/service-boundaries.md
 analysis/formats/sound-modes.md
 analysis/formats/sprite-animation.md
@@ -345,6 +346,7 @@ tests/test_field_script.cpp
 tests/test_field_sprite.cpp
 tests/test_field_sprite_factory.cpp
 tests/test_fingerprint_survey.py
+tests/test_gpu_packets.py
 tests/test_host_slots.py
 tests/test_index_survey.py
 tests/test_instruction_trace.py
@@ -413,6 +415,7 @@ tools/analysis/field_control.py
 tools/analysis/ghidra/ExportOriginalAnalysis.java
 tools/analysis/ghidra/PrepareOriginalProgram.java
 tools/analysis/ghidra_project.py
+tools/analysis/gpu_packets.py
 tools/analysis/jump_physics.py
 tools/analysis/memory_case.py
 tools/analysis/menu_save_file.py
