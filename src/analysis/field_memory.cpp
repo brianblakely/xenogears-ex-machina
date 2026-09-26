@@ -171,10 +171,12 @@ Program import_resident(const OriginalMemory &memory) {
     // BIOS pad driver's receive buffers.
     for (std::uint32_t port = 0; port < 2; ++port)
         copy_into(resident.pad.buffers[port], memory.range(pad_buffers + port * 34, 34));
-    // The game data is allocated during boot; before that there is none.
-    if (game_state_loaded(resident))
-        resident.game_data =
-            copy_of(memory.range(resident.game_state, reconstruction::game_data_bytes));
+    // The game data: the block the state pointer names; before the pointer
+    // is published (the first field start after the Kernel MENU sets it) the
+    // fixed resident block it will name.
+    resident.game_data = copy_of(memory.range(
+        game_state_loaded(resident) ? resident.game_state : reconstruction::game_data_block,
+        reconstruction::game_data_bytes));
     // The heap list: every header, and the bytes of free blocks.
     for (auto at = resident.heap.head - 8;;) {
         if (resident.heap.headers.size() > 0x10000)

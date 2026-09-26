@@ -831,6 +831,9 @@ std::vector<OriginalGlobal> build() {
                      [i](Program &p) -> auto & { return p.resident.party_sprite_blocks[i]; });
     add_resident("field_exit_4f30c", 0x8004f30c, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f30c; });
+    for (std::uint32_t i = 0; i < 3; ++i)
+        add_resident("w_6fabc", 0x8006fabc + 4 * i, 4,
+                     [i](Program &p) -> auto & { return p.resident.w_6fabc[i]; });
     add_resident("field_exit_4f310", 0x8004f310, 4,
                  [](Program &p) -> auto & { return p.resident.w_4f310; });
     add_resident("field_exit_4f370", 0x8004f370, 4,

@@ -228,7 +228,7 @@ void Program::field_mode_start(FrameServices &services, const ProgramObserver &o
     resident::heap_select_tag(heap, 8, 0); // 80032498
     static_cast<void>(select_directory(4, 0));
     init_pointer(); // 80071ee8
-    resident.game_state = 0x8006d634;
+    resident.game_state = game_data_block;
     auto &data = resident.game_data;
     if (data.size() != game_data_bytes)
         throw field::FieldFormatError("The field mode's start requires the game data");

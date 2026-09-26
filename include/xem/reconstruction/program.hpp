@@ -28,6 +28,9 @@
 namespace xem::reconstruction {
 
 inline constexpr std::uint32_t game_data_bytes = 0x2358;
+// The resident block the game state pointer (8005a39c) names once the field
+// mode's start (80077e88) or boot publishes it.
+inline constexpr std::uint32_t game_data_block = 0x8006d634;
 // Load address of the field overlay image.
 inline constexpr std::uint32_t field_overlay_base = 0x8006faf0;
 // The field main loop 80077e88's stack pointer (the SP at its calls of
@@ -459,6 +462,10 @@ struct ResidentState {
     std::array<std::uint32_t, 3> party_sprite_blocks{}; // 8005a414
     std::uint32_t w_4f30c{};                            // 8004f30c
     std::uint32_t w_4f310{};                            // 8004f310
+    // 8006fabc..8006fac7: three words the first field start sets to FF
+    // (80077f98) and field extended handlers near 8008c4xx shift; meaning
+    // not recovered.
+    std::array<std::uint32_t, 3> w_6fabc{};
     std::uint32_t w_4f370{}; // 8004f370: nonzero keeps a map change from reaching the dispatcher
     // Field entry 80078d44 globals whose meaning is not recovered.
     std::uint32_t w_4f2f8{}; // 8004f2f8: zero converts the screen first (800a77c4); set after
