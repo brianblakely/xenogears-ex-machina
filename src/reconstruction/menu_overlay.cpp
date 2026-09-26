@@ -437,16 +437,7 @@ std::int32_t Overlay::select_directory(std::uint32_t base, std::uint32_t index) 
     return program.select_directory(base, index);
 }
 
-// 800288ec: the file's byte size rounded up to words (signed MIPS quotient).
-std::uint32_t Overlay::file_words(std::uint32_t file) {
-    const auto size = static_cast<std::int32_t>(program.file_size(static_cast<std::int32_t>(file)));
-    const auto rounded = static_cast<std::int32_t>(static_cast<std::uint32_t>(size) + 3U);
-    const auto quotient =
-        (rounded >= 0 ? rounded
-                      : static_cast<std::int32_t>(static_cast<std::uint32_t>(size) + 6U)) >>
-        2;
-    return static_cast<std::uint32_t>(quotient) << 2U;
-}
+std::uint32_t Overlay::file_words(std::uint32_t file) { return program.file_words(file); }
 
 std::int32_t Overlay::read_file(std::uint32_t file, std::uint32_t destination, std::uint32_t offset,
                                 std::uint32_t mode) {

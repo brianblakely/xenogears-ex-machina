@@ -164,6 +164,7 @@ include/xem/reconstruction/interrupts.hpp
 include/xem/reconstruction/menu.hpp
 include/xem/reconstruction/menu_overlay.hpp
 include/xem/reconstruction/menu_save.hpp
+include/xem/reconstruction/movie.hpp
 include/xem/reconstruction/original_layout.hpp
 include/xem/reconstruction/packed_field.hpp
 include/xem/reconstruction/program.hpp
@@ -189,16 +190,21 @@ src/analysis/event_disassembler.cpp
 src/analysis/field_memory.cpp
 src/analysis/field_memory.hpp
 src/analysis/main.cpp
+src/analysis/mdec_codec.cpp
+src/analysis/mdec_codec.hpp
 src/analysis/memory_runner.cpp
 src/reconstruction/battle.cpp
 src/reconstruction/battle_ai.cpp
 src/reconstruction/battle_attack.cpp
 src/reconstruction/battle_formula.cpp
 src/reconstruction/battle_levels.cpp
+src/reconstruction/battle_loader.cpp
 src/reconstruction/battle_menu.cpp
 src/reconstruction/battle_results.cpp
 src/reconstruction/battle_rewards.cpp
 src/reconstruction/battle_rules.cpp
+src/reconstruction/battle_setup.cpp
+src/reconstruction/battle_start.cpp
 src/reconstruction/battle_steps.cpp
 src/reconstruction/battle_turn.cpp
 src/reconstruction/battle_turns.cpp
@@ -206,6 +212,7 @@ src/reconstruction/disc_read.cpp
 src/reconstruction/disc_stream.cpp
 src/reconstruction/field_actor.cpp
 src/reconstruction/field_battle.cpp
+src/reconstruction/field_battle_exit.cpp
 src/reconstruction/field_characters.cpp
 src/reconstruction/field_collision.cpp
 src/reconstruction/field_control.cpp
@@ -222,6 +229,7 @@ src/reconstruction/field_models.cpp
 src/reconstruction/field_motion.cpp
 src/reconstruction/field_move.cpp
 src/reconstruction/field_movie.cpp
+src/reconstruction/field_movie_player.cpp
 src/reconstruction/field_music.cpp
 src/reconstruction/field_reload.cpp
 src/reconstruction/field_return.cpp
@@ -235,6 +243,7 @@ src/reconstruction/field_update.cpp
 src/reconstruction/field_view.cpp
 src/reconstruction/gpu.cpp
 src/reconstruction/gpu_queue.cpp
+src/reconstruction/graphics_setup.cpp
 src/reconstruction/gte.cpp
 src/reconstruction/interrupts.cpp
 src/reconstruction/media.cpp
@@ -250,9 +259,15 @@ src/reconstruction/menu_save.cpp
 src/reconstruction/menu_screens.cpp
 src/reconstruction/menu_text.cpp
 src/reconstruction/menu_windows.cpp
+src/reconstruction/mode_dispatch.cpp
+src/reconstruction/movie.cpp
+src/reconstruction/movie_mode.cpp
+src/reconstruction/movie_stream.cpp
 src/reconstruction/original_layout.cpp
 src/reconstruction/packed_field.cpp
 src/reconstruction/program.cpp
+src/reconstruction/resident_disc.cpp
+src/reconstruction/resident_gpu.cpp
 src/reconstruction/resident_gte.cpp
 src/reconstruction/resident_heap.cpp
 src/reconstruction/resident_text.cpp
@@ -294,7 +309,9 @@ tests/test_authoring_contract.py
 tests/test_baseline.py
 tests/test_battle.cpp
 tests/test_battle_continuation.py
+tests/test_battle_loader.cpp
 tests/test_battle_request.py
+tests/test_battle_setup.cpp
 tests/test_collision_math.py
 tests/test_collision_query.py
 tests/test_disc_read.cpp
@@ -337,7 +354,9 @@ tests/test_menu.cpp
 tests/test_menu_overlay.cpp
 tests/test_menu_save.cpp
 tests/test_menu_save_file.py
+tests/test_mode_dispatch.cpp
 tests/test_movement_sweep.py
+tests/test_movie_chain.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
 tests/test_observe.py
@@ -393,6 +412,7 @@ tools/analysis/jump_physics.py
 tools/analysis/memory_case.py
 tools/analysis/menu_save_file.py
 tools/analysis/movement_sweep.py
+tools/analysis/movie_chain.py
 tools/analysis/music_loading.py
 tools/analysis/original_trace.py
 tools/analysis/packed.py

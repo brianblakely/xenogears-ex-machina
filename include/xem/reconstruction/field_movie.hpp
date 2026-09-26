@@ -42,6 +42,14 @@ struct MovieState {
 void request_movie(FieldWorld &world, MovieState &movie, std::uint32_t field_active,
                    std::int32_t &single_actor_mode, std::uint32_t &movie_requested);
 
+// Extended 61 (field 8008e9f8): wait until the requested movie has played.
+// The movie player sets `started` (800adb7c) once it has started the stream;
+// the field frames it runs before (800a7394) see it clear, so the
+// instruction repeats there (the PC returns to its FE prefix) and completes
+// after the player returns: the flag clears and the PC passes the opcode.
+// The batch breaks either way.
+void wait_movie_started(FieldWorld &world, std::uint32_t &started);
+
 // One decision of the movie loop, 800a7f78..800a80b0. `presentation` is
 // 800adb74 (the loop draws differently for 0, 1 and 2); `marker` is 800c268c,
 // 1 when the resident word 80010000 is ffffffff (field entry 80077e88).

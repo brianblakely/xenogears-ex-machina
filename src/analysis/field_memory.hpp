@@ -47,6 +47,9 @@ struct ResourceExtent {
 
 // Builds battle-mode Program state: resident state plus the battle overlay
 // region (8006faf0..800d39f0) and the heap blocks battle setup allocates.
+// Resident state and the loaded battle overlay with its BSS (8006faf0 to
+// 800d39f0), before battle setup allocates anything.
+[[nodiscard]] reconstruction::Program import_battle_overlay(const OriginalMemory &memory);
 [[nodiscard]] reconstruction::Program import_battle(const OriginalMemory &memory);
 [[nodiscard]] std::vector<OwnedRange> export_battle(const reconstruction::Program &program,
                                                     OriginalMemory &memory);

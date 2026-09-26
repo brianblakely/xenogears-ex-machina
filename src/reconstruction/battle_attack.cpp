@@ -99,50 +99,18 @@ std::uint32_t event(const Battle &battle) {
 } // namespace
 
 std::uint32_t draw_glyph(Battle &battle, std::uint32_t id, std::uint32_t destination,
-                         std::uint32_t x, std::uint32_t y) {
-    // Battle memory as resident::Memory for the shared sheet routine.
-    class Memory final : public resident::Memory {
-      public:
-        explicit Memory(BattleMemory &memory) : memory_(memory) {}
-        [[nodiscard]] std::uint32_t read(std::uint32_t address,
-                                         std::uint32_t width) const override {
-            return width == 1   ? memory_.u8(address)
-                   : width == 2 ? memory_.u16(address)
-                                : memory_.u32(address);
-        }
-        void write(std::uint32_t address, std::uint32_t value, std::uint32_t width) override {
-            if (width == 1)
-                memory_.put8(address, value);
-            else if (width == 2)
-                memory_.put16(address, value);
-            else
-                memory_.put32(address, value);
-        }
-
-      private:
-        BattleMemory &memory_;
-    };
+                         std::uint32_t x, std::uint32_t y, std::uint32_t scale) {
     auto &memory = battle.memory;
-    Memory view{memory};
+    ResidentView view{memory};
     return resident::sheet_quads(view, memory.u32(glyph_table_pointer), id, destination,
-                                 memory.u32(buffer_index), x, y, 0x1000);
-}
-
-namespace {
-
-// 80076a10(id, destination, x, y): sprite `id` of the glyph table at scale 1.
-std::uint32_t glyph(Battle &battle, std::uint32_t id, std::uint32_t destination, std::uint32_t x,
-                    std::uint32_t y) {
-    return draw_glyph(battle, id, destination, x, y);
+                                 memory.u32(buffer_index), x, y, scale);
 }
 
 // 8008ac00(count): 80032498(2, 0) selects owner tag 2 (clearing its word and
 // the quiet flag), then 80031bdc allocates (count + 3) * 26 bytes first fit.
 std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::uint32_t count) {
     auto &heap = resident.heap;
-    heap.tag = 2;
-    heap.tag_words[2] = 0;
-    heap.quiet = 0;
+    resident::heap_select_tag(heap, 2, 0); // 80032498
     auto block = resident::heap_allocate(heap, (count + 3) * 26, 0, 0x8008ac34);
     if (!block)
         throw BattleError("A quiet null text-block allocation (8008ac00) is not reconstructed");
@@ -150,6 +118,15 @@ std::uint32_t allocate_text_block(Battle &battle, ResidentState &resident, std::
     battle.memory.regions.emplace(address, std::move(block->bytes));
     return address;
 }
+
+namespace {
+
+// 80076a10(id, destination, x, y): sprite `id` of the glyph table at scale 1.
+std::uint32_t glyph(Battle &battle, std::uint32_t id, std::uint32_t destination, std::uint32_t x,
+                    std::uint32_t y) {
+    return draw_glyph(battle, id, destination, x, y, 0x1000);
+}
+
 // 800320e8 on a block battle memory owns.
 void release_block(Battle &battle, ResidentState &resident, std::uint32_t address,
                    std::uint32_t call_site) {

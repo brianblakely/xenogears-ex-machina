@@ -162,8 +162,13 @@ void stops_explicitly() {
     auto status = sample();
     status.resident.disc_read.directory = 10;
     status.resident.cd.status = 0x10;
-    stops([&] { status.read_file(3, 0x80100000, 0, 0); }, 0x80042428,
-          "A blocking Getstat waits for its interrupt");
+    bool status_unsupplied = false;
+    try {
+        static_cast<void>(status.read_file(3, 0x80100000, 0, 0));
+    } catch (const game::PlatformInputError &) {
+        status_unsupplied = true;
+    }
+    check(status_unsupplied, "A blocking Getstat's status wait needs its recorded status reads");
     auto service = sample();
     service.resident.disc_read.directory = 10;
     service.resident.cd.dma_set_callback = 0x8004c000;

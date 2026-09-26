@@ -57,6 +57,62 @@ GteMatrix rotation_matrix(const GteVector &angles, std::span<const std::uint8_t>
     return result;
 }
 
+std::array<std::int16_t, 9> rotation_matrix_yxz(const GteVector &angles,
+                                                std::span<const std::uint8_t> trigonometry) {
+    const auto at = [&](std::int16_t angle) {
+        if (angle >= 0)
+            return planar_trigonometry(trigonometry, static_cast<std::uint16_t>(angle));
+        auto magnitude =
+            planar_trigonometry(trigonometry, static_cast<std::uint32_t>(-angle) & 0xfffU);
+        magnitude.sine = static_cast<std::int16_t>(-magnitude.sine);
+        return magnitude;
+    };
+    const auto x = at(angles[0]);
+    const auto y = at(angles[1]);
+    const auto z = at(angles[2]);
+    const std::int32_t sx = x.sine, cx = x.cosine, sy = y.sine, cy = y.cosine;
+    const std::int32_t sz = z.sine, cz = z.cosine;
+    const auto sysx = low(sy, sx) >> 12;
+    const auto cysx = low(cy, sx) >> 12;
+    return {half((low(cy, cz) >> 12) + (low(sysx, sz) >> 12)),
+            half((low(sysx, cz) >> 12) - (low(cy, sz) >> 12)),
+            half(low(sy, cx) >> 12),
+            half(low(sz, cx) >> 12),
+            half(low(cz, cx) >> 12),
+            half(-sx),
+            half((low(cysx, sz) >> 12) - (low(sy, cz) >> 12)),
+            half((low(sy, sz) >> 12) + (low(cysx, cz) >> 12)),
+            half(low(cy, cx) >> 12)};
+}
+
+std::array<std::int16_t, 9> rotation_matrix_zyx(const GteVector &angles,
+                                                std::span<const std::uint8_t> trigonometry) {
+    const auto at = [&](std::int16_t angle) {
+        if (angle >= 0)
+            return planar_trigonometry(trigonometry, static_cast<std::uint16_t>(angle));
+        auto magnitude =
+            planar_trigonometry(trigonometry, static_cast<std::uint32_t>(-angle) & 0xfffU);
+        magnitude.sine = static_cast<std::int16_t>(-magnitude.sine);
+        return magnitude;
+    };
+    const auto x = at(angles[0]);
+    const auto y = at(angles[1]);
+    const auto z = at(angles[2]);
+    const std::int32_t sx = x.sine, cx = x.cosine, sy = y.sine, cy = y.cosine;
+    const std::int32_t sz = z.sine, cz = z.cosine;
+    const auto sxsy = low(sx, sy) >> 12;
+    const auto cxsy = low(sy, cx) >> 12;
+    return {half(low(cy, cz) >> 12),
+            half((low(sxsy, cz) >> 12) - (low(sz, cx) >> 12)),
+            half((low(cxsy, cz) >> 12) + (low(sx, sz) >> 12)),
+            half(low(sz, cy) >> 12),
+            half((low(sxsy, sz) >> 12) + (low(cx, cz) >> 12)),
+            half((low(cxsy, sz) >> 12) - (low(sx, cz) >> 12)),
+            half(-sy),
+            half(low(sx, cy) >> 12),
+            half(low(cx, cy) >> 12)};
+}
+
 void multiply_rotation(const GteMatrix &left, GteMatrix &right) {
     std::array<GteVector, 3> columns{};
     for (std::size_t column = 0; column < 3; ++column)
