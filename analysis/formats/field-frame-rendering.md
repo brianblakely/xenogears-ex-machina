@@ -36,34 +36,12 @@ route, a field frame lasts at least two vertical blanks, about 30 frames per
 second on NTSC. This is a gameplay-visible rule of the original. The emulator's
 vertical-blank timing is an HLE observation, not a hardware timing proof.
 
-## Rendering behavior observed on the route
+## Rendering behavior
 
-A census of every primitive submitted with `DrawOTag`, plus each `PutDrawEnv`,
-`PutDispEnv`, `LoadImage`, `MoveImage` and `ClearImage` call, sampled over dialogue,
-walking, battle, post-battle and menu frames of the frozen route (captures
-`p1render-gpu-{dialogue,walk,battle,postbattle,menu}-20260924`), records these
-original settings. Command encodings are general PS1 GPU knowledge.
-
-| Behavior | Original setting |
-| --- | --- |
-| Display resolution | 320x224, non-interlaced, 15-bit color (`isinter=0`, `isrgb24=0`) |
-| Double buffering | Field buffers at VRAM y 0 and 256. Battle and menu buffers at y 0 and 224 |
-| Screen area | `screen=(0,10,256,216)`, the TV display window |
-| Dithering | Each `DrawEnv` enables dithering (`dtd=1`). Draw-mode (`E1`) packets inside the ordering tables turn it off (`dither=0`) for the primitive groups that follow them |
-| Texture depth | 4-bit and 8-bit CLUT texture pages. No 15-bit direct textures in the sampled frames |
-| Texture modulation | Both raw (unmodulated) and color-modulated textured polygons |
-| Semi-transparency | Modes 1 and 2 (additive and subtractive) on field polygons. Mode 2 also through `E1` in menus and battle |
-| Shading | No Gouraud polygons in field frames. Battle adds Gouraud polygons and lines, the menu Gouraud semi-transparent quads |
-| Primitive ordering | Ordering-table linked lists. Depth order comes from the recovered model and sprite code, as the original computes it |
-| Texture windows | `E2` texture-window packets in every sampled mode |
-| Drawing to the displayed buffer | Not used (`drawdisp=0`) |
-| Texture upload | `LoadImage` of CLUT rows (for example `(0,251,128,1)`) and sprite cells near VRAM x 640, per frame |
-
-These settings define the PS1-style rendering options of the native renderer:
-dithering, color depth, semi-transparency modes, primitive ordering and
-240-line-class resolution. Native modern rendering remains the default. Visual
-references are the captured frame images of the route (private, under
-`.local/scenarios`).
+The display and draw environments, primitive classes, dithering,
+semi-transparency, ordering tables, projection precision and visual
+references of every required route path are in
+[rendering behavior](rendering-behavior.md).
 
 ## Validation
 
