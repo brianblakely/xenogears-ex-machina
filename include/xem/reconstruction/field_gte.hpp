@@ -45,6 +45,10 @@ struct GteProduct {
 // angles take the table at their magnitude with the sine negated.
 [[nodiscard]] std::array<std::int16_t, 9>
 rotation_matrix_yxz(const GteVector &angles, std::span<const std::uint8_t> trigonometry);
+// 8004abbc RotMatrix: Rz * Ry * Rx from the same table; negative angles as
+// RotMatrixYXZ takes them.
+[[nodiscard]] std::array<std::int16_t, 9>
+rotation_matrix_zyx(const GteVector &angles, std::span<const std::uint8_t> trigonometry);
 // 80049bdc: right = left.r * right.r; right.t unchanged; pad = sign of r[8].
 void multiply_rotation(const GteMatrix &left, GteMatrix &right);
 // 8004931c: left.r * right.r, left.t + (left.r * low halfwords of right.t) >> 12.
