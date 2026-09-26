@@ -4,28 +4,75 @@ Phase 1 is **in progress**. No broad todo or slice proof is complete yet. The
 [slice contract](phase1-slice-contract.md) and all nine required proof domains
 remain the completion criteria. The exact field 23 encounter/victory/return/menu
 base route is now fixed in the existing manifest against its original input
-schedule and captures. Required map transitions, save/load, media and alternative
-or failure cases remain explicit unresolved extensions; the complete slice is
-still a candidate.
+schedule and captures. The complete slice is still a candidate: its required
+extensions and alternatives have not received final source qualification and
+independent acceptance review. All 120 Phase 1 facets remain required, all nine
+manifest proofs are `defined`, and `review.exit_reviewers` is empty.
+
+## Current checkout checkpoint
+
+The merged checkout inspected on 2026-09-25 contains substantial reconstruction
+beyond the latest published finding, EVID-REF-046. Existing C++ includes the field
+frame and main loop, loading/reloading and mode dispatch, sound ticks and
+interrupts, battle turn/menu/result steps, menu/card operations and movie paths.
+These are recovery work within Phase 1. Their presence does not establish a
+complete lifecycle or qualify the later private reports for acceptance.
+
+Preserve and rerun the existing reports before capturing or reimplementing:
+
+| Existing private checkpoint | Recorded result and limit |
+| --- | --- |
+| `.local/execution/p1music-reports/{dlg,dlg-after-music,walk,ret}.json` | The frozen `f699718` runner records 99, 48, 99 and 65 consecutive frames, all 618 entry/exit boundaries matching, with `supplied_state_bytes: 0`. These start from four separate original images; they are not a continuous full route. Current merged-source replay and independent methodology/source review remain required. |
+| `.local/execution/p1fieldov/reports-bca8d71/transition-chain.json` | The frozen `bca8d71` runner records 35 frames and 69 exact boundaries without intermediate state imports. Qualify the ordinary transition, source/resource lifetime, setup and readiness as one reviewed route extension. |
+| `.local/execution/p1-merge-frozen/reports/` | Per-call reports cover additional decoder/disc/interrupt/sound, battle turn and menu steps, defeat, menu items/equipment, save/load payloads, sound modes, movie decisions and transition stages. A report name or matched subset does not close its parent operation. Retain stops and unfinished presentation/results paths. |
+| `.local/execution/p1menuov/reports-v2/` | Whole-menu attempts remain failing or incomplete. `movie-transition` first differs at frontend run 1820, `sound-stereo` at 2630, `load` at 3391 and `save` at 8632. Each has a non-null `first_divergence` despite runner status `completed_boundary`. `menu-actions` matches 594 of 1,294 recorded frames before hardware-read ordering diverges. `encounter` and `save-card1-failure` match 504 and 2,201 recorded frame entries but exhaust platform input without an original return comparison. |
+
+The whole-menu report's runner status is an execution outcome, not comparison
+acceptance. Inspect `first_divergence`, expected versus matched boundaries,
+platform-input consumption and the original return. A truncated capture, exhausted
+service input or successful subprocess cannot qualify a complete menu lifecycle.
+Do not overwrite these historical reports when rerunning the merged source.
 
 | Slice proof domain | Remaining required work on the frozen route |
 | --- | --- |
-| Source and loading | The resident heap (EVID-REF-042) and file read chain (EVID-REF-045: 39 of 42 route reads exact, 3 explicit interrupt waits) are connected. Recover sector delivery and completion, resource decoding lifetimes after load, and loader initialization beyond per-call comparison. |
-| Field representation | Complete used geometry, material/texture, camera and sprite correlations with original source and state. |
-| Script execution | Every event opcode executed on the frozen route runs in exactly matched calls (EVID-REF-042), including dialogue windows, music change and sound effects. Add alternative inputs that reach the source-only opcodes, dialogue text rendering and controls, transitions, and an independently authored full disassembler. |
-| Field behavior | The complete `8008110c` update and `800739c0` move phase (contact, followers, camera, facing) now match per call; connect the rest of the field frame, map transitions and control readiness, then run multiple frames without re-importing. |
-| Encounter and return | Party attacks, damage, knockouts, victory, reward totals, experience, level-ups and write-back now match per call (EVID-REF-043), as do enemy AI script runs, enemy actions and formula type 3 on an alternative input where enemies act, and the escape route's battle teardown and field return (EVID-REF-046). Recover the turn scheduler and menu input, remaining script operations and formulas, the escape decision and defeat, the result screens, then checkpoint replay, cleanup and full return readiness. |
-| Menu and persistence | Recover ordinary menu/inventory/equipment and valid save/load, checksum, round trip and failure behavior. |
-| Required media | Recover used sound paths, Mono/Stereo/Wide and visual references, FMV framing/trigger and observable timing. |
-| Time and services | A route census (EVID-REF-044, [service boundaries](../analysis/formats/service-boundaries.md)) maps the 34 hardware-facing resident functions the route uses to display, controller, disc, audio and interrupt/time services. Recover the disc command acknowledgement contract, interrupt handlers and cadence proof beyond HLE observation. |
-| Reproducibility and remainder | Extend immutable original comparisons and independent reviews to all required alternatives, agent-visible ownership/actions/setup/readiness and the explicit rest-of-game backlog. |
+| Source and loading | Rerun and independently review the existing decoder, disc completion/interrupt, loader/reloader and mode-dispatch source together. Close initialization, allocation/release and every required resource lifetime across entry, transition, battle, menu and return; per-call heap/read agreement does not establish these lifecycles. |
+| Field representation | Qualify the existing frame/model/sprite/dialogue drawing and GTE reconstruction against the used geometry, materials, textures/palettes, camera, sprite/animation formats and visual references. Close required variants and source-to-runtime changes; preserve every owned byte and original write. |
+| Script execution | Qualify the existing disassembler and every instruction, branch, typed operand, scheduler/wait, dialogue control, trigger and resumed side effect reached by the complete route and alternatives. Base-route per-call agreement in EVID-REF-042 does not cover remaining source-only branches or all dialogue controls. |
+| Field behavior | Rerun and review the existing continuous frame and ordinary transition paths, then connect actual initialization, all required walking/running/jumping/collision/camera/interaction boundaries and full return. Close action eligibility and readiness; retain the complete movement-alternatives requirement. |
+| Encounter and return | Qualify and connect existing turn scheduler, input/target selection, escape, defeat and result steps beyond the EVID-REF-043/046 per-call subset. Finish required screen contents, formulas/AI branches, cleanup and return readiness. The HP-reduced defeat probe described in `analysis/formats/battle-actions.md` is an analysis probe, not ordinary progression or a reviewed setup contract. |
+| Menu and persistence | Resolve the whole-menu mismatches and input-order stops above; connect field caller, menu ownership, inventory/equipment and actual card save/load round trip, checksum and failure cases. Payload comparisons and matched prefixes do not prove the complete card/menu lifecycle. |
+| Required media | Qualify existing music/sample/effect, sound-mode and movie reconstruction, including complete lifetimes, ordinary FMV trigger/framing/completion and return to gameplay. Matched Mono/Stereo/Wide parameter calls do not establish the required matched unprocessed signals, panning/polarity/reverb/master/streamed-FMV routing or Wide playback model. |
+| Time and services | Rerun and review the existing controller, disc, GPU, sound-tick and interrupt implementation with qualified external inputs and exact ordering. Extend the EVID-REF-044 hardware-intent census to required paths; distinguish logical cadence and readiness from HLE frontend counts and hardware timing. |
+| Reproducibility and remainder | Freeze and independently review the entire route and all ten required extension/case records, publish qualified findings for accepted WIP, reconcile the source/format/opcode/content inventory and complete source-qualified Phase 4 ownership. All Phase 1 facets and integrated acceptance remain open. |
 
 The [frozen manifest](../analysis/slices/forest23.json) retains route extensions,
 alternatives and proof obligations. Every row above is still open.
 
+Agent-state recovery must identify resident versus mode-local ownership, valid
+actions and disabled reasons, menu/dialogue control, spawn/transition
+preconditions and subsystem initialization. Source-correlated C++ fields are a
+starting point; the required findings must separately establish assets available,
+map initialized, event completion, actionable dialogue/menu, battle readiness and
+player-control readiness. The existing guarded field adapter proves only its
+documented map initialization. No native Phase 2 API or readiness claim follows
+from it or from the matching frame windows.
+
+The Phase 4 recovery tasks own the source-qualified whole-game remainder after
+the slice is complete. The manifest explicitly assigns world-map formats and
+minigame rules to Phase 4; it does not yet map every remaining symbol, format,
+instruction and content obligation to a source-qualified Phase 4 owner. Preserve
+that distinction when updating `analysis/recovery.json` and the content inventory:
+required slice gaps stay in Phase 1, and each outside-slice remainder needs source
+identity/coordinates, evidence, a Phase 4 facet and a next experiment. The
+inventory validator currently reports valid structure with 659 incomplete entries
+(8 symbol, 10 format, 14 behavior and 627 instruction entries), not complete
+discovery or acceptance.
+
+## Published findings and their original scope
+
 [EVID-REF-041](../analysis/findings/EVID-REF-041.json) moved connected comparison
 to complete memory images, and [EVID-REF-042](../analysis/findings/EVID-REF-042.json)
-completes the frozen route's field side. From each original entry image, the C++
+completes its compared field-update and move-phase calls. From each original entry image, the C++
 program reproduces the exact exit image, GTE state and return value of all 2,589
 route field updates and 2,589 move phases, all 2,836 control/ramp route calls,
 all 1,418 held-out calls, all 413 initialization and post-battle event passes,
@@ -35,8 +82,8 @@ paths the field reaches and the complete music change of opcode `75`.
 [EVID-REF-045](../analysis/findings/EVID-REF-045.json) adds the resident disc
 read chain: 39 of the route's 42 file reads match exactly and the other three
 stop explicitly at the completion interrupt of the previous read. Evidence
-remains per call; free-running multi-frame execution still needs the sound
-tick, the stream consumer and drawing.
+remains per call. The later frame, sound-tick and stream work is recorded in the
+current-checkout section above and does not expand this finding's scope.
 
 [EVID-REF-043](../analysis/findings/EVID-REF-043.json) brings the encounter
 into the shared library. The [battle source](../analysis/formats/battle-actions.md)
@@ -56,8 +103,8 @@ and field-return call also matches. Remaining script operations and formula
 types, the escape decision, defeat, the turn scheduler, menu input, the result screens and full return
 readiness remain required work.
 
-The primary integration measure is the [connected C++ execution loop](executable-reconstruction.md),
-extended by [EVID-REF-040](../analysis/findings/EVID-REF-040.json). A shared program
+An earlier connected milestone is the [C++ return sequence](executable-reconstruction.md)
+recorded by [EVID-REF-040](../analysis/findings/EVID-REF-040.json). A shared program
 owner invokes the original return caller: snapshot data restore computes all 25
 actors and represented gates, then the same state feeds all 25 consecutive sprite
 factories. Factory arguments and intermediate environment state are computed,

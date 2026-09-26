@@ -1,10 +1,12 @@
 """Synthetic memory images exercise pairing and exact full-memory comparison."""
 
+import hashlib
 import json
 import stat
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.analysis.memory_case import (
     RAM,
@@ -17,6 +19,7 @@ from tools.analysis.memory_case import (
     loop_inputs,
     pairs,
     platform_inputs,
+    qualify_disc_source,
     superseded_bytes,
     visible_registers,
     vram_read_lines,
@@ -24,6 +27,62 @@ from tools.analysis.memory_case import (
 
 
 class MemoryCaseTests(unittest.TestCase):
+    def test_disc_service_binds_raw_bytes_and_capture_to_the_same_profile(self):
+        # Invented source bytes exercise qualification, not original fidelity.
+        data = b"synthetic raw sector source"
+        digest = hashlib.sha256(data).hexdigest()
+        profile = {
+            "id": "synthetic-disc-1",
+            "measurement": {
+                "source": {
+                    "raw_track": {"size": len(data), "sha256": digest},
+                    "chd": {"sha256": "synthetic-container-digest"},
+                }
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "analysis").mkdir()
+            (root / "analysis/reference-profiles.json").write_text(
+                json.dumps({"profiles": [profile]})
+            )
+            raw = root / "disc.bin"
+            raw.write_bytes(data)
+            observation = {
+                "source_profile": profile["id"],
+                "content_sha256": "synthetic-container-digest",
+            }
+            (root / "observation.json").write_text(json.dumps(observation))
+            with patch("tools.analysis.verify_field.ROOT", root):
+                self.assertEqual(
+                    qualify_disc_source(raw, root),
+                    {
+                        "source_profile": profile["id"],
+                        "raw_track_sha256": digest,
+                        "raw_track_bytes": len(data),
+                    },
+                )
+                raw.write_bytes(b"X" + data[1:])
+                with self.assertRaisesRegex(ValueError, "fingerprint mismatch"):
+                    qualify_disc_source(raw, root)
+                raw.write_bytes(data[:-1])
+                with self.assertRaisesRegex(ValueError, "size mismatch"):
+                    qualify_disc_source(raw, root)
+                raw.write_bytes(data)
+                observation["content_sha256"] = "another-container-digest"
+                (root / "observation.json").write_text(json.dumps(observation))
+                with self.assertRaisesRegex(ValueError, "Capture content fingerprint"):
+                    qualify_disc_source(raw, root)
+                for unsupported in ("another-disc", None):
+                    observation["source_profile"] = unsupported
+                    (root / "observation.json").write_text(json.dumps(observation))
+                    with self.assertRaisesRegex(ValueError, "Unknown original source profile"):
+                        qualify_disc_source(raw, root)
+                observation["source_profile"] = profile["id"]
+                (root / "observation.json").write_text(json.dumps(observation))
+                with self.assertRaises(FileNotFoundError):
+                    qualify_disc_source(root / "absent.bin", root)
+
     def test_pairs_follow_entry_exit_order_and_reject_nesting(self):
         rows = [
             {"hook": "entry", "event": 0},

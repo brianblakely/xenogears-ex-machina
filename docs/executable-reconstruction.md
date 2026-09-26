@@ -14,8 +14,8 @@ Phase 0 implementation.
 | Responsibility | Implementation | Boundary |
 | --- | --- | --- |
 | Recovered behavior and ownership | `xem-reconstruction`, `Program`, `ResidentState`, `FieldState`, existing subsystem C++ | Original algorithms, call order and committed state; no case files, expected results, host clocks or presentation |
-| Analysis execution | `xem-analysis-runner`, `tools.analysis.execution` | Prepare supported input, supply explicitly declared external service results, invoke the library, bound work, retain state and format reports |
-| Original qualification and comparison | `tools.analysis.return_case`, `tools.analysis.execution compare` | Verify source/capture lineage, build immutable starting inputs and separate expectations, compare named exact projections |
+| Analysis execution | `xem-memory-runner`, `xem-analysis-runner` | Prepare supported input, supply explicitly declared external service results, invoke the library, bound work, retain state and format reports |
+| Original qualification and comparison | `tools.analysis.memory_case`, `tools.analysis.return_case`, `tools.analysis.execution compare` | Verify source/capture lineage, separate execution inputs from expectations, compare complete owned memory and original writes; retain the older return projection as a bounded historical case |
 
 The old field-only library target has been replaced by `xem-reconstruction`.
 All C++ subsystem tests and the runner link this target. The future native runtime
@@ -33,16 +33,55 @@ invoke the existing motion arithmetic; music streaming invokes the resident ring
 The complete field update `8008110c` (events, party and NPC motion, contact,
 positions, interactions and followers), the move phase `800739c0` (camera follow,
 view matrices, facing and sprite orientation) and the return checkpoint pass
-`800a3c8c` now run in this library. The resident heap (`80031bdc`, `800320e8`,
-`80031ff8`) is reconstructed with synthetic coverage; its original comparisons
-and use by callers are in progress. Initialization, dialogue/message, sound,
-drawing, combat, menus/card state, media services and mode dispatch remain
-incomplete. The loader, initializer, scheduler, field update and mode dispatcher
-are distinct boundaries; an event pass does not stand in for a field update.
+`800a3c8c` run in this library. EVID-REF-042 independently qualifies their compared
+calls and all 543 resident heap allocations and 263 releases on its route. The
+heap is no longer an unrecovered service, although the older return-case input
+still supplies explicit allocation results within that case's narrower contract.
 
-## First connected original case
+The current merged checkout also contains field drawing/frame/main-loop,
+entry/reload/transition, sound-tick/interrupt, battle-turn/menu/results,
+menu/card and movie/mode-dispatch source. Much of this work postdates the latest
+published finding, EVID-REF-046. Existing private reports are recovery checkpoints;
+rerun them with one frozen current release runner and obtain independent source
+and methodology review before promoting their claims. The loader, initializer,
+scheduler, field update and mode dispatcher remain distinct boundaries.
 
-The supported entry is the **return branch of field `800a28d4`**, with freshly
+## Current connected checkpoints
+
+The [progress record](phase1-progress.md#current-checkout-checkpoint) separates
+published findings from later merged work and lists all nine still-open proof
+domains. Start from the existing capture catalog and reports, not the older
+return-factory boundary alone:
+
+- `.local/execution/p1music-reports/` records four frame windows of 99, 48, 99
+  and 65 frames from one import per window, with no intermediate gameplay-state
+  input and all 618 boundaries matching on its frozen runner.
+- `.local/execution/p1fieldov/reports-bca8d71/transition-chain.json` records a
+  35-frame transition window with 69 matching boundaries and no intermediate
+  state import.
+- `.local/execution/p1-merge-frozen/reports/` retains narrower merged-source
+  checks of services, battle, menu/save data, media and transition stages.
+- `.local/execution/p1menuov/reports-v2/` retains unresolved whole-menu attempts.
+  Four runs reach a C++ return but contain memory divergences; the others stop
+  on unavailable or misordered platform reads. None is a complete menu pass.
+
+Those windows do not constitute the complete frozen lifecycle. Connect the real
+callers and mode transitions without importing a new original gameplay image at
+each boundary. Source-qualified pad/device reads, sector bytes and interrupt
+arrivals are external inputs; game state, readiness decisions and recovered
+service computation must come from the shared library. Unknown paths stop by
+name. Qualify every changed ownership/exclusion rule and retained input boundary;
+zero reported intermediate state bytes alone is not an independence review.
+
+Check comparison outcomes separately from execution status. In existing menu
+reports, `completed_boundary` may coexist with `first_divergence`, and an
+exhausted capture may contain only matching frame prefixes. Complete expected
+boundary coverage, no mismatches/unowned writes, qualified return and platform
+consumption, plus independent review, are required for a lifecycle claim.
+
+## Historical first connected original case
+
+EVID-REF-040's supported entry is the **return branch of field `800a28d4`**, with freshly
 initialized actor/descriptor storage, an original field-return snapshot,
 qualified sprite resources and explicit original heap results. The source is
 Disc 1 profile `na-slus-00664-39c547a9afc6`, resident executable
@@ -64,15 +103,16 @@ produces the records and represented globals, the caller computes resource/slot/
 mode/variant/tag/defer arguments, and each factory produces the state used by the
 next. The sprite gate at `800b218e` and party reassignment gate at `800b2268` come
 from the restored field region. Original heap addresses and incoming allocation
-bytes remain **external service inputs**; no recovered heap is claimed.
+bytes are **external service inputs in this historical case**; it makes no
+claim about the later recovered heap.
 
 The original order rebuilds **all** sprites before the caller's optional party
 reassignment. The later `800a3c8c` checkpoint pass is a separate operation. The
-current entry stops before that pass, readiness publication or return to ordinary
+historical entry stops before that pass, readiness publication or return to ordinary
 field updates. Replaying a checkpoint after each individual factory would invent
 an ordering that the original does not have.
 
-The current comparison checks 26 completed restore/factory checkpoints, plus
+That comparison checks 26 completed restore/factory checkpoints, plus
 factory arguments, environment values, allocation/release and upload requests.
 It verifies the selected runner boundary separately from the original output
 projection; it does not compare final whole-field state or original return
@@ -90,7 +130,7 @@ Pick the cheapest validation that is exact for the behavior under test:
 | Behavior | Validation |
 | --- | --- |
 | Deterministic in disc data or constant tables (decoders, parsers, lookups, layouts, disassembly, table arithmetic) | Static review against the original code plus disc-data checks: projection hashes, decoded bytes, and source-to-RAM correlation read from RAM already in an existing capture. Synthetic tests cover bounds and errors. |
-| Depends on runtime state (interrupts, battle turns, menus and saves, field frame state, loader progress) | Exact per-call memory-image comparison, below. |
+| Depends on runtime state (interrupts, battle turns, menus and saves, field frame state, loader progress) | Exact memory-image comparison, below; retain per-call regressions and extend connected lifecycle/continuous-frame comparisons without state re-import. |
 
 Snapshot captures are expensive, so capture per route, not per function:
 
@@ -209,8 +249,7 @@ Enter the pinned environment, then build only the executable under investigation
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-cmake --preset debug
-cmake --build --preset debug --target xem-analysis-runner test-program
+python3 tools/repository/build.py debug --target xem-analysis-runner --target test-program
 ```
 
 Qualify and export once to new private paths. Inputs and expectations are separate;
@@ -240,8 +279,7 @@ watchdog.
 Public focused regression commands:
 
 ```sh
-cmake --build --preset debug
-ctest --preset debug -R 'connected-program|analysis-execution|field-sprite|field-event|field-return'
+python3 tools/repository/build.py debug --test 'connected-program|analysis-execution|field-sprite|field-event|field-return'
 python3 -m unittest tests.test_return_case
 ```
 
@@ -326,23 +364,19 @@ Battle requests are pending resident state, not combat or mode dispatch.
    a concrete mode owner when battle/menu/world-map/persistence/media code needs one;
    do not build empty subsystem frameworks or invent boot state.
 
-The next return dependency is the separate `800a3c8c` checkpoint pass after the
-factory sequence, followed by cleanup, control readiness and route variants.
-For the next distinct connected entry, use the manifest's ordinary field update
-`8008110c`. Its original order is event pass, previous positions, motion,
-controlled contact/position `80084158`, other positions `80084a40`, encounter
-`8008399c` and followers `800815f0`. Connect the existing C++ and qualified
-Python/source behavior into the shared library. Start with
-`tests/reference-inputs/field23-control-observation.json` and the original
-source/capture lineage in EVID-REF-026/027; compare each computed boundary to
-the corresponding original field 23 captures. Do not promote an event scheduler
-pass to a complete update.
+The field update, move phase, checkpoint pass and heap have published original
+comparisons; do not reimplement them. Rerun the current connected field entry,
+reload/transition and main-loop checkpoints, then pursue the earliest divergence
+or named dependency using the existing C++, reference models and Ghidra exports.
+The field loop still has explicit missing branches, including its menu caller
+`800799d4`; the menu overlay already has its own reconstructed mode owner and
+must be connected through the original caller and cleanup order.
 
-Backward work is the real `80080f44` allocation/default/shadow caller and resource
-loading. Its 25 RNG/default outputs already have exact captures, but shadow
-initialization `8007aa44` and heap results remain external boundaries. Forward
-ordinary field work must connect the already recovered movement/collision/position
-models before claiming field updates. Alternative return paths, failure/defeat,
-map transitions, menus/save-load, required media and the remaining slice obligations
-remain in the existing inventory/manifest. Neither this case nor synthetic success
-changes Phase 1 completion marks.
+Resolve the whole-menu memory and platform-order failures before claiming its
+inventory/equipment/card lifecycle. Continue the battle caller/results/return,
+movie-to-gameplay, movement alternatives and source-only event branches in the
+same program. The required semantic ownership, action eligibility, setup and
+readiness findings remain separate from matching state windows. Keep all ten
+manifest extension/case obligations and every Phase 1 facet; source-qualify and
+assign only the actual outside-slice remainder to Phase 4. No current checkpoint
+changes the Phase 1 completion marks.

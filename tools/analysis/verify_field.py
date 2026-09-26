@@ -45,18 +45,29 @@ def private_output(path: Path) -> Path:
     return resolved
 
 
+def qualify_raw_track(raw: Path, profile_id: str) -> tuple[dict, str]:
+    """Bind a raw track to an exact selected original source profile."""
+    profiles = json.loads((ROOT / "analysis/reference-profiles.json").read_text())["profiles"]
+    profile = next((p for p in profiles if p["id"] == profile_id), None)
+    if profile is None:
+        raise ValueError("Unknown original source profile")
+    expected = profile["measurement"]["source"]["raw_track"]
+    if raw.stat().st_size != expected["size"]:
+        raise ValueError("Original raw-track size mismatch")
+    raw_sha = file_sha(raw)
+    if raw_sha != expected["sha256"]:
+        raise ValueError("Original raw-track fingerprint mismatch")
+    return profile, raw_sha
+
+
 def load_sources(raw: Path, profile_id: str, map_id: int) -> dict:
     """Bind every source read to an exact revision and measured slot identity."""
     if type(map_id) is not int or not 0 <= map_id < 730:
         raise ValueError("Map selector outside catalog range")
-    profiles = json.loads((ROOT / "analysis/reference-profiles.json").read_text())["profiles"]
-    profile = next(p for p in profiles if p["id"] == profile_id)
+    profile, raw_sha = qualify_raw_track(raw, profile_id)
     disc = profile["disc_sequence"]
     if disc not in (1, 2):
         raise ValueError("No recovered source-slot mapping for this disc")
-    raw_sha = file_sha(raw)
-    if raw_sha != profile["measurement"]["source"]["raw_track"]["sha256"]:
-        raise ValueError("Original raw-track fingerprint mismatch")
     catalog = json.loads((ROOT / "analysis/coverage/source-fingerprints.json").read_text())
     source = next(p for p in catalog["profiles"] if p["source_profile"] == profile_id)
     rows = {r[0]: dict(zip(source["records_columns"], r, strict=True)) for r in source["records"]}

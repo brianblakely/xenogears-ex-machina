@@ -24,6 +24,7 @@ from pathlib import Path
 from tools.analysis.field import field_components
 from tools.analysis.packed import decode_block
 from tools.analysis.party_sprites import sprite_sources
+from tools.analysis.verify_field import qualify_raw_track
 from tools.reference.host_slots import slot as host_slot
 from tools.reference.inspect_disc import RawCd
 from tools.reference.instruction_trace import SnapshotReader, snapshot_path
@@ -214,6 +215,22 @@ def is_load_hook(hook: str) -> bool:
 def file_sha256(path: Path) -> str:
     with path.open("rb") as stream:
         return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def qualify_disc_source(raw: Path, capture: Path) -> dict:
+    """Qualify the drive's original data independently of expected RAM images."""
+    observation = json.loads((capture / "observation.json").read_text())
+    profile, raw_sha = qualify_raw_track(raw, observation.get("source_profile"))
+    source = profile["measurement"]["source"]
+    require(
+        observation.get("content_sha256") == source["chd"]["sha256"],
+        "Capture content fingerprint differs from the selected disc source",
+    )
+    return {
+        "source_profile": profile["id"],
+        "raw_track_sha256": raw_sha,
+        "raw_track_bytes": source["raw_track"]["size"],
+    }
 
 
 def gte_controls(row: dict) -> list[int]:
@@ -1134,6 +1151,7 @@ def run(args: argparse.Namespace) -> int:
     # entries use the source of the map each entry image names, unless --map
     # selects one (a requested map is stored before its field is loaded).
     resident = args.entry in RESIDENT_ENTRIES
+    disc_source = None
     loaded_sources: dict[int, Sources] = {}
     statuses = collections.Counter()
     dependencies = collections.defaultdict(list)
@@ -1261,6 +1279,10 @@ def run(args: argparse.Namespace) -> int:
             platform, recorded_sectors = platform_inputs(
                 inputs, entry, io, args.arrival, decoding, pads, args.arrival_ticks
             )
+            if resident and recorded_sectors and disc_source is None:
+                # Resident entries bypass field-source loading. Qualify the
+                # drive before its first use, once for this comparison run.
+                disc_source = qualify_disc_source(args.raw, capture)
             if args.assume_idle_otc:
                 require(args.entry in RELOAD_ENTRIES, "Assumed reads apply to reload entries")
                 platform += "".join(
@@ -1314,7 +1336,9 @@ def run(args: argparse.Namespace) -> int:
                     ",".join(f"{value:x}" for value in visible_registers(entry_row)),
                     str(work / "io.bin"),
                     str(work / "platform.txt"),
-                    str(args.raw) if args.raw.exists() else "",
+                    str(args.raw)
+                    if args.raw.exists() and (not resident or disc_source is not None)
+                    else "",
                     str(work / "services.txt"),
                 ],
                 args.timeout * len(frames),
@@ -1477,6 +1501,7 @@ def run(args: argparse.Namespace) -> int:
     trace_status = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     summary = {
         "capture": str(capture),
+        "disc_source": disc_source,
         "capture_trace": {
             key: trace_status.get(key)
             for key in ("trace_sha256", "snapshot_file_sha256", "failed", "budget_reached")
