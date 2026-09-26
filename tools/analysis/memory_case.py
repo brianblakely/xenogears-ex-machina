@@ -1272,9 +1272,10 @@ def run(args: argparse.Namespace) -> int:
                 )
                 hooked |= {row["hook"] for row in rows}
             pads = {
-                row["event"]: snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)]
+                row["event"]: pad_buffers(row, snapshots)
                 for row in inputs
-                if row["hook"] == args.arrival and "snapshot" in row
+                if row["hook"] == args.arrival
+                and ("snapshot" in row or any(r.get("name") == PAD_RANGE for r in row["ranges"]))
             }
             platform, recorded_sectors = platform_inputs(
                 inputs, entry, io, args.arrival, decoding, pads, args.arrival_ticks
@@ -1729,6 +1730,25 @@ SPU_TRANSFER_READS = (0x8004CD8C,)
 # from the imported I/O page, so every recording must agree with that page.
 DATASYNC_READ = 0x80042A6C
 PAD_BUFFERS = (0x625FC, 0x44)
+PAD_RANGE = "pad-buffers"
+
+
+def pad_buffers(row: dict, snapshots: SnapshotReader) -> bytes:
+    """The BIOS pad buffers at a dispatch entry: the hook's recorded range
+    when the capture declares one, else the record's snapshot."""
+    for item in row.get("ranges", ()):
+        if item.get("name") == PAD_RANGE:
+            require(
+                item.get("resolved_offset") == PAD_BUFFERS[0]
+                and item.get("size") == PAD_BUFFERS[1]
+                and "hex" in item,
+                "The pad-buffers range must record the BIOS pad buffers",
+            )
+            return bytes.fromhex(item["hex"])
+    require("snapshot" in row, "A dispatch entry records neither the pad buffers nor a snapshot")
+    return snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)]
+
+
 MAIN_LOOP_RETURN = 0x800782E4
 # The field entry's fade-in frames return to 80079178; a completed frame is
 # reported at its call (8007554c).
@@ -1983,7 +2003,7 @@ def run_frames(args: argparse.Namespace) -> int:
                 else [row for row in image_rows if inside(row) and row["hook"] in positions]
             )
             pads = {
-                row["cycle_u32"]: snapshots.read(row)[0][PAD_BUFFERS[0] : sum(PAD_BUFFERS)]
+                row["cycle_u32"]: pad_buffers(row, snapshots)
                 for row in image_rows
                 if inside(row) and row["hook"] == "dispatch-entry"
             }
@@ -2210,10 +2230,14 @@ MENU_STACK_BELOW = 0x1800
 # PS1 BIOS layout, the field's KERNEL_SAVE covers the last 13), since menu
 # code interrupted in more registers; and the BIOS words libcard's kernel
 # patches (8004e8d8, 8004e990 inside InitCARD) exchange with the game; and
-# the four kernel bytes the card BIOS services change on the card routes
-# (the only kernel bytes outside these ranges that change between menu frames
-# of the p1shared save and load captures), BIOS state behind the CardBios
-# contract.
+# the BIOS card driver's kernel variables that change on the card routes (the
+# only kernel bytes outside these ranges that change between menu frames of the
+# p1shared save and load captures): the active slot toggled by the card vint
+# handler (80007264), the active port (80007500) and the low half of the IRQ
+# handler pointer (80007528). The reference core's HLE BIOS keeps exactly
+# these variables there (pcsx-rearmed libpcsxcore/psxbios.c: A_CARD_ISLOT,
+# A_CARD_ACHAN, A_CARD_HANDLER; general BIOS layout, not game data). They are
+# BIOS state behind the CardBios contract, never Program state.
 MENU_KERNEL_SAVE = (
     (0x4D98, 0x4DA4),
     (0x7264, 0x7265),

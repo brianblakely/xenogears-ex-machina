@@ -17,6 +17,7 @@ from tools.analysis.memory_case import (
     differing_positions,
     image_map,
     loop_inputs,
+    pad_buffers,
     pairs,
     platform_inputs,
     qualify_disc_source,
@@ -82,6 +83,39 @@ class MemoryCaseTests(unittest.TestCase):
                 (root / "observation.json").write_text(json.dumps(observation))
                 with self.assertRaises(FileNotFoundError):
                     qualify_disc_source(root / "absent.bin", root)
+
+    def test_pad_buffers_come_from_the_recorded_range_or_the_snapshot(self):
+        buffers = bytes(range(0x44))
+        row = {
+            "ranges": [
+                {"name": "field-map", "size": 4, "resolved_offset": 0x4F34C, "hex": "17000000"},
+                {
+                    "name": "pad-buffers",
+                    "size": 0x44,
+                    "resolved_offset": 0x625FC,
+                    "hex": buffers.hex(),
+                },
+            ]
+        }
+
+        class NoSnapshots:
+            def read(self, record):
+                raise AssertionError("A recorded range needs no snapshot")
+
+        self.assertEqual(pad_buffers(row, NoSnapshots()), buffers)
+        row["ranges"][1]["resolved_offset"] = 0x62600
+        with self.assertRaisesRegex(ValueError, "BIOS pad buffers"):
+            pad_buffers(row, NoSnapshots())
+
+        class Snapshots:
+            def read(self, record):
+                ram = bytearray(RAM)
+                ram[0x625FC : 0x625FC + 0x44] = buffers
+                return bytes(ram), b"", b""
+
+        self.assertEqual(pad_buffers({"ranges": [], "snapshot": {}}, Snapshots()), buffers)
+        with self.assertRaisesRegex(ValueError, "neither the pad buffers nor a snapshot"):
+            pad_buffers({"ranges": []}, Snapshots())
 
     def test_pairs_follow_entry_exit_order_and_reject_nesting(self):
         rows = [

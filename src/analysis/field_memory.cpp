@@ -901,6 +901,7 @@ Program import_battle(const OriginalMemory &memory) {
     // Allocated heap blocks the battle reaches, each owned up to the next
     // header: those containing `address`, when one does.
     const auto &headers = program.resident.heap.headers;
+    const auto &task_nodes = program.resident.sprite_tasks.nodes;
     const auto own_block = [&](std::uint32_t address) {
         for (const auto &[at, header] : headers) {
             const auto tag = header[1] & reconstruction::resident::heap_tag_mask;
@@ -909,6 +910,12 @@ Program import_battle(const OriginalMemory &memory) {
                 continue;
             // A block holding a sound-driver object belongs to the sound driver.
             if (program.resident.sound.objects.contains(at + 8))
+                return true;
+            // A block holding a task node is the task list's (the node shares
+            // it with its sprite and that sprite's parts).
+            if (std::ranges::any_of(task_nodes, [&](const auto &piece) {
+                    return piece.address >= at + 8 && piece.address < header[0] - 8;
+                }))
                 return true;
             if (!battle.regions.contains(at + 8))
                 battle.regions.emplace(at + 8, copy_of(memory.range(at + 8, header[0] - 16 - at)));
