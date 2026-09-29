@@ -140,11 +140,16 @@ struct CollisionSweepResult {
     FieldVector velocity;
     CollisionEdge edge;
 };
+struct LayerFloorLocals {
+    std::int32_t x{}, z{};
+    std::uint32_t origin{};
+};
 struct LayerFloor {
     std::int32_t value{-1}; // Zero on success; the original leaves outputs untouched otherwise.
     std::optional<std::int32_t> floor, upper;
     std::optional<std::int16_t> triangle;
     std::optional<FieldVector> normal;
+    std::optional<LayerFloorLocals> locals; // 8007d460/8007d494/8007d4a0
 };
 // Field 8007d3d4 (with 8007c670) for one layer of a position update: walks from
 // the actor's current triangle to its X/Z plus velocity. A moving actor on its

@@ -258,12 +258,33 @@ bool Program::field_between_frames(FrameServices &services, const ProgramObserve
             // 800789a8: the requested movie (field_movie_player.cpp).
             if (services.mdec == nullptr)
                 throw ServiceUnavailable("The MDEC codec service of a requested movie");
-            play_movie(services, field_loop_stack - 0x28, *services.mdec, observe);
+            std::optional<FrameCallAbi> caller;
+            if (menu_call_state) {
+                auto registers = menu_call_state->saved_registers;
+                registers[1] = 1;
+                registers[2] = 0xffffffffU;
+                registers[3] = 0xff;
+                registers[4] = state.combination_latched ? 1U : 0U;
+                registers[5] = state.music_saved ? 1U : 0U;
+                caller = FrameCallAbi{field_loop_stack, registers, 0x800789b0};
+            }
+            play_movie(services, field_loop_stack - 0x28, *services.mdec, observe, caller);
             state.disc_idle_known = 0;
         }
-        if (inputs.jump_contact != 0xff && state.draw_buffer == 0 && (flags() & 0x1800U) == 0)
-            unrecovered("field_menu", 0x80078a28, "symbol:field-menu-800799d4",
-                        "Opening the field menu (8007ffe8, 800799d4) is not recovered");
+        if (inputs.jump_contact != 0xff && state.draw_buffer == 0 && (flags() & 0x1800U) == 0) {
+            close_dialogues(); // 80078a28 -> 8007ffe8
+            if (menu_call_state) {
+                auto &call = *menu_call_state;
+                call.saved_registers[1] = 1;
+                call.saved_registers[2] = 0xffffffffU;
+                call.saved_registers[3] = 0xff;
+                call.saved_registers[4] = state.combination_latched ? 1U : 0U;
+                call.saved_registers[5] = state.music_saved ? 1U : 0U;
+                call.return_address = 0x80078a38;
+            }
+            field_menu(services, field_loop_stack, observe); // 80078a30
+            inputs.jump_contact = 0xff; // 80078a3c, also when triangle was inhibited
+        }
         if ((repeats() & 0x10U) != 0 && state.script_flags_b21d0[0] == 0 &&
             inputs.jump_contact == 0xff && state.pass.input_updated == 1) {
             inputs.jump_contact = 0x80;
@@ -289,6 +310,8 @@ void Program::field_loop_top(FrameServices &services, const ProgramObserver &obs
         state.pause_inhibited == 0)
         unrecovered("field_pause", 0x80078238, "symbol:field-pause",
                     "Pausing the field (80037ee4, 8001fab4) is not recovered");
+    if (menu_call_state)
+        menu_call_state->saved_registers[0] = resident.pad.vsyncs; // 80078188, ordinary path
     if (state.event_control.diagnostic_suppression == 1)
         resident.variables.write(0x50, 1);
     // 80019ca0: the reset combination.
@@ -345,7 +368,11 @@ void Program::field_pre_frame(FrameServices &services) {
 bool Program::field_loop_step(FrameServices &services, const ProgramObserver &observe) {
     if (!field_between_frames(services, observe))
         return false;
-    field_frame(services, observe);
+    std::optional<FrameCallAbi> caller;
+    if (menu_call_state)
+        caller =
+            FrameCallAbi{menu_call_state->entry_sp, menu_call_state->saved_registers, 0x800782e4};
+    field_frame(services, observe, FrameStep::start, caller);
     return true;
 }
 

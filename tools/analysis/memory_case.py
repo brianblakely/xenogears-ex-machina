@@ -833,6 +833,8 @@ class BatchRunner:
         if self.process is not None:
             self.process.kill()
             self.process.wait()
+            self.process.stdin.close()
+            self.process.stdout.close()
             self.process = None
 
     def failure(self, reason: str) -> dict:
@@ -870,7 +872,7 @@ class BatchRunner:
         line = self.process.stdout.readline()
         if not line.endswith(b"\n"):
             code = self.process.wait()
-            self.process = None
+            self.stop()
             return self.failure(f"runner exit {code}: ")
         try:
             return json.loads(line)
@@ -967,13 +969,12 @@ def compare(
         (((stack - 1) & 0x1FFFFF) + 1 - stack_below, ((stack - 1) & 0x1FFFFF) + 1)
         for stack in sorted({sp, *arrival_stacks})
     ]
-    # Stacks the code switched to inside heap blocks (80022a0c): their frames
-    # are transient like the entry stack, and the heap's copy of those bytes
-    # holds whatever the frames left.
+    # Historical heap-stack windows are diagnostics, never exclusions. Their
+    # addresses can be reused and their residual bytes can be copied into live
+    # records. Neither case is transient callee storage below this entry SP.
     switched = [
         (address & 0x1FFFFF, (address & 0x1FFFFF) + size) for address, size in stack_windows
     ]
-    windows += switched
 
     def switched_stack(offset: int) -> bool:
         return any(low <= offset < high for low, high in switched)
@@ -997,9 +998,7 @@ def compare(
     mismatches = [
         (offset, value, exit[offset])
         for offset, value in differing
-        if not (offset in excused and value == entry[offset])
-        and offset not in verified
-        and not switched_stack(offset)
+        if not (offset in excused and value == entry[offset]) and offset not in verified
     ]
     unowned = [
         offset
@@ -1032,7 +1031,9 @@ def compare(
             for offset, computed_value, original in mismatches[:64]
         ],
         "mismatch_count": len(mismatches),
-        "switched_stack_bytes": len([offset for offset, _ in differing if switched_stack(offset)]),
+        "reported_stack_mismatches": len(
+            [offset for offset, _, _ in mismatches if switched_stack(offset)]
+        ),
         "unowned_writes": [hex(0x80000000 + o) for o in unowned[:64]],
         "unowned_count": len(unowned),
         "interrupt_attributed": len([o for o in changed if o in excused]),
@@ -1757,7 +1758,123 @@ FRAME_CALL = 0x8007554C
 
 
 def trace_rows(capture: Path) -> list[dict]:
-    return [json.loads(line) for line in (capture / "instruction-trace.jsonl").open()]
+    with (capture / "instruction-trace.jsonl").open() as stream:
+        return [json.loads(line) for line in stream]
+
+
+def qualify_captures(capture: Path, platform: Path, services: Path) -> dict[str, list[dict]]:
+    """Bind expectations and external inputs to one original execution.
+
+    Trace-only observer builds can differ. Source, reset, scenario, inputs and
+    final state/audio must agree, and shared hooks must identify identical CPU,
+    GTE and (when both recorded it) memory state at the same original times.
+    Checks do not supply any state to the reconstruction.
+    """
+    checked: dict[Path, tuple[dict, list[dict]]] = {}
+    result = {}
+    for name, path in (("images", capture), ("platform", platform), ("services", services)):
+        if path not in checked:
+            observation = json.loads((path / "observation.json").read_text())
+            trace = observation["instruction_trace"]
+            require(
+                not trace.get("failed") and not trace.get("budget_reached"),
+                f"Capture trace of {path} failed or reached its budget",
+            )
+            require(
+                file_sha256(path / "instruction-trace.jsonl") == trace.get("trace_sha256"),
+                f"Capture trace of {path} does not match its recorded digest",
+            )
+            if trace.get("snapshot_file"):
+                require(
+                    trace["snapshot_file"] == snapshot_path(path / "instruction-trace.jsonl").name,
+                    f"Capture snapshots of {path} do not name the canonical snapshot file",
+                )
+                require(
+                    file_sha256(snapshot_path(path / "instruction-trace.jsonl"))
+                    == trace.get("snapshot_file_sha256"),
+                    f"Capture snapshots of {path} do not match their recorded digest",
+                )
+            rows = trace_rows(path)
+            require(rows, f"Capture trace of {path} has no records")
+            require(
+                not any("snapshot" in row for row in rows) or trace.get("snapshot_file"),
+                f"Capture snapshots of {path} lack their file digest metadata",
+            )
+            checked[path] = observation, rows
+        result[name] = checked[path][1]
+
+    original = checked[capture][0]
+    identity = (
+        "source_profile",
+        "content_sha256",
+        "bios_sha256",
+        "effective_options",
+        "initial_reference_state_sha256",
+        "inputs",
+        "frames",
+        "final_state_sha256",
+        "audio_frames",
+        "audio_sha256",
+    )
+    require(original.get("source_profile") == PROFILE, "Unsupported capture source profile")
+    require(
+        original.get("final_state_sha256") and original.get("audio_sha256"),
+        "Captures need final original state and audio digests",
+    )
+    require(
+        original.get("scenario", {}).get("cold_boot") is True
+        and original.get("scenario", {}).get("complete") is True,
+        "Qualified captures need a complete cold-boot scenario",
+    )
+    for path, (observation, rows) in checked.items():
+        for key in identity:
+            require(
+                key in original and key in observation and original[key] == observation[key],
+                f"Capture {path} differs from the image capture's {key}",
+            )
+        for key in ("program_sha256", "cold_boot", "complete"):
+            scenario = observation.get("scenario", {})
+            baseline = original.get("scenario", {})
+            require(
+                key in baseline and key in scenario and baseline[key] == scenario[key],
+                f"Capture {path} differs from the image capture's scenario {key}",
+            )
+        if path == capture:
+            continue
+        images = result["images"]
+        low = max(
+            min(row["frontend_run"] for row in images), min(row["frontend_run"] for row in rows)
+        )
+        high = min(
+            max(row["frontend_run"] for row in images), max(row["frontend_run"] for row in rows)
+        )
+        require(low <= high, f"Capture {path} has no shared original frame window")
+        image_span = [row for row in images if low <= row["frontend_run"] <= high]
+        other_span = [row for row in rows if low <= row["frontend_run"] <= high]
+        shared = {row["hook"] for row in image_span} & {row["hook"] for row in other_span}
+        require(shared, f"Capture {path} has no shared original hooks")
+        image_marks = [row for row in image_span if row["hook"] in shared]
+        other_marks = [row for row in other_span if row["hook"] in shared]
+        require(len(image_marks) == len(other_marks), f"Capture {path} has missing shared hooks")
+        for expected, observed in zip(image_marks, other_marks, strict=True):
+            for key in ("hook", "frontend_run", "cycle_u32", "subcycle_u32", "pc", "code"):
+                require(
+                    expected[key] == observed[key],
+                    f"Capture {path} has different shared hook {key}",
+                )
+            require(
+                visible_registers(expected) == visible_registers(observed)
+                and expected["cop2_u32"] == observed["cop2_u32"]
+                and expected["load_delay"] == observed["load_delay"],
+                f"Capture {path} has different shared CPU or GTE state",
+            )
+            if "snapshot" in expected and "snapshot" in observed:
+                for key in ("ram_sha256", "scratchpad_sha256", "io_sha256"):
+                    require(
+                        expected["snapshot"][key] == observed["snapshot"][key],
+                        f"Capture {path} has different shared snapshot {key}",
+                    )
+    return result
 
 
 def loop_inputs(
@@ -1866,7 +1983,11 @@ def loop_inputs(
 
 
 def chain_services(
-    rows: list[dict], exits: list[dict], inside, interrupts: tuple[tuple[str, str], ...]
+    rows: list[dict],
+    exits: list[dict],
+    inside,
+    interrupts: tuple[tuple[str, str], ...],
+    entry_cycle: int,
 ) -> tuple[list[str], collections.Counter]:
     """Service results of a chain, in order: each field frame's, the VSync(1)
     of each 80077dac (vsync1-loop) and everything code between main-loop
@@ -1878,7 +1999,7 @@ def chain_services(
     ordered = sorted(
         (row for row in rows if inside(row)),
         key=lambda row: (
-            (row["cycle_u32"] - rows[0]["cycle_u32"]) % (1 << 32),
+            (row["cycle_u32"] - entry_cycle) % (1 << 32),
             row["subcycle_u32"],
         ),
     )
@@ -1922,21 +2043,12 @@ def run_frames(args: argparse.Namespace) -> int:
     args.platform = args.platform or capture
     args.services = args.services or capture
     require(args.entry == "field_frame", "Multi-frame runs are field_frame chains")
+    qualified_rows = qualify_captures(capture, args.platform, args.services)
     snapshots = SnapshotReader(snapshot_path(capture / "instruction-trace.jsonl"))
-    for path in (capture, args.platform, args.services):
-        trace = json.loads((path / "observation.json").read_text())["instruction_trace"]
-        require(
-            not trace.get("failed") and not trace.get("budget_reached"),
-            f"Capture trace of {path} failed or reached its budget",
-        )
-        require(
-            file_sha256(path / "instruction-trace.jsonl") == trace.get("trace_sha256"),
-            f"Capture trace of {path} does not match its recorded digest",
-        )
     calls = pairs(capture, "frame-entry", "frame-exit")
-    image_rows = trace_rows(capture)
-    loop_rows = image_rows if args.platform == capture else trace_rows(args.platform)
-    service_rows = image_rows if args.services == capture else trace_rows(args.services)
+    image_rows = qualified_rows["images"]
+    loop_rows = qualified_rows["platform"]
+    service_rows = qualified_rows["services"]
     positions = {hook for hook in ARRIVAL_POINTS if hook not in ("frame-entry", "frame-exit")}
     positions.add(VSYNC0_WAIT)
     # A main-loop iteration's frame returns to 800782e4. Frames other code
@@ -1979,6 +2091,7 @@ def run_frames(args: argparse.Namespace) -> int:
     ):
         work = Path(directory)
         for entry_row, chain in chains:
+            require(chain, "No complete main-loop frame follows the selected entry")
             last_exit = chain[-1][1]
             entry, scratch, io = snapshots.read(entry_row)
             # The import hook itself is no position or stage.
@@ -2010,11 +2123,20 @@ def run_frames(args: argparse.Namespace) -> int:
             platform, counts, sectors, stacks = loop_inputs(
                 chain_image, chain_loop, pads, entry, io
             )
+            # Separate service captures may omit the main loop's VSync(1)
+            # return hook. It belongs to the platform timeline, between the
+            # previous frame's exit and the next frame's drawing services.
+            loop_services = service_rows + (
+                [row for row in loop_rows if row["hook"] == "vsync1-loop"]
+                if not any(row["hook"] == "vsync1-loop" for row in service_rows)
+                else []
+            )
             lines, service_counts = chain_services(
-                service_rows,
+                loop_services,
                 [exit for _, exit, _, _ in chain],
                 inside,
                 (("dispatch-entry", "dispatch-exit"), ("tick-entry", "tick-exit")),
+                start,
             )
             service_counts["frame"] = 0
             # The entry's stages and the exits of its fade-in frames (their
@@ -2122,10 +2244,15 @@ def run_frames(args: argparse.Namespace) -> int:
                     break
                 matched += 1
             complete = len(outputs) == len(boundaries)
-            if complete and first_divergence is None:
-                if report.get("platform_unconsumed"):
+            if first_divergence is None and report["status"] == "completed_boundary":
+                if report["platform_unconsumed"]:
                     first_divergence = {"platform_unconsumed": report["platform_unconsumed"]}
-                elif sectors and report.get("delivered_sectors") != sectors:
+                elif report["services_unconsumed"] or report["card_unconsumed"]:
+                    first_divergence = {
+                        "services_unconsumed": report["services_unconsumed"],
+                        "card_unconsumed": report["card_unconsumed"],
+                    }
+                elif report["delivered_sectors"] != sectors:
                     first_divergence = {
                         "sector_mismatch": {
                             "computed": report.get("delivered_sectors"),
@@ -2143,6 +2270,11 @@ def run_frames(args: argparse.Namespace) -> int:
                     "boundaries_completed": len(outputs),
                     "boundaries_matched": matched,
                     "frames_matched": frames_matched,
+                    "comparison_passed": bool(boundaries)
+                    and complete
+                    and matched == len(boundaries)
+                    and report["status"] == "completed_boundary"
+                    and first_divergence is None,
                     "status": report["status"],
                     "stopped_at": None
                     if complete
@@ -2209,11 +2341,7 @@ def run_frames(args: argparse.Namespace) -> int:
             ]
         )
     )
-    return (
-        0
-        if all(c["frames_matched"] == c["frames"] and not c["first_divergence"] for c in results)
-        else 1
-    )
+    return 0 if results and all(c["comparison_passed"] for c in results) else 1
 
 
 # Menu overlay runs (menu::Overlay through "menu_call:ADDR"). A capture with
@@ -2221,7 +2349,7 @@ def run_frames(args: argparse.Namespace) -> int:
 # arrival is labelled with the number of overlay events before it: frame
 # entries, frame VSync(0) returns and service results outside interrupt code
 # (menu::Overlay::catch_up delivers it once the C++ has passed as many).
-MENU_POSITIONS = ("frame-entry", "frame-vsync", "menu-sound")
+MENU_POSITIONS = ("frame-entry", "frame-vsync", "menu-sound", "apply-entry")
 MENU_BRACKETS = (("dispatch-entry", "dispatch-exit"), ("tick-entry", "tick-exit"))
 # The menu's callee frames reach deeper below the entry SP than a field update.
 MENU_STACK_BELOW = 0x1800
@@ -2246,6 +2374,16 @@ MENU_KERNEL_SAVE = (
     (0x8550, 0x85D0),
     (0xE028, 0xE0A4),
 ) + KERNEL_SAVE[1:]
+
+
+def menu_position_in_call(row: dict, entry: dict, exit: dict) -> bool:
+    """A cycle may recur after wrap; its original frontend span must agree."""
+    offset = (row["cycle_u32"] - entry["cycle_u32"]) % (1 << 32)
+    duration = (exit["cycle_u32"] - entry["cycle_u32"]) % (1 << 32)
+    return (
+        entry["frontend_run"] <= row["frontend_run"] <= exit["frontend_run"]
+        and 0 < offset < duration
+    )
 
 
 def menu_otc_alarms(rows: list[dict], entry_row: dict, exit_row: dict) -> set[int]:
@@ -2398,6 +2536,7 @@ def run_menu(args: argparse.Namespace) -> int:
     results recorded in the same capture."""
     capture = args.capture
     require(args.function, "menu_call needs --function")
+    disc_source = qualify_disc_source(args.raw, capture)
     address = int(args.function, 16)
     trace = json.loads((capture / "observation.json").read_text())["instruction_trace"]
     snapshot_file = snapshot_path(capture / "instruction-trace.jsonl")
@@ -2408,7 +2547,7 @@ def run_menu(args: argparse.Namespace) -> int:
         "Capture trace or snapshot file does not match its recorded digest",
     )
     snapshots = SnapshotReader(snapshot_file)
-    rows = trace_rows(capture)
+    rows = qualify_captures(capture, capture, capture)["images"]
     entries = [i for i, row in enumerate(rows) if row["hook"] == args.entry_hook]
     require(len(entries) > args.start, "No such entry record")
     first = entries[args.start]
@@ -2418,8 +2557,44 @@ def run_menu(args: argparse.Namespace) -> int:
         if rows[i]["hook"] == args.exit_hook:
             last = i
             break
-    frames = [i for i in range(first + 1, last + 1) if rows[i]["hook"] == "frame-entry"]
-    frames = frames[: args.limit]
+    supplemental_snapshots = {}
+    if args.call_platform:
+        # Supplemental positions refine external arrival timing. Their
+        # images remain independent expectations, never execution inputs.
+        start_cycle = rows[first]["cycle_u32"]
+        merged = [(row, None) for row in rows[first : last + 1]]
+        marks = {
+            (r["hook"], r["frontend_run"], r["cycle_u32"], r["subcycle_u32"]) for r, _ in merged
+        }
+        for companion in args.call_platform:
+            qualified = qualify_captures(capture, companion, companion)
+            reader = SnapshotReader(snapshot_path(companion / "instruction-trace.jsonl"))
+            for row in qualified["platform"]:
+                if row["hook"] not in ("apply-entry", "menu-sound"):
+                    continue
+                if not menu_position_in_call(row, rows[first], rows[last]):
+                    continue
+                mark = (row["hook"], row["frontend_run"], row["cycle_u32"], row["subcycle_u32"])
+                if mark not in marks:
+                    require("snapshot" in row, "A supplemental menu position needs an image")
+                    merged.append((row, reader))
+                    marks.add(mark)
+        merged.sort(
+            key=lambda item: (
+                (item[0]["cycle_u32"] - start_cycle) % (1 << 32),
+                item[0]["subcycle_u32"],
+            )
+        )
+        rows = []
+        for index, (row, reader) in enumerate(merged):
+            rows.append({**row, "event": index})
+            if reader is not None:
+                supplemental_snapshots[index] = reader
+        first, last = 0, len(rows) - 1
+    available_frames = [i for i in range(first + 1, last + 1) if rows[i]["hook"] == "frame-entry"]
+    frames = available_frames[: args.limit]
+    positions = [i for i in range(first + 1, last + 1) if rows[i]["hook"] == "apply-entry"]
+    comparisons = sorted(frames + positions)
     end = frames[-1] if frames and rows[last]["hook"] != args.exit_hook else last
     if frames and end == frames[-1]:
         span = rows[first:end]
@@ -2443,9 +2618,12 @@ def run_menu(args: argparse.Namespace) -> int:
         (work / "platform.txt").write_text("".join(line + "\n" for line in platform))
         (work / "services.txt").write_text("".join(line + "\n" for line in services))
         sound = any(row["hook"] == "menu-sound" for row in span)
+        payload = any(row["hook"] == "apply-entry" for row in span)
         report = runner.call(
             [
-                f"menu_call:{address:08x}" + (":sound" if sound else ""),
+                f"menu_call:{address:08x}"
+                + (":sound" if sound else "")
+                + (":payload" if payload else ""),
                 str(args.budget),
                 "",
                 str(work / "ram.bin"),
@@ -2464,10 +2642,18 @@ def run_menu(args: argparse.Namespace) -> int:
         )
     sp = visible_registers(entry_row)[29]
     compared, divergence = [], None
-    outputs = [o for o in report.get("frames", []) if o["boundary"] == "frame_entry"]
-    for k, (index, output) in enumerate(zip(frames, outputs, strict=False)):
+    outputs = report.get("frames", [])
+    for k, (index, output) in enumerate(zip(comparisons, outputs, strict=False)):
+        expected_boundary = (
+            "frame_entry" if rows[index]["hook"] == "frame-entry" else "apply_loaded_payload_entry"
+        )
+        if output["boundary"] != expected_boundary:
+            divergence = {
+                "boundary_mismatch": {"expected": expected_boundary, "computed": output["boundary"]}
+            }
+            break
         row = rows[index]
-        image = snapshots.read(row)[0]
+        image = supplemental_snapshots.get(index, snapshots).read(row)[0]
         result = compare(
             entry,
             image,
@@ -2477,10 +2663,14 @@ def run_menu(args: argparse.Namespace) -> int:
             stack_below=MENU_STACK_BELOW,
             kernel_save=MENU_KERNEL_SAVE,
         )
+        if output["gte"] != gte_words(row):
+            result["gte_mismatch"] = {"computed": output["gte"], "original": gte_words(row)}
+            result["mismatch_count"] += 1
         ok = not (result["mismatch_count"] or result["unowned_count"])
         compared.append(
             {
                 "frame": k,
+                "boundary": expected_boundary,
                 "frontend_run": row["frontend_run"],
                 "matched": ok,
                 "owned_bytes": result["owned_bytes"],
@@ -2508,17 +2698,59 @@ def run_menu(args: argparse.Namespace) -> int:
             stack_below=MENU_STACK_BELOW,
             kernel_save=MENU_KERNEL_SAVE,
         )
+        if report["gte"] != gte_words(rows[last]):
+            result["gte_mismatch"] = {
+                "computed": report["gte"],
+                "original": gte_words(rows[last]),
+            }
+            result["mismatch_count"] += 1
+        expected_return = visible_registers(rows[last])[args.return_register]
+        if report["return_value"] != expected_return:
+            result["return_mismatch"] = {
+                "computed": report["return_value"],
+                "original": expected_return,
+            }
+            result["mismatch_count"] += 1
         exit_result = {
             k: result[k]
             for k in ("owned_bytes", "changed_bytes", "mismatch_count", "unowned_count")
         }
         if result["mismatch_count"] or result["unowned_count"]:
             divergence = {"exit": True, **result}
-        elif report.get("platform_unconsumed"):
+    if divergence is None and report["status"] == "completed_boundary":
+        if report["platform_unconsumed"]:
             divergence = {"platform_unconsumed": report["platform_unconsumed"]}
-    matched = sum(1 for item in compared if item["matched"])
+        elif report["services_unconsumed"] or report["card_unconsumed"]:
+            divergence = {
+                "services_unconsumed": report["services_unconsumed"],
+                "card_unconsumed": report["card_unconsumed"],
+            }
+        elif report["delivered_sectors"] != sectors:
+            divergence = {
+                "sector_mismatch": {
+                    "computed": report.get("delivered_sectors"),
+                    "recorded": sectors,
+                }
+            }
+    matched = sum(1 for item in compared if item["matched"] and item["boundary"] == "frame_entry")
+    boundaries_matched = sum(1 for item in compared if item["matched"])
+    complete = (
+        len(frames) == len(available_frames) == matched
+        and len(comparisons) == len(outputs) == boundaries_matched
+    )
+    passed = (
+        complete
+        and report["status"] == "completed_boundary"
+        and exit_result is not None
+        and divergence is None
+    )
     summary = {
         "capture": {"path": str(capture), "trace_sha256": trace["trace_sha256"]},
+        "supplemental_captures": [
+            {"path": str(path), "trace_sha256": file_sha256(path / "instruction-trace.jsonl")}
+            for path in args.call_platform
+        ],
+        "disc_source": disc_source,
         "runner_sha256": file_sha256(args.runner),
         "tool_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "source_revision": subprocess.run(
@@ -2544,10 +2776,15 @@ def run_menu(args: argparse.Namespace) -> int:
             "location": report.get("location"),
         },
         "frames_recorded": len(frames),
-        "frames_reported": len(outputs),
+        "frames_available": len(available_frames),
+        "frames_reported": sum(1 for output in outputs if output["boundary"] == "frame_entry"),
         "frames_matched": matched,
+        "boundaries_recorded": len(comparisons),
+        "boundaries_reported": len(outputs),
+        "boundaries_matched": boundaries_matched,
         "exit": exit_result,
         "first_divergence": divergence,
+        "comparison_passed": passed,
         "platform_inputs": counts,
         "service_results": dict(collections.Counter(line.split()[0] for line in services)),
         "supplied_state_bytes": 0,
@@ -2570,7 +2807,7 @@ def run_menu(args: argparse.Namespace) -> int:
             ]
         )
     )
-    return 0 if divergence is None and matched == len(outputs) and outputs else 1
+    return 0 if passed else 1
 
 
 def main() -> int:

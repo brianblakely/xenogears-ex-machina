@@ -45,7 +45,8 @@ void add_pc(std::span<std::uint8_t> actor, std::uint32_t step) {
 // sites; releases return the bytes their owner holds (replaced parts, the
 // two stacks of an image upload). Image uploads (8002dde4) run LoadImage on
 // the stack 8001fb30 switched to, with the event caller's services.
-void Program::create_actor_sprite(std::size_t index, const field::FieldSpriteArguments &arguments) {
+void Program::create_actor_sprite(std::size_t index, const field::FieldSpriteArguments &arguments,
+                                  std::optional<std::uint32_t> caller_sp) {
     auto &state = loaded(*this);
     auto &actor = state.actors.at(index);
     const field::SpriteAllocator allocate = [&](std::uint32_t bytes, std::uint32_t mode,
@@ -95,6 +96,10 @@ void Program::create_actor_sprite(std::size_t index, const field::FieldSpriteArg
         [&](const field::SpriteSources &input) {
             auto sources = input;
             sources.services = &services;
+            if (caller_sp)
+                // 80076ac0's 58h frame and the initial 80023210's 20h
+                // frame precede its call of the sprite interpreter.
+                sources.replay_entry_sp = *caller_sp - 0x58 - 0x20;
             auto environment = sprite_environment();
             try {
                 field::create_field_sprite(actor.sprite, actor.storage, actor.descriptor, arguments,
@@ -193,7 +198,8 @@ void Program::event_default_sprite(field::EventContext &context) {
     script(context, [&](field::FieldWorld &world) {
         const auto index = world.current;
         create_actor_sprite(
-            index, {static_cast<std::uint32_t>(index), 0, bundle_sprite(0), 0, 0, 0x80, 1});
+            index, {static_cast<std::uint32_t>(index), 0, bundle_sprite(0), 0, 0, 0x80, 1},
+            field_init_stack_ ? std::optional{*field_init_stack_ - 0x28 - 0x28} : std::nullopt);
         sync_actor_position(index);
         auto &a = loaded(*this).actors.at(index).storage;
         add_pc(a, 1);
@@ -209,8 +215,11 @@ void Program::event_bundle_sprite(field::EventContext &context) {
         auto &actor = loaded(*this).actors.at(index);
         put(actor.descriptor, 0x58, (word(actor.descriptor, 0x58, 2) & 0xf07fU) | 0x200U, 2);
         const auto slot = u32(field::read_immediate15_or_variable(world, 1));
-        create_actor_sprite(index, {static_cast<std::uint32_t>(index), slot, bundle_sprite(slot), 0,
-                                    0, static_cast<std::uint8_t>(slot | 0x80U), 0});
+        create_actor_sprite(index,
+                            {static_cast<std::uint32_t>(index), slot, bundle_sprite(slot), 0, 0,
+                             static_cast<std::uint8_t>(slot | 0x80U), 0},
+                            field_init_stack_ ? std::optional{*field_init_stack_ - 0x28 - 0x28}
+                                              : std::nullopt);
         sync_actor_position(index);
         auto &a = actor.storage;
         add_pc(a, 3);
@@ -261,8 +270,11 @@ void Program::event_party_member(field::EventContext &context) {
         put(a, 0xe4, u32(character), 2);
         put(actor.descriptor, 0x58, (word(actor.descriptor, 0x58, 2) & 0xf07fU) | 0x200U, 2);
         const auto self = static_cast<std::uint32_t>(index);
+        const auto caller_sp = field_init_stack_ ? std::optional{*field_init_stack_ - 0x28 - 0x30}
+                                                 : std::nullopt; // 800a1ec8 and 800a08b8
         if (slot == -1) {
-            create_actor_sprite(index, {self, 0, resident.party_sprite_blocks.at(0), 1, 0, 0, 1});
+            create_actor_sprite(index, {self, 0, resident.party_sprite_blocks.at(0), 1, 0, 0, 1},
+                                caller_sp);
             put(a, 0, word(a, 0) | 1U);
             world.control.budget_mode = 1;
             world.control.break_requested = 1;
@@ -276,9 +288,11 @@ void Program::event_party_member(field::EventContext &context) {
             }
             state.party_indices.at(k) = static_cast<std::int32_t>(index);
             if (state.party_reassignment == 0) {
-                create_actor_sprite(index, {self, static_cast<std::uint32_t>(slot),
-                                            resident.party_sprite_blocks.at(k), 1, 0,
-                                            static_cast<std::uint8_t>(slot), 1});
+                create_actor_sprite(index,
+                                    {self, static_cast<std::uint32_t>(slot),
+                                     resident.party_sprite_blocks.at(k), 1, 0,
+                                     static_cast<std::uint8_t>(slot), 1},
+                                    caller_sp);
                 put(a, 0, (word(a, 0) | 0x400U) & ~0x300U);
             } else {
                 throw MissingDependency({"event_party_member", 0x800a09a4, index, {}},

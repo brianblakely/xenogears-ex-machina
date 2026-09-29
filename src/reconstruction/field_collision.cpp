@@ -447,6 +447,7 @@ LayerFloor query_layer_floor(std::span<const std::uint8_t> component,
     const auto candidate = pack_collision_xz(x, z);
     const auto origin =
         pack_collision_xz(s32(read(actor, 0x20)) >> 16, s32(read(actor, 0x28)) >> 16);
+    result.locals = LayerFloorLocals{x, z, origin};
     const auto mask =
         ((read(actor, 4) >> ((u32(layer) + 3U) & 31U)) & 1U) == 0 && attribute_control == 0
             ? 0xffffffffU

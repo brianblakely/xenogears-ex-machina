@@ -845,7 +845,10 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
             select_sprite_animation(sprite, animation, environment, sources);
             put(sprite.bytes, 0x10, motion);
             put(sprite.bytes, 0x9e, 0, 2);
-            return commands + execute_sprite_commands(sprite, environment, sources);
+            auto nested = sources;
+            if (nested.replay_entry_sp)
+                *nested.replay_entry_sp -= 0x28; // 800248dc: the retained outer replay frame
+            return commands + execute_sprite_commands(sprite, environment, nested);
         } else if (opcode == 0x81) {
             put(sprite.bytes, 0x9e, 0, 2);
             invoke_sprite_callback(sprite, sources);
@@ -998,8 +1001,26 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
                     "Interrupted sprite upload has no represented continuation");
             require_recovered(static_cast<bool>(services.release),
                               "Sprite upload release service is not connected");
+            require_recovered(sources.replay_entry_sp.has_value(),
+                              "Sprite upload requires its recovered original replay caller SP");
+            require_source((*sources.replay_entry_sp & 0x1fffffffU) >= 0xb0 &&
+                               (*sources.replay_entry_sp & 0x1fffffffU) <= 0x200000,
+                           "The original replay caller stack must fit its frames in RAM");
             state.outer_stack = allocation(services.allocate, 8192, 0, 0x8001fe68);
             const auto operand = pointer + 1;
+            // 8001fbe4's 88h frame below 800248d4's 28h frame is saved
+            // before FC switches stacks. 8001fb30 then saves S0 (the outer
+            // block) and its return PC in its 28h frame on that block.
+            const auto command_sp = *sources.replay_entry_sp - 0x28 - 0x88;
+            put(state.outer_stack.bytes, 0x1f00, command_sp);
+            put(state.outer_stack.bytes, 0x1ef4, state.outer_stack.address);
+            put(state.outer_stack.bytes, 0x1ef8, 0x8001fec8);
+            // 80031bdc's 28h frame under 8001fb30: caller word, S0, S1,
+            // and RA. 800320e8 later replaces only RA at the same address.
+            put(state.outer_stack.bytes, 0x1ebc, (0x8001fb40U & 0x1ffffffU) >> 2U);
+            put(state.outer_stack.bytes, 0x1ec4, state.outer_stack.address);
+            put(state.outer_stack.bytes, 0x1ec8, operand);
+            put(state.outer_stack.bytes, 0x1ecc, 0x8001fb48);
             auto delta = resource(sources, operand, 3);
             if (delta & 0x800000U)
                 delta |= 0xff000000U;
@@ -1008,11 +1029,13 @@ std::uint32_t execute_sprite_commands(SpriteWindow sprite, SpriteEnvironment &en
             state.x = static_cast<std::int16_t>(signed_half(get(sprite.bytes, binding + 4, 2)));
             state.y = static_cast<std::int16_t>(signed_half(get(sprite.bytes, binding + 6, 2)));
             state.inner_stack = allocation(services.allocate, 8192, 1, 0x8001fb40);
+            put(state.inner_stack.bytes, 0x1f00, state.outer_stack.address + 0x1efc - 0x28);
             // 8001fb70: 8002dde4's three stack arguments (zero) above the
             // switched stack pointer (+1efc).
             std::fill_n(state.inner_stack.bytes.begin() + 0x1f0c, 12, std::uint8_t{0});
             static_cast<void>(upload_sprite_images(state.resource, state.x, state.y, sources,
                                                    services.upload_image));
+            put(state.outer_stack.bytes, 0x1ecc, 0x8001fb90); // 800320f4's saved RA
             services.release(state.inner_stack.address);
             state.inner_stack = {};
             services.release(state.outer_stack.address);

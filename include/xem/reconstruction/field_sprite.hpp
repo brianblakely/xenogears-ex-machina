@@ -84,6 +84,10 @@ struct SpriteSources {
     SpriteModelState *models{};
     SpriteHeapControls *heap{};
     resident::Heap *allocator{}; // Tag, class and quiet flag of the next allocation.
+    // Original SP at the call of 800248d4, when its caller is recovered.
+    // FC's temporary heap stacks retain this source coordinate. Native host
+    // pointers and later captured stack images never supply it.
+    std::optional<std::uint32_t> replay_entry_sp{};
 };
 struct SpriteEnvironment {
     std::int32_t rate_control{};

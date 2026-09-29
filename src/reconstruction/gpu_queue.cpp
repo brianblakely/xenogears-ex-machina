@@ -63,7 +63,23 @@ std::int16_t clamp_extent(std::int16_t value, std::int16_t limit, bool inclusive
         return 0;
     return value > top ? top : value;
 }
+std::pair<std::uint32_t, std::size_t> gpu_stack_owner(const Program &program) {
+    if (program.menu_call_state)
+        return {program.menu_call_state->stack_base, program.menu_call_state->stack.size()};
+    if (program.menu && !program.menu->stack.empty())
+        return {program.menu->stack_base, program.menu->stack.size()};
+    throw MissingDependency({"gpu_enqueue", 0x8004668c, {}, {}}, "state:gpu-call-stack", false,
+                            "The original GPU caller has no qualified stack owner");
+}
 } // namespace
+
+void Program::gpu_stack_store(std::uint32_t address, std::uint32_t value, std::size_t width) {
+    const auto [base, size] = gpu_stack_owner(*this);
+    if (address < base || std::uint64_t{address - base} + width > size)
+        throw MissingDependency({"gpu_stack_store", 0x80046974, {}, {}}, "state:gpu-call-stack",
+                                false, "The original GPU callee frame crosses its qualified owner");
+    set_memory(address, value, width);
+}
 
 // 80046efc: a deadline 240 vertical blanks after VSync(-1).
 void Program::gpu_alarm(FrameServices *services) {
@@ -114,6 +130,38 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
                                   std::array<std::int16_t, 4> *rect, std::uint32_t size,
                                   std::uint32_t argument, FrameServices *services) {
     auto &gpu = resident.gpu;
+    const auto spill = [&](std::uint32_t address, std::uint32_t value) {
+        if (!gpu_enqueue_caller_)
+            return;
+        gpu_stack_store(address, value);
+    };
+    const auto queue_sp = gpu_enqueue_caller_ ? gpu_enqueue_caller_->sp - 0x28U : 0U;
+    const auto runner_caller = [&](std::uint32_t return_address) {
+        auto caller = gpu_enqueue_caller_;
+        if (caller) {
+            caller->sp = queue_sp;
+            caller->saved_registers[0] = parameter;
+            caller->saved_registers[1] = size;
+            caller->saved_registers[2] = argument;
+            caller->saved_registers[3] = operation;
+            caller->return_address = return_address;
+        }
+        return caller;
+    };
+    if (gpu_enqueue_caller_) {
+        const auto &caller = *gpu_enqueue_caller_;
+        // Source 80046690..800466ac saves the actual incoming S0..S3/RA.
+        for (std::uint32_t i = 0; i < 4; ++i)
+            spill(queue_sp + 0x10U + 4U * i, caller.saved_registers[i]);
+        spill(queue_sp + 0x20U, caller.return_address);
+        // The common alarm call (800466b0) enters 18h, then VSync enters 20h.
+        const auto alarm_sp = queue_sp - 0x18U;
+        spill(alarm_sp + 0x10U, 0x800466b8);
+        const auto vsync_sp = alarm_sp - 0x20U;
+        spill(vsync_sp + 0x10U, parameter);
+        spill(vsync_sp + 0x14U, size);
+        spill(vsync_sp + 0x18U, 0x80046f0c);
+    }
     gpu_alarm(services);
     while (((gpu.head + 1U) & 63U) == gpu.tail) {
         // 80046f30: the timeout path prints and resets the GPU.
@@ -121,7 +169,7 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
                 static_cast<std::int32_t>(resident.vsync_counter) ||
             0xf0000 < static_cast<std::int32_t>(gpu.polls++))
             gpu_print(0x80046fc8);
-        static_cast<void>(gpu_execute());
+        static_cast<void>(gpu_execute(nullptr, runner_caller(0x800466d8)));
     }
     // 8004b8bc(0): SetIntrMask returns the mask it replaces.
     const auto mask_register = resident.interrupts.registers[1];
@@ -139,6 +187,22 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
     if (gpu.queued == 0 || (gpu.head == gpu.tail && !dma_busy() && gpu.sync_callback == 0)) {
         // The GPUSTAT wait (80046780) has no recorded result; the GPU is
         // taken as ready at once.
+        struct LendOperation {
+            std::optional<FrameCallAbi> &slot;
+            std::optional<FrameCallAbi> previous;
+            ~LendOperation() { slot = previous; }
+        } lend{gpu_operation_caller_, gpu_operation_caller_};
+        if (gpu_enqueue_caller_) {
+            auto caller = *gpu_enqueue_caller_;
+            caller.sp = queue_sp;
+            caller.saved_registers[0] = parameter;
+            caller.saved_registers[1] = size;
+            caller.saved_registers[2] = argument;
+            caller.saved_registers[3] = operation;
+            caller.return_address = 0x800467a0; // Actual 80046798 jalr delay-slot call.
+            gpu_operation_caller_ = caller;
+        } else
+            gpu_operation_caller_.reset();
         static_cast<void>(gpu_operation(operation, parameter, rect, argument, services));
         gpu.current = {operation, parameter, argument};
         io_write(mask_register, gpu.enqueue_mask, 2);
@@ -174,7 +238,7 @@ std::int32_t Program::gpu_enqueue(std::uint32_t operation, std::uint32_t paramet
     // An interrupt recorded before the runner's first read was taken once
     // the mask was restored.
     deliver_leading_arrivals();
-    static_cast<void>(gpu_execute());
+    static_cast<void>(gpu_execute(nullptr, runner_caller(0x80046930)));
     return static_cast<std::int32_t>((gpu.head - gpu.tail) & 63U);
 }
 
@@ -186,8 +250,14 @@ void Program::gpu_wait_ready(std::uint32_t first, std::uint32_t again) {
 
 // 8004696c: run queued requests while DMA2 is idle; when the queue empties,
 // run the DrawSync callback once.
-std::uint32_t Program::gpu_execute(FrameServices *services) {
+std::uint32_t Program::gpu_execute(FrameServices *services, std::optional<FrameCallAbi> caller) {
     auto &gpu = resident.gpu;
+    const auto runner_sp = caller ? caller->sp - 0x18U : 0U;
+    if (caller) {
+        // 80046974..8004697c executes before the first DMA-status read.
+        gpu_stack_store(runner_sp + 0x10U, caller->saved_registers[0]);
+        gpu_stack_store(runner_sp + 0x14U, caller->return_address);
+    }
     const auto chcr = [&](std::uint32_t site) {
         deliver_due_arrivals();
         return (platform_read(resident.platform, site, 4) & busy) != 0;
@@ -207,6 +277,19 @@ std::uint32_t Program::gpu_execute(FrameServices *services) {
             const auto operation = get(queue, entry);
             const auto parameter = get(queue, entry + 4);
             const auto argument = get(queue, entry + 8);
+            struct LendOperation {
+                std::optional<FrameCallAbi> &slot;
+                std::optional<FrameCallAbi> previous;
+                ~LendOperation() { slot = previous; }
+            } lend{gpu_operation_caller_, gpu_operation_caller_};
+            if (caller) {
+                auto operation_caller = *caller;
+                operation_caller.sp = runner_sp;
+                operation_caller.saved_registers[0] = 0x800569c4; // 800469dc/800469e0
+                operation_caller.return_address = 0x80046ac8;     // Actual 80046ac0 jalr.
+                gpu_operation_caller_ = operation_caller;
+            } else
+                gpu_operation_caller_.reset();
             static_cast<void>(gpu_operation(operation, parameter, nullptr, argument, services));
             gpu.current = {get(queue, entry), get(queue, entry + 4), get(queue, entry + 8)};
             gpu.tail = (gpu.tail + 1U) & 63U;
@@ -311,6 +394,18 @@ std::int32_t Program::gpu_operation(std::uint32_t operation, std::uint32_t param
 // (8005a238) for the rectangle at `rect` in owned memory, clamped in place.
 void Program::clear_operation(std::uint32_t rect, std::uint32_t color, FrameServices *services) {
     auto &gpu = resident.gpu;
+    if (gpu_operation_caller_) {
+        const auto &caller = *gpu_operation_caller_;
+        const auto frame = caller.sp - 0x40U;
+        const auto [base, size] = gpu_stack_owner(*this);
+        if (frame + 0x30U < base || std::uint64_t{frame + 0x3cU - base} > size)
+            throw MissingDependency({"clear_operation", 0x80045e44, {}, {}}, "state:gpu-call-stack",
+                                    false, "The original clear frame crosses its qualified owner");
+        // 80045e4c..80045e54, reached only by the actual native operation branch.
+        set_memory(frame + 0x30U, caller.saved_registers[0]);
+        set_memory(frame + 0x34U, caller.saved_registers[1]);
+        set_memory(frame + 0x38U, caller.return_address);
+    }
     const auto w = clamp_extent(s16(memory(rect + 4, 2)), gpu.width, true);
     set_memory(rect + 4, static_cast<std::uint16_t>(w), 2);
     const auto h = clamp_extent(s16(memory(rect + 6, 2)), gpu.height, true);
@@ -398,6 +493,13 @@ void Program::put_draw_env(FrameServices &services, std::uint32_t environment) {
     const auto clip_w = s16(memory(e + 4, 2));
     const auto clip_h = s16(memory(e + 6, 2));
     const auto packet = e + 0x1c;
+    const auto environment_sp = gpu_enqueue_caller_ ? gpu_enqueue_caller_->sp - 0x40U : 0U;
+    if (gpu_enqueue_caller_) {
+        // SetDrawEnv2 8004574c runs before enqueue, on the wrapper's SP.
+        gpu_stack_store(environment_sp + 0x30U, packet);
+        gpu_stack_store(environment_sp + 0x34U, e);
+        gpu_stack_store(environment_sp + 0x38U, 0x80044ca0);
+    }
     set_memory(packet + 4, corner(0xe3000000U, clip_x, clip_y));
     set_memory(packet + 8,
                corner(0xe4000000U, s16(u32(clip_x + clip_w - 1)), s16(u32(clip_y + clip_h - 1))));
@@ -422,6 +524,14 @@ void Program::put_draw_env(FrameServices &services, std::uint32_t environment) {
         };
         const auto w = static_cast<std::uint32_t>(clamp(clip_w, gpu.width)) & 0xffffU;
         const auto h = static_cast<std::uint32_t>(clamp(clip_h, gpu.height)) & 0xffffU;
+        if (gpu_enqueue_caller_) {
+            // 80045808..800458a4: halfword rectangle locals. The tile
+            // branch subtracts then restores the offsets before returning.
+            gpu_stack_store(environment_sp + 0x10U, u32(clip_x), 2);
+            gpu_stack_store(environment_sp + 0x12U, u32(clip_y), 2);
+            gpu_stack_store(environment_sp + 0x14U, w, 2);
+            gpu_stack_store(environment_sp + 0x16U, h, 2);
+        }
         const auto rgb =
             memory(e + 0x1b, 1) << 16U | memory(e + 0x1a, 1) << 8U | memory(e + 0x19, 1);
         auto x = static_cast<std::uint32_t>(clip_x) & 0xffffU;
@@ -438,7 +548,9 @@ void Program::put_draw_env(FrameServices &services, std::uint32_t environment) {
     }
     set_memory(packet + 3, words, 1);
     set_memory(packet, memory(packet) | 0xffffffU);
-    static_cast<void>(gpu_enqueue(send_op, packet, nullptr, 0, 0, &services));
+    // 80044cac: a queued draw environment copies the complete 40h packet;
+    // later edits to the caller's environment cannot change that request.
+    static_cast<void>(gpu_enqueue(send_op, packet, nullptr, 0x40, 0, &services));
     for (std::uint32_t i = 0; i < gpu.draw_environment.size(); ++i)
         gpu.draw_environment[i] = static_cast<std::uint8_t>(memory(e + i, 1));
 }
@@ -538,10 +650,26 @@ void Program::put_disp_env(std::uint32_t environment) {
 
 // DrawSync(0) (800445d0) -> _sync (80046db4): run the queue (8004696c) until
 // it is empty, then wait for an idle GPU; the waits poll the alarm.
-void Program::draw_sync(FrameServices &services, const std::function<void()> &arrivals) {
+void Program::draw_sync(FrameServices &services, const std::function<void()> &arrivals,
+                        std::optional<FrameCallAbi> caller) {
     auto &gpu = resident.gpu;
     if (gpu.debug >= 2)
         gpu_print(0x800445f0);
+    const auto drain_sp = caller ? caller->sp - 0x18U - 0x18U : 0U;
+    if (caller) {
+        const auto draw_sp = caller->sp - 0x18U;
+        gpu_stack_store(draw_sp + 0x10U, caller->saved_registers[0]);
+        gpu_stack_store(draw_sp + 0x14U, caller->return_address);
+        // DrawSync(0) holds S0=0 when it enters the 18h _sync frame.
+        gpu_stack_store(drain_sp + 0x10U, 0);
+        gpu_stack_store(drain_sp + 0x14U, 0x80044628);
+        const auto alarm_sp = drain_sp - 0x18U;
+        gpu_stack_store(alarm_sp + 0x10U, 0x80046dcc);
+        const auto vsync_sp = alarm_sp - 0x20U;
+        gpu_stack_store(vsync_sp + 0x10U, 0);
+        gpu_stack_store(vsync_sp + 0x14U, caller->saved_registers[1]);
+        gpu_stack_store(vsync_sp + 0x18U, 0x80046f0c);
+    }
     gpu_alarm(&services);
     // 80046dd4: run queued requests until the queue empties; each pass
     // polls the alarm (80046f30), whose count the recorded result covers.
@@ -553,7 +681,13 @@ void Program::draw_sync(FrameServices &services, const std::function<void()> &ar
             arrivals();
         if (gpu.head == gpu.tail)
             break;
-        static_cast<void>(gpu_execute(&services));
+        auto runner_caller = caller;
+        if (runner_caller) {
+            runner_caller->sp = drain_sp;
+            runner_caller->saved_registers[0] = 0;
+            runner_caller->return_address = 0x80046ddc;
+        }
+        static_cast<void>(gpu_execute(&services, runner_caller));
         // 80046f30: on a timeout it prints, resets the GPU and DrawSync
         // returns -1.
         if (static_cast<std::int32_t>(gpu.deadline) <

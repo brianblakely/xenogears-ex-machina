@@ -31,8 +31,8 @@ std::uint32_t turn_toward(std::int32_t current, std::int32_t target, std::int32_
     return u32(value) & 0xfffU;
 }
 
-void build_view(Gte &gte, std::span<const std::int16_t> reciprocal, GteMatrix &m,
-                const GteLong &eye, const GteLong &target, const GteLong &up) {
+ViewLocals build_view(Gte &gte, std::span<const std::int16_t> reciprocal, GteMatrix &m,
+                      const GteLong &eye, const GteLong &target, const GteLong &up) {
     GteLong direction{}, above{};
     for (std::size_t i = 0; i < 3; ++i) {
         direction[i] = subtract(target[i], eye[i]) >> 16;
@@ -53,6 +53,7 @@ void build_view(Gte &gte, std::span<const std::int16_t> reciprocal, GteMatrix &m
     gte.transform.r = m.r; // ApplyMatrix loads the rotation only.
     for (std::size_t i = 0; i < 3; ++i)
         m.t[i] = s32(0U - u32(moved[i]));
+    return {moved, z, x, y, scaled};
 }
 
 } // namespace xem::reconstruction::field

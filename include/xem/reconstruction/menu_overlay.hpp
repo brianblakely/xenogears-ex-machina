@@ -71,25 +71,30 @@ class CardBios {
     // 80040534 B(32h) open(name, mode): V0 the file descriptor, -1 on
     // failure. Mode 1 read, 2 write, 3 both; 200h create with the block count
     // in bits 16-31.
-    virtual std::uint32_t open(std::string_view name, std::uint32_t mode) = 0;
+    virtual std::uint32_t open(std::uint32_t name_address, std::string_view name,
+                               std::uint32_t mode) = 0;
     // 80040544 B(34h) read(fd, buffer, count): V0 the bytes read or -1; the
     // bytes read are stored at the buffer (at most `count`).
-    virtual ReadResult read(std::uint32_t fd, std::uint32_t count) = 0;
+    virtual ReadResult read(std::uint32_t fd, std::uint32_t buffer, std::uint32_t count) = 0;
     // 80040554 B(35h) write(fd, buffer, count): V0 the bytes written or -1.
-    virtual std::uint32_t write(std::uint32_t fd, std::span<const std::uint8_t> bytes) = 0;
+    virtual std::uint32_t write(std::uint32_t fd, std::uint32_t buffer,
+                                std::span<const std::uint8_t> bytes) = 0;
     // 80040564 B(36h) close(fd): V0 fd, or -1.
     virtual std::uint32_t close(std::uint32_t fd) = 0;
     // 80040574 B(41h) format(device): V0 1 on success, 0 on failure.
-    virtual std::uint32_t format(std::string_view device) = 0;
+    virtual std::uint32_t format(std::uint32_t device_address, std::string_view device) = 0;
     // 80040584 B(42h) firstfile(pattern, dir) and 80040594 B(43h)
     // nextfile(dir): the first / next directory entry matching the pattern
     // (V0 is `dir`, the entry stored there) or none (V0 0).
-    virtual std::optional<DirectoryEntry> first_file(std::string_view pattern) = 0;
-    virtual std::optional<DirectoryEntry> next_file() = 0;
+    virtual std::optional<DirectoryEntry> first_file(std::uint32_t pattern_address,
+                                                     std::string_view pattern,
+                                                     std::uint32_t directory) = 0;
+    virtual std::optional<DirectoryEntry> next_file(std::uint32_t directory) = 0;
     // 800405a4 B(44h) rename(old, new) and 800405b4 B(45h) erase(name): V0
     // 1 on success, 0 on failure.
-    virtual std::uint32_t rename(std::string_view from, std::string_view to) = 0;
-    virtual std::uint32_t erase(std::string_view name) = 0;
+    virtual std::uint32_t rename(std::uint32_t from_address, std::string_view from,
+                                 std::uint32_t to_address, std::string_view to) = 0;
+    virtual std::uint32_t erase(std::uint32_t name_address, std::string_view name) = 0;
     // 800405c4 B(51h) Krom2RawAdd(code): V0 the BIOS ROM address of the
     // 16x15 Kanji-font glyph of Shift-JIS `code` (one halfword per row), -1
     // when the font has none. The menu then reads the glyph rows from ROM:
@@ -118,7 +123,7 @@ class Overlay : public resident::Memory {
     // below it. `services` supplies platform results of libgpu and VSync
     // calls; `card` the card BIOS (null when the path makes no card call).
     Overlay(Program &program, FrameServices &services, std::uint32_t stack_pointer,
-            CardBios *card = nullptr);
+            CardBios *card = nullptr, std::span<std::uint8_t> qualified_stack = {});
     ~Overlay() override;
     Overlay(const Overlay &) = delete;
     Overlay &operator=(const Overlay &) = delete;
@@ -145,8 +150,13 @@ class Overlay : public resident::Memory {
     void pass_position(bool deliver = true);
     // With `sound_positions` each entry of the menu sound 801c8574 is an
     // event (a capture that hooks it); otherwise the sound only catches up.
+    // An arrival after that entry waits until the effect has been computed.
     bool sound_positions = false;
     void entering_sound();
+    // With `payload_positions`, the qualified 801cb28c entry is a position.
+    // Arrivals before it run before the loaded play counter is restored;
+    // arrivals after it wait for the next delivery point.
+    bool payload_positions = false;
     // Events passed so far (positions and consumed service results).
     [[nodiscard]] std::uint32_t events() const;
 
@@ -178,11 +188,17 @@ class Overlay : public resident::Memory {
 
     // The stack below the entry stack pointer (stack_bytes of it) is memory
     // like any other: it keeps what earlier callees left there, starting from
-    // `image` (the entry image's bytes below SP, lowest address first; zeros
-    // when the host has none). The comparison excludes it; stale contents
-    // matter only where the original reads bytes it did not write.
+    // `image` (the entry image's bytes below SP, lowest address first).
+    // A connected caller supplies a borrowed view ending at entry SP, no
+    // larger than stack_bytes and bounded by its original heap ceiling.
+    // Callee frames beyond that owner stop; no missing byte is initialized.
+    // Do not move the Program or its call-state owner while the Overlay runs.
     static constexpr std::uint32_t stack_bytes = 0x4000;
     void set_stack_image(std::span<const std::uint8_t> image);
+    // S0..S7 at the selected entry. The recovered GPU wrappers retain the
+    // original saved-register stores: later name decoders copy the unwritten
+    // tail of a reused stack buffer into persistent game data.
+    void set_saved_registers(std::span<const std::uint32_t> registers);
     // Each overlay function enters its original stack frame (the size its
     // prologue subtracts from SP) for its duration, so that locals whose
     // address the original passes on lie where the original kept them.
@@ -197,6 +213,7 @@ class Overlay : public resident::Memory {
         Overlay &overlay_;
         std::uint32_t saved_sp_;
         std::uint32_t saved_size_;
+        std::array<std::uint32_t, 8> saved_registers_;
     };
     [[nodiscard]] StackFrame enter(std::uint32_t bytes) { return StackFrame(*this, bytes); }
     // The current function's frame: `frame(bytes)[offset]` is SP + offset
@@ -608,6 +625,8 @@ class Overlay : public resident::Memory {
     std::uint32_t frame_size_{};
     std::uint32_t entry_sp_;
     std::uint32_t game_start_{};
+    std::span<std::uint8_t> qualified_stack_;
+    std::array<std::uint32_t, 8> saved_registers_{};
     [[nodiscard]] std::uint8_t *stack_byte(std::uint32_t address) const;
     [[nodiscard]] std::uint8_t *menu_byte(std::uint32_t address, std::uint32_t width) const;
 };

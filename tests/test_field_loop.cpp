@@ -181,8 +181,10 @@ void stops() {
           "A transition stops at 800a5924");
     auto menu = sample();
     menu.field->control_inputs.jump_contact = 0x80;
+    for (auto &window : menu.field->dialogue)
+        window.set_half(0x3f6, 0xffff);
     menu.field->draw_buffer = 0;
-    check(stop([&] { menu.field_between_frames(none); }) == "symbol:field-menu-800799d4",
+    check(stop([&] { menu.field_between_frames(none); }) == "state:field-menu-call-abi",
           "A pending menu request stops at 800799d4");
     auto mouse = sample();
     mouse.resident.pad.buffers[1] = {0, 0x12};

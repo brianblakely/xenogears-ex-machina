@@ -11,27 +11,129 @@ manifest proofs are `defined`, and `review.exit_reviewers` is empty.
 
 ## Current checkout checkpoint
 
-The merged checkout inspected on 2026-09-25 contains substantial reconstruction
-beyond the latest published finding, EVID-REF-046. Existing C++ includes the field
+The final runnable source checkpoint is
+`.local/execution/p1-20260929-v7/`: release runner `176f17f2…`, authored source
+archive, comparison tool, bounded reviews and public check record are frozen
+with their hashes. The final gate passes all 42 CTests in each of debug,
+sanitizer and release, plus requirement-matrix, validator and formatting checks;
+the source allowlist contains 496 public files. V7 has not been compared against
+original execution. Its latest original evidence remains the V6 results below.
+
+The one supplemental save card capture completed at
+`.local/scenarios/p1shared-save-card-requests-20260929/capture/` with 577,385
+records and two snapshots. Its shared original menu entry/exit CPU, GTE, cycle
+and memory identities match the existing save route. It records 576,248 zero
+TestEvent returns, 88 successful returns and 32 writes requesting 8,192 bytes.
+The current aggregate-wait adapter does not reproduce that individual poll
+transcript. Full request/name/write/return comparison and qualified per-poll
+external results remain required; capture lineage alone is not BIOS fidelity.
+
+This checkpoint was authored with AI assistance using original evidence and
+existing independent recovery. The card analysis adapter additionally consulted
+the already reviewed pinned general-purpose core's `libpcsxcore/psxbios.c` for
+HLE argument preservation and observation-only synchronous offsets. No code was
+copied, no other Xenogears project was consulted, and no dependency was added.
+
+The session-end checkpoint on 2026-09-29 retains frozen release `71b1189c…`
+and its source/tool hashes in `.local/execution/p1-20260929-v6/freeze.json`.
+Its four complete isolated menu comparisons pass through their original returns:
+load has 925 matched boundaries, save 1,852, movie-transition 256 and Stereo
+1,066. These passes include exact owned bytes, original-write coverage, GTE
+controls, return values and recorded input consumption. They do not close the
+field caller, continuous card round trip or full global device request trace.
+
+The same frozen release's transition comparison still fails the first exit at
+frontend 5387 with 37 owned stack bytes and zero unowned writes; no continuous
+frame is accepted. Menu-actions advances to 886 exact entries, then stops on the
+decoder's read at `801c4ff8`; the capture contains no original menu return.
+These failures and their literal native outputs/initial-input hashes are retained
+under `.local/execution/p1-20260929-v6/reports/`.
+
+A separate unchanged-tool, exact-input replay of frozen v5 save now matches all
+1,852 entries and its original return. Independent review binds its retained
+native stdout and report under
+`.local/execution/p1-20260929-review/save-native-diagnosis/full-v5-replay/`.
+The stdout agrees with earlier diagnostic reruns. The old v5 report's computed
+byte 8 remains an unexplained historical inconsistency; it was not overwritten
+or used to justify a game-code change.
+
+The newer checkout recovers computed compass/GPU/floor caller locals and lets
+the shared memory reader access already resident-owned heap headers and held
+bytes. Card requests now retain ordered native arguments, names, write payloads
+and result provenance in a tested analysis adapter. These additions require a
+fresh frozen original replay; synthetic bounds/ownership tests are not original
+fidelity. Initial field-mode entry still stops explicitly at the first-screen
+dependency `800a77c4` from `80078d9c`. Existing movie conversion source and the
+shared initial-mode capture are qualified for the next recovery step; no partial
+initial-mode implementation was added during session shutdown.
+
+Resume with these concrete steps:
+
+1. Replay the new frozen checkout against the existing transition and
+   menu-actions captures, resolve the earliest remaining exact mismatch or
+   dependency, and qualify a captured original menu return.
+2. Reuse the recovered movie last-frame conversion in initial field entry,
+   reconstruct its actual mode/entry/helper caller state and cache service, then
+   compare initial-mode entry and consecutive frames from one initial image.
+3. Qualify the supplemental card request capture against the existing save
+   route, add expectation-side global request/payload comparison, and recover
+   missing poll/return behavior. Keep expectations out of native inputs.
+4. Connect the full frozen route and all ten required case/alternative records,
+   then complete the nine proof domains, readiness findings and independent exit
+   review. All 120 required Phase 1 facets remain open; Phase 2 has not begun.
+
+The merged checkout inspected on 2026-09-29 contains substantial reconstruction
+beyond the battle findings through EVID-REF-046. Existing C++ includes the field
 frame and main loop, loading/reloading and mode dispatch, sound ticks and
 interrupts, battle turn/menu/result steps, menu/card operations and movie paths.
 These are recovery work within Phase 1. Their presence does not establish a
 complete lifecycle or qualify the later private reports for acceptance.
 
-Preserve and rerun the existing reports before capturing or reimplementing:
+The current recovery connects the field menu caller `800799d4`, resident setup
+`8001c634` and dispatch `8001c1a8` to the shared menu overlay. Resident memory is
+borrowed live; code/resources transfer ownership and are released in original
+order. The qualified caller stack is imported only at the starting boundary and
+bounded above the original terminal heap header. Unsupported caller branches
+stop explicitly. Independent instruction/ownership review accepts this bounded
+source structure; original fidelity across the complete caller remains open.
+
+Strict comparison now checks persistent heap-stack and computed caller-stack
+bytes. Historical stack windows are diagnostic labels, not masks. The complete
+boundary/type count, original return, GTE, exact service consumption and runner
+status all participate in acceptance. Supplemental load positions are qualified
+against the same complete cold-boot scenario and deliver external interrupt
+arrivals before the actual payload computation; their RAM images are independent
+expectations only. Synthetic tests exercise these gates and failure cases.
+
+Preserve the existing reports before capturing or reimplementing:
 
 | Existing private checkpoint | Recorded result and limit |
 | --- | --- |
 | `.local/execution/p1music-reports/{dlg,dlg-after-music,walk,ret}.json` | The frozen `f699718` runner records 99, 48, 99 and 65 consecutive frames, all 618 entry/exit boundaries matching, with `supplied_state_bytes: 0`. These start from four separate original images; they are not a continuous full route. Current merged-source replay and independent methodology/source review remain required. |
-| `.local/execution/p1fieldov/reports-bca8d71/transition-chain.json` | The frozen `bca8d71` runner records 35 frames and 69 exact boundaries without intermediate state imports. Qualify the ordinary transition, source/resource lifetime, setup and readiness as one reviewed route extension. |
+| `.local/execution/p1fieldov/reports-bca8d71/transition-chain.json` | Historical 35-frame/69-boundary report. Its persistent stack mask concealed owned writes; it is not acceptance under the current strict contract. |
 | `.local/execution/p1-merge-frozen/reports/` | Per-call reports cover additional decoder/disc/interrupt/sound, battle turn and menu steps, defeat, menu items/equipment, save/load payloads, sound modes, movie decisions and transition stages. A report name or matched subset does not close its parent operation. Retain stops and unfinished presentation/results paths. |
 | `.local/execution/p1menuov/reports-v2/` | Whole-menu attempts remain failing or incomplete. `movie-transition` first differs at frontend run 1820, `sound-stereo` at 2630, `load` at 3391 and `save` at 8632. Each has a non-null `first_divergence` despite runner status `completed_boundary`. `menu-actions` matches 594 of 1,294 recorded frames before hardware-read ordering diverges. `encounter` and `save-card1-failure` match 504 and 2,201 recorded frame entries but exhaust platform input without an original return comparison. |
+| `.local/execution/p1-20260929-v3/reports/load.json` | Frozen release `7b1dfdb2…`: all 924 menu frame entries, one qualified apply-payload entry and the original return match. No memory/GTE/return divergence, unowned write or intermediate state import. The supplemental arrival position resolves the original timer-restore ordering; it supplies no payload result. |
+| `.local/execution/p1-20260929-v4/reports/load.json` | Frozen release `e8b1b993…` repeats the complete 925-boundary load-menu pass after correcting the caller-stack bound. This starts at the original menu entry; it does not prove field entry, the field menu caller or a continuous card round trip. |
+| `.local/execution/p1-20260929-v4/reports/transition-map23.json` | The strict, validly owned 35-frame attempt first differs at the initial frame exit, frontend run 5387: 105 owned caller-stack bytes and zero unowned writes. Source-derived released FC/upload-stack stores are implemented, but the earlier main-stack divergence must be recovered first. All 69 outputs are retained; none qualifies a matched continuous frame. |
+| `.local/execution/p1-20260929-v4/reports/menu-actions.json` | 594 of 1,294 frame entries match, then hardware-read order differs (`800406b0` requested while `8003e9c0` is next). No original menu exit is recorded. This is an incomplete prefix with `comparison_passed: false`. |
+| `.local/execution/p1-20260929-v5/reports/{load,movie-transition,sound-stereo}.json` | Frozen release `df14a14a…` matches the complete recorded 925, 256 and 1,066 boundary sequences respectively, including each original menu return, owned bytes and GTE controls, with exact recorded input consumption and no intermediate state imports. These are three isolated menu entries, not a continuous field/menu/media route or full card filesystem equivalence. |
+| `.local/execution/p1-20260929-v5/reports/transition-map23.json` | Source-derived main-frame/GPU saves and six compass argument pointers reduce the initial frontend 5387 divergence to 81 owned caller-stack bytes, with zero unowned writes. All 35 frames/69 outputs are retained; zero boundaries match. |
+| `.local/execution/p1-20260929-v5/reports/menu-actions.json` | The source-qualified sound-entry ordering fix advances the exact prefix to 820 of 1,294 entries, then stops on the repeated block-release ownership dependency. No original exit is available. The failed status remains `comparison_passed: false` even though the matched prefix has no memory divergence. |
+| `.local/execution/p1-20260929-v5/reports/save.json` | All 1,852 entries and the original return execute, but a one-byte owned mismatch first appears at frontend 8308 after 1,089 matched entries. Zero unowned writes does not qualify this save call; its comparison fails. |
 
 The whole-menu report's runner status is an execution outcome, not comparison
 acceptance. Inspect `first_divergence`, expected versus matched boundaries,
 platform-input consumption and the original return. A truncated capture, exhausted
 service input or successful subprocess cannot qualify a complete menu lifecycle.
 Do not overwrite these historical reports when rerunning the merged source.
+
+Recorded card results are qualified external inputs consumed per BIOS result
+kind. They do not compare one global request trace, every filename/descriptor,
+discarded return, card-write payload or filesystem side effect. Service queues
+likewise count their recorded results per service type. The bounded image
+comparisons do not establish complete BIOS/device traffic or a card round trip.
+Those source and execution obligations remain in Phase 1.
 
 | Slice proof domain | Remaining required work on the frozen route |
 | --- | --- |
@@ -40,7 +142,7 @@ Do not overwrite these historical reports when rerunning the merged source.
 | Script execution | Qualify the existing disassembler and every instruction, branch, typed operand, scheduler/wait, dialogue control, trigger and resumed side effect reached by the complete route and alternatives. Base-route per-call agreement in EVID-REF-042 does not cover remaining source-only branches or all dialogue controls. |
 | Field behavior | Rerun and review the existing continuous frame and ordinary transition paths, then connect actual initialization, all required walking/running/jumping/collision/camera/interaction boundaries and full return. Close action eligibility and readiness; retain the complete movement-alternatives requirement. |
 | Encounter and return | Qualify and connect existing turn scheduler, input/target selection, escape, defeat and result steps beyond the EVID-REF-043/046 per-call subset. Finish required screen contents, formulas/AI branches, cleanup and return readiness. The HP-reduced defeat probe described in `analysis/formats/battle-actions.md` is an analysis probe, not ordinary progression or a reviewed setup contract. |
-| Menu and persistence | Resolve the whole-menu mismatches and input-order stops above; connect field caller, menu ownership, inventory/equipment and actual card save/load round trip, checksum and failure cases. Payload comparisons and matched prefixes do not prove the complete card/menu lifecycle. |
+| Menu and persistence | The reviewed field caller is connected and the bounded load-menu call passes. Resolve remaining menu input-order stops and qualify the caller/cleanup with actual inventory/equipment and card save/load round trip, checksum and failure cases. Per-entry images and matched prefixes do not prove the complete card/menu lifecycle. |
 | Required media | Qualify existing music/sample/effect, sound-mode and movie reconstruction, including complete lifetimes, ordinary FMV trigger/framing/completion and return to gameplay. Matched Mono/Stereo/Wide parameter calls do not establish the required matched unprocessed signals, panning/polarity/reverb/master/streamed-FMV routing or Wide playback model. |
 | Time and services | Rerun and review the existing controller, disc, GPU, sound-tick and interrupt implementation with qualified external inputs and exact ordering. Extend the EVID-REF-044 hardware-intent census to required paths; distinguish logical cadence and readiness from HLE frontend counts and hardware timing. |
 | Reproducibility and remainder | Freeze and independently review the entire route and all ten required extension/case records, publish qualified findings for accepted WIP, reconcile the source/format/opcode/content inventory and complete source-qualified Phase 4 ownership. All Phase 1 facets and integrated acceptance remain open. |
@@ -51,7 +153,9 @@ alternatives and proof obligations. Every row above is still open.
 Agent-state recovery must identify resident versus mode-local ownership, valid
 actions and disabled reasons, menu/dialogue control, spawn/transition
 preconditions and subsystem initialization. Source-correlated C++ fields are a
-starting point; the required findings must separately establish assets available,
+starting point; the [bounded ownership/readiness finding](../analysis/formats/readiness-and-ownership.md)
+records source distinctions and original counterexamples to a universal map
+marker. The required findings must separately establish assets available,
 map initialized, event completion, actionable dialogue/menu, battle readiness and
 player-control readiness. The existing guarded field adapter proves only its
 documented map initialization. No native Phase 2 API or readiness claim follows
@@ -64,11 +168,25 @@ instruction and content obligation to a source-qualified Phase 4 owner. Preserve
 that distinction when updating `analysis/recovery.json` and the content inventory:
 required slice gaps stay in Phase 1, and each outside-slice remainder needs source
 identity/coordinates, evidence, a Phase 4 facet and a next experiment. The
-inventory validator currently reports valid structure with 659 incomplete entries
-(8 symbol, 10 format, 14 behavior and 627 instruction entries), not complete
+inventory validator currently reports valid structure with 661 incomplete entries
+(8 symbol, 10 format, 16 behavior and 627 instruction entries), not complete
 discovery or acceptance.
 
+The source-qualified Phase 4 records now use the current world-map and minigame
+facet owners and include full-content remainder for field 290 and Disc 2 field
+15. Existing shared-loader/interpreter and held-out comparisons remain Phase 1.
+Required movie routes return to field 4 and sound-mode routes return to field
+14; those used resources and paths remain within the required slice.
+
 ## Published findings and their original scope
+
+[EVID-REF-047](../analysis/findings/EVID-REF-047.json) records the bounded frozen
+load-menu pass, source-reviewed field caller/ownership, strict failed transition
+and menu-actions experiments, and selected readiness distinctions. Its passed
+scope is the 925-position load call and original return, including stack-derived
+bytes copied into persistent game data. It does not claim a complete caller-stack
+comparison for that isolated menu entry, continuous card round trip, full field
+caller fidelity or integrated Phase 1 acceptance.
 
 [EVID-REF-041](../analysis/findings/EVID-REF-041.json) moved connected comparison
 to complete memory images, and [EVID-REF-042](../analysis/findings/EVID-REF-042.json)

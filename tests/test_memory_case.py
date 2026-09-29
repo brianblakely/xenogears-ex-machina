@@ -20,6 +20,7 @@ from tools.analysis.memory_case import (
     pad_buffers,
     pairs,
     platform_inputs,
+    qualify_captures,
     qualify_disc_source,
     superseded_bytes,
     visible_registers,
@@ -28,6 +29,117 @@ from tools.analysis.memory_case import (
 
 
 class MemoryCaseTests(unittest.TestCase):
+    def test_frame_capture_lineage_rejects_mixed_execution_and_changed_evidence(self):
+        # Invented records prove qualification failures, not original fidelity.
+        row = {
+            "hook": "dispatch-entry",
+            "frontend_run": 10,
+            "cycle_u32": 100,
+            "subcycle_u32": 0,
+            "pc": 0x8004B9B4,
+            "code": 0,
+            "gpr_u32": [0] * 34,
+            "cop2_u32": [0] * 64,
+            "load_delay": {"select": 0, "registers": [0, 0], "values": [0, 0]},
+            "snapshot": {
+                "sequence": 0,
+                "ram_sha256": "synthetic-ram",
+                "scratchpad_sha256": "synthetic-scratch",
+                "io_sha256": "synthetic-io",
+            },
+        }
+        baseline = {
+            "source_profile": "na-slus-00664-39c547a9afc6",
+            "content_sha256": "synthetic-source",
+            "bios_sha256": "synthetic-bios",
+            "effective_options": {},
+            "initial_reference_state_sha256": None,
+            "inputs": [],
+            "frames": 11,
+            "final_state_sha256": "synthetic-final",
+            "audio_frames": 11,
+            "audio_sha256": "synthetic-audio",
+            "scenario": {
+                "program_sha256": "synthetic-program",
+                "cold_boot": True,
+                "complete": True,
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            image, other = Path(directory) / "image", Path(directory) / "other"
+
+            def emit(path, rows, metadata=baseline):
+                path.mkdir(exist_ok=True)
+                trace = "".join(json.dumps(item) + "\n" for item in rows).encode()
+                snapshot = b"invented snapshot payload"
+                (path / "instruction-trace.jsonl").write_bytes(trace)
+                (path / "instruction-trace-snapshots.bin").write_bytes(snapshot)
+                observation = dict(metadata)
+                observation["instruction_trace"] = {
+                    "failed": False,
+                    "budget_reached": False,
+                    "trace_sha256": hashlib.sha256(trace).hexdigest(),
+                    "snapshot_file": "instruction-trace-snapshots.bin",
+                    "snapshot_file_sha256": hashlib.sha256(snapshot).hexdigest(),
+                }
+                (path / "observation.json").write_text(json.dumps(observation))
+
+            emit(image, [row])
+            emit(other, [row])
+            qualified = qualify_captures(image, other, other)
+            self.assertIs(qualified["platform"], qualified["services"])
+            self.assertEqual(qualified["images"], qualified["platform"])
+            for key in ("cold_boot", "complete"):
+                emit(image, [row], dict(baseline, scenario={**baseline["scenario"], key: False}))
+                with self.assertRaisesRegex(ValueError, "complete cold-boot scenario"):
+                    qualify_captures(image, image, image)
+            emit(image, [row])
+            for key in ("cycle_u32", "subcycle_u32", "pc"):
+                changed = json.loads(json.dumps(row))
+                changed[key] += 1
+                emit(other, [changed])
+                with self.assertRaisesRegex(ValueError, "different shared hook"):
+                    qualify_captures(image, other, other)
+            for key in ("gpr_u32", "cop2_u32"):
+                changed = json.loads(json.dumps(row))
+                changed[key][2] += 1
+                emit(other, [changed])
+                with self.assertRaisesRegex(ValueError, "CPU or GTE"):
+                    qualify_captures(image, other, other)
+            changed = json.loads(json.dumps(row))
+            changed["snapshot"]["ram_sha256"] = "another-state"
+            emit(other, [changed])
+            with self.assertRaisesRegex(ValueError, "different shared snapshot"):
+                qualify_captures(image, other, other)
+            changed = json.loads(json.dumps(row))
+            del changed["snapshot"]
+            emit(other, [changed])
+            self.assertEqual(len(qualify_captures(image, other, other)["platform"]), 1)
+            emit(image, [row], dict(baseline, final_state_sha256=None))
+            with self.assertRaisesRegex(ValueError, "final original state and audio digests"):
+                qualify_captures(image, other, other)
+            emit(image, [row])
+            emit(other, [row, row])
+            with self.assertRaisesRegex(ValueError, "missing shared hooks"):
+                qualify_captures(image, other, other)
+            emit(other, [row], dict(baseline, audio_sha256="another-output"))
+            with self.assertRaisesRegex(ValueError, "audio_sha256"):
+                qualify_captures(image, other, other)
+            emit(other, [row])
+            (other / "instruction-trace.jsonl").write_text("changed")
+            with self.assertRaisesRegex(ValueError, "trace.*recorded digest"):
+                qualify_captures(image, other, other)
+            emit(other, [row])
+            (other / "instruction-trace-snapshots.bin").write_text("changed")
+            with self.assertRaisesRegex(ValueError, "snapshots.*recorded digest"):
+                qualify_captures(image, other, other)
+            emit(other, [row])
+            metadata = json.loads((other / "observation.json").read_text())
+            del metadata["instruction_trace"]["snapshot_file"]
+            (other / "observation.json").write_text(json.dumps(metadata))
+            with self.assertRaisesRegex(ValueError, "lack their file digest metadata"):
+                qualify_captures(image, other, other)
+
     def test_disc_service_binds_raw_bytes_and_capture_to_the_same_profile(self):
         # Invented source bytes exercise qualification, not original fidelity.
         data = b"synthetic raw sector source"

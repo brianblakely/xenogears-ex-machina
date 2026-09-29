@@ -430,11 +430,31 @@ void Program::field_history(std::size_t index) {
 // Field 80084a40: layer selection, position commit or rollback, vertical
 // integration and headroom, followed by the history store.
 std::int32_t Program::field_position(std::size_t index, std::int32_t linked_floor,
-                                     std::uint32_t link_status) {
+                                     std::uint32_t link_status,
+                                     std::optional<std::uint32_t> contact_sp) {
     auto &state = *field;
     auto &actor = state.actors.at(index);
     auto &a = actor.storage;
     auto &sprite = actor.sprite.sprite.bytes;
+    const auto position_sp = contact_sp ? *contact_sp - 0x100U : 0U;
+    const auto spill = [&](std::uint32_t address, std::uint32_t value, std::size_t width = 4) {
+        if (!contact_sp)
+            return;
+        if (!menu_call_state)
+            throw MissingDependency({"field_position", 0x80084a40, index, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The qualified position caller has no original stack owner");
+        const auto &call = *menu_call_state;
+        if (address < call.stack_base ||
+            std::uint64_t{address - call.stack_base} + width > call.stack.size())
+            throw MissingDependency({"field_position", 0x80084a40, index, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The original position or query frame crosses its owner");
+        set_memory(address, value, width);
+    };
+    // The only lent caller is 80084890: its live S7 is also the linked-floor
+    // argument. Other callers cannot infer their incoming S7 from that argument.
+    spill(position_sp + 0xf4U, u32(linked_floor)); // 80084a4c
     if (sprite.size() < 0xb4)
         throw field::FieldFormatError("Position integration requires the actor sprite");
     const bool controlled = static_cast<std::int32_t>(index) == state.controlled_actor;
@@ -453,6 +473,9 @@ std::int32_t Program::field_position(std::size_t index, std::int32_t linked_floo
     if (old_layer < 0 || old_layer >= 4)
         throw field::FieldFormatError("Unqualified original position layer");
     const auto old_x = word(a, 0x20), old_y = word(a, 0x24), old_z = word(a, 0x28);
+    spill(position_sp + 0x90U, old_x); // 80084b4c
+    spill(position_sp + 0x94U, old_y); // 80084b58
+    spill(position_sp + 0x98U, old_z); // 80084b64
     std::array<std::uint8_t, 8> old_triangles{};
     std::copy_n(a.begin() + 8, 8, old_triangles.begin());
     std::array<std::int32_t, 4> floors{}, uppers{}, ids{};
@@ -466,9 +489,18 @@ std::int32_t Program::field_position(std::size_t index, std::int32_t linked_floo
     std::int32_t completed = 0;
     for (std::int32_t layer = 0; layer < count; ++layer) {
         const auto slot = static_cast<std::size_t>(layer);
+        const auto query_sp = position_sp - 0x80U;
+        // 8007d3ec saves the position helper's unchanged S7 on every entry.
+        spill(query_sp + 0x74U, u32(linked_floor));
         const auto query =
             field::query_layer_floor(state.collision_component, resident.math.reciprocal, a, layer,
                                      state.party_processing_mode);
+        if (query.locals) {
+            spill(query_sp + 0x18U, u32(query.locals->x), 2); // 8007d460
+            spill(query_sp + 0x1aU, 0, 2);                    // 8007d490
+            spill(query_sp + 0x1cU, u32(query.locals->z), 2); // 8007d4a0
+            spill(query_sp + 0x48U, query.locals->origin);    // 8007d494
+        }
         if (query.normal)
             normals[slot] = *query.normal;
         if (query.triangle)
@@ -716,6 +748,22 @@ void Program::field_contact(std::size_t index) {
     auto &state = *field;
     auto &actor = state.actors.at(index);
     auto &a = actor.storage;
+    const auto spill = [&](std::uint32_t offset, std::uint32_t value) {
+        if (!field_frame_stack_ || !menu_call_state)
+            return;
+        // 800739c0 -> 8008110c -> 80084158: 48h/50h/c8h caller frames.
+        const auto frame = *field_frame_stack_ - 0x48U - 0x50U - 0xc8U;
+        const auto &call = *menu_call_state;
+        const auto address = frame + offset;
+        if (address < call.stack_base ||
+            std::uint64_t{address - call.stack_base} + 4 > call.stack.size())
+            throw MissingDependency({"field_contact", 0x80084158, index, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The original contact frame crosses its qualified owner");
+        set_memory(address, value);
+    };
+    // 80081384's completed actor loop leaves S2 at the original count.
+    spill(0xa8, static_cast<std::uint32_t>(state.actors.size())); // 80084188
     const auto cx = s16(u32(s32(word(a, 0x20) + word(a, 0x30)) >> 16));
     const auto cz = s16(u32(s32(word(a, 0x28) + word(a, 0x38)) >> 16));
     const auto y = s16(word(a, 0x26, 2));
@@ -726,6 +774,9 @@ void Program::field_contact(std::size_t index) {
     bool linked = false;
     std::uint32_t link_status = 0;
     std::int32_t linked_floor = 0x7fffffff;
+    // 80084238 guards this store with the positive original actor count.
+    // The controlled actor above proves it; the compass later retains its pad.
+    spill(0x88, 0xff3fffff); // 80084250
     for (std::size_t u = 0; u < state.actors.size(); ++u) {
         if (u == index)
             continue;
@@ -876,8 +927,12 @@ void Program::field_contact(std::size_t index) {
             put(extension, 8, u32(field::script_distance(dx, 0, dz, resident.math.square_root)), 2);
         }
     }
-    if ((word(a, 0) & 0x10000U) == 0 && (word(a, 4) & 0x200000U) == 0)
-        static_cast<void>(field_position(index, linked_floor, link_status));
+    if ((word(a, 0) & 0x10000U) == 0 && (word(a, 4) & 0x200000U) == 0) {
+        const auto contact_sp = field_frame_stack_ && menu_call_state
+                                    ? std::optional{*field_frame_stack_ - 0x48U - 0x50U - 0xc8U}
+                                    : std::nullopt;
+        static_cast<void>(field_position(index, linked_floor, link_status, contact_sp));
+    }
     if (s16(resource_word(state, word(actor.sprite.sprite.bytes, 0x7c) + 0xc, 2)) == 1) {
         // 800848d8: the input reset, then actor +0 bit 0800 is cleared.
         resident.input_queue.reset();

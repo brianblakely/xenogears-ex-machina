@@ -13,7 +13,7 @@ std::uint8_t *byte_at(std::map<std::uint32_t, std::vector<std::uint8_t>> &region
         if (address - found->first + std::uint64_t{size} <= found->second.size())
             return found->second.data() + (address - found->first);
     }
-    throw MenuError("Menu code reaches memory outside its owned regions");
+    return nullptr;
 }
 
 // Character record fields.
@@ -41,40 +41,85 @@ void play_sound(Menu &menu, std::uint32_t id) {
 } // namespace
 
 std::uint32_t MenuMemory::u8(std::uint32_t address) const {
-    return *byte_at(const_cast<MenuMemory *>(this)->regions, address, 1);
+    if (const auto *bytes = byte_at(const_cast<MenuMemory *>(this)->regions, address, 1))
+        return *bytes;
+    if (resident_memory)
+        return resident_memory->read(address, 1);
+    throw MenuError("Menu code reaches memory outside its owned regions");
 }
 std::uint32_t MenuMemory::u16(std::uint32_t address) const {
     const auto *bytes = byte_at(const_cast<MenuMemory *>(this)->regions, address, 2);
+    if (!bytes) {
+        if (resident_memory)
+            return resident_memory->read(address, 2);
+        throw MenuError("Menu code reaches memory outside its owned regions");
+    }
     return static_cast<std::uint32_t>(bytes[0] | bytes[1] << 8);
 }
 std::uint32_t MenuMemory::u32(std::uint32_t address) const {
     const auto *bytes = byte_at(const_cast<MenuMemory *>(this)->regions, address, 4);
+    if (!bytes) {
+        if (resident_memory)
+            return resident_memory->read(address, 4);
+        throw MenuError("Menu code reaches memory outside its owned regions");
+    }
     return static_cast<std::uint32_t>(bytes[0]) | static_cast<std::uint32_t>(bytes[1]) << 8 |
            static_cast<std::uint32_t>(bytes[2]) << 16 | static_cast<std::uint32_t>(bytes[3]) << 24;
 }
 void MenuMemory::put8(std::uint32_t address, std::uint32_t value) {
-    *byte_at(regions, address, 1) = static_cast<std::uint8_t>(value);
+    if (auto *bytes = byte_at(regions, address, 1))
+        *bytes = static_cast<std::uint8_t>(value);
+    else if (resident_memory)
+        resident_memory->write(address, value, 1);
+    else
+        throw MenuError("Menu code reaches memory outside its owned regions");
 }
 void MenuMemory::put16(std::uint32_t address, std::uint32_t value) {
     auto *bytes = byte_at(regions, address, 2);
+    if (!bytes) {
+        if (resident_memory) {
+            resident_memory->write(address, value, 2);
+            return;
+        }
+        throw MenuError("Menu code reaches memory outside its owned regions");
+    }
     bytes[0] = static_cast<std::uint8_t>(value);
     bytes[1] = static_cast<std::uint8_t>(value >> 8);
 }
 void MenuMemory::put32(std::uint32_t address, std::uint32_t value) {
+    if (!byte_at(regions, address, 4)) {
+        if (resident_memory) {
+            resident_memory->write(address, value, 4);
+            return;
+        }
+        throw MenuError("Menu code reaches memory outside its owned regions");
+    }
     put16(address, value & 0xffff);
     put16(address + 2, value >> 16);
 }
 std::span<std::uint8_t> MenuMemory::bytes(std::uint32_t address, std::uint32_t size) {
-    return {byte_at(regions, address, size), size};
+    if (auto *data = byte_at(regions, address, size))
+        return {data, size};
+    if (resident_tail) {
+        const auto data = resident_tail(address);
+        if (data.size() >= size)
+            return data.first(size);
+    }
+    throw MenuError("Menu code reaches memory outside its owned regions");
 }
 std::span<const std::uint8_t> MenuMemory::bytes(std::uint32_t address, std::uint32_t size) const {
-    return {byte_at(const_cast<MenuMemory *>(this)->regions, address, size), size};
+    return const_cast<MenuMemory *>(this)->bytes(address, size);
 }
 std::span<const std::uint8_t> MenuMemory::tail(std::uint32_t address) const {
     auto found = regions.upper_bound(address);
-    if (found == regions.begin() || (--found, address - found->first >= found->second.size()))
-        throw MenuError("Menu code reaches memory outside its owned regions");
-    return std::span<const std::uint8_t>(found->second).subspan(address - found->first);
+    if (found != regions.begin() && (--found, address - found->first < found->second.size()))
+        return std::span<const std::uint8_t>(found->second).subspan(address - found->first);
+    if (resident_tail) {
+        const auto bytes = resident_tail(address);
+        if (!bytes.empty())
+            return bytes;
+    }
+    throw MenuError("Menu code reaches memory outside its owned regions");
 }
 
 std::uint32_t apply_item_effect(Menu &menu, std::uint32_t tables, std::uint32_t character,

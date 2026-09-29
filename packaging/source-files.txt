@@ -65,6 +65,7 @@ analysis/findings/EVID-REF-043.json
 analysis/findings/EVID-REF-044.json
 analysis/findings/EVID-REF-045.json
 analysis/findings/EVID-REF-046.json
+analysis/findings/EVID-REF-047.json
 analysis/formats/active-motion.md
 analysis/formats/actor-defaults.md
 analysis/formats/battle-actions.md
@@ -86,6 +87,7 @@ analysis/formats/movement-sweep.md
 analysis/formats/music-loading.md
 analysis/formats/packed-field.md
 analysis/formats/planar-motion.md
+analysis/formats/readiness-and-ownership.md
 analysis/formats/rendering-behavior.md
 analysis/formats/service-boundaries.md
 analysis/formats/sound-modes.md
@@ -195,6 +197,8 @@ src/analysis/main.cpp
 src/analysis/mdec_codec.cpp
 src/analysis/mdec_codec.hpp
 src/analysis/memory_runner.cpp
+src/analysis/recorded_card.cpp
+src/analysis/recorded_card.hpp
 src/reconstruction/battle.cpp
 src/reconstruction/battle_ai.cpp
 src/reconstruction/battle_attack.cpp
@@ -229,6 +233,7 @@ src/reconstruction/field_init.cpp
 src/reconstruction/field_load.cpp
 src/reconstruction/field_loop.cpp
 src/reconstruction/field_media.cpp
+src/reconstruction/field_menu.cpp
 src/reconstruction/field_models.cpp
 src/reconstruction/field_motion.cpp
 src/reconstruction/field_move.cpp
@@ -338,6 +343,7 @@ tests/test_field_frame.cpp
 tests/test_field_gte.cpp
 tests/test_field_loop.cpp
 tests/test_field_media.cpp
+tests/test_field_menu.cpp
 tests/test_field_motion.cpp
 tests/test_field_movie.cpp
 tests/test_field_reload.cpp
@@ -355,6 +361,7 @@ tests/test_inventory_records.py
 tests/test_jump_physics.py
 tests/test_media_survey.py
 tests/test_memory_case.py
+tests/test_memory_case_lifecycle.py
 tests/test_memory_sampler.py
 tests/test_menu.cpp
 tests/test_menu_overlay.cpp
@@ -372,6 +379,7 @@ tests/test_planar_motion.py
 tests/test_position.py
 tests/test_program.cpp
 tests/test_projection_records.py
+tests/test_recorded_card.cpp
 tests/test_recovery.py
 tests/test_reference.py
 tests/test_reference_iso.py

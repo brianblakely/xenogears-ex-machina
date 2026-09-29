@@ -252,7 +252,7 @@
             "evidence": "EVID-REF-027"
           }
         ],
-        "complete_inventory": true,
+        "complete_inventory": false,
         "open_work": "Sector delivery and read-completion interrupts (8002a68c state machine and libcd callbacks) and the menu/save extensions remain; see the source-loading proof.",
         "route_reads": [
           {
@@ -1274,7 +1274,154 @@
             "destination": "0x8006faf8"
           }
         ],
-        "inventory_evidence": "EVID-REF-047: every CD Setloc on the frozen route (57), all 42 single-file reads (800295d8), 8 list reads (80029afc) with their sorted entries, 2 ring reads (80029eb0), all 50 packed-block decodes (80032eb4) and every heap allocation/release, frames 0-11400."
+        "inventory_evidence": "Existing route_reads, list/ring entries and embedded packed sources describe the frozen base route only. No published independently reviewed source-inventory finding or hash-qualified private aggregate establishes the previously asserted complete counts or every allocation/release. EVID-REF-047 is bounded menu-load/caller evidence and does not establish this inventory. Full source/read/decode/ownership reconciliation across every required extension remains open.",
+        "inventory_scope": "Partial base-route worklist; not complete first-slice inventory or continuous lifecycle evidence.",
+        "required_extension_source_contexts": [
+          {
+            "id": "required-field4-movie-transition",
+            "required_obligation": "movie-transition-skip",
+            "owner_phase": 1,
+            "source_profile": "na-slus-00664-39c547a9afc6",
+            "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+            "boot_executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+            "original_field_selector": 4,
+            "source_pair": [
+              {
+                "slot": 614,
+                "source_lba": 121638,
+                "source_sector_count": 4,
+                "projected_bytes": 6624,
+                "projection_unit": 2048,
+                "projection_sha256": "bc36e949ec3e4c222ca886379ffe23f4827599a3245514836c94537e10c05ea0",
+                "all_projected_bytes_zero": false,
+                "following_sector_gap": 0
+              },
+              {
+                "slot": 615,
+                "source_lba": 121642,
+                "source_sector_count": 248,
+                "projected_bytes": 507904,
+                "projection_unit": 2048,
+                "projection_sha256": "15f3daee03310e5ce6630e01e217e15729ecd717007a9c57d055eb40069d40a2",
+                "all_projected_bytes_zero": false,
+                "following_sector_gap": 0
+              }
+            ],
+            "shared_field_overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+            "shared_field_overlay_load_address": "0x8006faf0",
+            "observed_loaded_components": [
+              {
+                "component": 1,
+                "source_offset": 648,
+                "logical_bytes": 1184,
+                "logical_sha256": "421cad615dfb49e3bb3becb33524d8eb1ee07ab5df43d739b5fed56869fe28aa",
+                "pointer_global": "0x800afb18",
+                "observed_load_address": "0x80109b0c",
+                "captured_bytes_match_original_logical_source": true
+              },
+              {
+                "component": 5,
+                "source_offset": 2532,
+                "logical_bytes": 7508,
+                "logical_sha256": "095e4ca89075f4f41f542e0eca63e07b690b41b4986d4604678e687418349b23",
+                "pointer_global": "0x800adbf8",
+                "observed_load_address": "0x801075a4",
+                "captured_bytes_match_original_logical_source": true
+              },
+              {
+                "component": 7,
+                "source_offset": 5224,
+                "logical_bytes": 1996,
+                "logical_sha256": "af968fc40cead1911890dd3acc534996d9b99fa349fce1bc670e247f6ef58911",
+                "pointer_global": "0x800adbf0",
+                "observed_load_address": "0x80109328",
+                "captured_bytes_match_original_logical_source": true
+              }
+            ],
+            "observed_event_actor_count": 14,
+            "observed_event_bytecode_bytes": 6480,
+            "observed_event_bytecode_base": "0x801079a8",
+            "original_capture": {
+              "path": ".local/scenarios/p1cov-movie-transition-v1/final.ram",
+              "sha256": "4ac7d9f4d59f82da0196b16091e67aebb5dc36d6f2fbdd9eed43cba124535b9d"
+            },
+            "original_census_route": "movie-transition",
+            "qualification_artifact": ".local/execution/p1-20260929-review/phase4-remainder-source-qualification-20260929.json",
+            "scope": "Required Phase 1 field context observed in an immutable original media/audio extension capture. Exact original source-pair identity and loaded logical collision/event/message components are qualified. These observations do not prove complete script semantics, second-resource streaming destinations/lifetime, original media/audio triggers/routing, continuous loading/cleanup or semantic readiness. No content, shared source or required alternative is assigned to Phase 4."
+          },
+          {
+            "id": "required-field14-sound-stereo",
+            "required_obligation": "sound-stereo-wide-mono",
+            "owner_phase": 1,
+            "source_profile": "na-slus-00664-39c547a9afc6",
+            "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+            "boot_executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+            "original_field_selector": 14,
+            "source_pair": [
+              {
+                "slot": 634,
+                "source_lba": 123064,
+                "source_sector_count": 16,
+                "projected_bytes": 31536,
+                "projection_unit": 2048,
+                "projection_sha256": "effa431ffd4cf8c547924c3523666891e7b036ebdb5ba859fc218e441cd7a1fd",
+                "all_projected_bytes_zero": false,
+                "following_sector_gap": 0
+              },
+              {
+                "slot": 635,
+                "source_lba": 123080,
+                "source_sector_count": 166,
+                "projected_bytes": 339968,
+                "projection_unit": 2048,
+                "projection_sha256": "9943ab462c3e6924e514345dc836d85b40dfb63afca3683afe1500555af5a7b2",
+                "all_projected_bytes_zero": false,
+                "following_sector_gap": 0
+              }
+            ],
+            "shared_field_overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+            "shared_field_overlay_load_address": "0x8006faf0",
+            "observed_loaded_components": [
+              {
+                "component": 1,
+                "source_offset": 1240,
+                "logical_bytes": 6240,
+                "logical_sha256": "8b6f708bfda64c9ee7bd09b5578633f8d19bbc011ea0ee92d28958c522467ac8",
+                "pointer_global": "0x800afb18",
+                "observed_load_address": "0x801110bc",
+                "captured_bytes_match_original_logical_source": true
+              },
+              {
+                "component": 5,
+                "source_offset": 27800,
+                "logical_bytes": 4884,
+                "logical_sha256": "3793c3d1851bf1b4e76bac562b352b53c77bf626bab75ceced850830f25e6caf",
+                "pointer_global": "0x800adbf8",
+                "observed_load_address": "0x8010f940",
+                "captured_bytes_match_original_logical_source": true
+              },
+              {
+                "component": 7,
+                "source_offset": 30656,
+                "logical_bytes": 1031,
+                "logical_sha256": "8c6a6045901d571013be96d94dfaad61184dc6b377fc66381981c0dee981e947",
+                "pointer_global": "0x800adbf0",
+                "observed_load_address": "0x80110c9c",
+                "captured_bytes_match_original_logical_source": true
+              }
+            ],
+            "observed_event_actor_count": 22,
+            "observed_event_bytecode_bytes": 3344,
+            "observed_event_bytecode_base": "0x8010ff44",
+            "original_capture": {
+              "path": ".local/scenarios/p1cov-sound-stereo-v1/final.ram",
+              "sha256": "952929bdf9b1d08ef36016a9d4f2ff02feb076da60b8ae5153b479d3f77d8604"
+            },
+            "original_census_route": "sound-stereo",
+            "qualification_artifact": ".local/execution/p1-20260929-review/phase4-remainder-source-qualification-20260929.json",
+            "scope": "Required Phase 1 field context observed in an immutable original media/audio extension capture. Exact original source-pair identity and loaded logical collision/event/message components are qualified. These observations do not prove complete script semantics, second-resource streaming destinations/lifetime, original media/audio triggers/routing, continuous loading/cleanup or semantic readiness. No content, shared source or required alternative is assigned to Phase 4."
+          }
+        ]
       },
       "source_coordinates": {
         "contact_function": "field 0x8008399c",
@@ -1632,6 +1779,22 @@
         {
           "finding": "EVID-REF-038",
           "scope": "Reusable retail CD ring methods connect to field music source. One allocation, 96 queries and 83 releases compare exactly. Heap internals, CD producers, resident audio and complete media alternatives remain required."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
+        },
+        {
+          "finding": "EVID-REF-043",
+          "scope": "Qualified battle/post-battle sources and per-call memory/RNG agreement for four party physical attacks, four knockouts, six alive-mask updates, 2080 ATB ticks, four reloads and victory rewards/experience/level-up/write-back. Enemy AI, other formulas, defeat/escape, complete result screens and connected return remain outside this finding; gold/drop additions are source/synthetic only."
+        },
+        {
+          "finding": "EVID-REF-045",
+          "scope": "Per-call file-read chain for all 42 frozen-route calls: 39 exact returns (three need bracketed interrupt attribution) and three explicit waits for the previous read completion. File/directory/ring/request/CD setup is reconstructed through the controller boundary. Sector delivery, completion interrupts, register-traffic fidelity and the continuous resource lifecycle remain outside this finding."
+        },
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Bounded continuous menu-load overlay call from one qualified original entry image: 924 recorded frame entries plus one apply-payload entry and the original return match, with zero intermediate state imports and exact owned/retained heap and persistent stack-derived bytes. The actual field800799d4/resident8001c634/8001c1a8 caller is connected and independently source/ownership-reviewed only; its initial owned transition attempt fails at frontend5387 with105 caller-stack mismatches. Complete boot/loading/initialization/field-menu lifetime and required alternative paths remain unproved."
         }
       ]
     },
@@ -1694,6 +1857,14 @@
         {
           "finding": "EVID-REF-036",
           "scope": "Reviewed reusable factory source compares all 19 supported actor factories, bounds and empty task passes. Six required NPC factories and nonempty tasks remain explicit frontiers; full construction/lifetime/readiness is incomplete."
+        },
+        {
+          "finding": "EVID-REF-041",
+          "scope": "Historical per-call complete-memory comparison: 2585/2589 frozen-route field updates and move phases match, with four explicit FC/75 dependency stops per entry; every held-out call and the return checkpoint pass match. EVID-REF-042 later closes those observed stops. No continuous lifecycle, scratchpad, actor readiness or full-domain claim."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
         }
       ]
     },
@@ -1752,6 +1923,18 @@
         {
           "finding": "EVID-REF-033",
           "scope": "Only ready 7F and unequal 86 are original-execution-validated. Pending waits, equality, variable operands and malformed/wrap cases are source/synthetic. Complete encounter/return/readiness remains required."
+        },
+        {
+          "finding": "EVID-REF-041",
+          "scope": "Historical per-call complete-memory comparison: 2585/2589 frozen-route field updates and move phases match, with four explicit FC/75 dependency stops per entry; every held-out call and the return checkpoint pass match. EVID-REF-042 later closes those observed stops. No continuous lifecycle, scratchpad, actor readiness or full-domain claim."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
+        },
+        {
+          "finding": "EVID-REF-046",
+          "scope": "Alternative enemy-turn input: all 20 AI runs and 24 commits, including nine formula-type-3 actions, match exact per-call memory/RNG. Escape input: 619 ATB ticks, two reloads, alive update, 342 allocations/516 releases and 234 field event/move/update calls plus checkpoint pass match. Escape decision, defeat, turn/menu/frame/result lifecycles remain unproved here; unhandled AI/formula branches stop explicitly."
         }
       ]
     },
@@ -1806,6 +1989,22 @@
         {
           "finding": "EVID-REF-032",
           "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-041",
+          "scope": "Historical per-call complete-memory comparison: 2585/2589 frozen-route field updates and move phases match, with four explicit FC/75 dependency stops per entry; every held-out call and the return checkpoint pass match. EVID-REF-042 later closes those observed stops. No continuous lifecycle, scratchpad, actor readiness or full-domain claim."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
+        },
+        {
+          "finding": "EVID-REF-046",
+          "scope": "Alternative enemy-turn input: all 20 AI runs and 24 commits, including nine formula-type-3 actions, match exact per-call memory/RNG. Escape input: 619 ATB ticks, two reloads, alive update, 342 allocations/516 releases and 234 field event/move/update calls plus checkpoint pass match. Escape decision, defeat, turn/menu/frame/result lifecycles remain unproved here; unhandled AI/formula branches stop explicitly."
+        },
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Source-only field-menu caller/cleanup ownership and selected original state observations distinguish assets, map markers, event completion, actionable UI, battle state and player-control handler eligibility. No universal readiness, spawn/setup or continuous field-to-menu fidelity is established. Strict initial transition exit frontend5387 has105 owned caller-stack mismatches; all required movement/transition/return/control conditions remain open."
         }
       ]
     },
@@ -1848,6 +2047,22 @@
         {
           "finding": "EVID-REF-036",
           "scope": "Reviewed reusable factory source compares all 19 supported actor factories, bounds and empty task passes. Six required NPC factories and nonempty tasks remain explicit frontiers; full construction/lifetime/readiness is incomplete."
+        },
+        {
+          "finding": "EVID-REF-041",
+          "scope": "Historical per-call complete-memory comparison: 2585/2589 frozen-route field updates and move phases match, with four explicit FC/75 dependency stops per entry; every held-out call and the return checkpoint pass match. EVID-REF-042 later closes those observed stops. No continuous lifecycle, scratchpad, actor readiness or full-domain claim."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
+        },
+        {
+          "finding": "EVID-REF-043",
+          "scope": "Qualified battle/post-battle sources and per-call memory/RNG agreement for four party physical attacks, four knockouts, six alive-mask updates, 2080 ATB ticks, four reloads and victory rewards/experience/level-up/write-back. Enemy AI, other formulas, defeat/escape, complete result screens and connected return remain outside this finding; gold/drop additions are source/synthetic only."
+        },
+        {
+          "finding": "EVID-REF-046",
+          "scope": "Alternative enemy-turn input: all 20 AI runs and 24 commits, including nine formula-type-3 actions, match exact per-call memory/RNG. Escape input: 619 ATB ticks, two reloads, alive update, 342 allocations/516 releases and 234 field event/move/update calls plus checkpoint pass match. Escape decision, defeat, turn/menu/frame/result lifecycles remain unproved here; unhandled AI/formula branches stop explicitly."
         }
       ]
     },
@@ -1870,6 +2085,10 @@
         {
           "finding": "EVID-REF-027",
           "scope": "Reviewed core C++ event execution and connected loader/state documentation; qualified battle/menu C surveys and corrected shared calling context. Complete handler, return, combat, menu and persistence behavior remains open."
+        },
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Frozen release e8b1b993c81a066f8e5a08354d91d3ecc26f7c93ef5e9873993134d34c5e497b matches all925 load-menu positions (924 frame entries and one qualified apply-payload entry), original return/GTE, every owned byte/original-write coverage and complete supplied platform/service/card inputs, with supplied_state_bytes0. Expectations never enter intermediate execution. This is one continuous overlay call from a qualified entry, not ordinary cold-boot/field-caller/save-load round trip or complete card-failure/corrupt/no-data/return lifecycle. Menu-actions matches594/1294 entries then stops on hardware-read order with no original exit."
         }
       ]
     },
@@ -1896,6 +2115,10 @@
         {
           "finding": "EVID-REF-038",
           "scope": "Reusable retail CD ring methods connect to field music source. One allocation, 96 queries and 83 releases compare exactly. Heap internals, CD producers, resident audio and complete media alternatives remain required."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
         }
       ]
     },
@@ -1942,6 +2165,22 @@
         {
           "finding": "EVID-REF-027",
           "scope": "Connected Ghidra/source handoff, core event C++ with 81,527 original transitions and preserved position models with 4,385 complete calls. Initialization, remaining handlers/contact/return/menu/media, timing and full slice proof remain open."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
+        },
+        {
+          "finding": "EVID-REF-044",
+          "scope": "Hardware-intent census of six frozen-route windows: 34 of 86 qualified resident hardware-register entries hit, 72 final RAM/audio artifacts equal the uninstrumented route. Display/controller/disc/audio/interrupt service intent is identified; capped counts are lower bounds. No whole-route census, native service execution or hardware-timing proof."
+        },
+        {
+          "finding": "EVID-REF-045",
+          "scope": "Per-call file-read chain for all 42 frozen-route calls: 39 exact returns (three need bracketed interrupt attribution) and three explicit waits for the previous read completion. File/directory/ring/request/CD setup is reconstructed through the controller boundary. Sector delivery, completion interrupts, register-traffic fidelity and the continuous resource lifecycle remain outside this finding."
+        },
+        {
+          "finding": "EVID-REF-047",
+          "scope": "A separately qualified original apply-payload position resolves interrupt-before-timer-restore ordering inside the bounded925-position load call; all required external platform/service/card inputs are consumed. Strict owned stack and original-write attribution remain enforced. Source caller requires explicit BIOS critical-section/cache-intent services. No full BIOS/cache traffic, hardware cadence, all interrupt ordering or continuous route timing equivalence is established."
         }
       ]
     },
@@ -2020,6 +2259,34 @@
         {
           "finding": "EVID-REF-032",
           "scope": "Reviewed reusable C++ packed/event/collision parsing, actor defaults/RNG/floor queries and battle request integrated into the existing library with exact original subset comparisons. Complete domain and required remaining source/lifetime/readiness remain open."
+        },
+        {
+          "finding": "EVID-REF-041",
+          "scope": "Historical per-call complete-memory comparison: 2585/2589 frozen-route field updates and move phases match, with four explicit FC/75 dependency stops per entry; every held-out call and the return checkpoint pass match. EVID-REF-042 later closes those observed stops. No continuous lifecycle, scratchpad, actor readiness or full-domain claim."
+        },
+        {
+          "finding": "EVID-REF-042",
+          "scope": "Per-call original-entry memory agreement: all 2589 route updates and move phases, 2836 control/ramp calls, 1418 held-out calls, 413 event passes, 543 resident allocations, 263 releases, 11 music stops and the return checkpoint pass; exact return and GTE state with reviewed interrupt_superseded attribution. No continuous frames, interrupt execution, stream consumer or semantic readiness claim; unreached initialization branches remain source/synthetic."
+        },
+        {
+          "finding": "EVID-REF-043",
+          "scope": "Qualified battle/post-battle sources and per-call memory/RNG agreement for four party physical attacks, four knockouts, six alive-mask updates, 2080 ATB ticks, four reloads and victory rewards/experience/level-up/write-back. Enemy AI, other formulas, defeat/escape, complete result screens and connected return remain outside this finding; gold/drop additions are source/synthetic only."
+        },
+        {
+          "finding": "EVID-REF-044",
+          "scope": "Hardware-intent census of six frozen-route windows: 34 of 86 qualified resident hardware-register entries hit, 72 final RAM/audio artifacts equal the uninstrumented route. Display/controller/disc/audio/interrupt service intent is identified; capped counts are lower bounds. No whole-route census, native service execution or hardware-timing proof."
+        },
+        {
+          "finding": "EVID-REF-045",
+          "scope": "Per-call file-read chain for all 42 frozen-route calls: 39 exact returns (three need bracketed interrupt attribution) and three explicit waits for the previous read completion. File/directory/ring/request/CD setup is reconstructed through the controller boundary. Sector delivery, completion interrupts, register-traffic fidelity and the continuous resource lifecycle remain outside this finding."
+        },
+        {
+          "finding": "EVID-REF-046",
+          "scope": "Alternative enemy-turn input: all 20 AI runs and 24 commits, including nine formula-type-3 actions, match exact per-call memory/RNG. Escape input: 619 ATB ticks, two reloads, alive update, 342 allocations/516 releases and 234 field event/move/update calls plus checkpoint pass match. Escape decision, defeat, turn/menu/frame/result lifecycles remain unproved here; unhandled AI/formula branches stop explicitly."
+        },
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Frozen runner/source/tool and original-capture identities bind a reviewed925/925-position load call with zero supplied intermediate state, exact return/GTE/owned memory/write coverage and complete qualified input consumption. Independent bounded field-caller/ownership/readiness and comparison-methodology reviews are linked. Failed transition/frontend5387 and incomplete menu-actions594/1294 experiments remain failures; later source changes do not expand the frozen pass. All120 required facets, nine proofs, ten cases and integrated exit remain open; generic shared unknowns are not assigned to Phase4."
         }
       ]
     }
@@ -2959,11 +3226,82 @@
       "requirement": "world-map formats",
       "later_facets": [
         "P04-T02-F12",
-        "P04-T11-F01"
+        "P04-T10-F01"
       ],
       "status": "unresolved",
-      "next_experiment": "Independently recover world-map formats from source-qualified ordinary original scenarios before complete-game coverage.",
-      "owner_phase": 4
+      "next_experiment": "Reuse EVID-REF-009 original mode-3 source/entry correlations on both profiles; recover the terrain/object consumers, transport and location records, ordinary transitions and progression variants. The Kernel-entry observation proves neither valid world-map setup nor player-control readiness. This outside-slice recovery remains owned by Phase 4.",
+      "owner_phase": 4,
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "source_correlations": [
+        {
+          "source_profile": "na-slus-00664-39c547a9afc6",
+          "evidence": "EVID-REF-009",
+          "original_mode": 3,
+          "mode_table_address": "0x800180bc",
+          "entry_address": "0x80070cfc",
+          "bss": [
+            "0x8009bbb0",
+            "0x8009d80c"
+          ],
+          "source_record": {
+            "slot": 37,
+            "source_lba": 108995,
+            "source_sector_count": 46,
+            "projected_bytes": 92180,
+            "projection_unit": 2048,
+            "projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 180422,
+          "decoded_sha256": "4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70",
+          "consumed_source_bytes": 92180,
+          "bytes_consumed_beyond_candidate_length": 0,
+          "entry_window": {
+            "decoded_offset": 4620,
+            "bytes": 128,
+            "sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f",
+            "matches_captured_original_ram": true
+          },
+          "scope": "Original source and 128-byte entry-window correlation only; mode readiness, ordinary story access, complete formats and rules remain unresolved."
+        },
+        {
+          "source_profile": "na-slus-00669-5eab85c683d4",
+          "evidence": "EVID-REF-009",
+          "original_mode": 3,
+          "mode_table_address": "0x800180bc",
+          "entry_address": "0x80070cfc",
+          "bss": [
+            "0x8009bbb0",
+            "0x8009d80c"
+          ],
+          "source_record": {
+            "slot": 32,
+            "source_lba": 173307,
+            "source_sector_count": 46,
+            "projected_bytes": 92180,
+            "projection_unit": 2048,
+            "projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 180422,
+          "decoded_sha256": "4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70",
+          "consumed_source_bytes": 92180,
+          "bytes_consumed_beyond_candidate_length": 0,
+          "entry_window": {
+            "decoded_offset": 4620,
+            "bytes": 128,
+            "sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f",
+            "matches_captured_original_ram": true
+          },
+          "scope": "Original source and 128-byte entry-window correlation only; mode readiness, ordinary story access, complete formats and rules remain unresolved."
+        }
+      ]
     },
     {
       "id": "BACKLOG-P01-T11-F08",
@@ -2971,11 +3309,82 @@
       "requirement": "minigame rules",
       "later_facets": [
         "P04-T02-F31",
-        "P04-T14-F01"
+        "P04-T13-F01"
       ],
       "status": "unresolved",
-      "next_experiment": "Independently recover minigame rules from source-qualified ordinary original scenarios before complete-game coverage.",
-      "owner_phase": 4
+      "next_experiment": "Reuse EVID-REF-009 original mode-4 source/entry correlations and Bonus Battling/Practice/Tutorial/Exit observations; retain the five decoder bytes consumed beyond the 80284-byte logical resource as an explicit physical-boundary dependency. Recover ordinary access, valid setup/readiness, full actions, win/loss/retry and progression effects. This outside-slice recovery remains owned by Phase 4.",
+      "owner_phase": 4,
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "source_correlations": [
+        {
+          "source_profile": "na-slus-00664-39c547a9afc6",
+          "evidence": "EVID-REF-009",
+          "original_mode": 4,
+          "mode_table_address": "0x800180cc",
+          "entry_address": "0x80088e90",
+          "bss": [
+            "0x800925d0",
+            "0x8009b554"
+          ],
+          "source_record": {
+            "slot": 35,
+            "source_lba": 108893,
+            "source_sector_count": 40,
+            "projected_bytes": 80284,
+            "projection_unit": 2048,
+            "projection_sha256": "1449e55e665200c0d363938815ef23a77e53620228cb6b14ef5937f8f43ed3cf",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 142953,
+          "decoded_sha256": "3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea1575646e",
+          "consumed_source_bytes": 80289,
+          "bytes_consumed_beyond_candidate_length": 5,
+          "entry_window": {
+            "decoded_offset": 103328,
+            "bytes": 128,
+            "sha256": "fcc9ba349ab2a60638601ecf54767686230ffc333672ba26e88088437891514d",
+            "matches_captured_original_ram": true
+          },
+          "scope": "Original source and 128-byte entry-window correlation only; mode readiness, ordinary story access, complete formats and rules remain unresolved."
+        },
+        {
+          "source_profile": "na-slus-00669-5eab85c683d4",
+          "evidence": "EVID-REF-009",
+          "original_mode": 4,
+          "mode_table_address": "0x800180cc",
+          "entry_address": "0x80088e90",
+          "bss": [
+            "0x800925d0",
+            "0x8009b554"
+          ],
+          "source_record": {
+            "slot": 30,
+            "source_lba": 173205,
+            "source_sector_count": 40,
+            "projected_bytes": 80284,
+            "projection_unit": 2048,
+            "projection_sha256": "1449e55e665200c0d363938815ef23a77e53620228cb6b14ef5937f8f43ed3cf",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 142953,
+          "decoded_sha256": "3e6df915e9c7f05f5fb997cb331392f1333e867dfb2628cd65e5e1ea1575646e",
+          "consumed_source_bytes": 80289,
+          "bytes_consumed_beyond_candidate_length": 5,
+          "entry_window": {
+            "decoded_offset": 103328,
+            "bytes": 128,
+            "sha256": "fcc9ba349ab2a60638601ecf54767686230ffc333672ba26e88088437891514d",
+            "matches_captured_original_ram": true
+          },
+          "scope": "Original source and 128-byte entry-window correlation only; mode readiness, ordinary story access, complete formats and rules remain unresolved."
+        }
+      ]
     },
     {
       "id": "BACKLOG-SLICE-SOURCE-LOADING",
@@ -3057,6 +3466,251 @@
       "status": "unresolved",
       "next_experiment": "Complete original-source and observed-execution recovery for this required domain; see docs/phase1-slice-contract.md.",
       "proof": "P01-SLICE-REPRODUCIBILITY-REMAINDER"
+    },
+    {
+      "id": "BACKLOG-FIELD290-CONTENT",
+      "kind": "outside_slice",
+      "requirement": "Complete field-selector 290 content, event branches and progression on both exact disc profiles, outside the frozen first-slice routes.",
+      "later_facets": [
+        "P04-T02-F01",
+        "P04-T06-F03",
+        "P04-T06-F05",
+        "P04-T14-F01",
+        "P04-T14-F02"
+      ],
+      "status": "unresolved",
+      "owner_phase": 4,
+      "evidence": [
+        "EVID-REF-007",
+        "EVID-REF-011"
+      ],
+      "scope_basis": "EVID-REF-011 observes this distinct field selector through a separate original world-map-to-bridge input sequence on both discs. That content sequence is outside the frozen eighteen first-slice routes. Required first-slice field4/media, field14/sound, field22/save/transition and field23/encounter content, every shared source dependency, and all required alternatives remain in Phase 1. This assigns the field290-specific content; it does not defer shared field code or an unknown instruction family.",
+      "next_experiment": "Reuse the two immutable field290 captures and exact paired source images; recover its 45-actor/9512-byte event package, ordinary world-map/field entry preconditions, content branches and progression effects. Follow original scene data consumers and interactions, then compare complete lifecycle and return/control state without re-importing intermediate gameplay bytes. Semantic location name and retail progression validity remain unknown.",
+      "source_correlations": [
+        {
+          "source_profile": "na-slus-00664-39c547a9afc6",
+          "raw_track_sha256": "39c547a9afc6da15d847ef81a2c6cea1a6516bdfa562cf13b0999b04e8598bda",
+          "boot_executable_sha256": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+          "original_field_selector": 290,
+          "source_pair": [
+            {
+              "slot": 1186,
+              "source_lba": 167609,
+              "source_sector_count": 56,
+              "projected_bytes": 114596,
+              "projection_unit": 2048,
+              "projection_sha256": "ec2a4cc8e8f056b4344c552493b9f2f6de6323558a330ec08ecdb1a9520b7ec2",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            {
+              "slot": 1187,
+              "source_lba": 167665,
+              "source_sector_count": 247,
+              "projected_bytes": 505856,
+              "projection_unit": 2048,
+              "projection_sha256": "f93033e55e7b25cf6e14153c1fb5682b11b1daa2e4470d5407ca5b2be94d506a",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            }
+          ],
+          "shared_field_overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+          "shared_field_overlay_load_address": "0x8006faf0",
+          "observed_loaded_components": [
+            {
+              "component": 1,
+              "source_offset": 1576,
+              "logical_bytes": 6752,
+              "logical_sha256": "3454e90f792556731d97e940b71674c3e7b04e8b46e195b23d4b51991b13d4e1",
+              "pointer_global": "0x800afb18",
+              "observed_load_address": "0x80124bd4",
+              "captured_bytes_match_original_logical_source": true
+            },
+            {
+              "component": 5,
+              "source_offset": 93588,
+              "logical_bytes": 12524,
+              "logical_sha256": "a6b674d7c3f8a5e8e6cefb8467642e00746294f8d097d689d367fe57722e6f63",
+              "pointer_global": "0x800adbf8",
+              "observed_load_address": "0x8011b758",
+              "captured_bytes_match_original_logical_source": true
+            },
+            {
+              "component": 7,
+              "source_offset": 100876,
+              "logical_bytes": 25416,
+              "logical_sha256": "184a8ca263941dee8326bcdc0d92e23fcdf7143ca94cd0bebda535615d2aaced",
+              "pointer_global": "0x800adbf0",
+              "observed_load_address": "0x8011e874",
+              "captured_bytes_match_original_logical_source": true
+            }
+          ],
+          "observed_event_actor_count": 45,
+          "observed_event_bytecode_bytes": 9512,
+          "observed_event_bytecode_base": "0x8011c31c",
+          "original_capture": {
+            "path": ".local/scenarios/disc1-bridge-file-menu-probe/capture/final.ram",
+            "sha256": "c7002b38b65af8f0ff9f21a18d4beb2771205c08c83a4b62dd86054c4a362a77"
+          },
+          "scope": "Exact source-pair identity and original immutable collision/event/message component loads only. Shared decoder, field loader/interpreter and existing Phase 1 reference comparisons remain required Phase 1 work. Ordinary progression validity, complete content/branches, ownership lifecycle and readiness remain unproved."
+        },
+        {
+          "source_profile": "na-slus-00669-5eab85c683d4",
+          "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+          "boot_executable_sha256": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+          "original_field_selector": 290,
+          "source_pair": [
+            {
+              "slot": 1181,
+              "source_lba": 189790,
+              "source_sector_count": 56,
+              "projected_bytes": 114596,
+              "projection_unit": 2048,
+              "projection_sha256": "ec2a4cc8e8f056b4344c552493b9f2f6de6323558a330ec08ecdb1a9520b7ec2",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            {
+              "slot": 1182,
+              "source_lba": 189846,
+              "source_sector_count": 247,
+              "projected_bytes": 505856,
+              "projection_unit": 2048,
+              "projection_sha256": "f93033e55e7b25cf6e14153c1fb5682b11b1daa2e4470d5407ca5b2be94d506a",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            }
+          ],
+          "shared_field_overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+          "shared_field_overlay_load_address": "0x8006faf0",
+          "observed_loaded_components": [
+            {
+              "component": 1,
+              "source_offset": 1576,
+              "logical_bytes": 6752,
+              "logical_sha256": "3454e90f792556731d97e940b71674c3e7b04e8b46e195b23d4b51991b13d4e1",
+              "pointer_global": "0x800afb18",
+              "observed_load_address": "0x80124bd4",
+              "captured_bytes_match_original_logical_source": true
+            },
+            {
+              "component": 5,
+              "source_offset": 93588,
+              "logical_bytes": 12524,
+              "logical_sha256": "a6b674d7c3f8a5e8e6cefb8467642e00746294f8d097d689d367fe57722e6f63",
+              "pointer_global": "0x800adbf8",
+              "observed_load_address": "0x8011b758",
+              "captured_bytes_match_original_logical_source": true
+            },
+            {
+              "component": 7,
+              "source_offset": 100876,
+              "logical_bytes": 25416,
+              "logical_sha256": "184a8ca263941dee8326bcdc0d92e23fcdf7143ca94cd0bebda535615d2aaced",
+              "pointer_global": "0x800adbf0",
+              "observed_load_address": "0x8011e874",
+              "captured_bytes_match_original_logical_source": true
+            }
+          ],
+          "observed_event_actor_count": 45,
+          "observed_event_bytecode_bytes": 9512,
+          "observed_event_bytecode_base": "0x8011c31c",
+          "original_capture": {
+            "path": ".local/scenarios/disc2-bridge-file-menu-probe/capture/final.ram",
+            "sha256": "67e16868f3bc087da80aebaab84d2669a763309f77f3ade2b79aae510648c644"
+          },
+          "scope": "Exact source-pair identity and original immutable collision/event/message component loads only. Shared decoder, field loader/interpreter and existing Phase 1 reference comparisons remain required Phase 1 work. Ordinary progression validity, complete content/branches, ownership lifecycle and readiness remain unproved."
+        }
+      ]
+    },
+    {
+      "id": "BACKLOG-DISC2-FIELD15-CONTENT",
+      "kind": "outside_slice",
+      "requirement": "Complete original Disc 2 field-selector 15 content, event branches and progression outside the frozen Disc 1 first-slice routes.",
+      "later_facets": [
+        "P04-T02-F01",
+        "P04-T06-F03",
+        "P04-T06-F05",
+        "P04-T14-F02"
+      ],
+      "status": "unresolved",
+      "owner_phase": 4,
+      "evidence": [
+        "EVID-REF-007",
+        "EVID-REF-014",
+        "EVID-REF-032"
+      ],
+      "scope_basis": "The frozen first-slice routes use source profile na-slus-00664-39c547a9afc6. EVID-REF-007 separately observes original Disc 2 selector15 via the guarded numeric-field adapter. Only the complete Disc 2 field15 content/progression is assigned here; its already required cross-profile/held-out decoder comparisons and all shared loader/interpreter/source qualification remain Phase 1 obligations.",
+      "next_experiment": "Reuse the immutable original Disc 2 field15 setup/decoder/read captures and exact source pair; recover its 63-actor/11208-byte event package, ordinary story entry, required content branches and progression/state effects. Separate guarded map initialization from event completion and actionable player control; validate complete loading, ownership and return without adopting the adapter as an ordinary progression proof.",
+      "source_correlations": [
+        {
+          "source_profile": "na-slus-00669-5eab85c683d4",
+          "raw_track_sha256": "5eab85c683d4d7087d345b587472db9c44df29b35ce66553c2626d26018b947e",
+          "boot_executable_sha256": "3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35",
+          "original_field_selector": 15,
+          "source_pair": [
+            {
+              "slot": 631,
+              "source_lba": 185094,
+              "source_sector_count": 56,
+              "projected_bytes": 114012,
+              "projection_unit": 2048,
+              "projection_sha256": "9461e0ce6855c404c02badacf7c1b913a356b1685957bf129a79df30bf6382c5",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            },
+            {
+              "slot": 632,
+              "source_lba": 185150,
+              "source_sector_count": 186,
+              "projected_bytes": 380928,
+              "projection_unit": 2048,
+              "projection_sha256": "a5f3fdce2d67135721a987f5ddc97ec9beb90bfbc475432c921232663c7f6f43",
+              "all_projected_bytes_zero": false,
+              "following_sector_gap": 0
+            }
+          ],
+          "shared_field_overlay_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+          "shared_field_overlay_load_address": "0x8006faf0",
+          "observed_loaded_components": [
+            {
+              "component": 1,
+              "source_offset": 2152,
+              "logical_bytes": 41052,
+              "logical_sha256": "3da76e37475552fe685c3f2b851e5d74c88ee9a4a9e2f1dfd4e62ff074590de6",
+              "pointer_global": "0x800afb18",
+              "observed_load_address": "0x8011fb44",
+              "captured_bytes_match_original_logical_source": true
+            },
+            {
+              "component": 5,
+              "source_offset": 103968,
+              "logical_bytes": 15372,
+              "logical_sha256": "8de63fbf190b30e94e8e824078554fac010498d7f6473176858195b76b4c6d6e",
+              "pointer_global": "0x800adbf8",
+              "observed_load_address": "0x8011b188",
+              "captured_bytes_match_original_logical_source": true
+            },
+            {
+              "component": 7,
+              "source_offset": 112152,
+              "logical_bytes": 3024,
+              "logical_sha256": "8c15f263734c434bf38fa08a4fdbda704c52ac792a5def06870a8d4c0770feba",
+              "pointer_global": "0x800adbf0",
+              "observed_load_address": "0x8011ef5c",
+              "captured_bytes_match_original_logical_source": true
+            }
+          ],
+          "observed_event_actor_count": 63,
+          "observed_event_bytecode_bytes": 11208,
+          "observed_event_bytecode_base": "0x8011c1cc",
+          "original_capture": {
+            "path": ".local/scenarios/disc2-field-15-reviewed/capture/final.ram",
+            "sha256": "47a75c54338d116737a7e10d6ebc9ab65046ab7ac5a3b8e0e95991f6a09cd609"
+          },
+          "scope": "Exact source-pair identity and original immutable collision/event/message component loads only. Shared decoder, field loader/interpreter and existing Phase 1 reference comparisons remain required Phase 1 work. Ordinary progression validity, complete content/branches, ownership lifecycle and readiness remain unproved."
+        }
+      ]
     }
   ]
 }

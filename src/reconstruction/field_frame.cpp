@@ -104,6 +104,19 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
                    ? std::span<std::uint8_t>(owned).subspan(address - base)
                    : std::span<std::uint8_t>{};
     };
+    // A running read temporarily owns the source-sorted caller list. Its
+    // owner must agree with export, including while it overlaps the stack.
+    const auto &read = resident.disc_read;
+    if (const auto bytes = from(read.list.address, read.list.bytes); !bytes.empty())
+        return bytes;
+    if (menu_call_state)
+        if (auto bytes = from(menu_call_state->stack_base, menu_call_state->stack);
+            !bytes.empty()) {
+            if (!read.list.bytes.empty() && address < read.list.address &&
+                read.list.address - address < bytes.size())
+                bytes = bytes.first(read.list.address - address);
+            return bytes;
+        }
     // The loaded message table (component 7) that dialogue text reads.
     if (field)
         if (const auto bytes = from(field->messages_address, field->messages); !bytes.empty())
@@ -153,8 +166,7 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
             return bytes;
     // Disc reads: the ring, its payload, the read list, DMA transfers and the
     // file and directory tables.
-    const auto &read = resident.disc_read;
-    for (const auto *block : {&read.ring, &read.ring_payload, &read.list})
+    for (const auto *block : {&read.ring, &read.ring_payload})
         if (const auto bytes = from(block->address, block->bytes); !bytes.empty())
             return bytes;
     for (const auto &block : resident.disc_transfers)
@@ -197,6 +209,14 @@ std::span<std::uint8_t> Program::record_block(std::uint32_t address) const {
         if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
             !bytes.empty())
             return bytes;
+    // Free blocks and allocation slack stay resident-owned. A packed resource
+    // can finish at the next header, so its caller must read the actual heap
+    // bytes after its own allocation rather than a separate resource copy.
+    if (const auto after = resident.heap.held.upper_bound(address);
+        after != resident.heap.held.begin())
+        if (const auto bytes = from(std::prev(after)->first, std::prev(after)->second);
+            !bytes.empty())
+            return bytes;
     return {};
 }
 
@@ -217,6 +237,21 @@ std::uint32_t Program::memory(std::uint32_t address, std::size_t width) const {
         return word(bytes, 0, width);
     if (const auto bytes = record_bytes(address, width); !bytes.empty())
         return word(bytes, 0, width);
+    // Heap headers are typed resident state, not bytes owned by a mode's
+    // adjacent resource. 80032eb4 reads its next flag before testing whether
+    // all output has been written; that read can reach this header.
+    const auto &headers = resident.heap.headers;
+    if (const auto after = headers.upper_bound(address); after != headers.begin()) {
+        const auto &[at, words] = *std::prev(after);
+        const auto offset = address - at;
+        if (offset < 8 && width <= 8 - offset) {
+            std::uint32_t value = 0;
+            for (std::size_t i = 0; i < width; ++i)
+                value |= ((words[(offset + i) / 4] >> (8U * ((offset + i) % 4))) & 0xffU)
+                         << (8U * i);
+            return value;
+        }
+    }
     std::array<std::uint8_t, 4> bytes{};
     read_original(*this, address, std::span(bytes).first(width));
     return word(bytes, 0, width);
@@ -253,7 +288,8 @@ void Program::set_memory(std::uint32_t address, std::uint32_t value, std::size_t
 // RotAverage4 (8004a7bc): the four SVECTOR corners at `record` projected
 // into the packet's vertices (RTPT on three, RTPS on the fourth); returns
 // the average depth OTZ.
-std::uint32_t Program::rot_average4(std::uint32_t record, std::uint32_t packet) {
+std::uint32_t Program::rot_average4(std::uint32_t record, std::uint32_t packet,
+                                    std::optional<std::array<std::uint32_t, 2>> local_outputs) {
     auto &gte = resident.gte;
     const auto vector = [&](std::uint32_t at) {
         return field::GteVector{static_cast<std::int16_t>(s16(memory(at, 2))),
@@ -263,11 +299,18 @@ std::uint32_t Program::rot_average4(std::uint32_t record, std::uint32_t packet) 
     for (std::uint32_t i = 0; i < 3; ++i)
         gte.set_vector(i, vector(record + i * 8));
     gte.rtpt();
+    const auto first_flags = gte.flag(); // 8004a7f4 CFC2 before RTPS.
     for (std::uint32_t i = 0; i < 3; ++i)
         set_memory(packet + 8 + i * 8, gte.sxy(i));
     gte.set_vector(0, vector(record + 0x18));
     gte.rtps();
     set_memory(packet + 0x20, gte.sxy(2));
+    if (local_outputs) {
+        // 8004a81c/8004a824: the computed IR0 and the two projection flags,
+        // before AVSZ4 replaces the GTE's flags.
+        set_memory((*local_outputs)[0], gte.data(8));
+        set_memory((*local_outputs)[1], first_flags | gte.flag());
+    }
     gte.avsz4();
     return gte.otz();
 }
@@ -433,9 +476,29 @@ void Program::compass_quad(std::uint32_t table, std::uint32_t record, const fiel
                            bool label) {
     auto &gte = resident.gte;
     const auto packet = record + 0x20 + field->draw_buffer * 0x28;
+    if (field_frame_stack_ && menu_call_state) {
+        // 80074108's f8h frame calls 8007ab6c/8007ac58, whose 48h frame
+        // passes RotAverage4's four packet outputs and two local outputs.
+        const auto quad_sp = *field_frame_stack_ - 0xf8U - 0x48U;
+        const auto &call = *menu_call_state;
+        if (quad_sp + 0x10U < call.stack_base ||
+            std::uint64_t{quad_sp + 0x30U - call.stack_base} > call.stack.size())
+            throw MissingDependency({"compass_quad", 0x8007ab6c, {}, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The original compass argument frame crosses its stack owner");
+        for (std::uint32_t i = 0; i < 4; ++i)
+            set_memory(quad_sp + 0x10U + 4U * i, packet + 8U + 8U * i);
+        set_memory(quad_sp + 0x20U, quad_sp + 0x28U); // 8007abe0 / 8007accc
+        set_memory(quad_sp + 0x24U, quad_sp + 0x2cU); // 8007abf8 / 8007ace4
+    }
     field::push_matrix(resident.matrix_stack, gte.transform);
     gte.transform = m; // SetRotMatrix and SetTransMatrix
-    static_cast<void>(rot_average4(record, packet));
+    std::optional<std::array<std::uint32_t, 2>> local_outputs;
+    if (field_frame_stack_ && menu_call_state) {
+        const auto quad_sp = *field_frame_stack_ - 0xf8U - 0x48U;
+        local_outputs = {quad_sp + 0x28U, quad_sp + 0x2cU};
+    }
+    static_cast<void>(rot_average4(record, packet, local_outputs));
     if (label) {
         // 8007ac58: a 16-pixel-wide letter centred on the lower edge.
         const auto sum = s16(memory(packet + 0x20, 2)) + s16(memory(packet + 0x18, 2));
@@ -461,6 +524,50 @@ void Program::frame_compass(FrameServices &services) {
     auto &c = state.camera;
     auto &gte = resident.gte;
     const auto &trig = resident.math.trigonometry;
+    const auto spill = [&](std::uint32_t address, std::uint32_t value, std::size_t width = 4) {
+        if (!field_frame_stack_ || !menu_call_state)
+            return;
+        const auto &call = *menu_call_state;
+        if (address < call.stack_base ||
+            std::uint64_t{address - call.stack_base} + width > call.stack.size())
+            throw MissingDependency({"frame_compass", 0x80074108, {}, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The original compass local crosses its qualified owner");
+        set_memory(address, value, width);
+    };
+    const auto compass_sp = field_frame_stack_ ? *field_frame_stack_ - 0xf8U : 0U;
+    const auto spill_matrix = [&](std::uint32_t offset, const field::GteMatrix &matrix,
+                                  bool full_rotation = false, bool translation = true) {
+        const auto address = compass_sp + offset;
+        // 80073750/8003f738/8007409c write nine halfwords. They leave
+        // +12h's previous callee bytes intact, unlike MulMatrix's SWC2.
+        if (full_rotation) {
+            // MulMatrix2/CompMatrix store four packed words and a SWC2
+            // sign-extended IR3 word, including the matrix's pad half.
+            for (std::uint32_t i = 0; i < 4; ++i)
+                spill(address + 4U * i,
+                      static_cast<std::uint16_t>(matrix.r[2U * i]) |
+                          std::uint32_t{static_cast<std::uint16_t>(matrix.r[2U * i + 1U])} << 16U);
+            spill(address + 0x10U,
+                  static_cast<std::uint16_t>(matrix.r[8]) |
+                      std::uint32_t{static_cast<std::uint16_t>(matrix.pad)} << 16U);
+        } else
+            for (std::uint32_t i = 0; i < matrix.r.size(); ++i)
+                spill(address + 2U * i, static_cast<std::uint16_t>(matrix.r[i]), 2);
+        if (translation)
+            for (std::uint32_t i = 0; i < matrix.t.size(); ++i)
+                spill(address + 0x14U + 4U * i, u32(matrix.t[i]));
+    };
+    const auto spill_identity = [&](std::uint32_t offset, const field::GteMatrix &matrix,
+                                    std::uint32_t s0, std::uint32_t return_address) {
+        // 80070594's 20h frame; RotMatrix is a leaf that writes nine halves.
+        const auto sp = compass_sp - 0x20U;
+        for (std::uint32_t i = 0; i < 3; ++i)
+            spill(sp + 0x10U + 2U * i, 0, 2);
+        spill(sp + 0x18U, s0);
+        spill(sp + 0x1cU, return_address);
+        spill_matrix(offset, matrix);
+    };
     // Eight rows of the sixteen compass colours; a row whose heading octant
     // is blocked (800af9f5) is black.
     for (std::uint32_t row = 0; row < 8; ++row) {
@@ -479,9 +586,19 @@ void Program::frame_compass(FrameServices &services) {
                                                          resident.math.square_root);
     const field::GteLong eye{0, subtract(c.eye[1], c.target[1]), s32(u32(-distance) << 16U)};
     field::GteMatrix look{};
-    field::build_view(gte, resident.math.reciprocal, look, eye, {0, 0, 0}, c.up);
+    for (std::uint32_t i = 0; i < 3; ++i) {
+        spill(compass_sp + 0xb8U + 4U * i, u32(eye[i]));
+        spill(compass_sp + 0xc8U + 4U * i, 0);
+    }
+    const auto view_locals =
+        field::build_view(gte, resident.math.reciprocal, look, eye, {0, 0, 0}, c.up);
+    if (field_frame_stack_)
+        retain_view_locals(view_locals, *field_frame_stack_ - 0xf8U - 0x70U, 0x8007428c);
+    spill_matrix(0x30, look); // 80074284: 80073750 writes the view local.
     auto base = identity(trig);
+    spill_identity(0x10, base, 0x800af884, 0x80074294);
     base.t[2] = 0x80;
+    spill_matrix(0x10, base); // 8007428c..800742a0: identity and Z translation.
     gte.transform.r = base.r; // SetRotMatrix and SetTransMatrix
     gte.transform.t = base.t;
     // The needle turns toward the followed actor's heading in view.
@@ -496,16 +613,21 @@ void Program::frame_compass(FrameServices &services) {
     spin = field::rotation_matrix({0, state.compass_heading, 0}, trig, spin);
     multiply_rotation(gte, look, spin);
     spin.t[2] = 0x1000;
+    spill_matrix(0x50, spin, true);
     auto placed = compose(gte, base, spin);
+    spill_matrix(0x70, placed, true);
     const bool shown =
         state.script_flags_b21d0[1] == 0 && state.camera_cut == 0 && resident.w_4f378 == 0;
     const auto table = state.draw_block + 0x80d4U;
     if (shown)
         compass_quad(table, 0x800b0f7c, placed, false);
     auto upright = identity(trig);
+    spill_identity(0x50, upright, shown ? 0x15U : compass_sp + 0x50U, 0x800743e4);
     multiply_rotation(gte, look, upright);
     upright.t[2] = 0x1000;
+    spill_matrix(0x50, upright, true);
     placed = compose(gte, base, upright);
+    spill_matrix(0x70, placed, true);
     // MulMatrix0 (8004920c): the rotation (and its sign halfword) only.
     auto product = upright;
     multiply_rotation(gte, base, product);
@@ -514,19 +636,31 @@ void Program::frame_compass(FrameServices &services) {
     gte.transform.r = base.r;
     gte.transform.t = base.t;
     auto view = identity(trig);
+    spill_identity(0x50, view, 0x800afa84, 0x8007443c);
     multiply_rotation(gte, c.previous_view, view);
     view.t[2] = 0x1000;
+    spill_matrix(0x50, view, true);
     placed = compose(gte, base, view);
+    spill_matrix(0x70, placed, true);
     base.r = placed.r; // 80074038 copies the rotation and translation
     base.t = placed.t;
+    spill_matrix(0x10, base); // 80074460: partial rotation, then translation.
     const auto tilt = field::rotation_matrix({0x400, 0, 0}, trig);
+    spill_matrix(0x90, tilt, false, false);
+    spill(compass_sp + 0xb0U, 0x400, 2);
+    spill(compass_sp + 0xb2U, 0, 2);
+    spill(compass_sp + 0xb4U, 0, 2);
     if (shown) {
         for (std::uint32_t k = 0; k < 4; ++k) {
             auto offset = identity(trig);
+            spill_identity(0x50, offset, 0x10U + k, 0x800744e8);
             offset.t[0] = s16(overlay_half(0x800adc34 + k * 4));
             offset.t[2] = s16(overlay_half(0x800adc36 + k * 4));
+            spill_matrix(0x50, offset);
             auto letter = compose(gte, base, offset);
+            spill_matrix(0x70, letter, true);
             letter.r = tilt.r; // 8007409c
+            spill_matrix(0x70, letter, false, false);
             compass_quad(table, 0x800b0dbc + k * 0x70, letter, true);
         }
         for (std::uint32_t k = 0; k < 16; ++k)
@@ -541,12 +675,53 @@ void Program::frame_compass(FrameServices &services) {
 }
 
 // Field 8007554c, resumable at `from` (the call the frame makes next).
-void Program::field_frame(FrameServices &services, const ProgramObserver &observe, FrameStep from) {
+void Program::field_frame(FrameServices &services, const ProgramObserver &observe, FrameStep from,
+                          std::optional<FrameCallAbi> caller) {
     auto &state = loaded(*this);
     if (state.event_control.diagnostic_suppression == 0)
         throw MissingDependency({"field_frame", 0x8007554c, {}, {}},
                                 "symbol:field-diagnostic-output", false,
                                 "Unsuppressed frame diagnostic output is not recovered");
+    if (menu_call_state && !caller)
+        throw MissingDependency({"field_frame", 0x8007554c, {}, {}}, "state:field-frame-call-abi",
+                                false,
+                                "The owned original frame stack needs its recovered caller ABI");
+    const auto spill = [&](std::uint32_t address, std::uint32_t value) {
+        if (!menu_call_state)
+            return; // No original stack owner was qualified for this isolated call.
+        const auto &call = *menu_call_state;
+        if (address < call.stack_base ||
+            std::uint64_t{address - call.stack_base} + 4 > call.stack.size())
+            throw MissingDependency({"field_frame", 0x8007554c, {}, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The original field callee frame crosses its qualified owner");
+        set_memory(address, value);
+    };
+    const auto frame = caller ? caller->sp - 0x28U : 0U;
+    struct LendFrame {
+        std::optional<std::uint32_t> &slot;
+        std::optional<std::uint32_t> previous;
+        ~LendFrame() { slot = previous; }
+    } lend{field_frame_stack_, field_frame_stack_};
+    field_frame_stack_ = caller ? std::optional{frame} : std::nullopt;
+    if (caller && from == FrameStep::start) {
+        spill(frame + 0x18, caller->saved_registers[0]); // 80075560
+        spill(frame + 0x1c, caller->saved_registers[1]); // 80075558
+        spill(frame + 0x20, caller->return_address);     // 80075554
+    }
+    std::optional<std::uint32_t> vsync_start;
+    const auto start_counter = [&] {
+        if (!vsync_start)
+            throw MissingDependency({"field_frame", 0x8007554c, {}, {}},
+                                    "state:field-frame-start-counter", false,
+                                    "A resumed owned frame lacks its original VSync start counter");
+        return *vsync_start;
+    };
+    struct LendGpuCaller {
+        std::optional<FrameCallAbi> &slot;
+        std::optional<FrameCallAbi> previous;
+        ~LendGpuCaller() { slot = previous; }
+    };
     // Interrupts that arrived while a step ran are delivered when it ends.
     const auto done = [&](std::string_view operation, std::uint32_t address) {
         deliver_arrivals(address);
@@ -562,7 +737,16 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
         // 8007555c VSync(1); the VSync(-1) that follows only paces the final wait.
         state.frame_start_hcount = take_service(services.hblank_counts, "VSync(1) at frame start");
         deliver_arrivals(0x8007555c);
-        field_move(observe);
+        vsync_start = resident.vsync_counter; // 8007556c..80075578: VSync(-1) -> S1
+        {
+            auto move_caller = caller;
+            if (move_caller) {
+                move_caller->sp = frame;
+                move_caller->saved_registers[1] = *vsync_start;
+                move_caller->return_address = 0x8007557c;
+            }
+            field_move(observe, move_caller);
+        }
         deliver_arrivals(0x800739c0);
         [[fallthrough]];
     case FrameStep::emitters:
@@ -634,10 +818,18 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
         state.frame_drawn_hcount = take_service(services.hblank_counts, "VSync(1) after drawing");
         done("field_frame_drawn_time", 0x80075694);
         [[fallthrough]];
-    case FrameStep::draw_sync:
-        draw_sync(services);
+    case FrameStep::draw_sync: {
+        auto draw_caller = caller;
+        if (draw_caller) {
+            draw_caller->sp = frame;
+            draw_caller->saved_registers[0] = 0x80d4;
+            draw_caller->saved_registers[1] = start_counter();
+            draw_caller->return_address = 0x800756ac;
+        }
+        draw_sync(services, {}, draw_caller);
         done("field_frame_draw_sync", 0x800445d0);
         [[fallthrough]];
+    }
     case FrameStep::dialogue_timers:
         frame_dialogue_timers();
         done("field_frame_dialogue_timers", 0x800805f4);
@@ -677,13 +869,49 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
             const auto &c = state.clear_color;
             const auto color =
                 state.camera_cut != 0 ? 0U : u32(c[0]) | u32(c[1]) << 8U | u32(c[2]) << 16U;
+            LendGpuCaller lend_gpu{gpu_enqueue_caller_, gpu_enqueue_caller_};
+            if (caller && menu_call_state) {
+                const auto clear_sp = frame - 0x28U;
+                spill(clear_sp + 0x10U, 0x80d4); // 8004478c
+                spill(clear_sp + 0x14U, start_counter());
+                spill(clear_sp + 0x18U, caller->saved_registers[2]);
+                spill(clear_sp + 0x1cU, caller->saved_registers[3]);
+                spill(clear_sp + 0x20U, 0x80075780);
+                auto queue_caller = *caller;
+                queue_caller.sp = clear_sp;
+                // 800447a0..800447d4 leaves shifted green in S1, blue/green
+                // in S0, masked red in S2 and the rectangle in S3.
+                queue_caller.saved_registers[0] = color & 0xffff00U;
+                queue_caller.saved_registers[1] = color & 0xff00U;
+                queue_caller.saved_registers[2] = color & 0xffU;
+                queue_caller.saved_registers[3] = block() + 0x5cU;
+                queue_caller.return_address = 0x800447d8;
+                gpu_enqueue_caller_ = queue_caller;
+            }
             clear_image(services, block() + 0x5c, color);
         }
         done("field_frame_clear", 0x80044764);
         [[fallthrough]];
     case FrameStep::environments:
         put_disp_env(block() + 0xb8);
-        put_draw_env(services, block());
+        {
+            LendGpuCaller lend_gpu{gpu_enqueue_caller_, gpu_enqueue_caller_};
+            if (caller && menu_call_state) {
+                const auto draw_sp = frame - 0x20U;
+                spill(draw_sp + 0x10U, 0x80d4); // 80044c5c
+                spill(draw_sp + 0x14U, start_counter());
+                spill(draw_sp + 0x18U, caller->saved_registers[2]);
+                spill(draw_sp + 0x1cU, 0x800757a0);
+                auto queue_caller = *caller;
+                queue_caller.sp = draw_sp;
+                queue_caller.saved_registers[0] = block() + 0x1cU;
+                queue_caller.saved_registers[1] = block();
+                queue_caller.saved_registers[2] = 0x800568d2; // 80044c4c..80044c50
+                queue_caller.return_address = 0x80044cd8;
+                gpu_enqueue_caller_ = queue_caller;
+            }
+            put_draw_env(services, block());
+        }
         done("field_frame_environments", 0x80044c44);
         [[fallthrough]];
     case FrameStep::uploads: {
@@ -725,10 +953,31 @@ void Program::field_frame(FrameServices &services, const ProgramObserver &observ
         }
         done("field_frame_tables", 0x80075850);
         [[fallthrough]];
-    case FrameStep::draw:
+    case FrameStep::draw: {
+        LendGpuCaller lend_gpu{gpu_enqueue_caller_, gpu_enqueue_caller_};
+        if (caller && menu_call_state) {
+            // DrawOTag 80044bd8's 18h prologue and 80044c28 call.
+            const auto draw_sp = frame - 0x18U;
+            spill(draw_sp + 0x10U, 0x80d4);
+            spill(draw_sp + 0x14U, 0x800758d0);
+            auto queue_caller = *caller;
+            queue_caller.sp = draw_sp;
+            queue_caller.saved_registers[0] = block() + 0x80f0U;
+            queue_caller.saved_registers[1] = start_counter();
+            queue_caller.return_address = 0x80044c30;
+            gpu_enqueue_caller_ = queue_caller;
+        }
         draw_otag(services, block() + 0x80f0);
+    }
         // The frame then waits until VSync(-1) reaches its start count plus
         // 800b217c + 2; the wait changes no RAM.
+        if (caller && menu_call_state) {
+            // Final VSync(-1), 800758d0, overwrites the upper callee slots.
+            const auto vsync_sp = frame - 0x20U;
+            spill(vsync_sp + 0x10, 0x80d4);
+            spill(vsync_sp + 0x14, start_counter());
+            spill(vsync_sp + 0x18, 0x800758d8);
+        }
         done("field_frame", 0x8007554c);
         break;
     }

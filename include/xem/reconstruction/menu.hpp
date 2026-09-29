@@ -1,5 +1,6 @@
 #pragma once
 
+#include "xem/reconstruction/resident_memory.hpp"
 #include "xem/reconstruction/sound_driver.hpp"
 
 #include <cstdint>
@@ -27,6 +28,11 @@ class MenuError : public std::runtime_error {
 // original code addresses it.
 struct MenuMemory {
     std::map<std::uint32_t, std::vector<std::uint8_t>> regions;
+    // Borrowed only while an Overlay runs: shared menu computations also
+    // reach resident globals and resident-owned resource bytes. The Overlay
+    // clears these on destruction; no resident value is copied into regions.
+    resident::Memory *resident_memory{};
+    std::function<std::span<std::uint8_t>(std::uint32_t)> resident_tail;
     // While the overlay runs (menu_overlay.hpp): the stack below its entry
     // SP, [stack_base, stack_base + stack.size()), where callee frames keep
     // their locals. Transient machine memory, never exported as state.

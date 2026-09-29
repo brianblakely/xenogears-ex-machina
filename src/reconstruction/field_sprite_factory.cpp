@@ -165,6 +165,9 @@ void advance_sprite_tasks(SpriteTaskState &state, SpriteEnvironment &environment
         return;
     }
     auto sources = input_sources;
+    // The task callback has another original caller stack. A field factory's
+    // initial replay coordinate cannot qualify that separate call tree.
+    sources.replay_entry_sp.reset();
     sources.tasks = &state;
     state.next = state.head;
     std::unordered_set<std::uint32_t> seen;

@@ -243,6 +243,64 @@ void program_paths() {
     }
     check(stopped, "Exit mode bit 80 stops at 8001bb50");
 }
+
+void movie_caller_ownership() {
+    game::Program program;
+    program.field = std::make_unique<game::FieldState>();
+    std::vector<std::uint8_t> stack(0x380, 0x5a);
+    std::array<std::uint32_t, 8> registers{11, 22, 33, 44, 55, 66, 77, 88};
+    constexpr std::uint32_t sp = 0x801fff80;
+    constexpr std::uint32_t base = sp - 0x300;
+    constexpr std::uint32_t frame = sp - 0x28;
+    program.qualify_menu_call(sp, base, stack, registers, 0, 0x800789b0);
+    game::FrameServices services;
+    bool missing = false;
+    try {
+        program.movie_prepare(services, frame);
+    } catch (const game::MissingDependency &error) {
+        missing = error.dependency == "state:field-movie-call-abi";
+    }
+    check(missing && program.menu_call_state->stack == stack,
+          "An owned movie cannot borrow a guessed caller or mutate its stack before qualification");
+    const game::FrameCallAbi caller{sp, registers, 0x800789b0};
+    missing = false;
+    try {
+        program.movie_prepare(services, frame - 4, {}, caller);
+    } catch (const game::MissingDependency &error) {
+        missing = error.dependency == "state:field-movie-call-abi";
+    }
+    check(missing && program.menu_call_state->stack == stack,
+          "The movie frame must agree with its qualified caller before computation");
+    missing = false;
+    try {
+        program.movie_prepare(services, base - 4, {},
+                              game::FrameCallAbi{base + 0x24, registers, 0x800789b0});
+    } catch (const game::MissingDependency &error) {
+        missing = error.dependency == "state:field-movie-call-stack";
+    }
+    check(missing && program.menu_call_state->stack == stack,
+          "A movie frame below its owned stack stops before changing the existing owner");
+    // No directory/heap services are supplied. Preparation stops on that
+    // missing dependency after its original prologue, preserving adjacent
+    // stack bytes instead of allocating/replacing the caller owner.
+    bool stopped = false;
+    try {
+        program.movie_prepare(services, frame, {}, caller);
+    } catch (const std::exception &) {
+        stopped = true;
+    }
+    const auto word = [&](std::uint32_t address) {
+        const auto &bytes = program.menu_call_state->stack;
+        std::uint32_t value = 0;
+        for (std::size_t i = 0; i < 4; ++i)
+            value |= std::uint32_t{bytes[address - base + i]} << (8 * i);
+        return value;
+    };
+    check(stopped && word(frame + 0x18) == 11 && word(frame + 0x1c) == 22 &&
+              word(frame + 0x20) == 33 && word(frame + 0x24) == 0x800789b0 &&
+              word(frame + 0x14) == 0x5a5a5a5a && word(frame + 0x28) == 0x5a5a5a5a,
+          "Movie prologue stores stay in the evolving caller stack when a later dependency stops");
+}
 } // namespace
 
 int main() {
@@ -252,6 +310,7 @@ int main() {
         slice_output();
         decisions();
         program_paths();
+        movie_caller_ownership();
     } catch (const std::exception &error) {
         std::cerr << error.what() << '\n';
         return 1;

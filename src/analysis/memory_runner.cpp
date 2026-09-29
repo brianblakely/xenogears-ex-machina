@@ -2,6 +2,7 @@
 // only game-state input; expected exit images never reach this process.
 #include "field_memory.hpp"
 #include "mdec_codec.hpp"
+#include "recorded_card.hpp"
 
 #include "xem/reconstruction/menu_overlay.hpp"
 #include "xem/reconstruction/resident_heap.hpp"
@@ -129,101 +130,6 @@ void optional(std::ostream &out, const auto &value) {
 } // namespace
 
 namespace {
-// Card BIOS results recorded in the same original execution ("card KIND
-// VALUE [HEX]" service lines, in call order per kind). Results the menu
-// discards (critical sections, event close/enable/undeliver, the card file
-// system setup) are not recorded; their calls only count.
-class RecordedCardBios final : public game::menu::CardBios {
-  public:
-    void add(const std::string &kind, std::uint32_t value, std::vector<std::uint8_t> bytes) {
-        results_[kind].push_back({value, std::move(bytes)});
-    }
-    [[nodiscard]] std::size_t unconsumed() const {
-        std::size_t count = 0;
-        for (const auto &[kind, queue] : results_)
-            count += queue.size();
-        return count;
-    }
-    void bu_init() override {}
-    std::uint32_t open_event(std::uint32_t, std::uint32_t, std::uint32_t, std::uint32_t) override {
-        return take("open_event").value;
-    }
-    std::uint32_t close_event(std::uint32_t) override { return 1; }
-    std::uint32_t test_event(std::uint32_t) override {
-        // "card wait CODE": 801c881c returned CODE, the index of the event
-        // that fired among the polls new card, error, done, timeout.
-        auto &queue = results_["wait"];
-        if (queue.empty())
-            throw game::ServiceUnavailable("card event wait result");
-        static constexpr std::array<std::uint32_t, 4> order{3, 1, 0, 2};
-        const auto fired = queue.front().value;
-        const auto polled = order[poll_++ % 4];
-        if (polled != fired)
-            return 0;
-        poll_ = 0;
-        queue.pop_front();
-        return 1;
-    }
-    std::uint32_t enable_event(std::uint32_t) override { return 1; }
-    void undeliver_event(std::uint32_t, std::uint32_t) override {}
-    std::uint32_t enter_critical_section() override { return 1; }
-    void exit_critical_section() override {}
-    std::uint32_t open(std::string_view, std::uint32_t) override { return take("open").value; }
-    ReadResult read(std::uint32_t, std::uint32_t) override {
-        auto result = take("read");
-        return {result.value, std::move(result.bytes)};
-    }
-    std::uint32_t write(std::uint32_t, std::span<const std::uint8_t>) override {
-        return take("write").value;
-    }
-    std::uint32_t close(std::uint32_t fd) override { return fd; }
-    std::uint32_t format(std::string_view) override { return take("format").value; }
-    std::optional<DirectoryEntry> first_file(std::string_view) override { return entry("first"); }
-    std::optional<DirectoryEntry> next_file() override { return entry("next"); }
-    std::uint32_t rename(std::string_view, std::string_view) override {
-        return take("rename").value;
-    }
-    std::uint32_t erase(std::string_view) override { return 1; }
-    std::uint32_t kanji_address(std::uint32_t) override { return take("kanji").value; }
-    std::uint32_t rom_halfword(std::uint32_t) override { return take("rom").value; }
-    std::uint32_t card_info(std::uint32_t) override { return take("info").value; }
-    CardPatch init_card(std::uint32_t) override {
-        auto result = take("init");
-        CardPatch bytes{};
-        if (result.bytes.size() != bytes.size())
-            throw InputError("A recorded card patch is not 20 bytes");
-        std::ranges::copy(result.bytes, bytes.begin());
-        return bytes;
-    }
-    void start_card() override {}
-
-  private:
-    struct Result {
-        std::uint32_t value;
-        std::vector<std::uint8_t> bytes;
-    };
-    Result take(const std::string &kind) {
-        auto &queue = results_[kind];
-        if (queue.empty())
-            throw game::ServiceUnavailable("card BIOS " + kind + " result");
-        auto result = std::move(queue.front());
-        queue.pop_front();
-        return result;
-    }
-    std::optional<DirectoryEntry> entry(const std::string &kind) {
-        auto result = take(kind);
-        if (result.value == 0)
-            return std::nullopt;
-        if (result.bytes.size() != std::tuple_size_v<DirectoryEntry>)
-            throw InputError("A recorded directory entry is not 40 bytes");
-        DirectoryEntry bytes{};
-        std::ranges::copy(result.bytes, bytes.begin());
-        return bytes;
-    }
-    std::map<std::string, std::deque<Result>> results_;
-    std::uint32_t poll_{};
-};
-
 int run_case(int argc, char **argv) {
     std::string status = "invalid_input", reason, dependency;
     std::string_view entry = argc > 1 ? argv[1] : "unknown";
@@ -238,6 +144,9 @@ int run_case(int argc, char **argv) {
     std::optional<std::uint32_t> return_value;
     std::string result = "null";
     ServiceOutput service_output;
+    std::vector<game::FrameServices> sections(1);
+    analysis::RecordedCardBios card_bios;
+    std::vector<std::uint32_t> instruction_cache_flushes;
     try {
         if (argc != 15)
             throw InputError("Usage: xem-memory-runner ENTRY BUDGET STOP RAM SCRATCHPAD "
@@ -430,6 +339,26 @@ int run_case(int argc, char **argv) {
         std::ranges::copy(io, program->resident.io.begin());
         analysis::load_platform(*program, argv[12], argv[13]);
         analysis::attach_interrupt_memory(*program, memory);
+        if (entry == "field_frames" || entry == "field_entry_frames" ||
+            entry == "field_mode_frames") {
+            // Qualify the caller ABI once at this chain's initial entry.
+            // Later menu calls use only this evolving owned stack.
+            const auto loop_sp = registers[29] - (entry == "field_mode_frames" ? 0x38U : 0U);
+            constexpr auto below = game::menu::Overlay::stack_bytes + 0xc0U;
+            if (loop_sp < 0x80000000U + below || loop_sp >= 0x80200000U)
+                throw InputError("The initial field loop stack is outside RAM");
+            if (program->resident.heap.headers.empty())
+                throw InputError("The initial field caller needs its original heap boundary");
+            const auto &[last_header, last_words] = *program->resident.heap.headers.rbegin();
+            if ((last_words[1] & game::resident::heap_tag_mask) != game::resident::heap_end_tag)
+                throw InputError("The initial field caller heap has no terminal header");
+            const auto base = std::max(loop_sp - below, last_header + 8U);
+            if (base >= loop_sp)
+                throw InputError("The original heap leaves no field caller stack");
+            program->qualify_menu_call(loop_sp, base, memory.range(base, 0x80200000U - base),
+                                       std::span(registers).subspan(16, 8), registers[30],
+                                       registers[31]);
+        }
         // A field teardown releases whole heap blocks: own all their bytes
         // (main-loop chains may reach one through a map change). The movie
         // player's blocks (the library image, its buffers and ring) are heap
@@ -443,11 +372,9 @@ int run_case(int argc, char **argv) {
         // (hexadecimal), in the order the original consumed them. A "frame"
         // line starts the next main-loop iteration of "field_frames": the
         // code between frames, then the frame.
-        std::vector<game::FrameServices> sections(1);
         // "stage ADDR" lines name completed operations (their original
         // address) whose state a multi-frame run also reports.
         std::set<std::uint32_t> stages;
-        RecordedCardBios card_bios;
         {
             std::ifstream lines(argv[14]);
             if (!lines)
@@ -509,6 +436,14 @@ int run_case(int argc, char **argv) {
             entry != "field_mode_frames")
             throw InputError("Only frame chains take several frame sections");
         auto &services = sections.front();
+        for (auto &section : sections) {
+            section.menu_card = &card_bios;
+            // Native code is compiled C++; report the original BIOS cache
+            // invalidation intent explicitly rather than executing RAM code.
+            section.flush_instruction_cache = [&] {
+                instruction_cache_flushes.push_back(0x8007999c);
+            };
+        }
         executing = true;
         const game::ProgramObserver observer = [&](const game::Program &, game::SourcePoint at,
                                                    bool completed) {
@@ -582,7 +517,10 @@ int run_case(int argc, char **argv) {
                     report("entry", written);
                     written = program->resident.hardware_writes.size();
                 }
-                program->field_frame(sections[k], staged);
+                const auto &call = *program->menu_call_state;
+                program->field_frame(
+                    sections[k], staged, game::FrameStep::start,
+                    game::FrameCallAbi{call.entry_sp, call.saved_registers, 0x800782e4});
                 report("exit", written);
             }
         } else if (movie_mode_entry) {
@@ -946,11 +884,17 @@ int run_case(int argc, char **argv) {
             program->add_battle_drops(registers[4], registers[5], registers[6]);
         } else if (overlay_entry) {
             std::size_t used = 0;
-            // "menu_call:ADDR:sound": the capture hooks the menu sound 801c8574.
+            // Qualified positions: menu sound 801c8574 and payload 801cb28c.
             auto text = std::string(entry.substr(10));
-            const bool sound_positions = text.ends_with(":sound");
-            if (sound_positions)
-                text.resize(text.size() - 6);
+            const auto suffix = text.find(':');
+            const auto flags = suffix == std::string::npos ? std::string{} : text.substr(suffix);
+            if (!flags.empty() && flags != ":sound" && flags != ":payload" &&
+                flags != ":sound:payload")
+                throw InputError("Unknown menu call positions");
+            const bool sound_positions = flags.find(":sound") != std::string::npos;
+            const bool payload_positions = flags.find(":payload") != std::string::npos;
+            if (suffix != std::string::npos)
+                text.resize(suffix);
             const auto address = static_cast<std::uint32_t>(std::stoul(text, &used, 16));
             if (used != text.size())
                 throw InputError("menu_call needs a hexadecimal entry address");
@@ -962,6 +906,7 @@ int run_case(int argc, char **argv) {
                 arguments.push_back(memory.word(sp + 0x10 + 4 * k));
             game::menu::Overlay overlay(*program, services, sp, &card_bios);
             overlay.sound_positions = sound_positions;
+            overlay.payload_positions = payload_positions;
             // Each frame entry's exported state (menu memory holds the game
             // data while the overlay runs).
             overlay.boundary = [&](std::string_view boundary) {
@@ -973,6 +918,7 @@ int run_case(int argc, char **argv) {
             };
             overlay.set_stack_image(memory.range(sp - game::menu::Overlay::stack_bytes,
                                                  game::menu::Overlay::stack_bytes));
+            overlay.set_saved_registers(std::span(registers).subspan(16, 8));
             return_value = overlay.call(address, arguments);
         } else if (entry == "menu_item_effect") {
             // 801e31c0: A0 table directory, A1 character, A2 item.
@@ -1311,6 +1257,9 @@ int run_case(int argc, char **argv) {
     } catch (const InputError &error) {
         status = "invalid_input";
         reason = error.what();
+    } catch (const analysis::RecordedCardBios::InputError &error) {
+        status = "invalid_input";
+        reason = error.what();
     } catch (const game::ServiceUnavailable &error) {
         status = "invalid_input";
         reason = std::string("Service result not supplied: ") + error.what();
@@ -1356,14 +1305,46 @@ int run_case(int argc, char **argv) {
     if (program && !owned.empty())
         std::cout << gte_controls(*program);
     std::cout << "],\"platform_unconsumed\":" << (program ? program->resident.platform.size() : 0)
-              << ",\"delivered_sectors\":[";
+              << ",\"services_unconsumed\":";
+    std::size_t unconsumed = program ? program->resident.gpu.vram_reads.size() : 0;
+    for (const auto &services : sections)
+        unconsumed += services.hblank_counts.size() + services.vblank_waits.size() +
+                      services.vblank_counts.size() + services.alarm_polls.size() +
+                      services.gpu_status.size() + services.dma_busy.size() +
+                      services.interrupt_masks.size() + services.gpu_info.size();
+    std::cout << unconsumed << ",\"card_unconsumed\":" << card_bios.unconsumed()
+              << ",\"card_requests\":[";
+    for (std::size_t i = 0; i < card_bios.requests().size(); ++i) {
+        const auto &request = card_bios.requests()[i];
+        std::cout << (i ? "," : "") << "{\"kind\":" << quote(request.kind) << ",\"arguments\":[";
+        for (std::size_t j = 0; j < request.arguments.size(); ++j)
+            std::cout << (j ? "," : "") << request.arguments[j];
+        std::cout << "],\"names_hex\":[";
+        for (std::size_t j = 0; j < request.names.size(); ++j) {
+            const auto &name = request.names[j];
+            const auto bytes =
+                std::span(reinterpret_cast<const std::uint8_t *>(name.data()), name.size());
+            std::cout << (j ? "," : "") << quote(hex(bytes));
+        }
+        std::cout << "],\"payload_hex\":" << quote(hex(request.payload)) << ",\"result\":";
+        optional(std::cout, request.result);
+        std::cout << ",\"result_source\":" << quote(request.result_source)
+                  << ",\"response_hex\":" << quote(hex(request.response)) << ",\"offset\":";
+        optional(std::cout, request.offset);
+        std::cout << ",\"offset_source\":"
+                  << quote(request.offset ? "inferred_synchronous_hle" : "unavailable") << '}';
+    }
+    std::cout << "],\"instruction_cache_flushes\":[";
+    for (std::size_t i = 0; i < instruction_cache_flushes.size(); ++i)
+        std::cout << (i ? "," : "") << instruction_cache_flushes[i];
+    std::cout << "],\"delivered_sectors\":[";
     if (program)
         for (std::size_t i = 0; i < program->resident.drive.delivered.size(); ++i)
             std::cout << (i ? "," : "") << program->resident.drive.delivered[i];
     std::cout << "],\"owned\":[" << owned << "],\"hardware_writes\":[";
     if (program && executing)
         std::cout << hardware_writes(*program, 0);
-    // Stack windows the code ran on inside heap blocks: callee frames.
+    // Diagnostic stack windows; comparisons do not exclude owned bytes here.
     std::cout << "],\"stack_windows\":[";
     if (program)
         for (std::size_t i = 0; i < program->resident.switched_stacks.size(); ++i) {

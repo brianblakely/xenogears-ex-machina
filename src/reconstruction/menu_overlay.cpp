@@ -15,14 +15,26 @@ std::uint32_t ram(std::uint32_t address) {
         throw MenuError("Menu code reaches an address outside main RAM");
     return 0x80000000U | (address & 0x1fffffU);
 }
+struct LendGpuCaller {
+    std::optional<FrameCallAbi> &slot;
+    std::optional<FrameCallAbi> previous;
+    ~LendGpuCaller() { slot = previous; }
+};
 } // namespace
 
 Overlay::Overlay(Program &owner, FrameServices &frame_services, std::uint32_t stack_pointer,
-                 CardBios *bios)
+                 CardBios *bios, std::span<std::uint8_t> qualified_stack)
     : program(owner), services(frame_services), card(bios), sp_(stack_pointer),
-      entry_sp_(stack_pointer) {
+      entry_sp_(stack_pointer), qualified_stack_(qualified_stack) {
+    if (qualified_stack_.size() > stack_bytes || qualified_stack_.size() > entry_sp_ ||
+        (qualified_stack_.size() & 3U) != 0)
+        throw MenuError("A qualified menu stack must fit the bounded entry stack window");
     if (!program.menu)
         throw MenuError("The menu overlay requires menu memory");
+    if (!qualified_stack_.empty() && !program.menu->stack.empty())
+        throw MenuError("A borrowed menu stack cannot overlap a separate menu stack owner");
+    if (program.menu->resident_memory || program.menu->resident_tail)
+        throw MenuError("Menu memory already has a borrowed resident owner");
     auto &resident = program.resident;
     if (resident.game_data.size() != game_data_bytes)
         throw MenuError("The menu overlay requires the game data");
@@ -33,8 +45,15 @@ Overlay::Overlay(Program &owner, FrameServices &frame_services, std::uint32_t st
             throw MenuError("Game data overlaps menu memory");
     regions.emplace(game_start_, std::move(resident.game_data));
     services_at_start_ = services_left();
-    program.menu->stack_base = entry_sp_ - stack_bytes;
-    program.menu->stack.assign(stack_bytes, 0);
+    program.menu->stack_base =
+        entry_sp_ - static_cast<std::uint32_t>(qualified_stack_.empty() ? stack_bytes
+                                                                        : qualified_stack_.size());
+    if (qualified_stack_.empty())
+        program.menu->stack.assign(stack_bytes, 0);
+    program.menu->resident_memory = this;
+    program.menu->resident_tail = [&](std::uint32_t address) {
+        return program.record_block(address);
+    };
 }
 
 std::size_t Overlay::services_left() const {
@@ -65,10 +84,12 @@ void Overlay::pass_position(bool deliver) {
 }
 
 void Overlay::entering_sound() {
+    // The qualified hook is 801c8574's entry, before 801c85a8 starts the
+    // effect. Deliver earlier arrivals first; later arrivals must see the
+    // voice setup that 8003b644 brackets with DisableEvent/EnableEvent.
+    catch_up();
     if (sound_positions)
-        pass_position();
-    else
-        catch_up();
+        pass_position(false);
 }
 
 Overlay::~Overlay() {
@@ -76,6 +97,8 @@ Overlay::~Overlay() {
     if (auto found = regions.find(game_start_); found != regions.end())
         program.resident.game_data = std::move(regions.extract(found).mapped());
     program.menu->stack.clear();
+    program.menu->resident_memory = nullptr;
+    program.menu->resident_tail = {};
 }
 
 void Overlay::missing(std::string_view operation, std::uint32_t address, const char *id,
@@ -86,17 +109,26 @@ void Overlay::missing(std::string_view operation, std::uint32_t address, const c
 // ---- Memory ---------------------------------------------------------------
 
 void Overlay::set_stack_image(std::span<const std::uint8_t> image) {
+    if (!qualified_stack_.empty())
+        throw MenuError("A connected menu stack cannot be replaced at its menu boundary");
     auto &stack = program.menu->stack;
     if (image.size() != stack.size())
         throw MenuError("The stack image must cover the modeled stack");
     std::ranges::copy(image, stack.begin());
 }
 
+void Overlay::set_saved_registers(std::span<const std::uint32_t> registers) {
+    if (registers.size() != saved_registers_.size())
+        throw MenuError("The saved-register image must contain S0 through S7");
+    std::ranges::copy(registers, saved_registers_.begin());
+}
+
 std::uint8_t *Overlay::stack_byte(std::uint32_t address) const {
-    const auto base = entry_sp_ - stack_bytes;
+    const auto base = program.menu->stack_base;
     if (address < base || address >= entry_sp_)
         return nullptr;
-    return program.menu->stack.data() + (address - base);
+    const auto bytes = qualified_stack_.empty() ? std::span(program.menu->stack) : qualified_stack_;
+    return bytes.data() + (address - base);
 }
 
 std::uint8_t *Overlay::menu_byte(std::uint32_t address, std::uint32_t width) const {
@@ -164,9 +196,10 @@ void Overlay::put16(std::uint32_t address, std::uint32_t value) { write(address,
 void Overlay::put32(std::uint32_t address, std::uint32_t value) { write(address, value, 4); }
 
 Overlay::StackFrame::StackFrame(Overlay &overlay, std::uint32_t bytes)
-    : overlay_(overlay), saved_sp_(overlay.sp_), saved_size_(overlay.frame_size_) {
-    if (overlay_.entry_sp_ - (overlay_.sp_ - bytes) > stack_bytes)
-        throw MenuError("Menu callee frames exceed the modeled stack");
+    : overlay_(overlay), saved_sp_(overlay.sp_), saved_size_(overlay.frame_size_),
+      saved_registers_(overlay.saved_registers_) {
+    if (bytes > overlay_.sp_ || overlay_.sp_ - bytes < overlay_.program.menu->stack_base)
+        throw MenuError("Menu callee frames exceed the qualified stack");
     overlay_.sp_ -= bytes;
     overlay_.frame_size_ = bytes;
 }
@@ -174,6 +207,7 @@ Overlay::StackFrame::StackFrame(Overlay &overlay, std::uint32_t bytes)
 Overlay::StackFrame::~StackFrame() {
     overlay_.sp_ = saved_sp_;
     overlay_.frame_size_ = saved_size_;
+    overlay_.saved_registers_ = saved_registers_;
 }
 
 Overlay::Frame Overlay::frame(std::uint32_t bytes) const {
@@ -185,7 +219,14 @@ Overlay::Frame Overlay::frame(std::uint32_t bytes) const {
 // ---- Resident services -----------------------------------------------------
 
 std::uint32_t Overlay::allocate(std::uint32_t size, std::uint32_t mode, std::uint32_t site) {
-    const auto stack_frame = enter(0x20);
+    // 80031bdc..80031c20: the heap frame and the caller/register stores it
+    // retains. The original caller word is reduced to its 25-bit word offset.
+    const auto stack_frame = enter(0x28);
+    const auto locals = frame(0x28);
+    put32(locals[0x18], saved_registers_[0]);
+    put32(locals[0x1c], saved_registers_[1]);
+    put32(locals[0x20], site + 8);
+    put32(locals[0x10], (site & 0x1ffffffU) >> 2U);
     auto block = resident::heap_allocate(program.resident.heap, size, mode, site);
     if (!block)
         missing("heap_allocate", site, "symbol:heap-fatal-80019acc",
@@ -196,12 +237,28 @@ std::uint32_t Overlay::allocate(std::uint32_t size, std::uint32_t mode, std::uin
 }
 
 void Overlay::release(std::uint32_t block, std::uint32_t site) {
+    // 800320e8..800320f4: the 20h frame and delay-slot RA store execute
+    // for both null and non-null pointers. The caller supplies its JAL PC.
+    const auto stack_frame = enter(0x20);
+    const auto locals = frame(0x20);
+    put32(locals[0x18], site + 8);
+    if (block == 0 && program.resident.heap.quiet == 0)
+        put32(locals[0x10], site + 8); // 80032108..80032110, before the fatal handler.
     auto &regions = program.menu->regions;
     resident::HeapBlock taken{block, {}};
     const auto found = regions.find(block);
     if (block != 0) {
-        if (found == regions.end())
-            throw MenuError("The menu releases a block it does not own");
+        if (found == regions.end()) {
+            const auto header = program.resident.heap.headers.find(block - 8);
+            if (header != program.resident.heap.headers.end() &&
+                (header->second[1] & resident::heap_tag_mask) != 0)
+                throw MenuError("The menu releases a live block it does not own");
+            // 801da518 repeats data-set 10's releases. 800320e8 rewrites
+            // the flags even after the bytes have returned to the heap;
+            // its stale-pointer path also validates heap-held ownership.
+            static_cast<void>(resident::heap_release(program.resident.heap, taken, site));
+            return;
+        }
         taken.bytes = std::move(found->second);
         regions.erase(found);
     }
@@ -372,14 +429,31 @@ void Overlay::put_draw_env(std::uint32_t environment) {
 }
 void Overlay::put_disp_env(std::uint32_t environment) { program.put_disp_env(environment); }
 void Overlay::move_image(std::uint32_t rect, std::int32_t x, std::int32_t y) {
+    // 8004495c..80044980: MoveImage preserves its caller's S0..S2,
+    // then keeps the rectangle, y and x in those registers.
+    const auto stack_frame = enter(0x20);
+    const auto locals = frame(0x20);
+    for (std::uint32_t i = 0; i < 3; ++i)
+        put32(locals[0x10 + i * 4], saved_registers_[i]);
+    saved_registers_[0] = rect;
+    saved_registers_[1] = static_cast<std::uint32_t>(y);
+    saved_registers_[2] = static_cast<std::uint32_t>(x);
     catch_up();
     const std::array<std::int16_t, 4> area{
         static_cast<std::int16_t>(s16(rect)), static_cast<std::int16_t>(s16(rect + 2)),
         static_cast<std::int16_t>(s16(rect + 4)), static_cast<std::int16_t>(s16(rect + 6))};
+    LendGpuCaller lend{program.gpu_enqueue_caller_, program.gpu_enqueue_caller_};
+    program.gpu_enqueue_caller_ = FrameCallAbi{sp_, saved_registers_, 0x80044a04};
     program.move_image(services, area, x, y);
 }
 void Overlay::draw_otag(std::uint32_t table) {
+    // 80044bd8..80044be0: DrawOTag preserves S0 and uses it for the table.
+    const auto stack_frame = enter(0x18);
+    put32(frame(0x18)[0x10], saved_registers_[0]);
+    saved_registers_[0] = table;
     catch_up();
+    LendGpuCaller lend{program.gpu_enqueue_caller_, program.gpu_enqueue_caller_};
+    program.gpu_enqueue_caller_ = FrameCallAbi{sp_, saved_registers_, 0x80044c30};
     program.draw_otag(services, table);
 }
 void Overlay::clear_otag_r(std::uint32_t table, std::uint32_t count) {
@@ -444,7 +518,15 @@ std::int32_t Overlay::read_file(std::uint32_t file, std::uint32_t destination, s
     return program.read_file(static_cast<std::int32_t>(file), destination, offset, mode);
 }
 
-void Overlay::disc_wait(std::uint32_t once) { program.disc_wait(once); }
+void Overlay::disc_wait(std::uint32_t once) {
+    const auto stack_frame = enter(0x18); // 80028a60
+    program.disc_wait(once);
+    // The final 800286cc call at 80028a7c occurs on either path, after
+    // the wait. Its S0 and return-PC stores remain in the reused stack.
+    const auto poll_frame = enter(0x18);
+    put32(frame(0x18)[0x10], saved_registers_[0]); // 800286d0
+    put32(frame(0x18)[0x14], 0x80028a84);          // 800286e4
+}
 
 std::uint32_t Overlay::current_disc() const { return program.current_disc(); }
 

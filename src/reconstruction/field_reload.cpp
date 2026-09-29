@@ -97,11 +97,12 @@ void Program::reload_transition_shade(std::uint32_t value) {
 }
 
 std::int32_t Program::field_reload_fade_frame(FrameServices &services, std::int32_t shade,
-                                              const ProgramObserver &observe) {
+                                              const ProgramObserver &observe,
+                                              std::optional<FrameCallAbi> caller) {
     auto &reload = loaded(*this).reload;
     field_pre_frame(services);
     reload_transition_draw();
-    field_frame(services, observe);
+    field_frame(services, observe, FrameStep::start, caller);
     field_post_frame();
     reload_transition_shade(u32(shade >> 16));
     shade -= divide(0x800000, s32(reload.fade_frames), 0x800a617c);
@@ -112,13 +113,28 @@ std::int32_t Program::field_reload_fade_frame(FrameServices &services, std::int3
     return shade;
 }
 
-void Program::field_reload_fade_in(FrameServices &services, const ProgramObserver &observe) {
+void Program::field_reload_fade_in(FrameServices &services, const ProgramObserver &observe,
+                                   std::optional<std::uint32_t> frame) {
     auto &state = loaded(*this);
     auto &reload = state.reload;
     field::begin_fade_out(state.fade, s32(reload.fade_frames)); // 80071e58
     std::int32_t shade = 0x800000;
     for (std::int32_t i = 0; i < s32(reload.fade_frames); ++i) {
-        shade = field_reload_fade_frame(services, shade, observe);
+        std::optional<FrameCallAbi> caller;
+        if (menu_call_state) {
+            if (!frame)
+                throw MissingDependency({"field_reload_fade_in", 0x800a6158, {}, {}},
+                                        "state:field-reload-frame-abi", false,
+                                        "The owned reload fade needs its original caller frame");
+            auto registers = menu_call_state->saved_registers;
+            // 800a612c/6140/6144: this source loop owns S0..S2. S3..S7
+            // are preserved by 800a5c40's original prologue and callees.
+            registers[0] = u32(i);
+            registers[1] = u32(shade);
+            registers[2] = 0x800000;
+            caller = FrameCallAbi{*frame, registers, 0x800a6160};
+        }
+        shade = field_reload_fade_frame(services, shade, observe, caller);
         observed(observe, *this, {"field_reload_fade_frame", 0x800a61c8, {}, {}}, true);
     }
 }
@@ -1091,7 +1107,7 @@ void Program::field_reload(FrameServices &services, std::uint32_t frame,
     if (s32(resident.music.gate) == -1)
         load_music(resident.music.requested); // 80085b20
     done("reload_resume", 0x800a6120);
-    field_reload_fade_in(services, observe);
+    field_reload_fade_in(services, observe, frame);
     deliver_arrivals(0x80077db4); // Since the last fade frame's exit.
     done("reload_fade_in", 0x800a63a0);
     field_reload_finish(services, frame);

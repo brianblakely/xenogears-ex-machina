@@ -35,6 +35,52 @@ void stage(Program &program, const ProgramObserver &observe, std::string_view op
     program.reach_position(address);
     observed(observe, program, {operation, address, {}, {}});
 }
+// Callee-save stores retained on 80022a0c's switched heap stack. The
+// corresponding native services compute all GPU/queue/timer state; these
+// stores preserve the source caller data that survives the stack's release.
+void retain_across_image_stack(Program &program, std::uint32_t stack, std::uint32_t rect,
+                               std::uint32_t pixels, const std::array<std::uint32_t, 6> &saved) {
+    auto &bytes = program.resident.heap_contents.at(stack);
+    const auto store = [&](std::uint32_t frame, std::uint32_t offset, std::uint32_t value) {
+        const auto at = frame + offset - stack;
+        if (at > bytes.size() || 4 > bytes.size() - at)
+            throw field::FieldFormatError("An image upload stack store exceeds its owner");
+        for (std::uint32_t i = 0; i < 4; ++i)
+            bytes[at + i] = static_cast<std::uint8_t>(value >> (8U * i));
+    };
+    const auto load = stack + 0x1efc - 0x20; // 80044894
+    store(load, 0x10, saved[0]);
+    store(load, 0x14, saved[1]);
+    store(load, 0x18, 0x80022a4c);
+    const auto check = load - 0x20; // 8004463c
+    store(check, 0x18, rect);
+    store(check, 0x1c, 0x800448bc);
+    const auto queue = load - 0x28; // 8004668c
+    store(queue, 0x10, rect);
+    store(queue, 0x14, pixels);
+    store(queue, 0x18, saved[2]);
+    store(queue, 0x1c, saved[3]);
+    store(queue, 0x20, 0x800448e0);
+    const auto alarm = [&](std::uint32_t caller, std::uint32_t return_pc, std::uint32_t s0,
+                           std::uint32_t s1) {
+        const auto frame = caller - 0x18; // 80046efc
+        store(frame, 0x10, return_pc);
+        const auto vsync = frame - 0x20; // 8004b54c(-1)
+        store(vsync, 0x10, s0);
+        store(vsync, 0x14, s1);
+        store(vsync, 0x18, 0x80046f0c);
+    };
+    alarm(queue, 0x800466b8, rect, 8);
+    const auto dws = queue - 0x50; // 800460a0, called immediately at 80046798
+    store(dws, 0x30, rect);
+    store(dws, 0x34, 8);
+    store(dws, 0x38, pixels);
+    store(dws, 0x3c, 0x800460a0);
+    store(dws, 0x40, saved[4]);
+    store(dws, 0x44, saved[5]);
+    store(dws, 0x48, 0x800467a0);
+    alarm(dws, 0x800460cc, rect, rect);
+}
 // Constant stores of the field reset 800705dc, in program order.
 struct Store {
     std::uint32_t address;
@@ -378,17 +424,6 @@ std::uint8_t Program::ram_byte(std::uint32_t address) {
     address = 0x80000000U | (address & 0x1fffffU);
     if (const auto bytes = owned_span(address); !bytes.empty())
         return bytes[0];
-    const auto &heap = resident.heap;
-    if (const auto after = heap.headers.upper_bound(address); after != heap.headers.begin()) {
-        const auto &[at, words] = *std::prev(after);
-        if (address - at < 8)
-            return static_cast<std::uint8_t>(words[(address - at) / 4] >> (8U * (address % 4)));
-    }
-    if (const auto after = heap.held.upper_bound(address); after != heap.held.begin()) {
-        const auto &[at, bytes] = *std::prev(after);
-        if (address - at < bytes.size())
-            return bytes[address - at];
-    }
     return static_cast<std::uint8_t>(memory(address, 1));
 }
 
@@ -458,7 +493,18 @@ void Program::load_images_across(FrameServices &services, std::uint32_t data, st
         resident.image_upload = {frame + 0x10, entry + 4};
         const auto stack = load_block(0x2000, 1, 0x80022a1c);
         resident.switched_stacks.push_back({stack + 0x1f00 - 0x800, 0x804});
+        set_memory(stack + 0x1f00, frame - 0x18); // 80022a30 saves 80022a0c's frame SP
+        const auto head = resident.gpu.head;
         static_cast<void>(load_image(rect, frame + 0x10, entry + 4, &services));
+        if (resident.gpu.head != head)
+            throw MissingDependency(
+                {"load_images_across", 0x800467d4, {}, {}}, "symbol:queued-upload-stack-stores",
+                false, "A queued image's retained heap-stack stores are not recovered");
+        // 80022a70's loop registers before the call: 80022a0c replaces S0
+        // with the temporary block; S1 is the advanced offset-table cursor.
+        retain_across_image_stack(
+            *this, stack, frame + 0x10, entry + 4,
+            {stack, data + 4 + 4 * (k + 1), 0x40U * (k + 1), frame + 0x10, data, x});
         static_cast<void>(release_owned_block(stack, 0x80022a54));
     }
 }
@@ -1014,8 +1060,10 @@ void Program::restore_field_events(const ProgramObserver &observe) {
         } else {
             resource = bundle_sprite(tag & 0x7fU);
         }
-        create_actor_sprite(i, {static_cast<std::uint32_t>(i), a[0x127], resource,
-                                (mode >> 28U) & 3U, flags & 15U, tag, (flags >> 4U) & 1U});
+        create_actor_sprite(i,
+                            {static_cast<std::uint32_t>(i), a[0x127], resource, (mode >> 28U) & 3U,
+                             flags & 15U, tag, (flags >> 4U) & 1U},
+                            field_init_stack_);
         const auto auxiliary = memory(state.actors[i].address + 0x12e, 2) & 3U;
         if ((tag & 0x80U) != 0 && (auxiliary == 1 || auxiliary == 2))
             throw MissingDependency({"restore_field_events", 0x800a2a7c, i, {}},
@@ -1068,7 +1116,8 @@ void Program::init_field_events(const ProgramObserver &observe) {
         if (state.initialized_sprites != 0)
             continue;
         // The bundle's first sprite, tag 80, and flag 800.
-        create_actor_sprite(i, {static_cast<std::uint32_t>(i), 0, bundle_sprite(0), 0, 0, 0x80, 0});
+        create_actor_sprite(i, {static_cast<std::uint32_t>(i), 0, bundle_sprite(0), 0, 0, 0x80, 0},
+                            field_init_stack_);
         auto &actor = state.actors[i];
         set_memory(actor.address + 4, memory(actor.address + 4) | 0x800U);
     }
@@ -1212,9 +1261,13 @@ void Program::load_field(FrameServices &services, std::uint32_t frame,
     adopt_loaded_field(sizes);
     struct Lend {
         FrameServices *&slot;
-        ~Lend() { slot = nullptr; }
-    } lend{event_services_ = &services};
-    init_field_events(observe); // 800a28d4
+        std::optional<std::uint32_t> &stack;
+        ~Lend() {
+            slot = nullptr;
+            stack.reset();
+        }
+    } lend{event_services_ = &services, field_init_stack_ = frame - 0x48}; // 800a28dc
+    init_field_events(observe);                                            // 800a28d4
     stage(*this, observe, "load_events", 0x80071770);
     finish_field_load(observe);
 }

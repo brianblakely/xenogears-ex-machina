@@ -162,6 +162,8 @@ void layer_floors() {
     auto bytes = mesh();
     auto r = f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0);
     check(r.value == 0 && r.floor == 7 && r.upper == 7 && r.triangle == 0, "layer floor height");
+    check(r.locals && r.locals->x == 4 && r.locals->z == 4 && r.locals->origin == 0x00040004,
+          "layer query exposes its computed source coordinate locals");
     bytes[0x30 + 13] = 2;
     check(f::query_layer_floor(bytes, v.reciprocal, actor, 0, 0).upper == 15,
           "nonnegative signed extent raises the upper bound");
@@ -182,11 +184,14 @@ void layer_floors() {
           "attribute control disables the terrain mask");
     put(actor, 8, 0xffff, 2);
     r = f::query_layer_floor(mesh(), v.reciprocal, actor, 0, 0);
-    check(r.value == -1 && !r.floor && !r.triangle, "missing triangle leaves outputs untouched");
+    check(r.value == -1 && !r.floor && !r.triangle && !r.locals,
+          "missing triangle leaves outputs and pre-coordinate locals untouched");
     put(actor, 8, 0, 2);
     put(actor, 0x30, 0xfff00000U);
-    check(f::query_layer_floor(mesh(), v.reciprocal, actor, 0, 0).value == -1,
-          "missing neighbor fails the layer");
+    r = f::query_layer_floor(mesh(), v.reciprocal, actor, 0, 0);
+    check(r.value == -1 && r.locals && r.locals->x == -12 && r.locals->z == 4 &&
+              r.locals->origin == 0x00040004,
+          "missing neighbor retains only the already computed coordinate locals");
     rejects([&] { (void)f::query_layer_floor(mesh(), v.reciprocal, actor, 1, 0); },
             "layer beyond the component's count");
 }

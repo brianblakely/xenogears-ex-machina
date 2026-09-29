@@ -487,7 +487,49 @@ void Program::camera_update() {
 }
 
 // Field 800739c0.
-void Program::field_move(const ProgramObserver &observe) {
+void Program::retain_view_locals(const field::ViewLocals &locals, std::uint32_t sp,
+                                 std::uint32_t return_address) {
+    if (!menu_call_state)
+        return;
+    const auto &call = *menu_call_state;
+    if (sp + 0x10U < call.stack_base ||
+        std::uint64_t{sp + 0x70U - call.stack_base} > call.stack.size())
+        throw MissingDependency({"build_view", 0x80073750, {}, {}}, "state:field-frame-call-stack",
+                                false,
+                                "The original view-helper locals cross their qualified owner");
+    // Source 80073750's final local values. +1ch/+2ch/+3ch/+4ch and
+    // scaled-eye +56h remain prior callee bytes; these are not full records.
+    const std::array<const field::GteLong *, 4> vectors{&locals.transformed_eye, &locals.forward,
+                                                        &locals.right, &locals.above};
+    for (std::uint32_t slot = 0; slot < vectors.size(); ++slot)
+        for (std::uint32_t i = 0; i < 3; ++i)
+            set_memory(sp + 0x10U + slot * 0x10U + i * 4U, u32((*vectors[slot])[i]));
+    for (std::uint32_t i = 0; i < 3; ++i)
+        set_memory(sp + 0x50U + i * 2U, static_cast<std::uint16_t>(locals.scaled_eye[i]), 2);
+    set_memory(sp + 0x6cU, return_address); // 8007375c
+}
+
+void Program::field_move(const ProgramObserver &observe, std::optional<FrameCallAbi> caller) {
+    if (menu_call_state && !caller)
+        throw MissingDependency({"field_move", 0x800739c0, {}, {}}, "state:field-move-call-abi",
+                                false, "The owned move stack needs its source field-frame caller");
+    const auto spill = [&](std::uint32_t address, std::uint32_t value) {
+        if (!menu_call_state)
+            return;
+        const auto &call = *menu_call_state;
+        if (address < call.stack_base ||
+            std::uint64_t{address - call.stack_base} + 4 > call.stack.size())
+            throw MissingDependency({"field_move", 0x800739c0, {}, {}},
+                                    "state:field-frame-call-stack", false,
+                                    "The original move callee crosses its qualified stack owner");
+        set_memory(address, value);
+    };
+    const auto move_sp = caller ? caller->sp - 0x48U : 0U;
+    if (caller) {
+        for (std::uint32_t i = 0; i < 3; ++i)
+            spill(move_sp + 0x38U + 4U * i, caller->saved_registers[i]);
+        spill(move_sp + 0x44U, caller->return_address);
+    }
     field_update(observe);
     auto &state = *field;
     auto &c = state.camera;
@@ -510,14 +552,31 @@ void Program::field_move(const ProgramObserver &observe) {
         eye[i] = add(c.eye[i], c.shake_offset[i]);
         target[i] = add(c.target[i], c.shake_offset[i]);
     }
+    const auto view_sp = move_sp - 0x70U;
+    if (caller) {
+        // 800739f4 keeps the camera base in S0; S1..S4 are preserved
+        // through the original atan/length and scratchpad camera calls.
+        spill(view_sp + 0x58U, 0x800af898);
+        for (std::uint32_t i = 1; i < 5; ++i)
+            spill(view_sp + 0x58U + 4U * i, caller->saved_registers[i]);
+        // 80073b20..80073b84 retains the actual camera/shake arguments.
+        for (std::uint32_t i = 0; i < 3; ++i) {
+            spill(move_sp + 0x10U + 4U * i, u32(eye[i]));
+            spill(move_sp + 0x20U + 4U * i, u32(target[i]));
+        }
+    }
+    field::ViewLocals view_locals{};
     if (state.camera_cut == 0) {
         c.previous_view = c.view;
-        field::build_view(resident.gte, resident.math.reciprocal, c.view, eye, target, c.up);
+        view_locals =
+            field::build_view(resident.gte, resident.math.reciprocal, c.view, eye, target, c.up);
     } else {
-        field::build_view(resident.gte, resident.math.reciprocal, c.previous_view, eye, target,
-                          c.up);
+        view_locals = field::build_view(resident.gte, resident.math.reciprocal, c.previous_view,
+                                        eye, target, c.up);
         c.view = c.previous_view;
     }
+    if (caller)
+        retain_view_locals(view_locals, view_sp, state.camera_cut == 0 ? 0x80073c44U : 0x80073b9cU);
     view_setup(resident, state); // 800722f4 reloads the same matrix.
     diagnostic(state, 0x80072330);
     observed(observe, *this, {"field_move_view", 0x80073c64, {}, {}}, true);

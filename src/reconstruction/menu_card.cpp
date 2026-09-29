@@ -184,12 +184,12 @@ std::uint32_t store_entry(Overlay &overlay, std::uint32_t dir,
 }
 
 std::uint32_t card_open(Overlay &overlay, std::uint32_t name, std::uint32_t mode) {
-    return bios(overlay, "open").open(text_at(overlay, name), mode); // 80040534
+    return bios(overlay, "open").open(name, text_at(overlay, name), mode); // 80040534
 }
 
 std::uint32_t card_read(Overlay &overlay, std::uint32_t fd, std::uint32_t buffer,
                         std::uint32_t count) { // 80040544
-    const auto read = bios(overlay, "read").read(fd, count);
+    const auto read = bios(overlay, "read").read(fd, buffer, count);
     if (read.bytes.size() > count)
         throw ServiceUnavailable("memory card BIOS read returned more than the count");
     for (std::uint32_t i = 0; i < read.bytes.size(); ++i)
@@ -200,7 +200,7 @@ std::uint32_t card_read(Overlay &overlay, std::uint32_t fd, std::uint32_t buffer
 std::uint32_t card_write(Overlay &overlay, std::uint32_t fd, std::uint32_t buffer,
                          std::uint32_t count) { // 80040554
     const auto bytes = bytes_at(overlay, buffer, count);
-    return bios(overlay, "write").write(fd, bytes);
+    return bios(overlay, "write").write(fd, buffer, bytes);
 }
 
 std::uint32_t card_close(Overlay &overlay, std::uint32_t fd) {
@@ -208,7 +208,7 @@ std::uint32_t card_close(Overlay &overlay, std::uint32_t fd) {
 }
 
 std::uint32_t card_erase(Overlay &overlay, std::uint32_t name) {
-    return bios(overlay, "erase").erase(text_at(overlay, name)); // 800405b4
+    return bios(overlay, "erase").erase(name, text_at(overlay, name)); // 800405b4
 }
 
 // A failed card call before a retry: 801c8ca4 (outside the census) waits a
@@ -404,12 +404,12 @@ std::uint32_t Overlay::list_card_directory(std::uint32_t a0) {
     // The retry counter (5, decremented once) never reaches zero here.
     std::uint32_t count = 0;
     auto &service = bios(*this, "firstfile");
-    if (store_entry(*this, dir, service.first_file(text_at(*this, pattern))) == dir) {
+    if (store_entry(*this, dir, service.first_file(pattern, text_at(*this, pattern), dir)) == dir) {
         do {
             const auto entry = port * 16 + (count & 0xffU);
             ++count;
             strcpy(u32(at(state_card)) + entry * entry_bytes + entry_name, dir);
-        } while (store_entry(*this, dir, service.next_file()) == dir);
+        } while (store_entry(*this, dir, service.next_file(dir)) == dir);
     }
     put8(u32(at(state_card)) + port + port_files, count);
     return count & 0xffU;
@@ -982,6 +982,12 @@ void Overlay::decode_game_names() {
 // from payload + 0, the globals 8005a3a0 from game + 2324, and decode the
 // names (801cb184).
 void Overlay::apply_loaded_payload(std::uint32_t a0) {
+    if (payload_positions) {
+        catch_up();
+        if (boundary)
+            boundary("apply_loaded_payload_entry");
+        pass_position(false);
+    }
     const auto stack_frame = enter(0x18);
     restore_payload_game_data(a0, u32(at(state_tables)));
     program.resident.pad.vsyncs = u32(a0);
@@ -1080,7 +1086,11 @@ std::uint32_t Overlay::load_game() {
             }
             static_cast<void>(card_close(*this, fd));
             Menu context{*program.menu, program.resident.sound};
-            if (check_loaded(context, buffer).decision == LoadDecision::accepted) {
+            const auto checked = check_loaded(context, buffer);
+            // 801cb720 is the checksum branch's delay slot: both accepted
+            // and checksum-mismatch paths retain the payload pointer in S0.
+            saved_registers_[0] = buffer + header_size;
+            if (checked.decision == LoadDecision::accepted) {
                 load_menu_data_set(1);
                 apply_loaded_payload(buffer + header_size);
                 load_menu_data_set(0x11);
@@ -1276,7 +1286,7 @@ std::uint32_t Overlay::save_game_body(std::uint32_t a0, std::uint32_t, std::uint
                 continue;
             }
             show_message(0x26);
-            if (bios(*this, "format").format(text_at(*this, device)) != 0) { // 80040574
+            if (bios(*this, "format").format(device, text_at(*this, device)) != 0) { // 80040574
                 close_message();
                 static_cast<void>(ask_confirmation(0x5c, 0xff, 0));
             } else {
@@ -1375,7 +1385,8 @@ std::uint32_t Overlay::save_game_body(std::uint32_t a0, std::uint32_t, std::uint
                 strcpy(temp_name, device);
                 strcat(temp_name, temp_suffix);
                 if (bios(*this, "rename")
-                        .rename(text_at(*this, temp_name), text_at(*this, final_name)) == 0)
+                        .rename(temp_name, text_at(*this, temp_name), final_name,
+                                text_at(*this, final_name)) == 0)
                     retry_wait(0x801cc50c); // 800405a4
                 release(payload, 0x801cc534);
             }
@@ -1827,6 +1838,9 @@ void Overlay::store_payload_game_data(std::uint32_t a0) {
 // 801e4258, 801e42ac and 801e433c, the other ranges).
 void Overlay::restore_payload_game_data(std::uint32_t a0, std::uint32_t a1) {
     const auto stack_frame = enter(0x30);
+    // 801e4d44: the incoming S0 is retained where 801cb184's later
+    // decoded-name buffer reads its final unwritten word.
+    put32(frame(0x30)[0x10], saved_registers_[0]);
     Menu context{*program.menu, program.resident.sound};
     restore_game_data(context, a0, a1);
 }

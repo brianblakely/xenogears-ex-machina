@@ -19,6 +19,7 @@ add_library(xem-reconstruction STATIC
   src/reconstruction/field_actor.cpp
   src/reconstruction/field_battle.cpp
   src/reconstruction/field_battle_exit.cpp
+  src/reconstruction/field_menu.cpp
   src/reconstruction/field_control.cpp
   src/reconstruction/field_sprite.cpp
   src/reconstruction/field_sprite_factory.cpp
@@ -103,7 +104,7 @@ target_link_libraries(xem-analysis-runner PRIVATE xem-reconstruction)
 add_executable(xem-event-disassembler src/analysis/event_disassembler.cpp)
 target_link_libraries(xem-event-disassembler PRIVATE xem-reconstruction)
 add_executable(xem-memory-runner src/analysis/memory_runner.cpp src/analysis/field_memory.cpp
-  src/analysis/mdec_codec.cpp)
+  src/analysis/mdec_codec.cpp src/analysis/recorded_card.cpp)
 target_link_libraries(xem-memory-runner PRIVATE xem-reconstruction)
 
 find_package(Python3 3.11 REQUIRED COMPONENTS Interpreter)
@@ -192,6 +193,9 @@ if(BUILD_TESTING)
   add_executable(test-menu-overlay tests/test_menu_overlay.cpp)
   target_link_libraries(test-menu-overlay PRIVATE xem-reconstruction)
   add_test(NAME menu-overlay-reconstruction COMMAND test-menu-overlay)
+  add_executable(test-recorded-card tests/test_recorded_card.cpp src/analysis/recorded_card.cpp)
+  target_link_libraries(test-recorded-card PRIVATE xem-reconstruction)
+  add_test(NAME recorded-card-boundary COMMAND test-recorded-card)
   add_executable(test-menu-save tests/test_menu_save.cpp)
   target_link_libraries(test-menu-save PRIVATE xem-reconstruction)
   add_test(NAME menu-save-reconstruction COMMAND test-menu-save)
@@ -225,6 +229,9 @@ if(BUILD_TESTING)
   add_executable(test-field-loop tests/test_field_loop.cpp)
   target_link_libraries(test-field-loop PRIVATE xem-reconstruction)
   add_test(NAME field-loop-reconstruction COMMAND test-field-loop)
+  add_executable(test-field-menu tests/test_field_menu.cpp src/analysis/field_memory.cpp)
+  target_link_libraries(test-field-menu PRIVATE xem-reconstruction)
+  add_test(NAME field-menu-reconstruction COMMAND test-field-menu)
   add_executable(test-packed-field tests/test_packed_field.cpp)
   target_link_libraries(test-packed-field PRIVATE xem-reconstruction)
   add_test(NAME packed-field-reconstruction COMMAND test-packed-field)

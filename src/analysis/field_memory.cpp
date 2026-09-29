@@ -726,6 +726,29 @@ void export_resident_into(const Program &program, Claims &out) {
         out.bytes("sprite_task_block", node.address, node.bytes);
     for (const auto &[address, bytes] : resident.heap_outside)
         out.bytes("heap_outside", address, bytes);
+    if (program.menu_call_state) {
+        const auto &call = *program.menu_call_state;
+        const auto start = std::uint64_t{call.stack_base};
+        const auto end = start + call.stack.size();
+        const auto list_start = std::uint64_t{read.list.address};
+        const auto list_end = list_start + read.list.bytes.size();
+        if (!read.list.bytes.empty() && list_start < end && start < list_end) {
+            // The disc reader temporarily owns this exact list. Its claim
+            // above compares every byte; the stale call-stack copy is not
+            // a second owner until the caller takes the evolved bytes back.
+            if (list_start < start || list_end > end)
+                throw field::FieldFormatError("The disc list crosses the owned call stack");
+            const auto before = static_cast<std::size_t>(list_start - start);
+            const auto after = static_cast<std::size_t>(list_end - start);
+            if (before != 0)
+                out.bytes("field_call_stack", call.stack_base, std::span(call.stack).first(before));
+            if (after != call.stack.size())
+                out.bytes("field_call_stack", static_cast<std::uint32_t>(list_end),
+                          std::span(call.stack).subspan(after));
+        } else {
+            out.bytes("field_call_stack", call.stack_base, call.stack);
+        }
+    }
 }
 } // namespace
 
@@ -1195,6 +1218,9 @@ std::vector<OwnedRange> export_field(const Program &program, OriginalMemory &mem
     for (const auto &item : reconstruction::original_globals())
         if (!item.resident)
             out.global(item, program);
+    if (program.menu)
+        for (const auto &[address, bytes] : program.menu->regions)
+            out.bytes("menu_memory", address, bytes);
     for (const auto &actor : state.actors) {
         out.bytes("actor", actor.address, actor.storage);
         out.bytes("descriptor", actor.descriptor_address, actor.descriptor);

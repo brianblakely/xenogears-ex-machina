@@ -148,6 +148,8 @@ std::uint32_t build_sprite(Overlay &o, std::uint32_t id, std::uint32_t destinati
 void Overlay::load_menu_data_set(std::uint32_t a0) {
     const auto stack_frame = enter(0x28);
     const auto code = a0 & 0xffU;
+    saved_registers_[3] = a0;   // 801c72c4
+    saved_registers_[0] = code; // 801c72cc
     std::uint32_t file = 0;
     if (code < 0x10) {
         static_cast<void>(program.select_directory(0x10, 0));
@@ -155,11 +157,14 @@ void Overlay::load_menu_data_set(std::uint32_t a0) {
         const auto size = s(program.file_size(2));
         const auto rounded = size + 3 >= 0 ? size + 3 : size + 6;
         file = allocate(u(rounded >> 2) << 2U, 1, 0x801c72fc);
+        saved_registers_[1] = file; // 801c7308: the loaded offset table
         static_cast<void>(program.read_file(2, file, 0, 0x80));
-        program.disc_wait(0);
+        disc_wait(0);
         static_cast<void>(resident::relocate_offsets(*this, file));
     }
     const auto unpack = [&](std::uint32_t entry) { // 80032e88(entry, 0)
+        const auto unpack_frame = enter(8);
+        put32(frame(8)[4], u32(file + entry)); // 80032e8c
         return resident::unpack_to_new_block(
             *this, u32(file + entry), 0, [&](std::uint32_t size, std::uint32_t mode) {
                 return allocate(size, mode, resident::unpack_allocation_site);

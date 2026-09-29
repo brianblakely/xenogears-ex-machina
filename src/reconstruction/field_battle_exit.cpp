@@ -134,19 +134,7 @@ bool Program::field_battle_start() {
 // particles (800a9460), the emitters (800864f0), the dialogue windows
 // (8007ffe8), then DrawSync(0) and VSync(0).
 void Program::field_battle_leave(FrameServices &services) {
-    auto &state = loaded(*this);
-    // 800798bc: 1 without a reassigned party, else whether the controlled
-    // actor has flag c0 (+14); 800b234c overrides it unless ff.
-    std::uint8_t flag = 1;
-    if (state.party_reassignment != 0) {
-        const auto index = static_cast<std::size_t>(state.controlled_actor);
-        if (index >= state.actors.size())
-            throw field::FieldFormatError("The battle-entry flag needs the controlled actor");
-        flag = (word(state.actors[index].storage, 0x14) & 0xc0U) != 0 ? 1 : 0;
-    }
-    resident.b_59179 = flag;
-    if (const auto value = memory(0x800b234c, 2); s16(value) != 0xff)
-        resident.b_59179 = static_cast<std::uint8_t>(value);
+    field_entry_flag();              // 800798bc
     restore_particle_vram(services); // 800a91f0
     record_play_state();             // 800a31e8
     stop_particles(services);        // 800a9460
@@ -167,11 +155,7 @@ void Program::field_battle_release(std::uint32_t block) {
             throw field::FieldFormatError("A released block has no heap header");
         found->second[1] &= ~resident::heap_keep;
     };
-    for (const auto address : resident.party_sprite_blocks)
-        unkeep(address);
-    const std::array<std::uint32_t, 3> sites{0x80077d70, 0x80077d80, 0x80077d90};
-    for (std::size_t i = 0; i < 3; ++i)
-        static_cast<void>(release_owned_block(resident.party_sprite_blocks[i], sites[i]));
+    release_party_sprites(); // 80077d2c
     const auto bank = resident.field_effect_bank;
     resident::unlink_effect_bank(resident.sound, bank); // 8003852c
     unkeep(bank);

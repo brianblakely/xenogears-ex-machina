@@ -509,7 +509,19 @@ void Program::field_entry(FrameServices &services, std::uint32_t frame,
     for (std::uint32_t n = 0; n < 32; ++n) {
         field_pre_frame(services); // 80077dac
         reload_transition_draw();  // 800a6408
-        field_frame(services, observe);
+        std::optional<FrameCallAbi> caller;
+        if (menu_call_state) {
+            auto registers = menu_call_state->saved_registers;
+            // 80079150..80079170: fade shade, iteration, zoom step and
+            // shade delta are the resident entry caller's S0..S3.
+            registers[0] = u32(shade);
+            registers[1] = n;
+            registers[2] = u32(zoom_step);
+            registers[3] = 0xfffc0000U;
+            registers[4] = 1;
+            caller = FrameCallAbi{frame, registers, 0x80079178};
+        }
+        field_frame(services, observe, FrameStep::start, caller);
         field_post_frame(); // 80078b5c
         reload_transition_shade(u32(shade >> 16));
         shade = std::max(shade - 0x40000, 0);

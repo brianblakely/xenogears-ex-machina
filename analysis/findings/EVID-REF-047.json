@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "id": "EVID-REF-047",
+  "kind": "bounded_menu_load_memory_image_and_connected_caller_ownership",
+  "source_profiles": [
+    "na-slus-00664-39c547a9afc6"
+  ],
+  "locations": [
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": 0,
+      "track_lba": 109123,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "decoded_sha256": "82f84a24ac1fd1979754e1cc9c861405fb59ce95dd78db00a76f00c8f1bd177d",
+        "decoded_base": "0x801c5000"
+      },
+      "address": "0x801c62a8",
+      "address_space": "PS1 KSEG0 menu overlay; main menu call, card load and payload restore at 801cb28c",
+      "not_applicable": "Sector identifies the packed source; address identifies the independently qualified decoded overlay. Original bytes remain private.",
+      "source_slot": 39,
+      "source_window_bytes": 70944,
+      "source_window_sha256": "f3b8d9516c519ee7b1580716c653c54804f205f43eaef3567355700e45d13261"
+    },
+    {
+      "profile": "na-slus-00664-39c547a9afc6",
+      "file": null,
+      "file_offset": null,
+      "track_lba": 108933,
+      "sector_bytes": 2352,
+      "user_data_offset": 24,
+      "executable": "dc0b2dd786203d4cce5927c5a3fc85a18f39a3f7406078860076ebb0bbae7119",
+      "overlay": {
+        "source_slot": 36,
+        "decoded_sha256": "38a1ce829a6f094c505f67143d6ace2d328418c65425a7383991179467e1fdfc",
+        "decoded_base": "0x8006faf0"
+      },
+      "address": "0x800799d4",
+      "address_space": "PS1 KSEG0 field overlay; field menu caller with resident initialization/dispatch at 8001c634/8001c1a8",
+      "not_applicable": "LBA identifies the packed overlay, not a direct instruction offset. Original bytes remain private."
+    }
+  ],
+  "observation": "Frozen release e8b1b993c81a066f8e5a08354d91d3ecc26f7c93ef5e9873993134d34c5e497b reproduces all 924 recorded menu frame entries, one qualified apply-payload entry and the original return of the existing load-menu capture. Every owned byte and original write outside the documented unowned callee/interrupt windows matches, including retained heap bytes and stack-derived bytes copied into persistent game data; GTE and return match and all required platform, service and card inputs are consumed. The qualified supplemental apply-payload position resolves the original interrupt-before-timer-restore order; its snapshot is an expectation only. The validly owned transition attempt separately fails at initial frame exit frontend5387 with105 owned caller-stack byte mismatches and zero unowned writes. Menu-actions separately matches594 of1294 frame entries and stops on hardware-read order, with no captured original exit.",
+  "interpretation": "The load-menu overlay is a bounded continuous call from one original entry image, with zero intermediate state imports. Source-derived GPU/load residual stores are required behavior, including the decoded-name tail; persistent stack windows are not masks. The shared Program now connects the actual field menu caller to resident setup/dispatch and the existing overlay, borrowing live resident memory and qualified stack ownership and transferring/releasing mode-local resources in original order. Independent source/ownership review accepts this bounded integration, but the transition failure prevents a complete field-to-menu runtime fidelity claim. Source and selected original observations distinguish assets, map markers, event completion, actionable UI, battle state and player-control eligibility; no universal readiness or arbitrary spawn contract is established.",
+  "confidence": "supported",
+  "author": "Codex /root, integration owner, with bounded original-source recovery by boundary_audit, menu_recovery and slice_audit agents, 2026-09-29; AI assistance is original authorship.",
+  "reviewers": [
+    "menu_recovery independently reviewed slice_audit field-menu source, original instructions and ownership; its fade DrawOTag offset correction was integrated.",
+    "boundary_audit independently reviewed root complete-boundary/return/GTE/input acceptance and menu residual stores; checksum delay-slot and supplemental-span precision corrections were integrated.",
+    "root independently reviewed boundary_audit capture qualification and released FC/upload stack stores, original menu sound setup sources, and selected readiness counterexamples.",
+    "menu_recovery independently reviewed root public readiness wording and bounded stack owner/fixture; corrected initial-loop and battle-slot wording is retained."
+  ],
+  "validation": {
+    "preconditions": [
+      "Pinned Nix shell, supported original Disc1 profile and existing immutable complete cold-boot original captures; no new capture or debugger progression write.",
+      "Frozen runner/source/tool hashes in .local/execution/p1-20260929-v4/freeze.json. Source revision9c3ad4cf94abae716b345df2450c222ff98060da is dirty; the authored-source archive binds the actual executable sources.",
+      "Images p1shared-load-menu/capture and supplemental positions p1saveload-load-v1/capture have exact source/BIOS/options/reset/input/scenario/final state/audio identity, shared CPU/load-delay/GTE and snapshot digests wherever both record images. The tool verifies trace/snapshot files; source/disc identity is checked before execution.",
+      "Boundary snapshots are independent expectations. Only one entry image, entry registers and qualified external pad/device/card/sector/interrupt inputs reach the runner."
+    ],
+    "commands": [
+      "XDG_CACHE_HOME=/tmp/xem-nix-cache nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 -m tools.analysis.memory_case --capture .local/scenarios/p1shared-load-menu/capture --call-platform .local/scenarios/p1saveload-load-v1/capture --entry menu_call --entry-hook menu-entry --exit-hook menu-exit --function 801c62a8 --runner .local/execution/p1-20260929-v4/xem-memory-runner --timeout 180 --report NEW_REPORT.json",
+      "XDG_CACHE_HOME=/tmp/xem-nix-cache nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 -m tools.analysis.memory_case --capture .local/scenarios/p1shared-transition-chain/capture --entry field_frame --map 23 --frames 35 --limit 35 --runner .local/execution/p1-20260929-v4/xem-memory-runner --timeout 180 --report NEW_TRANSITION_REPORT.json",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 tools/repository/check.py",
+      "nix --extra-experimental-features 'nix-command flakes' develop path:./nix --command python3 tools/repository/build.py sanitize --target test-menu-overlay --target test-field-menu --test 'menu-overlay|field-menu'"
+    ],
+    "expected": "For the bounded load call: exact count and type of every recorded boundary, original return value and GTE, every owned byte and unowned original-write coverage, completed execution and exact platform/services/card/sector consumption. Unknown behavior and incomplete captures cannot pass.",
+    "actual": "Load:924/924 frame entries and925/925 total boundaries, exact original return, zero memory/unowned/GTE/return divergence, supplied_state_bytes0, comparison_passedtrue. Transition and menu-actions are explicitly failed, retained independent experiments and do not expand this passed scope. Public check recorded41 CTests passing in debug/sanitize/release plus matrix/validation/format gates; later focused bounded-stack tests passed2/2 in each preset. Later sound-entry ordering/field-caller spill work is outside this frozen runner claim.",
+    "result": "passed",
+    "tolerance": "No owned-byte tolerance or persistent-stack exclusion. Unowned native callee/interrupt windows, reviewed BIOS save areas and scratchpad follow the documented memory-image contract. All computed-owned stack mismatches remain failures.",
+    "artifacts": [
+      {
+        "path": ".local/execution/p1-20260929-v4/freeze.json",
+        "sha256": "bf20c6b56b0d9b1f0f9ffe3004df0c12b43b46a0bf32e654c426b7d06b3f780f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-v4/source.tar.gz",
+        "sha256": "0cb5b28529d7834be8d82c35aa8d8e6cff46df1155b5431aba7c6f97d8899456",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-v4/xem-memory-runner",
+        "sha256": "e8b1b993c81a066f8e5a08354d91d3ecc26f7c93ef5e9873993134d34c5e497b",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-v4/memory_case.py",
+        "sha256": "cf4b17208e806715f1b9ae49f063174fd4a4d34c5d05b3b45660aea6e9ca2658",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-v4/reports/load.json",
+        "sha256": "cad14ae641204c8c31c6b396af943ae722d53b3c6d00670deacb6677ef53d0b1",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-v4/reports/transition-map23.json",
+        "sha256": "a4927ed6f41e0ee90aeb861aeb48bccf74f7807bc20e8cc7a9c3d8028fa1e17a",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-v4/reports/menu-actions.json",
+        "sha256": "9bb4361e48776d23dc6957cabe41fa2c49a886e06567bcedb7b413745576436f",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/phase1-field-menu-source-proof-20260929.json",
+        "sha256": "420a3c9e744957d86efeb8e4ef062dffd8b1eaf2c85c5417b1b58a62bd52dcb0",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/menu-caller-source-review.md",
+        "sha256": "80596316f04cab63d17ff0739d330a42be030c54cb9cf74eb0437433b9074d26",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/evid047-boundary-methodology.md",
+        "sha256": "f416b9317da8d2eb7da314acb3b66c6a339cc93d85838570a210beadab63b036",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/readiness-source-review.md",
+        "sha256": "5246461579afa28302acb10835fd9b7dfdd1a308c048b359b33103c2e3bbb098",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/readiness-observations.json",
+        "sha256": "581d8fe7e8fc9065fa8d8d939ffc9ec190ba292c437242575aa469350204c5e2",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/evid047-root-source-review.md",
+        "sha256": "b887ad71f5e4fea364e27136e10dc70660730d452187730baa9c9b30db959189",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/public-check-before-frame-spills.json",
+        "sha256": "4b84bebd156f4c3ae7bc3991553e6369a1b0c382aec1f8fd03708335b7180c94",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/xem-readiness-observe.py",
+        "sha256": "b40c16fef3c2c1cdd2de57d5a92bad9553fd28b76ca676403c3a7052a40887f4",
+        "distribution": "private_local_only"
+      },
+      {
+        "path": ".local/execution/p1-20260929-review/menu-review-evid-ref047.md",
+        "sha256": "538c7897bf041784f05e1a01ffa68b9bbb6b25a71db6fb343e35c2d0b4029785",
+        "distribution": "private_local_only"
+      }
+    ]
+  },
+  "implemented_sources": [
+    "src/reconstruction/field_menu.cpp",
+    "src/reconstruction/field_loop.cpp",
+    "src/reconstruction/menu_overlay.cpp",
+    "src/reconstruction/menu_core.cpp",
+    "src/reconstruction/menu_card.cpp",
+    "src/reconstruction/field_init.cpp",
+    "src/reconstruction/field_load.cpp",
+    "src/reconstruction/field_sprite.cpp",
+    "src/analysis/field_memory.cpp",
+    "src/analysis/memory_runner.cpp",
+    "tools/analysis/memory_case.py",
+    "analysis/formats/readiness-and-ownership.md"
+  ],
+  "limitations": [
+    "This is one bounded menu load call from an original entry image, not cold boot through loading, field, battle, caller, card round trip and return. Source-qualified external inputs remain analysis boundaries.",
+    "The field menu caller has independent bounded source review and synthetic ownership/order tests; strict transition execution reveals unrecovered original caller-stack stores before that caller is reached.",
+    "The menu-actions and encounter/card-failure/corrupt/no-data captures contain matching or failing prefixes without an original menu return; incomplete boundary/return coverage cannot pass.",
+    "Gear/party-refresh, diagnostic/alternative dispatch, required media and other named missing branches remain Phase1 work. Existing per-call battle/motion/menu findings do not prove complete lifecycles.",
+    "All120 Phase1 facets, nine proofs and ten required cases remain open. No exit reviewer or checkbox is promoted, and no Phase2 behavior/API is implemented.",
+    "Outside-slice remainder assignment requires original source coordinates and actual current Phase4 facet owners; generic shared unknowns and required slice paths are not deferred."
+  ],
+  "provenance": {
+    "consulted_sources": "Original supported disc/executable/data, immutable project captures, qualified Ghidra exports and independently authored project code/reference models only. No other Xenogears project supplied game-specific behavior.",
+    "distribution": "Only authored source, synthetic fixtures and factual metadata are public. Original bytes, snapshots, captures, reports, disassembly and frozen archives remain private_local_only.",
+    "independence": "Expected images and original changed-byte/GTE/return coverage are owned by the comparison process. Neither snapshots nor expected results are injected at intermediate boundaries."
+  }
+}

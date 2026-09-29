@@ -13,8 +13,13 @@ namespace xem::reconstruction::field {
                                         std::int32_t speed);
 
 // Field 80073750: a look-at matrix from eye to target with an up vector. Its
-// ApplyMatrix leaves the rotation loaded in `gte`.
-void build_view(Gte &gte, std::span<const std::int16_t> reciprocal, GteMatrix &m,
-                const GteLong &eye, const GteLong &target, const GteLong &up);
+// ApplyMatrix leaves the rotation loaded in `gte`. Its typed locals expose
+// computed values for callers retaining the original callee's stack writes.
+struct ViewLocals {
+    GteLong transformed_eye, forward, right, above;
+    GteVector scaled_eye;
+};
+ViewLocals build_view(Gte &gte, std::span<const std::int16_t> reciprocal, GteMatrix &m,
+                      const GteLong &eye, const GteLong &target, const GteLong &up);
 
 } // namespace xem::reconstruction::field

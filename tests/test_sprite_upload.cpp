@@ -25,6 +25,7 @@ struct Fixture {
     field::SpriteEnvironment environment{};
     std::vector<field::SpriteImageUpload> uploads;
     std::vector<std::uint32_t> releases;
+    std::vector<field::SpriteAllocation> released_stacks;
     unsigned allocations{};
     Fixture() : resources{{{resource_address, data}}} {
         put(data, 0x20, 2);
@@ -62,12 +63,17 @@ struct Fixture {
             return field::SpriteAllocation{0x80100000 + allocations * 8192,
                                            std::vector<std::uint8_t>(8192, 0xa5)};
         };
-        services.release = [&](auto address) { releases.push_back(address); };
+        services.release = [&](auto address) {
+            releases.push_back(address);
+            released_stacks.push_back(address == state.inner_stack.address ? state.inner_stack
+                                                                           : state.outer_stack);
+        };
         services.upload_image = [&](const auto &request) { uploads.push_back(request); };
     }
     field::SpriteSources sources() {
         field::SpriteSources result{resources, {}, {}, widths, {}};
         result.services = &services;
+        result.replay_entry_sp = 0x801fff00; // Invented original caller coordinate.
         return result;
     }
 };
@@ -94,6 +100,23 @@ void original_record_and_lifetime_order() {
               fixture.uploads[1].rectangle == std::array<std::int16_t, 4>{3, 18, 1, 1} &&
               fixture.uploads[1].bytes == std::vector<std::uint8_t>{0xcd, 0xab},
           "1100 and1101 coordinates differ; halfword wrap and sequential pixel cursor match");
+    const auto read = [](const auto &bytes, std::size_t at) {
+        std::uint32_t word = 0;
+        for (std::uint32_t i = 0; i < 4; ++i)
+            word |= static_cast<std::uint32_t>(bytes.at(at + i)) << (8U * i);
+        return word;
+    };
+    const auto &outer = fixture.released_stacks.at(1);
+    check(read(outer.bytes, 0x1f00) == 0x801fff00 - 0x28 - 0x88 &&
+              read(outer.bytes, 0x1ef4) == outer.address &&
+              read(outer.bytes, 0x1ef8) == 0x8001fec8 &&
+              read(outer.bytes, 0x1ebc) == (0x8001fb40U & 0x1ffffffU) >> 2U &&
+              read(outer.bytes, 0x1ec4) == outer.address &&
+              read(outer.bytes, 0x1ec8) == Fixture::resource_address + 0x81 &&
+              read(outer.bytes, 0x1ecc) == 0x8001fb90,
+          "Released outer stack retains computed source caller and register stores");
+    check(read(fixture.released_stacks.at(0).bytes, 0x1f00) == outer.address + 0x1efc - 0x28,
+          "Released inner stack retains its actual outer caller coordinate");
 }
 void malformed_records_and_interrupted_service() {
     Fixture fixture;
@@ -132,6 +155,29 @@ void malformed_records_and_interrupted_service() {
     } catch (const field::SpriteInputError &) {
     }
     check(missing.uploads.empty(), "A missing pixel range is never uploaded as invented zeros");
+    Fixture unqualified;
+    auto unqualified_sources = unqualified.sources();
+    unqualified_sources.replay_entry_sp.reset();
+    try {
+        static_cast<void>(
+            field::execute_sprite_commands({Fixture::sprite_address, unqualified.sprite},
+                                           unqualified.environment, unqualified_sources));
+        check(false, "An upload cannot invent its original caller stack coordinate");
+    } catch (const field::UnrecoveredSpriteBehavior &) {
+    }
+    check(unqualified.allocations == 0 && unqualified.uploads.empty(),
+          "Missing source stack context stops before reserving upload storage");
+    Fixture invalid_stack;
+    auto invalid_sources = invalid_stack.sources();
+    invalid_sources.replay_entry_sp = 0x80000010;
+    try {
+        static_cast<void>(
+            field::execute_sprite_commands({Fixture::sprite_address, invalid_stack.sprite},
+                                           invalid_stack.environment, invalid_sources));
+        check(false, "The retained original stack frame cannot wrap below RAM");
+    } catch (const field::SpriteInputError &) {
+    }
+    check(invalid_stack.allocations == 0, "Invalid original stack bounds stop before allocation");
 }
 } // namespace
 int main() {

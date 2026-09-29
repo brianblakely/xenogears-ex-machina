@@ -48,7 +48,31 @@ constexpr std::uint32_t start_failed = 0x800adb6c;
 // 800a77c4's read and write positions (800c3904, 800c390c).
 constexpr std::uint32_t read_cursor = 0x800c3904;
 constexpr std::uint32_t write_cursor = 0x800c390c;
+
+void require_caller(const Program &program, const std::optional<FrameCallAbi> &caller) {
+    if (program.menu_call_state && !caller)
+        unrecovered("field_movie", 0x800a7c58, "state:field-movie-call-abi",
+                    "The owned original movie stack needs its recovered caller ABI");
+    if (program.menu_call_state && caller) {
+        const auto &owner = *program.menu_call_state;
+        if (caller->sp < 0x28U || caller->sp - 0x28U < owner.stack_base ||
+            std::uint64_t{caller->sp} > std::uint64_t{owner.stack_base} + owner.stack.size())
+            unrecovered("field_movie", 0x800a7c58, "state:field-movie-call-stack",
+                        "The movie caller SP lies outside its qualified original stack owner");
+    }
+}
 } // namespace
+
+void Program::movie_stack_word(std::uint32_t address, std::uint32_t value) {
+    if (!menu_call_state)
+        return;
+    const auto &call = *menu_call_state;
+    if (address < call.stack_base ||
+        std::uint64_t{address - call.stack_base} + 4 > call.stack.size())
+        unrecovered("field_movie", 0x800a7c58, "state:field-movie-call-stack",
+                    "The movie callee frame crosses its qualified original stack owner");
+    set_memory(address, value);
+}
 
 // 800a7120, the library's frame callback (interrupt context): record the
 // frame, clear the first-frame wait, select the draw block of the display
@@ -77,12 +101,20 @@ void Program::movie_frame_ready(std::uint32_t callback, std::uint32_t frame, std
 
 // 800a7394: run field frames until the disc and the draw buffer are idle,
 // then wait for the CD DMA (80041410 -> 8004293c CD_datasync(0)).
-void Program::movie_wait_disc(FrameServices &services, const ProgramObserver &observe) {
+void Program::movie_wait_disc(FrameServices &services, const ProgramObserver &observe,
+                              std::optional<FrameCallAbi> caller) {
     auto &state = loaded(*this);
+    if (caller) {
+        // 800a7394 has only this saved return address; it leaves S0..S7
+        // unchanged. The field frame is called from its 18h body.
+        caller->sp -= 0x18U;
+        movie_stack_word(caller->sp + 0x10, caller->return_address);
+        caller->return_address = 0x800a73ac;
+    }
     for (;;) {
         deliver_arrivals(0x800a739c);
-        field_pre_frame(services);      // 80077dac
-        field_frame(services, observe); // 8007554c
+        field_pre_frame(services);                                // 80077dac
+        field_frame(services, observe, FrameStep::start, caller); // 8007554c
         deliver_arrivals(0x800a73ac);
         if (disc_busy() == 0 && state.draw_buffer == 0)
             break;
@@ -231,27 +263,44 @@ void Program::movie_decode_steps(std::uint32_t count, movie::MdecCodec &codec) {
 // stack frame (its entry SP - 28h), holding the rectangle its image calls
 // pass at +10.
 void Program::movie_prepare(FrameServices &services, std::uint32_t frame,
-                            const ProgramObserver &observe) {
+                            const ProgramObserver &observe, std::optional<FrameCallAbi> caller) {
     auto &state = loaded(*this);
+    require_caller(*this, caller);
+    if (caller) {
+        if (caller->sp < 0x28U || caller->sp - 0x28U != frame)
+            unrecovered("movie_prepare", 0x800a7c58, "state:field-movie-call-abi",
+                        "The movie frame differs from its original caller SP");
+        movie_stack_word(frame + 0x24, caller->return_address);
+        movie_stack_word(frame + 0x20, caller->saved_registers[2]);
+        movie_stack_word(frame + 0x1c, caller->saved_registers[1]);
+        movie_stack_word(frame + 0x18, caller->saved_registers[0]);
+        caller->sp = frame;
+    }
     const auto rect_address = frame + 0x10;
     state.movie.signals = 0;
     state.movie_frame_pending = 0;
     state.movie_display = 0;
     // The library file (a9 of directory 4) into a temporary block.
     const auto temporary = load_block(file_words(movie::library_file), 0, 0x800a7c90);
+    if (caller) {
+        caller->saved_registers[0] = temporary; // 800a7c98: S0 keeps the library block.
+        caller->return_address = 0x800a7cc8;
+    }
     deliver_arrivals(0x800a7ca8);
     static_cast<void>(read_file(movie::library_file, temporary, 0, 0x80));
     state.movie.frame = 0;
     state.movie_overlay_active = 0;
     deliver_arrivals(0x800a7cc0);
-    movie_wait_disc(services, observe);
+    movie_wait_disc(services, observe, caller);
     observed(observe, *this, "movie_library_read", 0x800a7cc8);
     static_cast<void>(select_directory(0x18, 0));
     deliver_arrivals(0x800a7cdc);
     seek_file(static_cast<std::int16_t>(state.movie.request.movie)); // 8002a2d0
     static_cast<void>(select_directory(4, 0));
     deliver_arrivals(0x800a7cf0);
-    movie_wait_disc(services, observe);
+    if (caller)
+        caller->return_address = 0x800a7cf8;
+    movie_wait_disc(services, observe, caller);
     observed(observe, *this, "movie_seek", 0x800a7cf8);
     if (state.w_b2264 != 0)
         unrecovered("movie_prepare", 0x800a7d0c, "symbol:field-movie-gear-mode",
@@ -295,8 +344,8 @@ void Program::movie_prepare(FrameServices &services, std::uint32_t frame,
     movie_overlay_load(); // 800acc58
     state.movie_frame_pending = 1;
     deliver_arrivals(0x800a7e2c);
-    movie_release_parked(services, frame - 0x30); // 800a73e8
-    draw_and_vertical_sync(services);             // 8007999c; FlushCache touches no RAM
+    movie_release_parked(services, frame - 0x30);   // 800a73e8
+    field_flush_cache(services, frame, 0x800a7e3c); // 8007999c
     resident::heap_coalesce(resident.heap);
     deliver_arrivals(0x800a7e44);
     movie_open_display(); // 800a708c
@@ -323,8 +372,10 @@ void Program::movie_first_frame(FrameServices &services, movie::MdecCodec &codec
 // One pass of the loop 800a7e88..800a80b0. `frame` is the player's stack
 // frame.
 field::MovieStep Program::movie_pass(FrameServices &services, movie::MdecCodec &codec,
-                                     const ProgramObserver &observe) {
+                                     const ProgramObserver &observe,
+                                     std::optional<FrameCallAbi> caller) {
     auto &state = loaded(*this);
+    require_caller(*this, caller);
     switch (state.single_actor_mode) {
     case 1:
         unrecovered("movie_pass", 0x800a7ec4, "symbol:field-movie-presentation-1",
@@ -356,8 +407,17 @@ field::MovieStep Program::movie_pass(FrameServices &services, movie::MdecCodec &
         break;
     }
     case 2:
-        field_pre_frame(services);      // 80077dac
-        field_frame(services, observe); // 8007554c
+        if (caller) {
+            // 800a7e7c/7e80/7e84 set S0=2 and S1=800c3a3a. S2
+            // retains the computed library image from 800a7ddc/7e08.
+            caller->sp -= 0x28U;
+            caller->saved_registers[0] = 2;
+            caller->saved_registers[1] = 0x800c3a3a;
+            caller->saved_registers[2] = state.movie_library;
+            caller->return_address = 0x800a7f6c;
+        }
+        field_pre_frame(services);                                // 80077dac
+        field_frame(services, observe, FrameStep::start, caller); // 8007554c
         movie_decode_steps(9, codec);
         break;
     default:
@@ -407,8 +467,8 @@ void Program::movie_finish(FrameServices &services, std::uint32_t frame,
     wait(0x800a80b4);
     sync(0x800a80bc);
     deliver_arrivals(0x800a80c4);
-    movie_close();                    // 801d43b0
-    draw_and_vertical_sync(services); // 8007999c
+    movie_close();                                  // 801d43b0
+    field_flush_cache(services, frame, 0x800a80d4); // 8007999c
     present(state.draw_block, 0x800a80dc, 0x800a80ec);
     wait(0x800a80f4);
     sync(0x800a80fc);
@@ -468,10 +528,10 @@ void Program::movie_finish(FrameServices &services, std::uint32_t frame,
 
 // The whole player 800a7c58: the stages above until the loop ends.
 void Program::play_movie(FrameServices &services, std::uint32_t frame, movie::MdecCodec &codec,
-                         const ProgramObserver &observe) {
-    movie_prepare(services, frame, observe);
+                         const ProgramObserver &observe, std::optional<FrameCallAbi> caller) {
+    movie_prepare(services, frame, observe, caller);
     movie_first_frame(services, codec);
-    while (movie_pass(services, codec, observe) == field::MovieStep::next_frame) {
+    while (movie_pass(services, codec, observe, caller) == field::MovieStep::next_frame) {
     }
     movie_finish(services, frame, observe);
 }

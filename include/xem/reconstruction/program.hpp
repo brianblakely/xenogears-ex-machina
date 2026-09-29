@@ -27,6 +27,13 @@
 
 namespace xem::reconstruction {
 
+namespace menu {
+class CardBios;
+}
+namespace field {
+struct ViewLocals;
+}
+
 inline constexpr std::uint32_t game_data_bytes = 0x2358;
 // The resident block the game state pointer (8005a39c) names once the field
 // mode's start (80077e88) or boot publishes it.
@@ -335,6 +342,31 @@ struct FrameServices {
     std::deque<std::uint32_t> gpu_info;
     // The codec a movie the field plays decodes with (movie.hpp).
     movie::MdecCodec *mdec{};
+    // BIOS services reached by a field menu (including its critical section).
+    menu::CardBios *menu_card{};
+    // BIOS FlushCache reached after EnterCriticalSection, before Exit.
+    std::function<void()> flush_instruction_cache;
+};
+
+// Original call ABI retained from the initial qualified connected entry.
+// Its stack is owned once and evolves under recovered calls; it is never
+// supplied again at a menu boundary. Qualification does not establish that
+// every intervening callee's stale-stack writes have been recovered.
+struct MenuCallState {
+    std::uint32_t entry_sp{};
+    std::uint32_t stack_base{};
+    std::vector<std::uint8_t> stack;
+    std::array<std::uint32_t, 8> saved_registers{};
+    std::uint32_t frame_pointer{};
+    std::uint32_t return_address{};
+};
+
+// Original caller registers used by the recovered field-frame and movie
+// routes. Addresses correlate owned bytes, never native C++ stack pointers.
+struct FrameCallAbi {
+    std::uint32_t sp{};
+    std::array<std::uint32_t, 8> saved_registers{};
+    std::uint32_t return_address{};
 };
 
 // A platform result the host did not supply: invalid input, not a game result.
@@ -868,6 +900,19 @@ class Program {
     std::optional<battle::BattleMemory> battle;
     // Menu-mode memory while the menu overlay is loaded.
     std::optional<menu::MenuMemory> menu;
+    std::optional<MenuCallState> menu_call_state;
+
+    void qualify_menu_call(std::uint32_t entry_sp, std::uint32_t stack_base,
+                           std::span<const std::uint8_t> stack,
+                           std::span<const std::uint32_t> saved_registers,
+                           std::uint32_t frame_pointer, std::uint32_t return_address);
+    // Field 800799d4: menu loading, resident initialization, the shared menu
+    // overlay and field restoration, keeping the live field and heap.
+    void field_menu(FrameServices &services, std::uint32_t entry_sp,
+                    const ProgramObserver &observe = {});
+    // Resident 8001c634, with the source frame at entry_sp - 18h.
+    void initialize_field_menu(FrameServices &services, std::uint32_t entry_sp,
+                               const ProgramObserver &observe = {});
     // Mode 6 (the movie mode, movie_mode.cpp) while its overlay is loaded:
     // the overlay image with its statics (8006faf0..80077458) and the
     // player's stack frame (80076488), whose rectangle ClearImage reads.
@@ -906,12 +951,12 @@ class Program {
     void field_update(const ProgramObserver &observe = {});
     // Field overlay 800739c0: the field update, then camera, view matrices,
     // actor facing and sprite orientation.
-    void field_move(const ProgramObserver &observe = {});
+    void field_move(const ProgramObserver &observe = {}, std::optional<FrameCallAbi> caller = {});
     // Field overlay 8007554c: one field frame (move phase, drawing, buffer
     // presentation and the frame-rate wait). Services supply platform timing
     // and GPU status results; see FrameServices.
     void field_frame(FrameServices &services, const ProgramObserver &observe = {},
-                     FrameStep from = FrameStep::start);
+                     FrameStep from = FrameStep::start, std::optional<FrameCallAbi> caller = {});
     // Field main loop 80077e88 from a frame's return (800782e4) up to the
     // call of the next frame (800782dc): 800a5924, the exit, map-change and
     // menu checks, 80078b5c, the pause and reset checks, then 80077dac
@@ -1093,12 +1138,14 @@ class Program {
     // The field movie player 800a7c58 (field_movie_player.cpp) and its
     // stages. `frame` is the player's stack frame (its entry SP - 28h).
     void play_movie(FrameServices &services, std::uint32_t frame, movie::MdecCodec &codec,
-                    const ProgramObserver &observe = {});
+                    const ProgramObserver &observe = {}, std::optional<FrameCallAbi> caller = {});
     void movie_prepare(FrameServices &services, std::uint32_t frame,
-                       const ProgramObserver &observe = {});
+                       const ProgramObserver &observe = {},
+                       std::optional<FrameCallAbi> caller = {});
     void movie_first_frame(FrameServices &services, movie::MdecCodec &codec);
     [[nodiscard]] field::MovieStep movie_pass(FrameServices &services, movie::MdecCodec &codec,
-                                              const ProgramObserver &observe = {});
+                                              const ProgramObserver &observe = {},
+                                              std::optional<FrameCallAbi> caller = {});
     void movie_finish(FrameServices &services, std::uint32_t frame,
                       const ProgramObserver &observe = {});
     void movie_open_display();                                             // 800a708c
@@ -1153,11 +1200,13 @@ class Program {
     // Field 800a5c40 from the fade-in (800a6120) to its return: start the
     // fade, run the fade-in frames and restore what the reload suspended.
     // `frame` is the reload's stack frame (its entry SP - 48h).
-    void field_reload_fade_in(FrameServices &services, const ProgramObserver &observe = {});
+    void field_reload_fade_in(FrameServices &services, const ProgramObserver &observe = {},
+                              std::optional<std::uint32_t> frame = {});
     // One pass of that loop (800a6148..800a61c8): `shade` is the quads'
     // 8.16 color, returned for the next pass.
     std::int32_t field_reload_fade_frame(FrameServices &services, std::int32_t shade,
-                                         const ProgramObserver &observe = {});
+                                         const ProgramObserver &observe = {},
+                                         std::optional<FrameCallAbi> caller = {});
     void field_reload_finish(FrameServices &services, std::uint32_t frame);
     // Field 800a5c40 up to its reload-type dispatch (800a5d74): stop the old
     // field's effects, save the screen, tear the field down (800700b0) and
@@ -1302,6 +1351,15 @@ class Program {
     // Platform services of the call now running events (the field load's
     // initialization); event instructions that reach libgpu use them.
     FrameServices *event_services_{};
+    // Original 800a28d4 frame SP while load_field runs its initialization.
+    std::optional<std::uint32_t> field_init_stack_{};
+    // Original 8007554c body SP lent to source callees for this frame only.
+    std::optional<std::uint32_t> field_frame_stack_{};
+    // Source caller contexts lent only while the recovered GPU call runs.
+    std::optional<FrameCallAbi> gpu_enqueue_caller_{};
+    std::optional<FrameCallAbi> gpu_operation_caller_{};
+    void retain_view_locals(const field::ViewLocals &locals, std::uint32_t sp,
+                            std::uint32_t return_address);
     // Outside interrupt code, the arrivals recorded before the next
     // hardware read: code that polls hardware observes them first.
     void deliver_due_arrivals();
@@ -1354,10 +1412,11 @@ class Program {
                     std::int32_t mode); // 8002c700
     void draw_primitives(std::uint32_t routine, std::uint32_t record, std::int32_t count);
     // Field 8007ab6c/8007ac58: one compass quad (a letter when `label`).
-    [[nodiscard]] std::uint32_t rot_average4(std::uint32_t record,
-                                             std::uint32_t packet);           // 8004a7bc
-    [[nodiscard]] field::GteLong vector_normal(const field::GteLong &vector); // 80048d7c
-    void frame_shadows(std::uint32_t table, std::uint32_t buffer);            // 800764b4
+    [[nodiscard]] std::uint32_t
+    rot_average4(std::uint32_t record, std::uint32_t packet,
+                 std::optional<std::array<std::uint32_t, 2>> local_outputs = {}); // 8004a7bc
+    [[nodiscard]] field::GteLong vector_normal(const field::GteLong &vector);     // 80048d7c
+    void frame_shadows(std::uint32_t table, std::uint32_t buffer);                // 800764b4
     void compass_quad(std::uint32_t table, std::uint32_t record, const field::GteMatrix &m,
                       bool label);
     [[nodiscard]] std::uint16_t overlay_half(std::uint32_t address) const;
@@ -1481,6 +1540,7 @@ class Program {
     void stream_dma(std::uint32_t address, std::uint32_t words, std::uint32_t blocks,
                     std::uint32_t control, std::uint32_t interrupt); // 801d66f8
     // The field movie player's helpers (field_movie_player.cpp).
+    void movie_stack_word(std::uint32_t address, std::uint32_t value);
     void movie_frame_ready(std::uint32_t callback, std::uint32_t frame, std::uint32_t x,
                            std::uint32_t y); // 800a7120
     // Mode 6's helpers (movie_mode.cpp).
@@ -1497,19 +1557,20 @@ class Program {
     // 80028928(file): a directory entry's negative size as a count; 0 when
     // the size is not negative.
     [[nodiscard]] std::int32_t file_count(std::uint32_t file);
-    void movie_wait_disc(FrameServices &services, const ProgramObserver &observe); // 800a7394
-    void movie_release_parked(FrameServices &services, std::uint32_t frame);       // 800a73e8
-    void movie_restore_parked(FrameServices &services, std::uint32_t frame);       // 800a74f8
-    void movie_sound_step();                                                       // 80085678
-    void movie_sound_load();                                                       // 80085788
-    void movie_sound_release();                                                    // 80085738
-    void movie_overlay_step();                                                     // 800a7948
-    void movie_overlay_load();                                                     // 800acc58
-    void draw_and_vertical_sync(FrameServices &services);                          // 800775f8
-    void movie_last_frame_to_15bit(FrameServices &services, std::uint32_t frame);  // 800a77c4(0)
-    std::uint32_t movie_next_component();                                          // 800a7744
-    void start_field_stream();                                                     // 80070488
-    void finish_field_stream(FrameServices &services);                             // 80070508
+    void movie_wait_disc(FrameServices &services, const ProgramObserver &observe,
+                         std::optional<FrameCallAbi> caller);                     // 800a7394
+    void movie_release_parked(FrameServices &services, std::uint32_t frame);      // 800a73e8
+    void movie_restore_parked(FrameServices &services, std::uint32_t frame);      // 800a74f8
+    void movie_sound_step();                                                      // 80085678
+    void movie_sound_load();                                                      // 80085788
+    void movie_sound_release();                                                   // 80085738
+    void movie_overlay_step();                                                    // 800a7948
+    void movie_overlay_load();                                                    // 800acc58
+    void draw_and_vertical_sync(FrameServices &services);                         // 800775f8
+    void movie_last_frame_to_15bit(FrameServices &services, std::uint32_t frame); // 800a77c4(0)
+    std::uint32_t movie_next_component();                                         // 800a7744
+    void start_field_stream();                                                    // 80070488
+    void finish_field_stream(FrameServices &services);                            // 80070508
     // Interrupt context (interrupts.cpp, disc_read.cpp).
     void interrupt_handler(std::uint32_t address); // An 800578a8 entry
     void vsync_interrupt();                        // 8004bf78
@@ -1550,7 +1611,9 @@ class Program {
                              std::uint32_t argument, FrameServices *services); // 8004668c
     // `services` supply the results of a request run from the main flow
     // (DrawSync's drain); a request run from the DMA2 interrupt has none.
-    std::uint32_t gpu_execute(FrameServices *services = nullptr); // 8004696c
+    void gpu_stack_store(std::uint32_t address, std::uint32_t value, std::size_t width = 4);
+    std::uint32_t gpu_execute(FrameServices *services = nullptr,
+                              std::optional<FrameCallAbi> caller = {}); // 8004696c
     // Run a queued or immediate operation; `rect` is the rectangle parameter
     // when the caller holds it, else it lives in the queue at `parameter`.
     std::int32_t gpu_operation(std::uint32_t operation, std::uint32_t parameter,
@@ -1564,7 +1627,8 @@ class Program {
     void put_draw_env(FrameServices &services, std::uint32_t environment);              // 80044c44
     void put_disp_env(std::uint32_t environment);                                       // 80044e9c
     // `arrivals` delivers the interrupts that arrive while the queue drains.
-    void draw_sync(FrameServices &services, const std::function<void()> &arrivals = {}); // 800445d0
+    void draw_sync(FrameServices &services, const std::function<void()> &arrivals = {},
+                   std::optional<FrameCallAbi> caller = {}); // 800445d0
     // Mode dispatch (mode_dispatch.cpp).
     void release_heap_blocks();                        // 8003223c
     void restart_heap(std::uint32_t address);          // 80031b10
@@ -1633,6 +1697,13 @@ class Program {
     void place_party_at_leader();                              // 80077268
     void load_field_effect_bank();                             // 80085890
     void allocate_party_sprites();                             // 80077c88
+    void release_party_sprites();                              // 80077d2c
+    void field_entry_flag();                                   // 800798bc
+    void field_menu_fade(FrameServices &services, std::int32_t shade, std::uint32_t caller_sp,
+                         std::uint32_t return_address); // 80079784
+    void field_flush_cache(FrameServices &services, std::optional<std::uint32_t> caller_sp,
+                           std::uint32_t return_address);   // 8007999c
+    void field_menu_return(const ProgramObserver &observe); // 800a2488
     void load_tim_at(FrameServices &services, std::uint32_t tim, std::int32_t x, std::int32_t y,
                      std::int32_t clut_x, std::int32_t clut_y, std::int32_t clut_w,
                      std::int32_t clut_h);                                       // 80070340
@@ -1643,9 +1714,9 @@ class Program {
     void adjust_after_return(const ProgramObserver &observe);                    // 800a24c4
     void release_cached_sequence();                                              // 80085eec
     // Event initialization and actor setup (field_init.cpp).
-    void create_actor_sprite(std::size_t index,
-                             const field::FieldSpriteArguments &arguments); // 80076ac0
-    void sync_actor_position(std::size_t index);                            // 800a0c94
+    void create_actor_sprite(std::size_t index, const field::FieldSpriteArguments &arguments,
+                             std::optional<std::uint32_t> caller_sp = {}); // 80076ac0
+    void sync_actor_position(std::size_t index);                           // 800a0c94
     [[nodiscard]] std::uint32_t bundle_sprite(std::uint32_t slot);
     void place_at_entry(std::size_t index, std::int32_t entry); // 8009fa54
     void event_default_sprite(field::EventContext &context);    // Primary bc
@@ -1754,7 +1825,8 @@ class Program {
     void play_sound_effect(std::uint32_t id, std::uint32_t channel);
     void field_history(std::size_t index);
     std::int32_t field_position(std::size_t index, std::int32_t linked_floor,
-                                std::uint32_t link_status);
+                                std::uint32_t link_status,
+                                std::optional<std::uint32_t> contact_sp = {});
     void field_contact(std::size_t index);
     void field_interactions(std::size_t index);
     [[nodiscard]] bool rectangle_contains(std::size_t index, std::int32_t x, std::int32_t z,

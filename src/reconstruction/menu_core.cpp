@@ -110,6 +110,7 @@ void Overlay::run_menu_mode() {
     put8(at(drawing), 1);
     put8(at(sounds), 1);
     const auto mode = u8(menu_mode);
+    saved_registers_[0] = mode; // 801c62e0..801c62e4
     if (mode == 2) {
         put8(load_resume, 0);
         title_file_loop();
@@ -359,6 +360,8 @@ void Overlay::load_resources() {
     const auto resources = u32(menu_resources);
     static_cast<void>(resident::relocate_offsets(*this, resources));    // 8003342c
     const auto unpack = [&](std::uint32_t source, std::uint32_t mode) { // 80032e88
+        const auto unpack_frame = enter(8);
+        put32(frame(8)[4], source); // 80032e8c: preserve the compressed input pointer
         return resident::unpack_to_new_block(
             *this, source, mode, [&](std::uint32_t size, std::uint32_t kind) {
                 return allocate(size, kind, resident::unpack_allocation_site);
@@ -629,6 +632,7 @@ void Overlay::menu_frame() {
     draw_status_panel();
     draw_screen();
     const auto shown = u32(at(buffer_index)) == 0 ? 1U : 0U;
+    saved_registers_[0] = shown; // 801c7cd0..801c7cdc, retained by GPU wrappers
     draw_sync();
     vsync();
     pass_position();
@@ -907,6 +911,8 @@ void Overlay::open_field_menu() {
 // 801e8070).
 void Overlay::field_menu_loop() {
     const auto stack_frame = enter(0x30);
+    saved_registers_[1] = 1; // 801c55a8: the loop continues until a command/cancel
+    saved_registers_[2] = 1; // 801c55b0: the confirm and redraw flag
     for (bool running = true; running;) {
         menu_frame();
         const auto code = u8(at(input_code));
@@ -946,9 +952,11 @@ void Overlay::field_menu_loop() {
 // 800594d0 = 1 (the title's timeout).
 void Overlay::title_file_loop() {
     const auto stack_frame = enter(0x30);
+    saved_registers_[0] = 1; // 801c58f4: the loop's running flag
     std::uint32_t running = 1;
     reveal_sprite_columns(4, 0x801ea1d4);
     layout_labels_row4(8, at(command_labels), 0x801ea530);
+    saved_registers_[1] = 1; // 801c593c: after the initial labels, before the loop
     put32(at(frame_counter), 0);
     for (;;) {
         menu_frame();

@@ -41,7 +41,8 @@ still supplies explicit allocation results within that case's narrower contract.
 The current merged checkout also contains field drawing/frame/main-loop,
 entry/reload/transition, sound-tick/interrupt, battle-turn/menu/results,
 menu/card and movie/mode-dispatch source. Much of this work postdates the latest
-published finding, EVID-REF-046. Existing private reports are recovery checkpoints;
+published battle findings through EVID-REF-046. The bounded menu/ownership
+checkpoint is recorded in EVID-REF-047. Existing private reports are recovery checkpoints;
 rerun them with one frozen current release runner and obtain independent source
 and methodology review before promoting their claims. The loader, initializer,
 scheduler, field update and mode dispatcher remain distinct boundaries.
@@ -56,14 +57,40 @@ return-factory boundary alone:
 - `.local/execution/p1music-reports/` records four frame windows of 99, 48, 99
   and 65 frames from one import per window, with no intermediate gameplay-state
   input and all 618 boundaries matching on its frozen runner.
-- `.local/execution/p1fieldov/reports-bca8d71/transition-chain.json` records a
-  35-frame transition window with 69 matching boundaries and no intermediate
-  state import.
+- `.local/execution/p1fieldov/reports-bca8d71/transition-chain.json` retains the
+  historical 35-frame window. Its persistent stack mask concealed owned writes;
+  the stricter current contract does not accept this as a transition pass.
 - `.local/execution/p1-merge-frozen/reports/` retains narrower merged-source
   checks of services, battle, menu/save data, media and transition stages.
 - `.local/execution/p1menuov/reports-v2/` retains unresolved whole-menu attempts.
   Four runs reach a C++ return but contain memory divergences; the others stop
   on unavailable or misordered platform reads. None is a complete menu pass.
+- `.local/execution/p1-20260929-v4/reports/load.json` records the published bounded
+  load-menu pass: 924 frame entries, one qualified apply-payload entry and the
+  original return, with exact memory/GTE/return and input consumption. The
+  frozen runner and source archive are bound by `freeze.json` in that directory.
+- `.local/execution/p1-20260929-v4/reports/transition-map23.json` exposes the
+  earliest strict divergence at frontend run 5387: 105 owned caller-stack bytes,
+  zero unowned writes. `menu-actions.json` retains 594 matching frame entries
+  before a hardware-read ordering stop, with no captured original return.
+- `.local/execution/p1-20260929-v5/reports/` freezes the later `df14a14a…` runner
+  and actual source archive. Load (925 positions), movie-transition (256) and
+  Stereo (1,066) menu calls match all their recorded boundaries and original
+  returns with exact owned bytes/GTE controls and recorded input consumption.
+  Transition still fails its first exit at frontend 5387 with 81 owned stack
+  bytes; save first differs by one owned byte at frontend 8308. Menu-actions
+  matches 820 entries before a repeated-release ownership stop and has no
+  original return. All three failures remain rejected.
+- `.local/execution/p1-20260929-v6/reports/` retains frozen `71b1189c…`
+  comparisons: load (925 boundaries), save (1,852), movie-transition (256) and
+  Stereo (1,066) match through their original returns with strict owned-byte,
+  original-write, GTE and input-consumption checks. Transition still fails its
+  first exit at frontend 5387 with 37 owned stack bytes; menu-actions matches
+  886 entries, then stops reading `801c4ff8` during equipment decompression,
+  without a captured original return. Newer computed caller-local, resident
+  heap-read and card request-observation changes remain pending original replay.
+  The [session checkpoint](phase1-progress.md) records exact blockers and resume
+  steps, including the preserved contradictory historical v5 save report.
 
 Those windows do not constitute the complete frozen lifecycle. Connect the real
 callers and mode transitions without importing a new original gameplay image at
@@ -78,6 +105,24 @@ reports, `completed_boundary` may coexist with `first_divergence`, and an
 exhausted capture may contain only matching frame prefixes. Complete expected
 boundary coverage, no mismatches/unowned writes, qualified return and platform
 consumption, plus independent review, are required for a lifecycle claim.
+
+The field menu caller now invokes resident setup/dispatch and the existing
+overlay through the same `Program`. Menu helpers borrow live resident memory;
+field/menu code and resources have explicit transfer/release ownership. The
+initial qualified stack and saved registers are imported once. The terminal
+heap header keeps its full heap ownership, and the borrowed menu stack cannot
+extend below its qualified base. No later menu-entry stack import is permitted.
+Intervening original stack writes remain recovered behavior and are strictly
+compared. Persistent stack-window labels never exclude computed-owned bytes.
+The [readiness checkpoint](../analysis/formats/readiness-and-ownership.md) keeps
+asset, map, event, UI, battle and player-control predicates distinct.
+
+Per-kind BIOS/service input accounting does not independently compare a global
+request trace, all arguments/discarded returns, card writes or filesystem
+effects. Bounded image agreement cannot promote that boundary into complete
+card persistence or device equivalence. The independent lifecycle review and
+exact remaining proof are retained with the private checkpoint and in the
+progress record.
 
 ## Historical first connected original case
 
@@ -187,7 +232,10 @@ comparison then requires:
   below the entry stack pointer and bytes changed only inside bracketed
   interrupt handlers (`8003c028` sound tick, `8004b9b4` dispatcher, and the BIOS
   exception save areas while such a handler ran);
-- the GTE rotation and translation registers at exit to match exactly.
+- all Program-owned GTE control registers 0–30 at exit to match exactly (including
+  rotation, translation, screen offsets and H); FLAG and data registers remain
+  transient. Capture qualification separately checks the complete 64-word GTE
+  observation wherever observers share a hook.
 
 An owned byte that only interrupt code changed is attributed to the
 interrupt when the C++ left it at its entry value. An owned byte the call
@@ -207,10 +255,11 @@ way as interrupt changes. The GTE registers must be unchanged across each
 bracket, and owned state they touch still has to match. A bracket asserts that
 the call is presentation. That assertion is part of the reviewed boundary, never
 a mask for unexplained bytes. `--entry-repeats` selects later passes of an entry
-hook placed on a loop head. Stack bytes below the entry stack pointer are
-excluded from interrupt attribution as they are from ownership.
+hook placed on a loop head. Native callee/interrupt windows exclude only unowned
+original writes. Every computed-owned caller/heap stack byte is still compared;
+persistent stack-window labels are diagnostics and never exclusions.
 
-Two limits follow from snapshot granularity. A call store that repeats the
+Two historical per-call limits follow from snapshot granularity. A call store that repeats the
 value an interrupt left is invisible, so both interrupt rules then expect the
 older value. The comparison also does not model the call reading a value that
 interrupt code wrote; carrying Program state from one call into the next would
@@ -222,8 +271,8 @@ commits pending loads before passing entry registers (arguments, stack
 pointer) and before reading the exit return value, which is what the code
 observes one instruction later.
 They also record all 64 GTE registers and the 4 KiB hardware I/O page;
-the runner imports the GTE control registers (rotation, translation, screen
-offset and H are compared at exit) and receives the I/O page as a read-only
+the runner imports the GTE control registers (0–30 are compared at exit)
+and receives the I/O page as a read-only
 platform input, for example the CD DMA status that libcd polls. The scratchpad
 is not compared. Original
 globals are correlated once, in `src/reconstruction/original_layout.cpp`; the
@@ -368,9 +417,10 @@ The field update, move phase, checkpoint pass and heap have published original
 comparisons; do not reimplement them. Rerun the current connected field entry,
 reload/transition and main-loop checkpoints, then pursue the earliest divergence
 or named dependency using the existing C++, reference models and Ghidra exports.
-The field loop still has explicit missing branches, including its menu caller
-`800799d4`; the menu overlay already has its own reconstructed mode owner and
-must be connected through the original caller and cleanup order.
+The field menu caller `800799d4` is connected through original resident setup,
+mode-local ownership and cleanup order. Its unimplemented gear/party-refresh,
+diagnostic/alternative dispatch and media branches still stop explicitly; the
+complete caller and intervening stack stores require original comparison.
 
 Resolve the whole-menu memory and platform-order failures before claiming its
 inventory/equipment/card lifecycle. Continue the battle caller/results/return,

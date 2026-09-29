@@ -3756,7 +3756,16 @@
     {
       "id": "ui-dialogue",
       "status": "unresolved",
-      "next_experiment": "Recover dialogue tokens, menu ownership, input eligibility and wait/end semantics."
+      "next_experiment": "Recover dialogue tokens, menu ownership, input eligibility and wait/end semantics.",
+      "evidence": [
+        "EVID-REF-047"
+      ],
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Frozen release e8b1b993c81a066f8e5a08354d91d3ecc26f7c93ef5e9873993134d34c5e497b matches all925 load-menu positions (924 frame entries and one qualified apply-payload entry), original return/GTE, every owned byte/original-write coverage and complete supplied platform/service/card inputs, with supplied_state_bytes0. Expectations never enter intermediate execution. This is one continuous overlay call from a qualified entry, not ordinary cold-boot/field-caller/save-load round trip or complete card-failure/corrupt/no-data/return lifecycle. Menu-actions matches594/1294 entries then stops on hardware-read order with no original exit."
+        }
+      ]
     },
     {
       "id": "battle-formations-and-rules",
@@ -3769,7 +3778,84 @@
     {
       "id": "world-map",
       "status": "unresolved",
-      "next_experiment": "Recover terrain/object records, transitions and transport state from original source and execution."
+      "next_experiment": "Reuse EVID-REF-009 original mode-3 source/entry correlations on both profiles; recover the terrain/object consumers, transport and location records, ordinary transitions and progression variants. The Kernel-entry observation proves neither valid world-map setup nor player-control readiness. This outside-slice recovery remains owned by Phase 4.",
+      "evidence": [
+        "EVID-REF-009"
+      ],
+      "source_correlations": [
+        {
+          "source_profile": "na-slus-00664-39c547a9afc6",
+          "evidence": "EVID-REF-009",
+          "original_mode": 3,
+          "mode_table_address": "0x800180bc",
+          "entry_address": "0x80070cfc",
+          "bss": [
+            "0x8009bbb0",
+            "0x8009d80c"
+          ],
+          "source_record": {
+            "slot": 37,
+            "source_lba": 108995,
+            "source_sector_count": 46,
+            "projected_bytes": 92180,
+            "projection_unit": 2048,
+            "projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 180422,
+          "decoded_sha256": "4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70",
+          "consumed_source_bytes": 92180,
+          "bytes_consumed_beyond_candidate_length": 0,
+          "entry_window": {
+            "decoded_offset": 4620,
+            "bytes": 128,
+            "sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f",
+            "matches_captured_original_ram": true
+          },
+          "scope": "Original source and 128-byte entry-window correlation only; mode readiness, ordinary story access, complete formats and rules remain unresolved."
+        },
+        {
+          "source_profile": "na-slus-00669-5eab85c683d4",
+          "evidence": "EVID-REF-009",
+          "original_mode": 3,
+          "mode_table_address": "0x800180bc",
+          "entry_address": "0x80070cfc",
+          "bss": [
+            "0x8009bbb0",
+            "0x8009d80c"
+          ],
+          "source_record": {
+            "slot": 32,
+            "source_lba": 173307,
+            "source_sector_count": 46,
+            "projected_bytes": 92180,
+            "projection_unit": 2048,
+            "projection_sha256": "0f7e7a283fc5ef25d4a82960e16b119d09e1ba5594cc02069cf3dd2113f48803",
+            "all_projected_bytes_zero": false,
+            "following_sector_gap": 0
+          },
+          "decoded_destination": "0x8006faf0",
+          "decoded_bytes": 180422,
+          "decoded_sha256": "4c15fd32b3a03d7cd5ea4403dcaabc70abaf99b6aaca65d63d6866803edaac70",
+          "consumed_source_bytes": 92180,
+          "bytes_consumed_beyond_candidate_length": 0,
+          "entry_window": {
+            "decoded_offset": 4620,
+            "bytes": 128,
+            "sha256": "18f988af315daa2f153f1b6139fb91092d527d755d12c91541d3c0887321192f",
+            "matches_captured_original_ram": true
+          },
+          "scope": "Original source and 128-byte entry-window correlation only; mode readiness, ordinary story access, complete formats and rules remain unresolved."
+        }
+      ],
+      "backlog": "BACKLOG-P01-T09-F12",
+      "owner_phase": 4,
+      "later_facets": [
+        "P04-T02-F12",
+        "P04-T10-F01"
+      ]
     },
     {
       "id": "audio-and-wide",
@@ -3778,17 +3864,38 @@
       "evidence": [
         "EVID-REF-010",
         "EVID-REF-018"
-      ]
+      ],
+      "source_correlations": {
+        "manifest": "analysis/slices/forest23.json",
+        "required_extension_source_context": "required-field14-sound-stereo",
+        "owner_phase": 1,
+        "scope": "Original field context and immutable component source identity only; required media/audio behavior, all alternatives, ownership/timing and readiness remain unresolved Phase 1 work."
+      }
     },
     {
       "id": "fmv",
       "status": "unresolved",
-      "next_experiment": "Extend measured sector headers to original playback/transition and timing semantics."
+      "next_experiment": "Extend measured sector headers to original playback/transition and timing semantics.",
+      "source_correlations": {
+        "manifest": "analysis/slices/forest23.json",
+        "required_extension_source_context": "required-field4-movie-transition",
+        "owner_phase": 1,
+        "scope": "Original field context and immutable component source identity only; required media/audio behavior, all alternatives, ownership/timing and readiness remain unresolved Phase 1 work."
+      }
     },
     {
       "id": "save-data",
       "status": "unresolved",
-      "next_experiment": "Recover valid ordinary save context, block layout, checksums, corruption behavior and original round trips."
+      "next_experiment": "Recover valid ordinary save context, block layout, checksums, corruption behavior and original round trips.",
+      "evidence": [
+        "EVID-REF-047"
+      ],
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Frozen release e8b1b993c81a066f8e5a08354d91d3ecc26f7c93ef5e9873993134d34c5e497b matches all925 load-menu positions (924 frame entries and one qualified apply-payload entry), original return/GTE, every owned byte/original-write coverage and complete supplied platform/service/card inputs, with supplied_state_bytes0. Expectations never enter intermediate execution. This is one continuous overlay call from a qualified entry, not ordinary cold-boot/field-caller/save-load round trip or complete card-failure/corrupt/no-data/return lifecycle. Menu-actions matches594/1294 entries then stops on hardware-read order with no original exit."
+        }
+      ]
     }
   ],
   "unverified_behavior": [
@@ -3825,12 +3932,30 @@
     {
       "id": "semantic-readiness-and-setup",
       "status": "unresolved",
-      "next_experiment": "Recover player/event/menu/battle ownership and valid initialization/transition preconditions."
+      "next_experiment": "Recover player/event/menu/battle ownership and valid initialization/transition preconditions.",
+      "evidence": [
+        "EVID-REF-047"
+      ],
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Source-only field-menu caller/cleanup ownership and selected original state observations distinguish assets, map markers, event completion, actionable UI, battle state and player-control handler eligibility. No universal readiness, spawn/setup or continuous field-to-menu fidelity is established. Strict initial transition exit frontend5387 has105 owned caller-stack mismatches; all required movement/transition/return/control conditions remain open."
+        }
+      ]
     },
     {
       "id": "timing-and-hardware-intent",
       "status": "unresolved",
-      "next_experiment": "Distinguish logical update cadences and waits from HLE/core frontend frames and device timing."
+      "next_experiment": "Distinguish logical update cadences and waits from HLE/core frontend frames and device timing.",
+      "evidence": [
+        "EVID-REF-047"
+      ],
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-047",
+          "scope": "A separately qualified original apply-payload position resolves interrupt-before-timer-restore ordering inside the bounded925-position load call; all required external platform/service/card inputs are consumed. Strict owned stack and original-write attribution remain enforced. Source caller requires explicit BIOS critical-section/cache-intent services. No full BIOS/cache traffic, hardware cadence, all interrupt ordering or continuous route timing equivalence is established."
+        }
+      ]
     },
     {
       "id": "actor-zero-initialization-wait",
@@ -3911,6 +4036,52 @@
         "EVID-REF-031"
       ],
       "next_experiment": "Capture another primary71 blocking gate and signed/unsigned variable selectors on source-qualified ordinary routes, including full variable/type banks. Verify formation validity, subsequent field/battle scheduling and semantic readiness separately."
+    },
+    {
+      "id": "field290-content-and-progression",
+      "status": "unresolved",
+      "owner_phase": 4,
+      "backlog": "BACKLOG-FIELD290-CONTENT",
+      "later_facets": [
+        "P04-T02-F01",
+        "P04-T06-F03",
+        "P04-T06-F05",
+        "P04-T14-F01",
+        "P04-T14-F02"
+      ],
+      "evidence": [
+        "EVID-REF-007",
+        "EVID-REF-011"
+      ],
+      "source_correlations": {
+        "manifest": "analysis/slices/forest23.json",
+        "backlog": "BACKLOG-FIELD290-CONTENT"
+      },
+      "scope": "EVID-REF-011 observes this distinct field selector through a separate original world-map-to-bridge input sequence on both discs. That content sequence is outside the frozen eighteen first-slice routes. Required first-slice field4/media, field14/sound, field22/save/transition and field23/encounter content, every shared source dependency, and all required alternatives remain in Phase 1. This assigns the field290-specific content; it does not defer shared field code or an unknown instruction family.",
+      "next_experiment": "Reuse the two immutable field290 captures and exact paired source images; recover its 45-actor/9512-byte event package, ordinary world-map/field entry preconditions, content branches and progression effects. Follow original scene data consumers and interactions, then compare complete lifecycle and return/control state without re-importing intermediate gameplay bytes. Semantic location name and retail progression validity remain unknown."
+    },
+    {
+      "id": "disc2-field15-content-and-progression",
+      "status": "unresolved",
+      "owner_phase": 4,
+      "backlog": "BACKLOG-DISC2-FIELD15-CONTENT",
+      "later_facets": [
+        "P04-T02-F01",
+        "P04-T06-F03",
+        "P04-T06-F05",
+        "P04-T14-F02"
+      ],
+      "evidence": [
+        "EVID-REF-007",
+        "EVID-REF-014",
+        "EVID-REF-032"
+      ],
+      "source_correlations": {
+        "manifest": "analysis/slices/forest23.json",
+        "backlog": "BACKLOG-DISC2-FIELD15-CONTENT"
+      },
+      "scope": "The frozen first-slice routes use source profile na-slus-00664-39c547a9afc6. EVID-REF-007 separately observes original Disc 2 selector15 via the guarded numeric-field adapter. Only the complete Disc 2 field15 content/progression is assigned here; its already required cross-profile/held-out decoder comparisons and all shared loader/interpreter/source qualification remain Phase 1 obligations.",
+      "next_experiment": "Reuse the immutable original Disc 2 field15 setup/decoder/read captures and exact source pair; recover its 63-actor/11208-byte event package, ordinary story entry, required content branches and progression/state effects. Separate guarded map initialization from event completion and actionable player control; validate complete loading, ownership and return without adopting the adapter as an ordinary progression proof."
     }
   ],
   "sprite_command_dispatch": {
@@ -4870,7 +5041,14 @@
         "tests/test_program.cpp",
         "tests/test_execution.py",
         "tests/test_return_case.py",
-        "docs/executable-reconstruction.md"
+        "docs/executable-reconstruction.md",
+        "src/reconstruction/field_menu.cpp",
+        "src/reconstruction/field_loop.cpp",
+        "src/reconstruction/menu_overlay.cpp",
+        "src/reconstruction/menu_core.cpp",
+        "src/reconstruction/menu_card.cpp",
+        "tests/test_field_menu.cpp",
+        "analysis/formats/readiness-and-ownership.md"
       ],
       "analysis_status": "source_reviewed",
       "native_status": "authored_cpp_library",
@@ -4880,9 +5058,16 @@
         "EVID-REF-030",
         "EVID-REF-036",
         "EVID-REF-039",
-        "EVID-REF-040"
+        "EVID-REF-040",
+        "EVID-REF-047"
       ],
-      "scope": "One resident/field owner invokes the same recovered C++ as subsystem tests. Qualified 800a28d4 return input computes 25 restored actors/globals/variables, resource selection and seven factory arguments, then all 25 factories with shared environment and owned allocations on one route. Twenty-six checkpoint projections and uploads match; final whole-field state and readiness have no original oracle here. Event passes/batches connect core/call/control/motion-divisor/battle/music-wait handlers with synthetic continuity coverage, not a full update or original connected-event proof. Analysis owns prepared cases, explicit heap results, limits and reports; independent expectations never enter C++. No complete boot, heap, mode dispatcher, return readiness or native persistence is claimed."
+      "scope": "One resident/field owner invokes the same recovered C++ as subsystem tests. Qualified 800a28d4 return input computes 25 restored actors/globals/variables, resource selection and seven factory arguments, then all 25 factories with shared environment and owned allocations on one route. Twenty-six checkpoint projections and uploads match; final whole-field state and readiness have no original oracle here. Event passes/batches connect core/call/control/motion-divisor/battle/music-wait handlers with synthetic continuity coverage, not a full update or original connected-event proof. Analysis owns prepared cases, explicit heap results, limits and reports; independent expectations never enter C++. No complete boot, heap, mode dispatcher, return readiness or native persistence is claimed.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Bounded continuous menu-load overlay call from one qualified original entry image: 924 recorded frame entries plus one apply-payload entry and the original return match, with zero intermediate state imports and exact owned/retained heap and persistent stack-derived bytes. The actual field800799d4/resident8001c634/8001c1a8 caller is connected and independently source/ownership-reviewed only; its initial owned transition attempt fails at frontend5387 with105 caller-stack mismatches. Complete boot/loading/initialization/field-menu lifetime and required alternative paths remain unproved. Frozen release e8b1b993c81a066f8e5a08354d91d3ecc26f7c93ef5e9873993134d34c5e497b matches all925 load-menu positions (924 frame entries and one qualified apply-payload entry), original return/GTE, every owned byte/original-write coverage and complete supplied platform/service/card inputs, with supplied_state_bytes0. Expectations never enter intermediate execution. This is one continuous overlay call from a qualified entry, not ordinary cold-boot/field-caller/save-load round trip or complete card-failure/corrupt/no-data/return lifecycle. Menu-actions matches594/1294 entries then stops on hardware-read order with no original exit."
+        }
+      ]
     },
     {
       "id": "field_events_cpp",
@@ -5509,7 +5694,13 @@
       "capability": "Required route extensions and remaining domains",
       "source_boundary": "Original ordinary transition, battle command/results, menu/card and source-qualified FMV/music paths named in frozen_route.required_extensions_and_cases",
       "status": "required_unresolved",
-      "completion": "Freeze demonstrated extension inputs/checkpoints and recover their connected source without shrinking the nine-domain contract."
+      "completion": "Freeze demonstrated extension inputs/checkpoints and recover their connected source without shrinking the nine-domain contract.",
+      "partial_evidence": [
+        {
+          "finding": "EVID-REF-047",
+          "scope": "Frozen runner/source/tool and original-capture identities bind a reviewed925/925-position load call with zero supplied intermediate state, exact return/GTE/owned memory/write coverage and complete qualified input consumption. Independent bounded field-caller/ownership/readiness and comparison-methodology reviews are linked. Failed transition/frontend5387 and incomplete menu-actions594/1294 experiments remain failures; later source changes do not expand the frozen pass. All120 required facets, nine proofs, ten cases and integrated exit remain open; generic shared unknowns are not assigned to Phase4."
+        }
+      ]
     }
   ]
 }
