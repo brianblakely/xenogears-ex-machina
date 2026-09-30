@@ -443,7 +443,7 @@ void func_80071A8C(s32 channel) {
 }
 
 /* Step both fade channels while fading, then draw them into `ot`. */
-void func_80071CB4(void *ot) {
+void func_80071CB4(void *ot, s32 buffer) {
     if (D_800ADC04 == 2) {
         func_80071A8C(0);
         func_80071A8C(1);
@@ -1545,7 +1545,95 @@ void func_80075484(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007554C);
+/* One field frame: the move phase, then drawing effects, dialogue, the
+ * compass, characters and models (on a scratchpad stack) and the other
+ * layers; flush, clear or copy the next buffer, put its environments,
+ * link the depth tables and draw them, then wait out the frame rate. */
+void func_8007554C(void) {
+    RECT rect;
+    s32 start;
+    s32 now;
+    s32 frames;
+
+    D_800ADB9C = VSync(1);
+    start = VSync(-1);
+    func_800739C0();
+    func_80086908();
+    if (D_800C268C == 0) {
+        func_80281B00("SEFFECT   ");
+    }
+    func_80071CB4(D_800C426C->overlay_ot, D_800ADB08);
+    if (D_800C268C == 0) {
+        func_80281B00("MESSAGE   ");
+    }
+    func_80074108();
+    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"
+                     :
+                     : "r"(0x1F8003FC)
+                     : "$8", "memory");
+    func_800748E8();
+    func_800752C8();
+    func_800A9688();
+    if (D_800C268C == 0) {
+        func_80281450();
+    }
+    func_800A4DAC();
+    __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
+    func_800A84C0();
+    func_80075484();
+    func_8007520C();
+    func_800ABEC8();
+    if (D_800C268C == 0) {
+        func_80281400();
+        func_80281B00("FntPrint  ");
+    }
+    D_800ADBA0 = VSync(1);
+    DrawSync(0);
+    func_800805F4();
+    func_8008004C(D_800C426C->overlay_ot, D_800ADB08);
+    VSync(0);
+    func_80032CB8();
+    if (D_800ADC18 == 0) {
+        ClearImage(&D_800C426C->draw2.clip, D_800B2078.clear_color[0], D_800B2078.clear_color[1],
+                   D_800B2078.clear_color[2]);
+    } else if (D_800B0048 == 3) {
+        rect.x = 0x2C0;
+        rect.y = 0x100;
+        rect.w = 0x140;
+        rect.h = 0xE0;
+        MoveImage(&rect, 0, D_800ADB08 << 8);
+    } else {
+        ClearImage(&D_800C426C->draw2.clip, 0, 0, 0);
+    }
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    if (D_800C268C == 0) {
+        D_800ADB9C = VSync(1);
+    }
+    func_80025044();
+    if (D_800C268C == 0) {
+        func_80281B00("ShapeTrans");
+    }
+    func_800920D8();
+    if (D_800ADBB4 != 0) {
+        LoadImage(&D_800AFC58, D_800AF87C);
+        D_800ADBB4 = 0;
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("LineScroll");
+    }
+    if (D_800ADC18 == 0) {
+        if (D_800ADB4C != 0) {
+            func_80075458(&D_800C426C->ot[D_800B2078.unk21D4], D_800C426C->ot2, D_800B2078.unk21D4);
+        }
+        func_80075458(&D_800C426C->overlay_ot[7], D_800C426C->ot, D_800B2078.unk21D4);
+    }
+    DrawOTag(&D_800C426C->overlay_ot[7]);
+    do {
+        now = VSync(-1);
+        frames = D_800B2078.unk217C + 2;
+    } while (now < start + frames);
+}
 
 /* Finish the frame: draw the overlays, flush, sync, copy the shown half,
  * then put this block's environments and draw its overlay table. */

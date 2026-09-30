@@ -765,6 +765,21 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+/* The field frame (8007554c). */
+extern s32 D_800ADB9C; /* frame start time */
+extern s32 D_800ADBA0; /* frame draw time */
+extern RECT D_800AFC58;
+extern u_long *D_800AF87C;
+extern void func_800748E8(void);
+extern void func_80086908(void);
+extern void func_800A9688(void);
+extern void func_800A4DAC(void);
+extern void func_800A84C0(void);
+extern void func_800ABEC8(void);
+extern void func_800920D8(void);
+extern void func_80281400(void);
+extern void func_80281450(void);
+extern void func_80032CB8(void);
 /* The compass (80074108). */
 extern u16 D_800ADC24[8];     /* heading octant bit per palette row */
 extern DVECTOR D_800ADC34[4]; /* letter x, z offsets */
