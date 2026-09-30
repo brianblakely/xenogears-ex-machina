@@ -57,7 +57,7 @@ typedef struct MenuParty {
     u8 redraw4; /* 4 */
     u8 redraw5; /* 5 */
     u8 redraw6; /* 6 */
-    u8 pad7[0x1];
+    u8 redraw7; /* 7 */
     u8 unk8; /* 8 */
     u8 redraw9; /* 9 */
     u8 redrawA; /* A */
@@ -91,8 +91,8 @@ typedef struct MenuParty {
     u8 unk54[6]; /* 54 */
     u8 pad5A[0x2];
     u8 unk5C[4]; /* 5C */
-    u8 ready; /* 60 */
-    u8 pad61[0x6];
+    u8 ready[3]; /* 60 */
+    u8 pad63[0x4];
     u8 unk67; /* 67 */
     u8 pad68[0x4];
 } MenuParty;
@@ -352,6 +352,46 @@ typedef struct MenuBlock42C {
     u8 pad1184[0x14];
 } MenuBlock42C;
 
+/* The field menu command block (*(state + 340)). */
+typedef struct MenuFieldMenu {
+    POLY_FT4 polys[18]; /* 0 */
+    POLY_FT4 cursor[2]; /* 2D0 */
+    s32 count; /* 320 */
+    u8 start; /* 324 */
+    u8 pad325[0x3];
+} MenuFieldMenu;
+
+/* The second field menu block (*(state + 344)). */
+typedef struct MenuFieldMenu2 {
+    POLY_FT4 polys[14]; /* 0 */
+    POLY_FT4 polys2[8]; /* 230 */
+    u8 start; /* 370 */
+    u8 pad371[0x3];
+} MenuFieldMenu2;
+
+/* The status panel block (*(state + 358)). */
+typedef struct MenuBlock358 {
+    u8 pad0[0x2AE0];
+    u8 buffer; /* 2AE0 */
+    u8 pad2AE1[0xF];
+} MenuBlock358;
+
+/* The equipment panel block (*(state + 35c)). */
+typedef struct MenuBlock35C {
+    u8 pad0[0x2420];
+    u8 sprites[0xed1]; /* 2420 */
+    u8 buffer; /* 32F1 */
+    u8 pad32F2[0x1];
+    u8 kind; /* 32F3 */
+} MenuBlock35C;
+
+/* A panel built by 801ce0cc. */
+typedef struct MenuPanel {
+    u8 pad0[0xBE6];
+    u8 buffer; /* BE6 */
+    u8 shown; /* BE7 */
+} MenuPanel;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -385,14 +425,14 @@ typedef struct MenuState {
     u8 choiceCount; /* 33A */
     u8 fighters; /* 33B: party members with a gear */
     MenuParty *party; /* 33C: party block (6c bytes) */
-    u8 *fieldMenu; /* 340: field-menu block (328 bytes) */
-    u8 *fieldMenu2; /* 344: field-menu block (374 bytes) */
+    MenuFieldMenu *fieldMenu; /* 340: field-menu block (328 bytes) */
+    MenuFieldMenu2 *fieldMenu2; /* 344: field-menu block (374 bytes) */
     MenuPrims *primitives; /* 348: shared primitive block (15c bytes) */
     MenuBlock34C *block34C; /* 34C: 2dc0 bytes */
     MenuImages *screenImages; /* 350: screen images (1194 bytes) */
     MenuSpriteLists *spriteLists; /* 354: 140c bytes */
-    u8 *block358; /* 358 */
-    u8 *block35C; /* 35C */
+    MenuBlock358 *block358; /* 358 */
+    MenuBlock35C *block35C; /* 35C */
     MenuLabels360 *labels360; /* 360 */
     u8 *portraits[6]; /* 364 */
     u8 pad37C[0x4];
@@ -576,6 +616,14 @@ void func_801C8694(u8 arg0);
 u8 func_801CAA38(u8 arg);
 s32 func_801CACF8(u8 message, u8 confirm, u8 arg);
 void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first);
+void func_801CD81C(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e);
+void func_801CDB1C(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d);
+void func_801CDC6C(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e);
+void func_801CE540(void);
+void func_801CE660(void);
+void func_801CEB5C(void);
+void func_801CEBB4(void);
+void func_801CE464(void);
 void func_801CE198(u8 kind, u8 *sprites, u8 *block, u8 count);
 void func_801CE338(void);
 void func_801CE3C8(void);
@@ -597,6 +645,14 @@ void func_801D1030(void);
 void func_801D10DC(void);
 void func_801D1160(void);
 void func_801D12D4(u8 *panel, s32 arg1);
+void func_801D13F8(void);
+void func_801D1464(void);
+void func_801D14B0(void);
+void func_801D14FC(void);
+void func_801D1640(void);
+void func_801D17C4(void);
+void func_801D1914(void);
+void func_801D1AAC(void);
 void func_801D1B20(void);
 void func_801D1BE8(void);
 void func_801D1C48(void);
@@ -614,10 +670,20 @@ void func_801D2F4C(u8 message);
 void func_801D3B00(void);
 void func_801D397C(s32 arg0, s32 x, s32 y, s32 w, s32 h, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
 void func_801D4EA0(u8 slot);
+void func_801D5ED4(u8 slot, u8 mode);
+void func_801D6194(u8 mode);
+void func_801D6338(u8 slot, u8 mode);
+void func_801D680C(u8 slot, u8 mode);
+void func_801D6CF4(u8 slot, u8 mode);
+void func_801D7154(u8 slot, u8 mode);
+void func_801D74EC(u8 slot, u8 mode);
+void func_801D7884(u8 slot, u8 mode);
 void func_801D7C3C(u8 slot, u8 mode);
 void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
-void func_801D8DE4(u8 slot, s32 arg1, s32 arg2, u8 mode);
-void func_801D8EA4(u8 slot, s32 arg1, s32 arg2, u8 mode);
+void func_801D7F50(s32 x, s32 y, u8 mode);
+void func_801D8644(u8 slot, s32 x, s32 y, u8 arg3, u8 mode);
+void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode);
+void func_801D8EA4(u8 slot, u8 lower, u8 arg2, u8 mode);
 void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
