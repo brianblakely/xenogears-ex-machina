@@ -873,7 +873,7 @@ void func_8007F854(void) {
 
     D_800912F0 = 1;
     func_80083C0C(1);
-    D_80092734 = 0;
+    D_80092734 = NULL;
     func_8007F834();
     D_8009872C.unkD4 |= 0xC;
     D_80097010.unkD4 |= 0xC;
@@ -886,7 +886,7 @@ void func_8007F8B4(void) {
     s32 unused[2]; /* never used; the original frame keeps its slot */
 
     func_80083C0C(1);
-    D_80092734 = 0;
+    D_80092734 = NULL;
     func_8007F834();
 }
 
@@ -900,9 +900,9 @@ void func_8007F8E4(void) {
     }
 }
 
-/* Highlight the text when an entry's index (+0x12) is the cursor. */
-void func_8007F948(s16 *entry, s32 cursor) {
-    if (entry[9] == cursor) {
+/* Highlight the text of a page's entry when it is under the cursor. */
+void func_8007F948(MenuPage *page, s32 entry) {
+    if (page->cursor == entry) {
         func_8007EE08(1);
     } else {
         func_8007EE08(0);
@@ -1026,27 +1026,93 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080644);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080780);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800808F4);
+void func_800808F4(void) {
+    D_80092924 = 1;
+    func_8007F834();
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080920);
+void func_80080920(void) {
+    D_80092924 = 1;
+    func_800719F0();
+    func_8008509C(0, 0);
+    func_8008509C(1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080964);
+/* Show a page, remembering the current one; 0xff returns to it. */
+void func_80080964(s32 page) {
+    MenuPage *previous;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800809BC);
+    if (page == 0xFF) {
+        D_80092734 = D_80092738;
+        return;
+    }
+    previous = D_80092734;
+    D_80092734 = &D_800915AC[page];
+    D_80092738 = previous;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800809D8);
+/* Whether page 3 is shown. */
+s32 func_800809BC(void) {
+    return D_80092734 == &D_800915AC[3];
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080A58);
+/* Enter the settings/system menu at page 3 with every state reset. */
+void func_800809D8(void) {
+    func_80039FF8();
+    D_80092734 = NULL;
+    func_80080964(3);
+    D_800915AC[3].cursor = 0;
+    D_800915AC[4].cursor = 0;
+    D_800928C8 = 0;
+    D_80092758 = 0;
+    func_8007F834();
+    D_80092924 = 0;
+    func_80080AA0(0);
+    D_80092940 = 0;
+    D_800928D8 = func_800891C0(6);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080AA0);
+void func_80080A58(void) {
+    if (D_80092940 == 0) {
+        func_80028A60(0);
+        func_800320E8((void *)D_800928D8);
+        D_80092940 = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080AE8);
+/* Free the loaded image data (or just forget it). */
+void func_80080AA0(s32 forget) {
+    if (forget) {
+        D_80092760 = NULL;
+    }
+    if (D_80092760 != NULL) {
+        func_800320E8(D_80092760);
+        D_80092760 = NULL;
+    }
+}
+
+/* Unpack the loaded image data and upload it to VRAM (320,256)-(640,474). */
+void func_80080AE8(void) {
+    s16 rect[4];
+
+    if (D_80092760 != NULL) {
+        func_800445D0(0);
+        rect[0] = 0x140;
+        rect[1] = 0x100;
+        rect[2] = 0x140;
+        rect[3] = 0xDA;
+        func_8007313C(D_80092760, (u8 *)D_80092760 + 0x21E80);
+        func_80044894(rect, D_80092760);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080B58);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080C48);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080D10);
+void func_80080D10(void) {
+    D_800926DC = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080D20);
 

@@ -98,7 +98,34 @@ extern s8 D_8009273C;
 extern s8 D_80092740;
 extern s32 D_80092744;
 extern s32 D_800912F0;
-extern s32 D_80092734;
+/* A page of the settings/system menu (0x3C bytes; table at D_800915AC). */
+typedef struct {
+    u8 unk0[0x12];
+    s16 cursor; /* 0x12 */
+    u8 unk14[0x28];
+} MenuPage;
+
+extern MenuPage D_800915AC[];
+extern MenuPage *D_80092734; /* shown page */
+extern MenuPage *D_80092738; /* page to return to */
+extern s32 D_80092924;
+extern s32 D_800928C8;
+extern s8 D_80092758;
+extern s32 D_80092940;
+extern s32 D_800928D8;
+extern void *D_80092760; /* loaded image data */
+
+void func_80080964(s32 page);
+void func_80080AA0(s32 forget);
+void func_800719F0(void);
+void func_8008509C(s32 a, s32 b);
+void func_80039FF8(void);
+s32 func_800891C0(s32 arg);
+void func_80028A60(s32 arg);
+void func_800320E8(void *block); /* free a heap block */
+void func_800445D0(s32 mode);    /* wait for drawing */
+void func_8007313C(void *src, void *dst);
+s32 func_80044894(s16 *rect, void *pixels); /* load an image into VRAM */
 extern s32 D_80092950;
 
 /* 32-byte records of the list at D_80092874; +4 is the required level. */
