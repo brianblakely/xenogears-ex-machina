@@ -9008,7 +9008,86 @@ void func_8009C12C(void) {
     func_8009C5A8(D_800AFD1C, 3);
 }
 
+#ifdef NON_MATCHING
+/* Show the dialogue portrait of `character`: finish a pending slot first
+ * (upload loaded images, or release shown ones) and return -1; a slot
+ * already holding it is selected (bits 2-4 of the actor state) and 0
+ * returned; otherwise the next free slot starts loading its image files and
+ * -1 is returned. */
+s32 func_8009C154(s16 character) {
+    s32 i;
+    s32 tries;
+    s32 found;
+    s32 count;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800B06A4[i].b == 1) {
+            if (func_80028A60(1) != 0) {
+                return -1;
+            }
+            D_800B06A4[i].b = 2;
+            func_80070340(D_800ADB10, D_800AEAE4[i][0].x, D_800AEAE4[i][0].y, D_800AEAE4[i][0].clut_x,
+                          D_800AEAE4[i][0].clut_y, 0x100, 1);
+            if (D_800B06A4[i].c == 0) {
+                func_80070340(D_800ADB10, D_800AEAE4[i][1].x, D_800AEAE4[i][1].y, D_800AEAE4[i][1].clut_x,
+                              D_800AEAE4[i][1].clut_y, 0x100, 1);
+            } else {
+                func_80070340(D_800ADB14, D_800AEAE4[i][1].x, D_800AEAE4[i][1].y, D_800AEAE4[i][1].clut_x,
+                              D_800AEAE4[i][1].clut_y, 0x100, 1);
+            }
+            return -1;
+        }
+        if (D_800B06A4[i].b == 2) {
+            D_800B06A4[i].b = 0;
+            func_800320E8(D_800ADB10);
+            if (D_800B06A4[i].c == 1) {
+                func_800320E8(D_800ADB14);
+            }
+            return -1;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800B06A4[i].a == character) {
+            D_800B0078->state.bits.unk2 = i;
+            return 0;
+        }
+    }
+    found = 0;
+    for (tries = 0; tries < 3; tries++) {
+        D_800ADB0C++;
+        if (D_800ADB0C >= 3) {
+            D_800ADB0C = 0;
+        }
+        if (func_8009C538(D_800B06A4[D_800ADB0C].a) == 0) {
+            found = 1;
+            break;
+        }
+    }
+    if (found == 0) {
+        return -1;
+    }
+    D_800B0078->state.bits.unk2 = D_800ADB0C;
+    func_80028470(4, 0);
+    D_800B06A4[D_800ADB0C].a = character;
+    D_800B06A4[D_800ADB0C].b = 1;
+    D_800B06A4[D_800ADB0C].c = 0;
+    D_800B00C8[0].file = D_800AE1E0[character][0] + 0x46;
+    D_800ADB10 = D_800B00C8[0].data = func_80031BDC(func_800288EC(D_800B00C8[0].file), 0);
+    count = 1;
+    if (D_800AE1E0[character][1] != D_800AE1E0[character][0]) {
+        D_800B06A4[D_800ADB0C].c = 1;
+        D_800B00C8[1].file = D_800AE1E0[character][1] + 0x46;
+        count = 2;
+        D_800ADB14 = D_800B00C8[1].data = func_80031BDC(func_800288EC(D_800B00C8[1].file), 0);
+    }
+    D_800B00C8[count].file = 0;
+    D_800B00C8[count].data = NULL;
+    func_80029AFC(D_800B00C8, 0, 0);
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009C154);
+#endif
 
 /* -1 when an idle window shows message kind 1 for `id`, else 0. */
 s32 func_8009C538(s32 id) {

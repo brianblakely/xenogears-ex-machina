@@ -52,4 +52,26 @@ extern void func_8009E574(s32 x, s32 z);
 extern s32 D_800ADBEC; /* publish the field id on the next walk */
 extern void func_80092F44(void);
 
+/* Dialogue portraits (8009c154): D_800B06A4[slot] holds .a the character,
+ * .b the state (1 loaded, 2 shown) and .c whether a second image is used. */
+typedef struct {
+    s16 x;
+    s16 y;
+    s16 clut_x;
+    s16 clut_y;
+} PortraitPlace;
+
+typedef struct {
+    u16 file;
+    void *data;
+} PortraitRequest;
+
+extern PortraitPlace D_800AEAE4[3][2]; /* VRAM place per slot and image */
+extern u8 D_800AE1E0[][2];             /* portrait files per character, - 0x46 */
+extern void *D_800ADB10;               /* first portrait image */
+extern void *D_800ADB14;               /* second portrait image */
+extern PortraitRequest D_800B00C8[3];  /* file list read by 80029afc */
+extern s32 func_80029AFC(PortraitRequest *list, s32 mode, s32 a2);
+extern s32 func_8009C538(s32 id);
+
 #endif
