@@ -1127,7 +1127,55 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2ACC);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2EB0);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E308C);
+/* Add the experience pools to the current record's totals and gain levels
+ * A and B while the pools reach the next level (none past 99 with option
+ * 0x8000, and nothing more at 99). */
+void func_801E308C(void) {
+    s32 rest;
+
+    D_801E44EC->totalA += D_801E44F0;
+    D_801E44EC->totalB += D_801E44F4;
+    if (D_801E44EC->level == 99 && (D_801E44C4->options & 0x8000)) {
+        D_801E44F0 = 0;
+    }
+    if (D_801E44EC->level2 == 99 && (D_801E44C4->options & 0x8000)) {
+        D_801E44F4 = 0;
+    }
+    if (D_801E44EC->level == 99) {
+        D_801E44F0 = 0;
+    }
+    if (D_801E44EC->level2 == 99) {
+        D_801E44F4 = 0;
+    }
+    rest = D_801E44EC->nextA - D_801E44F0;
+    if (rest > 0) {
+        D_801E44EC->nextA = rest;
+    } else {
+        do {
+            if (++D_801E44EC->level >= 100 && (D_801E44C4->options & 0x8000)) {
+                D_801E44EC->level--;
+            }
+            D_801E44EC->nextA = D_801E44E8->experience[D_801E44EC->level - 1];
+            func_801E335C();
+            rest += D_801E44EC->nextA;
+        } while (rest <= 0);
+    }
+    D_801E44EC->nextA = rest;
+    rest = D_801E44EC->nextB - D_801E44F4;
+    if (rest > 0) {
+        D_801E44EC->nextB = rest;
+    } else {
+        do {
+            if (++D_801E44EC->level2 >= 100 && (D_801E44C4->options & 0x8000)) {
+                D_801E44EC->level2--;
+            }
+            D_801E44EC->nextB = D_801E44E8->experience[D_801E44EC->level2 - 1];
+            func_801E3500();
+            rest += D_801E44EC->nextB;
+        } while (rest <= 0);
+    }
+    D_801E44EC->nextB = rest;
+}
 
 /* Level A growth of the current record: max HP, then stats 58, 59, 5e
  * and 5f toward the growth data's targets for its level range. */

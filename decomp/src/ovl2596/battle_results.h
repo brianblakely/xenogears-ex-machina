@@ -274,6 +274,7 @@ typedef struct {
 /* The growth data file: one block per character. */
 typedef struct {
     Growth characters[11];
+    s32 experience[99];       /* 0xBB0: experience to the next level, per level - 1 */
 } GrowthFile;
 
 /* Per character skill state in the game data (0x20 each, at +0x16c0). */
@@ -300,11 +301,18 @@ typedef struct {
     s16 value_E66;            /* 0xE66 */
     u8 padE68[0x16C0 - 0xE68];
     CharacterSkills skills[11]; /* 0x16C0 */
+    u8 pad1820[0x22B6 - 0x1820];
+    u16 options;              /* 0x22B6: 8006f8ea */
 } GameData;
 
 /* A battle combatant record (0x170 each from 800ccce8). */
 typedef struct {
-    u8 pad0[0x4E];
+    u8 pad0[0x3C];
+    s32 totalA;               /* 0x3C: experience totals (levels A and B) */
+    s32 totalB;               /* 0x40 */
+    s32 nextA;                /* 0x44: experience to the next level */
+    s32 nextB;                /* 0x48 */
+    u8 pad4C[2];
     u16 maxHp;                /* 0x4E */
     u16 pad50;
     u16 maxEp;                /* 0x52 */
@@ -344,6 +352,10 @@ extern BattleWork *D_801E44C8;  /* 800ccce8 */
 extern GrowthFile *D_801E44E8;  /* the growth data file */
 extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
+extern s32 D_801E44F0;          /* experience pool for level A */
+extern s32 D_801E44F4;          /* experience pool for level B */
+void func_801E335C(void);
+void func_801E3500(void);
 
 /* Sound and input. */
 typedef struct {
