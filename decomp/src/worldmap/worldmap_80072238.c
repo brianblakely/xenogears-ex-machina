@@ -15,8 +15,195 @@ s32 func_80087710();
 s32 func_80087734();
 s32 func_80071A50();
 s32 func_80071A58();
+s32 func_8008A52C();
+s32 func_8008B498();
+s32 func_8008BD1C();
+s32 func_8008C6EC();
+s32 func_8008D520();
+s32 func_8008DE9C();
+s32 func_8008E4F4();
+s32 func_800907C4();
+s32 func_80092BE4();
+s32 func_80092DF8();
+s32 func_80087F60();
+s32 func_8008868C();
+s32 func_800879E0();
+s32 func_80088C90();
 
+/* Enter the world map: set up the display, load or restore the area, start the
+ * subsystems, the music and the area's actors. */
+#ifdef NON_MATCHING /* flag stores scheduled early; music buffer address kept in $s0 */
+void func_80072238(void) {
+    RECT rect;
+    ActorSpawn *spawn;
+    void *seq;
+    void *data;
+    s32 file;
+    s32 i;
+
+    func_80072BB0();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    func_80028A60(0);
+    func_80071EF0();
+    while (func_800286CC() >= 3) {
+    }
+    func_80073530();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 4;
+    D_8009D804 = 0;
+    D_8009CEC0 = 0;
+    D_8009C7E8 = 0;
+    D_8009BD34 = 0;
+    D_8009D144 = 0;
+    D_8009C178 = D_80059198 = 1;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    if (D_8009C894 == 0) {
+        func_8001B66C();
+    } else {
+        func_80039CC4();
+        func_800399D4(D_80062528);
+        seq = D_8004F2FC;
+        D_8004F2FC = NULL;
+        D_80062528 = seq;
+    }
+    if ((u16)D_8006EE54.unk6A != 0) {
+        func_80073398();
+    } else if (D_8009C894 == 0) {
+        func_80073448(D_8009D3D4);
+    } else {
+        func_8007565C();
+        func_80075D4C();
+    }
+    func_80028A60(0);
+    func_8008440C();
+    func_800979C8();
+    func_80084580();
+    func_80072090();
+    func_800736DC();
+    func_80073E30();
+    func_80085F58();
+    func_80024F64(0x1400, 0);
+    func_80074594();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    if (D_8009C894 == 0) {
+        D_8006258C = func_80037FD8(D_8009C88C, 0);
+    }
+    func_80028470(0x24, 0);
+    if (D_8009C894 == 0) {
+        func_80097BC0(&D_8009C5AC);
+        do {
+            func_800967E4();
+            VSync(0);
+        } while (func_80096668() >= 2);
+    } else {
+        func_80097CB8(&D_8009BE28);
+        func_80096694();
+    }
+    if (D_8009C894 == 0) {
+        while (D_8005957C & 0x10) {
+        }
+        func_800320E8(D_8009C88C);
+        func_80038428(D_8006259C);
+        if (D_8009BE10 == 7) {
+            file = D_8009D800;
+            data = D_8009C888;
+        } else {
+            file = D_8009D3D0;
+            data = D_8009C884;
+        }
+        memcpy(D_80062648, data, func_800288EC(file));
+        seq = func_80039850(D_80062648);
+        D_80062528 = seq;
+        func_80039A80(D_80062528, 0x7F, 0);
+    } else {
+        func_800320E8(D_8009C88C);
+        func_80038428(D_8006259C);
+        if (D_8009BE10 == 7) {
+            file = D_8009D800;
+            data = D_8009C888;
+        } else {
+            file = D_8009D3D0;
+            data = D_8009C884;
+        }
+        memcpy(D_80062648, data, func_800288EC(file));
+        func_80039B68(D_80062528, 0x7F, 0xF0);
+    }
+    if (D_8009C894 == 0) {
+        if (D_80099E8C[0].kind != 0) {
+            i = 0;
+            do {
+                func_80097718(D_80099E8C[i].kind, D_80099E8C[i].update);
+                i++;
+            } while (D_80099E8C[i].kind != 0);
+        }
+        for (spawn = D_8009A034[D_8009C610]; spawn->kind != 0; spawn++) {
+            func_80097718(spawn->kind, spawn->update);
+        }
+    } else if (D_8009C894 == 1) {
+        func_800976FC((s32)func_800923A8, 0);
+        func_800976FC((s32)func_8008A52C, 1);
+        func_800976FC((s32)func_8008B498, 2);
+        func_800976FC((s32)func_8008BD1C, 3);
+        func_800976FC((s32)func_8008C6EC, 4);
+        func_800976FC((s32)func_8008D520, 5);
+        func_800976FC((s32)func_8008DE9C, 6);
+        func_800976FC((s32)func_8008E4F4, 7);
+        func_800976FC((s32)func_800907C4, 8);
+        func_800976FC((s32)func_80092BE4, 0xC);
+        func_800976FC((s32)func_80092DF8, 0xD);
+        func_800976FC((s32)func_80071A50, 0xE);
+        switch (D_8009C610) {
+        case 3:
+            func_800976FC((s32)func_80087F60, 0xF);
+            func_800976FC((s32)func_8008868C, 0x10);
+            break;
+        case 4:
+            func_800976FC((s32)func_80087F60, 0xF);
+            func_800976FC((s32)func_8008868C, 0x10);
+            func_800976FC((s32)func_800879E0, 0x11);
+            func_800976FC((s32)func_80088C90, 0x13);
+            break;
+        case 5:
+        case 6:
+        case 7:
+            func_800976FC((s32)func_80087F60, 0xF);
+            func_800976FC((s32)func_8008868C, 0x10);
+        case 8:
+            func_800976FC((s32)func_800879E0, 0x11);
+            break;
+        }
+    }
+    D_80059179 = 0;
+    if (D_8009C610 == 0) {
+        func_80089160(0xE, NULL, NULL);
+        D_80059179 = 1;
+    }
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80085FE0();
+    if (D_8009C894 == 0) {
+        func_80075228();
+    }
+    func_80033698(0x130, 0x1E0);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072238);
+#endif
 
 /* Leave the world map: stop audio, release actor handles, shut down each
  * subsystem and free the area buffers. */

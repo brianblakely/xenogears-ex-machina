@@ -897,4 +897,31 @@ void func_80075030(void);
 void func_800739B8(void);
 void func_80075228(void);
 
+/* Actor spawn list entry; a zero kind ends a list. */
+typedef struct {
+    s32 kind;
+    s32 update;
+} ActorSpawn;
+
+extern ActorSpawn D_80099E8C[];  /* actors of every area */
+extern ActorSpawn *D_8009A034[]; /* per area: its actors */
+extern s32 D_8009C894;           /* nonzero when resuming a saved state */
+extern s32 D_8009C178, D_80059198, D_8006258C;
+extern u16 D_8005957C;
+extern void *D_8004F2FC;
+
+void func_8001B66C(void);
+void func_80024F64(s32 a, s32 b);
+s32 func_80037FD8(void *data, s32 mode);
+void func_80039B68(void *seq, s32 volume, s32 c);
+void func_80071EF0(void);
+void func_80072090(void);
+void func_80073398(void);
+void func_80073448(s32 id);
+void func_80073E30(void);
+void func_80074594(void);
+void func_8007565C(void);
+void func_80097CB8(Camera *camera);
+void func_800976FC(s32 kind, s32 index);
+
 #endif
