@@ -106,6 +106,9 @@ typedef struct {
 
 #define LIST_PRIMS ((ListPrims *)D_800D2DB4)
 
+extern u32 *D_800C3E5C[];   /* text images of battle messages 0-9 */
+void *func_800338D8(s32 id); /* a battle message text */
+
 s32 func_80025FA8(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y,
                   s32 scaleX, s32 scaleY, s32 scale);
 s32 func_80076A6C(s32 id, POLY_FT4 *prims, s16 x, s16 y);

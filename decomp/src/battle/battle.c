@@ -1493,7 +1493,47 @@ void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076D58);
 #endif
 
+/* Render the eleven command names (messages 10-20, and 21-31 in the
+ * alternate colours) into text images, record their icon cells and upload
+ * them to VRAM rows below (0x3de, 0x10d); then upload the ten message images
+ * 0-9 side by side at (0x3de, 0x100). */
+#ifdef NON_MATCHING
+void func_80076EA4(void) {
+    u32 *pixels[11];
+    RECT rect;
+    u32 *image;
+    s32 i;
+
+    for (i = 0; i < 11; i++) {
+        image = (u32 *)func_8008AC00(0x1B);
+        pixels[i] = image;
+        bzero(image, 0x30C);
+        D_800D2F68[i].w = func_80034EAC(func_800338D8(i + 10), pixels[i], 0x1B, 0);
+        D_800D2F68[i + 11].w = func_80034EAC(func_800338D8(i + 21), pixels[i], 0x1B, 1);
+        D_800D2F68[i].u = D_800D2F68[i + 11].u = 0x78;
+        D_800D2F68[i].v = D_800D2F68[i + 11].v = i * 0xD + 0xD;
+        D_800D2F68[i].alternate = 0;
+        D_800D2F68[i + 11].alternate = 1;
+        rect.x = 0x3DE;
+        rect.y = i * 0xD + 0x10D;
+        rect.w = 0x1E;
+        rect.h = 0xD;
+        func_800769E8(&rect, pixels[i]);
+    }
+    for (i = 0; i < 11; i++) {
+        func_800320E8(pixels[i]);
+    }
+    for (i = 0; i < 10; i++) {
+        rect.x = i * 2 + 0x3DE;
+        rect.y = 0x100;
+        rect.w = 6;
+        rect.h = 0xD;
+        func_800769E8(&rect, D_800C3E5C[i]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076EA4);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077074);
 
