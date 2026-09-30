@@ -13,3 +13,5 @@ LINKER_EXTRA := .local/decomp/resident/undefined_syms_auto.txt .local/decomp/res
 OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
+# The heap unit addresses its small globals through $gp.
+GP_heap := 8
