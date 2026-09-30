@@ -2994,7 +2994,7 @@ void func_8007ABA0(u8 **pc, u8 enemy) {
 #ifdef NON_MATCHING
 void func_8007ABD8(u8 **pc, u8 enemy) {
     u16 *value = &D_800D3400[enemy].vars[(*pc)[1]];
-    s32 sum = *value + (((*pc)[3] << 8) + (*pc)[2]);
+    s32 sum = *value + ((*pc)[2] + ((*pc)[3] << 8));
 
     if (sum > 0xFFFF) {
         sum = 0xFFFF;
@@ -7294,7 +7294,64 @@ void func_80087A38(u8 member) {
     D_800C3E18 = 0;
 }
 
+/* Execute the member's attack step (paying `cost` AP, 1-3): once per
+ * turn move into the target's group (unless the character is 4; flagged
+ * slots use 800881b8), reset the events, advance the combo step through the
+ * step table (a step from 8 is a deathblow the character must know, else
+ * step 7), queue an event 0xf3 when the target reacts while down, commit
+ * the step against the target, queue its event, let the enemy remember the
+ * attack and run its reaction script, and apply the results. Returns
+ * whether the combo completed a known deathblow or the reaction ran action
+ * 0x62. */
+#ifdef NON_MATCHING
+u8 func_80087AF0(u8 member, u8 cost) {
+    u8 queue;
+    u8 reacted = 0;
+
+    if (D_800C3E18 == 0) {
+        if (D_800D32A0[member].unk1 == 0) {
+            if (D_800D2D24[member] != 4) {
+                func_80087EDC(member, D_800C3EAC->slots[member].defaultTarget);
+            }
+        } else {
+            func_800881B8(member, D_800C3EAC->slots[member].defaultTarget);
+        }
+        D_800C3E18 = 1;
+    }
+    func_80085388();
+    if (D_800D32A0[member].unk1 == 0) {
+        if (D_800C3EAC->unk2DC < 8) {
+            D_800C3EAC->unk2DC = D_800C34B3[D_800C3EAC->unk2DC][cost];
+        } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C3EAC->unk2DC - 8)) {
+            reacted = 1;
+        } else {
+            D_800C3EAC->unk2DC = 7;
+        }
+    } else {
+        D_800C3EAC->unk2DC++;
+    }
+    if (D_800CCCE8.records[D_800C3EAC->slots[member].defaultTarget].pilot.flags34 & 0x800) {
+        D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+        D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
+        D_800C3FE8[D_800C3EAC->eventCount].parameter = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+        D_800C3EAC->eventCount++;
+    }
+    func_80085CCC(member, func_80089C08(D_800C3EAC->slots[member].defaultTarget), D_800C3EAC->unk2DC - 1);
+    queue = D_800C3EAC->eventCount;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2C94.animation;
+    D_800C3EAC->eventCount++;
+    func_80079840(member, D_800C3EAC->slots[member].defaultTarget);
+    if (D_800C3EAC->slots[member].defaultTarget >= 3 && (u8)func_80079AB0(D_800C3EAC->slots[member].defaultTarget)) {
+        reacted = 1;
+    }
+    func_80085C88(queue);
+    return reacted;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
+#endif
 
 /* Move `actor` into `target`'s formation group when it is another group
  * with room (under four members): leave the old group, take the first free

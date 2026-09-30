@@ -27,6 +27,7 @@ extern u32 *D_800C3A70[3]; /* combo text image blocks */
 s32 func_80086028(u8 member, s32 index, s32 column, u8 id, u32 **pixels, u8 offset);
 extern u8 D_800C4929;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
+extern u8 D_800C34B3[8][3]; /* the next combo step by step and AP paid */
 extern u8 *D_800C31AC[];   /* per character: the deathblow of each combo */
 
 /* The fuel cost of each combo step (1-based, indexed like the combo flags
