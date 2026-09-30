@@ -569,7 +569,113 @@ void func_801C6A54(u8 mode) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C6E74);
+/*
+ * Collect the shop's five part lists (20 ids each) and their counts from the
+ * shop tables, release the tables, unpack the file-2 pictures, set up the
+ * member bars and the gear screen's title sprite and backdrop.
+ */
+void func_801C6E74(void) {
+    u8 *entry;
+    s32 i;
+    s32 j;
+
+    entry = D_800625A0->gear_tables + D_80059171 * 0x64;
+    i = 0;
+    D_801D908C[0] = 0;
+    for (; i < 20; i++) {
+        D_800625A0->details->stock[0][i] = *(entry + i + 0x14);
+        if (D_800625A0->details->stock[0][i] != 0) {
+            D_801D908C[0]++;
+        }
+    }
+    i = 0;
+    D_801D908C[1] = 0;
+    for (; i < 20; i++) {
+        D_800625A0->details->stock[1][i] = entry[i];
+        if (D_800625A0->details->stock[1][i] != 0) {
+            D_801D908C[1]++;
+        }
+    }
+    i = 0;
+    D_801D908C[2] = 0;
+    for (; i < 20; i++) {
+        D_800625A0->details->stock[2][i] = *(entry + i + 0x28);
+        if (D_800625A0->details->stock[2][i] != 0) {
+            D_801D908C[2]++;
+        }
+    }
+    i = 0;
+    D_801D908C[3] = 0;
+    for (; i < 20; i++) {
+        D_800625A0->details->stock[3][i] = *(entry + i + 0x50);
+        if (D_800625A0->details->stock[3][i] != 0) {
+            D_801D908C[3]++;
+        }
+    }
+    i = 0;
+    D_801D908C[4] = 0;
+    for (; i < 20; i++) {
+        D_800625A0->details->stock[4][i] = *(entry + i + 0x3C);
+        if (D_800625A0->details->stock[4][i] != 0) {
+            D_801D908C[4]++;
+        }
+    }
+    func_800320E8(D_800625A0->gear_tables);
+    func_801C6A54(0);
+    for (j = 0; j < 9; j++) {
+        for (i = 0; i < 2; i++) {
+            SetLineF3(D_800625A0->details->bar_upper + (j * 2 + i));
+            (D_800625A0->details->bar_upper + (j * 2 + i))->r0 = 0xFF;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->g0 = 0;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->b0 = 0;
+            SetLineF3(D_800625A0->details->bar_lower + (j * 2 + i));
+            (D_800625A0->details->bar_lower + (j * 2 + i))->r0 = 0xFF;
+            (D_800625A0->details->bar_lower + (j * 2 + i))->g0 = 0;
+            (D_800625A0->details->bar_lower + (j * 2 + i))->b0 = 0;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->x0 = D_801D6C44[j];
+            (D_800625A0->details->bar_upper + (j * 2 + i))->y0 = 0xA6;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->x1 = D_801D6C44[j] + 0x18;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->y1 = 0xA6;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->x2 = D_801D6C44[j] + 0x18;
+            (D_800625A0->details->bar_upper + (j * 2 + i))->y2 = 0xBC;
+            (D_800625A0->details->bar_lower + (j * 2 + i))->x0 = D_801D6C44[j];
+            (D_800625A0->details->bar_lower + (j * 2 + i))->y0 = 0xA6;
+            (D_800625A0->details->bar_lower + (j * 2 + i))->x1 = D_801D6C44[j];
+            (D_800625A0->details->bar_lower + (j * 2 + i))->y1 = 0xBC;
+            (D_800625A0->details->bar_lower + (j * 2 + i))->x2 = D_801D6C44[j] + 0x18;
+            (D_800625A0->details->bar_lower + (j * 2 + i))->y2 = 0xBC;
+        }
+        D_800625A0->details->bar_shown[j] = 0;
+    }
+    func_8002675C(D_800625A0->sprite_sheet, 0x166, D_800625A0->unk454->packets, D_800625A0->buffer, 0x108, 0x18,
+                  0x1000);
+    for (j = 0; j < 2; j++) {
+        SetPolyFT4((D_800625A0->unk454->backdrop + j));
+        SetSemiTrans((D_800625A0->unk454->backdrop + j), 0);
+        SetShadeTex((D_800625A0->unk454->backdrop + j), 0);
+        (D_800625A0->unk454->backdrop + j)->r0 = 0x80;
+        (D_800625A0->unk454->backdrop + j)->g0 = 0x80;
+        (D_800625A0->unk454->backdrop + j)->b0 = 0x80;
+        D_800625A0->unk454->backdrop[j].tpage = GetTPage(0, 0, 0x180, 0);
+        D_800625A0->unk454->backdrop[j].clut = D_800595D4;
+        (D_800625A0->unk454->backdrop + j)->u0 = 0;
+        (D_800625A0->unk454->backdrop + j)->v0 = 0x48;
+        (D_800625A0->unk454->backdrop + j)->u1 = 0x60;
+        (D_800625A0->unk454->backdrop + j)->v1 = 0x48;
+        (D_800625A0->unk454->backdrop + j)->u2 = 0;
+        (D_800625A0->unk454->backdrop + j)->v2 = 0x55;
+        (D_800625A0->unk454->backdrop + j)->u3 = 0x60;
+        (D_800625A0->unk454->backdrop + j)->v3 = 0x55;
+        (D_800625A0->unk454->backdrop + j)->x0 = 0x10;
+        (D_800625A0->unk454->backdrop + j)->y0 = 0x20;
+        (D_800625A0->unk454->backdrop + j)->x1 = 0x70;
+        (D_800625A0->unk454->backdrop + j)->y1 = 0x20;
+        (D_800625A0->unk454->backdrop + j)->x2 = 0x10;
+        (D_800625A0->unk454->backdrop + j)->y2 = 0x2D;
+        (D_800625A0->unk454->backdrop + j)->x3 = 0x70;
+        (D_800625A0->unk454->backdrop + j)->y3 = 0x2D;
+    }
+}
 
 /* Set a quad's four corners for the rectangle (x, y, w, h), centred on the screen. */
 void func_801C7604(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h) {
