@@ -139,6 +139,7 @@ decomp/src/resident/heap.c
 decomp/src/resident/heap.h
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
+decomp/src/resident/model.h
 decomp/src/resident/pad.h
 decomp/src/resident/sound.h
 decomp/src/resident/text.h

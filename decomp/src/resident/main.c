@@ -659,7 +659,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B5D0);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B8B0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BA40);
+extern s32 D_8004FE00;
+
+void func_8002BA40(void) {
+    D_8004FDFC = D_8004FE00;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BA58);
 
@@ -669,7 +673,10 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BF38);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C310);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C3D8);
+/* Whether a disc read is active. */
+s32 func_8002C3D8(void) {
+    return D_8004FE48;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C3E8);
 
@@ -677,41 +684,155 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C4BC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C59C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C644);
+#include "model.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C68C);
+/* Trim a model group's heap block to its data (once). Returns 1 when it
+ * was already trimmed. */
+s32 func_8002C644(ModelGroup *group) {
+    if (group->flags & 2) {
+        return 1;
+    }
+    group->flags |= 2;
+    func_80031F70(group, group->primitives - (u8 *)group);
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C6E0);
+/* Trim a model buffer's heap block at its end (once). Returns 1 when it
+ * was already trimmed. */
+s32 func_8002C68C(ModelBuffer *buffer) {
+    if (buffer->flags & 0x40) {
+        return 1;
+    }
+    buffer->flags |= 0x40;
+    func_80031F70(buffer, buffer->end - (u8 *)buffer);
+    buffer->end = NULL;
+    return 0;
+}
+
+extern u8 D_80059598;
+extern u8 D_80059599;
+extern u8 D_8005959A;
+
+void func_8002C6E0(u8 r, u8 g, u8 b) {
+    D_80059598 = r;
+    D_80059599 = g;
+    D_8005959A = b;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C700);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C8CC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CB54);
+/* Allocate a model buffer's two halves of `size` bytes each. */
+void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second) {
+    u8 *block;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CBBC);
+    func_800324B8(0x25);
+    block = func_80031BDC(buffer->size * 2, 0);
+    *first = block;
+    *second = block + buffer->size;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CC10);
+/* Release a model buffer's owned block. */
+void func_8002CBBC(ModelBuffer *buffer) {
+    if (buffer->flags & 1) {
+        func_800320E8(buffer->buffer);
+        buffer->flags &= ~1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CC54);
+extern s32 D_80050108; /* texture page override: 0 none, 1 page, 2 raw */
+extern s32 D_8005010C; /* CLUT override: 0 on */
+extern s32 D_80059310;
+extern s32 D_80059314;
+extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);
+extern u16 func_80043A58(s32 x, s32 y);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CC74);
+/* Override model texture pages with the page at (x, y). */
+void func_8002CC10(u16 x, u16 y) {
+    D_80059310 = func_80043A1C(0, 0, x, y) & 0x1F;
+    D_80050108 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CCAC);
+void func_8002CC54(u16 tpage) {
+    D_80059310 = tpage;
+    D_80050108 = 2;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CCC8);
+/* Override model CLUTs with the CLUT at (x, y). */
+void func_8002CC74(u16 x, u16 y) {
+    D_80059314 = func_80043A58(x, y) & 0xFFF0;
+    D_8005010C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CD24);
+void func_8002CCAC(void) {
+    D_80050108 = 0;
+    D_8005010C = 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CD64);
+extern u16 D_80059308;
+extern u16 D_8005930C;
+
+/* Apply the texture page override to a primitive's page. */
+void func_8002CCC8(u16 *tpage) {
+    u16 value = *tpage;
+
+    D_80059308 = value;
+    if (D_80050108 == 1) {
+        D_80059308 = value & 0xFFE0;
+        D_80059308 = (value & 0xFFE0) | D_80059310;
+    } else if (D_80050108 == 2) {
+        D_80059308 = D_80059310;
+    }
+}
+
+/* Apply the CLUT override to a primitive's CLUT. */
+void func_8002CD24(u16 *clut) {
+    u16 value = *clut;
+
+    D_8005930C = value;
+    if (D_8005010C == 0) {
+        D_8005930C = value & 0xF;
+        D_8005930C = (value & 0xF) | D_80059314;
+    }
+}
+
+/* Handle a texture page (0xC4) or CLUT (0xC8) command. Returns 1 for any
+ * other command. */
+s32 func_8002CD64(u8 *command) {
+    if ((command[3] & 0xF0) != 0xC0) {
+        return 1;
+    }
+    switch (command[3]) {
+    case 0xC4:
+        func_8002CCC8((u16 *)command);
+        return 0;
+    case 0xC8:
+        func_8002CD24((u16 *)command);
+        return 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CDCC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CF34);
+s32 func_8002CF34(s32 *value) {
+    RenderPacket *packet = D_80059424;
+
+    packet->code = 4;
+    packet->value = *value;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CF58);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D0C0);
+s32 func_8002D0C0(s32 *value) {
+    RenderPacket *packet = D_80059424;
+
+    packet->code = 5;
+    packet->value = *value;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D0E4);
 
