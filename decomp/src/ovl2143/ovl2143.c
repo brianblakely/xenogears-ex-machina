@@ -684,9 +684,88 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E37D0);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E39F0);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E59D4);
+/* Turn a node to (rx, ry, rz): at once when `duration` is below 2, else
+ * through its first attachment (a kind-3 tween of the shortest angle
+ * differences over `duration` ticks), taking a pool slot if it has none. */
+void func_801E59D4(SlotPool *pool, ModelPart *part, s32 duration, s32 rx, s32 ry, s32 rz) {
+    PoolSlot *tween;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E5B50);
+    if (duration < 2) {
+        part->rot.vx = rx;
+        part->rot.vy = ry;
+        part->rot.vz = rz;
+        part->rotate = 1;
+        return;
+    }
+    if (part->rot.vx != rx || part->rot.vy != ry || part->rot.vz != rz) {
+        if (part->attachments[0] != NULL) {
+            tween = part->attachments[0];
+        } else {
+            tween = func_801DF6F0(pool);
+        }
+        if (tween != NULL) {
+            tween->used = 1;
+            tween->kind = 3;
+            tween->flag = 0;
+            tween->tag = 0xFE;
+            tween->value[0] = part->rot.vx;
+            tween->value[1] = part->rot.vy;
+            tween->value[2] = part->rot.vz;
+            rx = (rx - part->rot.vx) & 0xFFF;
+            if (rx >= 0x800) {
+                rx -= 0x1000;
+            }
+            tween->value[3] = rx;
+            ry = (ry - part->rot.vy) & 0xFFF;
+            if (ry >= 0x800) {
+                ry -= 0x1000;
+            }
+            tween->value[4] = ry;
+            rz = (rz - part->rot.vz) & 0xFFF;
+            if (rz >= 0x800) {
+                rz -= 0x1000;
+            }
+            tween->value[5] = rz;
+            tween->time = 0;
+            tween->duration = duration;
+            part->attachments[0] = tween;
+        }
+    }
+}
+
+/* Start a movement tween (kind `type` + 7) of a node towards (x, y, z) over
+ * `duration` ticks in its first attachment; value 0 is the distance + 1. */
+void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4, s32 duration,
+                   s32 x, s32 y, s32 z) {
+    PoolSlot *tween;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+
+    if (part->attachments[0] != NULL) {
+        tween = part->attachments[0];
+    } else {
+        tween = func_801DF6F0(pool);
+    }
+    if (tween != NULL) {
+        tween->used = 1;
+        tween->kind = type + 7;
+        tween->flag = 0;
+        tween->tag = 0xFE;
+        dx = x - part->pos[0];
+        dy = y - part->pos[1];
+        dz = z - part->pos[2];
+        tween->value[0] = func_80048C4C(dx * dx + dy * dy + dz * dz) + 1;
+        tween->value[1] = arg3;
+        tween->value[2] = arg4;
+        tween->value[3] = x;
+        tween->value[4] = y;
+        tween->value[5] = z;
+        tween->time = 0;
+        tween->duration = duration;
+        part->attachments[0] = tween;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E5C74);
 
@@ -700,13 +779,69 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6338);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E63A8);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6578);
+/* Hide node `index` of `parts` and its descendants, showing the same nodes of
+ * `other`, and release their attachments. Differs in register assignment and
+ * one addu operand order. */
+#ifdef NON_MATCHING
+void func_801E6578(SlotPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
+    ModelPart *part;
+    ModelPart *child;
+    s32 count;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6668);
+    child = parts;
+    part = &parts[index];
+    count = parts->count;
+    part->visible = 0;
+    other[index].visible = 1;
+    func_801DF7A8(pool, part->attachments[0]);
+    part->attachments[0] = NULL;
+    func_801DF7A8(pool, part->attachments[1]);
+    part->attachments[1] = NULL;
+    func_801DF7A8(pool, part->attachments[2]);
+    part->attachments[2] = NULL;
+    for (i = 1; i < count;) {
+        child++;
+        i++;
+        if (child->parent == part) {
+            func_801E6578(pool, child->count, parts, other);
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6578);
+#endif
+
+/* Move the visibility of every shown node of `parts` to the same node of
+ * `other`. */
+void func_801E6668(ModelPart *parts, ModelPart *other) {
+    u16 count;
+    s32 i;
+
+    count = parts->count;
+    for (i = 1; i < count; i++) {
+        parts++;
+        other++;
+        if (parts->visible) {
+            parts->visible = 0;
+            other->visible = 1;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E66BC);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E67F8);
+/* The lowest set bit of D_801E863C's low byte (8 when none). */
+s32 func_801E67F8(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if ((D_801E863C >> i) & 1) {
+            break;
+        }
+    }
+    return i;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6830);
 
@@ -726,9 +861,33 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7298);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E72CC);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E7378);
+/* Set flag D_801E85CC from bit 0. */
+void func_801E7378(s32 value) {
+    D_801E85CC = value & 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E738C);
+/* Reset the module state: the tween pool of `slot_count` slots, the 16-particle
+ * pool and the state tables. */
+void func_801E738C(s32 slot_count) {
+    s32 i;
+    s32 j;
+    s32 offset;
+
+    D_801E8640 = 0;
+    D_801E869C = 0;
+    func_801DF5F4(&D_801E86A8, slot_count);
+    func_801E0064(&D_801E86A0, 0x10);
+    for (i = 9; i >= 0; i--) {
+        D_801E8670[i] = 0;
+    }
+    for (j = 7; j >= 0; j--) {
+        D_801E85F4[j].w0 = 0;
+    }
+    /* Both 0x14-byte records' second halfword, by byte offset. */
+    for (offset = sizeof(Record14); offset >= 0; offset -= sizeof(Record14)) {
+        *(s16 *)((u8 *)&D_801E864C[0].h2 + offset) = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
 

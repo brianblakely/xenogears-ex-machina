@@ -73,12 +73,15 @@ typedef struct ModelPart {
     struct PoolSlot *attachments[3]; /* +70: pool slots attached to the node */
 } ModelPart;
 
-/* A pool slot (0x14 bytes); +0 marks it used. */
+/* A pool slot (0x14 bytes): a tween attached to a model node. */
 typedef struct PoolSlot {
     u8 used;
-    u8 pad1[2];
-    u8 tag;         /* +3: 0xff: kept by func_801DFE8C */
-    u8 pad4[0x10];
+    u8 flag;
+    u8 kind;        /* 3: rotation, 7 + n: movement */
+    u8 tag;         /* 0xff: kept by func_801DFE8C */
+    s16 value[6];   /* +4: start values and deltas / targets */
+    s16 time;       /* +10 */
+    s16 duration;   /* +12 */
 } PoolSlot;
 
 /* A pool of slots with the position where the search for a free one starts. */
@@ -133,6 +136,7 @@ void func_80043CB0(POLY_FT4 *p);                 /* SetPolyFT4 */
 
 /* Resident maths. */
 s32 func_8003F8CC(s16 angle);                    /* cosine (4096 = 1.0) */
+s32 func_80048C4C(s32 value);                    /* square root */
 
 /* libgte. */
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m);        /* RotMatrix */
@@ -143,7 +147,32 @@ void func_80049EFC(MATRIX *m);                /* SetRotMatrix */
 void func_80049F2C(MATRIX *m);                /* SetLightMatrix */
 void func_80049F8C(MATRIX *m);                /* SetTransMatrix */
 
+/* This overlay's data. */
+typedef struct {
+    s32 w0;
+    s32 w4;
+} Pair;
+
+typedef struct {
+    s16 h0;
+    s16 h2;
+    u8 rest[0x10];
+} Record14;
+
+extern s32 D_801E85CC;
+extern Pair D_801E85F4[8];
+extern u16 D_801E863C;
+extern s32 D_801E8640;
+extern Record14 D_801E864C[2];
+extern s32 D_801E8670[10];
+extern s16 D_801E869C;
+extern ParticlePool D_801E86A0;
+extern SlotPool D_801E86A8;
+
 /* This overlay. */
+SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);
+PoolSlot *func_801DF6F0(SlotPool *pool);
+ParticlePool *func_801E0064(ParticlePool *pool, s32 capacity);
 void func_801E011C(ParticlePool *pool);
 void func_801DF6A8(SlotPool *pool);
 s32 func_801DF7A8(SlotPool *pool, PoolSlot *slot);
