@@ -27,5 +27,12 @@ typedef struct {
 void SpuInit(void);
 void SpuQuit(void);
 void SpuSetCommonAttr(SpuCommonAttr *attr);
+long SpuReadDecodedData(void *data, long flag);
+unsigned long SpuSetTransferStartAddr(unsigned long addr);
+long SpuSetTransferMode(long mode);
+typedef void (*SpuTransferCallbackProc)(void);
+SpuTransferCallbackProc SpuSetTransferCallback(SpuTransferCallbackProc func);
+void SpuGetVoiceEnvelopeAttr(int voice, long *status, short *level);
+void SpuSetNoiseClock(long clock);
 
 #endif

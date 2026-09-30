@@ -1027,7 +1027,7 @@ void func_80037E8C(void) {
  * Nonmatching: the voice fields are addressed from a different base. */
 #ifdef NON_MATCHING
 void func_80037EE4(void) {
-    SpuVoice *voice = D_800508E4;
+    SpuVoice *voice = D_800508E4->voice;
     s32 i;
 
     D_8005957C |= 0x40;
@@ -1068,7 +1068,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800380D0);
  * none). */
 void func_800381F4(SoundSequence *sequence, s32 fade) {
     if (fade == 0) {
-        fade = sequence->fade;
+        fade = sequence->address;
     } else if (fade == -1) {
         fade = 0;
     }
@@ -1076,7 +1076,7 @@ void func_800381F4(SoundSequence *sequence, s32 fade) {
         func_800393B8(sequence->voice, sequence->volume);
         return;
     }
-    func_800395B8(sequence->voice, sequence->fade, sequence->volume);
+    func_800395B8(sequence->voice, sequence->address, sequence->volume);
 }
 
 extern s32 D_80059584;
@@ -1204,7 +1204,7 @@ void func_80038AD4(s32 a, s32 b) {
     D_800595DC = a;
     D_800595E0 = b;
     if (D_800595A4 == 0) {
-        D_800595A4 = func_80038F18(0x840);
+        D_800595A4 = (s32)func_80038F18(0x840);
         if (D_800595A4 == 0) {
             func_8003F6B0(0x1E);
         }
@@ -1370,7 +1370,7 @@ void func_80039C4C(SoundTrack *track) {
         return;
     }
     track->flags &= 0x7FFF;
-    func_8003B060(track);
+    func_8003B060((SoundSeq *)track);
 }
 
 void func_80039C8C(s32 a, s32 c) {
@@ -1378,7 +1378,7 @@ void func_80039C8C(s32 a, s32 c) {
         func_8003F6B0(5);
         return;
     }
-    func_8003A89C(a, 0, c);
+    func_8003A89C((SoundSeq *)a, 0, c);
 }
 
 extern SoundTrack *D_80059564;
@@ -1390,7 +1390,7 @@ void func_80039CC4(void) {
     for (track = D_80059564; track != NULL; track = track->next) {
         if (track->flags & 1) {
             track->flags &= 0x7FFF;
-            func_8003B060(track);
+            func_8003B060((SoundSeq *)track);
         }
     }
 }

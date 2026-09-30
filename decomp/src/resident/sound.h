@@ -7,7 +7,7 @@
 /* Resident sound driver: SPU voices, channels and loaded sound banks. Field
  * names follow their observed use; unknown bytes keep their offsets. */
 
-/* One SPU voice's registers (the driver's D_800508E4 base). */
+/* One SPU voice's registers. */
 typedef struct {
     s16 volume_left;
     s16 volume_right;
@@ -19,13 +19,49 @@ typedef struct {
     u16 repeat;
 } SpuVoice;
 
-/* A voice's claim on a hardware SPU voice (D_8006252C holds the owner of
- * each hardware voice). */
+/* The SPU registers (the driver's D_800508E4 base, 0x1F801C00). */
+typedef struct {
+    SpuVoice voice[24];
+    s16 main_volume[2];
+    s16 reverb_volume[2];
+    u16 key_on[2];
+    u16 key_off[2];
+    u16 pitch_mod[2];
+    u16 noise[2];
+    u16 reverb[2];
+} SpuRegs;
+
+/* A voice envelope in parts (SPU ADSR fields). */
+typedef struct {
+    u8 attack_mode;
+    u8 sustain_mode;
+    u8 release_mode;
+    u8 attack_rate;
+    u8 decay_rate;
+    u8 sustain_rate;
+    u8 release_rate;
+    u8 sustain_level;
+} SoundEnvelope;
+
+/* A channel's claim on a hardware SPU voice and its staged register
+ * values (D_8006252C holds the owner of each hardware voice). */
 typedef struct {
     u16 voice;         /* hardware voice */
-    u16 mode;
+    u16 mode;          /* 0x10 pitch modulation, 0x20 noise, 0x40 reverb */
     s16 priority;
-    u16 flags;         /* registers to update */
+    u16 flags;         /* registers to update: 1 volume, 4 pitch, 8 sample
+                        * addresses, 0x10-0x100 envelope parts, 0x1000-0x4000
+                        * mode bits */
+    s16 volume_left;
+    s16 volume_right;
+    u16 unkC;
+    u16 unkE;
+    u8 unk10[4];
+    u16 pitch;
+    u8 unk16[6];
+    u32 sample_start;  /* SPU address */
+    u32 sample_loop;
+    SoundEnvelope envelope;
 } SoundChannel;
 
 /* A loaded sound bank (list through `next`). */
@@ -34,8 +70,11 @@ typedef struct SoundBank {
     u16 flags;
     u8 unk12[2];
     u16 id;
-    u8 unk16[6];
+    u16 unk16;         /* instrument set key */
+    u16 volumes;       /* offset of the per-effect volume bytes */
+    u8 unk1A[2];
     struct SoundBank *next;
+    u16 effect[1];     /* data offsets of each effect's two channels */
 } SoundBank;
 
 /* A sound track (list through `next`); flag 1 marks it paused. */
@@ -54,36 +93,104 @@ typedef union {
     } part;
 } SoundEffectId;
 
+/* A 16.16 value whose whole part is also read on its own. */
+typedef union {
+    s32 value;
+    struct {
+        u16 fraction;
+        s16 whole;
+    } part;
+} SoundFixed;
+
+/* A per-channel low-frequency modulator (four per channel; the first
+ * modulates the pitch). */
+typedef struct SoundModulator {
+    s32 (*wave)(struct SoundModulator *modulator);
+    s32 phase;         /* current output (16.16) */
+    s32 slope;
+    s32 step;
+    u16 count;         /* frames to the next wave segment */
+    u16 rate;          /* frames per wave segment */
+    u16 delay_count;
+    s16 delay;
+    s16 period_count;
+    s16 period;
+    u8 target;         /* 0 pitch, 1 volume, 2 pan */
+    u8 shape;
+    u16 flags;         /* bit 0: on */
+} SoundModulator;
+
+/* A repeat of a channel's sequence data. */
+typedef struct {
+    u8 count;          /* repeats left */
+    u8 unk1;
+    u8 transpose;      /* at the start of the repeat */
+    u8 exit_transpose; /* at its end */
+    u8 *start;
+    u8 *end;
+} SoundLoop;
+
 /* One channel of a playing sequence (0x158 bytes). */
 typedef struct {
-    u16 flags;         /* bit 0: active */
-    u16 flags2;
+    u16 flags;         /* bit 0: active, 0x20: muted */
+    u16 flags2;        /* registers to update */
     u16 flags3;        /* bit 0x20: volume slide */
     u8 voice_bit;      /* bit of the channel in the sequence's voice mask */
-    u8 unk7;
+    u8 priority;
     SoundEffectId id;
-    u32 stamp;
-    u8 unk10[8];
+    u32 stamp;         /* start time (effect channels) */
+    u8 *position;      /* sequence data position */
+    u8 *start;
     u8 *loop;          /* sequence data position to return to */
-    u8 unk1C[7];
+    s32 unk1C;
+    u16 unk20;
+    u8 unk22;
     u8 unk23;
-    u8 unk24[3];
+    u8 unk24;
+    u8 unk25;
+    u8 instrument;
     u8 voice;          /* hardware voice */
-    u8 unk28[8];
+    u8 unk28;
+    u8 unk29[3];
+    struct SoundSequence *instruments;
     SoundChannel state;
-    u8 unk38[0x24];
     s16 unk5C;
-    u8 unk5E[8];
+    u8 unk5E[2];
+    u8 unk60;
+    u8 unk61;
+    u16 unk62;
+    u8 unk64;
+    u8 unk65;
     s16 transpose;     /* in semitones */
-    u8 unk68[0xC];
-    s16 pan;
+    SoundFixed note;   /* 8.8 semitones in the high half */
+    s16 unk6C;
+    s16 detune;
+    u16 unk70;
+    u16 loop_depth;    /* innermost entry of `loops`, 0xFFFF when none */
+    s16 pan;           /* 0 left, 0x4000 centre, 0x7F00 right */
     s16 volume;
-    u8 unk78[0x14];
+    SoundFixed level;  /* its whole part scales the volume */
+    s32 unk7C;
+    s16 unk80;
+    s16 unk82;
+    s32 unk84;
+    s32 unk88;
     s16 volume_step;
     s16 volume_target;
-    u8 unk90[0xA];
+    s16 pan_step;
+    s16 pan_target;
+    s16 unk94;
+    s16 unk96;
+    s16 pan_frames;
     s16 volume_frames;
-    u8 unk9C[0xBC];
+    SoundLoop loops[4];
+    u16 modulator_index; /* modulator the generic opcodes address */
+    u16 modulators;    /* mask of the running modulators */
+    s16 pitch_mod;     /* modulator outputs */
+    s16 level_mod;
+    s16 pan_mod;
+    u8 unkD6[2];
+    SoundModulator modulator[4];
 } SoundSeqChannel;
 
 /* A linear slide of a 16.16 value. */
@@ -94,19 +201,28 @@ typedef struct {
     s16 target;
 } SoundSlide;
 
-/* A sequence being played: header, then its channels. */
-typedef struct {
-    u8 unk0[0x10];
-    u16 flags;         /* bit 15: paused */
-    u8 unk12[2];
+/* A sequence being played: header, then its channels. Sequences are
+ * listed through `next` (D_80059564). */
+typedef struct SoundSeq {
+    struct SoundSeq *next;
+    struct SoundSeq *snapshot; /* saved copy of the sequence to restart from */
+    struct SoundSeqHeader *header; /* sequence data */
+    u32 *table;        /* per-sequence table after the channels */
+    u16 flags;         /* bit 15: playing, bit 8: stopped by a fade,
+                        * bit 4: has a snapshot, bit 0: header read */
+    u16 unk12;
     u8 channels;
-    u8 unk15[5];
+    u8 unk15;
+    s16 unk16;         /* instrument set key */
+    u16 unk18;
     u8 unk1A;
     u8 unk1B;
-    u8 unk1C[8];
+    u16 noise_clock;
+    u16 unk1E;
+    s32 unk20;
     s32 unk24;
     u32 ticks;
-    u8 unk2C[4];
+    s32 unk2C;
     u16 unk30;
     s16 unk32;
     s16 unk34;
@@ -115,28 +231,59 @@ typedef struct {
     u16 unk3A;
     s16 unk3C;
     s16 unk3E;
-    u8 unk40[8];
+    u8 unk40;
+    u8 reverb_type;
+    u8 reverb_delay;
+    u8 reverb_feedback;
+    s16 reverb_depth;
+    u8 unk46[2];
     u32 voices;        /* mask of the channels holding a voice */
-    u8 unk4C[8];
-    s32 tick_step;
-    u8 unk58[2];
-    s16 resolution;
-    u8 unk5C[8];
-    s32 tempo;         /* 16.16 */
+    u32 muted;         /* mask of the muted channels */
+    s32 unk50;
+    s32 tick_step;     /* rate * tempo */
+    SoundFixed rate;   /* 16.16 ticks per frame at tempo 1 */
+    s32 rate_step;
+    s16 rate_frames;
+    s16 rate_target;
+    SoundFixed tempo;  /* 16.16, 1.0 = 0x100 */
     s32 tempo_step;
     s16 tempo_frames;
     s16 tempo_target;
-    u8 unk70[0xC];
-    s32 volume;        /* 8.24 */
-    s32 volume_step;
-    s16 volume_frames;
-    s16 volume_target;
-    s32 pan;
+    SoundFixed fade;   /* 8.24 level scaling every voice */
+    s32 fade_step;
+    s16 fade_frames;
+    s16 fade_target;
+    SoundFixed pitch;  /* 8.24 semitones added to every voice */
+    s32 pitch_step;
+    s16 pitch_frames;
+    s16 pitch_target;
+    SoundFixed pan;    /* 8.24 added to every voice's pan */
     s32 pan_step;
     s16 pan_frames;
     s16 pan_target;
     SoundSeqChannel channel[1];
 } SoundSeq;
+
+/* Some tests read a channel's flags and flags2 as one word. */
+#define SEQ_CHANNEL_FLAGS32(channel) (*(u32 *)&(channel)->flags)
+
+/* The header of sequence data. */
+typedef struct SoundSeqHeader {
+    u8 unk0[0x10];
+    u16 unk10;
+    u8 unk12[2];
+    u8 channels;
+    u8 entries;        /* entries of the table at `table` */
+    u16 unk16;
+    u16 unk18;
+    u8 reverb_type;
+    u8 reverb_depth;   /* high byte of the depth */
+    u8 reverb_delay;
+    u8 reverb_feedback;
+    u16 unk1E;
+    u16 table;         /* offset of 5-byte (index, word) entries */
+    u16 channel[1];    /* data offset of each channel (0: unused) */
+} SoundSeqHeader;
 
 typedef struct {
     s32 unk0;
@@ -144,6 +291,16 @@ typedef struct {
     s16 seconds;
     s16 minutes;
 } SoundTime;
+
+/* An instrument of a wave bank (16 bytes). */
+typedef struct {
+    u32 start;         /* sample start, 8-byte units from the bank */
+    u16 loop;          /* loop start, 8-byte units from the sample */
+    s16 note;          /* note offset */
+    u32 envelope;      /* rates and sustain level */
+    u16 modes;         /* envelope modes */
+    u8 unkE[2];
+} SoundInstrument;
 
 /* A playing sequence (list through `next`). */
 typedef struct SoundSequence {
@@ -153,8 +310,9 @@ typedef struct SoundSequence {
     u16 volume;
     u16 key;
     u8 unk22[6];
-    s32 fade;
+    s32 address;       /* SPU address of the samples (in 8-byte units) */
     struct SoundSequence *next;
+    SoundInstrument instrument[1];
 } SoundSequence;
 
 /* A block of the driver's SPU memory pool. */
@@ -166,7 +324,7 @@ typedef struct {
     u32 unkC;
 } SpuBlock;
 
-extern SpuVoice *D_800508E4;          /* SPU voice registers */
+extern SpuRegs *D_800508E4;           /* SPU registers */
 extern u16 D_8005957C;                /* driver state flags */
 extern s32 D_80059404;
 extern s32 D_80059478;                /* voice count of the effect channels */
@@ -177,11 +335,11 @@ extern SoundBank *D_80059440;         /* loaded banks */
 extern SoundSequence *D_80059558;     /* playing sequences */
 
 /* Driver interface (0x80037e8c-0x8003f738). */
-s32 func_80037FD8(void *data, s32 a1);
+s32 func_80037FD8(void *data, s32 flags);
 void func_80038310(s32 bank);      /* release a wave bank */
 void func_80038B4C(void);
 void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
-s32 func_80038F18(s32 size);
+void *func_80038F18(s32 size);
 void func_800393B8(s32 voice, u16 volume);
 void func_800395B8(s32 voice, s32 fade, u16 volume);
 void func_800399D4(s32 sequence);  /* release a sequence */
@@ -189,11 +347,11 @@ void func_80039C4C(SoundTrack *track); /* resume a track */
 void func_80039CC4(void);
 void func_80039FF8(void);
 u32 func_8003A65C(s32 id, s32 width);
-void func_8003A89C(s32 a, s32 b, s32 c);
-void func_8003B060(SoundTrack *track);
+void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames);
+void func_8003B060(SoundSeq *seq);
 void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
-void func_8003BCA0(s32 a, s32 b, s32 c, s32 d, s32 mode);
-void func_8003BDFC(s32 a0);
+void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
+s32 func_8003BDFC(s32 wait);
 void func_8003E680(s32 bits, SoundSeq *seq);
 void func_8003E83C(SoundChannel *state, u32 voice);
 void func_8003F6B0(s32 error);
