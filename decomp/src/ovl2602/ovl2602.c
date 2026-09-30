@@ -3,9 +3,9 @@
  * parts shop. Its entry (801ce024) sets up the same shop screen as ovl2601
  * (sell lists, buying with prices and gold, yes/no prompts) and adds the
  * Gear side: the gear records at 8006dfac and their part tables, a 3D model
- * of the chosen Gear drawn through the resident-loaded module at 801e7xxx
- * with its own ordering table, the member switch and the gear screen block
- * at menu state +454. Functions shared with ovl2601 are recovered from the
+ * of the chosen Gear drawn through code at 801e7xxx outside this overlay
+ * with a second 400h-entry ordering table, the member switch and the gear
+ * screen block at menu state +454. Functions shared with ovl2601 are recovered from the
  * same source; the ones that differ keep their own versions here.
  */
 #include "menu_card.h"
