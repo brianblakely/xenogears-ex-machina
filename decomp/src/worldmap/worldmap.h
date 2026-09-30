@@ -1788,4 +1788,34 @@ typedef struct {
 
 #define FACE_TEST_SCRATCH ((FaceTestScratch *)0x1F800000)
 
+#define gte_rtv0() __asm__ volatile("nop;nop;.word 0x4A486012")
+
+/* Scratchpad work area of the particle pass. */
+typedef struct {
+    SVECTOR v[4];       /* 0x00: quad corners */
+    SVECTOR centre;     /* 0x20 */
+    MATRIX view;        /* 0x28 */
+    MATRIX m;           /* 0x48 */
+    MATRIX identity;    /* 0x68 */
+    VECTOR offset;      /* 0x88 */
+    VECTOR scale;       /* 0x98 */
+    s32 padA8;
+    s32 flag;           /* 0xAC */
+    s32 sz;             /* 0xB0 */
+} ParticleScratch;
+
+#define PARTICLE_SCRATCH ((ParticleScratch *)0x1F800000)
+
+/* Particle shapes and texture coordinates, per kind. */
+typedef struct {
+    SVECTOR v[4];
+} ParticleShape;
+
+typedef struct {
+    u16 uv[4];
+} ParticleUV;
+
+extern ParticleShape D_8009B040[];
+extern ParticleUV D_8009AFF0[];
+
 #endif
