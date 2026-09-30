@@ -122,7 +122,7 @@ typedef struct FieldActor {
     s16 unk0EA;          /* 0EA */
     s16 unkEC;           /* 0EC */
     s16 unkEE;           /* 0EE */
-    s32 unkF0;           /* 0F0: fall speed */
+    s32 unkF0;           /* 0F0: 16.16 vertical (fall) or push speed */
     s16 scale[3];        /* 0F4 */
     u8 unk0FA[2];
     u8 color0[3];        /* 0FC */
@@ -135,7 +135,7 @@ typedef struct FieldActor {
     u8 sound_volume;     /* 10C */
     u8 sound_mode;       /* 10D: 0xff off */
     u8 unk10E[0x110 - 0x10E];
-    void *unk110;        /* 110 */
+    struct PlatformLink *link; /* 110: linked platform state (allocated) */
     void *unk114;        /* 114 */
     s32 *list;           /* 118 */
     u16 unk11C;          /* 11C */
@@ -973,7 +973,6 @@ extern s32 func_8008492C(FieldActor *actor);
 extern s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper);
 extern void func_80081C54(s32 index);
 extern void func_800379C8(char *format, ...); /* debug print */
-extern s32 func_80083288(s32 index, FieldMesh *mesh, s32 x, s32 z, s32 *top, VECTOR *normal);
 extern s32 D_800B2360[3]; /* movement history index per party slot (FieldWork +2360) */
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);

@@ -5599,7 +5599,7 @@ void func_8008083C(s32 index) {
     if (index < D_800ADBFC) {
         actor = D_800AF880.components.descriptors[index].actor;
         if (actor->unk134 & 0x80) {
-            func_800320E8(actor->unk110);
+            func_800320E8(actor->link);
         }
         if (actor->state.word & 0x1000) {
             func_800320E8(actor->unk114);
@@ -6230,9 +6230,283 @@ s32 func_800825AC(s32 from, s32 to) {
     return func_80099A4C(to_x - from_x, to_z - from_z);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082620);
+#ifdef NON_MATCHING
+/* An actor's additive motion before it moves: the terrain push and conveyor
+ * of the floor it stands on, the platform it rides and its gear layer's
+ * drift. */
+void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
+    u32 terrain;
+    VECTOR conveyor;
+    VECTOR slope;
+    VECTOR normal;
+    VECTOR unused;
+    SVECTOR turn;
+    FieldModel *model;
+    FieldActor *platform;
+    LayerObject **entry;
+    s32 push_x;
+    s32 push_z;
+    s32 speed;
+    s32 limit;
+    s32 self_x;
+    s32 self_z;
+    s32 other_x;
+    s32 other_z;
+    s32 radius;
+    s32 angle;
 
+    push_x = 0;
+    push_z = 0;
+    terrain = 0;
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1) && D_800B2078.party_processing_mode == 0) {
+        terrain = actor->unk014;
+    }
+    model = descriptor->model;
+    func_8007B614(&conveyor, D_800ADFC4[(terrain >> 9) & 3],
+                  (D_800ADFA8[(terrain >> 11) & 7] + (u16)D_800B2078.terrain_angle) & 0xFFF);
+    if (!(actor->flags & 0x41800)) {
+        speed = actor->unkF0;
+        if (terrain & 0x420000) {
+            slope.vx = -(actor->unk50[0] * actor->unk50[1]) >> 15;
+            slope.vy = 0;
+            slope.vz = -(actor->unk50[2] * actor->unk50[1]) >> 15;
+            if (slope.vx == 0) {
+                slope.vx = 1;
+            }
+            slope.vy = 1;
+            if (slope.vz == 0) {
+                slope.vz = 1;
+            }
+            func_80048D7C(&slope, &normal);
+            if (normal.vx == 0) {
+                normal.vx = 1;
+            }
+            if (normal.vy == 0) {
+                normal.vy = 1;
+            }
+            if (normal.vz == 0) {
+                normal.vz = 1;
+            }
+            push_x = normal.vx * (speed >> 17) << 4;
+            push_z = normal.vz * (speed >> 17) << 4;
+            limit = 0xC;
+            if (terrain & 0x400000) {
+                limit = 0x18;
+            }
+            if ((actor->unkF0 >> 16) >= limit) {
+                actor->unkF0 = limit << 16;
+            } else {
+                actor->unkF0 += model->unk1C;
+            }
+            model->velocity[1] = actor->unkF0 >> 1;
+        }
+        if (terrain & 0x400000) {
+            actor->unk40[0] += push_x;
+            actor->unk40[2] += push_z;
+            actor->heading |= 0x8000;
+        }
+        if (actor->unk074 != 0xFF) {
+            goto linked;
+        }
+        if (terrain & 0x20000) {
+            actor->unk40[0] += push_x;
+            actor->unk40[2] += push_z;
+        }
+        if (!(terrain & 0x8000)) {
+            goto conveyed;
+        }
+    } else if (!(terrain & 0x4000)) {
+        goto conveyed;
+    }
+    actor->unk40[0] += conveyor.vx;
+    actor->unk40[1] += conveyor.vy;
+    actor->unk40[2] += conveyor.vz;
+conveyed:
+    if (actor->unk074 != 0xFF) {
+    linked:
+        if ((D_800AF880.components.descriptors[actor->unk074].actor->layer_flags & 0xC0) == 0xC0) {
+            if (!(actor->unk134 & 0x80)) {
+                actor->link = func_80031BDC(sizeof(PlatformLink), 0);
+                actor->unk134 |= 0x80;
+            }
+            turn.vx = D_800AF880.components.descriptors[actor->unk074].rotation.vx - actor->link->rotation.vx;
+            angle = turn.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy - actor->link->rotation.vy;
+            turn.vz = D_800AF880.components.descriptors[actor->unk074].rotation.vz - actor->link->rotation.vz;
+            actor->link->rotation.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy;
+            self_x = actor->position[0];
+            self_z = actor->position[2];
+            platform = D_800AF880.components.descriptors[actor->unk074].actor;
+            other_x = platform->position[0];
+            other_z = platform->position[2];
+            if (!(actor->heading & 0x8000)) {
+                actor->link->radius = func_800825AC(index, actor->unk074);
+            }
+            radius = actor->link->radius;
+            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle - 0x800;
+            actor->unk40[0] += other_x + func_8003F8CC(angle) * radius * 16 - self_x;
+            actor->unk40[2] += other_z + func_8003F8B0(angle) * radius * 16 - self_z;
+        }
+    }
+    if ((actor->layer_flags & 0x22000) == 0x22000) {
+        entry = (LayerObject **)&D_801E8670[D_800AF858];
+        actor->unk40[0] -= (((*entry)->speed_x << 16) / (u16)actor->unk76) << 8;
+        actor->unk40[2] -= (((*entry)->speed_z << 16) / (u16)actor->unk76) << 8;
+        D_800AF858++;
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082620);
+#endif
+
+#ifdef NON_MATCHING
+/* Move actor `index` for this frame: choose its walk/run mode, turn its
+ * requested heading into a velocity (80081f80) plus its additive motion,
+ * sweep that against the collision layers, then pick its animation and
+ * store the result as its velocity (+30). */
+void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
+    VECTOR move;
+    SVECTOR edge[2];
+    FieldModel *model;
+    s32 moving;
+    s32 result;
+    u32 saved;
+    s32 heading;
+    s16 mode;
+
+    heading = actor->heading;
+    model = descriptor->model;
+    D_80065B08 = index;
+    if (actor->flags & 0x1000000) {
+        return;
+    }
+    mode = 1;
+    if ((actor->flags & 0x4000) && (D_800AFE9C & 0x40) && D_800ADB68 == 1) {
+        mode = 2;
+    }
+    if ((actor->flags & 0x1800) && actor->unkE8 != mode) {
+        switch (actor->unkE8) {
+        case 1:
+            mode = 1;
+            break;
+        case 2:
+            mode = 2;
+            break;
+        }
+    }
+    if (actor->unk0E3 >= 9) {
+        actor->unk0E3--;
+    }
+    moving = actor->unk40[0] | actor->unk40[1] | actor->unk40[2];
+    if (func_8008492C(actor) == -1) {
+        moving = 1;
+    }
+    if ((heading & 0x8000) && moving == 0 && !(actor->flags & 0x40800)) {
+        goto idle;
+    }
+    if (!(heading & 0x8000)) {
+        func_80081F80(model, heading, descriptor);
+        move.vx = model->velocity[0];
+        move.vy = model->velocity[1];
+        move.vz = model->velocity[2];
+        move.vx += actor->unk40[0];
+        move.vy += actor->unk40[1];
+        move.vz += actor->unk40[2];
+        actor->heading_goal = heading;
+    } else {
+        move.vx = actor->unk40[0];
+        move.vy = actor->unk40[1];
+        heading = actor->heading_goal & 0xFFF;
+        move.vz = actor->unk40[2];
+    }
+    if (func_80082494(&move.vx, actor) != 0) {
+        goto stop;
+    }
+    if (move.vx != 0 || move.vz != 0) {
+        heading = -(s16)ratan2(move.vz, move.vx) & 0xFFF;
+    }
+    result = -1;
+    if (actor->triangle[actor->layer] != -1) {
+        saved = actor->flags;
+        if (index == D_800B2078.controlled) {
+            if (D_8005A444[1] != 0xFF) {
+                actor->flags = saved | (D_800AF880.components.descriptors[D_8005A444[1]].actor->flags & 0x600);
+            }
+            if (D_8005A444[2] != 0xFF) {
+                actor->flags |= D_800AF880.components.descriptors[D_8005A444[2]].actor->flags & 0x600;
+            }
+        }
+        if (!(actor->flags & 0x41800) && actor->unk074 == 0xFF && D_800ADB98 == 0) {
+            result = func_8007BAC0(&move, actor, edge, heading);
+        } else {
+            result = func_8007B814(&move, actor, edge, heading);
+        }
+        actor->flags = (actor->flags & ~0x600) | (saved & 0x600);
+    }
+    if (result != -1) {
+        goto moved;
+    }
+    goto stop;
+idle:
+    mode = actor->unkE6;
+    actor->heading |= 0x8000;
+stop:
+    actor->unkF0 = 0x10000;
+    actor->unk40[0] = 0;
+    actor->unk40[1] = 0;
+    actor->unk40[2] = 0;
+    move.vx = 0;
+    move.vy = 0;
+    move.vz = 0;
+    model->velocity[0] = 0;
+    model->velocity[2] = 0;
+    actor->heading_goal |= 0x8000;
+moved:
+    actor->layer_flags &= ~0x1000;
+    if (actor->flags & 0x800) {
+        if (D_800B2078.jump_mode == 0) {
+            if (WHOLE(model->position[1]) != (s16)model->unk84) {
+                if (mode == 2) {
+                    model->unk18 = model->unk82 * 0x60;
+                } else {
+                    model->unk18 = model->unk82 * 0x30;
+                }
+            } else {
+                model->unk18 = 0;
+            }
+        }
+        mode = D_800B2078.animation_mode;
+    } else {
+        if (actor->heading & 0x8000) {
+            mode = actor->unkE6;
+        }
+        if (func_80080968(actor) & 0x200000) {
+            if ((actor->heading & 0x8000) && actor->unkE8 == 6) {
+                actor->layer_flags |= 0x1000;
+            }
+            mode = 6;
+        }
+    }
+    if (actor->unk0EA != 0xFF) {
+        mode = actor->unk0EA;
+    }
+    if (actor->unkE8 != mode && !(actor->flags & 0x2000000)) {
+        actor->unkE8 = mode;
+        func_800821F4(model, mode, descriptor);
+    }
+    if (actor->unk014 & 0x100) {
+        move.vx >>= 1;
+        move.vz >>= 1;
+    }
+    actor->unk030[0] = move.vx;
+    actor->unk030[1] = move.vy;
+    actor->unk40[0] = 0;
+    actor->unk40[1] = 0;
+    actor->unk40[2] = 0;
+    actor->unk030[2] = move.vz;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082BB8);
+#endif
 
 /* Ease `value` 0x4000 towards zero, bounded by +-`limit`. */
 s32 func_80083178(s32 value, s32 limit) {
@@ -6287,12 +6561,313 @@ void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800831F4);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80083288);
+/* POLYCHECK: the lowest floor height of descriptor `index`'s collision model
+ * under x/z (0, with the height and the last hit's normal), or -1. */
+s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR *normal) {
+    PolyCheck *work;
+    FieldActor *actor;
+    u32 *prim;
+    u32 header;
+    s32 count;
+    s32 groups;
+    s32 i;
+
+    work = (PolyCheck *)func_8007CD3C(sizeof(PolyCheck));
+    prim = model->prims;
+    work->vertices = model->vertices;
+    work->point = (x << 16) + z;
+    work->lowest = 0x7FFFFFFF;
+    actor = D_800AF880.components.descriptors[index].actor;
+    switch (actor->state.bits.mode) {
+    case 1:
+        work->angles.vx = actor->unk70;
+        work->angles.vy = 0;
+        work->angles.vz = 0;
+        goto local;
+    case 2:
+        work->angles.vx = 0;
+        work->angles.vy = D_800AF880.components.descriptors[index].actor->unk70;
+        work->angles.vz = 0;
+        goto local;
+    case 3:
+        work->angles.vx = 0;
+        work->angles.vy = 0;
+        work->angles.vz = D_800AF880.components.descriptors[index].actor->unk70;
+    local:
+        func_8003F738(&work->angles, &work->local);
+        func_80049BDC(&D_800AF880.components.descriptors[index].matrix, &work->local);
+        work->local.t[0] = D_800AF880.components.descriptors[index].matrix.t[0];
+        work->local.t[1] = D_800AF880.components.descriptors[index].matrix.t[1];
+        work->local.t[2] = D_800AF880.components.descriptors[index].matrix.t[2];
+        CompMatrix(&D_800AF880.world_matrix, &work->local, &work->transform);
+        break;
+    default:
+        work->transform.t[2] = 0;
+        work->transform.t[1] = 0;
+        work->transform.t[0] = 0;
+        work->view.t[2] = 0;
+        work->view.t[1] = 0;
+        work->view.t[0] = 0;
+        if (D_800AF880.components.descriptors[index].actor->unk075 != 0xFF) {
+            CompMatrix(&D_800AF880.world_matrix, &D_800AFC30, &work->view);
+            CompMatrix(&work->view, &D_800AF880.components.descriptors[D_800AF880.components.descriptors[index].actor->unk075].transform,
+                       &work->local);
+            CompMatrix(&work->local, &D_800AF880.components.descriptors[index].matrix, &work->transform);
+        } else {
+            CompMatrix(&D_800AF880.world_matrix, &D_800AFC30, &work->view);
+            CompMatrix(&work->view, &D_800AF880.components.descriptors[index].matrix, &work->transform);
+        }
+        break;
+    }
+    SetRotMatrix(&work->transform);
+    SetTransMatrix(&work->transform);
+    for (groups = model->groups; groups > 0; groups--) {
+        header = *prim;
+        count = header >> 16;
+        work->type = header & 0xFF;
+        if (work->type == 0xC4 || work->type == 0xC8) {
+            prim++;
+            continue;
+        }
+        prim++;
+        if (!(header & 8)) {
+            for (i = 0; i < count; i++) {
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[0], &work->flag);
+                RotTransSV(&work->vertices[((u16 *)prim)[1]], &work->v[1], &work->flag);
+                prim++;
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[2], &work->flag);
+                prim++;
+                work->packed[0] = (work->v[0].vx << 16) + work->v[0].vz;
+                work->packed[1] = (work->v[1].vx << 16) + work->v[1].vz;
+                work->packed[2] = (work->v[2].vx << 16) + work->v[2].vz;
+                if (func_8004A70C(work->packed[0], work->packed[1], work->point) >= 0
+                    && func_8004A70C(work->packed[1], work->packed[2], work->point) >= 0
+                    && func_8004A70C(work->packed[2], work->packed[0], work->point) >= 0
+                    && func_8004A70C(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
+                    work->p.vx = x;
+                    work->p.vz = z;
+                    func_8007B07C(&work->v[0], &work->v[1], &work->v[2], &work->p, normal);
+                    if (work->p.vy < work->lowest) {
+                        work->lowest = work->p.vy;
+                    }
+                }
+            }
+        } else {
+            for (i = 0; i < count; i++) {
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[0], &work->flag);
+                RotTransSV(&work->vertices[((u16 *)prim)[1]], &work->v[1], &work->flag);
+                prim++;
+                RotTransSV(&work->vertices[((u16 *)prim)[0]], &work->v[2], &work->flag);
+                RotTransSV(&work->vertices[((u16 *)prim)[1]], &work->v[3], &work->flag);
+                prim++;
+                work->packed[0] = (work->v[0].vx << 16) + work->v[0].vz;
+                work->packed[1] = (work->v[1].vx << 16) + work->v[1].vz;
+                work->packed[2] = (work->v[2].vx << 16) + work->v[2].vz;
+                work->packed[3] = (work->v[3].vx << 16) + work->v[3].vz;
+                if (func_8004A70C(work->packed[0], work->packed[1], work->point) >= 0
+                    && func_8004A70C(work->packed[1], work->packed[3], work->point) >= 0
+                    && func_8004A70C(work->packed[3], work->packed[2], work->point) >= 0
+                    && func_8004A70C(work->packed[2], work->packed[0], work->point) >= 0
+                    && func_8004A70C(work->packed[0], work->packed[1], work->packed[2]) >= 0) {
+                    work->p.vx = x;
+                    work->p.vz = z;
+                    if (func_8004A70C(work->packed[1], work->packed[2], work->point) >= 0) {
+                        func_8007B07C(&work->v[0], &work->v[1], &work->v[2], &work->p, normal);
+                    } else {
+                        func_8007B07C(&work->v[1], &work->v[3], &work->v[2], &work->p, normal);
+                    }
+                    if (work->p.vy < work->lowest) {
+                        work->lowest = work->p.vy;
+                    }
+                }
+            }
+        }
+    }
+    if (work->lowest == 0x7FFFFFFF) {
+        func_8007CD60(sizeof(PolyCheck));
+        return -1;
+    }
+    *height = work->lowest;
+    func_8007CD60(sizeof(PolyCheck));
+    return 0;
+}
 
 void func_80083994(void) {
 }
 
+#ifdef NON_MATCHING
+/* The controlled actor's talk (event 2) and touch (event 3) triggers: each
+ * other actor within reach (rectangle 0x2000 or circle), facing and not
+ * inhibited, turns toward it and gets the event in a free script slot. */
+void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
+    VECTOR offset;
+    VECTOR square;
+    VECTOR reach;
+    VECTOR reach_square;
+    FieldActor *other;
+    s32 priority;
+    s32 touch;
+    s32 talk;
+    s32 py;
+    s32 head;
+    s32 facing;
+    s32 px;
+    s32 pz;
+    s32 talked;
+    s32 event;
+    s32 top;
+    s32 distance;
+    s32 angle;
+    s32 octant;
+    s32 relative;
+    s32 i;
+    s32 j;
+
+    talked = 0;
+    priority = 7;
+    py = WHOLE(player->position[1]);
+    head = py - (u16)player->height;
+    touch = (u16)player->gravity.s.whole + 8;
+    talk = (u16)player->gravity.s.whole + 0x20;
+    facing = player->heading_goal & 0xFFF;
+    px = WHOLE(player->position[0]);
+    pz = WHOLE(player->position[2]);
+    for (i = 0; i < D_800ADBFC; i++) {
+        other = D_800AF880.components.descriptors[i].actor;
+        event = 0xFF;
+        if ((other->flags & 1) || player->unk074 == i) {
+            goto insert;
+        }
+        top = WHOLE(other->position[1]) + other->unk62;
+        if (other->layer_flags & 0x180) {
+            if (other->layer_flags & 0x100) {
+                if ((D_800C2694 & 0x20) && talked == 0 && !(other->layer_flags & 0x4000000)) {
+                    if (!(other->flags & 0x220000) && (s16)D_800B2078.open_windows == 0) {
+                        talked = 1;
+                        event = 2;
+                        priority = 3;
+                        offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                        offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                        angle = -ratan2(offset.vz, offset.vx);
+                        other->state.word = (other->state.word & ~0xE00) | (angle & 0xE00);
+                    }
+                } else if (!(other->flags & 0xA20000)) {
+                    event = 3;
+                    priority = 4;
+                    offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                    offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                    octant = -(ratan2(offset.vz, offset.vx) >> 9) & 7;
+                    other->state.bits.octant = octant;
+                    if (D_800ADF64 == 0 && (other->flags & 0x8000000)) {
+                        D_800ADF64 = 1;
+                        descriptor->model->velocity[1] = 0;
+                    }
+                }
+            } else {
+                D_800ADF64 = 0;
+            }
+        }
+        if (other->flags & 0x2000) {
+            if (top < head || py < top - (u16)other->height || i == index
+                || func_8008237C(px, pz, (FieldBox *)other, 0x10) != 0) {
+                goto insert;
+            }
+            if ((D_800C2694 & 0x20) && talked == 0 && !(other->layer_flags & 0x4000000)) {
+                if (other->flags & 0x220000) {
+                    goto insert;
+                }
+                if ((s16)D_800B2078.open_windows != 0) {
+                    goto insert;
+                }
+                offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                angle = -ratan2(offset.vz, offset.vx);
+                octant = (angle >> 9) & 7;
+                relative = (facing - (angle & 0xFFF)) & 0xFFF;
+                if ((other->layer_flags & 0x40000) && (u32)(relative - 0x2BC) < 0xA89) {
+                    goto insert;
+                }
+                talked = 1;
+                event = 2;
+                priority = 3;
+                other->state.bits.octant = octant;
+                if (D_800C268C == 0) {
+                    D_80285988 = 1;
+                }
+            } else if (!(other->flags & 0xA20000)) {
+                event = 3;
+                priority = 4;
+                offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                octant = -(ratan2(offset.vz, offset.vx) >> 9) & 7;
+                other->state.bits.octant = octant;
+                if (D_800C268C == 0) {
+                    D_80285988 = 1;
+                }
+            }
+        } else {
+            offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+            offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+            offset.vy = talk + (u16)other->gravity.s.whole;
+            gte_ldlvl(&offset);
+            gte_sqr0();
+            gte_stlvnl(&square);
+            if (square.vx + square.vz >= square.vy || top < head || py < top - (u16)other->height || i == index) {
+                goto insert;
+            }
+            offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+            offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+            func_8004A414(&offset, &square);
+            reach.vx = touch + (u16)other->gravity.s.whole;
+            distance = square.vx + square.vz;
+            reach.vz = talk + (u16)other->gravity.s.whole;
+            func_8004A414(&reach, &reach_square);
+            if (distance < reach_square.vz && (D_800C2694 & 0x20) && talked == 0
+                && !(other->layer_flags & 0x4000000)) {
+                if (other->flags & 0x220000) {
+                    goto insert;
+                }
+                angle = -ratan2(offset.vz, offset.vx);
+                octant = (angle >> 9) & 7;
+                relative = (facing - (angle & 0xFFF)) & 0xFFF;
+                if ((u32)(relative - 0x2BC) < 0xA89 || (s16)D_800B2078.open_windows != 0) {
+                    goto insert;
+                }
+                talked = 1;
+                event = 2;
+                priority = 3;
+                other->state.bits.octant = octant;
+            } else if (!(other->flags & 0xA20000) && distance < reach_square.vx) {
+                event = 3;
+                priority = 4;
+                octant = -(ratan2(offset.vz, offset.vx) >> 9) & 7;
+                other->state.bits.octant = octant;
+            }
+        }
+    insert:
+        if (event != 0xFF) {
+            for (j = 0; j < 8; j++) {
+                if (other->slots[j].tag == (u8)event) {
+                    break;
+                }
+            }
+            if (j == 8) {
+                for (j = 0; j < 8; j++) {
+                    if (other->slots[j].priority == 15 && !other->slots[j].unk22) {
+                        other->slots[j].resume_pc = func_800A3090(i, event);
+                        other->slots[j].tag = event;
+                        other->slots[j].priority = priority;
+                        other->heading = other->heading_goal = other->heading_goal | 0x8000;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008399C);
+#endif
 
 /* The controlled actor's contacts: against every other actor (its floor
  * polygon, its box, or its radius) either ride it, stand below it or push
@@ -6351,7 +6926,7 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         layer_flags = other->layer_flags;
         other->layer_flags = layer_flags & 0xFFFF3EFF;
         if (layer_flags & 0x80) {
-            if (func_80083288(u, D_800AF880.components.descriptors[u].instance->mesh, x, z, &top, &normal) != 0) {
+            if (func_80083288(u, (PolyModel *)D_800AF880.components.descriptors[u].instance->mesh, x, z, &top, &normal) != 0) {
                 other->layer_flags &= 0xFF3FFFFF;
                 continue;
             }
@@ -6473,13 +7048,13 @@ void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
         D_800AF880.components.descriptors[actor->unk074].actor->layer_flags |= 0x8000;
         if (link == 0xFF) {
             if (!(actor->unk134 & 0x80)) {
-                actor->unk110 = func_80031BDC(0xC, 0);
+                actor->link = func_80031BDC(sizeof(PlatformLink), 0);
                 actor->unk134 |= 0x80;
             }
-            ((u16 *)actor->unk110)[0] = D_800AF880.components.descriptors[actor->unk074].rotation.vx;
-            ((u16 *)actor->unk110)[1] = D_800AF880.components.descriptors[actor->unk074].rotation.vy;
-            ((u16 *)actor->unk110)[2] = D_800AF880.components.descriptors[actor->unk074].rotation.vz;
-            ((s16 *)actor->unk110)[4] = func_800825AC(index, actor->unk074);
+            actor->link->rotation.vx = D_800AF880.components.descriptors[actor->unk074].rotation.vx;
+            actor->link->rotation.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy;
+            actor->link->rotation.vz = D_800AF880.components.descriptors[actor->unk074].rotation.vz;
+            actor->link->radius = func_800825AC(index, actor->unk074);
         }
     }
     if (!(actor->flags & 0x10000) && !(actor->layer_flags & 0x200000)) {

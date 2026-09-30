@@ -72,6 +72,16 @@
 /* Store the last colour of the colour FIFO (RGB2). */
 #define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
 
+/* libgte (gtemac) square: IR1-IR3 from a 32-bit vector, squared into
+ * MAC1-MAC3. */
+#define gte_ldlvl(r0)                                                          \
+    __asm__ volatile("lwc2 $9, 0(%0);"                                         \
+                     "lwc2 $10, 4(%0);"                                        \
+                     "lwc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0))
+#define gte_sqr0() __asm__ volatile("nop;nop;.word 0x4AA00428")
+
 /* Load a matrix's rotation into the GTE. */
 #define gte_SetRotMatrix(r0)                                                   \
     __asm__ volatile("lw $12, 0(%0);"                                          \

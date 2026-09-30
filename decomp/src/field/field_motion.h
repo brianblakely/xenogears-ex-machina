@@ -60,8 +60,55 @@ typedef struct {
 extern FieldHistory D_800B14F0[32];
 extern s32 D_800C3910; /* history reset */
 
+/* An actor's link to the platform it rides (actor +110, 12 bytes). */
+typedef struct PlatformLink {
+    SVECTOR rotation; /* 0: platform rotation last frame */
+    s16 radius;       /* 8: distance to the platform */
+    s16 unkA;
+} PlatformLink;
+
+extern s16 D_800ADFC4[4]; /* terrain push speeds */
+extern u16 D_800ADFA8[8]; /* terrain push angles */
+extern s32 func_800825AC(s32 from, s32 to);
+
+/* A descriptor's collision model for the polygon check (80083288). */
+typedef struct {
+    u8 unk00[6];
+    u16 groups;        /* 06 */
+    SVECTOR *vertices; /* 08 */
+    u8 unk0C[4];
+    u32 *prims;        /* 10: per group a header word (type, flags, count << 16),
+                        * then 8-byte items of vertex indices */
+} PolyModel;
+
+/* The polygon check's scratchpad work area (0xb8 bytes). */
+typedef struct {
+    s32 packed[4];     /* 00: projected vertices, x << 16 | z */
+    s32 point;         /* 10: the queried x << 16 | z */
+    SVECTOR v[4];      /* 14: transformed vertices */
+    SVECTOR p;         /* 34: query point; vy receives the height */
+    s32 flag;          /* 3C */
+    MATRIX transform;  /* 40 */
+    MATRIX local;      /* 60 */
+    MATRIX view;       /* 80 */
+    s32 lowest;        /* A0 */
+    SVECTOR *vertices; /* A4 */
+    u8 unkA8[4];
+    s32 type;          /* AC */
+    SVECTOR angles;    /* B0 */
+} PolyCheck;
+
+extern u32 *func_8007CD3C(s32 words);
+extern void func_8007CD60(s32 words);
+
+/* Talk and touch triggers (8008399c). */
+extern s32 D_800ADF64; /* touch latch */
+extern s32 D_80285988; /* 801e module: interaction debug flag */
+extern s32 func_800A3090(s32 actor, s32 event);
+
 /* The per-actor motion stages of the field update (8008110c). */
 extern s32 D_800AF858;
+extern s32 D_80065B08; /* actor in motion */
 extern void func_800815F0(void);
 extern void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
 extern void func_80082BB8(s32 index, FieldDescriptor *descriptor, FieldActor *actor);
