@@ -93,6 +93,14 @@ typedef struct {
     s32 pad;
 } Vector;
 
+/* PsyQ CVECTOR. */
+typedef struct {
+    u8 r;
+    u8 g;
+    u8 b;
+    u8 cd;
+} CVector;
+
 /* libc. */
 s32 rand(void); /* 0..0x7FFF */
 void *memcpy(void *to, const void *from, u32 size);

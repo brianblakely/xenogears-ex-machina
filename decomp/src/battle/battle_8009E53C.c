@@ -2123,7 +2123,71 @@ void func_800A6884(u8 *out, s32 index, u8 *color) {
     out[2] = color[2];
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6AE8);
+/* Relight the stage when its image is marked dirty (800A6444 marks it on a
+ * light slot change, through D_800D3611): restart the stage image from
+ * its original pixels and the working colours from the loaded ones, then
+ * apply each active light slot to the image (modes 0-3 through 80025D4C,
+ * mode 4 through 80026F44) and to every stage colour (800A6884), and load
+ * the image into VRAM. */
+void func_800A6AE8(void) {
+    CVector *color;
+    s32 i;
+    s32 j;
+
+    if (D_800D3600.dirty && D_800D3600.active) {
+        D_800D3600.dirty = 0;
+        memcpy(D_800D3600.pixels2, D_800D3600.pixels, D_800D2D2C * D_800C3EA8 * 2);
+        *D_800C3AC8 = *D_800C3AC4;
+        for (i = 0; i < 4; i++) {
+            if (D_800C3AAC[i].active) {
+                switch (D_800C3AAC[i].r) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    func_80025D4C(D_800D2D2C * D_800C3EA8, D_800D3600.pixels2, D_800D3600.pixels2,
+                                  D_800D3600.pixels2, (s8)D_800C3AAC[i].b, (s8)D_800C3AAC[i].field4,
+                                  (s8)D_800C3AAC[i].field5, D_800C3AAC[i].r, D_800C3AAC[i].g);
+                    break;
+                case 4:
+                    func_80026F44(D_800D2D2C * D_800C3EA8, D_800C3AAC[i].g, D_800D3600.pixels2,
+                                  D_800D3600.pixels);
+                    break;
+                }
+                color = (CVector *)D_800C3AC8;
+                for (j = 0; j < 4; j++) {
+                    if (D_800C3EA0 != NULL) {
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r0, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r1, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r2, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->quads[j].r3, i, (u8 *)color++);
+                        func_800A6884(&((StageGeometry *)D_800C3EA0)->flats[j].r0, i, (u8 *)color++);
+                    } else {
+                        color += 5;
+                    }
+                    if (D_800C3D50[0] != NULL) {
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->flats[j].r0, i, (u8 *)color++);
+                    } else {
+                        color++;
+                    }
+                }
+                for (j = 0; j < 2; j++) {
+                    if (D_800C3D50[0] != NULL) {
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r0, i, (u8 *)color++);
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r1, i, (u8 *)color++);
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r2, i, (u8 *)color++);
+                        func_800A6884(&((StageBackdrop *)D_800C3D50[0])->quads[j].r3, i, (u8 *)color++);
+                    } else {
+                        color += 4;
+                    }
+                }
+                func_800A6884((u8 *)D_800D2D40, i, (u8 *)color++);
+                func_800A6884((u8 *)D_800D2D48, i, (u8 *)color);
+            }
+        }
+        LoadImage(&D_800D3600.rect, (u32 *)D_800D3600.pixels2);
+    }
+}
 
 /* Release the stage image: detach the stage object's active image
  * animations from their targets, restore the image's VRAM and stop it; then
