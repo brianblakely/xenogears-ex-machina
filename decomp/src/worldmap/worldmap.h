@@ -33,7 +33,12 @@ extern s32 D_8009D800, D_8009D3C8, D_8009BCD8, D_8009BCC8, D_8009BD08;
 extern s32 D_8009D2B4, D_8009D160, D_8009D7CC, D_8009C610;
 extern void *D_8009C59C, *D_8009BD20, *D_8009C180, *D_8009D528;
 extern void *D_8005945C;
-extern void *D_8006259C;
+typedef struct {
+    u8 pad0[0x14];
+    u16 id;
+} SoundBank;
+
+extern SoundBank *D_8006259C; /* area sound bank */
 extern void *D_8009BC38, *D_8009BCB0;
 extern FileLoad D_8009D3F8[]; /* shared read list */
 
@@ -155,10 +160,18 @@ void func_80048AB0(s32 a, s32 b, s32 c);
 
 /* Actor slots (0x80 bytes each). */
 typedef struct {
-    u8 pad0[0x4C];
+    u8 pad0[0x22];
+    s16 wait;     /* script wait counter */
+    u8 pad24[0x28];
     s32 handle;
-    u8 pad50[0x30];
+    s16 *script;  /* script position */
+    u8 pad54[0x2C];
 } WorldmapActor;
+
+/* Script opcode handler: returns the halfwords to advance, 0 to yield. */
+typedef s32 (*ScriptOp)(WorldmapActor *actor, s32 arg1, s32 arg2, s32 arg3);
+
+extern ScriptOp D_8009A3C0[];
 
 extern WorldmapActor *D_8009BE24;
 extern void *D_80062528;
@@ -309,6 +322,27 @@ void func_800453AC(DR_TWIN *p, RECT *tw);         /* SetTexWindow */
 
 extern s16 D_8009C854[16];
 extern s32 D_8009D64C, D_8009BE40, D_8009BCC4, D_8009D80C;
+
+extern s32 D_8009D554, D_8009CCA4, D_8009D3CC;
+extern u8 D_80062648[];
+#define SCRIPT_VECTOR ((SVECTOR *)0x1F8000A0) /* scratchpad script vector */
+
+void func_800445D0(s32 mode);
+void func_8004B54C(s32 mode);
+void func_800404D4(void);
+void func_80040454(void);
+void func_800404E4(void);
+void func_80039CC4(void);
+void func_800399D4(void *seq);
+void func_8003F968(void *header, s32 file, s32 size);
+void *func_80039850(void *header);
+void func_80039A80(void *seq, s32 volume, s32 c);
+void func_80097770(s32 a, s32 b);
+void func_80089160(s32 a, SVECTOR *v, s32 c);
+void func_800894C8(s32 a);
+void func_80089514(s32 a);
+void func_80039E60(s32 sound);
+void func_8003A3B8(s32 sound, s32 b, s32 c);
 
 /* Frame state. */
 typedef struct {

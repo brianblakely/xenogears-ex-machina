@@ -462,47 +462,141 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076098);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800762FC);
+/* Reset the GPU and sound state before leaving. */
+void func_800762FC(void) {
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_800404D4();
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80040454();
+    func_800404E4();
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007634C);
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076594);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800767D4);
+/* Replace the music: stop the current sequence and start disc file `file`. */
+void func_800767D4(s32 mode, s32 file) {
+    func_80039CC4();
+    func_800399D4(D_80062528);
+    func_8003F968(D_80062648, mode, func_800288EC(file));
+    D_80062528 = func_80039850(D_80062648);
+    func_80039A80(D_80062528, 0x7F, 0);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076858);
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076954);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076A14);
+/* Mode step that has nothing to do; always reports done. */
+s32 func_80076A14(void) {
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076A1C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076B34);
+/* Run an actor's script until an opcode yields. */
+s32 func_80076B34(s32 index) {
+    s32 unused[2]; /* unreferenced; the original frame reserves it */
+    WorldmapActor *actor;
+    s32 step;
+    s32 word;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076BC4);
+    actor = &D_8009BE24[index];
+    step = 0;
+    do {
+        actor->script += step;
+        word = *(s32 *)actor->script;
+        step = D_8009A3C0[word & 0xFFFF](actor, word >> 16, actor->script[2], actor->script[3]);
+    } while (step != 0);
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076BDC);
+/* Script opcode 0: end the world map. */
+s32 func_80076BC4(void) {
+    D_8009D554 = 0;
+    D_8009D7CC = 0;
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076C18);
+/* Script opcode 1: wait `frames` frames. */
+s32 func_80076BDC(WorldmapActor *actor, s16 frames) {
+    if (actor->wait == 0) {
+        actor->wait = frames;
+        return 0;
+    }
+    if (--actor->wait <= 0) {
+        return 2;
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076C3C);
+/* Script opcode 2. */
+s32 func_80076C18(WorldmapActor *actor, s32 a, s32 b) {
+    func_80097770(a, b);
+    return 4;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076C68);
+/* Script opcode 3: place the player (world units). */
+s32 func_80076C3C(WorldmapActor *actor, s32 x, s32 y, s32 z) {
+    D_8009C5AC.vx = x << 12;
+    D_8009C5AC.vy = y << 12;
+    D_8009C5AC.vz = z << 12;
+    return 4;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076C88);
+/* Script opcode 4: set the script vector. */
+s32 func_80076C68(WorldmapActor *actor, s16 x, s16 y, s16 z) {
+    SCRIPT_VECTOR->vx = x;
+    SCRIPT_VECTOR->vy = y;
+    SCRIPT_VECTOR->vz = z;
+    return 4;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076CB4);
+/* Script opcode 5. */
+s32 func_80076C88(WorldmapActor *actor, s32 a) {
+    func_80089160(a, SCRIPT_VECTOR, 0);
+    return 2;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076CD4);
+/* Script opcode 6. */
+s32 func_80076CB4(WorldmapActor *actor, s32 a) {
+    func_800894C8(a);
+    return 2;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076CF4);
+/* Script opcode 7. */
+s32 func_80076CD4(WorldmapActor *actor, s32 a) {
+    func_80089514(a);
+    return 2;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076D1C);
+/* Script opcode 8: music control. */
+s32 func_80076CF4(WorldmapActor *actor, s32 a, s32 b) {
+    func_8003A89C(D_80062528, a, b);
+    return 4;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076D50);
+/* Script opcode 9: play a sound of the area bank. */
+s32 func_80076D1C(WorldmapActor *actor, s32 sound) {
+    func_80039E60((D_8006259C->id << 16) | sound);
+    return 2;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076D8C);
+/* Script opcode 10: play a sound of the area bank with parameters. */
+s32 func_80076D50(WorldmapActor *actor, s32 sound, s32 b, s32 c) {
+    func_8003A3B8((D_8006259C->id << 16) | sound, b, c);
+    return 4;
+}
+
+/* Script opcode 11. */
+s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b) {
+    D_8009CCA4 = a;
+    D_8009D3CC = b;
+    return 4;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076DA4);
 
