@@ -3092,7 +3092,72 @@ void func_801D01D0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D02D8);
+/* While party flag +b is set, draw the save/load screen's block (+34c):
+ * without the file details, the 32 text characters and the selected file's
+ * icon cursor (its slot's column and animation step); with them, each shown
+ * view's lists, image and name and the shared play time, disc and title
+ * lists. Then the shaded band. */
+void func_801D02D8(void) {
+    s32 i;
+
+    if (!D_800625A0->party->unkB) {
+        return;
+    }
+    if (!D_800625A0->block34C->rebuilt) {
+        func_801CE2B4(32, D_800625A0->block34C->chars, D_800625A0->bufferIndex);
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->u0 =
+            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16;
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->v0 =
+            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                .frames[D_800625A0->unk4CC];
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->u1 =
+            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16 + 15;
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->v1 =
+            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                .frames[D_800625A0->unk4CC];
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->u2 =
+            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16;
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->v2 =
+            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                .frames[D_800625A0->unk4CC] + 15;
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->u3 =
+            D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16 + 15;
+        (D_800625A0->block34C->cursor + D_800625A0->bufferIndex)->v3 =
+            D_800625A0->card->files[D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]]]
+                .frames[D_800625A0->unk4CC] + 15;
+        D_800625A0->block34C->cursor[D_800625A0->bufferIndex].clut =
+            GetClut(D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] * 16,
+                    D_800625A0->card->fileSlots[D_801E981C[D_800625A0->card->cursor]] / 16 + 0x1c1);
+        AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block34C->cursor[D_800625A0->bufferIndex]);
+    } else {
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->block34C->views[i].shown) {
+                func_801CE2B4(D_800625A0->block34C->views[i].frameCount, D_800625A0->block34C->views[i].frame[0],
+                              D_800625A0->block34C->views[i].frameBuffer);
+                func_801CE2B4(D_800625A0->block34C->views[i].levelCount, D_800625A0->block34C->views[i].levelDigits[0],
+                              D_800625A0->block34C->views[i].buffer);
+                func_801CE2B4(D_800625A0->block34C->views[i].unk871, D_800625A0->block34C->views[i].levelDigits[3],
+                              D_800625A0->block34C->views[i].buffer);
+                func_801CE2B4(D_800625A0->block34C->views[i].aCount, D_800625A0->block34C->views[i].aDigits[0],
+                              D_800625A0->block34C->views[i].buffer);
+                func_801CE2B4(D_800625A0->block34C->views[i].bCount, D_800625A0->block34C->views[i].bDigits[0],
+                              D_800625A0->block34C->views[i].buffer);
+                func_801CE2B4(D_800625A0->block34C->views[i].cCount, D_800625A0->block34C->views[i].cDigits[0],
+                              D_800625A0->block34C->views[i].buffer);
+                func_801CE2B4(D_800625A0->block34C->views[i].dCount, D_800625A0->block34C->views[i].dDigits[0],
+                              D_800625A0->block34C->views[i].buffer);
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->block34C->views[i].image[D_800625A0->block34C->views[0].buffer]);
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->block34C->views[i].name[D_800625A0->block34C->views[i].nameBuffer]);
+            }
+        }
+        func_801CE2B4(11, D_800625A0->block34C->colon0, D_800625A0->block34C->views[0].buffer);
+        func_801CE2B4(4, D_800625A0->block34C->discLabel, D_800625A0->block34C->views[0].buffer);
+        func_801CE2B4(16, D_800625A0->block34C->title, D_800625A0->block34C->views[0].buffer);
+    }
+    AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block34C->band[D_800625A0->bufferIndex]);
+}
 
 /* Project the four vertices `v` into quad `index` of `polys` and add it at
  * depth `otz`. */
