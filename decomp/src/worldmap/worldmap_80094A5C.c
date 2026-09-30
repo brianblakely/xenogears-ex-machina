@@ -1232,7 +1232,98 @@ void func_800981C8(Camera *camera) {
     }
 }
 
+/* Classify the 5x5 terrain blocks around the camera: test each block's
+ * quad for visibility, and its four quarters when partly visible; blocks
+ * near the camera are always visible. */
+#ifdef NON_MATCHING /* the original keeps the scratch vector addresses in saved registers and stack slots */
+void func_800983A0(Camera *camera) {
+    s16 *block;
+    u32 *quarters;
+    u32 *always;
+    u32 visible;
+    s32 row;
+    s32 column;
+    s32 quadrant;
+    s16 result;
+
+    GRID_SCRATCH->local = D_8009D534;
+    CompMatrix(&D_8009C808, &GRID_SCRATCH->local, &GRID_SCRATCH->world);
+    SetRotMatrix(&GRID_SCRATCH->world);
+    SetTransMatrix(&GRID_SCRATCH->world);
+    block = D_8009D618;
+    quarters = D_8009D650[0];
+    GRID_SCRATCH->x0 = -((camera->target.vx >> 12) & 0x7FF) - 0x1000;
+    GRID_SCRATCH->v[8].vy = 0;
+    GRID_SCRATCH->v[7].vy = 0;
+    GRID_SCRATCH->v[6].vy = 0;
+    GRID_SCRATCH->v[5].vy = 0;
+    GRID_SCRATCH->v[4].vy = 0;
+    GRID_SCRATCH->v[3].vy = 0;
+    GRID_SCRATCH->v[2].vy = 0;
+    GRID_SCRATCH->v[1].vy = 0;
+    GRID_SCRATCH->v[0].vy = 0;
+    GRID_SCRATCH->z0 = -((camera->target.vz >> 12) & 0x7FF) - 0x1000;
+    GRID_SCRATCH->v[0].vz = -GRID_SCRATCH->z0;
+    for (row = 0; row < 5; row++) {
+        GRID_SCRATCH->v[0].vx = GRID_SCRATCH->x0;
+        for (column = 0; column < 5; column++) {
+            GRID_SCRATCH->v[1].vx = GRID_SCRATCH->v[0].vx + 0x800;
+            GRID_SCRATCH->v[2].vz = GRID_SCRATCH->v[0].vz - 0x800;
+            GRID_SCRATCH->v[1].vz = GRID_SCRATCH->v[0].vz;
+            GRID_SCRATCH->v[2].vx = GRID_SCRATCH->v[0].vx;
+            GRID_SCRATCH->v[3].vx = GRID_SCRATCH->v[0].vx + 0x800;
+            GRID_SCRATCH->v[3].vz = GRID_SCRATCH->v[0].vz - 0x800;
+            result = func_800987AC(&GRID_SCRATCH->v[0], &GRID_SCRATCH->v[1], &GRID_SCRATCH->v[2],
+                                   &GRID_SCRATCH->v[3]);
+            *block = result;
+            if (result == 0) {
+                GRID_SCRATCH->v[5].vz = GRID_SCRATCH->v[0].vz - 0x400;
+                GRID_SCRATCH->v[4].vx = GRID_SCRATCH->v[0].vx + 0x400;
+                GRID_SCRATCH->v[5].vx = GRID_SCRATCH->v[0].vx;
+                GRID_SCRATCH->v[6].vx = GRID_SCRATCH->v[1].vx;
+                GRID_SCRATCH->v[4].vz = GRID_SCRATCH->v[0].vz;
+                GRID_SCRATCH->v[7].vz = GRID_SCRATCH->v[2].vz;
+                GRID_SCRATCH->v[6].vz = GRID_SCRATCH->v[5].vz;
+                GRID_SCRATCH->v[7].vx = GRID_SCRATCH->v[4].vx;
+                GRID_SCRATCH->v[8].vx = GRID_SCRATCH->v[4].vx;
+                GRID_SCRATCH->v[8].vz = GRID_SCRATCH->v[5].vz;
+                visible = func_800987AC(&GRID_SCRATCH->v[0], &GRID_SCRATCH->v[4], &GRID_SCRATCH->v[5],
+                                        &GRID_SCRATCH->v[8]) & 0xFFFF;
+                visible |= func_800987AC(&GRID_SCRATCH->v[4], &GRID_SCRATCH->v[1], &GRID_SCRATCH->v[8],
+                                         &GRID_SCRATCH->v[6]) << 16;
+                quarters[0] = visible;
+                visible = func_800987AC(&GRID_SCRATCH->v[5], &GRID_SCRATCH->v[8], &GRID_SCRATCH->v[2],
+                                        &GRID_SCRATCH->v[7]) & 0xFFFF;
+                visible |= func_800987AC(&GRID_SCRATCH->v[8], &GRID_SCRATCH->v[6], &GRID_SCRATCH->v[7],
+                                         &GRID_SCRATCH->v[3]) << 16;
+            } else {
+                visible = result & 0xFFFF;
+                visible |= visible << 16;
+                quarters[0] = visible;
+            }
+            quarters[1] = visible;
+            quarters += 2;
+            GRID_SCRATCH->v[0].vx += 0x800;
+            block++;
+        }
+        GRID_SCRATCH->v[0].vz -= 0x800;
+    }
+    quadrant = ((camera->target.vx >> 12) & 0x7FF) >= 0x400;
+    if (((camera->target.vz >> 12) & 0x7FF) >= 0x400) {
+        quadrant |= 2;
+    }
+    always = D_8009B7A8[quadrant][0];
+    quarters = D_8009D650[0];
+    for (row = 0; row < 25; row++) {
+        quarters[0] |= always[0];
+        quarters[1] |= always[1];
+        always += 2;
+        quarters += 2;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800983A0);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800987AC);
 

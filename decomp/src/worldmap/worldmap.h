@@ -1643,4 +1643,24 @@ s32 func_80090A84(WorldmapActor *actor);
 extern s32 D_8009B214[3]; /* camera distance per pitch */
 s32 func_80091FF8(s32 current, s16 *pitches, s16 *heights);
 
+/* worldmap_80094A5C: terrain visibility grid */
+typedef struct {
+    u8 pad0[0x40];
+    s32 x0;          /* 0x40: grid corner x */
+    s32 pad44;
+    s32 z0;          /* 0x48: grid corner z */
+    u8 pad4C[0x54];
+    SVECTOR v[9];    /* 0xA0: cell corners and midpoints */
+    u8 padE8[8];
+    MATRIX local;    /* 0xF0 */
+    MATRIX world;    /* 0x110 */
+} GridScratch;
+
+#define GRID_SCRATCH ((GridScratch *)0x1F800000)
+
+extern u32 D_8009D650[25][2]; /* per block: visibility of its 4 quarters */
+extern u32 D_8009B7A8[4][25][2]; /* per quadrant: always-visible quarters */
+
+s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
+
 #endif
