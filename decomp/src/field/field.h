@@ -251,7 +251,7 @@ typedef struct {
 typedef struct FieldDescriptor {
     FieldInstance *instance; /* 00 */
     FieldModel *model;       /* 04 */
-    void *unk08;             /* 08 */
+    struct FieldMarker *shadow; /* 08: drop shadow quad */
     MATRIX matrix;           /* 0C: its translation is the position */
     MATRIX transform;        /* 2C */
     FieldActor *actor;       /* 4C */
@@ -259,6 +259,9 @@ typedef struct FieldDescriptor {
     u16 flags;               /* 58 */
     u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;
+
+/* The shadow pass reads the flags halfword with its padding as one word. */
+#define DESCRIPTOR_FLAGS_WORD(d) (*(u32 *)&(d)->flags)
 
 /* A sprite's sequencer; +14 names the descriptor it belongs to. */
 typedef struct {
@@ -632,7 +635,7 @@ typedef struct {
 } Record78;
 
 /* A pointer marker: its quad's corners and primitive per buffer. */
-typedef struct {
+typedef struct FieldMarker {
     SVECTOR v[4];
     POLY_FT4 poly[2];
 } FieldMarker;
@@ -765,6 +768,7 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+extern s32 D_8004F37C; /* shadows off */
 /* The model pass (800748e8). */
 extern s32 D_80059578; /* models drawn */
 extern s32 D_800595C0; /* primitives drawn */

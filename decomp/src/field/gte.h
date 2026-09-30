@@ -82,6 +82,38 @@
                      : "r"(r0)                                                 \
                      : "memory")
 
+/* Load the outer product's first vector into the rotation diagonal. */
+#define gte_ldopv1(r0)                                                         \
+    __asm__ volatile("lw $12, 0(%0);"                                          \
+                     "lw $13, 4(%0);"                                          \
+                     "ctc2 $12, $0;"                                           \
+                     "lw $14, 8(%0);"                                          \
+                     "ctc2 $13, $2;"                                           \
+                     "ctc2 $14, $4"                                            \
+                     :                                                         \
+                     : "r"(r0)                                                 \
+                     : "$12", "$13", "$14")
+
+/* Load the outer product's second vector into IR1-IR3. */
+#define gte_ldopv2(r0)                                                         \
+    __asm__ volatile("lwc2 $11, 8(%0);"                                        \
+                     "lwc2 $9, 0(%0);"                                         \
+                     "lwc2 $10, 4(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0))
+
+/* Outer product (sf = 1). */
+#define gte_op12() __asm__ volatile("nop;nop;.word 0x4B78000C")
+
+/* r3 = r1 x r2 in 1.19.12 fixed point. */
+#define gte_OuterProduct12(r1, r2, r3)                                         \
+    {                                                                          \
+        gte_ldopv1(r1);                                                        \
+        gte_ldopv2(r2);                                                        \
+        gte_op12();                                                            \
+        gte_stlvnl(r3);                                                        \
+    }
+
 /* r3 = r1 * r2 (rotation only). */
 #define gte_MulMatrix0(r1, r2, r3)                                             \
     {                                                                          \

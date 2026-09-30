@@ -1841,7 +1841,93 @@ void func_80075B08(void *target, u8 *color) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80075B44);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800764B4);
+/* Draw the drop shadows: for every visible sprite actor build a matrix that
+ * lays the shadow quad on the floor under it (its axes from the floor
+ * normal), scale it by the actor's size, and link the projected quad into
+ * `ot`. */
+void func_800764B4(u32 *ot, s32 buffer) {
+    VECTOR up;
+    VECTOR side;
+    VECTOR cross;
+    MATRIX floor;
+    MATRIX placed;
+    MATRIX world;
+    VECTOR scale;
+    s32 interpolation;
+    s32 flag;
+    s32 depth;
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    s32 i;
+    s32 sx;
+    s32 sy;
+    s32 sz;
+
+    world = D_800AF880.scaled_world; /* an unused copy */
+    if (D_8004F37C != 0) {
+        return;
+    }
+    for (i = 0; i < D_800ADBFC; i++) {
+        descriptor = &D_800AF880.components.descriptors[i];
+        if ((DESCRIPTOR_FLAGS_WORD(descriptor) & 0x60) != 0x40) {
+            continue;
+        }
+        actor = descriptor->actor;
+        if (actor->layer_flags & 0x102200) {
+            continue;
+        }
+        if (actor->layer_flags & 0x800) {
+            continue;
+        }
+        if (actor->flags & 0x10000) {
+            continue;
+        }
+        if (actor->unk014 & 0x200002) {
+            continue;
+        }
+        up.vx = 0;
+        up.vy = 0;
+        up.vz = 0x1000;
+        gte_OuterProduct12(&up, descriptor->actor->unk50, &cross);
+        func_80048D7C(&cross, &side);
+        gte_OuterProduct12(&side, descriptor->actor->unk50, &cross);
+        func_80048D7C(&cross, &up);
+        floor.m[0][0] = side.vx;
+        floor.m[0][1] = side.vy;
+        floor.m[0][2] = side.vz;
+        floor.m[1][0] = descriptor->actor->unk50[0];
+        floor.m[1][1] = descriptor->actor->unk50[1];
+        floor.m[1][2] = descriptor->actor->unk50[2];
+        floor.m[2][0] = up.vx;
+        floor.m[2][1] = up.vy;
+        floor.m[2][2] = up.vz;
+        floor.t[0] = descriptor->matrix.t[0];
+        floor.t[1] = (s16)descriptor->model->unk84;
+        floor.t[2] = descriptor->matrix.t[2];
+        gte_CompMatrix(&D_800AF880.scaled_world, &floor, &placed);
+        sx = descriptor->actor->scale[0] * 0xC00;
+        scale.vx = sx >> 12;
+        sy = descriptor->actor->scale[1] * 0xC00;
+        scale.vy = sy >> 12;
+        sz = descriptor->actor->scale[2] * 0xC00;
+        scale.vz = sz >> 12;
+        if (D_800B2078.unk2268 != 0 && (descriptor->actor->flags & 0x400)) {
+            scale.vx = sx >> 14;
+            scale.vy = sy >> 14;
+            scale.vz = sz >> 14;
+        }
+        ScaleMatrix(&placed, &scale);
+        gte_SetRotMatrix(&placed);
+        gte_SetTransMatrix(&placed);
+        depth = RotAverage4(&descriptor->shadow->v[0], &descriptor->shadow->v[1], &descriptor->shadow->v[2],
+                            &descriptor->shadow->v[3],
+                        (long *)&descriptor->shadow->poly[buffer].x0, (long *)&descriptor->shadow->poly[buffer].x1,
+                        (long *)&descriptor->shadow->poly[buffer].x2, (long *)&descriptor->shadow->poly[buffer].x3,
+                        &interpolation, &flag);
+        depth >>= D_80050100;
+        addPrim(ot + depth, &descriptor->shadow->poly[buffer]);
+    }
+}
 
 /* Sprite completion callback: flag the sprite's actor (layer bit 16). */
 void func_80076A74(FieldSprite *sprite) {
@@ -2676,7 +2762,7 @@ void func_8008083C(s32 index) {
             func_800320E8(actor->unk120);
         }
         func_800320E8(actor);
-        func_800320E8(D_800AF880.components.descriptors[index].unk08);
+        func_800320E8(D_800AF880.components.descriptors[index].shadow);
         func_800230A8(D_800AF880.components.descriptors[index].model);
     }
 }
