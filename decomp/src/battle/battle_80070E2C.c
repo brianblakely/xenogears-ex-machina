@@ -823,11 +823,9 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072F
 
 /* Build the member's four-digit panel value (the 800d32a0 value or record
  * +0xdc) as glyphs. */
-#ifdef NON_MATCHING
 void func_80073380(s32 member) {
     s16 value;
     s32 i;
-    s32 x;
     u8 digit;
 
     if (D_800C3EA4->panels[member].unk1E1 == 1) {
@@ -836,22 +834,16 @@ void func_80073380(s32 member) {
         value = D_800CCCE8.records[member].gear.fuel;
     }
     func_8008AAA0(value);
-    i = 0;
-    x = 0;
-    for (; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         digit = D_800C3CF4[i + 5];
         if (digit != 0xFF) {
             D_800D2D28->unkEC[member] +=
                 func_80076A10(digit + 0x83, &D_800C3EA4->unk6008[member][D_800D2D28->unkEC[member] * 2],
-                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + x, 0x25);
+                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + i * 6, 0x25);
         }
-        x += 6;
     }
     D_800D2D28->unk99[member] = D_800CCB04.buffer;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073380);
-#endif
 
 /* Build each present member's status glyphs by its panel state (0: the
  * status label, 1: the party-wide label, 2/3: the cursor window), and
