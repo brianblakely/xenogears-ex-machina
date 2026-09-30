@@ -10260,7 +10260,59 @@ void func_800A3C8C(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3C8C);
 #endif
 
+#ifdef NON_MATCHING
+void func_800A3F4C(void) {
+    s32 i;
+    s32 flags;
+    s32 size;
+    u8 *snapshot;
+
+    D_800AFC50 = D_8005A4E4;
+    *D_800AFC50 = D_800AF880.components.descriptor_count;
+    D_800AFC50 += 4;
+    COPY_BLOCK(D_800AFC50, &D_800B007C, 0x38);
+    D_800AFC50 += 0x38;
+    COPY_BLOCK(D_800AFC50, &D_800AF880.world_angles, 0x74);
+    D_800AFC50 += 0x74;
+    COPY_BLOCK(D_800AFC50, D_800AF880.components.collision_attributes, 0x400);
+    D_800AFC50 += 0x400;
+    COPY_BLOCK(D_800AFC50, &D_800B2078, 0x2E4);
+    D_800AFC50 += 0x2E4;
+    COPY_BLOCK(D_800AFC50, &D_800AF880, 0x1C8);
+    D_800AFC50 += 0x1C8;
+    for (i = 0; i < D_800ADBFC; i++) {
+        COPY_BLOCK(D_800AFC50, &D_800AF880.components.descriptors[i].rotation, 8);
+        D_800AFC50 += 8;
+        flags = D_800AF880.components.descriptors[i].flags;
+        COPY_BLOCK(D_800AFC50, &flags, 4);
+        D_800AFC50 += 4;
+        func_80021EBC(D_800AF880.components.descriptors[i].model, D_800AFC50);
+        D_800AFC50 += 0x30;
+        COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor, 0x138);
+        D_800AFC50 += 0x138;
+        if (D_800AF880.components.descriptors[i].actor->unk134 & 0x80) {
+            COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor->unk110, 0xC);
+            D_800AFC50 += 0xC;
+        }
+        if (D_800AF880.components.descriptors[i].actor->state.word & 0x1000) {
+            COPY_BLOCK(D_800AFC50, D_800AF880.components.descriptors[i].actor->unk114, 0x10);
+            D_800AFC50 += 0x10;
+        }
+    }
+    COPY_BLOCK(D_800AFC50, D_800C3A68, 0x800);
+    D_800AFC50 += 0x800;
+    for (i = 0; i < 3; i++) {
+        D_8005A408[i] = D_8005A39C->unk22B1[i];
+    }
+    snapshot = D_8005A4E4;
+    size = D_800AFC50 - snapshot;
+    if (D_800C268C == 0) {
+        func_800379C8("SAVESIZE=%d %x\n", size, size);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A3F4C);
+#endif
 
 void func_800A476C(s32 x, s32 y);
 

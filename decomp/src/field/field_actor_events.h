@@ -107,6 +107,17 @@ s32 func_80029AFC(void *list, s32 mode, s32 a2);
 void func_801E742C(s32 layer, s32 a1, void *data0, void *data1, s16 x, s32 a5, s32 a6, s16 a7, void *state);
 
 
+void func_80021EBC(FieldModel *model, u8 *checkpoint);
+
+/* Copy `size` bytes as one unaligned block (a byte-struct assignment). */
+#define COPY_BLOCK(destination, source, size)                    \
+    {                                                            \
+        typedef struct {                                         \
+            u8 bytes[size];                                      \
+        } Block;                                                 \
+        *(Block *)(destination) = *(Block *)(source);            \
+    }
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
