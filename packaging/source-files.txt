@@ -598,6 +598,7 @@ tools/extraction/overlays.py
 tools/matching.py
 tools/matching_coverage.py
 tools/matching_diff.py
+tools/matching_ram.py
 tools/packed_container.py
 tools/psyq_signatures.py
 tools/reference/README.md

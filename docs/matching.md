@@ -66,6 +66,23 @@ complete eight-token group; the same rule reproduces a 25-file sample of other
 packed disc files. This is a separate claim from image matching; whole-disc
 filesystem/ECC reproduction is not attempted.
 
+## Original-environment smoke check
+
+`tools/matching_ram.py` compares code loaded by an original scenario run with the
+rebuilt images. The painting-room (Disc 1) and disc2-field-15 (Disc 2) routes load
+resident and field code identical to the rebuilt SLUS_006.64/69 and field images;
+the only resident differences are the harness's documented startup guard at
+0x80019930 (EVID-REF-007) and PsyQ variables kept inside SDK text at
+0x8004e960-0x8004e96b.
+
+```sh
+nix ... develop path:./nix#observation -c python3 tools/reference/scenario.py painting-room \
+  --content 'discs/Xenogears disc 1.chd' --output .local/scenarios/<new>
+python3 tools/matching_ram.py .local/scenarios/<new>/capture/final.ram --header 0x800 \
+  .local/decomp/build/SLUS_006.64@80010000:80019524-8004e960 \
+  .local/decomp/build/field.bin@8006faf0:8006fdec-800ada68
+```
+
 ## Converting a function
 
 Replace one `INCLUDE_ASM(...)` in the target's C file with C. Start from m2c
