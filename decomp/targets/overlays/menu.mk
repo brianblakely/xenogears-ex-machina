@@ -7,7 +7,3 @@ IMAGE := .local/decomp/build/menu.bin
 LINKER_SCRIPT := .local/decomp/menu/menu.ld
 LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/menu
-# This unit's assembler expanded `li` itself: every positive load immediate is
-# `ori rt, $zero, imm` (1454 in the image, none as addiu; negatives are addiu).
-# GNU as emits addiu, and maspsx expands li only below its 2.50 version switch.
-override MASPSXFLAGS := --aspsx-version=2.49
