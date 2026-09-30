@@ -3463,7 +3463,50 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082BB0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082D4C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082F7C);
+/* Confirm the selected entry of the member's command window (800d3014):
+ * entries 4, 6 and 7 open the gear list when the member has one (else page
+ * 0x13); 0, 1 and 3 open pages 0x10, 0x11 and 0x18 unless their item is
+ * unavailable (buzzer 0x4f); 2 opens page 0x12. */
+void func_80082F7C(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8007FD38(member);
+        if (func_8008B478(member)) {
+            func_8008ADD0(member);
+        } else {
+            D_800C3EAC->page = 0x13;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 0x12;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[4] == 0) {
+            D_800C3EAC->page = 0x18;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800830A8);
 

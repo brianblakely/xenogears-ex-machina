@@ -488,6 +488,12 @@ extern u16 D_800595D4;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
+/* Command menu. */
+void func_8007FD38(u8 member);
+void func_8008AA74(u8 id);   /* play a menu sound */
+void func_8008ADD0(u8 member);
+u8 func_8008B478(u8 member); /* the member has a gear list */
+
 /* Turn start (80071b94). */
 extern u8 D_800C4922;      /* acting slot */
 extern void *D_800C3DDC;   /* enemy name table */
