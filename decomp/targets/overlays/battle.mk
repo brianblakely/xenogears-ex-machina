@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/battle.bin
 LINKER_SCRIPT := .local/decomp/battle/battle.ld
 LINKER_EXTRA := .local/decomp/battle/undefined_syms_auto.txt .local/decomp/battle/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/battle
+# Packed containers of this image (tools/packed_container.py).
+CONTAINERS := 1:38 2:33

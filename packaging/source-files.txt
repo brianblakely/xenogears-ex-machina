@@ -489,6 +489,7 @@ tests/test_movie_chain.py
 tests/test_music_load.cpp
 tests/test_music_loading.py
 tests/test_observe.py
+tests/test_packed_container.py
 tests/test_packed_field.cpp
 tests/test_planar_motion.py
 tests/test_position.py
@@ -589,6 +590,7 @@ tools/extraction/overlays.py
 tools/matching.py
 tools/matching_coverage.py
 tools/matching_diff.py
+tools/packed_container.py
 tools/psyq_signatures.py
 tools/reference/README.md
 tools/reference/capture.py

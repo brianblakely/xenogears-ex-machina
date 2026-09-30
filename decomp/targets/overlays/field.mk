@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/field.bin
 LINKER_SCRIPT := .local/decomp/field/field.ld
 LINKER_EXTRA := .local/decomp/field/undefined_syms_auto.txt .local/decomp/field/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/field
+# Packed containers of this image (tools/packed_container.py).
+CONTAINERS := 1:36 2:31

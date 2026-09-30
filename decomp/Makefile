@@ -10,11 +10,11 @@ MASPSX := maspsx
 .SUFFIXES:
 .SECONDARY:
 MAKEFLAGS += --no-builtin-rules
-.PHONY: verify smoke split coverage clean all-split all-verify all-coverage
+.PHONY: verify smoke split coverage container clean all-split all-verify all-coverage all-container
 TARGET_CONFIGS := $(sort $(wildcard targets/resident/*.mk targets/overlays/*.mk))
 
 # Every supported executable image: split, exact comparison, source coverage.
-all-split all-verify all-coverage:
+all-split all-verify all-coverage all-container:
 	@for config in $(TARGET_CONFIGS); do \
 		echo "== $$config"; \
 		$(MAKE) --no-print-directory CONFIG=$$config $(@:all-%=%) || exit 1; \
@@ -25,7 +25,7 @@ smoke:
 	cd $(ROOT) && $(PYTHON) -m unittest tests.test_matching
 
 ifeq ($(strip $(CONFIG)),)
-verify split coverage clean:
+verify split coverage container clean:
 	@echo 'Set CONFIG=targets/<target>/<target>.mk (see docs/matching.md).' >&2
 	@exit 2
 else
@@ -83,6 +83,15 @@ verify: $(ROOT)/$(IMAGE)
 
 coverage: $(ROOT)/$(IMAGE)
 	cd $(ROOT) && $(PYTHON) tools/matching_coverage.py $(IMAGE).elf $(addprefix --src ,$(SOURCE_DIRS)) $(if $(CLASSIFICATION),--classification $(CLASSIFICATION))
+
+# Compressed-container reproduction (a separate claim from image matching):
+# CONTAINERS lists DISC:SLOT pairs whose packed file holds this image.
+container: $(ROOT)/$(IMAGE)
+	cd $(ROOT) && for pair in $(CONTAINERS); do \
+		disc=$${pair%%:*}; slot=$${pair##*:}; \
+		$(PYTHON) tools/packed_container.py $(IMAGE) --disc .local/discs/disc$$disc.bin \
+			--manifest .local/extract/disc$$disc/manifest.json --slot $$slot || exit 1; \
+	done
 
 clean:
 	rm -rf $(ROOT)/$(BUILD) $(ROOT)/$(IMAGE) $(ROOT)/$(IMAGE).elf $(ROOT)/$(IMAGE).map

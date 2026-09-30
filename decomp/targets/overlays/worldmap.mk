@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/worldmap.bin
 LINKER_SCRIPT := .local/decomp/worldmap/worldmap.ld
 LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/worldmap/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/worldmap
+# Packed containers of this image (tools/packed_container.py).
+CONTAINERS := 1:37 2:32

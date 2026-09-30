@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/menu.bin
 LINKER_SCRIPT := .local/decomp/menu/menu.ld
 LINKER_EXTRA := .local/decomp/menu/undefined_syms_auto.txt .local/decomp/menu/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/menu
+# Packed containers of this image (tools/packed_container.py).
+CONTAINERS := 1:35 2:30

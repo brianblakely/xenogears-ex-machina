@@ -8,3 +8,5 @@ IMAGE := .local/decomp/build/movie.bin
 LINKER_SCRIPT := .local/decomp/movie/movie.ld
 LINKER_EXTRA := .local/decomp/movie/undefined_syms_auto.txt .local/decomp/movie/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/movie
+# Packed containers of this image (tools/packed_container.py).
+CONTAINERS := 1:40 2:35

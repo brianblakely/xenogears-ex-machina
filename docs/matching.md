@@ -26,11 +26,12 @@ It establishes tooling, not Xenogears compiler identity or game-source progress.
 GCC 2.6.3 and 2.7.2 (`psx-cc1-2.6.3`, `psx-cc1-2.7.2`; decompals/old-gcc 0.17
 PSX builds) with `-O2 -mcpu=3000 -msoft-float -fgnu-linker -mgas`, ASPSX 2.34
 behaviour through maspsx, and GNU as/ld reproduce original code exactly. The
-version is per translation unit: 2.7.2 moves the stack adjustment into the
-epilogue's `jr $ra` delay slot (`lw ra; move v0,0; jr ra; addiu sp`), 2.6.3
-never does (`move v0,0; lw ra; addiu sp; jr ra; nop`, battle 800716d8). Most of
-the resident, battle, menu and the small overlays fit 2.6.3; field and worldmap
-contain 2.7.2 units. Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
+version is per translation unit: 2.7.2 can move the stack adjustment into the
+epilogue's `jr $ra` delay slot (`lw ra; move v0,0; jr ra; addiu sp`), which 2.6.3
+never does (`move v0,0; lw ra; addiu sp; jr ra; nop`, battle 800716d8); 2.7.2
+does not always fill it, and 2.6.3 also differs in commutative operand order and
+narrow loads (menu 80070808, 80071794). A filled slot proves 2.7.2; 2.6.3 is
+established per unit by functions that only it reproduces. Targets set `CC_VERSION`; `CC_<file> := 2.7.2` overrides. ASPSX below 2.50 expands
 positive `li` to `ori` as the original does (resident, movie library). Qualification: resident
 `80028aac` (ring reset) matches only under 2.7.2 — 2.8.1 omits its empty
 8-byte frame and reschedules the stores. The small-data threshold is a
@@ -54,6 +55,16 @@ make -C decomp all-split all-verify all-coverage
 make -C decomp CONFIG=targets/overlays/field.mk verify
 python3 tools/matching_diff.py decomp/targets/overlays/field.mk [-f func_8007xxxx]
 ```
+
+## Compressed containers
+
+The six packed overlay files (mode overlays in slots 35-40 and the slot-39
+image's second copy) are reproduced from the rebuilt images by
+`tools/packed_container.py` (`make -C decomp all-container`). The packer is
+Okumura's LZSS binary-tree encoder without preset-ring matches, ending on a
+complete eight-token group; the same rule reproduces a 25-file sample of other
+packed disc files. This is a separate claim from image matching; whole-disc
+filesystem/ECC reproduction is not attempted.
 
 ## Converting a function
 
