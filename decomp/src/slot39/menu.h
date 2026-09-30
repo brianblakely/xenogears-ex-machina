@@ -771,6 +771,7 @@ extern MenuAnchor D_801EA054[]; /* target panel layouts: x and y anchors */
 extern MenuAnchor D_801EA098[];
 extern MenuAnchor D_801EA0DC[];
 extern MenuAnchor D_801EA120[];
+extern u8 D_801EA730[];  /* equipment list entry ids */
 extern s32 D_801EA718;   /* card event and handler ids */
 extern s32 D_801EA71C;
 extern s32 D_801EA720;

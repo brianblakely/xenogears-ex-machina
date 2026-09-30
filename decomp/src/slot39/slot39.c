@@ -3720,7 +3720,42 @@ void func_801DF890(u8 slot, u8 gear) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFB68);
+/* Try list entry `top` + `row` on part `part` of party slot `slot`: the
+ * weapon (0) or an accessory (1-3), with `special` a special part; with
+ * `gear` the gear's parts. */
+void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
+    if (!gear) {
+        if (!special) {
+            switch (part) {
+            case 0:
+                D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][0] = D_801EA730[top + row];
+                break;
+            case 1:
+            case 2:
+            case 3:
+                D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][part - 1] = D_801EA730[top + row];
+                break;
+            }
+        } else {
+            D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][part] = D_801EA730[top + row];
+        }
+    } else {
+        if (!special) {
+            switch (part) {
+            case 0:
+                D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC[0] = D_801EA730[top + row];
+                break;
+            case 1:
+            case 2:
+            case 3:
+                D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1] = D_801EA730[top + row];
+                break;
+            }
+        } else {
+            D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part] = D_801EA730[top + row];
+        }
+    }
+}
 
 /* Compute party slot `slot`'s gear stats and copy them to the shown values. */
 void func_801DFE2C(u8 slot) {
