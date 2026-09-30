@@ -200,13 +200,11 @@ typedef struct {
     void *block20;          /* +20 */
 } Record24;
 
-/* A node's tracks of a keyframe: byte offsets of its rotation and position
- * tracks (0xffff none) and their kinds. */
+/* A node's tracks of a keyframe (read through a u16 cursor): byte offsets
+ * of its rotation and position tracks (0xffff none) and their kinds. */
 typedef struct {
-    u16 rot_offset;
-    u16 pos_offset;
-    u8 rot_kind;
-    u8 pos_kind;
+    u16 offset[2];          /* rotation, position */
+    u8 kind[2];
 } TrackEntry;
 
 /* A keyframe: rotations then positions of the nodes after the root. */
@@ -519,7 +517,7 @@ void func_801DFF78(SlotPool *pool, ModelPart *parts, u8 tag);
 void func_801DCE18(ModelList *list, s32 release_models);
 void func_801E165C(ImageAnim *anim);
 void func_801E3438(Record24 *record);
-u16 func_801DEF10(ModelPart *parts, Keyframe *key);
+u16 func_801DEF10(ModelPart *parts, s16 *data);
 void SetColorMatrix(MATRIX *m);              /* SetColorMatrix */
 void func_8003852C(void *bank);              /* release a sound effect bank */
 void func_80049BDC(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
