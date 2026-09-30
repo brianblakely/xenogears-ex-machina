@@ -836,15 +836,80 @@ void func_80088AF8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088BD4);
+/* Refresh the progress flags, then check for completion. */
+void func_80088BD4(void) {
+    func_800888B0();
+    func_800889C8();
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088BFC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088C28);
+/* Debug counter: pad bits 0x4/0x1 step it up/down (not below zero), then
+ * print it. */
+void func_80088C28(void) {
+    u16 pad = D_80059570;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088CBC);
+    if (pad & 4) {
+        D_800927F4++;
+    }
+    if (pad & 1) {
+        D_800927F4--;
+    }
+    if (D_800927F4 < 0) {
+        D_800927F4 = 0;
+    }
+    func_8003278C(1, D_800927F4, 10, 0x80AD);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088D1C);
+/* Set up the given window record's defaults. */
+void func_80088CBC(s32 index) {
+    Window *window = &D_8009A0D8[index];
+
+    window->unk77 = 3;
+    window->unk7B = 0x7D;
+    window->unk80 = 0x3000;
+    window->unk82 = func_80043A58(0x3F0, 0xC0);
+}
+
+/* Menu mode start-up: frame callback, display and windows, the start
+ * state from the boot word, then the mode's first screen. */
+void func_80088D1C(void) {
+    s32 unused[2]; /* never used; the original frame has these 8 bytes */
+
+    /* The callback starts one word into splat's func_80088BFC, which begins
+     * with a data word. */
+    func_800444D8((u8 *)func_80088BFC + 4);
+    func_80048BC4();
+    func_80032498(6, D_80091BB0);
+    func_80028470(0x30, 0);
+    func_800374E8(4, 2, 0x138, 0xDA, 0x14, 1, 0x3C0, 0x1F0, 0x3C0, 0x1EF, 0);
+    func_80088CBC(0);
+    func_80088CBC(1);
+    switch (D_80010000) {
+    case -1:
+        D_800928CC = 2;
+        break;
+    case 0:
+        D_800928CC = 1;
+        break;
+    default:
+        D_800928CC = 0;
+        break;
+    }
+    D_80092868 = &D_8009A0D8[0];
+    D_80092870 = &D_8009A0D8[1];
+    func_8008A110(-1, -1);
+    func_8008A128(-1, -1);
+    D_80092898 = 2;
+    D_8009289C = 1;
+    D_80092930 = 0;
+    D_800928E8 = 0;
+    D_800928A0 = 0;
+    D_80092920 = 0;
+    D_80092930 = 0;
+    D_800928D0 = 7;
+    func_8008E620();
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_80070284);
 
