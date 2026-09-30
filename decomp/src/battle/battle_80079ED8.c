@@ -1810,7 +1810,114 @@ s32 func_8007EF44(u8 enemy) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007EF6C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007F8C0);
+/* Evaluate the AI condition at *pc (opcodes 80-9b; 80 and 9a always hold)
+ * and step past it. After opcode 99 the following conditions are or-ed
+ * together up to the next non-condition byte. */
+u8 func_8007F8C0(u8 **pc, u8 enemy) {
+    u8 result;
+    u8 chained;
+    u8 any;
+
+    result = 0;
+    chained = 0;
+    any = 0;
+    for (;;) {
+        switch (**pc) {
+        case 0x80:
+        case 0x9A:
+            result = 1;
+            break;
+        case 0x99:
+            chained = 1;
+            break;
+        case 0x81:
+            result = func_8007E954(pc, enemy);
+            break;
+        case 0x82:
+            result = func_8007E98C(pc, enemy);
+            break;
+        case 0x83:
+            result = func_8007E9D0(pc, enemy);
+            break;
+        case 0x84:
+            result = func_8007EA08(pc, enemy);
+            break;
+        case 0x85:
+            result = func_8007EA4C(pc, enemy);
+            break;
+        case 0x86:
+            result = func_8007EA84(pc, enemy);
+            break;
+        case 0x87:
+            result = func_8007EAC8(pc, enemy);
+            break;
+        case 0x88:
+            result = func_8007EB08(pc, enemy);
+            break;
+        case 0x89:
+            result = func_8007EB50(pc, enemy);
+            break;
+        case 0x8A:
+            result = func_8007EB90(pc, enemy);
+            break;
+        case 0x8B:
+            result = func_8007EBD8(pc, enemy);
+            break;
+        case 0x8C:
+            result = func_8007EC10(pc, enemy);
+            break;
+        case 0x8D:
+            result = func_8007EC54(pc, enemy);
+            break;
+        case 0x8E:
+            result = func_8007EC94(pc, enemy);
+            break;
+        case 0x8F:
+            result = func_8007ECDC(pc, enemy);
+            break;
+        case 0x90:
+            result = func_8007ED14(pc, enemy);
+            break;
+        case 0x91:
+            result = func_8007ED58(pc, enemy);
+            break;
+        case 0x92:
+            result = func_8007ED98(pc, enemy);
+            break;
+        case 0x93:
+            result = func_8007EDE0(pc, enemy);
+            break;
+        case 0x94:
+            result = func_8007EE28(pc, enemy);
+            break;
+        case 0x95:
+            result = func_8007EE70(pc);
+            break;
+        case 0x96:
+            result = func_8007EEA8(pc);
+            break;
+        case 0x97:
+            result = func_8007EED0();
+            break;
+        case 0x98:
+            result = func_8007EEE8();
+            break;
+        case 0x9B:
+            result = func_8007EF44(enemy);
+            break;
+        }
+        func_80079934(pc);
+        if (!chained) {
+            break;
+        }
+        any |= result;
+        if (**pc < 0x80) {
+            result = any;
+            break;
+        }
+    }
+    return result;
+}
 
 /* For party character 4 with its UI flag +0x8e set: close window 0 and
  * release the graphics block. */
