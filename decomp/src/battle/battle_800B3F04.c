@@ -381,7 +381,55 @@ void func_800B5FBC(BattleSprite *sprite) {
     sprite->colourFlags = 0x40;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B6004);
+/* Draw the sprite as a line in its colour from it to its parent, blended by
+ * its render mode; sets its depth. */
+void func_800B6004(BattleTask *draw) {
+    BattleSprite *sprite = draw->data;
+    BattleSprite *parent;
+    LINE_F2 *line;
+    DR_TPAGE *tpage;
+    SVECTOR position;
+    long p;
+    s32 depth;
+    u32 blend;
+
+    if (sprite->frame != 0) {
+        return;
+    }
+    line = (LINE_F2 *)D_80059580;
+    parent = sprite->parent;
+    if ((u8 *)(line + 1) >= D_80059534) {
+        return;
+    }
+    position.vx = sprite->x.fixed >> 16;
+    position.vy = sprite->y.fixed >> 16;
+    position.vz = sprite->z.fixed >> 16;
+    D_80059580 = (u8 *)(line + 1);
+    SetRotMatrix(&D_8004FBB8);
+    SetTransMatrix(&D_8004FBB8);
+    depth = RotTransPers(&position, (long *)&line->x0, &p, &p) >> D_80050100;
+    sprite->depth = depth;
+    position.vx = sprite->x.fixed >> 16;
+    position.vy = sprite->y.fixed >> 16;
+    position.vz = sprite->z.fixed >> 16;
+    position.vx = parent->x.fixed >> 16;
+    position.vy = parent->y.fixed >> 16;
+    position.vz = parent->z.fixed >> 16;
+    RotTransPers(&position, (long *)&line->x1, &p, &p);
+    setlen(line, 3);
+    *(u32 *)&line->r0 = *(u32 *)sprite->colour;
+    AddPrim(D_8005956C + depth, line);
+    tpage = (DR_TPAGE *)D_80059580;
+    if (D_80059580 + sizeof(DR_TPAGE) < D_80059534) {
+        blend = sprite->render.bytes[0] >> 5;
+        if (blend != 0) {
+            D_80059580 += sizeof(DR_TPAGE);
+            setlen(tpage, 1);
+            tpage->code[0] = 0xE1000000 | (((blend - 1) & 3) << 5);
+            AddPrim(D_8005956C + depth, tpage);
+        }
+    }
+}
 
 /* Draw sprite with 800B6004, uncoloured. */
 void func_800B61B0(BattleSprite *sprite) {
