@@ -688,19 +688,85 @@ void func_8007D274(Vector *from, Vector *to) {
     to->vz = from->vz + func_8003FA38() % 64 - 32;
 }
 
+#ifdef NON_MATCHING
+/* Queue a three-strand bolt of jittered 7-segment lines between two points,
+ * coloured by kind: 0 green-blue flicker, 1 random grey-yellow, 2
+ * alternating white and red segments.
+ * Does not match: the address of prev is kept in a saved register. */
+void func_8007D334(Vector *from, Vector *to, s32 kind) {
+    Vector point;
+    Vector step;
+    Vector prev;
+    Vector next;
+    Color color;
+    s32 strand;
+    s32 i;
+    s32 value;
+
+    step = *to;
+    step.vx -= from->vx;
+    step.vy -= from->vy;
+    step.vz -= from->vz;
+    func_800886FC(&step);
+    step.vx /= 7;
+    step.vy /= 7;
+    step.vz /= 7;
+    for (strand = 0; strand < 3; strand++) {
+        point = *from;
+        prev = *from;
+        for (i = 0; i < 7; i++) {
+            point.vx += step.vx;
+            point.vy += step.vy;
+            point.vz += step.vz;
+            func_8007D274(&point, &next);
+            switch (kind) {
+            case 0:
+                color.r = func_8003FA38() & 0x3F;
+                color.g = func_8003FA38() % 191 + 0x40;
+                color.b = 0xFF;
+                break;
+            case 1:
+                value = func_8003FA38() % 256 + 0x40;
+                if (value < 0x100) {
+                    color.g = value;
+                } else {
+                    color.g = 0xFF;
+                }
+                color.r = color.g = color.g;
+                color.b = value / 3;
+                break;
+            case 2:
+                if (i & 1) {
+                    color.b = 0xFF;
+                    color.g = 0xFF;
+                    color.r = 0xFF;
+                } else {
+                    color.r = 0xFF;
+                    color.b = 0;
+                    color.g = 0;
+                }
+                break;
+            }
+            func_8007E31C(&prev, i == 6 ? to : &next, &color);
+            prev = next;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D334);
+#endif
 
 /* Map codes 0x11..0x13 to kinds 0..2 and forward them. */
-void func_8007D65C(s32 arg0, s32 arg1, s32 code) {
+void func_8007D65C(Vector *from, Vector *to, s32 code) {
     switch (code) {
     case 0x11:
-        func_8007D334(arg0, arg1, 0);
+        func_8007D334(from, to, 0);
         break;
     case 0x12:
-        func_8007D334(arg0, arg1, 1);
+        func_8007D334(from, to, 1);
         break;
     case 0x13:
-        func_8007D334(arg0, arg1, 2);
+        func_8007D334(from, to, 2);
         break;
     }
 }
@@ -1079,7 +1145,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EFB4);
 /* Draw the portrait of a list entry (the index wraps around the list) on
  * the left or right side. At fade 64 it is shown full size and unshaded;
  * below, it is shaded and shrunk by fade / 16.
- * Does not match: the vertex arithmetic is scheduled differently (right edge computed early). */
+ * Does not match: the vertex arithmetic is scheduled differently. */
 void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade) {
     GridCell *cell;
     s32 shrink;

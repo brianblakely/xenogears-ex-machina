@@ -317,7 +317,7 @@ void func_8007EE08(s32 highlight);
 void func_8007F834(void);
 s32 func_8007FF70(s32 value, s32 max, s32 flags);
 void func_80080C48(s32 arg);
-void func_8007D334(s32 arg0, s32 arg1, s32 kind);
+void func_8007D334(Vector *from, Vector *to, s32 kind);
 void func_8008EB4C(s32 sound);
 
 /* Menu overlay drawing. */
@@ -377,5 +377,9 @@ extern u16 D_800926E0; /* text texture page */
 extern u16 D_800926E4; /* text CLUT */
 
 u16 func_80043A58(s32 x, s32 y); /* CLUT id */
+
+s32 func_800886FC(Vector *v);
+void func_8007D274(Vector *from, Vector *to);
+void func_8007E31C(Vector *from, Vector *to, Color *color);
 
 #endif
