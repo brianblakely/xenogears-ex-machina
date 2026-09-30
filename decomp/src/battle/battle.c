@@ -2720,7 +2720,98 @@ u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079ED8);
 #endif
 
+/* Read (`read` set) or write one halfword attribute 0-23 of the slot's
+ * combatant record; the result of a write is undefined. Nonmatching only
+ * by its jump table's alignment. */
+#ifdef NON_MATCHING
+u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read) {
+    u16 *field;
+    u16 result;
+
+    switch (attribute) {
+    case 0:
+        field = &D_800CCCE8.records[slot].pilot.maxHp;
+        break;
+    case 1:
+        field = &D_800CCCE8.records[slot].pilot.hp;
+        break;
+    case 2:
+        field = &D_800CCCE8.records[slot].pilot.status7C;
+        break;
+    case 3:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x7E];
+        break;
+    case 4:
+        field = &D_800CCCE8.records[slot].pilot.status80;
+        break;
+    case 5:
+        field = &D_800CCCE8.records[slot].pilot.status82;
+        break;
+    case 6:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x84];
+        break;
+    case 7:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x86];
+        break;
+    case 8:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x88];
+        break;
+    case 9:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x8A];
+        break;
+    case 10:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x8C];
+        break;
+    case 11:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x8E];
+        break;
+    case 12:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x110];
+        break;
+    case 13:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x114];
+        break;
+    case 14:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x116];
+        break;
+    case 15:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x120];
+        break;
+    case 16:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x122];
+        break;
+    case 17:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x124];
+        break;
+    case 18:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x126];
+        break;
+    case 19:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x128];
+        break;
+    case 20:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x12A];
+        break;
+    case 21:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x34];
+        break;
+    case 22:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x36];
+        break;
+    case 23:
+        field = (u16 *)&((u8 *)&D_800CCCE8.records[slot])[0x38];
+        break;
+    }
+    if (!read) {
+        *field = value;
+    } else {
+        result = *field;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A280);
+#endif
 
 /* Whether `slot` can be targeted: present, visible and not down (+0x7c
  * 0xc002); without `any` also not flagged 0x20 at +0x84. */
