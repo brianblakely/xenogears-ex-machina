@@ -1954,7 +1954,145 @@ void func_8007B270(u8 *first, u8 *second) {
     D_800926A0 = LoadClut2(D_800926A8, D_80092698, D_8009269C);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007B388);
+/* Load the effect textures from the scene file table: the twelve frames
+ * of sparkle kind 0, the textures of kinds 1-4 (kind 3 is kind 1 drawn
+ * additively), the sparkle packets, and the two other effect textures. */
+void func_8007B388(u32 **files) {
+    TimImage tim;
+    Rect unused; /* the original frame has 8 unused bytes */
+    s16 *clut;
+    Sparkle *sparkle;
+    u8 first = D_800911E8[0] == 0;
+    s32 i;
+
+    for (i = 0; i < 12; i++) {
+        OpenTIM(files[i + 1]);
+        ReadTIM(&tim);
+        D_800947E8[i] = (u8)tim.prect->x * 4;
+        D_800947F4[i] = tim.prect->y;
+        D_80094800[i] = GetClut(tim.crect->x, tim.crect->y);
+        LoadImage(tim.crect, tim.caddr);
+        LoadImage(tim.prect, tim.paddr);
+    }
+    D_80092A74[0].u = D_800947E8;
+    D_80092A74[0].v = D_800947F4;
+    D_80092A74[0].w = 0x26;
+    D_80092A74[0].h = 0x26;
+    D_80092A74[0].clut = 0;
+    D_80092A74[0].tpage = GetTPage(0, 1, 0x3C0, 0x100);
+    D_80092A74[0].frame_count = 0xC;
+    D_80092A74[0].gravity = 0;
+    D_80092A74[0].unkB = 0;
+
+    OpenTIM(files[13]);
+    ReadTIM(&tim);
+    clut = tim.caddr;
+    clut[0] = 0;
+    for (i = 1; i < 16; i++) {
+        clut[i] |= 0x8000;
+    }
+    if (first) {
+        for (i = 0; i < 16; i++) {
+            D_800911E8[i] += tim.prect->y;
+        }
+    }
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    D_80092A74[1].u = D_800911D8;
+    D_80092A74[1].v = D_800911E8;
+    D_80092A74[1].w = 0x1F;
+    D_80092A74[1].h = 0x1F;
+    D_80092A74[1].clut = GetClut(tim.crect->x, tim.crect->y);
+    D_80092A74[1].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    D_80092A74[1].frame_count = 0x10;
+    D_80092A74[1].gravity = -2;
+    D_80092A74[1].unkB = 0;
+
+    OpenTIM(files[16]);
+    ReadTIM(&tim);
+    clut = tim.caddr;
+    clut[0] = 0;
+    for (i = 1; i < 16; i++) {
+        clut[i] |= 0x8000;
+    }
+    if (first) {
+        for (i = 0; i < 12; i++) {
+            D_80091208[i] += tim.prect->y;
+        }
+    }
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    D_80092A74[2].u = D_800911F8;
+    D_80092A74[2].v = D_80091208;
+    D_80092A74[2].w = 0xF;
+    D_80092A74[2].h = 0xF;
+    D_80092A74[2].clut = GetClut(tim.crect->x, tim.crect->y);
+    D_80092A74[2].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    D_80092A74[2].frame_count = 0xC;
+    D_80092A74[2].gravity = 0;
+    D_80092A74[2].unkB = 1;
+
+    D_80092A74[3] = D_80092A74[1];
+    D_80092A74[3].tpage = (D_80092A74[3].tpage & ~0x60) | 0x40;
+
+    OpenTIM(files[26]);
+    ReadTIM(&tim);
+    if (first) {
+        for (i = 0; i < 16; i++) {
+            D_80091218[i] += tim.prect->y;
+        }
+    }
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    D_80092A74[4].u = D_800911F8;
+    D_80092A74[4].v = D_80091218;
+    D_80092A74[4].w = 0xF;
+    D_80092A74[4].h = 0xF;
+    D_80092A74[4].clut = GetClut(tim.crect->x, tim.crect->y);
+    D_80092A74[4].tpage = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    D_80092A74[4].frame_count = 0x10;
+    D_80092A74[4].gravity = 0;
+    D_80092A74[4].unkB = 2;
+
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        ((PacketTag *)&sparkle->prim[0])->len = 9;
+        *(u32 *)&sparkle->prim[0].r0 = 0x2C808080;
+        sparkle->prim[0].code |= 2;
+        sparkle->prim[1] = sparkle->prim[0];
+        sparkle->active = 0;
+        sparkle->frame = 0;
+    }
+
+    OpenTIM(files[14]);
+    ReadTIM(&tim);
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    D_80092678 = tim.prect->x;
+    D_8009267C = tim.prect->y;
+    D_80092680 = GetClut(tim.crect->x, tim.crect->y);
+    D_80092684 = GetTPage(0, 2, tim.prect->x, tim.prect->y);
+
+    OpenTIM(files[17]);
+    ReadTIM(&tim);
+    clut = tim.caddr;
+    clut[0] = 0;
+    for (i = 1; i < 16; i++) {
+        clut[i] |= 0x8000;
+    }
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    D_80092688 = (u8)((u16)tim.prect->x * 4);
+    D_8009268C = (u8)tim.prect->y;
+    D_80092690 = GetClut(tim.crect->x, tim.crect->y);
+    D_80092694 = GetTPage(0, 1, tim.prect->x, tim.prect->y);
+    D_800926A4 = 0x8000;
+    D_80092698 = tim.crect->x;
+    D_8009269C = tim.crect->y + 1;
+    func_8007D6B8();
+    func_8007DB28();
+    func_8007E2D8();
+}
 
 /* Advance every live sparkle one frame (expiring it after its last frame,
  * letting it fall otherwise) and latch the per-frame counters. */

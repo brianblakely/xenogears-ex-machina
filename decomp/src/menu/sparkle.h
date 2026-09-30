@@ -6,12 +6,14 @@
 
 /* Kind of sparkle (20-byte records at D_80092A74). */
 typedef struct {
-    u8 unk0[0xA];
+    u8 *u;          /* 0x00: texture column of each frame */
+    u8 *v;          /* 0x04: texture row of each frame */
+    u8 w, h;        /* 0x08: frame size */
     u8 frame_count; /* 0x0A */
     u8 unkB;
     u16 clut;       /* 0x0C */
     u16 tpage;      /* 0x0E */
-    u16 gravity;    /* 0x10 */
+    s16 gravity;    /* 0x10 */
     u8 unk12[2];
 } SparkleKind;
 
@@ -54,7 +56,24 @@ typedef struct Sparkle {
 #define SPARKLE_COUNT 60
 
 extern Sparkle D_80092AD8[SPARKLE_COUNT];
-extern SparkleKind D_80092A74[];
+extern SparkleKind D_80092A74[5];
+
+/* Frame tables of the sparkle kinds: kind 0's are filled from its twelve
+ * TIMs; kinds 1-4 use fixed tables whose rows are offset once by their
+ * TIM's row. */
+extern u8 D_800947E8[12];
+extern u8 D_800947F4[12];
+extern u16 D_80094800[12]; /* kind 0's CLUT of each frame */
+extern u8 D_800911D8[16];
+extern u8 D_800911E8[16];
+extern u8 D_800911F8[16];
+extern u8 D_80091208[12];
+extern u8 D_80091218[16];
+
+/* Other effect textures (position, CLUT, texture page). */
+extern u16 D_80092678, D_8009267C;
+extern s16 D_80092680, D_80092684;
+extern s16 D_80092688, D_8009268C, D_80092690;
 extern Color D_800926B8; /* colour of kind-2 sparkles */
 extern s32 D_800926A4;   /* frame counter */
 extern s32 D_800926B0; /* scene lines added this frame */
