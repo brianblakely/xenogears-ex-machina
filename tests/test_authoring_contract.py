@@ -12,12 +12,10 @@ from unittest.mock import patch
 from tools.authoring.qualify import installed_identities
 from tools.repository.authoring_contract import (
     read,
-    validate,
     validate_dependencies,
-    validate_gates,
     validate_policy,
 )
-from tools.repository.matrix import ROOT, build_matrix
+from tools.repository.validate import ROOT
 
 
 class AuthoringContractTests(unittest.TestCase):
@@ -30,11 +28,6 @@ class AuthoringContractTests(unittest.TestCase):
 
     def dependencies(self):
         return validate_dependencies(ROOT, self.review, self.manifest, self.lock)
-
-    def test_contract_matches_current_plan_and_reviewed_complete_lock(self):
-        result = validate(ROOT, build_matrix())
-        self.assertEqual(result["authoring_gates_defined"], 15)
-        self.assertEqual(result["reviewed_authoring_packages"], len(self.lock["packages"]) - 1)
 
     def test_untrusted_build_cannot_fall_back_to_plain_node_or_acquire_privilege(self):
         for key in (
@@ -113,47 +106,6 @@ class AuthoringContractTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "promoted to runtime"):
             self.dependencies()
 
-    def test_infrastructure_smoke_cannot_promote_unimplemented_native_gates(self):
-        self.review["qualification"]["native_bridge_tested"] = True
-        with self.assertRaisesRegex(ValueError, "promoted to native"):
-            self.dependencies()
-        self.acceptance["gates"][0]["status"] = "passed"
-        with self.assertRaisesRegex(ValueError, "unimplemented native authoring gate promoted"):
-            validate_gates(self.contract, self.acceptance, build_matrix())
-
-    def test_bridge_and_release_prerequisites_cannot_be_removed(self):
-        matrix = build_matrix()
-        for collection, identity in (
-            ("phase_exits", "P02A-EXIT"),
-            ("phase_exits", "P03-EXIT"),
-            ("phase_exits", "P13-EXIT"),
-        ):
-            changed = copy.deepcopy(matrix)
-            gate = next(g for g in changed["crosscutting"][collection] if g["id"] == identity)
-            gate["requires_authoring_gates"].clear()
-            with (
-                self.subTest(identity=identity),
-                self.assertRaisesRegex(ValueError, "omits authoring prerequisite"),
-            ):
-                validate_gates(self.contract, self.acceptance, changed)
-
-    def test_bridge_cannot_depend_on_later_sdk_implementation(self):
-        gate = self.acceptance["gates"][0]
-        gate["tasks"].append("P07-T01")
-        with self.assertRaisesRegex(ValueError, "requires a later phase task"):
-            validate_gates(self.contract, self.acceptance, build_matrix())
-
-    def test_graphical_gate_owners_are_separate_sequential_phases(self):
-        matrix = build_matrix()
-        by_id = {g["id"]: g for g in self.acceptance["gates"]}
-        self.assertEqual(by_id["AUTHOR-LEVEL-EDITORS"]["owner_phase"], 11)
-        self.assertEqual(by_id["AUTHOR-RULE-EDITORS"]["owner_phase"], 12)
-        gate = next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == 11)
-        self.assertNotIn("AUTHOR-RULE-EDITORS", gate["requires_authoring_gates"])
-        by_id["AUTHOR-LEVEL-EDITORS"]["tasks"].append("P12-T01")
-        with self.assertRaisesRegex(ValueError, "requires a later phase task"):
-            validate_gates(self.contract, self.acceptance, matrix)
-
     def test_dependency_qualification_rejects_stale_installed_manifests(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -182,46 +134,6 @@ class AuthoringContractTests(unittest.TestCase):
                     ValueError, "Required reviewed package is not installed"
                 ):
                     installed_identities()
-
-    def test_completed_narrow_facets_cannot_bypass_unexecuted_authoring_gates(self):
-        for collection, identity in (
-            ("phase_exits", "P02A-EXIT"),
-            ("phase_exits", "P03-EXIT"),
-        ):
-            matrix = build_matrix()
-            gate = next(g for g in matrix["crosscutting"][collection] if g["id"] == identity)
-            gate["status"] = "passed"
-            for row in matrix["requirements"]:
-                if row["source_id"] in gate["tasks"]:
-                    row["status"] = "passed"
-            with (
-                self.subTest(identity=identity),
-                self.assertRaisesRegex(ValueError, "passed without executed authoring gates"),
-            ):
-                validate_gates(self.contract, self.acceptance, matrix)
-
-    def test_unknown_authoring_prerequisites_are_not_ignored(self):
-        matrix = build_matrix()
-        next(g for g in matrix["crosscutting"]["phase_exits"] if g["phase"] == "2A")[
-            "requires_authoring_gates"
-        ].append("AUTHOR-INVENTED")
-        with self.assertRaisesRegex(ValueError, "unknown authoring gate"):
-            validate_gates(self.contract, self.acceptance, matrix)
-
-    def test_direct_release_authoring_dependencies_validate_ids_and_execution(self):
-        for identity, status, expected_error in (
-            ("AUTHOR-INVENTED", "defined", "unknown authoring gate"),
-            ("AUTHOR-PLAY", "passed", "passed without executed authoring gates"),
-        ):
-            matrix = build_matrix()
-            release = matrix["crosscutting"]["release_checkpoints"][0]
-            release["requires_authoring_gates"] = [identity]
-            release["status"] = status
-            with (
-                self.subTest(identity=identity),
-                self.assertRaisesRegex(ValueError, expected_error),
-            ):
-                validate_gates(self.contract, self.acceptance, matrix)
 
 
 if __name__ == "__main__":

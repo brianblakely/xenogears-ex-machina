@@ -1,5 +1,11 @@
 # Native agent contract 0.1
 
+> Roadmap ownership: plan.md is authoritative. Native runtime and original-game
+> play come first (Phases 2–4); the authoring bridge belongs to Phase 7. Legacy
+> facet/gate labels in retained specification JSON are historical identifiers,
+> not additional Phase 1 work or implementation-completion claims.
+
+
 Execution ownership follows the sequential plan. Phase 2 proves the complete
 minimum native field/event/persistence and agent foundation; Phase 3 adds the
 original slice's battle/menu/media integration; Phase 4 completes every original

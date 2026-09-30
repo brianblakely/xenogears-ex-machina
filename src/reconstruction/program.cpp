@@ -84,11 +84,6 @@ void store_control(FieldActor &target, const field::ControlActor &state) {
 }
 } // namespace
 
-field::EventActor FieldActor::events() const { return field::original::read_event_actor(storage); }
-field::ControlActor FieldActor::control() const {
-    return field::original::read_control_actor(storage);
-}
-
 field::FieldSpriteEnvironment Program::sprite_environment() const {
     if (!field)
         throw field::FieldFormatError("Sprite environment requires a field");

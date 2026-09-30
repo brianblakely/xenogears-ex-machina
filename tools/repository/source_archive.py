@@ -32,6 +32,9 @@ ALLOWED_SUFFIXES = {
     ".lock",
     ".cmake",
     ".cpp",
+    ".c",
+    ".ld",
+    ".mk",
     ".java",
     ".h",
     ".hpp",
@@ -40,7 +43,7 @@ ALLOWED_SUFFIXES = {
     ".yaml",
     ".ts",
 }
-ALLOWED_BASENAMES = {"LICENSE", ".gitignore", ".clang-format", ".editorconfig"}
+ALLOWED_BASENAMES = {"Makefile", "LICENSE", ".gitignore", ".clang-format", ".editorconfig"}
 MAX_TEXT_SIZE = 4 * 1024 * 1024
 
 

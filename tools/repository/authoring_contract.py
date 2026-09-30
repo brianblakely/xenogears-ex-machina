@@ -408,35 +408,3 @@ def validate_gates(contract: dict, acceptance: dict, matrix: dict) -> int:
             "phase exit omits authoring prerequisite: " + phase,
         )
     return len(gates)
-
-
-def validate(root: Path, matrix: dict) -> dict:
-    contract = read(root, "docs/authoring/contract.json")
-    validate_policy(contract)
-    dependency_count = validate_dependencies(
-        root,
-        read(root, "docs/authoring/dependencies.json"),
-        read(root, "tools/authoring/package.json"),
-        read(root, "tools/authoring/package-lock.json"),
-    )
-    central = read(root, "docs/dependencies.json")
-    require(
-        central["authoring_dependency_review"] == "docs/authoring/dependencies.json",
-        "central dependency record omits the separate authoring review",
-    )
-    direct = read(root, "tools/authoring/package.json")["devDependencies"]
-    records = {item["name"]: item for item in central["dependencies"]}
-    require(
-        all(
-            records[name]["version"] == version
-            and records[name]["scope"] == "authoring_build_tool_only"
-            for name, version in direct.items()
-        ),
-        "authoring dependencies lack separate central scope/pin review",
-    )
-    require(
-        records["cgltf"]["scope"] == "proposed_runtime_dependency_not_linked",
-        "native importer was adopted without its implementation gates",
-    )
-    gate_count = validate_gates(contract, read(root, "docs/authoring/acceptance.json"), matrix)
-    return {"authoring_gates_defined": gate_count, "reviewed_authoring_packages": dependency_count}

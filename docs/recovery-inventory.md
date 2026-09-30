@@ -35,7 +35,7 @@ separate opcode entries, including extended-table values not established as code
 
 The coverage name is an explicit caller declaration. This diagnostic does not
 infer that an unused instruction blocks the selected route, update validation
-results, or grant a coverage pass. The [slice gate](phase1-slice-contract.md)
+results, or grant a coverage pass. The [slice gate](matching.md)
 continues to require independent original evidence for each scoped proof.
 Complete symbol/format discovery and P01-T15 remain open.
 

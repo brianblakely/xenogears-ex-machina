@@ -1,10 +1,8 @@
-"""Run the reproducible public Phase 0 build/check gate from the pinned Nix shell."""
+"""Build and test public code without generated requirements paperwork."""
 
 from __future__ import annotations
 
 import argparse
-import json
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -15,7 +13,6 @@ from tools.reference.host_slots import slot  # noqa: E402
 
 
 def run_all(commands: list[list[str]]) -> list[dict]:
-    """Run commands in order, stopping at the first failure."""
     results = []
     for command in commands:
         print("Running: " + " ".join(command), flush=True)
@@ -28,15 +25,14 @@ def run_all(commands: list[list[str]]) -> list[dict]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--preset", choices=["debug", "sanitize", "release", "all"], default="all")
+    parser.add_argument(
+        "--preset", choices=["debug", "sanitize", "release", "all"], default="debug"
+    )
+    parser.add_argument("--format", action="store_true", help="also check repository formatting")
     args = parser.parse_args()
-    if not os.environ.get("IN_NIX_SHELL"):
-        parser.error("Enter the pinned Nix shell first; see docs/development.md")
-    commands = [
-        [sys.executable, "tools/repository/matrix.py", "--check"],
-        [sys.executable, "tools/repository/validate.py"],
-        [sys.executable, "tools/repository/format.py", "--check"],
-    ]
+    commands = [[sys.executable, "tools/repository/validate.py"]]
+    if args.format:
+        commands.append([sys.executable, "tools/repository/format.py", "--check"])
     presets = ["debug", "sanitize", "release"] if args.preset == "all" else [args.preset]
     for preset in presets:
         commands += [
@@ -45,11 +41,8 @@ def main() -> None:
             ["ctest", "--preset", preset],
         ]
     with slot("build"):
-        results = run_all(commands)
-    output = ROOT / ".local/verification/public-check.json"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps({"schema_version": 1, "commands": results}, indent=2) + "\n")
-    print(f"Public Phase 0 checks passed; local command record: {output.relative_to(ROOT)}")
+        run_all(commands)
+    print("Public build and tests passed; no original-game match is claimed.")
 
 
 if __name__ == "__main__":

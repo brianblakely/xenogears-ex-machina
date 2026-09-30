@@ -3,21 +3,16 @@
 from __future__ import annotations
 
 import copy
-import tempfile
 import unittest
-from pathlib import Path
 
 from tools.repository.agent_contract import (
     ROOT,
     ContractSchemas,
     decode_line,
     read,
-    validate,
     validate_parity,
     validate_semantics,
 )
-from tools.repository.matrix import build_matrix, plan_sources
-from tools.repository.validate import validate_traceability
 
 
 class AgentSpecificationTests(unittest.TestCase):
@@ -30,23 +25,6 @@ class AgentSpecificationTests(unittest.TestCase):
     def request(self, value):
         self.schemas.validate(value, "protocol.schema.json#/$defs/request")
         validate_semantics(value)
-
-    def test_all_artifacts_and_examples_form_one_contract(self):
-        validate(ROOT, build_matrix())
-
-    def test_phase_exits_cannot_drop_native_architecture_gates(self):
-        matrix = build_matrix()
-        matrix["crosscutting"]["phase_exits"][2]["requires_agent_gates"].pop()
-        with self.assertRaisesRegex(ValueError, "exit omits its native architecture gates"):
-            validate(ROOT, matrix)
-
-    def test_first_slice_cannot_drop_authored_content_prerequisite(self):
-        matrix = build_matrix()
-        next(gate for gate in matrix["crosscutting"]["phase_exits"] if gate["phase"] == 3)[
-            "requires_authoring_gates"
-        ] = []
-        with self.assertRaisesRegex(ValueError, "authored-content prerequisite"):
-            validate(ROOT, matrix)
 
     def test_protocol_is_not_a_generic_json_object(self):
         for change in (
@@ -166,36 +144,6 @@ class AgentSpecificationTests(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "backlog"):
             validate_parity(ROOT, bad, methods, gates)
-
-    def test_foundational_table_and_prose_cannot_fall_out_of_traceability(self):
-        matrix = build_matrix()
-        self.assertEqual(
-            len(plan_sources((ROOT / "plan.md").read_text())["tables"]["agent_contract"]), 8
-        )
-        matrix["crosscutting"]["agent_contract"].pop()
-        with self.assertRaisesRegex(ValueError, "agent_contract"):
-            validate_traceability(matrix)
-        matrix = build_matrix()
-        matrix["crosscutting"]["foundational_requirement"]["source"] = "lost"
-        with self.assertRaisesRegex(ValueError, "foundational requirement"):
-            validate_traceability(matrix)
-
-    def test_changed_source_cannot_be_regenerated_without_coverage_review(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            (root / "docs").mkdir()
-            for name in ("plan.md", "docs/requirement-facets.txt", "docs/requirement-review.json"):
-                (root / name).write_bytes((ROOT / name).read_bytes())
-            path = root / "plan.md"
-            path.write_text(
-                path.read_text().replace(
-                    "Create a requirement-to-test matrix",
-                    "Create an expanded requirement-to-test matrix",
-                    1,
-                )
-            )
-            with self.assertRaisesRegex(ValueError, "renewed source/facet coverage review"):
-                build_matrix(root)
 
 
 if __name__ == "__main__":

@@ -1,69 +1,42 @@
 # Xenogears: Ex Machina
 
-An independent Xenogears decompilation, native PC runtime and graphical modding
-toolkit, with Arch Linux leading development. This repository is currently a
-**Phase 0 research and build baseline**. It does not run the game yet.
+Independent Xenogears decompilation, native PC port and modding tools, with Arch
+Linux leading development. The native application does not run the complete game.
+
+Phase 1 now targets a **complete binary-matching PS1 decompilation of both discs**.
+It does not stop at one playable slice or require every recovered function to be
+ported into a host-side ownership model. See [the plan](plan.md) and the short
+[matching workflow](docs/matching.md).
+
+```sh
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
+make -C decomp smoke
+```
+
+That smoke test exercises MIPS assembly/linking and exact comparison on an authored
+fixture, not Xenogears decompilation. The original-compatible C compiler and game
+build targets still need qualification. Source recovery and binary matching must
+be reported separately; existing C++ comparisons imply neither a PS1 match nor a
+complete decomp.
+
+The existing `xem-reconstruction` library, original scenarios, findings and tests
+remain useful reference/portability assets. Its state declarations are separated
+into subsystem headers; `Program` remains its integration owner, not the design
+for new PS1-target source. Run its public build with:
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-python3 tools/repository/check.py
+python3 tools/repository/check.py --preset debug
 ```
 
-The pinned Nix environment supplies C++20/Clang, CMake, Ninja, Python and formatting
-tools. Debug, Release and ASan/UBSan configurations and public tests need no game
-data. See [development setup](docs/development.md).
+[Development](docs/development.md) covers focused commands. Source profiles live
+in `analysis/reference-profiles.json`; detailed findings are read on demand.
+Original images stay in ignored `discs/`, and extracted bytes/captures/saves in
+ignored `.local/`. The [source allowlist](packaging/source-files.txt) is audited.
+The Nix path inputs contain tool configuration only, never original data.
 
-The [plan](plan.md) defines the full project. The
-[requirement-to-test matrix](docs/requirements.md) covers every requested feature,
-default, platform and editor capability. A defined test is not an executed pass.
-
-The [native agent contract](docs/agent/README.md) specifies direct engine input,
-full state access, debugging, typed scenario setup, exact/unlocked time and optional
-spectator images. Its schemas and acceptance gates are established before native
-gameplay; `xem-baseline` does not yet implement this interface. The versioned
-[emulator parity inventory](docs/agent/emulator-parity.json) records verified
-reference paths, unsupported adapters and required native extensions separately.
-
-The [agent authoring contract](docs/authoring/README.md) specifies source-oriented
-TypeScript geometry, isolated build workers, native content loading and protected
-build/play/repair gates. Its [separate dependency review](docs/authoring/dependencies.json)
-pins the build-only toolchain. The dependency qualification fixture works; the
-authoring SDK, untrusted-build isolation and playable native bridge remain unimplemented.
-
-[Reference profiles](analysis/reference-profiles.json) identify the exact measured
-original inputs. [Coverage](analysis/coverage/README.md) grounds all ten content
-categories on both discs in original evidence and preserves unresolved content,
-formats and behavior. The baseline inventory is ready; the exhaustive game catalog
-remains open. [Checkpoint definitions](analysis/coverage/checkpoints.json) prepare
-both discs for original/native validation before gameplay implementation.
-
-The [Phase 1 handoff](docs/phase1-handoff.md) records exact starting evidence and
-the remaining analysis work. [Current Phase 1 progress](docs/phase1-progress.md)
-records bounded original format, event, movement and animation comparisons,
-including complete observed party motion updates composed from recovered source,
-together with their unresolved scope.
-The native runtime is still a build baseline.
-
-Phase 1 development now starts with the [executable reconstruction workflow](docs/executable-reconstruction.md):
-build the shared C++, run a qualified connected case, compare independent original
-checkpoints, and follow the first encountered dependency. The field-return entry
-restores 25 actors and executes 19 sprite factories with continuous state before
-reaching a precisely reported missing command. Narrow source tests and historical
-Python references remain useful regressions.
-
-The [original-game scenario system](analysis/scenarios/README.md) cold-boots
-selected fields through the original loaders, records guarded setup and ordered
-inputs, and captures reference output locally. Use it for emulator-based research;
-its independently recovered adapters and current limits are documented alongside
-the presets.
-
-Read the [evidence workflow](docs/evidence-workflow.md) and
-[contribution rules](CONTRIBUTING.md) before analysis or implementation. We do not
-use another Xenogears project's source or reverse-engineering results as a
-foundation. General-purpose tools are reviewed in
-[the dependency record](docs/dependencies.json).
-
-User-supplied images stay in ignored `discs/`; extracted assets, execution captures
-and private saves stay under ignored `.local/`. Nothing copyrighted is needed by
-public CI or included in the explicit [source allowlist](packaging/source-files.txt).
-The Nix path input is only `nix/`, so private data is not copied into its store.
+The [native-agent](docs/agent/README.md) and [authoring](docs/authoring/README.md)
+specifications preserve product requirements, not implemented capability. The
+plan places native gameplay before the authoring bridge. Historical Phase 0
+records and finding IDs retain their original scope; retired facet numbers are
+not the current phase checklist.

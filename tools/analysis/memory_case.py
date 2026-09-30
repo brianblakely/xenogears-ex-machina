@@ -50,6 +50,13 @@ STACK_BELOW_ENTRY = 0x800
 # reading; no scratchpad value is Program state.
 
 
+def private_temporary_directory():
+    """Allocate private work lazily, including on a source-only clean checkout."""
+    directory = ROOT / ".local"
+    directory.mkdir(parents=True, exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=directory)
+
+
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise ValueError(message)
@@ -1216,7 +1223,7 @@ def run(args: argparse.Namespace) -> int:
         "Capture trace or snapshot file does not match its recorded digest",
     )
     with (
-        tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
+        private_temporary_directory() as directory,
         BatchRunner(args.runner) as runner,
     ):
         work = Path(directory)
@@ -2086,7 +2093,7 @@ def run_frames(args: argparse.Namespace) -> int:
         else "field_frames"
     )
     with (
-        tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
+        private_temporary_directory() as directory,
         BatchRunner(args.runner) as runner,
     ):
         work = Path(directory)
@@ -2607,7 +2614,7 @@ def run_menu(args: argparse.Namespace) -> int:
     services = call_services(rows, snapshots, entry_row, rows[end], MENU_BRACKETS, clears)
     services += card_lines(span, snapshots)
     with (
-        tempfile.TemporaryDirectory(dir=ROOT / ".local") as directory,
+        private_temporary_directory() as directory,
         BatchRunner(args.runner) as runner,
     ):
         work = Path(directory)
