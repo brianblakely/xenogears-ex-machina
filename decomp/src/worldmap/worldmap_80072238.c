@@ -1173,7 +1173,61 @@ s32 func_800771D8(s32 value, s32 target, s32 delta) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800771D8);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077214);
+/* Set up the scripted flight scene: display, terrain loader, scene objects and
+ * its four actors. */
+void func_80077214(void) {
+    RECT rect;
+
+    func_80072BB0();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80073530();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 4;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    D_8009C5AC.vx = 0x7702000;
+    D_8009C5AC.vy = -0x300000;
+    D_8009C5AC.vz = 0x27C0000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_800736DC();
+    func_80085F58();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_8007756C, (s32)func_800776E0);
+    func_80097718((s32)func_80087710, (s32)func_80087734);
+    func_80097718((s32)func_80071A50, (s32)func_80071A58);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80085FE0();
+    func_80075228();
+    func_80089160(0xE, NULL, NULL);
+}
 
 /* Leave for scene 0x11: shut down the subsystems and free the area. */
 void func_80077480(void) {

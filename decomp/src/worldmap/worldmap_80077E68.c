@@ -212,7 +212,39 @@ s32 func_8007A144(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_8007A1B4);
+/* Grow scene sprites 14 and 15 at scene object 0: sprite 14 widens each frame,
+ * sprite 15 steps once 14 is full; done (3) when 15 reaches 0x6000. */
+s32 func_8007A1B4(s32 index) {
+    SceneObject *objects;
+    WorldmapActor *actor;
+    s32 result;
+
+    objects = D_8009C620;
+    actor = &D_8009BE24[index];
+    objects[14].position = objects[0].position;
+    objects[15].position = objects[14].position;
+    actor->unk6C += 0xC0;
+    result = 1;
+    if (actor->unk6C >= 0x800) {
+        actor->unk70 = (actor->unk70 + 0x100) & 0x7FFF;
+    }
+    if (actor->unk70 >= 0x6000) {
+        result = 3;
+        actor->unk4 = 0;
+        actor->unk70 = 0;
+        actor->unk6C = 0;
+    }
+    SCALE_SCRATCH->matrix[0] = *(MATRIX *)&D_8009A180;
+    SCALE_SCRATCH->matrix[1] = SCALE_SCRATCH->matrix[0];
+    SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->unk6C;
+    SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk70;
+    SCALE_SCRATCH->scale[0].vy = SCALE_SCRATCH->scale[1].vy = 0x1000;
+    ScaleMatrix(&SCALE_SCRATCH->matrix[0], &SCALE_SCRATCH->scale[0]);
+    ScaleMatrix(&SCALE_SCRATCH->matrix[1], &SCALE_SCRATCH->scale[1]);
+    objects[14].matrix = SCALE_SCRATCH->matrix[0];
+    objects[15].matrix = SCALE_SCRATCH->matrix[1];
+    return result;
+}
 
 /* Wait 0x60 frames. */
 s32 func_8007A410(s32 index) {

@@ -840,4 +840,24 @@ s32 func_800783E8();
 s32 func_80078948();
 s32 func_80078950();
 
+void func_80073530(void);
+void func_80085F58(void);
+s32 func_8007756C();
+s32 func_800776E0();
+s32 func_80087710();
+s32 func_80087734();
+s32 func_80071A50();
+s32 func_80071A58();
+
+MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
+
+/* Scratchpad work area of the scene-sprite scaler. */
+typedef struct {
+    VECTOR scale[2];   /* 0x00 */
+    u8 pad20[0xD0];
+    MATRIX matrix[2];  /* 0xF0 */
+} ScaleScratch;
+
+#define SCALE_SCRATCH ((ScaleScratch *)0x1F800000)
+
 #endif
