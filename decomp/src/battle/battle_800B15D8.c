@@ -63,9 +63,35 @@ void func_800B16F0(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1720);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1EA0);
+/* Scale a vertex list's points by 1 << shift, once. */
+void func_800B1EA0(VertexList *list, s32 shift) {
+    SVector *vertex;
+    s32 count;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1F0C);
+    if (!(list->flags & 0x8000)) {
+        list->flags |= 0x8000;
+        vertex = (SVector *)(list->offset + (s32)list);
+        count = list->count;
+        for (i = 0; i != count; i++) {
+            vertex[i].vx <<= shift;
+            vertex[i].vy <<= shift;
+            vertex[i].vz <<= shift;
+        }
+    }
+}
+
+/* Add a copy of the draw mode primitive D_800C3BF8 to the ordering table
+ * entry ot. */
+void func_800B1F0C(u32 *ot) {
+    DrawPrim8 *prim = (DrawPrim8 *)D_80059580;
+
+    if (D_80059580 + sizeof(DrawPrim8) < D_80059534) {
+        D_80059580 += sizeof(DrawPrim8);
+        *prim = D_800C3BF8;
+        AddPrim(ot, prim);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1F6C);
 
@@ -292,9 +318,61 @@ void func_800B3C74(BattleTask *draw) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3CD4);
+/* Fade light slot 0 (800B3B94) to level to over frames * 2 frames with the
+ * given red, blue and parameters, first saving the stage lights (800A5EB4,
+ * on a stack in a heap block). */
+void func_800B3CD4(s32 to, s32 frames, s32 red, s16 blue, u16 field4C, u16 field4E) {
+    LightFade *fade;
+    u8 *stack;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3E04);
+    if (D_800C3560 == NULL) {
+        D_800C3560 = fade = func_8001D1D8(sizeof(LightFade), 0, func_800B3B94, func_800B3C74, func_800B3C2C);
+        stack = func_80031BDC(0x1000, 1);
+        STACK_ENTER(stack + 0xC00);
+        func_800A5EB4();
+        STACK_LEAVE();
+        func_800320E8(stack);
+        fade->from = 0;
+        fade->applied = 0;
+        fade->level = 0;
+    } else {
+        fade = D_800C3560;
+        fade->from = fade->level;
+    }
+    fade->to = to;
+    fade->total = frames * 2;
+    fade->left = frames * 2;
+    fade->blue = blue;
+    fade->field4C = field4C;
+    fade->field4E = field4E;
+    fade->red = red;
+    func_800B3B94(fade);
+}
+
+/* Copy the three 64 x 256 VRAM columns at x 0x280, 0x240 and 0x200 to the
+ * places in D_800C3668 (on a stack in a heap block). */
+void func_800B3E04(void) {
+    u8 *stack = func_80031BDC(0x1000, 0);
+
+    STACK_ENTER(stack + 0xF00);
+    D_800C3C9C.x = 0x280;
+    D_800C3C9C.y = 0x100;
+    D_800C3C9C.w = 0x40;
+    D_800C3C9C.h = 0x100;
+    MoveImage(&D_800C3C9C, D_800C3668[0][0], D_800C3668[0][1]);
+    D_800C3C9C.x = 0x240;
+    D_800C3C9C.y = 0x100;
+    D_800C3C9C.w = 0x40;
+    D_800C3C9C.h = 0x100;
+    MoveImage(&D_800C3C9C, D_800C3668[1][0], D_800C3668[1][1]);
+    D_800C3C9C.x = 0x200;
+    D_800C3C9C.y = 0x100;
+    D_800C3C9C.w = 0x40;
+    D_800C3C9C.h = 0x100;
+    MoveImage(&D_800C3C9C, D_800C3668[2][0], D_800C3668[2][1]);
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B3F04);
 

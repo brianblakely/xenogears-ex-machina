@@ -61,6 +61,25 @@ typedef struct {
     s16 field4E;     /* 0x4E */
 } LightFade;
 
+/* A list of points (the points at offset, count of them; flags bit 15 once
+ * scaled). */
+typedef struct {
+    s32 offset; /* 0x00: from the list */
+    s32 count;  /* 0x04 */
+    u8 pad8[0x18 - 0x8];
+    u32 flags;  /* 0x18 */
+} VertexList;
+
+/* An 8-byte primitive (tag and one command word). */
+typedef struct {
+    u32 tag;
+    u32 code;
+} DrawPrim8;
+
+extern DrawPrim8 D_800C3BF8; /* a draw mode primitive */
+extern RECT D_800C3C9C;
+extern s16 D_800C3668[3][2]; /* VRAM places (x, y) */
+
 extern Quake *D_800C3548;
 extern s16 D_800C354C; /* the quake's view offset */
 extern s16 D_800C354E;
