@@ -4,7 +4,7 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
-#include "party_panel.h"
+#include "hud_draw.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -1074,7 +1074,71 @@ void func_80074554(void) {
 
 INCLUDE_RODATA(".local/decomp/battle/asm/nonmatchings/battle", D_8006FAF0);
 
+/* Add the command panel's primitives for the current command window page
+ * (UI +0xb7): titles, cost digits, the list quads and the page's extras.
+ * Nonmatching only by its jump table: GCC aligns it to 8, the original
+ * sits at 4 mod 8 (a unit boundary after the word at 8006faf0). */
+#ifdef NON_MATCHING
+void func_800745EC(void) {
+    switch (D_800D2D28->unkB7) {
+    case 1:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk669 != 0) {
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk410[0][D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk410[1][D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk410[2][D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk410[3][D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk410[4][D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk410[5][D_800C3EA4->unkA230->unk66C]);
+        }
+        if (D_800C3EA4->unkA230->unk66B != 0) {
+            if (D_800C3EA4->unkA230->unk66E != 0) {
+                AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk3C0[D_800C3EA4->unkA230->unk66C]);
+            }
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk140[D_800C3EA4->unkA230->buffer]);
+            func_800728B8(D_800C3EA4->unkA230->unk190, D_800C3EA4->unkA230->unk66E,
+                          D_800C3EA4->unkA230->buffer);
+            func_80074554();
+            func_800744BC();
+        }
+        break;
+    case 2:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk66B != 0) {
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk140[D_800C3EA4->unkA230->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk190[D_800C3EA4->unkA230->buffer]);
+        }
+        if (D_800C3EA4->unkA230->unk66D != 0) {
+            func_800744BC();
+            func_80074554();
+        }
+        break;
+    case 3:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk66F != 0) {
+            AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk5F0[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, COMMAND_BLOCK->unk638[D_800C3EA4->unkA230->unk66C]);
+        }
+        break;
+    case 4:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk66B != 0) {
+            if (D_800C3EA4->unkA230->unk66E != 0) {
+                AddPrim(D_800CCB04.ot + 1, &COMMAND_BLOCK->unk3C0[D_800C3EA4->unkA230->unk66C]);
+            }
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk140[D_800C3EA4->unkA230->buffer]);
+            func_80074554();
+            func_800744BC();
+        }
+        break;
+    case 5:
+        func_800743A4();
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800745EC);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074AB8);
 

@@ -126,8 +126,8 @@ decomp/src/battle/battle_800B1720.c
 decomp/src/battle/battle_core.h
 decomp/src/battle/combatant.h
 decomp/src/battle/gte.h
+decomp/src/battle/hud_draw.h
 decomp/src/battle/model.h
-decomp/src/battle/party_panel.h
 decomp/src/battle/psyq.h
 decomp/src/battle/scene.h
 decomp/src/debug2611/battle_debug.h

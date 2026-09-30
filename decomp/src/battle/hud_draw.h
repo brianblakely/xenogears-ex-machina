@@ -1,5 +1,5 @@
-#ifndef BATTLE_PARTY_PANEL_H
-#define BATTLE_PARTY_PANEL_H
+#ifndef BATTLE_HUD_DRAW_H
+#define BATTLE_HUD_DRAW_H
 
 #include "battle_core.h"
 
@@ -30,6 +30,18 @@ typedef struct {
 } PanelGraphics;
 
 #define PANEL_GRAPHICS ((PanelGraphics *)D_800C3EA4)
+
+/* Command panel primitives of the graphics block (*800c3ea4 + 0xa230) that
+ * the shared GraphicsBlock layout keeps as padding. */
+typedef struct {
+    u8 pad0[0x3C0];
+    POLY_FT4 unk3C0[2];       /* +0x3C0 */
+    POLY_FT4 unk410[6][2];    /* +0x410 */
+    POLY_G4 unk5F0[2];        /* +0x5F0 */
+    DR_MODE unk638[2][2];     /* +0x638 0x18 bytes per draw buffer */
+} CommandBlock;
+
+#define COMMAND_BLOCK ((CommandBlock *)D_800C3EA4->unkA230)
 
 /* A window's primitives (*800d2e38[window], 0x5a8 bytes). */
 typedef struct {
