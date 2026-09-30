@@ -2942,7 +2942,7 @@ void func_801D0EC8(u8 close) {
         D_800625A0->details->name_shown[i] = 0;
         D_800625A0->details->row_count[i] = 0;
     }
-    D_800625A0->details->unk46B6 = 0;
+    D_800625A0->details->label4530_shown = 0;
     if (close) {
         func_801C9054(2);
         func_801C9054(3);
@@ -3022,7 +3022,38 @@ void func_801D2804(u8 page) {
     func_801CCE90(4, D_800625A0->list_labels, D_801D6A24, D_800625A0->flags->list_label_shown);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2950);
+/* Render the edited gear's part name of list `kind` (0 frame, 1 engine, 2 armour) into its label and show it. */
+void func_801D2950(u8 kind) {
+    RECT rect;
+    u8 *pixels;
+
+    pixels = func_80031BDC(0x3F6, 0);
+    switch (kind) {
+    case 0:
+        D_800625A0->details->label4530.width = func_80034EAC(
+            func_80033728(D_800625A0->details->resources[6], D_8006D634.gears[D_801D9084].unk8), pixels, 0x24, 0);
+        break;
+    case 1:
+        D_800625A0->details->label4530.width = func_80034EAC(
+            func_80033728(D_800625A0->details->resources[7], D_8006D634.gears[D_801D9084].unk2), pixels, 0x24, 0);
+        break;
+    case 2:
+        D_800625A0->details->label4530.width = func_80034EAC(
+            func_80033728(D_800625A0->details->resources[8], D_8006D634.gears[D_801D9084].unk3), pixels, 0x24, 0);
+        break;
+    }
+    rect.x = 0x198;
+    rect.y = 0xB4;
+    rect.w = 0x28;
+    rect.h = 0xD;
+    LoadImage(&rect, pixels);
+    func_801C5CA8(&D_800625A0->details->label4530, 9, 0x80, 0x81);
+    func_801C7604(D_800625A0->details->label4530.quad, 0xD4, 0x8E, D_800625A0->details->label4530.width, 0xD);
+    DrawSync(0);
+    D_800625A0->details->label4530.buffer = D_800625A0->buffer;
+    D_800625A0->details->label4530_shown = 1;
+    func_800320E8(pixels);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2B74);
 

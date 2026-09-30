@@ -185,7 +185,7 @@ typedef struct {
     u8 group1220_buffer;      /* 46b3 */
     u8 group1220_count;       /* 46b4 */
     u8 label44B0_shown;       /* 46b5 */
-    u8 unk46B6;
+    u8 label4530_shown;       /* 46b6 */
     u8 unk46B7[3];
     u8 price_buffer;          /* 46ba */
     u8 price_count;           /* 46bb */
