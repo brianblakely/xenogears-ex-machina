@@ -2955,9 +2955,367 @@ void func_800A6F98(void) {
     func_800320E8(D_800C3AC8);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
+#ifdef NON_MATCHING
+/* Build a surface from `table`: a scaled centre per ring (offset by
+ * ox/oy/oz), each strand's points (segment length and sag), and two textured
+ * triangles per point pair between neighbouring rings, their texture
+ * spanning u_span x v_span from (tx, ty) with the CLUT at (clut_x, clut_y);
+ * then `count` zeroed entries. On an allocation failure the surface is left
+ * empty. The original keeps the loop state in caller-saved registers across
+ * SetPolyGT3 (saved on the stack). */
+void func_800A7064(Surface *surface, u16 *table, s16 angle_base, s32 scale, s16 ox, s16 oy, s16 oz,
+                   s16 count, s16 tx, s16 ty, s16 u_span, s16 v_span, s16 clut_x, s16 clut_y, u8 b0,
+                   u8 b1, u8 b2, u8 b3, u8 b4, u8 b5) {
+    SVector *centres;
+    SVector *centre;
+    SurfacePoint **rings;
+    SurfacePoint *points;
+    SurfacePoint *point;
+    SurfacePoly *polys;
+    POLY_GT3 *prim;
+    u16 *counts;
+    u16 *radii;
+    u8 *angles;
+    u16 tpage, clut;
+    s32 page_x, page_y;
+    s32 u_base, v_base;
+    s32 u_step, u, u_next;
+    s32 v_step;
+    s32 first;
+    s32 i, k, b, n;
 
+    surface->h0 = *table++;
+    surface->polys = *table * 2;
+    func_80032498(4, 0);
+    table++;
+    centres = func_80031BDC(surface->rings * sizeof(SVector), 0);
+    if (centres == NULL) {
+        surface->centres = NULL;
+        return;
+    }
+    surface->centres = centres;
+    for (i = 0; i < surface->rings; i++, centres++) {
+        centres->vx = (*table++ + ox) * scale / 4096;
+        centres->vy = (*table++ + oy) * scale / 4096;
+        centres->vz = (*table++ + oz) * scale / 4096;
+    }
+    n = table[surface->rings];
+    surface->points = n + surface->rings;
+    rings = func_80031BDC(surface->rings * sizeof(SurfacePoint *), 0);
+    if (rings == NULL) {
+        surface->centres = NULL;
+        func_800320E8(NULL);
+        return;
+    }
+    surface->strands = rings;
+    counts = table;
+    radii = table + surface->rings + 1;
+    angles = (u8 *)(radii + n);
+    points = func_80031BDC((n + surface->rings) * sizeof(SurfacePoint), 0);
+    if (points == NULL) {
+        surface->centres = NULL;
+        func_800320E8(NULL);
+        func_800320E8(surface->strands);
+        return;
+    }
+    centre = surface->centres;
+    point = points;
+    for (i = 0; i < surface->rings; i++, counts++, centre++) {
+        *rings++ = point;
+        for (k = 0; k < *counts; k++, point++) {
+            point->length = *radii++ * scale / 4096;
+            point->sag = *angles++ + angle_base;
+            point->pos[0] = centre->vx;
+            point->pos[1] = centre->vy;
+            point->pos[2] = centre->vz;
+        }
+        point->length = 0;
+        point->sag = 0;
+        point->pos[0] = centre->vx;
+        point->pos[1] = centre->vy;
+        point->pos[2] = centre->vz;
+        point++;
+    }
+    counts = table;
+    polys = func_80031BDC(surface->polys * sizeof(SurfacePoly), 0);
+    if (polys == NULL) {
+        surface->centres = NULL;
+        func_800320E8(surface->strands);
+        func_800320E8(points);
+        return;
+    }
+    surface->polyList = polys;
+    page_x = tx / 64;
+    page_y = ty / 256;
+    tpage = GetTPage(0, 1, (s16)(page_x << 6), (s16)(page_y << 8));
+    clut = GetClut(clut_x, clut_y);
+    u_base = (tx - (s16)(page_x << 6)) * 4;
+    v_base = ty - (page_y << 8);
+    first = 0;
+    u_step = u_span / (surface->rings - 1);
+    for (i = 0, u = 0, u_next = u_step; i < surface->rings - 1; i++, u += u_step, u_next += u_step) {
+        n = counts[1];
+        if (counts[0] < n) {
+            n = counts[0];
+        }
+        v_step = (s16)(v_span / n);
+        for (k = 0; k < n; k++, first++) {
+            polys->index[0] = first;
+            polys->index[2] = first + 1;
+            polys->index[1] = first + counts[0] + 1;
+            for (b = 0; b < 2; b++) {
+                prim = &polys->prim[b];
+                SetPolyGT3(prim);
+                prim->tpage = tpage;
+                prim->u0 = u_base + u;
+                prim->v0 = v_base + v_step * k;
+                prim->clut = clut;
+                prim->u1 = u_base + u_next;
+                prim->v1 = v_base + v_step * k;
+                prim->u2 = u_base + u;
+                prim->v2 = v_base + v_step * (k + 1);
+            }
+            polys++;
+            polys->index[0] = first + counts[0] + 1;
+            polys->index[2] = first + 1;
+            polys->index[1] = first + counts[0] + 2;
+            for (b = 0; b < 2; b++) {
+                prim = &polys->prim[b];
+                SetPolyGT3(prim);
+                prim->tpage = tpage;
+                prim->u0 = u_base + u_next;
+                prim->v0 = v_base + v_step * k;
+                prim->clut = clut;
+                prim->u1 = u_base + u_next;
+                prim->v1 = v_base + v_step * (k + 1);
+                prim->u2 = u_base + u;
+                prim->v2 = v_base + v_step * (k + 1);
+            }
+            polys++;
+        }
+        first = (first - k) + 1 + counts[0];
+        counts++;
+    }
+    surface->b[0] = b0;
+    surface->b[1] = b1;
+    surface->b[2] = b2;
+    surface->b[3] = b3;
+    surface->b[4] = b4;
+    surface->b[5] = b5;
+    surface->entryCount = count;
+    if (count > 0) {
+        surface->entries = func_80031BDC(count * sizeof(SurfaceEntry), 0);
+        if (surface->entries == NULL) {
+            surface->entryCount = 0;
+        }
+        for (i = 0; i < surface->entryCount; i++) {
+            surface->entries[i].h0 = 0;
+            surface->entries[i].h2 = 0;
+            surface->entries[i].h4 = 0;
+            surface->entries[i].h6 = 0;
+            surface->entries[i].h8 = 0;
+            surface->entries[i].hA = 0;
+            surface->entries[i].hC = 0;
+            surface->entries[i].hE = 0;
+        }
+    } else {
+        surface->entries = NULL;
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7064);
+#endif
+
+#ifdef NON_MATCHING
+/* Simulate and draw a surface (hair or cloth): each strand's
+ * segments hang from their start pulled by `wind` (plus each point's sag),
+ * keep their length, stay above `floor` and are pushed out of the surface's
+ * collision spheres; then the points' normals are averaged from their
+ * triangles, and the visible triangles are lit (front and back colours) and
+ * queued. As in the original, a triangle the GTE flags as off screen does
+ * not advance the triangle pointer. */
+void func_800A7948(Surface *surface, SVector *wind, Matrix *m, u32 *ot, s32 buffer, s32 scale,
+                   s32 floor) {
+    Vector d;
+    Vector e1, e2, n;
+    SVector normal;
+    u8 rgb[4];
+    s32 flag, opz, otz;
+    SurfacePoint *p, *q;
+    SurfacePoint *points;
+    SurfacePoly *poly;
+    POLY_GT3 *prim;
+    SurfaceEntry *entry;
+    s32 len, radius;
+    s32 i, k;
+
+    if (surface->centres == NULL) {
+        return;
+    }
+    rgb[3] = surface->polyList->prim[0].code;
+    for (i = 0; i < surface->rings; i++) {
+        p = surface->strands[i];
+        if (p->length == 0) {
+            continue;
+        }
+        do {
+            q = p + 1;
+            d.vx = q->pos[0] - p->pos[0] + wind->vx;
+            d.vy = q->pos[1] - p->pos[1] + wind->vy + p->sag;
+            d.vz = q->pos[2] - p->pos[2] + wind->vz;
+            len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+            if (len != 0) {
+                d.vx = (d.vx << 8) / len;
+                d.vy = (d.vy << 8) / len;
+                d.vz = (d.vz << 8) / len;
+            } else {
+                d.vx = 0;
+                d.vy = 0;
+                d.vz = 0;
+            }
+            q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
+            q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
+            q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
+            if ((s16)floor < q->pos[1]) {
+                q->pos[1] = floor;
+            }
+            entry = surface->entries;
+            for (k = 0; k < surface->entryCount; k++, entry++) {
+                d.vx = q->pos[0] - entry->h8;
+                d.vy = q->pos[1] - entry->hA;
+                d.vz = q->pos[2] - entry->hC;
+                len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+                radius = (s16)(entry->h2 * scale / 4096);
+                if (len >= radius) {
+                    continue;
+                }
+                if (len != 0) {
+                    d.vx = entry->h8 + radius * d.vx / len;
+                    d.vy = entry->hA + radius * d.vy / len;
+                    d.vz = entry->hC + radius * d.vz / len;
+                } else {
+                    d.vx = entry->h8;
+                    d.vy = entry->hA;
+                    d.vz = entry->hC;
+                }
+                d.vx -= p->pos[0];
+                d.vy -= p->pos[1];
+                d.vz -= p->pos[2];
+                len = SquareRoot0(d.vx * d.vx + d.vy * d.vy + d.vz * d.vz);
+                if (len != 0) {
+                    d.vx = (d.vx << 8) / len;
+                    d.vy = (d.vy << 8) / len;
+                    d.vz = (d.vz << 8) / len;
+                } else {
+                    d.vx = 0;
+                    d.vy = 0;
+                    d.vz = 0;
+                }
+                q->pos[0] = p->pos[0] + p->length * d.vx * scale / 0x100000;
+                q->pos[1] = p->pos[1] + p->length * d.vy * scale / 0x100000;
+                q->pos[2] = p->pos[2] + p->length * d.vz * scale / 0x100000;
+            }
+            p++;
+        } while (p->length != 0);
+    }
+    points = *surface->strands;
+    for (i = 0; i < surface->points; i++) {
+        points[i].normalCount = 0;
+        points[i].normal[0] = 0;
+        points[i].normal[1] = 0;
+        points[i].normal[2] = 0;
+    }
+    poly = surface->polyList;
+    for (i = 0; i < surface->polys; i++, poly++) {
+        e1.vx = points[poly->index[0]].pos[0] - points[poly->index[1]].pos[0];
+        e1.vy = points[poly->index[0]].pos[1] - points[poly->index[1]].pos[1];
+        e1.vz = points[poly->index[0]].pos[2] - points[poly->index[1]].pos[2];
+        e2.vx = points[poly->index[0]].pos[0] - points[poly->index[2]].pos[0];
+        e2.vy = points[poly->index[0]].pos[1] - points[poly->index[2]].pos[1];
+        e2.vz = points[poly->index[0]].pos[2] - points[poly->index[2]].pos[2];
+        gte_ldopv1(&e1);
+        gte_ldopv2(&e2);
+        gte_op0();
+        gte_stlvnl(&n);
+        n.vx /= 8;
+        n.vy /= 8;
+        n.vz /= 8;
+        func_80048D7C(&n, &e1);
+        for (k = 0; k < 3; k++) {
+            points[poly->index[k]].normal[0] += e1.vx;
+            points[poly->index[k]].normal[1] += e1.vy;
+            points[poly->index[k]].normal[2] += e1.vz;
+            points[poly->index[k]].normalCount++;
+        }
+    }
+    for (i = 0; i < surface->points; i++) {
+        points[i].normal[0] /= (s16)points[i].normalCount;
+        points[i].normal[1] /= (s16)points[i].normalCount;
+        points[i].normal[2] /= (s16)points[i].normalCount;
+    }
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    poly = surface->polyList;
+    points = *surface->strands;
+    for (i = 0; i < surface->polys; i++) {
+        prim = &poly->prim[buffer];
+        gte_ldv3(points[poly->index[0]].pos, points[poly->index[1]].pos, points[poly->index[2]].pos);
+        gte_rtpt();
+        flag = 0;
+        gte_stflg(&flag);
+        if (flag & 0x40000) {
+            continue;
+        }
+        gte_nclip();
+        gte_stopz(&opz);
+        gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
+        gte_avsz3();
+        gte_stotz(&otz);
+        otz >>= D_80050100;
+        for (k = 0; k < 3; k++) {
+            if (opz < 0) {
+                if (k == 0) {
+                    rgb[0] = surface->b[0];
+                    rgb[1] = surface->b[1];
+                    rgb[2] = surface->b[2];
+                }
+                normal.vx = points[poly->index[k]].normal[0];
+                normal.vy = points[poly->index[k]].normal[1];
+                normal.vz = points[poly->index[k]].normal[2];
+            } else {
+                if (k == 0) {
+                    rgb[0] = surface->b[3];
+                    rgb[1] = surface->b[4];
+                    rgb[2] = surface->b[5];
+                }
+                normal.vx = -points[poly->index[k]].normal[0];
+                normal.vy = -points[poly->index[k]].normal[1];
+                normal.vz = -points[poly->index[k]].normal[2];
+            }
+            gte_ldv0(&normal);
+            if (k == 0) {
+                gte_ldrgb(rgb);
+            }
+            gte_nccs();
+            switch (k) {
+            case 0:
+                gte_strgb(&prim->r0);
+                break;
+            case 1:
+                gte_strgb(&prim->r1);
+                break;
+            case 2:
+                gte_strgb(&prim->r2);
+                break;
+            }
+        }
+        addPrim(ot + otz, prim);
+        poly++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A7948);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8A88);
 

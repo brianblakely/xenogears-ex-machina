@@ -127,6 +127,47 @@ void func_800A429C(ImageAnim *anim);
 void func_800A4348(ImageAnim *anim, s16 level);
 void func_800A43F8(ImageAnim *anim, s16 level);
 
+/* A collision sphere of a surface (0x10 bytes). */
+typedef struct {
+    s16 h0, h2, h4, h6, h8, hA, hC, hE;
+} SurfaceEntry;
+
+/* A point of a surface strand (0x18 bytes): the length of its segment to the
+ * next point (0 ends the strand), a sag added to that segment, its position
+ * and the normal accumulated from its triangles. */
+typedef struct {
+    s16 length;
+    s16 sag;
+    s16 pos[3];
+    u16 normalCount; /* 0x0A */
+    s32 normal[3];   /* 0x0C */
+} SurfacePoint;
+
+/* Two triangles' textured primitives (one per frame buffer) and their vertex
+ * indices (0x58 bytes). */
+typedef struct {
+    u16 index[3];
+    u8 pad6[2];
+    POLY_GT3 prim[2];
+} SurfacePoly;
+
+/* A battle object's surface (0x24 bytes; hair or cloth): rings of point
+ * strands. */
+typedef struct {
+    u16 h0;
+    u8 pad2[2];
+    s16 rings;              /* 0x04 */
+    s16 polys;              /* 0x06: twice the rings' first point counts */
+    s16 points;             /* 0x08 */
+    s16 entryCount;         /* 0x0A */
+    u8 b[6];                /* 0x0C */
+    u8 pad12[2];
+    SVector *centres;       /* 0x14: a centre per ring */
+    SurfaceEntry *entries;  /* 0x18 */
+    SurfacePoint **strands; /* 0x1C: each ring's first point */
+    SurfacePoly *polyList;  /* 0x20 */
+} Surface;
+
 extern s32 D_80050100;
 
 s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */ /* ordering-table depth shift */

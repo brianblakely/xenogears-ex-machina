@@ -46,6 +46,22 @@ typedef struct {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    u8 r1, g1, b1, p1;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    u8 r2, g2, b2, p2;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad2;
+} POLY_GT3;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
     u8 r1, g1, b1, pad1;
     s16 x1, y1;
     u8 r2, g2, b2, pad2;
@@ -112,6 +128,7 @@ void SetShadeTex(void *prim, s32 tge);
 void SetSemiTrans(void *prim, s32 abe);
 void SetPolyFT4(POLY_FT4 *prim);
 void SetPolyG4(POLY_G4 *prim);
+void SetPolyGT3(POLY_GT3 *prim);
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 u16 GetClut(s32 x, s32 y);
