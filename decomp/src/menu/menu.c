@@ -420,7 +420,16 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007AC3C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007AE10);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B210);
+/* Set up a scene model with the given mode and place it. */
+void func_8007B210(SceneModel *model, s32 mode) {
+    model->unk15CC = model->unk9CC;
+    model->unk4F = 0x10;
+    model->unk4C = mode;
+    model->unk52 = 0;
+    D_8009292C = 0x100;
+    func_80074BA4(model);
+    func_80074678(model, model->unk998, model->unk99A);
+}
 
 /* Build a four-entry palette from two colours (components biased by 0x80,
  * clamped at zero) and load it, keeping the returned CLUT id. */
@@ -566,7 +575,12 @@ void func_8007D068(void *arg) {
     func_8007E3CC(arg);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D0B4);
+/* Jitter a short position by -24..23 on each axis. */
+void func_8007D0B4(SVector *pos) {
+    pos->vx += func_8003FA38() % 48 - 24;
+    pos->vy += func_8003FA38() % 48 - 24;
+    pos->vz += func_8003FA38() % 48 - 24;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D190);
 

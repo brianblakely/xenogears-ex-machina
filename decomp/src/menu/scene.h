@@ -67,6 +67,26 @@ typedef struct {
     u8 unk7[3];
 } SceneCell10;
 
+/* A model shown by the menu scene (fields known from 8007b210). */
+typedef struct {
+    u8 unk0[0x4C];
+    s8 unk4C;
+    u8 unk4D[2];
+    u8 unk4F;
+    u8 unk50[2];
+    u8 unk52;
+    u8 unk53[0x945];
+    s16 unk998;
+    s16 unk99A;
+    u8 unk99C[0x30];
+    u8 unk9CC[0xC00];
+    u8 *unk15CC;
+} SceneModel;
+
+extern s32 D_8009292C;
+void func_80074BA4(SceneModel *model);
+void func_80074678(SceneModel *model, s32 x, s32 y);
+
 extern Vector D_80096FA8; /* camera position */
 extern SceneLine D_80094818[100];
 /* libgpu TILE_1 layout, colour and code written as one word. */
