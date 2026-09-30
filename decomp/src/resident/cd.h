@@ -47,7 +47,7 @@ extern s32 D_8005A4DC;
 extern s32 D_80059EF8[3];   /* read status words */
 extern s32 D_80059F0C;      /* the file being read */
 extern CdlLOC D_80059F10;   /* CD position of the current read */
-extern u8 D_80059F18[4];    /* CD mode parameter */
+extern u8 D_80059F18[4];    /* CdlSetmode parameter: the mode byte, then 3 zero bytes */
 extern u8 D_80059F1C[];     /* CD command result */
 
 void func_80028230(u8 *files, u16 *directories, u32 mode);

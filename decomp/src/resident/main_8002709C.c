@@ -560,7 +560,129 @@ void func_80028ECC(s32 index) {
     }
 }
 
+/* The next complete movie frame: its first sector header in *frame and its
+ * data in *data (0 when one is available, 1 otherwise). With the PC file
+ * server, first read the next sector: a frame's first sector reserves a free
+ * run of slots for all its sectors, later sectors fill them. */
+/* Nonmatching: close; the original reads the CD mode byte without keeping its address in a
+ * register (as a scalar, where 8002a428's unit uses an array), the payload and slot-offset
+ * registers ($s5/$s4) are swapped, and the frame size is reloaded after the slot stores. */
+#ifdef NON_MATCHING
+s32 func_80028F30(u8 **data, StreamFrame **frame) {
+    StreamRing *ring = D_8004FE30;
+    StreamSlot *slots;
+    StreamSlot *slot;
+    StreamFrame *header;
+    u8 *payload;
+    s32 count;
+    s32 offset;
+    s32 rest;
+    s32 i;
+
+    if (ring == NULL) {
+        return 1;
+    }
+    payload = (u8 *)ring;
+    slots = ring->slots;
+    count = ring->count;
+    payload = payload + count * 8 + 0x24;
+    if (D_8004FE48 != NULL && D_8004FE4C != -1 && D_8004FDF8 > 0) {
+        if (D_80059F60 == 0) {
+            for (i = 0; i < D_8004FE40; i += slot->length) {
+                slot = &D_8004FE2C[i];
+                if (slot->state == 0) {
+                    break;
+                }
+            }
+            if (i >= D_8004FE40) {
+                goto search;
+            }
+            offset = i << 11;
+            if (D_80059F18[0] & 8) {
+                func_8004C398(D_8004FE4C, D_800596F8, 8);
+                if (D_800596F8[0] == 1) {
+                    goto skip;
+                }
+            }
+            D_80059F54 = (u8 *)D_8004FE08 + offset;
+            header = (StreamFrame *)D_80059F54;
+            func_8004C398(D_8004FE4C, (u8 *)header, 0x20);
+            D_80059F5C = header->sectors;
+            D_8005A4B8 = header->word8;
+            if (slot->length < D_80059F5C) {
+                if (D_80059F18[0] & 8) {
+                    PClseek(D_8004FE4C, -0x28, 1);
+                } else {
+                    PClseek(D_8004FE4C, -0x20, 1);
+                }
+                *frame = NULL;
+                goto search_all;
+            }
+            slot->state = 3;
+            slot->sequence = D_8004FE26;
+            rest = slot->length - D_80059F5C;
+            if (rest >= 3) {
+                slot->length = D_80059F5C + 1;
+                slot[D_80059F5C + 1].length = rest - 1;
+                slot[D_80059F5C + 1].state = 0;
+                func_80028ECC(D_80059F5C + 1);
+            }
+            D_8004FE26++;
+            D_80059F58 = (u8 *)D_8004FE08 + offset + D_80059F5C * 32;
+            func_8004C398(D_8004FE4C, D_80059F58, 0x7E0);
+            if (D_80059F18[0] & 8) {
+                PClseek(D_8004FE4C, 0x118, 1);
+            }
+            D_8004FE10 = i;
+            D_8004FDF8 -= 0x800;
+            D_80059F60++;
+        } else {
+            if (D_80059F18[0] & 8) {
+                func_8004C398(D_8004FE4C, D_800596F8, 8);
+                if (D_800596F8[0] == 1) {
+                skip:
+                    PClseek(D_8004FE4C, 0x918, 1);
+                    *frame = NULL;
+                    goto search_all;
+                }
+            }
+            slot = &D_8004FE2C[++D_8004FE10];
+            slot->state = 3;
+            slot->sequence = D_8004FE26++;
+            func_8004C398(D_8004FE4C, D_80059F54 + D_80059F60 * 32, 0x20);
+            func_8004C398(D_8004FE4C, D_80059F58 + D_80059F60 * 0x7E0, 0x7E0);
+            if (D_80059F18[0] & 8) {
+                PClseek(D_8004FE4C, 0x118, 1);
+            }
+            D_8004FDF8 -= 0x800;
+            if (++D_80059F60 >= D_80059F5C) {
+                D_80059F60 = 0;
+            }
+        }
+    }
+search:
+    *frame = NULL;
+search_all:
+    for (i = 0; i < count; i++, slots++) {
+        if (slots->state == 3 && slots->sequence == D_8004FE24) {
+            break;
+        }
+    }
+    if (i == D_8004FE40) {
+        return 1;
+    }
+    header = (StreamFrame *)(payload + (i << 11));
+    *frame = header;
+    *data = (u8 *)header + header->sectors * 32;
+    if (func_80028E60(i, header->sectors, 3) != 0) {
+        return 1;
+    }
+    D_8004FE24 += header->sectors;
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002709C", func_80028F30);
+#endif
 
 /* Release a ring chunk: clear its slot's state and return the old state (0xffff without a ring, 0 for no chunk). */
 /* Nonmatching: the original keeps the ring in $a1 (so the 0xffff return fills the branch delay slot); GCC puts it in $v0. */
