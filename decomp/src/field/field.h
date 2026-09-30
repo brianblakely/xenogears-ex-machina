@@ -349,9 +349,12 @@ typedef struct GameState {
     u16 unk1852;         /* 1852 */
     u16 unk1854;         /* 1854 */
     u16 unk1856;         /* 1856 */
-    u8 unk1858[0x1D32 - 0x1858];
+    u8 unk1858[0x1D30 - 0x1858];
+    u16 unk1D30;         /* 1D30: characters waiting to join */
     u16 unk1D32;         /* 1D32: bit per character */
-    u8 unk1D34[0x22B6 - 0x1D34];
+    u8 unk1D34[0x22B1 - 0x1D34];
+    u8 unk22B1[3];       /* 22B1: per party slot */
+    u8 unk22B4[2];
     u16 unk22B6;         /* 22B6 */
     u8 unk22B8[0x2318 - 0x22B8];
     u16 unk2318;         /* 2318: bit per character */
@@ -464,7 +467,13 @@ typedef struct {
     s16 unk24;       /* 24 */
     u8 unk26[4];
     u16 flags;       /* 2A */
-    u8 unk2C[0x76 - 0x2C];
+    u8 unk2C[0x54 - 0x2C];
+    s16 unk54;       /* 54 */
+    s16 unk56;       /* 56 */
+    s16 unk58;       /* 58 */
+    u8 unk5A[0x72 - 0x5A];
+    s16 unk72;       /* 72 */
+    s16 unk74;       /* 74 */
     s16 unk76;       /* 76 */
 } Record78;
 
@@ -591,6 +600,8 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8008A790(s32 id, s32 *slot);
+extern void func_8008A7DC(s32 member, s32 slot);
 extern void func_80085560(s32 file, s32 unused, void (*callback)(s32));
 extern void func_800859DC(WaveChunk *chunk);
 extern void func_80086024(void);

@@ -2449,7 +2449,22 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089174);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089374);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089574);
+/* Event: set the current record's +56, +58 and +54 from operands 1..5, its
+ * flags from op7, op9 and the effect kind, and +72/+74 from the effect
+ * parameters, using four batch steps. */
+void func_80089574(void) {
+    s16 flags;
+
+    D_800B02CC[D_800B2078.unk2384].unk56 = func_800ACDEC(1);
+    D_800B02CC[D_800B2078.unk2384].unk58 = func_800ACDEC(3);
+    D_800B02CC[D_800B2078.unk2384].unk54 = func_800ACDEC(5);
+    flags = func_800ACDEC(7);
+    D_800B02CC[D_800B2078.unk2384].flags = flags | (func_800ACDEC(9) * 2) | D_800B2078.unk2378;
+    D_800B02CC[D_800B2078.unk2384].unk72 = D_800B2078.unk237C;
+    D_800B02CC[D_800B2078.unk2384].unk74 = D_800B2078.unk2380;
+    D_800AFC7C += 4;
+    D_800B0078->pc += 11;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800896D4);
 
@@ -2764,7 +2779,44 @@ void func_8008AA60(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008AACC);
 
+#ifdef NON_MATCHING
+/* Event: load file op1 + 0x77a as the actor's block (+120), once the
+ * stream and disc are idle; yields. */
+void func_8008ACE8(void) {
+    s32 number;
+    s16 file;
+    s32 size;
+
+    if (D_800ADB90 == 0 && D_800ADB2C == 0) {
+        if (func_8008A558() != 0) {
+            D_800B00C0 = 1;
+            D_800B0078->pc--;
+            return;
+        }
+        if (D_800B0078->unk124 != -1) {
+            func_800320E8(D_800B0078->unk120);
+            D_800B0078->unk124 = -1;
+        }
+        number = func_800ACDEC(1);
+        func_80028470(4, 0);
+        file = number + 0x77A;
+        size = func_800288EC(file) + 8;
+        D_800B0078->unk124 = file;
+        D_800B0078->unk120 = func_80031BDC(size, 0);
+        func_800295D8(file, D_800B0078->unk120, 0, 0x80);
+        if (D_800ADB1C == 0) {
+            func_80028A60(0);
+        }
+        D_800ADB90 = 1;
+        D_800B0078->pc += 3;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008ACE8);
+#endif
 
 /* Event: set (selector 0) or clear the actor's layer bit 17. */
 void func_8008AE5C(void) {
@@ -2916,9 +2968,60 @@ void func_8008B894(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008B978);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BC80);
+/* Event: once idle, add character op1 to the party (a free slot starts its
+ * sprite load) or mark it waiting (+1d30); yields while busy. */
+void func_8008BC80(void) {
+    s32 pending = D_800ADBC4;
+    s32 member;
+    s32 slot;
 
+    if (pending == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
+        func_80028A60(0);
+        member = func_800ACDEC(1);
+        if (member != pending) {
+            if (func_8008A790(member, &slot) == 0) {
+                D_8005A39C->unk22B1[slot] = 0;
+                D_80062590[slot] = member;
+                func_8008A7DC(member, slot);
+                D_800B0078->pc += 3;
+                return;
+            }
+            D_8005A39C->unk1D30 |= 1 << member;
+            D_800B0078->pc += 5;
+            return;
+        }
+        D_800B0078->pc += 5;
+        return;
+    }
+    D_800B00C0 = 1;
+    D_800B0078->pc--;
+}
+
+#ifdef NON_MATCHING
+/* Event: once idle, add the character in its byte operand to the party (a
+ * free slot starts its sprite load) or mark it waiting; yields while busy. */
+void func_8008BDD8(void) {
+    s32 slot;
+
+    if (D_800ADBC4 == 0xFF && D_800ADB2C == 0 && func_8008A558() == 0) {
+        func_80028A60(0);
+        if (func_8008A790(D_800ADC00[D_800B0078->pc + 1], &slot) == 0) {
+            D_8005A39C->unk22B1[slot] = 0;
+            D_80062590[slot] = D_800ADC00[D_800B0078->pc + 1];
+            func_8008A7DC(D_800ADC00[D_800B0078->pc + 1], slot);
+            D_800B0078->pc += 2;
+            return;
+        }
+        D_8005A39C->unk1D30 |= 1 << D_800ADC00[D_800B0078->pc + 1];
+        D_800B0078->pc += 4;
+        return;
+    }
+    D_800B00C0 = 1;
+    D_800B0078->pc--;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BDD8);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008BF38);
 
