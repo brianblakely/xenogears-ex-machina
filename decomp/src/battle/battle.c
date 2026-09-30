@@ -4951,7 +4951,29 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800930AC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093578);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009382C);
+/* Build the name of the member's gear page `kind` (two text lines from the
+ * file 3 block) into VRAM and point the page's two title quads at them. */
+void func_8009382C(u8 member, u8 kind) {
+    RECT rect;
+    u32 *pixels;
+    s32 text;
+    s32 width0;
+    s32 width1;
+
+    text = (D_800CCCE8.records[member].pilot.gearId * 4 + kind) * 2;
+    pixels = (u32 *)func_8008AC00(0x39);
+    bzero(pixels, 0x618);
+    width0 = func_80034EAC(func_80033728(D_800C3DE8, text & 0xFFFF), pixels, 0x39, 0);
+    width1 = func_80034EAC(func_80033728(D_800C3DE8, (text & 0xFFFF) | 1), pixels, 0x39, 1);
+    rect.x = 0x3C0;
+    rect.y = 0;
+    rect.w = 0x3C;
+    rect.h = 13;
+    func_800769E8(&rect, pixels);
+    func_80076C78(&D_800C3EA4->unkA230->unk280[D_800CCB04.buffer], 0x88, 0xB6, 0, 0, width0);
+    func_80076C78(&D_800C3EA4->unkA230->unk2D0[D_800CCB04.buffer], 0x88, 0xC6, 0, 0, width1);
+    func_800320E8(pixels);
+}
 
 /* Open the member's `kind` page (0-2 the special pages, 3 the item page)
  * when its character has it and no status seals it; the page's graphics
