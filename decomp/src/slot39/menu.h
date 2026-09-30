@@ -2,6 +2,7 @@
 #define SLOT39_MENU_H
 
 #include "common.h"
+#include "psyq/libapi.h"
 
 /*
  * Menu overlay (Disc 1 slot 39, loaded at 801c5000): the menu mode's state.
@@ -719,6 +720,9 @@ extern u8 D_801EA542[];  /* title file screen load command labels */
 extern u8 D_801EA558[];
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
+extern u8 D_801EA574[];  /* sound mode labels */
+extern u8 D_801EA578[];
+extern u8 D_801E9F88[];
 extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
@@ -814,6 +818,10 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+s32 OpenEvent(u32 cause, s32 type, s32 mode, void *handler);
+void InitCARD(s32 shared);
+void StartCARD(void);
+void _bu_init(void);
 
 /* Overlay functions. */
 u8 func_801C531C(u8 offset);
@@ -942,6 +950,10 @@ void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
 u8 func_801D9808(void);
+s32 func_80038824(void);
+void func_800386C4(s32 mode);
+void func_801E86C8(u8 row);
+void func_801E8B4C(u8 row);
 void func_801D9E3C(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);

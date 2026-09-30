@@ -2519,11 +2519,143 @@ void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D8EA4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9704);
+/* Step party slot `slot` forward (`dir` 0) or back (1) to the next occupied
+ * slot, or with `readyOnly` to the next ready one; wraps around the three. */
+s32 func_801D9704(s32 slot, u8 dir, u8 readyOnly) {
+    switch (dir) {
+    case 0:
+        for (;;) {
+            slot++;
+            if (slot >= 3) {
+                slot = 0;
+            }
+            if (!readyOnly) {
+                if (D_800625A0->party->ids[slot] != 0xff) {
+                    break;
+                }
+            } else if (D_800625A0->party->ready[slot] != 0) {
+                break;
+            }
+        }
+        break;
+    case 1:
+        for (;;) {
+            slot--;
+            if (slot < 0) {
+                slot = 2;
+            }
+            if (!readyOnly) {
+                if (D_800625A0->party->ids[slot] != 0xff) {
+                    break;
+                }
+            } else if (D_800625A0->party->ready[slot] != 0) {
+                break;
+            }
+        }
+        break;
+    }
+    return slot;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9808);
+/* The sound mode screen: choose one of the sound driver's output
+ * modes (choice 0 is mode 0, 1 mode 2, 2 mode 1); confirm applies it, cancel
+ * leaves. Always continues the menu. */
+u8 func_801D9808(void) {
+    s32 mode;
+    u8 first;
+    u8 stay;
+    u8 apply;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9B08);
+    stay = 1;
+    first = 1;
+    apply = 0;
+    do {
+        func_801C7BF4();
+        if (first) {
+            func_801E8018(4, D_800625A0->soundLabels, D_801EA574, D_800625A0->party->unk5C);
+            func_801E86C8(0);
+            D_800625A0->choiceShown = 0xff;
+            switch (func_80038824()) {
+            case 0:
+                mode = 0;
+                break;
+            case 1:
+                mode = 2;
+                break;
+            case 2:
+                mode = 1;
+                break;
+            }
+            first = 0;
+            D_800625A0->choice = mode;
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801E8070(6, D_800625A0->soundLabels, D_801EA578, D_801E9F88, D_800625A0->party->unk5C,
+                          D_800625A0->choice, 7, 0);
+            func_801E8B4C(0);
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            apply = 1;
+        case 5:
+            stay = 0;
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        }
+    } while (stay);
+    if (apply) {
+        switch (D_800625A0->choice) {
+        case 0:
+            mode = 0;
+            break;
+        case 1:
+            mode = 2;
+            break;
+        case 2:
+            mode = 1;
+            break;
+        }
+        func_800386C4(mode);
+    }
+    func_801E8044(4, D_800625A0->party->unk5C);
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    return 1;
+}
+
+/* Restart memory-card access: close the card events, reinitialise the card
+ * library and open and enable its four events (ioe, error, timeout, new card). */
+void func_801D9B08(void) {
+    func_801C8960();
+    VSync(0);
+    InitCARD(1);
+    StartCARD();
+    _bu_init();
+    DrawSync(0);
+    VSync(0);
+    EnterCriticalSection();
+    D_800625A0->card->events[0] = OpenEvent(0xf4000001, 4, 0x2000, 0);
+    D_800625A0->card->events[1] = OpenEvent(0xf4000001, 0x8000, 0x2000, 0);
+    D_800625A0->card->events[2] = OpenEvent(0xf4000001, 0x100, 0x2000, 0);
+    D_800625A0->card->events[3] = OpenEvent(0xf4000001, 0x2000, 0x2000, 0);
+    EnableEvent(D_800625A0->card->events[0]);
+    EnableEvent(D_800625A0->card->events[1]);
+    EnableEvent(D_800625A0->card->events[2]);
+    EnableEvent(D_800625A0->card->events[3]);
+    ExitCriticalSection();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9C84);
 
