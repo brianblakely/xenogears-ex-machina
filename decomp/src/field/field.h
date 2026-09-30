@@ -248,6 +248,8 @@ typedef struct {
     s16 min[3];      /* 20 */
     s16 unk26;
     s16 max[3];      /* 28 */
+    u8 unk2E[0x34 - 0x2E];
+    s32 size;        /* 34: packet bytes per draw buffer */
 } FieldMesh;
 
 /* A model instance; +12 is its drawing mode. */
@@ -308,8 +310,8 @@ typedef struct {
 typedef struct {
     s32 descriptor_count;                      /* 800afb0c */
     FieldDescriptor *descriptors;              /* 800afb10 */
-    void *geometry;                            /* 800afb14 */
-    void *collision;                           /* 800afb18 */
+    s32 *geometry;                             /* 800afb14: count, then offsets */
+    s32 *collision;                            /* 800afb18 */
     s32 *sprites;                              /* 800afb1c: sprite resource (offset table) */
     Attribute *collision_attributes;           /* 800afb20 */
     CollisionTriangle *collision_triangles[4]; /* 800afb24 */
@@ -791,6 +793,63 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+/* The field load (80070cc8). */
+/* One sprite slot's VRAM area; slots with `shared` set keep their image. */
+typedef struct {
+    u16 x;
+    u16 y;
+    u16 unk4;
+    s16 shared;
+} SpriteSlot;
+
+typedef struct {
+    SpriteSlot slot[32];
+} SpriteSlotTable;
+
+/* Components of the map bundle: sizes at +10c and offsets at +130. */
+enum {
+    BUNDLE_PALETTES,
+    BUNDLE_COLLISION,
+    BUNDLE_MODELS,
+    BUNDLE_SPRITES,
+    BUNDLE_IMAGES,
+    BUNDLE_EVENTS,
+    BUNDLE_MESSAGES,
+    BUNDLE_8,
+    BUNDLE_ZONES
+};
+
+/* The map bundle read ahead of the field load (*8005a4e0). */
+typedef struct {
+    SpriteSlotTable slots; /* 000 */
+    u8 unk100[0x10C - 0x100];
+    s32 sizes[9];          /* 10C */
+    s32 offsets[9];        /* 130 */
+    s16 view[0x1C];        /* 154: lights and background (8006fdec) */
+    u16 descriptor_count;  /* 18C */
+    u16 unk18E;
+    u16 descriptors[1];    /* 190: flags, rotation[3], position[3], model */
+} FieldBundle;
+
+extern FieldBundle *D_8005A4E0;
+#define BUNDLE_COMPONENT(k) ((void *)(D_8005A4E0->offsets[k] + (s32)D_8005A4E0))
+extern SpriteSlotTable D_800B1F78;
+extern u8 D_800658DC[];      /* messages */
+extern s32 D_800AFD10;       /* attributes before the first triangle */
+extern s32 D_8004F330;
+extern s32 D_8004F334;
+extern void *D_800B007C;
+extern void func_80022A70(void *tim, s32 x, s32 y);
+extern void func_8002C3E8(void *model);
+extern void func_8002CB54(FieldMesh *mesh, void **packets, void **packets2);
+extern void func_8002C8CC(FieldMesh *mesh, void *packets, s32 mode);
+extern struct FieldAnimTable *func_800303C8(FieldMesh *mesh, s32);
+extern void func_8002C644(FieldMesh *mesh);
+extern void func_802812A4(void);
+extern void func_80024F64(s32, s32);
+extern void func_8001C944(void);
+extern void func_800A28D4(void);
+extern void *func_8002709C(s32 a, s32 b, s32 c, s32 d, s32 e, s32 f, s32 g, s32 h, s32 *i, u8 *j, s32 k, s32 l, s32 m);
 /* The sprite pass (80075b44). */
 extern CVECTOR D_80059598; /* fog color */
 extern s32 func_8009A514(void); /* camera octant */
@@ -798,7 +857,6 @@ extern void func_8001E298(FieldModel *sprite, u32 *ot);
 extern void func_8001E2F8(FieldModel *sprite, u32 *ot, s32 height);
 extern void func_8001E368(FieldModel *sprite, u32 *ot, s32 height);
 /* The field sprite factory (80076ac0). */
-extern u16 D_800B1F78[][4];  /* per sprite slot: VRAM x, y */
 extern s32 D_800AFC74;       /* sprites created */
 extern FieldModel *func_80024524(void *data, s16 a, s16 b, s16 x, s16 y, s32 c);
 extern FieldModel *func_80024294(void *data, s16 a, s16 b, s16 x, s16 y, s32 c, s32 bank);
