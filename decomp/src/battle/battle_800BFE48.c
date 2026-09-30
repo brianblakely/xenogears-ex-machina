@@ -19,6 +19,7 @@
 #include "frame.h"
 #include "stage.h"
 #include "settle.h"
+#include "curve.h"
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800BFE48);
 
@@ -182,7 +183,94 @@ void func_800C0828(SVECTOR *from, SVECTOR *to, SVECTOR *angles) {
     angles->vx = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BFE48", func_800C08CC);
+/* One span of a curve: the eight points of cell row row over the four
+ * control points from p, each drawn as a segment from the previous point
+ * (a and b alternate as the current point). */
+#define CURVE_SPAN(row, p)                                   \
+    for (column = 1; column != 8; column++) {                \
+        if (column & 1) {                                    \
+            func_800C0D18(row, column, p, &b);               \
+            draw(&a, &b);                                    \
+        } else {                                             \
+            func_800C0D18(row, column, p, &a);               \
+            draw(&b, &a);                                    \
+        }                                                    \
+    }
+
+/* Draw a smooth curve through count points (at least 2; 3 and 4 are padded
+ * to 5 by repeating the last point) as segments draw(from, to): a line for
+ * 2, otherwise spans of eight segments ending at the last point. */
+void func_800C08CC(s32 count, SVECTOR *points, void (*draw)()) {
+    VECTOR a;
+    VECTOR b;
+    SVECTOR unused; /* 8 bytes of the frame that no code touches */
+    s32 column;
+    s32 first;
+
+    D_800D2FCC = 0;
+    if (count < 5) {
+        if (count < 3) {
+            if (count < 2) {
+                return;
+            }
+            a.vx = points[0].vx;
+            a.vy = points[0].vy;
+            a.vz = points[0].vz;
+            b.vx = points[1].vx;
+            b.vy = points[1].vy;
+            b.vz = points[1].vz;
+            draw(&a, &b);
+            return;
+        }
+        switch (count) {
+        case 3:
+            points[3].vx = points[2].vx;
+            points[3].vy = points[2].vy;
+            points[3].vz = points[2].vz;
+            points[4].vx = points[2].vx;
+            points[4].vy = points[2].vy;
+            points[4].vz = points[2].vz;
+            break;
+        case 4:
+            points[4].vx = points[3].vx;
+            points[4].vy = points[3].vy;
+            points[4].vz = points[3].vz;
+            break;
+        }
+        count = 5;
+    }
+
+    first = 0;
+    func_800C0D18(0, 0, &points[first], &a);
+    CURVE_SPAN(0, &points[first]);
+    if (count >= 6) {
+        first = 1;
+        func_800C0D18(1, 0, &points[first], &a);
+        draw(&b, &a);
+        CURVE_SPAN(1, &points[first]);
+    }
+    for (first = 2; first < count - 5; first++) {
+        func_800C0D18(2, 0, &points[first], &a);
+        draw(&b, &a);
+        CURVE_SPAN(2, &points[first]);
+    }
+    if (count >= 7) {
+        first = count - 5;
+        func_800C0D18(3, 0, &points[first], &a);
+        draw(&b, &a);
+        CURVE_SPAN(3, &points[first]);
+    }
+    first = count - 4;
+    func_800C0D18(4, 0, &points[first], &a);
+    draw(&b, &a);
+    CURVE_SPAN(4, &points[first]);
+    if (count >= 5) {
+        a.vx = points[count - 1].vx;
+        a.vy = points[count - 1].vy;
+        a.vz = points[count - 1].vz;
+        draw(&b, &a);
+    }
+}
 
 /* The average of the four points weighted by the weights of cell
  * (row, column). */
