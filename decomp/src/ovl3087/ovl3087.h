@@ -17,12 +17,18 @@ typedef struct {
     u8 entry[8];    /* 0x18 entry index running at each level (0xff none) */
     u8 level;       /* 0x20 running level */
     u8 runningEntry; /* 0x21 entry index of the running level */
-    u8 unk22;
+    u8 order; /* 0x22 run-order request (0xfe: run first, opcode 2c) */
     u8 request; /* 0x23 entry this thread requested of another (0xff none) */
     u8 speaker; /* 0x24 actor whose messages this thread shows */
-    u8 pad25[0x34 - 0x25];
-    u8 memberState; /* 0x34 move state of party member n (opcode 23) */
-    u8 pad35[3];
+    u8 pad25;
+    s16 waitTimer; /* 0x26 frames left of a wait (opcode 2b) */
+    u8 waiting;    /* 0x28 */
+    u8 pad29[3];
+    void *modelFile; /* 0x2c model data loaded for this slot (opcode 35) */
+    s32 model;       /* 0x30 model instance */
+    u8 memberState;  /* 0x34 move state of party member n (opcode 23) */
+    u8 modelLoaded;  /* 0x35 */
+    u8 pad36[2];
 } ScriptThread;
 
 /* libgpu textured flat quad (POLY_FT4). */
@@ -136,8 +142,17 @@ typedef struct {
 } ActorFlags;
 extern ActorFlags D_800CCD1E[];
 
+/* Script file 3: the model archive, entry offsets from +4. */
+typedef struct {
+    s32 count;
+    void *entries[1];
+} ModelArchive;
+extern ModelArchive *D_801E9C38;
+
 /* Resident / battle services. */
 void func_8001AC94(void);
+void func_800320E8(void *block);
+void *func_80032E88(void *data, s32 mode);
 s32 func_80076A10(s32 id, PolyFT4 *quads, s16 x, s16 y);
 u16 func_80089C08(u8 id);
 void func_8009C0E0(s32 arg);
@@ -157,5 +172,10 @@ void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
 u8 func_801E58EC(s16 a, s16 b, u8 op);
 s32 func_801E5DCC(s32 thread, u8 *insn);
 u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
+void func_801E7A5C(s32 thread, u8 *insn);
+void func_801E9958(s32 model, u16 animation);
+s32 func_801E9978(void *file, s32 *info);
+void func_801E9AD4(s32 model);
+void func_801E9B2C(void);
 
 #endif

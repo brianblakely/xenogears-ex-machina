@@ -598,19 +598,100 @@ s32 func_801E78A8(s32 thread, u8 *insn) {
     return 9;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7914);
+/* Opcode 35: load model n of the model archive into actor slot a (thread
+ * a + 13) unless one is loaded. */
+s32 func_801E7914(s32 thread, u8 *insn) {
+    s32 info[2];
+    s32 slot;
+    void *file;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E79E0);
+    func_801E57F8(insn, 2, 0, 1);
+    slot = (u8)(D_800D3278->operands[0] + 13);
+    if (D_800D3278->threads[slot].modelLoaded == 0) {
+        file = func_80032E88(D_801E9C38->entries[D_800D3278->operands[1]], 0);
+        D_800D3278->threads[slot].modelFile = file;
+        D_800D3278->threads[slot].model = func_801E9978(file, info);
+        D_800D3278->threads[slot].modelLoaded = 1;
+    }
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7A5C);
+/* Opcode 2a: play an animation on the slot's loaded model. */
+s32 func_801E79E0(s32 thread, u8 *insn) {
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7B08);
+    func_801E57F8(insn, 2, 0, 1);
+    slot = (u8)(D_800D3278->operands[0] + 13);
+    if (D_800D3278->threads[slot].modelLoaded != 0) {
+        func_801E9958(D_800D3278->threads[slot].model, D_800D3278->operands[1]);
+    }
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7B2C);
+/* Release the slot's loaded model and its data. */
+void func_801E7A5C(s32 thread, u8 *insn) {
+    s32 slot;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7B58);
+    func_801E57F8(insn, 1, 0, 1);
+    slot = (u8)(D_800D3278->operands[0] + 13);
+    if (D_800D3278->threads[slot].modelLoaded != 0) {
+        func_801E9AD4(D_800D3278->threads[slot].model);
+        func_800320E8(D_800D3278->threads[slot].modelFile);
+        D_800D3278->threads[slot].modelLoaded = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7C0C);
+/* Opcode 36: release a model. */
+s32 func_801E7B08(s32 thread, u8 *insn) {
+    func_801E7A5C(thread, insn);
+    return 3;
+}
+
+/* Opcode 40: release a model and 801e9b2c's state. */
+s32 func_801E7B2C(s32 thread, u8 *insn) {
+    func_801E7A5C(thread, insn);
+    func_801E9B2C();
+    return 3;
+}
+
+/* Opcode 2b: wait n half-frames. */
+s32 func_801E7B58(s32 thread, u8 *insn) {
+    s32 length = 0;
+
+    if (D_800D3278->threads[thread].waiting == 0) {
+        func_801E57F8(insn, 1, 0, 1);
+        D_800D3278->threads[thread].waitTimer = D_800D3278->operands[0] * 2;
+        D_800D3278->threads[thread].waiting = 1;
+    }
+    if (D_800D3278->threads[thread].waitTimer == 0) {
+        D_800D3278->threads[thread].waiting = 0;
+        length = 3;
+    }
+    return length;
+}
+
+/* Opcode 2c: set the thread's run-order request; fe moves it to the front
+ * of the run order at once. */
+s32 func_801E7C0C(s32 thread, u8 *insn) {
+    u8 order[16];
+    s32 i;
+    s32 next;
+
+    D_800D3278->threads[thread].order = insn[1];
+    if (insn[1] == 0xFE) {
+        for (i = 0; i < 16; i++) {
+            order[i] = D_800D3278->order[i];
+        }
+        next = 1;
+        D_800D3278->order[0] = thread;
+        for (i = 0; i < 16; i++) {
+            if (order[i] != thread) {
+                D_800D3278->order[next++] = order[i];
+            }
+        }
+    }
+    return 3;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7CD0);
 
