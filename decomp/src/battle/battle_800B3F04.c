@@ -654,7 +654,7 @@ void func_800B65B0(BattleSprite *sprite, u8 *args) {
     s16 distance;
     s16 speedLength;
     s32 step;
-    s32 turn;
+    s16 turn;
     s32 difference;
 
     delta.vx = sprite->target[0] - sprite->x.part.whole;
@@ -1015,4 +1015,96 @@ void func_800B73EC(void) {
     func_800B7424(shatter);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B3F04", func_800B7424);
+/* Cut the screen copied to VRAM (0x2C0, 0x100) into shards: per 16 x 16
+ * cell an upper-left and a lower-right triangle, each starting further out
+ * the later it moves, launched outwards at a random speed with a random spin
+ * and fall. */
+ScreenShatter *func_800B7424(ScreenShatter *shatter) {
+    ScreenShard *shard;
+    POLY_FT3 *poly;
+    VECTOR square;
+    SVECTOR angles;
+    MATRIX m;
+    s32 radius;
+    s32 row;
+    s32 layer;
+    s32 column;
+    s32 i;
+    s32 distance;
+    s32 turn;
+    s32 tilt;
+    s32 r;
+    s32 base;
+    s32 yaw;
+
+    shatter->frame = 0;
+    radius = SquareRoot0(160 * 160 + 112 * 112) << 10;
+    for (layer = 0; layer != 2; layer++) {
+        for (row = 0; row != 14; row++) {
+            for (column = 0; column != 20; column++) {
+                shard = &shatter->shards[layer][row][column];
+                shard->angles.vx = 0;
+                shard->angles.vy = 0;
+                shard->angles.vz = 0;
+                if (layer == 0) {
+                    shard->position.vx = (column * 16 - 155) * 32;
+                    shard->position.vy = (row * 16 - 107) * 32;
+                    shard->position.vz = 0x4000;
+                } else {
+                    shard->position.vx = (column * 16 - 149) * 32;
+                    shard->position.vy = (row * 16 - 101) * 32;
+                    shard->position.vz = 0x4000;
+                }
+                D_800C35C4.vz = -500 << 16;
+                D_800C35C4.vz = D_800C35C4.vz + (-(rand() % 1000) << 16);
+                func_8004A414(&shard->position, &square);
+                distance = SquareRoot0(square.vx + square.vy);
+                shard->delay = (radius / 32 - distance) / 2048; /* overwritten */
+                shard->delay = distance / 1024;
+                /* Turn outwards, a little at random; tilt by the distance. */
+                turn = ratan2(shard->position.vy, shard->position.vx);
+                r = rand();
+                yaw = (turn += 0x600) + r % 1024;
+                tilt = (distance << 11) / radius;
+                r = rand();
+                base = tilt - 0x20;
+                tilt = base + r % 64;
+                angles.vx = 0;
+                angles.vy = tilt;
+                angles.vz = yaw;
+                func_8004ABBC(&angles, &m);
+                ApplyMatrixLV(&m, &D_800C35C4, &shard->velocity);
+                shard->fall = 0x70800 - ((rand() % 1600) << 8);
+                shard->spin.vx = (rand() & 0xFF) - 0x7F;
+                shard->spin.vy = (rand() & 0xFF) - 0x7F;
+                shard->spin.vz = (rand() & 0x1FF) - 0xFF;
+                for (i = 0; i != 2; i++) {
+                    poly = &shard->poly[i];
+                    SetPolyFT3(poly);
+                    SetShadeTex(poly, 0);
+                    poly->r0 = 0xFF;
+                    poly->g0 = 0xFF;
+                    poly->b0 = 0xFF;
+                    setSemiTrans(poly, 0);
+                    poly->tpage = GetTPage(2, 1, column * 16 + 0x2C0, 0x100);
+                    if (layer == 0) {
+                        poly->u0 = column * 16 & 0x3F;
+                        poly->v0 = row * 16;
+                        poly->u1 = (column * 16 & 0x3F) + 16;
+                        poly->v1 = row * 16;
+                        poly->u2 = column * 16 & 0x3F;
+                        poly->v2 = row * 16 + 16;
+                    } else {
+                        poly->u0 = (column * 16 & 0x3F) + 16;
+                        poly->v0 = row * 16;
+                        poly->u1 = (column * 16 & 0x3F) + 16;
+                        poly->v1 = row * 16 + 16;
+                        poly->u2 = column * 16 & 0x3F;
+                        poly->v2 = row * 16 + 16;
+                    }
+                }
+            }
+        }
+    }
+    return shatter;
+}

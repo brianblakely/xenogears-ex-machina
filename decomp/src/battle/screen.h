@@ -156,4 +156,7 @@ void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5);
 void func_800A6F98(void);
 void func_800A5EB4(void);
 
+/* The shattered screen's set-up (800B7424). */
+extern VECTOR D_800C35C4; /* a shard's launch velocity before turning */
+
 #endif
