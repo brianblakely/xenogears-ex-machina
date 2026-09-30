@@ -370,16 +370,62 @@ void func_800BAC50(ActorTask *task) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BACBC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BADD4);
+/* Remove party slot's sprite task: stop its effects (800BFC80), free its
+ * sprite source, destroy the task and clear the slot's sprite. */
+void func_800BADD4(s32 slot) {
+    ActorTask *task = BATTLE_AREA.tasks[slot];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAEB8);
+    if (task != NULL) {
+        func_800BFC80(task, 0, 2);
+        if (slot < 3) {
+            if (BATTLE_AREA.sources[slot].data != NULL) {
+                func_800320E8(BATTLE_AREA.sources[slot].data);
+            }
+            BATTLE_AREA.sources[slot].data = NULL;
+        }
+        task->destroy(task);
+        func_8001CE74(task);
+        BATTLE_AREA.sprites[slot] = NULL;
+        BATTLE_AREA.tasks[slot] = NULL;
+    }
+}
+
+/* Face slot's sprite along its side (turned for a nonzero target code),
+ * unless it runs animation 0x15. */
+void func_800BAEB8(s32 slot) {
+    BattleSprite *sprite = BATTLE_AREA.sprites[slot];
+    s32 direction;
+
+    if (sprite->motion.bytes[3] != 0x15) {
+        direction = (BATTLE_AREA.slots[slot].targetCode != 0) << 11;
+        func_800223B0(&sprite->x, direction);
+        func_80021FE0(&sprite->x, direction);
+    }
+}
 
 void func_800BAF40(void) {
 }
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAF48);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB080);
+/* Destroy the party members' sprites other than keep's that are not in
+ * use, then end their stage objects (800B14CC). */
+void func_800BB080(s32 keep) {
+    s32 i;
+    BattleSprite *sprite;
+
+    for (i = 0; i != 3; i++) {
+        if (i != keep) {
+            sprite = BATTLE_AREA.sprites[i];
+            if (sprite != NULL && sprite->field48 == 0) {
+                sprite->task->destroy(sprite->task);
+                BATTLE_AREA.sprites[i] = NULL;
+                BATTLE_AREA.tasks[i] = NULL;
+            }
+        }
+    }
+    func_800B14CC(keep);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB13C);
 
@@ -396,17 +442,86 @@ void func_800BB314(ActorTask *task) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB350);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB540);
+/* Task step: take a free stage place (of three), create the gear object of
+ * the task's slot there, its sprite (800BB350), and end the task; the last
+ * one sets D_800C37CC. */
+void func_800BB540(ActorTask *task) {
+    s32 i;
+    s32 bit;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB620);
+    for (i = 0, bit = 1; i != 3; i++, bit <<= 1) {
+        if (!(D_800C3666 & bit)) {
+            D_800C3666 |= bit;
+            break;
+        }
+    }
+    func_800A979C(task->field1C, D_800C3668[i].x, D_800C3668[i].y, 0, task->field1C + 0x1C0);
+    D_800C3CB8--;
+    func_800BB350(task->field1C);
+    task->destroy(task);
+    if (--D_800C35D8 == 0) {
+        D_800C37CC = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB690);
+/* Task step: once the disc is idle, run 800BB540 on a separate stack. */
+void func_800BB620(ActorTask *task) {
+    u8 *stack;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB6E0);
+    if (func_800286CC() == 0) {
+        stack = func_80031BDC(0x1000, 1);
+        STACK_ENTER(stack + 0xF00);
+        func_800BB540(task);
+        STACK_LEAVE();
+        func_800320E8(stack);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB760);
+/* Task step: read the gear files of the task's slot (800A9540), then
+ * continue with 800BB620. */
+void func_800BB690(ActorTask *task) {
+    func_800A9540(task->field1C);
+    D_800C3CB8++;
+    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BB620);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB7F8);
+/* Task step: once the disc and the file reads are idle, run 800BB690 on a
+ * separate stack. */
+void func_800BB6E0(ActorTask *task) {
+    u8 *stack;
+
+    if (func_800286CC() == 0 && D_800C3CB8 == 0) {
+        stack = func_80031BDC(0x1000, 1);
+        STACK_ENTER(stack + 0xF00);
+        func_800BB690(task);
+        STACK_LEAVE();
+        func_800320E8(stack);
+    }
+}
+
+/* Start a task loading slot's gear object (800BB6E0). */
+void func_800BB760(s32 slot) {
+    u8 saved = D_800591AC;
+    ActorTask *task;
+
+    D_800591AC = 0;
+    D_800591AF = 1;
+    task = func_8001CD08(NULL, 4);
+    func_8001CD6C((EffectSprite *)task, (void (*)(EffectSprite *))func_800BB6E0);
+    task->field1C = slot;
+    D_800591AF = 0;
+    D_800C35D8++;
+    D_800591AC = saved;
+}
+
+/* Reset the camera modes. */
+void func_800BB7F8(void) {
+    D_800C3674 = 0x200;
+    D_800C3678 = -1;
+    D_800C3CC4 = 0;
+    D_800C3CBC = 1;
+    func_800BC2F0(0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB844);
 
@@ -420,14 +535,58 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC0
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC158);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC2F0);
+/* Set the camera mode: 2 puts the eye and look-at sprites at the saved
+ * points, 4 sets D_800C3CBC to 5, others release them. */
+void func_800BC2F0(s32 mode) {
+    SVector *point;
+
+    D_800C3CC0 = mode;
+    D_800C3CBC = 1;
+    switch (mode) {
+    case 4:
+        D_800C3CBC = 5;
+        break;
+    case 2:
+        D_8006F99C.vx = D_800D30A0[0].vx << 16;
+        D_8006F99C.vy = D_800D30A0[0].vy << 16;
+        D_8006F99C.vz = D_800D30A0[0].vz << 16;
+        point = &D_800D30A0[1];
+        D_8006F9AC.vx = point->vx << 16;
+        D_8006F9AC.vy = point->vy << 16;
+        D_8006F9AC.vz = point->vz << 16;
+        break;
+    default:
+        if (D_800C3680 != NULL) {
+            D_800C3680->destroy(D_800C3680);
+            D_800C3680 = NULL;
+        }
+        if (D_800C3684 != NULL) {
+            D_800C3684->destroy(D_800C3684);
+            D_800C3684 = NULL;
+        }
+        break;
+    }
+}
 
 /* Set D_800C367C. */
 void func_800BC3F8(s32 value) {
     D_800C367C = value;
 }
 
+#ifdef NON_MATCHING
+/* Start camera move (800BC460) unless effects are off; restore D_80059454.
+ * Nonmatching: battle_core.h declares mask u16, which the original passes on
+ * unextended (its own parameter is a word). */
+void func_800BC404(u16 mask) {
+    if (D_800C37C8 == 0) {
+        func_800BC2F0(1);
+        func_800BC460(mask);
+    }
+    D_80059454 = D_800C3CDC;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BC404);
+#endif
 
 /* Set D_800C3740. */
 void func_800BC454(s16 value) {
