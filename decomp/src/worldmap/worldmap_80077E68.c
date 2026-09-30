@@ -54,7 +54,22 @@ s32 func_800794D8(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80079538);
+/* Keep the actor on the ground and scene object 16 at it. */
+s32 func_80079538(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    if (actor->unk4 != 0) {
+        actor->unk4 = 0;
+        D_8009C620[16].visible = 1;
+    }
+    func_80093354(&actor->position);
+    actor->position.vy = func_80093A5C(actor->position.vx, actor->position.vz) + 0x18000;
+    D_8009C620[16].position.vx = actor->position.vx >> 12;
+    D_8009C620[16].position.vy = actor->position.vy >> 12;
+    D_8009C620[16].position.vz = actor->position.vz >> 12;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_800795E4);
 

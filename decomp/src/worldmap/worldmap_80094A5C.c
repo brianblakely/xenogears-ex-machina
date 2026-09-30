@@ -226,7 +226,19 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097BC0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80097CB8);
+/* Reset the terrain loader around the camera. */
+void func_80097CB8(Camera *camera) {
+    s32 i;
+
+    D_8009D534 = D_8009A180;
+    for (i = 0xFF; i >= 0; i--) {
+        D_8009C184[i] = NULL;
+    }
+    D_8009C5BC = 0;
+    D_8009C618 = 0x400;
+    func_800981C8(camera);
+    func_80097DC0();
+}
 
 /* Free every loaded terrain block. */
 void func_80097D64(void) {

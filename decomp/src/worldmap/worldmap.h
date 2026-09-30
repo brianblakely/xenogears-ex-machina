@@ -384,7 +384,7 @@ void func_800399D4(void *seq);
 void *func_80039850(void *header);
 void func_80039A80(void *seq, s32 volume, s32 c);
 s32 func_80097770(s32 index, s32 arg);
-void func_80089160(s32 a, SVECTOR *v, s32 c);
+void func_80089160(s32 effect, SVECTOR *position, SVECTOR *angle);
 void func_800894C8(s32 a);
 void func_80089514(s32 a);
 void func_80039E60(s32 sound);
@@ -453,7 +453,7 @@ extern void *D_8009D7E8, *D_8009D7EC, *D_8009D7F8, *D_8009D7FC;
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
 
-void func_80087904(SceneObject *object, void *prims, s32 count, s32 mode);
+void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr);
 
 extern s16 D_8009AFDC[]; /* scene objects to show; -1 ends */
 extern u16 D_8006EF64;
@@ -630,6 +630,26 @@ extern u16 D_8009D52C;
 void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count);
 void func_8002CBBC(void *def);
 s32 func_80095414(Vec3 *position, Vec3 *direction, VECTOR *hit, s32 range, s32 mode);
+
+/* Scratchpad work area of the actor updaters. */
+typedef struct {
+    u8 pad0[0xA0];
+    SVECTOR position; /* 0xA0 */
+    SVECTOR angle;    /* 0xA8 */
+} ActorScratch;
+
+typedef struct {
+    s32 words[8];
+} LoaderState;
+
+extern LoaderState D_8009A180; /* initial terrain loader state */
+extern LoaderState D_8009D534;
+extern s32 D_8009C618;
+
+s32 func_80093A5C(s32 x, s32 z);  /* terrain height */
+s16 func_80093F18(Vec3 *position);
+void func_8003F738(SVECTOR *angle, MATRIX *m);
+void func_80097DC0(void);
 
 /* Frame state. */
 typedef struct {

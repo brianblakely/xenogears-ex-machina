@@ -131,9 +131,33 @@ void func_800933EC(Vec3 *position) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093484);
+/* Wrap a ground-plane offset (20.12) into half the area extent. */
+void func_80093484(Vec3 *offset) {
+    if (offset->vx < -0x4000000) {
+        offset->vx += D_8009D160 << 23;
+    } else if (offset->vx > 0x4000000) {
+        offset->vx -= D_8009D160 << 23;
+    }
+    if (offset->vz < -0x4000000) {
+        offset->vz += D_8009D2B4 << 23;
+    } else if (offset->vz > 0x4000000) {
+        offset->vz -= D_8009D2B4 << 23;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093534);
+/* Wrap a ground-plane offset (world units) into half the area extent. */
+void func_80093534(Vec3 *offset) {
+    if (offset->vx < -0x4000) {
+        offset->vx += D_8009D160 << 11;
+    } else if (offset->vx > 0x4000) {
+        offset->vx -= D_8009D160 << 11;
+    }
+    if (offset->vz < -0x4000) {
+        offset->vz += D_8009D2B4 << 11;
+    } else if (offset->vz > 0x4000) {
+        offset->vz -= D_8009D2B4 << 11;
+    }
+}
 
 /* Set the point's height to lie on the plane through `origin` with normal
  * `normal`. */

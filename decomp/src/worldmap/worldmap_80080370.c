@@ -31,7 +31,22 @@ s32 func_80080900(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080944);
+/* On command, emit effects 0x28-0x2A at the actor. */
+s32 func_80080944(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    if (actor->unk4 == 1) {
+        actor->unk4 = 0;
+        SCRIPT_VECTOR->vx = actor->position.vx >> 12;
+        SCRIPT_VECTOR->vy = actor->position.vy >> 12;
+        SCRIPT_VECTOR->vz = actor->position.vz >> 12;
+        func_80089160(0x28, SCRIPT_VECTOR, 0);
+        func_80089160(0x29, SCRIPT_VECTOR, 0);
+        func_80089160(0x2A, SCRIPT_VECTOR, 0);
+    }
+    return 1;
+}
 
 /* Set the colour of `count` textured quads. */
 void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b) {

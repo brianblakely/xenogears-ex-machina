@@ -139,7 +139,27 @@ s32 func_80087710(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087734);
+/* Spin scene objects 12 and 14 about their own axis. */
+s32 func_80087734(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *objects;
+    SVECTOR *first;
+    SVECTOR *second;
+
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
+    first = SCRIPT_VECTOR;
+    second = SCRIPT_VECTOR + 1;
+    second->vx = 0;
+    first->vx = 0;
+    first->vy = objects[12].angle.vy;
+    second->vy = objects[14].angle.vy;
+    first->vz = second->vz = actor->u.step;
+    func_8003F738(first, &objects[12].matrix);
+    func_8003F738(second, &objects[14].matrix);
+    return 1;
+}
 
 /* Reset an actor to step 0 with parameter 8. */
 s32 func_800877E0(s32 index) {
@@ -153,7 +173,17 @@ s32 func_800877E0(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087804);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087904);
+/* Give `count` quads the semi-transparent 0x1A0,0xA0 texture page. */
+void func_80087904(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        quads->tpage = func_80043A1C(0, abr, 0x1A0, 0xA0);
+        setSemiTrans(quads, 1);
+        quads++;
+    }
+    func_8003F968(object->prims2, object->prims, count * sizeof(PolyFT4));
+}
 
 /* Reset an actor to step 0 with parameter 0x10 and rebuild the area's two
  * scene objects. */
@@ -449,6 +479,20 @@ void func_8008BFD4(s32 index, Vec3 *position, s32 x, s32 z) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008C040);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008C1DC);
+/* Emit effect `effect` at the actor while it stands on terrain type 3,
+ * otherwise stop the effect group. */
+void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch) {
+    if (func_80093F18(&actor->position) == 3) {
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        scratch->angle.vz = 0;
+        scratch->angle.vx = 0;
+        scratch->angle.vy = actor->unk5C;
+        func_80089160(effect, &scratch->position, &scratch->angle);
+        return;
+    }
+    func_800894C8(effect);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008C28C);
