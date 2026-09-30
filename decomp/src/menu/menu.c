@@ -1314,7 +1314,52 @@ void func_80080644(s32 first, s32 second) {
     func_80032C18(data, 2);
 }
 
+#ifdef NON_MATCHING
+/* Enter the selection screen in a mode: upload every portrait once, set
+ * the pages' entry counts and labels, and reset both sides.
+ * Does not match: the original reloads 4 into the branch delay slot. */
+void func_80080780(s32 mode) {
+    GridCell *cell;
+    s32 i;
+    s32 count;
+
+    if (D_80092940 == 0) {
+        func_80028A60(0);
+        cell = D_8009270C;
+        for (i = 0; i < 49; i++, cell++) {
+            func_80044894(&cell->clut_x, D_800928D8 + (i << 12));
+            func_80044894(&cell->image_x, D_800928D8 + (i << 12) + 0x100);
+        }
+        func_800320E8(D_800928D8);
+        D_80092940 = 1;
+    }
+    D_800928C8 = mode;
+    count = 4;
+    if (mode == 4) {
+        count = 3;
+    }
+    D_800915AC[5].count = count;
+    D_800915AC[6].count = 5;
+    if (mode == 3) {
+        D_80091369 = 0x27;
+        D_80091391 = 0x28;
+    } else {
+        D_80091369 = 0x25;
+        D_80091391 = 0x26;
+    }
+    func_80083C0C(1);
+    D_80092710 = 0;
+    D_80092728 = 0;
+    D_80092724 = 0;
+    D_8009271C = 0;
+    D_80092718 = 0;
+    D_80092714 = D_80092700;
+    D_80092720 = D_80092704;
+    func_80080964(5);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080780);
+#endif
 
 void func_800808F4(void) {
     D_80092924 = 1;
@@ -1365,7 +1410,7 @@ void func_800809D8(void) {
 void func_80080A58(void) {
     if (D_80092940 == 0) {
         func_80028A60(0);
-        func_800320E8((void *)D_800928D8);
+        func_800320E8(D_800928D8);
         D_80092940 = 1;
     }
 }

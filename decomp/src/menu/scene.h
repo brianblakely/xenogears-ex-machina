@@ -162,7 +162,9 @@ typedef struct {
 typedef struct {
     u8 unk0[4];
     MenuItem *item; /* 0x04 */
-    u8 unk8[0xA];
+    u8 unk8[2];
+    s16 count;  /* 0x0A */
+    u8 unkC[6];
     s16 cursor; /* 0x12 */
     s16 y;      /* 0x14 */
     u8 unk16[0xE];
@@ -202,7 +204,7 @@ extern s32 D_80092924;
 extern s32 D_800928C8;
 extern s8 D_80092758;
 extern s32 D_80092940;
-extern s32 D_800928D8;
+extern u8 *D_800928D8; /* the 49 portraits, 0x1000 bytes each */
 extern void *D_80092760; /* loaded image data */
 
 void func_80080964(s32 page);
@@ -218,7 +220,7 @@ void func_80080AA0(s32 forget);
 void func_800719F0(void);
 void func_8008509C(s32 a, s32 b);
 void func_80039FF8(void);
-s32 func_800891C0(s32 arg);
+void *func_800891C0(s32 arg);
 void func_80028A60(s32 arg);
 void func_800320E8(void *block); /* free a heap block */
 void func_800445D0(s32 mode);    /* wait for drawing */
@@ -263,7 +265,13 @@ extern GridCell *D_8009270C;
 extern s32 D_80092700;   /* first side's pick */
 extern s32 D_80092704;   /* second side's pick */
 extern s32 D_80092714;
+extern s32 D_80092718;
+extern s32 D_8009271C;
 extern s32 D_80092720;
+extern s32 D_80092724;
+extern s32 D_80092728;
+extern u8 D_80091369;
+extern u8 D_80091391;
 extern s32 D_80092748;   /* bit 0: both sides may pick the same entry */
 extern s32 D_80091364;
 extern u16 D_8005948C;   /* first controller's newly pressed buttons */
