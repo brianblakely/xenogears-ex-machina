@@ -574,55 +574,58 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 /* Move a flying position: clamp its height between the ground and the
  * ceiling, bounce back off solid objects, else slide along the terrain. */
-#ifdef NON_MATCHING /* the probe address is kept in a saved register */
 s32 func_80095CD4(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode) {
     s16 hit;
     s32 floor;
     s32 count;
     s32 i;
     s32 cleared;
+    s32 result;
+    WalkScratch *scratch;
 
-    SCRATCH_PROBE->vx = position->vx + ((direction->vx * scale) >> 12);
-    SCRATCH_PROBE->vy = position->vy + ((direction->vy * scale) >> 12);
-    SCRATCH_PROBE->vz = position->vz + ((direction->vz * scale) >> 12);
-    func_80093354(SCRATCH_PROBE);
+    scratch = WALK_SCRATCH;
+    scratch->probe.vx = position->vx + ((direction->vx * scale) >> 12);
+    scratch->probe.vy = position->vy + ((direction->vy * scale) >> 12);
+    scratch->probe.vz = position->vz + ((direction->vz * scale) >> 12);
+    func_80093354(&scratch->probe);
     out->vx = position->vx + ((direction->vx * scale) >> 12);
     out->vy = position->vy + ((direction->vy * scale) >> 12);
     out->vz = position->vz + ((direction->vz * scale) >> 12);
     func_80093354(out);
-    floor = func_80093978(SCRATCH_PROBE->vx, SCRATCH_PROBE->vz) - 0x20000;
+    floor = func_80093978(scratch->probe.vx, scratch->probe.vz) - 0x20000;
     if (floor > 0x20000) {
         floor = 0x20000;
     }
-    if ((floor < SCRATCH_PROBE->vy) | (floor < -0x280000)) {
-        SCRATCH_PROBE->vy = floor;
+    if ((floor < scratch->probe.vy) | (floor < -0x280000)) {
+        scratch->probe.vy = floor;
         out->vy = floor;
     }
-    if ((floor > -0x280000) & (SCRATCH_PROBE->vy < -0x280000)) {
-        SCRATCH_PROBE->vy = -0x280000;
+    if ((floor > -0x280000) & (scratch->probe.vy < -0x280000)) {
+        scratch->probe.vy = -0x280000;
         out->vy = -0x280000;
     }
-    count = func_80084D00((s32)SCRATCH_PROBE, &hit);
+    count = func_80084D00((s32)&scratch->probe, &hit);
     if (count != 0) {
         cleared = 0;
         for (i = 0; i < count; i += 2) {
-            if (func_80085418(SCRATCH_PROBE, 0x70, hit, D_8009D718[i]) == 0) {
+            if (func_80085418(&scratch->probe, 0x70, hit, D_8009D718[i]) == 0) {
                 D_8009D718[i] = -1;
                 cleared += 2;
             }
         }
+        result = 0;
         if (cleared != count) {
             out->vx = -direction->vx >> 1;
             out->vy = -direction->vy >> 1;
             out->vz = -direction->vz >> 1;
-            return 0;
+        } else {
+            result = func_800951A8(position, direction, out, scale, mode);
         }
+    } else {
+        result = func_800951A8(position, direction, out, scale, mode);
     }
-    return func_800951A8(position, direction, out, scale, mode);
+    return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095CD4);
-#endif
 
 /* Reset the stream queue and allocate its command buffers (disc or host). */
 void func_80095F78(void) {
