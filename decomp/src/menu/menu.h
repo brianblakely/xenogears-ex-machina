@@ -258,7 +258,8 @@ typedef struct Actor {
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
-    u8 unkEC[0x6];
+    u8 unkEC[0x4];
+    s16 unkF0;           /* 0xF0: frames since the last hit reaction */
     s16 unkF2;
     u8 unkF4[0xC];
     s32 unk100;
@@ -287,7 +288,9 @@ typedef struct Actor {
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     Vector start_home;   /* 0x95C: home at the round start */
-    u8 unk96C[0x2C];
+    u8 unk96C[0x8];
+    Vector hit_from;     /* 0x974: where the last hit came from */
+    u8 unk984[0x14];
     s16 unk998;
     s16 unk99A;
     u8 unk99C[0x2];

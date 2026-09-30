@@ -833,7 +833,77 @@ s32 func_800776A8(Actor *actor, s32 arg) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077770);
+/* Start a reaction pose: animation, restart it, pose change pending. */
+#define SET_POSE(actor, pose) ((actor)->anim = (pose), (actor)->unk4E = 0xFF, (actor)->flags |= 0x1000)
+
+/* React to a hit: pick the flinch pose (alternating by the hit height
+ * between the two anchor heights), then knock the actor away from where the
+ * hit came from according to the hit's step, and vibrate the pad. */
+void func_80077770(Actor *actor) {
+    s32 strength = 4;
+    s32 angle;
+    s32 lift;
+    u32 flags;
+
+    actor->unkF0++;
+    if (actor->unkCA != 0) {
+        if (actor->anim == 9) {
+            SET_POSE(actor, 0xC);
+            goto done;
+        }
+    } else {
+        flags = actor->flags;
+        if (flags & 4) {
+            strength = 2;
+            goto done;
+        }
+        if (actor->hit_from.vy < (actor->unk92C.vy - actor->home.vy) * 2 / 3 + actor->home.vy) {
+            if ((flags & 0x700000) == 0x100000) {
+                SET_POSE(actor, 7);
+                actor->flags &= ~0x700000;
+            } else {
+                SET_POSE(actor, 6);
+                actor->flags = (actor->flags & ~0x700000) | 0x100000;
+            }
+        } else {
+            if ((flags & 0x700000) == 0x200000) {
+                SET_POSE(actor, 7);
+                actor->flags &= ~0x700000;
+            } else {
+                SET_POSE(actor, 5);
+                actor->flags = (actor->flags & ~0x700000) | 0x200000;
+            }
+        }
+    }
+    angle = ratan2(actor->pos.vx - actor->hit_from.vx, actor->pos.vz - actor->hit_from.vz);
+    if (func_80088838(&actor->pos, &actor->opponent->pos) < func_80088838(&actor->hit_from, &actor->opponent->pos)) {
+        angle += 0x800;
+    }
+    lift = 1;
+    switch ((actor->unk100 - 1) & 7) {
+    case 2:
+        SET_POSE(actor, 6);
+        func_80077584(actor, angle, 0xC, 0x64);
+        break;
+    case 3:
+        func_8007762C(actor, angle, 0xB, 0x80);
+        break;
+    case 1:
+        lift = 0;
+    default:
+        if (actor->unk916 >= 0x26 || actor->unkF0 >= 4) {
+            func_8007762C(actor, angle, 0xA, 0xA0);
+            strength = 0xF;
+            actor->unkE8 = 0;
+            actor->unk916 = 0;
+        } else {
+            func_80077584(actor, angle, 0xA, -lift & 0x1E);
+        }
+        break;
+    }
+done:
+    func_800776A8(actor, strength);
+}
 
 /* Advance an actor's combo with a button and return the new combo's
  * entry. */
