@@ -2929,7 +2929,7 @@ void func_801DA5BC(s32 row) {
                 rect.h = 0xd;
                 LoadImage(&rect, image);
                 DrawSync(0);
-                kind = D_800625A0->tables->items[INVENTORY->ids[row * 2 + i] * 16 + 6];
+                kind = D_800625A0->tables->items[INVENTORY->ids[row * 2 + i]].use;
                 if (kind & 0x20) {
                     grey = kind & 0x80;
                     if (D_80059171 == 0) {
@@ -2965,7 +2965,85 @@ void func_801DA5BC(s32 row) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA9A8);
+/* Show the description of item list entry `entry` at scroll row `row`: the
+ * item's message line, a copy of its name and count texts and, for items
+ * used from the menu, its target labels. An empty entry hides it. */
+void func_801DA9A8(s32 entry, s32 row) {
+    RECT rect;
+    u8 *ids;
+    u8 *id;
+    u8 *image;
+    s32 pad;
+    u8 all;
+    u8 kind;
+    u16 target;
+    MenuItem *item;
+
+    ids = D_8006F65A;
+    id = &ids[row * 2 + entry];
+    if (*id != 0) {
+        image = func_80031BDC(0x618, 0);
+        bzero(image, 0x618);
+        D_800625A0->block42C->extra[2].width =
+            func_80034EAC(func_80033728(D_800625A0->block42C->unk1180, *id), image, 0x39, 0);
+        rect.x = 0x140;
+        rect.y = 0x4e;
+        rect.w = 0x3c;
+        rect.h = 0xd;
+        LoadImage(&rect, image);
+        DrawSync(0);
+        func_801E7C50(&D_800625A0->block42C->extra[2], 0, 0, 0);
+        func_801E920C(&D_800625A0->block42C->extra[2].polys[D_800625A0->bufferIndex], 0x1c, 0xa1, 0, 0x4e,
+                      D_800625A0->block42C->extra[2].width, 0xd);
+        func_801C851C(D_800625A0->block42C->extra[2].verts, 0x1c, 0xa1, D_800625A0->block42C->extra[2].width, 0xd);
+        func_800320E8(image);
+        pad = D_800625A0->block42C->values[entry].width == 0x10 ? 4 : 0;
+        memmove(&D_800625A0->block42C->extra[0], &D_800625A0->block42C->names[entry], sizeof(MenuLabelSlot));
+        memmove(&D_800625A0->block42C->extra[1], &D_800625A0->block42C->values[entry], sizeof(MenuLabelSlot));
+        func_801C851C(D_800625A0->block42C->extra[0].verts, 0x10, 0x93, D_800625A0->block42C->names[entry].width,
+                      0xd);
+        func_801C851C(D_800625A0->block42C->extra[1].verts, pad | 0x78, 0x93,
+                      D_800625A0->block42C->values[entry].width, 0xd);
+        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+        (D_800625A0->block42C->extra[0].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->block42C->extra[0].polys[D_800625A0->bufferIndex], 0);
+        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+        (D_800625A0->block42C->extra[1].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+        SetSemiTrans(&D_800625A0->block42C->extra[1].polys[D_800625A0->bufferIndex], 0);
+        func_801E8044(8, D_800625A0->party->unk38);
+        item = &D_800625A0->tables->items[*id];
+        if (item->use & 0xc0) {
+            target = item->target;
+            if (target & 0x4000) {
+                all = 2;
+            } else if (target & 0x1000) {
+                all = 0;
+            } else {
+                all = 1;
+            }
+            func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, all, 0, 1);
+            kind = (item->target & 3) + 3;
+            func_801E8070(8, D_800625A0->labels10E0, D_801EA550, D_801E9EA0, D_800625A0->party->unk38, kind, 0, 1);
+            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+            (D_800625A0->labels10E0[all].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+            SetSemiTrans(&D_800625A0->labels10E0[all].polys[D_800625A0->bufferIndex], 0);
+            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->r0 = 0x80;
+            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->g0 = 0x80;
+            (D_800625A0->labels10E0[kind].polys + D_800625A0->bufferIndex)->b0 = 0x80;
+            SetSemiTrans(&D_800625A0->labels10E0[kind].polys[D_800625A0->bufferIndex], 0);
+        }
+        D_800625A0->block42C->extra[0].count = D_800625A0->bufferIndex;
+        D_800625A0->block42C->extra[1].count = D_800625A0->bufferIndex;
+        D_800625A0->block42C->extra[2].count = D_800625A0->bufferIndex;
+        D_800625A0->block42C->extraShown = 1;
+    } else {
+        func_801E8044(8, D_800625A0->party->unk38);
+        D_800625A0->block42C->extraShown = 0;
+    }
+}
 
 /* Allocate image block `index` (+444). */
 void func_801DB02C(u8 index) {

@@ -249,6 +249,14 @@ typedef struct CharRecord {
     u8 padA1[0x3];
 } CharRecord;
 
+/* An item record of the data tables (+1c). */
+typedef struct MenuItem {
+    u8 pad0[0x4];
+    u16 target; /* 4: 4000 all, 1000 none, else one; low bits: target kind */
+    u8 use; /* 6: 80 usable in the menu, 40 in battle, 20 field only */
+    u8 pad7[0x9];
+} MenuItem;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
     u8 *weapons; /* 0 */
@@ -257,7 +265,7 @@ typedef struct MenuTables {
     GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
     u8 pad14[0x8];
-    u8 *items; /* 1C */
+    MenuItem *items; /* 1C */
     MenuEffect *effects[11]; /* 20: per character */
     u8 pad4C[0x58];
     u16 unkA4; /* A4 */
@@ -724,6 +732,7 @@ extern u16 D_801E9E4C[3][2]; /* party label positions */
 extern u16 D_801E9E58[3][2];
 extern u8 D_801EA53C[];  /* save file screen command labels */
 extern u8 D_801EA542[];  /* title file screen load command labels */
+extern u8 D_801EA550[];  /* item target labels */
 extern u8 D_801EA558[];
 extern u8 D_801EA568[];  /* title file screen command labels */
 extern u8 D_801EA548[];  /* save/load screen labels */
@@ -826,6 +835,8 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+u8 *func_80033728(u8 *table, u8 index); /* message of a table */
+void memmove(void *dst, void *src, s32 size);
 u8 *func_80033818(u8 item);  /* item name text */
 void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
 u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
