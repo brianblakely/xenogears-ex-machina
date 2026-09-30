@@ -2149,9 +2149,9 @@ void func_80089580(void) {
 /* Run the emitters: count down their timers and every interval spawn one
  * particle into a free effect slot, starting at a random point around the
  * emitter and flying towards a random point around its target. */
-#ifdef NON_MATCHING /* slot pointer and counter registers swapped in the free-slot search */
+#ifdef NON_MATCHING /* counter register: the original sets it in the condition branch's delay slot (a1, after the
+                     * last use of unk8); set before the test it conflicts and takes a2 */
 void func_80089748(void) {
-    s32 j;
     AreaObject *object;
     EffectSlot *slot;
     EmitScratch *scratch;
@@ -2160,6 +2160,7 @@ void func_80089748(void) {
     s32 delay;
     s32 repeats;
     s32 distance;
+    s32 j;
 
     object = D_8009BCC0;
     scratch = EMIT_SCRATCH;
@@ -2185,9 +2186,9 @@ void func_80089748(void) {
             object->unk12--;
             goto store;
         }
+        j = 0xFF;
         object->unk12 = object->unk10;
         if ((((s16 *)&object->life)[1] != 0) & (object->unk8 > 0) & (object->unkA < object->unk8)) {
-            j = 0xFF;
             slot = D_8009BDF4;
             for (; j != -1; j--, slot++) {
                 if (EFFECT_ENABLED(slot) == 0) {
@@ -3161,14 +3162,15 @@ s32 func_8008BDD0(s32 index) {
 
 /* Step the actor towards its target (x, z in world units) at half its
  * speed; bit 0/1 of the result report x/z arrival. */
-#ifdef NON_MATCHING /* target and position registers swapped */
 s32 func_8008BEC8(WorldmapActor *actor) {
     s32 arrived;
     s32 distance;
     s32 position;
+    s32 cell;
 
     position = actor->position.vx;
-    distance = actor->u.step - (position >> 12);
+    cell = position >> 12;
+    distance = actor->u.step - cell;
     arrived = 0;
     if (ABS(distance) >= 5) {
         actor->position.vx = position + actor->motion.vx * (actor->turn / 2);
@@ -3176,7 +3178,8 @@ s32 func_8008BEC8(WorldmapActor *actor) {
         arrived = 1;
     }
     position = actor->position.vz;
-    distance = actor->unk54 - (position >> 12);
+    cell = position >> 12;
+    distance = actor->unk54 - cell;
     if (ABS(distance) >= 5) {
         actor->position.vz = position + actor->motion.vz * (actor->turn / 2);
     } else {
@@ -3186,9 +3189,6 @@ s32 func_8008BEC8(WorldmapActor *actor) {
     actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
     return arrived;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BEC8);
-#endif
 
 /* Queue a placement of actor `index` at `position`, facing (x, z). */
 void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z) {

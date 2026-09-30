@@ -1414,20 +1414,15 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 
 /* Find the region of path table `table` of kind `kind` containing the
  * position; it becomes the current path. */
-#ifdef NON_MATCHING /* position loads scheduled after the table index */
 s32 func_80094364(VECTOR *position, s32 table, s32 kind) {
     PathRegion *region;
-    u32 world_x;
-    u32 world_z;
-    s32 x;
-    s32 z;
+    u16 x;
+    u16 z;
 
-    world_x = (u32)position->vx >> 12;
-    world_z = (u32)position->vz >> 12;
+    x = (u32)position->vx >> 12;
+    z = (u32)position->vz >> 12;
     region = ((PathRegion **)D_8009BD00)[table];
     if (region->id != -1) {
-        x = (u16)world_x;
-        z = (u16)world_z;
         do {
             if (((x >= region->x) & (region->x + region->w >= x) & (z >= region->z) & (region->z + region->h >= z)) &&
                 region->kind == kind) {
@@ -1439,9 +1434,6 @@ s32 func_80094364(VECTOR *position, s32 table, s32 kind) {
     }
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094364);
-#endif
 
 void func_80094434(void) {
 }

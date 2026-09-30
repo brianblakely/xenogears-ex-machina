@@ -564,7 +564,6 @@ s32 func_800827C8(s32 index) {
 }
 
 /* Start a scripted camera on the player: pitch -0x220 at distance 0x50. */
-#ifdef NON_MATCHING /* actor pointer and distance constant swap registers */
 s32 func_800827EC(s32 index) {
     WorldmapActor *actor;
 
@@ -580,16 +579,13 @@ s32 func_800827EC(s32 index) {
     D_8009BD38.vy = 0;
     D_8009BD38.vz = 0;
     actor->motion.vx = actor->u.step = -0x220 << 12;
+    D_8009BE0C = 0x78;
     D_8009D144 = 0;
     D_8009D3F0 = 0x500000;
     actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-    D_8009BE0C = 0x78;
     actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800827EC);
-#endif
 
 /* Pulsing-effect scene camera: commands pick camera shots and moves; each state eases distance, pitch and yaw; adds a vertical shake. */
 s32 func_800828DC(s32 index) {
@@ -1000,7 +996,6 @@ s32 func_800838E8(s32 index) {
 }
 
 /* Start a scripted camera on the player: pitch -0x20, yaw 0x400 at distance 0x96. */
-#ifdef NON_MATCHING /* actor pointer and distance constant swap registers */
 s32 func_8008390C(s32 index) {
     WorldmapActor *actor;
 
@@ -1016,13 +1011,10 @@ s32 func_8008390C(s32 index) {
     D_8009BD38.vy = 0x400;
     D_8009BD38.vz = 0;
     actor->motion.vx = actor->u.step = -0x20 << 12;
+    D_8009BE0C = 0x78;
     D_8009D144 = 0;
     D_8009D3F0 = 0x960000;
     actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
-    D_8009BE0C = 0x78;
     actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_8008390C);
-#endif

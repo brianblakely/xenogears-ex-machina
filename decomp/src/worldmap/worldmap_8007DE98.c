@@ -406,7 +406,6 @@ void func_8007EBBC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
 }
 
 /* Start the flight: link objects 2-3 to 1, build their quads, hide 1 and place the actor behind the player on its entry path. */
-#ifdef NON_MATCHING /* motion reload not hoisted into the load delay slot */
 s32 func_8007ECA4(s32 index) {
     SceneObject *objects;
     WorldmapActor *actor;
@@ -434,9 +433,6 @@ s32 func_8007ECA4(s32 index) {
     actor->position.vz = D_8009C5AC.vz - actor->motion.vz * 0x3680;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007ECA4);
-#endif
 
 /* Flying vehicle (scene object 1): commands place it on its approach track;
  * it flies along its motion vector, stops at the landing point, trails
@@ -791,7 +787,6 @@ s32 func_8007F968(s32 index) {
 }
 
 /* Rebuild scene objects 9 and 10 and start a descent at a fixed point. */
-#ifdef NON_MATCHING /* return value loaded before the stores */
 s32 func_8007FC8C(s32 index) {
     SceneObject *objects;
     WorldmapActor *actor;
@@ -800,18 +795,15 @@ s32 func_8007FC8C(s32 index) {
     actor = &D_8009BE24[index];
     func_8007A06C(&objects[9], objects[9].prims, objects[9].def->count);
     func_8007A06C(&objects[10], objects[10].prims, objects[10].def->count);
+    actor->state = 0;
     actor->position.vx = 0x1498000;
     actor->position.vy = -0x80000;
     actor->position.vz = 0x4AF2000;
-    actor->state = 0;
     actor->u.step = 0;
     actor->unk54 = -0x800;
     actor->unk58 = 0x80;
     return 3;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FC8C);
-#endif
 
 /* Grow and fade scene objects 9 and 10 at the actor; ends the step when faded out. */
 s32 func_8007FD30(s32 index) {
