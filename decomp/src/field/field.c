@@ -3394,19 +3394,105 @@ s32 func_8009744C(void) {
     return (((D_800AFA64.descriptors[D_800B226C].actor->unk106 + 0x100) >> 9) + 2) & 7;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009749C);
+s32 func_80097A50(s32 speed);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800975C0);
+/* Move the current actor toward actor operand 1 (speed operand 5, latched
+ * in the slot); advances once arrived. */
+void func_8009749C(void) {
+    FieldActor *other;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800976A8);
+    D_800B0078->slots[D_800B0078->slot].move_mode = 2;
+    other = D_800AFA64.descriptors[EVENT_OPERAND_BYTE(1)].actor;
+    D_800B0078->target[0] = other->position[0].s.whole;
+    D_800B0078->target[2] = other->position[2].s.whole;
+    D_800B0078->target[1] = other->position[1].s.whole;
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(5);
+    }
+    if (func_80097A50(func_800ACDEC(5)) == 0) {
+        D_800B0078->pc += 7;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800977A4);
+/* Move toward actor operand 1 at the default speed. */
+void func_800975C0(void) {
+    FieldActor *other;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097864);
+    D_800B0078->slots[D_800B0078->slot].move_mode = 2;
+    other = D_800AFA64.descriptors[EVENT_OPERAND_BYTE(1)].actor;
+    D_800B0078->target[0] = other->position[0].s.whole;
+    D_800B0078->target[2] = other->position[2].s.whole;
+    D_800B0078->target[1] = other->position[1].s.whole;
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    if (func_80097A50(0xFFFF) == 0) {
+        D_800B0078->pc += 5;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097954);
+/* Start a relative move (mode 1) from the current position, speed
+ * operand 8; advances once arrived. */
+void func_800976A8(void) {
+    if (D_800B0078->slots[D_800B0078->slot].move_mode == 0) {
+        D_800B0078->slots[D_800B0078->slot].move_mode = 1;
+        D_800B0078->target[0] = D_800B0078->position[0].s.whole;
+        D_800B0078->target[1] = D_800B0078->position[1].s.whole;
+        D_800B0078->target[2] = D_800B0078->position[2].s.whole;
+    }
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(8);
+    }
+    if (func_80097A50(func_800ACDEC(8)) == 0) {
+        D_800B0078->pc += 10;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800979F0);
+/* Relative move (mode 1) at the default speed. */
+void func_800977A4(void) {
+    if (D_800B0078->slots[D_800B0078->slot].move_mode == 0) {
+        D_800B0078->slots[D_800B0078->slot].move_mode = 1;
+        D_800B0078->target[0] = D_800B0078->position[0].s.whole;
+        D_800B0078->target[1] = D_800B0078->position[1].s.whole;
+        D_800B0078->target[2] = D_800B0078->position[2].s.whole;
+    }
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    if (func_80097A50(0xFFFF) == 0) {
+        D_800B0078->pc += 8;
+    }
+}
+
+/* Move in mode 3 from the current position, speed operand 5. */
+void func_80097864(void) {
+    if (D_800B0078->slots[D_800B0078->slot].move_mode == 0) {
+        D_800B0078->slots[D_800B0078->slot].move_mode = 3;
+        D_800B0078->target[0] = D_800B0078->position[0].s.whole;
+        D_800B0078->target[1] = D_800B0078->position[1].s.whole;
+        D_800B0078->target[2] = D_800B0078->position[2].s.whole;
+    }
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(5);
+    }
+    if (func_80097A50(func_800ACDEC(5)) == 0) {
+        D_800B0078->pc += 8;
+    }
+}
+
+/* Continue a move at speed operand 8. */
+void func_80097954(void) {
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(8);
+    }
+    if (func_80097A50(func_800ACDEC(8)) == 0) {
+        D_800B0078->pc += 10;
+    }
+}
+
+/* Continue a move at the default speed. */
+void func_800979F0(void) {
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    if (func_80097A50(0xFFFF) == 0) {
+        D_800B0078->pc += 8;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097A50);
 

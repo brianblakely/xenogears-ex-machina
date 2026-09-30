@@ -7,6 +7,19 @@
  * src/reconstruction/field_script.cpp). Opcode handlers read operands at byte
  * offsets from the current actor's working PC and advance it themselves. */
 
+/* One of an actor's eight script slots (field-lifecycle.md). */
+typedef struct ScriptSlot {
+    u16 resume_pc;      /* 0 */
+    u8 countdown;       /* 2 */
+    u8 tag;             /* 3 */
+    u32 value : 16;     /* 4: per-slot argument (e.g. move speed) */
+    u32 unk16 : 2;
+    u32 priority : 4;   /* bits 18-21 */
+    u32 unk22 : 1;
+    u32 move_mode : 2;  /* bits 23-24 */
+    u32 unk25 : 7;
+} ScriptSlot;
+
 /* One 0x138-byte event actor record. */
 typedef struct FieldActor {
     u32 flags;          /* 000 */
@@ -29,10 +42,13 @@ typedef struct FieldActor {
     s16 unk70;           /* 070 */
     u8 unk072[0x078 - 0x072];
     u16 call_stack[4];   /* 078: return PCs */
-    u8 unk080[0x0CC - 0x080];
+    u8 unk080[0x08C - 0x080];
+    ScriptSlot slots[8]; /* 08C */
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
-    u8 unk0CF[0x0E2 - 0x0CF];
+    u8 unk0CF[0x0D0 - 0x0CF];
+    s32 target[3];       /* 0D0: move target x, y, z */
+    u8 unk0DC[0x0E2 - 0x0DC];
     u8 unkE2;            /* 0E2 */
     u8 unk0E3[0x0EE - 0x0E3];
     s16 unkEE;          /* 0EE */
