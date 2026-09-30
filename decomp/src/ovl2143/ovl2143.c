@@ -731,17 +731,15 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
             } else {
                 tween = func_801DF6F0(pool);
             }
-            {
-                if (tween != NULL) {
-                    tween->used = 1;
-                    tween->flag = mode;
-                    tween->kind = kind[0];
-                    tween->tag = tag;
-                    tween->u.track.pos = tween->u.track.start = values + *data;
-                    tween->time = 0;
-                    tween->duration = duration;
-                    parts->attachments[0] = tween;
-                }
+            if (tween != NULL) {
+                tween->used = 1;
+                tween->flag = mode;
+                tween->kind = kind[0];
+                tween->tag = tag;
+                tween->u.track.pos = tween->u.track.start = values + *data;
+                tween->time = 0;
+                tween->duration = duration;
+                parts->attachments[0] = tween;
             }
         } else {
             if (parts->attachments[0] != NULL && i != 0 && parts->attachments[0]->tag != 0xFF) {
@@ -760,17 +758,15 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
             } else {
                 tween = func_801DF6F0(pool);
             }
-            {
-                if (tween != NULL) {
-                    tween->used = 1;
-                    tween->flag = mode;
-                    tween->kind = kind[1];
-                    tween->tag = tag;
-                    tween->u.track.pos = tween->u.track.start = values + *data;
-                    tween->time = 0;
-                    tween->duration = duration;
-                    parts->attachments[1] = tween;
-                }
+            if (tween != NULL) {
+                tween->used = 1;
+                tween->flag = mode;
+                tween->kind = kind[1];
+                tween->tag = tag;
+                tween->u.track.pos = tween->u.track.start = values + *data;
+                tween->time = 0;
+                tween->duration = duration;
+                parts->attachments[1] = tween;
             }
         } else {
             if (parts->attachments[1] != NULL && i != 0 && parts->attachments[1]->tag != 0xFF) {
@@ -785,7 +781,127 @@ s32 func_801DF7F4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DFAC4);
+/* Like func_801DF7F4, but each node after the root first takes the
+ * keyframe's start values for the tracks that are started. */
+s32 func_801DFAC4(SlotPool *pool, ModelPart *parts, u16 *data, s32 mode, s32 tag) {
+    Keyframe *key;
+    u8 *kind;
+    PoolSlot *tween;
+    s16 *values;
+    u8 *tracks;
+    u16 rot_count;
+    u16 pos_count;
+    u16 count;
+    u16 duration;
+    u16 rotations;
+    u16 positions;
+    u16 flags;
+    s32 i;
+
+    key = (Keyframe *)data;
+    if (key->packed != 0) {
+        func_801DFE8C(pool, parts);
+        func_801DEF10(parts, (s16 *)key);
+        return 1;
+    }
+    mode &= 1;
+    rotations = 0;
+    rot_count = key->rot_count;
+    count = parts->count;
+    positions = 0;
+    pos_count = key->pos_count;
+    if (rot_count + 1 < count) {
+        count = rot_count + 1;
+    }
+    duration = key->duration;
+    if (!mode) {
+        duration--;
+    }
+    flags = key->flags;
+    data = (u16 *)(key + 1);
+    values = (s16 *)(data + (rot_count + 1) * 3);
+    tracks = (u8 *)values;
+    if (!(flags & 1)) {
+        tracks += rot_count * 6;
+    }
+    if (!(flags & 2)) {
+        tracks += pos_count * 6;
+    }
+    for (i = 0; i < count; i++) {
+        kind = (u8 *)(data + 2);
+        if (*data != 0xFFFF) {
+            if (parts->attachments[0] != NULL) {
+                tween = parts->attachments[0];
+                if (tween->tag == 0xFF) {
+                    goto skip0; /* a kept tween stays */
+                }
+            } else {
+                tween = func_801DF6F0(pool);
+            }
+            if (!(flags & 1) && i != 0 && rotations < rot_count) {
+                parts->rot.vx = *values++;
+                parts->rot.vy = *values++;
+                parts->rot.vz = *values++;
+                rotations++;
+                parts->dirty = 1;
+                parts->rotate = 1;
+            }
+            if (tween != NULL) {
+                tween->used = 1;
+                tween->flag = mode;
+                tween->kind = kind[0];
+                tween->tag = tag;
+                tween->u.track.pos = tween->u.track.start = tracks + *data;
+                tween->time = 0;
+                tween->duration = duration;
+                parts->attachments[0] = tween;
+            }
+        } else {
+        skip0:
+            if (!(flags & 1) && i != 0 && rotations < rot_count) {
+                values += 3;
+                rotations++;
+            }
+        }
+        data++;
+        if (*data != 0xFFFF) {
+            if (parts->attachments[1] != NULL) {
+                tween = parts->attachments[1];
+                if (tween->tag == 0xFF) {
+                    goto skip1; /* a kept tween stays */
+                }
+            } else {
+                tween = func_801DF6F0(pool);
+            }
+            if (!(flags & 2) && i != 0 && positions < pos_count) {
+                parts->pos[0] = *values++;
+                parts->pos[1] = *values++;
+                parts->pos[2] = *values++;
+                positions++;
+                parts->dirty = 1;
+            }
+            if (tween != NULL) {
+                tween->used = 1;
+                tween->flag = mode;
+                tween->kind = kind[1];
+                tween->tag = tag;
+                tween->u.track.pos = tween->u.track.start = tracks + *data;
+                tween->time = 0;
+                tween->duration = duration;
+                parts->attachments[1] = tween;
+            }
+        } else {
+        skip1:
+            if (!(flags & 2) && i != 0 && positions < pos_count) {
+                values += 3;
+                positions++;
+            }
+        }
+        data += 2;
+        parts++;
+    }
+    return 0;
+}
 
 /* Release every node's attachments except those tagged 0xff. */
 void func_801DFE8C(SlotPool *pool, ModelPart *parts) {
