@@ -3671,7 +3671,141 @@ void func_801DE474(u8 wide, u8 page) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE5CC);
 
+/* Commit the equipment change of part `part` of party slot `slot` (with
+ * `special` a special part, with `gear` the gear's): the newly equipped part
+ * leaves its inventory list and the replaced one kept by 801df5d0 joins it
+ * (worn special parts are dropped). Without a new part the kept one goes
+ * back. Returns 1 when character 4 changed weapon. */
+#ifdef NON_MATCHING
+/* Differs: the original's frame is 0x28 (this builds 0x18) and it converts
+ * `gear` at each use; the inventory update code otherwise has the same shape. */
+s32 func_801DF0D4(u8 slot, u8 part, u8 special, u8 gear) {
+    u8 *ids;
+    u8 *counts;
+    u8 *at;
+    s32 length;
+    s32 i;
+    s32 result;
+    u8 swap;
+    u8 add;
+    u8 selected;
+    u8 kept;
+    u8 id;
+
+    add = 1;
+    swap = 1;
+    ids = D_8006F754;
+    result = 0;
+    if (!gear) {
+        ids = D_8006F3D0;
+    }
+    counts = ids - 100;
+    length = 100;
+    if (special) {
+        if (!gear) {
+            at = &D_8006D8A0[D_800625A0->party->ids[slot]].specials[part];
+            selected = *at;
+            kept = D_800625A0->labels360->parts[1][part];
+            if (selected == 0) {
+                *at = kept;
+                swap = 0;
+            } else {
+                if (D_8006F8BA[*at] < 100) {
+                    kept = 0;
+                }
+                D_8006F8BA[*at] = 100;
+            }
+        } else {
+            at = &D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4[part];
+            selected = *at;
+            kept = D_800625A0->labels360->parts[1][part];
+            if (selected == 0) {
+                *at = kept;
+                swap = 0;
+            } else {
+                if (D_8006F8EA[*at] < 100) {
+                    kept = 0;
+                }
+                D_8006F8EA[*at] = 100;
+            }
+        }
+    } else if (!gear) {
+        if (part == 0) {
+            id = D_800625A0->party->ids[slot];
+            selected = D_8006D8A0[id].weapons[0];
+            kept = D_800625A0->labels360->parts[0][0];
+            if (selected == 0) {
+                D_8006D8A0[id].weapons[0] = kept;
+                swap = 0;
+            } else if (id == 4) {
+                result = 1;
+            }
+        } else {
+            ids = D_8006F4FC;
+            counts = D_8006F434;
+            kept = D_800625A0->labels360->parts[2][part - 1];
+            selected = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1];
+            length = 200;
+        }
+    } else {
+        if (part == 0) {
+            id = D_800625A0->party->ids[slot];
+            selected = D_8006DFAC[D_8006D8A0[id].gear].unkC[0];
+            kept = D_800625A0->labels360->parts[0][0];
+            if (selected == 0) {
+                D_8006DFAC[D_8006D8A0[id].gear].unkC[0] = kept;
+                swap = 0;
+            } else if (id == 4) {
+                result = 1;
+            }
+        } else {
+            ids = D_8006F84E;
+            counts = D_8006F7B8;
+            length = 150;
+            kept = D_800625A0->labels360->parts[2][part - 1];
+            selected = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9[part - 1];
+        }
+    }
+    if (swap) {
+        if (selected != 0) {
+            for (i = 0; i < length; i++) {
+                if (ids[i] == selected) {
+                    counts[i]--;
+                    break;
+                }
+            }
+        }
+        if (kept != 0) {
+            for (i = 0; i < length; i++) {
+                if (ids[i] == kept) {
+                    add = 0;
+                    counts[i]++;
+                    break;
+                }
+            }
+            if (add) {
+                for (i = 0; i < length; i++) {
+                    if (ids[i] == 0) {
+                        ids[i] = kept;
+                        counts[i] = 1;
+                        break;
+                    }
+                }
+            }
+        }
+        for (i = 0; i < length; i++) {
+            if (counts[i] == 0) {
+                ids[i] = 0;
+            } else if (counts[i] >= 100) {
+                counts[i] = 99;
+            }
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF0D4);
+#endif
 
 /* Keep the shown stats and the equipment of party slot `slot` (its gear's
  * parts when `gear`) in the equipment screen's block. */
@@ -3683,9 +3817,9 @@ void func_801DF5D0(u8 slot, u8 gear) {
     }
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_800625A0->labels360->parts[0][i] = D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][i];
-            D_800625A0->labels360->parts[1][i] = D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][i];
-            D_800625A0->labels360->parts[2][i] = D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][i];
+            D_800625A0->labels360->parts[0][i] = D_8006D8A0[D_800625A0->party->ids[slot]].weapons[i];
+            D_800625A0->labels360->parts[1][i] = D_8006D8A0[D_800625A0->party->ids[slot]].specials[i];
+            D_800625A0->labels360->parts[2][i] = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[i];
         }
     } else {
         for (i = 0; i < 4; i++) {
@@ -3703,11 +3837,11 @@ void func_801DF890(u8 slot, u8 gear) {
 
     if (!gear) {
         for (i = 0; i < 5; i++) {
-            D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][i] = D_800625A0->labels360->parts[0][i];
-            D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][i] = D_800625A0->labels360->parts[1][i];
+            D_8006D8A0[D_800625A0->party->ids[slot]].weapons[i] = D_800625A0->labels360->parts[0][i];
+            D_8006D8A0[D_800625A0->party->ids[slot]].specials[i] = D_800625A0->labels360->parts[1][i];
         }
         for (i = 0; i < 3; i++) {
-            D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][i] = D_800625A0->labels360->parts[2][i];
+            D_8006D8A0[D_800625A0->party->ids[slot]].accessories[i] = D_800625A0->labels360->parts[2][i];
         }
     } else {
         for (i = 0; i < 4; i++) {
@@ -3728,16 +3862,16 @@ void func_801DFB68(u8 slot, s32 part, s32 row, s32 top, u8 special, u8 gear) {
         if (!special) {
             switch (part) {
             case 0:
-                D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][0] = D_801EA730[top + row];
+                D_8006D8A0[D_800625A0->party->ids[slot]].weapons[0] = D_801EA730[top + row];
                 break;
             case 1:
             case 2:
             case 3:
-                D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][part - 1] = D_801EA730[top + row];
+                D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1] = D_801EA730[top + row];
                 break;
             }
         } else {
-            D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][part] = D_801EA730[top + row];
+            D_8006D8A0[D_800625A0->party->ids[slot]].specials[part] = D_801EA730[top + row];
         }
     } else {
         if (!special) {
@@ -3797,16 +3931,16 @@ void func_801DFF5C(s32 part, s32 row, s32 top, u8 special, u8 gear, u8 current, 
             table = D_800625A0->block434->texts[0];
             if (current) {
                 if (!special) {
-                    id = D_8006D8A0[D_800625A0->party->ids[slot]].equip[0][0];
+                    id = D_8006D8A0[D_800625A0->party->ids[slot]].weapons[0];
                 } else {
-                    id = D_8006D8A0[D_800625A0->party->ids[slot]].equip[1][part];
+                    id = D_8006D8A0[D_800625A0->party->ids[slot]].specials[part];
                 }
             }
             break;
         case 1:
             table = D_800625A0->block434->texts[1];
             if (current) {
-                id = D_8006D8A0[D_800625A0->party->ids[slot]].equip[2][part - 1];
+                id = D_8006D8A0[D_800625A0->party->ids[slot]].accessories[part - 1];
             }
             break;
         case 2:

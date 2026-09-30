@@ -245,7 +245,9 @@ typedef struct CharRecord {
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
     u8 pad64[0x6];
-    u8 equip[3][5]; /* 6A: equipment ids (three kinds, five slots) */
+    u8 weapons[5]; /* 6A: [0] the weapon */
+    u8 specials[5]; /* 6F: special parts */
+    u8 accessories[5]; /* 74 */
     u8 pad79[0x27];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
@@ -707,6 +709,8 @@ extern u8 D_8006F6F0[];
 extern u8 D_8006F754[];
 extern u8 D_8006F7B8[];
 extern u8 D_8006F84E[];
+extern u8 D_8006F8BA[];       /* game data: special part durability per id */
+extern u8 D_8006F8EA[];       /* game data: gear special part durability per id */
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;
 extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
