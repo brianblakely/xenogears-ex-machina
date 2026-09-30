@@ -379,7 +379,71 @@ void func_80074B58(void) {
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80074BA4);
 
+#ifdef NON_MATCHING
+/* The last frame number of the selected movie, read from the header of its
+ * last sector (host PC file or disc), or -1. An index past the list returns
+ * without a value, and a kind above 2 reads with unset parameters, as the
+ * original does. Same instructions but for register allocation (frames and
+ * the read size swap $s3/$s4; the sector count takes $s0). */
+s32 func_8007519C(void) {
+    u8 buffer[0x1000];
+    s32 file;
+    char *name;
+    s32 sector_size;
+    s32 read_size;
+    s32 frames;
+    s32 header;
+    s32 fd;
+    s32 size;
+    s32 sectors;
+
+    frames = -1;
+    if (D_80077448 == 0) {
+        func_80028470(0x18, 0);
+        if (D_8007711C >= func_80028928(2)) {
+            return;
+        }
+        file = D_8007711C + 3;
+        name = func_80028998(file);
+        sector_size = 0x800;
+        read_size = 0x20;
+        header = 0;
+    } else if (D_80077448 == 1) {
+        func_80028470(0x18, 1);
+        if (D_8007711C >= func_80028928(1)) {
+            return;
+        }
+        file = D_8007711C + 2;
+        name = func_80028998(file);
+        sector_size = 0x920;
+        read_size = 0x28;
+        header = 8;
+    } else if (D_80077448 == 2) {
+        return -1;
+    }
+    if (func_8002C3D8() != 0) {
+        fd = PCopen(name, 0, 0);
+        size = PClseek(fd, 0, 2);
+        PClseek(fd, 0, 0);
+        PClseek(fd, size - sector_size, 0);
+        func_8004C398(fd, buffer, read_size);
+        if (((MovieSector *)(buffer + header))->magic == 0x160) {
+            frames = ((MovieSector *)(buffer + header))->frame;
+        }
+        PCclose(fd);
+        return frames;
+    }
+    sectors = (func_800288EC(file) + sector_size - 1) / sector_size;
+    func_8002954C(func_800289D0(file) + sectors - 1, buffer, 0x800, 0, 0);
+    func_80028A60(0);
+    if (((MovieSector *)buffer)->magic == 0x160) {
+        frames = ((MovieSector *)buffer)->frame;
+    }
+    return frames;
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_8007519C);
+#endif
 
 /* Load the three sound effect banks from the host PC, waiting for each
  * transfer to the sound memory. */

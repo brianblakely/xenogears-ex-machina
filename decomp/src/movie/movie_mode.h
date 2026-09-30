@@ -159,6 +159,19 @@ extern MATRIX D_800770B8;                      /* camera translation */
 extern MATRIX D_800770D8;                      /* camera rotation */
 extern MATRIX D_800770F8;
 
+/* The header that starts each movie (STR) sector. */
+typedef struct MovieSector {
+    u16 magic; /* 0x160 */
+    u16 type;
+    u16 sector;
+    u16 sectors;
+    s32 frame;
+} MovieSector;
+
+s32 func_800288EC(s32 file);   /* a file's size */
+char *func_80028998(s32 file); /* a file's host name */
+s32 func_800289D0(s32 file);   /* a file's first sector */
+
 /* Menu. */
 extern s32 D_80076EEC;          /* frames the buttons were held */
 extern s32 D_80076EF0;          /* frames until they repeat */
