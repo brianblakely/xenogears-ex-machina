@@ -512,6 +512,20 @@ extern void *D_8009C184[0x100]; /* terrain block buffers */
 
 void func_800976C8(void);
 
+extern u16 D_8009B6B0[], D_8009B69C[]; /* per area: scene object */
+
+/* Timed sequence: state per step and the step durations. */
+typedef struct {
+    s16 *states;
+    u16 *durations;
+} Sequence;
+
+extern Sequence D_8009A65C[];
+extern s32 D_8009D3D4;
+extern Vec3 D_8009D55C;
+
+void func_80097BC0(Vec3 *position);
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];
@@ -523,7 +537,15 @@ extern s32 D_8009D144;
 extern s16 D_8009D558;
 extern s32 D_8009C5BC;
 extern WorldmapView *D_8009BE3C;
-extern u8 D_8009BBB4[], D_8009BD40[], D_8009BE28[];
+extern u8 D_8009BBB4[], D_8009BD40[];
+
+/* Camera: its target and orientation. */
+typedef struct {
+    Vec3 target;
+    s32 unkC;
+} Camera;
+
+extern Camera D_8009BE28;
 
 void func_80073B04(void);
 void func_800737EC(void);
@@ -539,9 +561,9 @@ void func_80096130(void);
 void func_80097244(void *);
 void func_80097440(void *);
 void func_800980D4(void *);
-void func_800981C8(void *);
-void func_800983A0(void *);
+void func_800981C8(Camera *);
+void func_800983A0(Camera *);
 void func_80098CC0(void);
-void func_8009932C(u32 *ot, s32, void *);
+void func_8009932C(u32 *ot, s32, Camera *);
 
 #endif

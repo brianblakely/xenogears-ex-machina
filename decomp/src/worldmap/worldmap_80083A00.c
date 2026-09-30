@@ -2,7 +2,22 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80083A00);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80083FE4);
+/* Place the actor and show scene objects 7 and 8 at its position. */
+s32 func_80083FE4(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->position.vx = 0x1800000;
+    actor->position.vy = 0x80000;
+    actor->position.vz = 0x1A00000;
+    actor->state = 0;
+    D_8009C620[8].visible = 1;
+    D_8009C620[7].visible = 1;
+    D_8009C620[7].position.vx = D_8009C620[8].position.vx = actor->position.vx >> 12;
+    D_8009C620[7].position.vy = D_8009C620[8].position.vy = actor->position.vy >> 12;
+    D_8009C620[7].position.vz = D_8009C620[8].position.vz = actor->position.vz >> 12;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084068);
 
@@ -178,7 +193,18 @@ s32 func_80088D00(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088D00);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088D64);
+/* Place the actor just above the current area's scene object. */
+s32 func_80088D64(s32 index) {
+    SceneObject *object;
+    WorldmapActor *actor;
+
+    object = &D_8009C620[D_8009B69C[D_8009C610]];
+    actor = &D_8009BE24[index];
+    actor->position.vx = object->position.vx << 12;
+    actor->position.vy = (object->position.vy << 12) + 0x40000;
+    actor->position.vz = object->position.vz << 12;
+    return 1;
+}
 
 /* Place the actor at (0x68, 0x60). */
 s32 func_80088DE4(s32 index) {
@@ -203,7 +229,18 @@ s32 func_80088E68(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80088EA0);
+/* Place the actor at the current area's scene object. */
+s32 func_80088EA0(s32 index) {
+    SceneObject *object;
+    WorldmapActor *actor;
+
+    object = &D_8009C620[D_8009B6B0[D_8009C610]];
+    actor = &D_8009BE24[index];
+    actor->position.vx = object->position.vx << 12;
+    actor->position.vy = object->position.vy << 12;
+    actor->position.vz = object->position.vz << 12;
+    return 1;
+}
 
 /* Place the actor at (0xC9, 0x392). */
 s32 func_80088F1C(s32 index) {

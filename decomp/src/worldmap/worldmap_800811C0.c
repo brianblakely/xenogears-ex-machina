@@ -74,7 +74,24 @@ s32 func_800834D0(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800834D8);
+/* On command, reload the terrain around the player and drain the frames. */
+s32 func_800834D8(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    if (actor->unk4 == 1) {
+        actor->unk4 = 0;
+        func_800445D0(0);
+        func_8004B54C(0);
+        func_80097D64();
+        func_80097BC0(&D_8009C5AC);
+        do {
+            func_800967E4();
+            func_8004B54C(0);
+        } while (func_80096668() > 0);
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_8008355C);
 
