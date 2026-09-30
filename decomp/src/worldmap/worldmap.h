@@ -34,7 +34,21 @@ extern s32 D_8009D2B4, D_8009D160, D_8009D7CC, D_8009C610;
 extern void *D_8009C59C, *D_8009BD20, *D_8009C180, *D_8009D528;
 extern void *D_8005945C;
 extern void *D_8006259C;
-extern FileLoad D_8009D3F8[4]; /* shared read list */
+extern FileLoad D_8009D3F8[]; /* shared read list */
+
+/* Party: three character ids (0xFF empty) and per-character records. */
+typedef struct {
+    u8 gear; /* piloted gear, 0xFF none */
+    u8 pad1[0xA3];
+} CharacterRecord;
+
+extern u8 D_8006F368[3];
+extern CharacterRecord D_8006D940[];
+extern void *D_8009CD34[3]; /* character model buffers */
+extern void *D_8009BDF8[3]; /* gear model buffers */
+extern s32 D_8009C170;      /* loaded party members */
+extern s32 D_8004F304;
+extern void *D_8009C88C, *D_8009C884, *D_8009C888, *D_8009C614;
 
 /* Frame state. */
 typedef struct {

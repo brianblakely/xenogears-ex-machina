@@ -75,7 +75,54 @@ void func_80071B9C(s32 index, s32 position) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071B9C);
 #endif
 
+/* Allocate buffers for each party member's model and gear model, then read
+ * them all with one list. */
+#ifdef NON_MATCHING /* second loop's index/pointer registers differ */
+void func_80071CDC(void) {
+    s32 i;
+    s32 j;
+    s32 member;
+    u8 gear;
+
+    for (i = 0; i < 3; i++) {
+        member = D_8006F368[i];
+        if (member != 0xFF) {
+            D_8009CD34[i] = func_80031BDC(func_800288EC(member + 2), 0);
+            gear = D_8006D940[member].gear;
+            if (gear != 0xFF) {
+                D_8009BDF8[i] = func_80031BDC(func_800288EC(gear + 0x13), 0);
+            } else {
+                D_8009BDF8[i] = NULL;
+            }
+        } else {
+            D_8009BDF8[i] = NULL;
+            D_8009CD34[i] = NULL;
+        }
+    }
+    i = 0;
+    D_8009C170 = 0;
+    for (j = 0; j < 3; j++) {
+        member = D_8006F368[j];
+        if (member != 0xFF) {
+            D_8009D3F8[i].file = member + 2;
+            D_8009D3F8[i].dest = D_8009CD34[j];
+            i++;
+            D_8009C170++;
+            gear = D_8006D940[member].gear;
+            if (gear != 0xFF) {
+                D_8009D3F8[i].file = gear + 0x13;
+                D_8009D3F8[i].dest = D_8009BDF8[j];
+                i++;
+            }
+        }
+    }
+    D_8009D3F8[i].file = 0;
+    D_8009D3F8[i].dest = NULL;
+    func_80029AFC(D_8009D3F8, 0, 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071CDC);
+#endif
 
 /* Allocate and read the three area files into their resident buffers.
  * Differs in store scheduling of the read list. */
@@ -116,7 +163,27 @@ void func_80071FEC(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80071FEC);
 #endif
 
+/* Allocate and read the area's terrain, texture and object files. */
+#ifdef NON_MATCHING /* read-list base address kept in $s0 across calls */
+void func_80072090(void) {
+    D_8004F304++;
+    D_8009D3F8[0].file = D_8009CC98;
+    D_8009D3F8[0].dest = D_8009C88C = func_80031BDC(func_800288EC(D_8009CC98), 1);
+    D_8009D3F8[1].file = D_8009D3D0;
+    D_8009D3F8[1].dest = D_8009C884 = func_80031BDC(func_800288EC(D_8009D3D0), 0);
+    D_8009D3F8[2].file = D_8009D3C8;
+    D_8009D3F8[2].dest = D_8006259C = func_80031BDC(func_800288EC(D_8009D3C8), 0);
+    D_8009D3F8[3].file = D_8009D800;
+    D_8009D3F8[3].dest = D_8009C888 = func_80031BDC(func_800288EC(D_8009D800), 0);
+    D_8009D3F8[4].file = D_8009BCC8;
+    D_8009D3F8[4].dest = D_8009C614 = func_80031BDC(func_800288EC(D_8009BCC8), 0);
+    D_8009D3F8[5].file = 0;
+    D_8009D3F8[5].dest = NULL;
+    func_80029AFC(D_8009D3F8, 0, 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap", func_80072090);
+#endif
 
 /* Allocate and read the area's sixth file (kept, mode 0). */
 void func_800721E4(void) {
