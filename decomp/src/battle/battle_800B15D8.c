@@ -862,7 +862,7 @@ void func_800BEFF4(s32 slot) {
     SlotSprite *sprite = D_800C3610->sprite;
 
     if (sprite != NULL && D_800C3610->slot != slot && !BATTLE_FRAME.slots[SPRITE_SLOT(sprite)].hidden) {
-        func_800245D8(sprite, sprite->idleMode);
+        func_800245D8(sprite, sprite->idle.mode);
     }
     D_800C3610->slot = slot;
     D_800C3610->sprite = BATTLE_FRAME.slotSprites[slot];
@@ -1112,17 +1112,116 @@ void func_800BF998(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BF9EC);
+/* Upload the images of file 1 of directory 0x2C once requested. */
+void func_800BF9EC(void) {
+    void *file;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BFA9C);
+    if (D_800C3621 != 0) {
+        func_800B8354();
+        func_80028470(0x2C, 0);
+        file = func_80031BDC(func_800288EC(1), 0);
+        func_800295D8(1, (s32)file, 0, 0x80);
+        func_800B8354();
+        func_8002DDE4(file, 0, 0, 0, 0, 0, 0);
+        func_800BE790();
+        func_800320E8(file);
+        D_800C3621 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BFBA0);
+/* Once requested, restart the party slots in gears (in mode 2 all but the
+ * acting one) and wait for them to stop moving. */
+void func_800BFA9C(void) {
+    s32 i;
+    s32 acting;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BFC80);
+    if (D_800C362C != 0) {
+        func_800B8D04();
+        func_800BE790();
+        func_800BE790();
+        acting = SPRITE_SLOT(D_800C3E1C);
+        for (i = 0; i != 3; i++) {
+            if (BATTLE_FRAME.slots[i].gear != 0 && (D_800C362C != 2 || i != acting) && BATTLE_FRAME.slots[i].field2 < 0x11) {
+                func_800BB760(i);
+            }
+        }
+        while (D_800C35D8 != 0) {
+            func_800BE790();
+        }
+        D_800C362C = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BFD88);
+/* Load and transfer the sound bank of file 5 of directory 0x2C once. */
+void func_800BFBA0(void) {
+    u8 *file;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BFDA8);
+    if (D_800C3620 == 0) {
+        func_800B8354();
+        func_80028470(0x2C, 0);
+        file = func_80031BDC(func_800288EC(5), 0);
+        func_800295D8(5, (s32)file, 0, 0x80);
+        func_800B8354();
+        if (func_800383EC(*(u16 *)(file + 0x20)) == 0) {
+            func_800C0F70();
+            D_800C3A6C = func_80037FD8(file, 0);
+            while (func_8003BDFC(0) != 0) {
+                func_800BE790();
+            }
+            D_800C3620 = 1;
+            D_800C3622 = 0;
+        }
+        func_800320E8(file);
+    }
+}
+
+/* Find the resident effect sprites of sprite with motion mode (any with
+ * action 2): action 0 returns the first, the others destroy them. */
+SlotSprite *func_800BFC80(SlotSprite *sprite, s32 mode, s32 action) {
+    SpriteTask *owner = sprite->task;
+    SpriteTask *task;
+    SlotSprite *child;
+
+    for (task = D_8005958C; task != NULL; task = task->next) {
+        if (task->owner == owner && (task->link & 0x1FFFFFFF) == (owner->id & 0x1FFFFFFF) && (task->link >> 29 & 1)) {
+            child = task->data;
+            if (child->base == D_8006BE10) {
+                if (action != 2) {
+                    if (child->motion.b.mode != mode) {
+                        continue;
+                    }
+                    if (action == 0) {
+                        return child;
+                    }
+                }
+                child->task->destroy(child->task);
+            }
+        }
+    }
+    return NULL;
+}
+
+/* Destroy the resident effect sprites of sprite with motion mode. */
+void func_800BFD88(SlotSprite *sprite, s32 mode) {
+    func_800BFC80(sprite, mode, 1);
+}
+
+/* Give sprite a resident effect sprite playing motion mode, unless it has. */
+void func_800BFDA8(SlotSprite *sprite, s32 mode) {
+    u8 saved;
+    SlotSprite *child;
+
+    if (sprite->field48 != 0 && func_800BFC80(sprite, mode, 0) == NULL) {
+        void *motion = (void *)(SPRITE_RESOURCE->motions[mode + 1] + (s32)SPRITE_RESOURCE->motions);
+        saved = D_800591AC;
+        D_800591AC = 0;
+        child = func_80023B84(sprite, motion, D_8006BE10);
+        child->motion.b.mode = mode;
+        child->target = sprite;
+        D_800591AC = saved;
+        child->idle.word |= 0x100;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BFE48);
 

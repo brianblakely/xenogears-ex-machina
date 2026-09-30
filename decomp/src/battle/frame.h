@@ -9,6 +9,8 @@
 #include "psyq.h"
 #include "scene.h"
 #include "battle_core.h"
+#include "files.h"
+#include "objects.h"
 #include "psyq/libetc.h"
 #include "psyq/libapi.h"
 
@@ -27,13 +29,26 @@ typedef struct {
     u16 time;
 } PadRecord;
 
+/* A resident sprite task (the resident Task, fields as far as used). */
+typedef struct SpriteTask {
+    struct SpriteTask *owner;
+    void *data;                                /* 0x04: its sprite */
+    void (*update)(struct SpriteTask *task);   /* 0x08 */
+    void (*destroy)(struct SpriteTask *task);  /* 0x0C */
+    u32 id;                                    /* 0x10: bits 0-28 its serial */
+    u32 link;                                  /* 0x14: bits 0-28 the owner's, bit 29 linked */
+    struct SpriteTask *next;                   /* 0x18 */
+} SpriteTask;
+
 /* A slot's sprite (a resident sprite; fields as far as used). */
 typedef struct SlotSprite {
     s32 x, y, z;                /* 16.16 */
-    u8 padC[0x48 - 0xC];
+    u8 padC[0x24 - 0xC];
+    u8 *base;                   /* 0x24: its resource block */
+    u8 pad28[0x48 - 0x28];
     s32 field48;                /* 0x48 */
     u8 pad4C[0x6C - 0x4C];
-    void *task;                 /* 0x6C: its resident task */
+    SpriteTask *task;           /* 0x6C: its resident task */
     u8 pad70[0x74 - 0x70];
     struct SlotSprite *target;  /* 0x74 */
     u8 pad78[0x7C - 0x78];
@@ -58,8 +73,19 @@ typedef struct SlotSprite {
             s8 mode;            /* 10 while running commands, 0x15 ... */
         } b;
     } motion;                   /* 0xAC */
-    s8 idleMode;                /* 0xB0 */
+    union {
+        u32 word;               /* 0x100 an effect sprite */
+        s8 mode;                /* the idle motion mode */
+    } idle;                     /* 0xB0 */
 } SlotSprite;
+
+/* The resident sprite resource block of D_8006BE10. */
+typedef struct {
+    u8 pad0[0x10];
+    u16 *motions; /* 0x10: a count, then offsets from here */
+} SpriteResource;
+
+#define SPRITE_RESOURCE ((SpriteResource *)D_8006BE10)
 
 /* The battle slot of a slot's sprite. */
 #define SPRITE_SLOT(sprite) ({ s32 low_ = (sprite)->frameBits.slotLow; (sprite)->motion.bits.slotHigh << 2 | low_; })
@@ -254,5 +280,22 @@ s32 func_800B57E4(SlotSprite *sprite);
 void func_800B7C34(s32 command);
 void func_800BD2E4(void);
 s32 func_800BF720(void);
+
+/* Requested loads, gear restarts and effect sprites (800BF9EC-800BFDA8). */
+extern u8 D_800C3620;            /* the sound bank of file 5 is loaded */
+extern u8 D_800C3621;            /* upload the images of file 1 */
+extern s8 D_800C3622;
+extern u8 D_800C362C;            /* restart the party's gears (2: all but the acting) */
+extern s32 D_800C35D8;           /* members still moving */
+extern s32 D_800C3A6C;
+extern SpriteTask *D_8005958C;   /* the main task list */
+
+SlotSprite *func_80023B84(SlotSprite *owner, void *motion, void *resource); /* create an effect sprite */
+s32 func_80037FD8(void *bank, s32 flags); /* transfer a sound bank */
+s32 func_800383EC(u16 id);
+s16 func_8003BDFC(s32 wait);             /* sound transfer busy */
+void func_800B8D04(void);
+void func_800BB760(s32 slot);
+SlotSprite *func_800BFC80(SlotSprite *sprite, s32 mode, s32 action);
 
 #endif
