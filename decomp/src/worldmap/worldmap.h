@@ -941,4 +941,15 @@ typedef struct {
     s16 x3, y3;
 } PolyG4v;
 
+/* Scratchpad work area of the scene rigs. */
+typedef struct {
+    VECTOR position;   /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR angle[4];  /* 0xA0 */
+    u8 padC0[0x30];
+    MATRIX matrix[4];  /* 0xF0 */
+} RigScratch;
+
+#define RIG_SCRATCH ((RigScratch *)0x1F800000)
+
 #endif

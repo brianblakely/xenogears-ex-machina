@@ -62,7 +62,43 @@ s32 func_8007828C(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_800783E8);
+/* Fly the scene rig forward: move the actor and the ground scroll, place scene
+ * object 0 and the camera on it, spin the three rotors and share their
+ * matrices across the rig's objects. */
+s32 func_800783E8(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->position.vz -= 0x4000;
+    GROUND_SCROLL[2] -= 0x4000;
+    func_80093354(&actor->position);
+    RIG_SCRATCH->position.vx = actor->position.vx >> 12;
+    RIG_SCRATCH->position.vy = actor->position.vy >> 12;
+    RIG_SCRATCH->position.vz = actor->position.vz >> 12;
+    D_8009C620[0].position = RIG_SCRATCH->position;
+    D_8009BE28.target = actor->position;
+    actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
+    actor->unk58 = (actor->unk58 + actor->unk5C) & 0xFFF;
+    actor->unk60 = (actor->unk60 + actor->unk64) & 0xFFF;
+    RIG_SCRATCH->angle[0].vx = RIG_SCRATCH->angle[0].vz = RIG_SCRATCH->angle[1].vx =
+        RIG_SCRATCH->angle[1].vz = RIG_SCRATCH->angle[2].vx = RIG_SCRATCH->angle[2].vz = 0;
+    RIG_SCRATCH->angle[0].vy = actor->u.step;
+    RIG_SCRATCH->angle[1].vy = actor->unk58;
+    RIG_SCRATCH->angle[2].vy = actor->unk60;
+    RIG_SCRATCH->angle[3].vx = RIG_SCRATCH->angle[3].vy = 0;
+    RIG_SCRATCH->angle[3].vz = actor->unk60;
+    func_8004A92C(&RIG_SCRATCH->angle[0], &RIG_SCRATCH->matrix[0]);
+    func_8004A92C(&RIG_SCRATCH->angle[1], &RIG_SCRATCH->matrix[1]);
+    func_8004A92C(&RIG_SCRATCH->angle[2], &RIG_SCRATCH->matrix[2]);
+    func_8004A92C(&RIG_SCRATCH->angle[3], &RIG_SCRATCH->matrix[3]);
+    D_8009C620[1].matrix = D_8009C620[2].matrix = D_8009C620[3].matrix = RIG_SCRATCH->matrix[3];
+    D_8009C620[4].matrix = D_8009C620[5].matrix = RIG_SCRATCH->matrix[2];
+    D_8009C620[6].matrix = D_8009C620[10].matrix = D_8009C620[8].matrix = D_8009C620[12].matrix =
+        RIG_SCRATCH->matrix[0];
+    D_8009C620[7].matrix = D_8009C620[11].matrix = D_8009C620[9].matrix = D_8009C620[13].matrix =
+        RIG_SCRATCH->matrix[1];
+    return 1;
+}
 
 /* Mode step that has nothing to do; always reports done. */
 s32 func_80078948(void) {
