@@ -3243,7 +3243,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008ADD0);
  * +0x641c lists. */
 void func_8008B108(u8 keep) {
     D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
-    D_800D2D28->unkB0 = D_800D2D28->unkB1 = D_800D2D28->unkB2 = D_800D2D28->unkB3 = 0;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
         D_800D2D28->unkCB = 1;
@@ -3254,7 +3254,7 @@ void func_8008B108(u8 keep) {
  * the member and its default target. */
 void func_8008B168(u8 member) {
     D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
-    D_800D2D28->unkB0 = D_800D2D28->unkB1 = D_800D2D28->unkB2 = D_800D2D28->unkB3 = 1;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = D_800D2D28->windows[3] = 1;
     D_800D2D28->unkB7 = 1;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
@@ -3270,7 +3270,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B908);
  * lists. */
 void func_8008BC40(u8 keep) {
     D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
-    D_800D2D28->unkB0 = D_800D2D28->unkB1 = 0;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
         D_800D2D28->unkCB = 1;
@@ -3281,7 +3281,7 @@ void func_8008BC40(u8 keep) {
  * member and its default target. */
 void func_8008BC98(u8 member) {
     D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
-    D_800D2D28->unkB0 = D_800D2D28->unkB1 = 1;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = 1;
     D_800D2D28->unkB7 = 2;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
@@ -3304,7 +3304,7 @@ void func_8008C360(u8 close) {
         func_8007765C();
         func_80077980();
     } else {
-        D_800D2D28->unkB0 = D_800D2D28->unkB1 = 0;
+        D_800D2D28->windows[0] = D_800D2D28->windows[1] = 0;
     }
 }
 
@@ -3313,7 +3313,7 @@ void func_8008C360(u8 close) {
 void func_8008C3F0(u8 member) {
     D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
     D_800D2D28->unkB7 = 3;
-    D_800D2D28->unkB0 = D_800D2D28->unkB1 = 1;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = 1;
     func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
@@ -3326,14 +3326,22 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C81C);
  * lists. */
 void func_8008CCCC(u8 keep) {
     D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 0;
-    D_800D2D28->unkB0 = D_800D2D28->unkB1 = D_800D2D28->unkB2 = 0;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = 0;
     D_800D2D28->unkB7 = 0;
     if (keep == 0) {
         D_800D2D28->unkCB = 1;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CD28);
+/* Show the command windows (three panels, page 4) and frame the camera on
+ * the member and its default target. */
+void func_8008CD28(u8 member) {
+    D_800D2D28->unk9C = D_800D2D28->unk9D = D_800D2D28->unk9E = 1;
+    D_800D2D28->windows[0] = D_800D2D28->windows[1] = D_800D2D28->windows[2] = 1;
+    D_800D2D28->unkB7 = 4;
+    func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+    func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CDE4);
 
@@ -3357,13 +3365,23 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F6E4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F8F4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FA60);
+/* Close window `window` and release its two blocks after a frame. */
+void func_8008FA60(u8 window) {
+    D_800D2D28->windows[window] = 0;
+    D_800D2D28->unkB8[window] = 0;
+    func_800716D8();
+    func_800320E8(D_800D2E38[window]);
+    func_800320E8(D_800D2D90[window]);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FAD8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FC1C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FDE4);
+/* Open the standard message window (0x20, 0x5c, 0xcc x 0x60, style 0xe). */
+void func_8008FDE4(void) {
+    func_8008FC1C(0x20, 0x5C, 0xCC, 0x60, 0xE);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FE18);
 
@@ -3417,7 +3435,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800939CC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093B08);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009413C);
+/* For party character 4: close its command window and, with `release`,
+ * its extra resources. */
+void func_8009413C(u8 member, u8 release) {
+    if (D_800D2D24[member] == 4) {
+        D_800D2D28->unkB7 = 0;
+        D_800D2D28->windows[0] = 0;
+        if (release != 0) {
+            func_8007FB70(member);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800941A4);
 
@@ -3437,7 +3465,13 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800958D8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095A78);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095B44);
+/* When 80097964 accepts the attacker's +2/+3/+0 values, run 800995a0 on the
+ * target with the descriptor's +0x1d/+0x1e and mode 5. */
+void func_80095B44(void) {
+    if (func_80097964(D_800C3E00->unk2, D_800C3E00->unk3, D_800C3E00->unk0) == 1) {
+        func_800995A0(D_800C3E50, D_800C3DFC->unk1D, D_800C3DFC->unk1E, 5);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095BAC);
 
@@ -3462,7 +3496,15 @@ void func_8009795C(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097964);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097D08);
+/* Clear the per-slot damage and result codes (12 entries). */
+void func_80097D08(void) {
+    s16 slot = 11;
+
+    do {
+        D_800C34B0->resultCodes[slot] = 0xFF;
+        D_800C34B0->damage[slot] = 0;
+    } while (--slot != -1);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097D5C);
 

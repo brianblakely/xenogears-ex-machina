@@ -126,15 +126,13 @@ typedef struct {
     u8 unkAD;
     u8 unkAE;          /* menu module block loaded */
     u8 unkAF;
-    u8 unkB0;
-    u8 unkB1;
-    u8 unkB2;
-    u8 unkB3;
+    u8 windows[4];     /* +0xB0 window shown */
     u8 unkB4;
     u8 unkB5;
     u8 unkB6;
     u8 unkB7;          /* command window page */
-    u8 unkB8[0xC6 - 0xB8];
+    u8 unkB8[4];
+    u8 unkBC[0xC6 - 0xBC];
     u8 unkC6;
     u8 unkC7;
     u8 unkC8;
@@ -364,6 +362,36 @@ typedef struct {
 } SoundSystem;
 
 extern SoundSystem *D_8005919C;
+extern void *D_800D2E38[4]; /* window blocks */
+extern void *D_800D2D90[4];
+
+/* Battle state (800ccce8): the records and per-action arrays. */
+typedef struct {
+    BattleRecord records[11];
+    u8 unkFD0[0x5F6C - 0xFD0];
+    s32 damage[12];    /* +0x5F6C */
+    u8 unk5F9C[4];
+    u8 resultCodes[12]; /* +0x5FA0 */
+} BattleState;
+
+extern BattleState *D_800C34B0;
+
+/* Resolver globals. */
+typedef struct {
+    u16 unk0;
+    u8 unk2;
+    u8 unk3;
+} ResolverAttacker;
+
+typedef struct {
+    u8 unk0[0x1D];
+    u8 unk1D;
+    u16 unk1E;
+} CommandDescriptor;
+
+extern ResolverAttacker *D_800C3E00;
+extern CommandDescriptor *D_800C3DFC;
+extern u8 D_800C3E50;      /* target slot */
 
 /* Per-slot formation information (0x1c bytes from 800c3eb4). */
 typedef struct {
@@ -535,7 +563,7 @@ s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);
 s32 func_800877E0(u8 actor, u8 target);
 void func_80085D34(void);
 void func_800879A8(u8 actor, u8 target);
-void func_8008FA60(s32 window);
+void func_8008FA60(u8 window);
 void func_8007765C(void);
 void func_8008AB94(void);
 void func_8008A684(u8 member);
@@ -544,6 +572,9 @@ void func_8008A3EC(u8 member);
 void func_800BC404(u16 mask);
 void func_800BCD98(u16 mask);
 void func_80077980(void);
+void func_8008FC1C(s32 x, s32 y, s32 w, s32 h, s32 style);
+s8 func_80097964(u8 a, u8 b, u16 c);
+void func_800995A0(u8 slot, u8 a, u16 b, s32 mode);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
 void func_800883AC(u8 slot);
