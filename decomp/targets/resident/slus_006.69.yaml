@@ -24,6 +24,7 @@ options:
   gp_value: 0x80059170
   ld_gp_expression: "0x80059170"
   o_as_suffix: True
+  generate_asm_macros_files: False
   ld_bss_is_noload: True
   ld_align_segment_vram_end: False
   ld_align_section_vram_end: False
