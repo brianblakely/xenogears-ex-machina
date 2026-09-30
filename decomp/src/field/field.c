@@ -6074,7 +6074,179 @@ s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR
 void func_80083994(void) {
 }
 
+#ifdef NON_MATCHING
+/* The controlled actor's talk (event 2) and touch (event 3) triggers: each
+ * other actor within reach (rectangle 0x2000 or circle), facing and not
+ * inhibited, turns toward it and gets the event in a free script slot. */
+void func_8008399C(s32 index, FieldDescriptor *descriptor, FieldActor *player) {
+    VECTOR offset;
+    VECTOR square;
+    VECTOR reach;
+    VECTOR reach_square;
+    FieldActor *other;
+    s32 priority;
+    s32 touch;
+    s32 talk;
+    s32 py;
+    s32 head;
+    s32 facing;
+    s32 px;
+    s32 pz;
+    s32 talked;
+    s32 event;
+    s32 top;
+    s32 distance;
+    s32 angle;
+    s32 octant;
+    s32 relative;
+    s32 i;
+    s32 j;
+
+    talked = 0;
+    priority = 7;
+    py = WHOLE(player->position[1]);
+    head = py - (u16)player->height;
+    touch = (u16)player->gravity.s.whole + 8;
+    talk = (u16)player->gravity.s.whole + 0x20;
+    facing = player->heading_goal & 0xFFF;
+    px = WHOLE(player->position[0]);
+    pz = WHOLE(player->position[2]);
+    for (i = 0; i < D_800ADBFC; i++) {
+        other = D_800AF880.components.descriptors[i].actor;
+        event = 0xFF;
+        if ((other->flags & 1) || player->unk074 == i) {
+            goto insert;
+        }
+        top = WHOLE(other->position[1]) + other->unk62;
+        if (other->layer_flags & 0x180) {
+            if (other->layer_flags & 0x100) {
+                if ((D_800C2694 & 0x20) && talked == 0 && !(other->layer_flags & 0x4000000)) {
+                    if (!(other->flags & 0x220000) && (s16)D_800B2078.open_windows == 0) {
+                        talked = 1;
+                        event = 2;
+                        priority = 3;
+                        offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                        offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                        angle = -ratan2(offset.vz, offset.vx);
+                        other->state.word = (other->state.word & ~0xE00) | (angle & 0xE00);
+                    }
+                } else if (!(other->flags & 0xA20000)) {
+                    event = 3;
+                    priority = 4;
+                    offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                    offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                    octant = -(ratan2(offset.vz, offset.vx) >> 9) & 7;
+                    other->state.bits.octant = octant;
+                    if (D_800ADF64 == 0 && (other->flags & 0x8000000)) {
+                        D_800ADF64 = 1;
+                        descriptor->model->velocity[1] = 0;
+                    }
+                }
+            } else {
+                D_800ADF64 = 0;
+            }
+        }
+        if (other->flags & 0x2000) {
+            if (top < head || py < top - (u16)other->height || i == index
+                || func_8008237C(px, pz, (FieldBox *)other, 0x10) != 0) {
+                goto insert;
+            }
+            if ((D_800C2694 & 0x20) && talked == 0 && !(other->layer_flags & 0x4000000)) {
+                if (other->flags & 0x220000) {
+                    goto insert;
+                }
+                if ((s16)D_800B2078.open_windows != 0) {
+                    goto insert;
+                }
+                offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                angle = -ratan2(offset.vz, offset.vx);
+                octant = (angle >> 9) & 7;
+                relative = (facing - (angle & 0xFFF)) & 0xFFF;
+                if ((other->layer_flags & 0x40000) && (u32)(relative - 0x2BC) < 0xA89) {
+                    goto insert;
+                }
+                talked = 1;
+                event = 2;
+                priority = 3;
+                other->state.bits.octant = octant;
+                if (D_800C268C == 0) {
+                    D_80285988 = 1;
+                }
+            } else if (!(other->flags & 0xA20000)) {
+                event = 3;
+                priority = 4;
+                offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+                offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+                octant = -(ratan2(offset.vz, offset.vx) >> 9) & 7;
+                other->state.bits.octant = octant;
+                if (D_800C268C == 0) {
+                    D_80285988 = 1;
+                }
+            }
+        } else {
+            offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+            offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+            offset.vy = talk + (u16)other->gravity.s.whole;
+            gte_ldlvl(&offset);
+            gte_sqr0();
+            gte_stlvnl(&square);
+            if (square.vx + square.vz >= square.vy || top < head || py < top - (u16)other->height || i == index) {
+                goto insert;
+            }
+            offset.vx = WHOLE(other->position[0]) - px + other->unk60;
+            offset.vz = WHOLE(other->position[2]) - pz + other->unk64;
+            func_8004A414(&offset, &square);
+            reach.vx = touch + (u16)other->gravity.s.whole;
+            distance = square.vx + square.vz;
+            reach.vz = talk + (u16)other->gravity.s.whole;
+            func_8004A414(&reach, &reach_square);
+            if (distance < reach_square.vz && (D_800C2694 & 0x20) && talked == 0
+                && !(other->layer_flags & 0x4000000)) {
+                if (other->flags & 0x220000) {
+                    goto insert;
+                }
+                angle = -ratan2(offset.vz, offset.vx);
+                octant = (angle >> 9) & 7;
+                relative = (facing - (angle & 0xFFF)) & 0xFFF;
+                if ((u32)(relative - 0x2BC) < 0xA89 || (s16)D_800B2078.open_windows != 0) {
+                    goto insert;
+                }
+                talked = 1;
+                event = 2;
+                priority = 3;
+                other->state.bits.octant = octant;
+            } else if (!(other->flags & 0xA20000) && distance < reach_square.vx) {
+                event = 3;
+                priority = 4;
+                octant = -(ratan2(offset.vz, offset.vx) >> 9) & 7;
+                other->state.bits.octant = octant;
+            }
+        }
+    insert:
+        if (event != 0xFF) {
+            for (j = 0; j < 8; j++) {
+                if (other->slots[j].tag == (u8)event) {
+                    break;
+                }
+            }
+            if (j == 8) {
+                for (j = 0; j < 8; j++) {
+                    if (other->slots[j].priority == 15 && !other->slots[j].unk22) {
+                        other->slots[j].resume_pc = func_800A3090(i, event);
+                        other->slots[j].tag = event;
+                        other->slots[j].priority = priority;
+                        other->heading = other->heading_goal = other->heading_goal | 0x8000;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008399C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80084158);
 

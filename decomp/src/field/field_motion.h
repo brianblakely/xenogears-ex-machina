@@ -101,6 +101,21 @@ typedef struct {
 extern u32 *func_8007CD3C(s32 words);
 extern void func_8007CD60(s32 words);
 
+/* Talk and touch triggers (8008399c). */
+extern s32 D_800ADF64; /* touch latch */
+extern s32 D_80285988; /* 801e module: interaction debug flag */
+extern s32 func_800A3090(s32 actor, s32 event);
+
+/* libgte (gtemac) square: IR1-IR3 from a 32-bit vector, squared into
+ * MAC1-MAC3. */
+#define gte_ldlvl(r0)                                                          \
+    __asm__ volatile("lwc2 $9, 0(%0);"                                         \
+                     "lwc2 $10, 4(%0);"                                        \
+                     "lwc2 $11, 8(%0)"                                         \
+                     :                                                         \
+                     : "r"(r0))
+#define gte_sqr0() __asm__ volatile("nop;nop;.word 0x4AA00428")
+
 /* The per-actor motion stages of the field update (8008110c). */
 extern s32 D_800AF858;
 extern s32 D_80065B08; /* actor in motion */
