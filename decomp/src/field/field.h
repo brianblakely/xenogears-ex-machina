@@ -424,7 +424,8 @@ typedef struct {
     u8 unk2358;                /* 2358 */
     u8 unk2359[0x236C - 0x2359];
     s16 unk236C;               /* 236C */
-    u8 unk236E[0x2374 - 0x236E];
+    u8 unk236E[2];
+    s32 wave_chunks;           /* 2370: music-wave chunks gathered */
     s32 unk2374;               /* 2374 */
     s32 unk2378;               /* 2378 */
     s32 unk237C;               /* 237C */
@@ -473,10 +474,15 @@ typedef struct {
     POLY_FT4 poly[2];
 } FieldMarker;
 
+/* One 2 KiB music-wave stream chunk. */
+typedef struct {
+    u32 words[0x200];
+} WaveChunk;
+
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
-    u16 id;
-    u16 owner;
+    u16 actor;  /* descriptor the sound follows */
+    u16 sound;  /* 0xffff when free */
     u16 unk4;
 } EmitterSlot;
 
@@ -488,6 +494,10 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_8001B66C(void);
+extern void func_8002945C(WaveChunk *chunk);
+extern void func_8003827C(void *bank, s32 size);
+extern s32 func_800380D0(void *data, s32 size, s32);
 extern void func_8003A948(s32 sequence, s32, s32);
 extern void func_8003A9BC(s32 sequence, s32, s32);
 extern void func_8004A0EC(s32 r, s32 g, s32 b); /* SetBackColor */
@@ -581,6 +591,9 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80085560(s32 file, s32 unused, void (*callback)(s32));
+extern void func_800859DC(WaveChunk *chunk);
+extern void func_80086024(void);
 extern void func_800A47D4(void);
 extern void func_800A4CC4(s32, s32, s32, s32, s32, s32, s32);
 extern void func_80086BA8(void);
@@ -660,6 +673,9 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F33C; /* current music wave */
+extern s32 D_8004F354;
+extern s32 D_8006258C; /* music wave bank */
 extern s32 D_8006FABC[3]; /* party sprite ids per slot */
 extern s32 D_8004F380;
 extern s32 D_80059198;
@@ -689,6 +705,9 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern u8 D_800ADFCC[][2]; /* per music: wave file, release shared bank */
+extern s32 D_800AFC54;
+extern void *D_800C3A1C; /* music-wave gather buffer */
 extern s16 D_800ADB54;
 extern s32 D_800B068C[4];
 extern s32 D_800ADB98;

@@ -1624,9 +1624,61 @@ void func_80085988(void) {
     D_8004F32C = -1;
 }
 
+#ifdef NON_MATCHING
+/* Music-wave chunk callback: gather four 2 KiB chunks and open them as a
+ * wave bank; later chunks feed the bank. */
+void func_800859DC(WaveChunk *chunk) {
+    if (D_800B2078.wave_chunks < 0) {
+        return;
+    }
+    if (D_800B2078.wave_chunks < 4) {
+        ((WaveChunk *)D_800C3A1C)[D_800B2078.wave_chunks] = *chunk;
+        D_800B2078.wave_chunks++;
+        func_8002945C(chunk);
+        if (D_800B2078.wave_chunks == 4) {
+            D_8006258C = func_800380D0(D_800C3A1C, 0x2000, 0);
+        }
+    } else if (D_800B2078.wave_chunks == 4) {
+        func_8003BDFC(0x10);
+        *(WaveChunk *)D_800C3A1C = *chunk;
+        func_8003827C(D_800C3A1C, 0x800);
+        func_8002945C(chunk);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800859DC);
+#endif
 
+#ifdef NON_MATCHING
+/* Change the field music to `music` (0xff: none): release the shared wave
+ * bank when the entry asks, then stream its wave file through 800859dc. */
+void func_80085B20(s32 music) {
+    u8 wave;
+
+    func_80028A60(0);
+    func_8001B66C();
+    if (music == 0xFF) {
+        D_8004F308 = 0;
+        return;
+    }
+    func_80028470(0x1C, 0);
+    if (D_800ADFCC[music][1] == 1) {
+        func_80086024();
+    }
+    wave = D_800ADFCC[music][0];
+    if (wave != 0xFF && D_8004F33C != wave) {
+        func_80085560(wave * 2 + 0x13, 1, (void (*)(s32))func_800859DC);
+        D_8004F354 = 1;
+        D_800B2078.wave_chunks = 0;
+        D_800C3A1C = func_80031BDC(0x2000, 1);
+    }
+    func_80028470(4, 0);
+    D_8004F308 = -1;
+    D_800AFC54 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085B20);
+#endif
 
 /* Run up to five stream steps; 0 once the stream finished, else -1. */
 s32 func_80085C3C(void) {
@@ -1714,7 +1766,7 @@ void func_800860F0(s32 unused0, s32 volume, s32 unused2, s32 distance, s32 id) {
     s32 y;
 
     for (i = 0; i < 3; i++) {
-        if (D_800AFE88[i].id == id) {
+        if (D_800AFE88[i].actor == id) {
             voice = i * 2;
             func_80086078(distance, &level, volume);
             func_80086200(id, &x, &y);
@@ -1755,17 +1807,46 @@ void func_80086200(s32 index, s32 *x, s32 *y) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086200);
 #endif
 
+#ifdef NON_MATCHING
+/* Start `sound` on the first free emitter, following descriptor `actor`,
+ * with volume by distance and pan by screen X. */
+void func_800862CC(u16 sound, s32 volume, s32 unused, s32 distance, s32 actor) {
+    s32 i;
+    u32 level;
+    s32 x;
+    s32 y;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800AFE88[i].sound == 0xFFFF) {
+            D_800AFE88[i].sound = sound;
+            D_800AFE88[i].actor = actor;
+            func_80086078(distance, &level, volume);
+            func_80086200(actor, &x, &y);
+            if (x > 0x140) {
+                x = 0x13F;
+            }
+            if (x < 0) {
+                x = 0;
+            }
+            func_8003A20C(i * 2);
+            func_80039F9C(sound, i * 2, level, (x * 0x6666) >> 16);
+            return;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800862CC);
+#endif
 
 /* Stop the emitter playing sound `id`, freeing its slot. */
 void func_800863E8(s32 id) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        if (D_800AFE88[i].id == id) {
+        if (D_800AFE88[i].actor == id) {
             func_8003A20C(i * 2);
-            D_800AFE88[i].owner = 0xFFFF;
-            D_800AFE88[i].id = 0xFFFF;
+            D_800AFE88[i].sound = 0xFFFF;
+            D_800AFE88[i].actor = 0xFFFF;
             return;
         }
     }
@@ -1779,7 +1860,7 @@ s32 func_80086470(s32 owner, s32 id) {
         return -1;
     }
     for (i = 0; i < 3; i++) {
-        if (D_800AFE88[i].id == id) {
+        if (D_800AFE88[i].actor == id) {
             return i;
         }
     }
@@ -1791,8 +1872,8 @@ void func_800864B4(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        D_800AFE88[i].id = 0xFFFF;
-        D_800AFE88[i].owner = 0xFFFF;
+        D_800AFE88[i].actor = 0xFFFF;
+        D_800AFE88[i].sound = 0xFFFF;
     }
 }
 
@@ -1801,8 +1882,8 @@ void func_800864F0(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
-        D_800AFE88[i].owner = 0xFFFF;
-        D_800AFE88[i].id = 0xFFFF;
+        D_800AFE88[i].sound = 0xFFFF;
+        D_800AFE88[i].actor = 0xFFFF;
     }
     for (i = 0; i < 4; i++) {
         if (!(D_800B2078.effects_kept & 1)) {
