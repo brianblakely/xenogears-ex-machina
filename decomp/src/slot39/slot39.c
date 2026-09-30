@@ -1719,8 +1719,9 @@ s32 func_801C9D34(s32 mode) {
  * below holding a file, else to the first file after the next row; 1 the
  * same for this game's files; 2 a row down when that card is present. */
 #ifdef NON_MATCHING
+/* Matches except the placement of the second mode-0 loop's store block (see
+ * 801ca1d4). */
 void func_801C9EF4(s32 mode, s32 slot) {
-    s32 cursor;
     s32 next;
     s32 i;
 
@@ -1733,8 +1734,7 @@ void func_801C9EF4(s32 mode, s32 slot) {
             }
         }
         if (slot + 3 >= 30) {
-            cursor = D_800625A0->card->cursor;
-            i = cursor + 3;
+            i = D_800625A0->card->cursor + 3;
             if (i < 30) {
                 for (; i + 1 < 30; i++) {
                     if (D_800625A0->card->fileSlots[D_801E981C[i + 1]] != 0xff) {
@@ -1746,20 +1746,24 @@ void func_801C9EF4(s32 mode, s32 slot) {
         }
         break;
     case 1:
-        for (next = slot + 3; next < 30; next += 3, slot += 3) {
-            if (D_800625A0->card->fileSlots[D_801E981C[next]] != 0xff &&
-                D_800625A0->card->ours[D_801E981C[next]]) {
-                D_800625A0->card->cursor = next;
+        while (slot + 3 < 30) {
+            if (D_800625A0->card->fileSlots[D_801E981C[slot + 3]] == 0xff ||
+                !D_800625A0->card->ours[D_801E981C[slot + 3]]) {
+                slot += 3;
+            } else {
+                D_800625A0->card->cursor = slot + 3;
                 break;
             }
         }
         if (slot + 3 >= 30) {
-            cursor = D_800625A0->card->cursor;
-            if (cursor + 3 < 30) {
-                for (i = cursor + 4; i < 30; i++) {
-                    if (D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff &&
-                        D_800625A0->card->ours[D_801E981C[i]]) {
-                        D_800625A0->card->cursor = i;
+            i = D_800625A0->card->cursor + 3;
+            if (i < 30) {
+                while (i + 1 < 30) {
+                    if (D_800625A0->card->fileSlots[D_801E981C[i + 1]] == 0xff ||
+                        !D_800625A0->card->ours[D_801E981C[i + 1]]) {
+                        i++;
+                    } else {
+                        D_800625A0->card->cursor = i + 1;
                         break;
                     }
                 }
@@ -1772,9 +1776,9 @@ void func_801C9EF4(s32 mode, s32 slot) {
             if (next < 30) {
                 D_800625A0->card->cursor = next;
             } else {
-                cursor = D_800625A0->card->cursor;
-                if (cursor + 3 < 30 && cursor + 4 < 30) {
-                    D_800625A0->card->cursor = cursor + 4;
+                i = D_800625A0->card->cursor + 3;
+                if (i < 30 && i + 1 < 30) {
+                    D_800625A0->card->cursor = i + 1;
                 }
             }
         }
