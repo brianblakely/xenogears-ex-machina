@@ -288,11 +288,16 @@ typedef struct {
     s16 emitter_range;         /* 21AC */
     u8 unk21AE[0x21B8 - 0x21AE];
     s32 last_sound_effect;     /* 21B8 */
-    u8 unk21BC[0x225F - 0x21BC];
+    u8 unk21BC[0x21D2 - 0x21BC];
+    s8 unk21D2;                /* 21D2 */
+    u8 unk21D3;
+    s16 unk21D4;               /* 21D4 */
+    u8 unk21D6[0x225F - 0x21D6];
     u8 unk225F[0x2268 - 0x225F]; /* 225F: event byte table */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled descriptor */
-    u8 unk2270[0x22E2 - 0x2270];
+    u8 unk2270[0x22E0 - 0x2270];
+    s16 unk22E0;               /* 22E0 */
     s16 emitter_descriptor[3]; /* 22E2: descriptor each emitter follows, or -1 */
     u8 unk22E8[0x233C - 0x22E8];
     u16 effects_kept;          /* 233C: bit per effect pair still playing */
@@ -329,6 +334,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_8003633C(s32);
 extern void func_80019CD0(void);
 extern s32 func_800288EC(s32 file);
 extern void *func_80031BDC(s32 size, s32);
@@ -387,6 +393,9 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8008A558(void);
+extern void func_800A98E8(s32 actor, s32 value);
+extern void func_800A99A8(s32 actor);
 extern void func_80088D38(s32);
 extern void func_800A8BA4(void);
 extern void func_800A915C(void);
@@ -422,6 +431,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8005A444[3]; /* party members */
 extern s32 D_8004F300;
 extern u8 D_80050622;
 extern GameState *D_8005A39C;
@@ -442,6 +452,12 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s32 D_800ADB88;
+extern s32 D_800ADB8C;
+extern s32 D_800AFC7C; /* batch limit */
+extern s32 D_800AFD1C; /* current actor index */
+extern s32 D_800AFE84;
+extern s32 D_800B06A0;
 extern FieldWork D_800B21AC;
 extern void *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */

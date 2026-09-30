@@ -1581,19 +1581,54 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800896D4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089880);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089A80);
+/* Event: use four batch steps and, unless 800adb8c is set, 800a99a8 for the
+ * current actor. */
+void func_80089A80(void) {
+    D_800AFC7C += 4;
+    if (D_800ADB8C == 0) {
+        func_800A99A8(D_800AFD1C);
+    }
+    D_800B0078->pc++;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089AE4);
+/* Event: use four batch steps and run 800a98e8 for the current actor with
+ * its byte operand. */
+void func_80089AE4(void) {
+    D_800AFC7C += 4;
+    func_800A98E8(D_800AFD1C, D_800ADC00[D_800B0078->pc + 1]);
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089B54);
+/* Event: store the current actor's party position (or 0xff) in variable op1. */
+void func_80089B54(void) {
+    s32 i;
+
+    for (i = 0; i < 3; i++) {
+        if (D_8005A444[i] == D_800AFD1C) {
+            func_800A3074(func_800ACDB8(1) & 0xFFFF, i);
+            goto done;
+        }
+    }
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, 0xFF);
+done:
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089BF0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089DCC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089F18);
+/* Event: set 800b22e0 from operand 1. */
+void func_80089F18(void) {
+    D_800B21AC.unk22E0 = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089F54);
+/* Event: set 800b21d2 to operand 1 less 0x80. */
+void func_80089F54(void) {
+    D_800B21AC.unk21D2 = func_800ACDEC(1) - 0x80;
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089F94);
 
@@ -1603,9 +1638,21 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A08C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A148);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A244);
+/* Event: wait while 800adb88 is set, yielding each time. */
+void func_8008A244(void) {
+    if (D_800ADB88 == 0) {
+        D_800B0078->pc++;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A2A0);
+/* Event: store 800b06a0 in variable op1. */
+void func_8008A2A0(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800B06A0);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A2E8);
 
@@ -1633,13 +1680,38 @@ void func_8008A510(void) {
 void func_8008A518(void) {
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A520);
+/* Wait (VSync) until the disc is idle and the stream is stopped. */
+void func_8008A520(void) {
+    while (func_8008A558() != 0) {
+        func_8004B54C(0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A558);
+/* Stop the stream once no music-wave read runs and the disc is idle; -1
+ * while busy. */
+s32 func_8008A558(void) {
+    if (D_800ADB2C == 0) {
+        if (func_800286CC() == 0) {
+            func_80028A60(0);
+            return 0;
+        }
+    }
+    return -1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A5A0);
+/* Event: call 8003633c(0) when its byte operand is zero. */
+void func_8008A5A0(void) {
+    if (D_800ADC00[D_800B0078->pc + 1] == 0) {
+        func_8003633C(0);
+    }
+    D_800B0078->pc++;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A604);
+/* Event: set 800b21d4 from operand 1. */
+void func_8008A604(void) {
+    D_800B21AC.unk21D4 = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A640);
 
