@@ -1600,13 +1600,13 @@ void func_8007D7A8(Vector *pos, s32 count) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
 #endif
 
-/* Link a projected point tile into the ordering table at the depth left in
- * the scratchpad. */
-#define LINK_TILE1(ot, scratch, tile)                                         \
+/* Link a projected primitive of the given length tag into the ordering
+ * table at the depth left in the scratchpad. */
+#define LINK_PRIM(ot, scratch, prim, len)                                      \
     prev = (ot)[(scratch)->depth >> 4];                                        \
-    addr = (u32)(tile) & 0xFFFFFF;                                             \
+    addr = (u32)(prim) & 0xFFFFFF;                                             \
     (ot)[(scratch)->depth >> 4] = addr;                                        \
-    prev |= 0x02000000;                                                        \
+    prev |= (len);                                                             \
     *(u32 *)addr = prev
 
 /* Draw and advance this buffer's half of the ground particles: project
@@ -1643,11 +1643,11 @@ void func_8007D918(u32 *ot) {
             loaded = 0;
             gte_stsxy3(&tile[0].x0, &tile[1].x0, &tile[2].x0);
             gte_stsz1(&scratch->depth);
-            LINK_TILE1(ot, scratch, &tile[0]);
+            LINK_PRIM(ot, scratch, &tile[0], 0x02000000);
             gte_stsz2(&scratch->depth);
-            LINK_TILE1(ot, scratch, &tile[1]);
+            LINK_PRIM(ot, scratch, &tile[1], 0x02000000);
             gte_stsz3(&scratch->depth);
-            LINK_TILE1(ot, scratch, &tile[2]);
+            LINK_PRIM(ot, scratch, &tile[2], 0x02000000);
             tile += 3;
         }
         cell->unk2 += cell->unk7;
@@ -1667,8 +1667,8 @@ void func_8007DB28(void) {
 
     D_800926C8 = func_80031BDC(0x1950, 0);
     tile = func_80031BDC(0x21C0, 0);
-    D_800926CC = tile;
-    D_800926D0 = func_80031BDC(0x21C0, 0);
+    D_800926CC[0] = tile;
+    D_800926CC[1] = func_80031BDC(0x21C0, 0);
     cell = D_800926C8;
     for (i = 0; i < 540; i++, cell++, tile++) {
         tile->len = 3;
@@ -1678,12 +1678,62 @@ void func_8007DB28(void) {
         cell->unk0 = cell->unk2 = cell->unk4 = 0;
         cell->unk8 = cell->unkA = cell->unk9 = cell->unk6 = 0;
     }
-    func_800732AC(D_800926D0, D_800926CC, 0x21C0);
+    func_800732AC(D_800926CC[1], D_800926CC[0], 0x21C0);
 }
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007DC74);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007E020);
+/* Draw and advance the scene cells: project the live ones three at a time
+ * into their tiles, drift them sideways and let them rise or fall (capped
+ * at height 0x10) until their life runs out. */
+void func_8007E020(u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    s32 loaded = 0;
+    s32 i;
+    s32 cx = scratch->camera.vx;
+    s32 cy = scratch->camera.vy;
+    s32 cz = scratch->camera.vz;
+    SceneCell12 *cell = D_800926C8;
+    TileWords *tile = D_800926CC[D_800928A0];
+    u32 prev;
+    u32 addr;
+
+    for (i = 0; i < 0x218; i++, cell++) {
+        if (cell->unk6 == 0) {
+            continue;
+        }
+        cell->unk0 += cell->unk8;
+        cell->unk4 += cell->unk9;
+        scratch->point.vx = cell->unk0 - cx;
+        scratch->point.vy = cell->unk2 - cy;
+        scratch->point.vz = cell->unk4 - cz;
+        if (loaded == 0) {
+            gte_ldv0(&scratch->point);
+            loaded = 1;
+        } else if (loaded == 1) {
+            gte_ldv1(&scratch->point);
+            loaded = 2;
+        } else {
+            gte_ldv2(&scratch->point);
+            gte_rtpt();
+            loaded = 0;
+            gte_stsxy3(&tile[0].x0, &tile[1].x0, &tile[2].x0);
+            gte_stsz1(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[0], 0x03000000);
+            gte_stsz2(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[1], 0x03000000);
+            gte_stsz3(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[2], 0x03000000);
+            tile += 3;
+        }
+        cell->unk2 += cell->unkA;
+        cell->unkA += 2;
+        if (cell->unk2 > 0x10) {
+            cell->unk2 = 0x10;
+        }
+        cell->unk6--;
+    }
+}
 
 /* Clear both scene cell tables and the actors' 0x90b bytes. */
 void func_8007E24C(void) {

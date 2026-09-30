@@ -51,10 +51,11 @@ typedef struct {
 extern SceneSprite D_800954D8[2];
 
 typedef struct {
-    s16 unk0, unk2, unk4, unk6;
-    u8 unk8;
-    u8 unk9;
-    s16 unkA;
+    s16 unk0, unk2, unk4; /* position */
+    s16 unk6;             /* remaining life */
+    s8 unk8;              /* x speed */
+    s8 unk9;              /* z speed */
+    s16 unkA;             /* vertical speed */
 } SceneCell12;
 
 /* TILE with its colour and code as one word (16 bytes). */
@@ -66,8 +67,7 @@ typedef struct {
     s16 w, h;
 } TileWords;
 
-extern TileWords *D_800926CC;
-extern TileWords *D_800926D0;
+extern TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
 void func_800732AC(void *dst, void *src, s32 size); /* copy memory */
 
 /* A ground particle of the scene (10 bytes; table at D_800926BC). */
