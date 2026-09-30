@@ -538,13 +538,99 @@ void func_801C7548(u8 index, u16 x, u16 y, u16 w, u16 h) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C7894);
+/* Lay out panel `index` at (x, y, w, h) for this buffer: fill, corners and
+ * edges, the frame sprites when `framed`, and mark it shown. */
+void func_801C7894(u8 index, u16 x, u16 y, u16 w, u16 h, u8 style, s32 param, u8 framed) {
+    Panel *panel = D_800625A0->panels[index];
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C7A18);
+    D_800625A0->flags->panel_20[index] = 0;
+    func_801C6408(panel->fill_at, x, y, w, h);
+    func_801C6928(index, x, y, w, h);
+    func_801C6B70(index, x, y, w);
+    func_801C6EB4(index, x, y, w, h);
+    func_801C7200(index, x, y, h);
+    func_801C7548(index, x, y, w, h);
+    if (framed) {
+        func_801C67C4(index, x, y, w, h);
+    }
+    panel->framed = framed;
+    panel->style = style;
+    panel->param = param;
+    panel->buffer = D_800625A0->buffer_index;
+    D_800625A0->flags->panel_20[index] = 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C7AA4);
+/* Hide panel `index` and release its block and growth record. */
+void func_801C7A18(u8 index) {
+    D_800625A0->flags->panel_20[index] = 0;
+    D_800625A0->flags->panel_27[index] = 0;
+    func_800320E8(D_800625A0->panels[index]);
+    func_800320E8(D_800625A0->growth[index]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C7C28);
+/* Open panel `index` (allocating it first unless it is 0 or 1): either
+ * start its growth animation toward (x, y, w, h) or lay it out at once. */
+void func_801C7AA4(u8 index, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 style, s32 param,
+                   u8 framed) {
+    PanelGrowth *growth;
+
+    if (index >= 2) {
+        D_800625A0->panels[index] = func_80031BDC(0x720, 0);
+        func_8003F8E8(D_800625A0->panels[index], 0x720);
+        D_800625A0->growth[index] = func_80031BDC(0x18, 0);
+        func_8003F8E8(D_800625A0->growth[index], 0x18);
+        func_801C64A8(index);
+    }
+    growth = D_800625A0->growth[index];
+    if (animate) {
+        growth->index = index;
+        growth->open = 0;
+        growth->x = x;
+        growth->y = y;
+        growth->w = w;
+        growth->h = h;
+        growth->cur_w = 0;
+        growth->cur_h = 0;
+        D_800625A0->flags->panel_27[index] = 1;
+        growth->style = style;
+        growth->param = param;
+    } else {
+        func_801C7894(index, x, y, w, h, style, param, framed);
+    }
+}
+
+/* Grow every opening panel by 32 in width and height per frame until it
+ * reaches its size, laying it out centred on its final rectangle. */
+void func_801C7C28(void) {
+    s32 i;
+    PanelGrowth *growth;
+    u8 done;
+
+    for (i = 0; i < 7; i++) {
+        growth = D_800625A0->growth[i];
+        if (D_800625A0->flags->panel_27[i] && !growth->open) {
+            done = 0;
+            if (growth->cur_w + 32 >= growth->w) {
+                growth->cur_w = growth->w;
+                done++;
+            } else {
+                growth->cur_w = growth->cur_w + 32;
+            }
+            if (growth->cur_h + 32 >= growth->h) {
+                growth->cur_h = growth->h;
+                done++;
+            } else {
+                growth->cur_h = growth->cur_h + 32;
+            }
+            if (done == 2) {
+                growth->open = 1;
+            }
+            func_801C7894(growth->index, growth->x + growth->w / 2 - growth->cur_w / 2,
+                          growth->y + growth->h / 2 - growth->cur_h / 2, growth->cur_w,
+                          growth->cur_h, growth->style, growth->param, growth->framed);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C7D74);
 
