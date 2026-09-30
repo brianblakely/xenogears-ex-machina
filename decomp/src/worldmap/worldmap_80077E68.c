@@ -429,7 +429,124 @@ s32 func_800795E4(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80079778);
+/* Scene rig landing: drop and brake the rig with exhaust effects, then show all
+ * its objects; every frame place it and spin its rotors. */
+s32 func_80079778(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *objects;
+    RigScratch *scratch;
+
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    scratch = (RigScratch *)0x1F800000;
+    switch (actor->state) {
+    case 0:
+        scratch->angle[0].vx = actor->position.vx >> 12;
+        scratch->angle[0].vy = actor->position.vy >> 12;
+        scratch->angle[0].vz = actor->position.vz >> 12;
+        func_80089160(0xB, &scratch->angle[0], NULL);
+        actor->position.vy += 0x4000;
+        actor->position.vz -= 0x8000;
+        GROUND_SCROLL[2] -= 0x8000;
+        if (actor->position.vy >= -0x18000) {
+            actor->motion.vy = -0x4000;
+            actor->state++;
+            func_80089160(0xC, &scratch->angle[0], NULL);
+            func_80039E60((D_8006259C->id << 16) | 0x71);
+            actor->wait = 0x20;
+        }
+        break;
+    case 1:
+        scratch->angle[0].vx = actor->position.vx >> 12;
+        scratch->angle[0].vy = actor->position.vy >> 12;
+        scratch->angle[0].vz = actor->position.vz >> 12;
+        func_80089160(0xB, &scratch->angle[0], NULL);
+        func_80089160(0xC, &scratch->angle[0], NULL);
+        if (--actor->wait <= 0) {
+            func_800894C8(0xC);
+        }
+        objects[0].angle.vx += 4;
+        objects[0].angle.vz += 2;
+        actor->position.vy += actor->motion.vy;
+        actor->motion.vy += 0x100;
+        actor->position.vz -= 0x8000;
+        GROUND_SCROLL[2] -= 0x8000;
+        if (actor->position.vy >= -0x18000) {
+            actor->motion.vz = -0x8000;
+            actor->state++;
+            func_80089160(0xC, &scratch->angle[0], NULL);
+            func_80039E60((D_8006259C->id << 16) | 0x71);
+        }
+        break;
+    case 2:
+        scratch->angle[0].vx = actor->position.vx >> 12;
+        scratch->angle[0].vy = actor->position.vy >> 12;
+        scratch->angle[0].vz = actor->position.vz >> 12;
+        func_80089160(0xB, &scratch->angle[0], NULL);
+        func_80089160(0xC, &scratch->angle[0], NULL);
+        objects[0].angle.vx -= 2;
+        objects[0].angle.vz -= 1;
+        actor->position.vz += actor->motion.vz;
+        GROUND_SCROLL[2] += actor->motion.vz;
+        actor->motion.vz += 0x100;
+        if (actor->position.vz <= 0x1580000) {
+            actor->wait = 8;
+            actor->state++;
+            func_800894C8(0xC);
+            func_80097770(1, 1);
+        }
+        break;
+    case 3:
+        objects[0].angle.vx -= 2;
+        objects[0].angle.vz -= 1;
+        actor->position.vz += actor->motion.vz;
+        GROUND_SCROLL[2] += actor->motion.vz;
+        actor->motion.vz += 0x100;
+        if (--actor->wait <= 0) {
+            func_80097770(1, 1);
+            actor->state++;
+        }
+        break;
+    case 4:
+        if (actor->unk4 != 0) {
+            actor->unk4 = 0;
+            objects[0].visible = objects[1].visible = objects[2].visible = objects[3].visible =
+                objects[4].visible = objects[5].visible = objects[6].visible = objects[7].visible =
+                    objects[8].visible = objects[9].visible = objects[10].visible = objects[11].visible =
+                        objects[12].visible = objects[13].visible = 1;
+            func_800894C8(0xB);
+        }
+        break;
+    }
+    func_80093354(&actor->position);
+    D_8009C620[0].position.vx = actor->position.vx >> 12;
+    D_8009C620[0].position.vy = actor->position.vy >> 12;
+    D_8009C620[0].position.vz = actor->position.vz >> 12;
+    D_8009BE28.target = actor->position;
+    actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
+    actor->unk58 = (actor->unk58 + actor->unk5C) & 0xFFF;
+    actor->unk60 = (actor->unk60 + actor->unk64) & 0xFFF;
+    scratch->angle[0].vx = scratch->angle[0].vz = scratch->angle[1].vx = scratch->angle[1].vz =
+        scratch->angle[2].vx = scratch->angle[2].vz = 0;
+    scratch->angle[0].vy = actor->u.step;
+    scratch->angle[1].vy = actor->unk58;
+    scratch->angle[2].vy = actor->unk60;
+    scratch->angle[3].vx = scratch->angle[3].vy = 0;
+    scratch->angle[3].vz = actor->unk60;
+    func_8004A92C(&scratch->angle[0], &scratch->matrix[0]);
+    func_8004A92C(&scratch->angle[1], &scratch->matrix[1]);
+    func_8004A92C(&scratch->angle[2], &scratch->matrix[2]);
+    func_8004A92C(&scratch->angle[3], &scratch->matrix[3]);
+    D_8009C620[1].matrix = D_8009C620[2].matrix = D_8009C620[3].matrix = scratch->matrix[3];
+    D_8009C620[4].matrix = D_8009C620[5].matrix = scratch->matrix[2];
+    D_8009C620[6].matrix = D_8009C620[10].matrix = D_8009C620[8].matrix = D_8009C620[12].matrix =
+        scratch->matrix[0];
+    D_8009C620[7].matrix = D_8009C620[11].matrix = D_8009C620[9].matrix = D_8009C620[13].matrix =
+        scratch->matrix[1];
+    func_8004A92C(&D_8009C620[0].angle, &scratch->matrix[0]);
+    D_8009C620[0].matrix = scratch->matrix[0];
+    return 1;
+}
 
 /* Build `count` semi-transparent textured quads for a scene sprite. */
 void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count) {
