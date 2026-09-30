@@ -281,6 +281,12 @@ s32 func_800747AC(s32 first, s32 last, s32 *button);
 void func_80074B58(void);
 u32 func_80075D4C(s32 index);
 s32 func_80039850(void *sequence); /* load a music sequence */
+
+/* Disc change test. */
+extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
+s32 func_80028530(void);  /* the disc in the drive */
+void func_8007293C(void);
+s32 func_80072A08(s32 disc, s32 state, s32 *error, s32 *done);
 extern char D_8007042C[]; /* "\n", first used by the monitor (80075534) */
 extern char D_80070430[]; /* "\nPUSH CIRCLE BUTTON TO MENU." */
 

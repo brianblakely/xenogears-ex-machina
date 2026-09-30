@@ -140,7 +140,129 @@ void func_80072428(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* The menu's disc change test: show the test state (the steps reached, the
+ * error and the last CD command result); Start begins a test from a stopped
+ * or failed state, Cross steps a waiting one, and each frame runs one step
+ * of it for the other disc. Circle returns to the menu. The instructions
+ * match; the original rodata also holds an unreferenced "" after the
+ * strings (dead code?), which this source does not emit. */
+void func_80072480(void) {
+    s32 button;
+    s32 error;
+    s32 done;
+    s32 step;
+    s32 state;
+    s32 frames;
+    MovieBuffer *buffer;
+    u32 *ot;
+
+    frames = 0;
+    state = 0;
+    error = 0;
+    done = 1;
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_8003700C("\n[ DISC CHANGE TEST NOW DISC %2d ]\n\n", func_80028530());
+        func_800747AC(0, 0, &button);
+        func_8003700C("  STATUS ");
+        if (error == 1) {
+            func_8003700C("[ IT IS NOT PLAY STATION DISC ]\n");
+        } else if (error == 2) {
+            func_8003700C("[ NOT XENOGEARS DISC ]\n");
+        } else if (error == 3) {
+            func_8003700C("[ NO CHANGE DISC ]\n");
+        } else if (error == 4) {
+            func_8003700C("[ RETRY SET DISC ]\n");
+        } else {
+            func_8003700C("[ NOP ]\n");
+        }
+        func_8003700C(D_8006FC6C);
+        for (step = 0; step < 9; step++) {
+            if (step < state) {
+                switch (step) {
+                case 0:
+                    func_8003700C("  1 : NORMAL SPEED\n");
+                    break;
+                case 1:
+                    func_8003700C("  2 : CD STOPED\n");
+                    break;
+                case 2:
+                    func_8003700C("  3 : CD OPENED\n");
+                    break;
+                case 3:
+                    func_8003700C("  4 : CD CLOSED\n");
+                    break;
+                case 4:
+                    func_8003700C("  5 : SPINDLE OK\n");
+                    break;
+                case 5:
+                    func_8003700C("  6 : TOC OK\n");
+                    break;
+                case 6:
+                    func_8003700C("  7 : SET LOCATION OK\n");
+                    break;
+                case 7:
+                    func_8003700C("  8 : PLAY STATION DISC OK\n");
+                    break;
+                case 8:
+                    func_8003700C("  9 : XENOGEARS %2d DISC OK\n", func_80028530());
+                    break;
+                }
+            } else {
+                func_8003700C(" %2d :\n", step + 1);
+            }
+        }
+        if (done) {
+            func_8003700C("\n MODE %1d : NO ERROR  COUNT %6d\n", state, frames);
+        } else {
+            func_8003700C("\n MODE %1d : %2d ERROR COUNT %6d\n", state, done, frames);
+        }
+        func_8003700C(" RESULT %02x %02x %02x %02x %02x %02x %02x %02x\n", D_80076F84[0],
+                      D_80076F84[1], D_80076F84[2], D_80076F84[3], D_80076F84[4], D_80076F84[5],
+                      D_80076F84[6], D_80076F84[7]);
+        func_8003700C("\n\n PUSH START TO TEST.\n");
+        func_8003700C(" PUSH CIRCLE BUTTON TO MENU.\n");
+        if (state > 0) {
+            state = func_80072A08(3 - func_80028530(), state, &error, &done);
+        }
+        if ((D_800773AC & 0x40) && !(D_800773B4 & 0x40) && state > 0 && state < 8) {
+            state++;
+        }
+        if ((D_800773AC & 0x800) && !(D_800773B4 & 0x800) &&
+            (state == 0 || state == 9 || error != 0)) {
+            error = 0;
+            state = 2;
+            func_8007293C();
+        }
+        if (D_80077394 > 0) {
+            D_80077394 = 0;
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 20, 304, 192);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 19, 306, 194);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        if (button == 2) {
+            break;
+        }
+        frames++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072480);
+#endif
 
 /* Stop the resident disc read and wait until the drive reports its status. */
 void func_8007293C(void) {
