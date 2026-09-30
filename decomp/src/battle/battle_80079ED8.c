@@ -1499,23 +1499,18 @@ void func_8007E7C0(u8 **pc) {
 
 /* AI action 6f: set (b2 != 0) or clear flag b1 + 7 in every party record's
  * +0x7a. */
-#ifdef NON_MATCHING
 void func_8007E7E4(u8 **pc, u8 enemy) {
-    Combatant *record = D_800CCCE8.records;
+    s32 i;
     u8 set = (*pc)[2] != 0;
 
-    do {
+    for (i = 0; i < 3; i++) {
         if (set) {
-            record->pilot.status7A |= func_80089BEC((*pc)[1] + 7);
+            D_800CCCE8.records[i].pilot.status7A |= func_80089BEC((*pc)[1] + 7);
         } else {
-            record->pilot.status7A &= ~func_80089BEC((*pc)[1] + 7);
+            D_800CCCE8.records[i].pilot.status7A &= ~func_80089BEC((*pc)[1] + 7);
         }
-        record++;
-    } while (record < &D_800CCCE8.records[3]);
+    }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007E7E4);
-#endif
 
 /* AI action 70: formation group distance b1 -> b2 = b3. */
 void func_8007E8AC(u8 **pc) {
@@ -2205,7 +2200,6 @@ void func_8007FB70(u8 member) {
 
 /* Place the separator lines of a `count`-row list (rows from the 800c3200
  * table) and remember the selected row (clamped below `count`). */
-#ifdef NON_MATCHING
 void func_8007FBE0(u8 count, u8 selected) {
     s32 i;
 
@@ -2213,17 +2207,12 @@ void func_8007FBE0(u8 count, u8 selected) {
         selected--;
     }
     for (i = 0; i < count - 1; i++) {
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count * 6 + i + 2] + 0x5E;
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
-        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count * 6 + i + 2] + 0x5E;
+        setXY2(&D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer], 0xC, D_800C3200[count * 6 + 2 + i] + 0x5E, 0x12,
+               D_800C3200[count * 6 + 2 + i] + 0x5E);
     }
     D_800D2D28->unk97 = selected;
     D_800D2D28->unk98 = D_800CCB04.buffer;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_8007FBE0);
-#endif
 
 /* Release the loaded menu module block (UI +0xae). */
 void func_8007FCE8(void) {
@@ -2347,12 +2336,9 @@ void func_800800E8(u8 member) {
  * an event runs, redraw a changed page (8008d598) and run the page's
  * handler (pages 0x64/0x65 redraw 5/0x19). Finally close the panel, return
  * unspent AP when +0x2e3 is set (up to 28), tidy the windows when done and
- * reload the member's turn timer. Nonmatching: the original keeps one
- * zero-extended copy of the member through the character 4 checks. */
-#ifdef NON_MATCHING
+ * reload the member's turn timer. */
 void func_80080160(u8 member) {
     s32 i;
-    u8 usable;
     u8 target;
 
     D_800C3EAC->unk2EA = 1;
@@ -2387,15 +2373,16 @@ void func_80080160(u8 member) {
             if (D_8006F8BA[D_8006D634.characters[4].entryItems[0]] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            usable = D_8006F8BA[D_8006D634.characters[4].entryItems[3]];
+            if (D_8006F8BA[D_8006D634.characters[4].entryItems[3]] == 0) {
+                D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+            }
         } else {
             if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[4].gearId].partItems[0]] == 0) {
                 D_800C3EAC->slots[member].items[0] = D_800C3234[0];
             }
-            usable = D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]];
-        }
-        if (usable == 0) {
-            D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+            if (D_8006F8EA[D_8006D634.gears[D_8006D634.characters[D_800D2D24[member]].gearId].partItems[3]] == 0) {
+                D_800C3EAC->slots[member].items[2] = D_800C3234[2];
+            }
         }
     }
     if (D_800D32A0[member].unk1 == 0) {
@@ -2533,9 +2520,6 @@ void func_80080160(u8 member) {
     D_800D2D28->reaction[member] = 1;
     D_800C4928 = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_80080160);
-#endif
 
 /* The next slot in turn order, other than `actor`, with the lowest turn
  * timer (undefined when there is none). */
@@ -2587,7 +2571,6 @@ void func_80080C6C(u8 index) {
  * when its EP cover the cost, or defend in the gear (4); anything else, or
  * too little EP, passes the turn. Then wait for the menu or the events to
  * finish. */
-#ifdef NON_MATCHING
 void func_80080C94(u8 member) {
     u8 choice[2];
     u8 targets[11];
@@ -2595,7 +2578,6 @@ void func_80080C94(u8 member) {
     u8 *next;
     u8 pass = 1;
     u8 cost;
-    u16 ep;
 
     func_800716D8();
     for (i = 0; i < 11; i++) {
@@ -2634,20 +2616,19 @@ void func_80080C94(u8 member) {
         } else {
             D_800C3EAC->unk2DC = choice[1];
         }
-        pass = 0;
         func_800B89FC(func_800877E0(member, D_800C3EAC->slots[member].defaultTarget), member,
                       D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
         func_80087AF0(member, choice[1] + 1);
         func_80080B64(member);
+        pass = 0;
         break;
     case 2:
         cost = D_800CCCE8.partyCommands[member][choice[1] + 0x16].cost;
-        ep = D_800CCCE8.records[member].pilot.ep;
-        if (ep >= cost) {
-            D_800CCCE8.records[member].pilot.ep = ep - cost;
+        if (D_800CCCE8.records[member].pilot.ep >= cost) {
+            D_800CCCE8.records[member].pilot.ep -= cost;
             D_800C3EAC->unk2E6 = choice[1];
-            pass = 0;
             func_8008ADD0(member);
+            pass = 0;
         }
         break;
     case 4:
@@ -2666,6 +2647,3 @@ void func_80080C94(u8 member) {
     }
     D_800C204C = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_80080C94);
-#endif

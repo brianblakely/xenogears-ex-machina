@@ -276,7 +276,8 @@ s32 func_80079AB0(u8 slot) {
 /* Run each armed enemy's AI script at +0xc (reaction bytes 1 and 2 set, the
  * enemy not down unless +0x34 bit 0x800 lets it act) as the acting slot,
  * then execute its action list; restore the acting slot.
- * Nonmatching: the original keeps one offset register per table. */
+ * Nonmatching: the original schedules the script pointer load before the
+ * status test and increments the slot first. */
 #ifdef NON_MATCHING
 void func_80079C24(void) {
     u8 *pc;
@@ -285,6 +286,7 @@ void func_80079C24(void) {
     u8 slot;
     u8 actor;
     u8 *p;
+    u8 *end;
     s32 offset;
 
     count = 0;
@@ -293,16 +295,17 @@ void func_80079C24(void) {
     for (enemy = 0; enemy < 8; enemy++, slot++) {
         if (D_800C3D18[enemy].unk1[1] != 0 && D_800C3D18[enemy].unk1[0] != 0) {
             D_800C3EAC->actor = slot;
-            pc = *(u8 **)D_800D3400[enemy].unkC;
+            pc = D_800D3400[enemy].turnScript;
             p = (u8 *)D_800D2E5C;
             if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) ||
                 (D_800CCCE8.records[enemy + 3].pilot.flags34 & 0x800)) {
                 for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
                     ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
                 }
+                end = p + 0x100;
                 do {
                     *p++ = 0;
-                } while (p < (u8 *)D_800D2E5C + 0x100);
+                } while (p < end);
                 while (*pc != 0xFD && *pc != 0xFF) {
                     if (*pc >= 0x80) {
                         if (!func_8007F8C0(&pc, enemy)) {

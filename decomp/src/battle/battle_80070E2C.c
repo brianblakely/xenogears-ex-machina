@@ -360,14 +360,15 @@ void func_80071AE0(void) {
 /* Start the turn of the acting slot (turn state actor + 1; none when 0). An
  * enemy runs its AI script (unless mode is set) and shows its name; a party
  * member gets its panel highlight and its command menu. Then each slot's
- * default target is chosen and the turn's actions play out. */
+ * default target is chosen and the turn's actions play out.
+ * Nonmatching: the original adds the panel x before 0x28 for the right
+ * corners and allocates the y constant to $a1. */
 #ifdef NON_MATCHING
 void func_80071B94(u8 mode) {
     s32 i;
     s32 offset;
     u8 actor;
     u16 flags;
-    s32 layout;
     u8 *message;
     u8 *bytes;
 
@@ -416,15 +417,11 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        layout = D_800D3280 * 3;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y0 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y1 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y2 = 0x20;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y3 = 0x20;
+        setXY4(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8,
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 8,
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 0x20,
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 0x20);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
         actor = D_800C3EAC->actor;
@@ -498,7 +495,6 @@ void func_80072270(void) {
 /* Give every enemy in the act-together mask its turn: clear the event types,
  * queue action 0x17 and run the turn procedure. The cleared 0x100-byte action
  * buffer pointer is never initialised in the original. */
-#ifdef NON_MATCHING
 void func_80072324(void) {
     s32 slot;
     s32 offset;
@@ -516,16 +512,13 @@ void func_80072324(void) {
             for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
                 ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
             }
-            D_800D2E5C[0].type = 4;
-            D_800D2E5C[0].param = 0x17;
+            D_800D2E5C->type = 4;
+            D_800D2E5C->param = 0x17;
             func_80085AC4(slot);
             func_80071B94(1);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072324);
-#endif
 
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
@@ -535,7 +528,6 @@ void func_800723E0(void) {
     s32 position;
     u8 *cursor;
     s32 slot;
-    u8 next;
 
     if (D_800D39E0 == 0) {
         if (D_800D2DC0 != 0) {
@@ -552,8 +544,8 @@ void func_800723E0(void) {
                 slot = D_800D2DCC.order[position];
                 if (D_800D2DCC.ready[slot] == 1) {
                     D_800C3EAC->actor = slot + 1;
-                    *cursor = next = position + 1;
-                    if (next == 11) {
+                    *cursor = position + 1;
+                    if (*cursor == 11) {
                         *cursor = 0;
                     }
                 }
@@ -658,25 +650,18 @@ void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
 
 /* Tint the current buffer's primitives from `first` to `last`: yellow for
  * mode 1, red otherwise. */
-#ifdef NON_MATCHING
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
     s32 i;
 
     for (i = first; i < last; i++) {
         SetShadeTex(&prims[i * 2 + D_800CCB04.buffer], 0);
         if (mode != 1) {
-            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
-            prims[i * 2 + D_800CCB04.buffer].g0 = 0;
+            setRGB0(&prims[i * 2 + D_800CCB04.buffer], 0x80, 0, 0);
         } else {
-            prims[i * 2 + D_800CCB04.buffer].r0 = 0x80;
-            prims[i * 2 + D_800CCB04.buffer].g0 = 0x80;
+            setRGB0(&prims[i * 2 + D_800CCB04.buffer], 0x80, 0x80, 0);
         }
-        prims[i * 2 + D_800CCB04.buffer].b0 = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072938);
-#endif
 
 /* Build the member's panel HP glyphs: the current value's digits (800c3e08),
  * a '/', and the maximum's digits (800d2d54 from index 4), and tint them by
@@ -914,19 +899,14 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800735
 
 /* When enabled, shade the current flat quad at graphics +0x63c8 grey by
  * +0x6410 and add it with its draw mode to the ordering table. */
-#ifdef NON_MATCHING
 void func_80073A58(void) {
     if (D_800C3EA4->unk6415 != 0) {
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].r0 = D_800C3EA4->unk6410;
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].g0 = D_800C3EA4->unk6410;
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].b0 = D_800C3EA4->unk6410;
+        setRGB0(&D_800C3EA4->unk63C8[D_800C3EA4->unk6414], D_800C3EA4->unk6410, D_800C3EA4->unk6410,
+                D_800C3EA4->unk6410);
         AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63C8[D_800C3EA4->unk6414]);
         AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63F8[D_800C3EA4->unk6414]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073A58);
-#endif
 
 /* Draw the party panel: the list separator lines, the status glyphs, each
  * member's panel value and digits, the command portrait and name glyphs,
@@ -1243,86 +1223,55 @@ void func_8007500C(void) {
 /* Size and colour each member's gauge shade in the current draw buffer:
  * panel state 1 shows the 800d32a0 value (green, two pixels per point),
  * state 2 the gear's fuel over 56 pixels (blue, yellow below a quarter,
- * pale red below an eighth).
- * Nonmatching: address operand order and register allocation. */
-#ifdef NON_MATCHING
+ * pale red below an eighth). */
 void func_80075168(void) {
     s32 i;
     u16 fuel;
     u16 maxFuel;
     s32 width;
-    u16 *panelX;
 
     for (i = 0; i < 3; i++) {
         switch (D_800C3EA4->panels[i].state) {
         case 1:
-            panelX = &D_800C3254[D_800D3280 * 3 + i];
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 =
-                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 =
-                i * 0x60 + (*panelX + 0x28) + D_800D32A0[i].unk0 * 2;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+            setXY4(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer],
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x22,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28) + D_800D32A0[i].unk0 * 2, 0x22,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x26,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28) + D_800D32A0[i].unk0 * 2, 0x26);
+            setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0xFF, 0);
+            setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0xFF, 0);
             break;
         case 2:
             fuel = D_800CCCE8.records[i].gear.fuel;
             maxFuel = D_800CCCE8.records[i].gear.maxFuel;
-            panelX = &D_800C3254[D_800D3280 * 3 + i];
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x0 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y0 = 0x22;
             width = (u32)(fuel * 100) / maxFuel * 5600 / 10000;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x1 = i * 0x60 + 0x28 + *panelX + width;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y1 = 0x22;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x2 = i * 0x60 + (*panelX + 0x28);
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y2 = 0x26;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].x3 = i * 0x60 + 0x28 + *panelX + width;
-            D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].y3 = 0x26;
+            setXY4(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer],
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x22,
+                   i * 0x60 + 0x28 + D_800C3254[D_800D3280 * 3 + i] + width, 0x22,
+                   i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x28), 0x26,
+                   i * 0x60 + 0x28 + D_800C3254[D_800D3280 * 3 + i] + width, 0x26);
             if (fuel >= maxFuel >> 2) {
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0xFF;
+                setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0, 0xFF);
+                setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0, 0, 0xFF);
             } else if (fuel >= maxFuel >> 3) {
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0;
+                setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0xFF, 0);
+                setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0xFF, 0);
             } else {
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r0 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g0 = 0x7F;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b0 = 0x7F;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].r1 = 0xFF;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].g1 = 0x7F;
-                D_800C3EA4->shade[i * 2 + D_800CCB04.buffer].b1 = 0x7F;
+                setRGB0(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0x7F, 0x7F);
+                setRGB1(&D_800C3EA4->shade[i * 2 + D_800CCB04.buffer], 0xFF, 0x7F, 0x7F);
             }
             break;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80075168);
-#endif
 
 /* Update the gauge shades, then each present member's time bar in the
  * current draw buffer: filled by the turn counter over 56 pixels, coloured
  * for haste or slow. With the member's panel open (state != 0) the bar is
  * the upright party-wide one instead, showing the fuel of a member in a
  * gear.
- * Nonmatching: the original hoists more constants out of the loop. */
+ * Nonmatching: the original loads the bar width with lw in u1/u3 (only the
+ * page x byte is narrowed). */
 #ifdef NON_MATCHING
 void func_80075938(void) {
     s32 widths[3];
@@ -1338,28 +1287,16 @@ void func_80075938(void) {
             }
             if (D_800D2D28->unk90[i] == 0) {
                 widths[i] = (100 - D_800D2DCC.timers[1][i] * 100 / D_800D2DCC.timers[0][i]) * 5600 / 10000;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x0 =
-                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y0 = 0x1A;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x1 =
-                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y1 = 0x1A;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x2 =
-                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y2 = 0x1E;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].x3 =
-                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].y3 = 0x1E;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u1 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].u3 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                setXY4(&D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer],
+                       D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D, 0x1A,
+                       i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1), 0x1A,
+                       D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D, 0x1E,
+                       i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1), 0x1E);
+                setUV4(&D_800C3EA4->gaugeBars[i * 2 + D_800CCB04.buffer],
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY,
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY + 4,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY + 4);
                 if ((D_800CCCE8.records[i].pilot.status84.half.active |
                      D_800CCCE8.records[i].pilot.status84.half.permanent) & 0x8000) {
                     clut = D_800C3EA4->barCluts[3];
@@ -1376,24 +1313,16 @@ void func_80075938(void) {
                     widths[i] = D_800CCCE8.records[i].gear.fuel * 100 / D_800CCCE8.records[i].gear.maxFuel * 5600 /
                                 10000;
                 }
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x0 = 0xC;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y0 = 0xCE;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x1 = 0xC;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y1 = 0xCE - widths[i] * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x2 = 0x14;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y2 = 0xCE;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].x3 = 0x14;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].y3 = 0xCE - widths[i] * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u0 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v0 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u1 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v1 = D_800C3EA4->sprites[0].pageY;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u2 = (D_800C3EA4->sprites[0].pageX & 0x3F) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v2 = D_800C3EA4->sprites[0].pageY + 4;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].u3 =
-                    (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) * 2;
-                D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].v3 = D_800C3EA4->sprites[0].pageY + 4;
+                setXY4(&D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer],
+                       0xC, 0xCE,
+                       0xC, 0xCE - widths[i] * 2,
+                       0x14, 0xCE,
+                       0x14, 0xCE - widths[i] * 2);
+                setUV4(&D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer],
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY,
+                       (D_800C3EA4->sprites[0].pageX & 0x3F) << 1, D_800C3EA4->sprites[0].pageY + 4,
+                       (widths[i] + (D_800C3EA4->sprites[0].pageX & 0x3F)) << 1, D_800C3EA4->sprites[0].pageY + 4);
                 D_800C3EA4->gaugeBars[6 + D_800CCB04.buffer].clut = D_800C3EA4->barCluts[1];
                 if (D_800D2D28->unkCB != 0) {
                     D_800D2D28->barShown[3] = 1;
@@ -1471,12 +1400,15 @@ void func_80076544(void) {
 #ifdef NON_MATCHING
 void func_800765C4(s32 member) {
     u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
+    s32 x;
 
+    x = *panelX + 0x48;
+    D_800D2D28->unk34 = member * 0x60 + x;
     D_800D2D28->unk44 = 0x1C;
-    D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x48);
     if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
+        x = *panelX + 0x44;
+        D_800D2D28->unk34 = member * 0x60 + x;
         D_800D2D28->unk44 = 0x24;
-        D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x44);
     }
     D_800D2D28->unk3C = 0x10;
     D_800D2D28->unk4C = 0x98;
@@ -1517,10 +1449,11 @@ void func_80076710(s32 member) {
     D_800D2D28->statusParts[3] = 0;
     D_800D2D28->statusParts[3] = func_80025FA8(D_800D2F5C, 0x52, D_800C3EA4->status[3][0], D_800CCB04.buffer, x, y,
                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    part = D_800D2D28->statusParts[3];
-    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][part], D_800CCB04.buffer, x, y,
-                                        D_800D2D28->unk104, D_800D2D28->unk104, D_800D2D28->unk106);
-    for (part = part * 2; part < D_800D2D28->statusParts[3] * 2; part += 2) {
+    part = D_800D2D28->statusParts[3] * 2;
+    D_800D2D28->statusParts[3] += func_80025FA8(D_800D2F5C, 0x53, D_800C3EA4->status[3][D_800D2D28->statusParts[3]],
+                                        D_800CCB04.buffer, x, y, D_800D2D28->unk104, D_800D2D28->unk104,
+                                        D_800D2D28->unk106);
+    for (; part < D_800D2D28->statusParts[3] * 2; part += 2) {
         SetSemiTrans(&D_800C3EA4->status[3][0][part + D_800CCB04.buffer], 1);
     }
     D_800D2D28->statusBuffer[3] = D_800CCB04.buffer;
@@ -1814,10 +1747,7 @@ void func_8007765C(void) {
 }
 
 /* Set up the four direction arrows (down, left, up, right triangles, red
- * fading to dark) in both draw buffers and start their pulse. Nonmatching: the original
- * adds the primitive offsets before the block address and keeps one offset
- * register per arrow. */
-#ifdef NON_MATCHING
+ * fading to dark) in both draw buffers and start their pulse. */
 void func_80077698(void) {
     s32 dir;
     s32 buf;
@@ -1828,47 +1758,21 @@ void func_80077698(void) {
             SetPolyG3(&D_800C3E24->prims[dir * 2 + buf]);
             switch (dir) {
             case 0:
-                D_800C3E24->prims[buf].x0 = 0xC0;
-                D_800C3E24->prims[buf].y0 = 0x70;
-                D_800C3E24->prims[buf].y1 = 0x78;
-                D_800C3E24->prims[buf].x1 = 0xB0;
-                D_800C3E24->prims[buf].x2 = 0xB0;
-                D_800C3E24->prims[buf].y2 = 0x68;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0xC0, 0x70, 0xB0, 0x78, 0xB0, 0x68);
                 break;
             case 1:
-                D_800C3E24->prims[buf + 2].x0 = 0xA0;
-                D_800C3E24->prims[buf + 2].x1 = 0x98;
-                D_800C3E24->prims[buf + 2].y0 = 0x90;
-                D_800C3E24->prims[buf + 2].y1 = 0x80;
-                D_800C3E24->prims[buf + 2].x2 = 0xA8;
-                D_800C3E24->prims[buf + 2].y2 = 0x80;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0xA0, 0x90, 0x98, 0x80, 0xA8, 0x80);
                 break;
             case 2:
-                D_800C3E24->prims[buf + 4].y0 = 0x70;
-                D_800C3E24->prims[buf + 4].y1 = 0x68;
-                D_800C3E24->prims[buf + 4].x0 = 0x80;
-                D_800C3E24->prims[buf + 4].x1 = 0x90;
-                D_800C3E24->prims[buf + 4].x2 = 0x90;
-                D_800C3E24->prims[buf + 4].y2 = 0x78;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0x80, 0x70, 0x90, 0x68, 0x90, 0x78);
                 break;
             case 3:
-                D_800C3E24->prims[buf + 6].x0 = 0xA0;
-                D_800C3E24->prims[buf + 6].y0 = 0x50;
-                D_800C3E24->prims[buf + 6].x1 = 0x98;
-                D_800C3E24->prims[buf + 6].y1 = 0x60;
-                D_800C3E24->prims[buf + 6].x2 = 0xA8;
-                D_800C3E24->prims[buf + 6].y2 = 0x60;
+                setXY3(&D_800C3E24->prims[dir * 2 + buf], 0xA0, 0x50, 0x98, 0x60, 0xA8, 0x60);
                 break;
             }
-            D_800C3E24->prims[dir * 2 + buf].r0 = 0xFF;
-            D_800C3E24->prims[dir * 2 + buf].g0 = 0;
-            D_800C3E24->prims[dir * 2 + buf].b0 = 0;
-            D_800C3E24->prims[dir * 2 + buf].r1 = 0x40;
-            D_800C3E24->prims[dir * 2 + buf].g1 = 0;
-            D_800C3E24->prims[dir * 2 + buf].b1 = 0;
-            D_800C3E24->prims[dir * 2 + buf].r2 = 0x40;
-            D_800C3E24->prims[dir * 2 + buf].g2 = 0;
-            D_800C3E24->prims[dir * 2 + buf].b2 = 0;
+            setRGB0(&D_800C3E24->prims[dir * 2 + buf], 0xFF, 0, 0);
+            setRGB1(&D_800C3E24->prims[dir * 2 + buf], 0x40, 0, 0);
+            setRGB2(&D_800C3E24->prims[dir * 2 + buf], 0x40, 0, 0);
         }
     }
     D_800C3E24->shade = 0xFF;
@@ -1876,9 +1780,6 @@ void func_80077698(void) {
     D_800C3E24->buffer = D_800CCB04.buffer;
     D_800D2D28->unkC6 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80077698);
-#endif
 
 /* Clear UI byte +0xc6. */
 void func_80077980(void) {
@@ -2005,7 +1906,6 @@ void func_800780A8(BattleMessage *message, u32 row) {
 
 /* Set up windows 5 and 4 (closed) and the eight battle messages: each pair
  * shares a text image block and a VRAM rectangle row. */
-#ifdef NON_MATCHING
 void func_8007819C(void) {
     s32 i;
 
@@ -2016,18 +1916,12 @@ void func_8007819C(void) {
     for (i = 0; i < 8; i += 2) {
         D_800D36C8[i].pixels = (u32 *)func_8008AC00(0x39);
         D_800D36C8[i + 1].pixels = D_800D36C8[i].pixels;
-        D_800D36C8[i].rect.x = 0x3C0;
-        D_800D36C8[i].rect.y = (i / 2) * 13;
-        D_800D36C8[i].rect.w = 0x3C;
-        D_800D36C8[i].rect.h = 13;
+        setRECT(&D_800D36C8[i].rect, 0x3C0, (i / 2) * 13, 0x3C, 13);
         D_800D36C8[i + 1].rect = D_800D36C8[i].rect;
         func_800780A8(&D_800D36C8[i], i);
         func_800780A8(&D_800D36C8[i + 1], i + 1);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_8007819C);
-#endif
 
 /* Upload each present member's portrait TIM (0x460 bytes per character in
  * `portraits`; character 0xb for the second and third member when 800d3294
@@ -2084,15 +1978,14 @@ void func_80078508(u8 *order) {
 
 /* Close the current event for `actor` with the action entry's parameter and
  * advance the event count. */
-#ifdef NON_MATCHING
 void func_800785D4(u8 actor, u8 index) {
+    u16 parameter;
+
+    parameter = (D_800D2E5C[index].unk5 << 8) | D_800D2E5C[index].param;
     D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8);
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = parameter;
     D_800C3EAC->eventCount++;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800785D4);
-#endif
 
 /* Show the name of action `index` in the next battle message (up to eight)
  * and queue its event (0xfa) for `actor`. */
@@ -2208,9 +2101,7 @@ void func_80078D6C(u8 actor, u8 index, u8 target) {
 
 /* Make enemy `slot` a copy of the first slot action `index` targets: its
  * name, AI scripts, reaction state and combatant record, and queue the
- * split event (0xfb) for it.
- * Nonmatching: register allocation of the slot indexes. */
-#ifdef NON_MATCHING
+ * split event (0xfb) for it. */
 void func_80078E24(u8 slot, u8 index, u8 target) {
     s32 i;
     u8 source;
@@ -2225,7 +2116,7 @@ void func_80078E24(u8 slot, u8 index, u8 target) {
     D_800D3400[slot - 3].script = D_800D3400[source - 3].script;
     D_800D3400[slot - 3].unk4 = D_800D3400[source - 3].unk4;
     D_800D3400[slot - 3].reaction = D_800D3400[source - 3].reaction;
-    *(s32 *)D_800D3400[slot - 3].unkC = *(s32 *)D_800D3400[source - 3].unkC;
+    D_800D3400[slot - 3].turnScript = D_800D3400[source - 3].turnScript;
     D_800C3D18[slot - 3].armed = D_800C3D18[source - 3].armed;
     D_800C3D18[slot - 3].unk1[0] = D_800C3D18[source - 3].unk1[0];
     memmove(&D_800CCCE8.records[slot], &D_800CCCE8.records[source], sizeof(Combatant));
@@ -2234,9 +2125,6 @@ void func_80078E24(u8 slot, u8 index, u8 target) {
     D_800C3FE8[D_800C3EAC->eventCount].actor = slot;
     D_800C3EAC->eventCount++;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80078E24);
-#endif
 
 /* Set the actor's attribute arg1 to the entry's parameter byte. */
 void func_80079054(u8 actor, u8 index, u8 target) {
