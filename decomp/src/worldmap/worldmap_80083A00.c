@@ -709,7 +709,83 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A2C8);
+/* Create the party leader's model sprite at the scene's entry position; in
+ * movement modes 1-7 follow the player or start hidden. Fill the position
+ * trail and save the position as the world-map return point. */
+s32 func_8008A2C8(s32 index) {
+    WorldmapActor *actor;
+    TrailPoint *point;
+    s32 i;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x1800);
+    ((s32 *)actor->handle)[15] &= ~4;
+    actor->unk24 = 0;
+    actor->position.vx = D_8006EF64[0] << 12;
+    actor->position.vz = D_8006EF64[1] << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->unk48 = D_8009C584;
+    actor->unk4A = 8;
+    actor->unk5C = actor->unk48;
+    switch (D_8009BE10) {
+    case 1:
+    case 2:
+    case 3:
+        if (D_8006F8E5 == 0) {
+            actor->position.vx = D_8009C5AC.vx;
+            actor->position.vz = D_8009C5AC.vz;
+            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+            actor->unk48 = D_8009C584;
+            D_8009D55C.target = actor->position;
+            D_8009D52C = actor->unk48;
+        } else {
+            actor->state = 1;
+            actor->unk24 = 1;
+        }
+        break;
+    case 4:
+    case 5:
+    case 6:
+        actor->state = 3;
+        actor->unk24 = 1;
+        if (D_8006F368[0] != 0xFF) {
+            D_8006F8E5 = 1;
+        }
+        break;
+    case 7:
+        actor->state = 2;
+        actor->unk24 = 1;
+        if (D_8006F368[0] != 0xFF) {
+            D_8006F8E5 = 1;
+        }
+        break;
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+        break;
+    }
+    D_8009D154 = 0;
+    i = 0;
+    point = D_8009CEC4;
+    do {
+        point->position = actor->position;
+        i++;
+        point->heading = actor->unk48;
+        point++;
+    } while (i < 0x20);
+    D_8006EE54.x = actor->position.vx >> 12;
+    D_8006EE54.z = actor->position.vz >> 12;
+    D_8006EE54.heading = actor->unk48;
+    return 1;
+}
 
 /* Create the lead party member's model sprite for the actor. */
 s32 func_8008A52C(s32 index) {
