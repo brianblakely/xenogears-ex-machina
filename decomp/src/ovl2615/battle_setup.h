@@ -247,18 +247,32 @@ void func_80043BFC(void *prim, s32 semi);           /* SetSemiTrans */
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);   /* GetTPage */
 void func_800454DC(DR_MODE *mode, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 
+/* A glyph's primitives, double-buffered (0x28 bytes per buffer). */
+typedef struct {
+    u8 data[0x28];
+} GlyphPrim;
+
+/* A party member's gauge glyph primitives (0x1E0 bytes). */
+typedef struct {
+    GlyphPrim prim[12];
+} MemberGauge;
+
 /* A party member's status panel (0x1E4 bytes). */
 typedef struct {
-    u8 state; /* 0 absent, 1 shown, 2 placed alone */
-    u8 pad[0x1E3];
+    GlyphPrim digit[3][4];    /* digit glyphs: two parts, double-buffered */
+    u8 buffer;                /* 0x1E0 */
+    u8 state;                 /* 0x1E1: 0 absent, 1 shown, 2 placed alone */
+    u8 digit_parts[2];        /* 0x1E2 */
 } MemberPanel;
 
 /* Battle graphics state (pointer 0x800C3EA4). */
 typedef struct {
-    u8 pad0[0x5A0];
+    MemberGauge member_gauge[3]; /* 0x000 */
     POLY_GT4 gauge[8];      /* 0x5A0: gauge bars */
-    POLY_G4 gauge_shade[8]; /* 0x740 */
-    u8 pad860[0x908 - 0x860];
+    POLY_G4 gauge_shade[6]; /* 0x740; the gauge setup initialises eight,
+                             * the last two overlapping the portraits */
+    GlyphPrim portrait[3][2]; /* 0x818: member portraits */
+
     LINE_F2 gauge_line[12]; /* 0x908 */
     u8 pad9C8[0x63C8 - 0x9C8];
     POLY_F4 panel[2];       /* 0x63C8: semi-transparent panel backdrops */
@@ -267,9 +281,9 @@ typedef struct {
     u8 pad6414;
     u8 panel6415;
     u8 panel6416;
-    u8 pad6417[0x853D - 0x6417];
-    MemberPanel member_panel[3]; /* 0x853D */
-    u8 pad8AE9[0xA234 - 0x853D - 3 * 0x1E4];
+    u8 pad6417[0x835C - 0x6417];
+    MemberPanel member_panel[3]; /* 0x835C */
+    u8 pad8AE8[0xA234 - 0x835C - 3 * 0x1E4];
     s32 glyph_a234;         /* 0xA234: the gauge glyph's fields */
     s32 tpage_tp;           /* 0xA238 */
     s32 clut_x;             /* 0xA23C */
@@ -434,13 +448,26 @@ void func_80029AFC(u16 *list, s32 a1, s32 a2); /* read a file list */
 
 /* Battle UI state (pointer 0x800D2D28). */
 typedef struct {
-    u8 pad0[0x7C];
+    u8 pad0[0x78];
+    u8 gauge_parts[3]; /* 0x78: gauge glyph parts per member */
+    u8 pad7B;
     u8 gauge_shown[3]; /* 0x7C */
+    u8 pad7F[0x83 - 0x7F];
+    u8 b83;            /* 0x83: draw buffer */
+    u8 pad84[0xA2 - 0x84];
+    u8 bA2;            /* 0xA2: draw buffer */
 } UiState;
 
 extern UiState *D_800D2D28;
 
 void func_80026338(void *glyphs, s32 glyph, s32 *a, s32 *tp, s32 *clut_x, s32 *clut_y,
                    s32 *tpage_x, s32 *tpage_y); /* a glyph's texture fields */
+
+extern u16 D_800C3254[]; /* member panel columns, three per party layout */
+extern s32 D_800CCB34;      /* the draw buffer index */
+
+s32 func_80076A6C(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* half-scale glyph */
+s32 func_80076A10(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* glyph; returns its parts */
+void func_80076C34(GlyphPrim *prim);                          /* dim a glyph part */
 
 #endif

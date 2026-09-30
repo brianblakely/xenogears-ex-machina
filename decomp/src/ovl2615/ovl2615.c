@@ -581,7 +581,42 @@ void func_801E5E78(void) {
     }
 }
 
+/* Draw each present member's gauge glyphs (the second set dimmed), its
+ * portrait and its two digit glyphs, placed by the party layout's columns. */
+#ifdef NON_MATCHING
+void func_801E5EE8(void) {
+    s32 i;
+    s32 part;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
+            D_800D2D28->gauge_parts[i] += func_80076A6C(
+                0x52, &D_800C3EA4->member_gauge[i].prim[D_800D2D28->gauge_parts[i] * 2],
+                i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
+            part = D_800D2D28->gauge_parts[i];
+            D_800D2D28->gauge_parts[i] += func_80076A6C(
+                0x53, &D_800C3EA4->member_gauge[i].prim[part * 2],
+                i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x44), 0x24);
+            for (part = part * 2; part < D_800D2D28->gauge_parts[i] * 2; part += 2) {
+                func_80076C34(&D_800C3EA4->member_gauge[i].prim[part + D_800CCB34]);
+            }
+            func_80076A10(0x61 + i, D_800C3EA4->portrait[i],
+                          i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x1C), 0x14);
+            D_800C3EA4->member_panel[i].digit_parts[0] =
+                func_80076A10(0x90, D_800C3EA4->member_panel[i].digit[0],
+                              i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x38), 0x27);
+            D_800C3EA4->member_panel[i].digit_parts[1] =
+                func_80076A10(0x91, D_800C3EA4->member_panel[i].digit[1],
+                              i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x3C), 0x27);
+            D_800C3EA4->member_panel[i].buffer = D_800CCB34;
+        }
+    }
+    D_800D2D28->bA2 = D_800CCB34;
+    D_800D2D28->b83 = D_800CCB34;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5EE8);
+#endif
 
 /* Setup phase 3, first frame: the gauge panels and each member's glyphs. */
 void func_801E6290(void) {
