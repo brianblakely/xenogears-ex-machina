@@ -3292,7 +3292,116 @@ void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
     }
 }
 
+/* Recompute character `id`'s equipment values: sum its three accessories
+ * (amount, kind bits and stat bonuses) and take its weapon's values (kind 4
+ * characters: both weapons). The code matches except the jump table
+ * address, which marks a separate unit (see 801e3ecc). */
+#ifdef NON_MATCHING
+void func_801E36D4(MenuTables *tables, u8 id) {
+    CharRecord *chara;
+    MenuAccessory *accessory;
+    MenuWeapon *weapon;
+    u8 i;
+    u8 amount;
+
+    chara = &D_8006D8A0[id];
+    chara->bonus[5] = 0;
+    chara->unk32 = 0;
+    chara->bonus[0] = 0;
+    chara->bonus[1] = 0;
+    chara->bonus[2] = 0;
+    chara->bonus[3] = 0;
+    chara->bonus[4] = 0;
+    chara->bonus[6] = 0;
+    chara->bonus[7] = 0;
+    chara->unk30 = 0;
+    chara->unk31 = 0;
+    chara->unk7E = 0;
+    chara->unk82 = 0;
+    chara->unk86 = 0;
+    chara->unk8A = 0;
+    chara->unk8E = 0;
+    chara->unkA1 = 0;
+    for (i = 0; i < 3; i++) {
+        accessory = &tables->accessories[chara->accessories[i]];
+        chara->bonus[5] += accessory->amount;
+        switch (accessory->kind) {
+        case 1:
+            chara->unk7E |= accessory->value;
+            break;
+        case 2:
+            chara->unk82 |= accessory->value;
+            break;
+        case 3:
+            chara->unk86 |= accessory->value;
+            break;
+        case 4:
+            chara->unk8A |= accessory->value;
+            break;
+        case 7:
+            chara->unk8E |= accessory->value;
+            break;
+        case 5:
+            chara->unk32 |= accessory->value;
+            break;
+        case 8:
+        case 9:
+            chara->unk30 += accessory->value;
+            break;
+        case 10:
+            chara->unkA1 += accessory->value;
+            break;
+        }
+        amount = accessory->stats;
+        if (accessory->stats & 0x8000) {
+            chara->bonus[0] += amount;
+        }
+        if (accessory->stats & 0x4000) {
+            chara->bonus[1] += amount;
+        }
+        if (accessory->stats & 0x2000) {
+            chara->bonus[2] += amount;
+        }
+        if (accessory->stats & 0x1000) {
+            chara->bonus[3] += amount;
+        }
+        if (accessory->stats & 0x800) {
+            chara->bonus[4] += amount;
+        }
+        if (accessory->stats & 0x400) {
+            chara->bonus[6] += amount;
+        }
+        if (accessory->stats & 0x200) {
+            chara->bonus[7] += amount;
+        }
+        if (accessory->stats & 0x100) {
+            chara->bonus[5] += amount;
+        }
+    }
+    weapon = &tables->weapons[chara->weapon];
+    chara->level = weapon->level;
+    chara->weaponValue = weapon->value;
+    chara->weaponA = weapon->a;
+    chara->weaponB = weapon->b;
+    if (chara->unk56 == 4) {
+        weapon = &tables->weapons[chara->accessory];
+        chara->level = weapon->level;
+        chara->weaponValue = weapon->value;
+        chara->weaponA = weapon->a;
+        chara->weaponB = weapon->b;
+        weapon = &tables->weapons[chara->weapon2];
+        chara->unk1C = weapon->level;
+        chara->weapon2Value = weapon->value;
+        chara->weapon2A = weapon->a;
+        chara->weapon2B = weapon->b;
+    }
+    if (chara->weaponB == 100) {
+        chara->unk8E |= chara->weaponValue;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E36D4);
+#endif
 
 /* Compute character `id`'s shown stats: base values plus equipment bonuses
  * (the first from the level, scaled 6/10 with +1c for kind 4), capped at

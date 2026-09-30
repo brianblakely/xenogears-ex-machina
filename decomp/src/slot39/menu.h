@@ -267,13 +267,21 @@ typedef struct MenuEffect {
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
 typedef struct CharRecord {
-    u8 pad0[0x4];
-    u8 level; /* 4 */
-    u8 pad5[0x17];
+    u16 weaponValue; /* 0: from the weapon record (+8) */
+    u8 weaponA; /* 2 */
+    u8 weaponB; /* 3: 100 adds the value to +8e */
+    u8 level; /* 4: from the weapon record (+c) */
+    u8 pad5[0x13];
+    u16 weapon2Value; /* 18: kind 4: the second weapon's values */
+    u8 weapon2A; /* 1A */
+    u8 weapon2B; /* 1B */
     u8 unk1C; /* 1C */
     u8 pad1D[0xB];
     u8 bonus[8]; /* 28: equipment bonuses of the base values (58) */
-    u8 pad30[0x1C];
+    u8 unk30; /* 30: accessory kinds 8, 9 */
+    u8 unk31; /* 31 */
+    u16 unk32; /* 32: accessory kind 5 bits */
+    u8 pad34[0x18];
     u16 hp; /* 4C */
     u16 hpMax; /* 4E */
     u16 ep; /* 50 */
@@ -292,15 +300,31 @@ typedef struct CharRecord {
     u8 pad60[0x2];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
-    u8 pad64[0xB];
-    u8 accessory; /* 6F: inventory list 1 entry (801e0434) */
-    u8 pad70[0x8];
+    u8 pad64[0x6];
+    u8 weapon; /* 6A: weapon record */
+    u8 pad6B[0x4];
+    u8 accessory; /* 6F: inventory list 1 entry (801e0434); kind 4: first weapon */
+    u8 pad70[0x2];
+    u8 weapon2; /* 72: kind 4: second weapon */
+    u8 pad73[0x1];
+    u8 accessories[3]; /* 74: accessory records */
+    u8 pad77[0x1];
     u8 unk78; /* 78 */
-    u8 pad79[0x17];
+    u8 pad79[0x5];
+    u16 unk7E; /* 7E: accessory kind 1 bits */
+    u8 pad80[0x2];
+    u16 unk82; /* 82: kind 2 */
+    u8 pad84[0x2];
+    u16 unk86; /* 86: kind 3 */
+    u8 pad88[0x2];
+    u16 unk8A; /* 8A: kind 4 */
+    u8 pad8C[0x2];
+    u16 unk8E; /* 8E: kind 7 */
     u16 unk90[7]; /* 90: progress values (801e1418) */
     u8 pad9E[0x2];
     u8 gear; /* A0: gear record (+11), ff none */
-    u8 padA1[0x3];
+    u8 unkA1; /* A1: accessory kind 10 */
+    u8 padA2[0x2];
 } CharRecord;
 
 /* A weapon slot of a gear record. */
@@ -333,10 +357,30 @@ typedef struct MenuItem {
     u8 padE[0x2];
 } MenuItem;
 
+/* A weapon record of the data tables (+0). */
+typedef struct MenuWeapon {
+    u8 pad0[0x8];
+    u16 value; /* 8 */
+    u8 a; /* A */
+    u8 b; /* B */
+    u8 level; /* C */
+    u8 padD[0x3];
+} MenuWeapon;
+
+/* An accessory record of the data tables (+4). */
+typedef struct MenuAccessory {
+    u8 pad0[0x8];
+    u8 amount; /* 8: added to +2d */
+    u8 kind; /* 9 */
+    s16 value; /* A */
+    s16 stats; /* C: bonuses raised by the amount */
+    u8 padE[0x2];
+} MenuAccessory;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
-    u8 *weapons; /* 0 */
-    u8 *accessories; /* 4 */
+    MenuWeapon *weapons; /* 0 */
+    MenuAccessory *accessories; /* 4 */
     GearEngine *engines; /* 8 */
     GearPart *parts; /* C */
     GearFrame *frames; /* 10 */
