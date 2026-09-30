@@ -695,18 +695,7 @@ void func_800366F0(void) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036718);
 
-typedef struct {
-    u16 flags;
-    u8 unk2[0x12];
-    s16 unk14;
-    s16 unk16;
-    u8 unk18[0x16];
-    u16 flags2E;
-    s16 unk30;
-    s16 unk32;
-} Block59394;
-
-extern Block59394 *D_80059394;
+#include "console.h"
 
 void func_80036CD8(s32 bits) {
     D_80059394->flags |= bits;
@@ -740,47 +729,136 @@ void func_80036D98(s16 value) {
     D_80059394->unk16 = value;
 }
 
+/* Move the console cursor. */
 void func_80036DA8(s16 value) {
-    D_80059394->unk30 = value;
+    D_80059394->x = value;
 }
 
 void func_80036DB8(s16 value) {
-    D_80059394->unk32 = value;
+    D_80059394->y = value;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036DC8);
+/* Set the console text colour; any channel below 0x80 clears bright mode. */
+void func_80036DC8(s32 r, s32 g, s32 b) {
+    D_80059394->r = r;
+    D_80059394->g = g;
+    D_80059394->b = b;
+    if (r < 0x80 || g < 0x80 || b < 0x80) {
+        D_80059394->mode &= ~1;
+    } else {
+        D_80059394->mode |= 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036E4C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036F44);
+s16 func_80036F44(void) {
+    return D_80059394->unk14;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036F5C);
+s16 func_80036F5C(void) {
+    return D_80059394->unk16;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036F74);
+s16 func_80036F74(void) {
+    return D_80059394->x;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036F8C);
+s16 func_80036F8C(void) {
+    return D_80059394->y;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036FA4);
+s16 func_80036FA4(void) {
+    return D_80059394->unk34;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036FBC);
+/* Save the console cursor. */
+void func_80036FBC(void) {
+    D_80059394->saved_x = D_80059394->x;
+    D_80059394->saved_y = D_80059394->y;
+    D_80059394->saved_36 = D_80059394->unk36;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036FE4);
+/* Restore the saved console cursor. */
+void func_80036FE4(void) {
+    D_80059394->x = D_80059394->saved_x;
+    D_80059394->y = D_80059394->saved_y;
+    D_80059394->unk36 = D_80059394->saved_36;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003700C);
+extern void func_80036718(s32 target, char *format, void *args);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037058);
+/* printf to the console, when there is one. */
+void func_8003700C(char *format, ...) {
+    if (D_80059394 != NULL) {
+        func_80036718(0, format, &format + 1);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003708C);
+/* Place the console cursor relative to its origin. */
+void func_80037058(s32 x, s32 y) {
+    if (D_80059394 != NULL) {
+        D_80059394->x = D_80059394->left + x;
+        D_80059394->y = D_80059394->top + y;
+    }
+}
+
+/* Place the console cursor and line start relative to the origin. */
+void func_8003708C(s32 x, s32 y) {
+    if (D_80059394 != NULL) {
+        if (x < 0) {
+            x = 0;
+        }
+        if (y < 0) {
+            y = 0;
+        }
+        D_80059394->unk36 = D_80059394->x = D_80059394->left + x;
+        D_80059394->y = D_80059394->top + y;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800370DC);
 
+/* Home the console cursor and select the active text buffer.
+ * Nonmatching: the original loads every field before the stores. */
+#ifdef NON_MATCHING
+void func_800372CC(void) {
+    Console *console = D_80059394;
+
+    console->unk34 = 0;
+    console->y = console->top;
+    console->saved_y = console->top;
+    console->mode &= ~1;
+    console->x = console->left;
+    console->saved_x = console->left;
+    console->unk36 = console->left;
+    console->saved_36 = console->left;
+    console->current = console->buffer[console->flags2E & 1];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800372CC);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037324);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003747C);
+void func_8003747C(s32 value) {
+    D_800593A0 = value;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003748C);
+extern void (*D_800592B8)(char *line);
+
+/* Close the console: restore the default report output and release the
+ * console block unless it is not owned. */
+void func_8003748C(void) {
+    if (D_80059394 != NULL) {
+        D_800592B8 = (void (*)(char *))func_8003700C;
+        if (D_800593A0 == 0) {
+            func_800320E8(D_80059394);
+        }
+        D_80059394 = NULL;
+    }
+    D_800593A0 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800374E8);
 
