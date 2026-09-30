@@ -125,6 +125,8 @@ decomp/src/battle/battle.c
 decomp/src/battle/battle_80070E2C.c
 decomp/src/battle/battle_800792F8.c
 decomp/src/battle/battle_80079ED8.c
+decomp/src/battle/battle_8008B478.c
+decomp/src/battle/battle_8008CCCC.c
 decomp/src/battle/battle_8009E53C.c
 decomp/src/battle/battle_800B1720.c
 decomp/src/battle/battle_command.h

@@ -241,7 +241,7 @@ typedef struct {
     u8 accuracy; /* 0x14 */
     s8 hitBonus; /* 0x15 */
     u8 formula; /* 0x16: index into the formula table */
-    u8 pad17;
+    u8 apCost; /* 0x17: AP a combo step costs */
     u8 chanceSource; /* 0x18: 0 attacker +0x60, 1 field1C */
     u8 pad19;
     u8 amountKind;  /* 0x1A: what 80096018 writes as the amount */
