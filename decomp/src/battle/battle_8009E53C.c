@@ -2050,7 +2050,78 @@ void func_800A6444(s32 index, s32 r, s32 g, s32 b, s32 field4, s32 field5) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A64E4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6884);
+/* Light a colour with light slot index: when active, its mode (field r)
+ * adds the colour (0), half (1) or a quarter (2) of it, its grey level (3),
+ * or nothing (4) to the light's signed colour (b, field4, field5, times 8); the
+ * colour then moves towards that by field g / 32, clamped to 0-255, and is
+ * copied to out. */
+void func_800A6884(u8 *out, s32 index, u8 *color) {
+    s32 r;
+    s32 g;
+    s32 b;
+    s32 grey;
+
+    r = (s8)D_800C3AAC[index].b * 8;
+    g = (s8)D_800C3AAC[index].field4 * 8;
+    b = (s8)D_800C3AAC[index].field5 * 8;
+    if (D_800C3AAC[index].active) {
+        switch (D_800C3AAC[index].r) {
+        case 0:
+            r += color[0];
+            g += color[1];
+            b += color[2];
+            break;
+        case 1:
+            r += color[0] >> 1;
+            g += color[1] >> 1;
+            b += color[2] >> 1;
+            break;
+        case 2:
+            r += color[0] >> 2;
+            g += color[1] >> 2;
+            b += color[2] >> 2;
+            break;
+        case 3:
+            grey = (color[0] + color[1] + color[2]) / 3;
+            r += grey;
+            g += grey;
+            b += grey;
+            break;
+        case 4:
+            r = 0;
+            g = 0;
+            b = 0;
+            break;
+        }
+    }
+    r += (color[0] - r) * D_800C3AAC[index].g / 32;
+    g += (color[1] - g) * D_800C3AAC[index].g / 32;
+    b += (color[2] - b) * D_800C3AAC[index].g / 32;
+    if (r >= 0x100) {
+        color[0] = 0xFF;
+    } else if (r < 0) {
+        color[0] = 0;
+    } else {
+        color[0] = r;
+    }
+    if (g >= 0x100) {
+        color[1] = 0xFF;
+    } else if (g < 0) {
+        color[1] = 0;
+    } else {
+        color[1] = g;
+    }
+    if (b >= 0x100) {
+        color[2] = 0xFF;
+    } else if (b < 0) {
+        color[2] = 0;
+    } else {
+        color[2] = b;
+    }
+    out[0] = color[0];
+    out[1] = color[1];
+    out[2] = color[2];
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A6AE8);
 

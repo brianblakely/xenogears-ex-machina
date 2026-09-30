@@ -31,6 +31,7 @@ void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s
                    s32 depth);
 void func_800A4DB8(void *geometry, s32 arg1, s32 arg2, Matrix *view, u32 *ot, s32 buffer);
 void func_800A64E4(void);
+void func_800A6884(u8 *out, s32 index, u8 *color);
 void func_800A6AE8(void);
 
 #endif
