@@ -1223,15 +1223,14 @@ void func_80074F70(void) {
 /* Place and add the shown battle messages: the first centred at (0x40,
  * 0x2c), the others centred at (0x9a, 0xca), texture rows 13 apart per
  * pair. */
-#ifdef NON_MATCHING
 void func_8007500C(void) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
         if (D_800D36C8[i].shown != 0) {
             if (i == 0) {
-                func_80076C78(&D_800D36C8[0].prims[D_800CCB04.buffer], 0x40 - (D_800D36C8[0].width >> 1), 0x2C, 0, 0,
-                              D_800D36C8[0].width);
+                func_80076C78(&D_800D36C8[i].prims[D_800CCB04.buffer], 0x40 - (D_800D36C8[i].width >> 1), 0x2C, 0, 0,
+                              D_800D36C8[i].width);
             } else {
                 func_80076C78(&D_800D36C8[i].prims[D_800CCB04.buffer], 0x9A - (D_800D36C8[i].width >> 1), 0xCA, 0,
                               (i / 2) * 13, D_800D36C8[i].width);
@@ -1240,9 +1239,6 @@ void func_8007500C(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_8007500C);
-#endif
 
 /* Size and colour each member's gauge shade in the current draw buffer:
  * panel state 1 shows the 800d32a0 value (green, two pixels per point),
