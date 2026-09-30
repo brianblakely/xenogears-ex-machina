@@ -484,7 +484,7 @@ void func_800726B4(void) {
 
 /* Copy a model's matrix to out, rotated by the base matrix, with its
  * translation set to the model position relative to the scene origin. */
-void func_8007273C(SceneModel *model, Matrix *matrix, Matrix *out) {
+void func_8007273C(Model *model, Matrix *matrix, Matrix *out) {
     Matrix local;
 
     *out = *matrix;
@@ -1311,9 +1311,24 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078920);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078D20);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078E94);
+/* Place an actor's model at the actor's position and facing. */
+void func_80078E94(Actor *actor) {
+    actor->model->x = actor->pos.vx;
+    actor->model->y = actor->pos.vy;
+    actor->model->z = actor->pos.vz;
+    actor->model->angle = actor->angle;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078ED4);
+/* Default values of a seven-entry parameter block. */
+void func_80078ED4(s16 *params) {
+    params[0] = 0x100;
+    params[2] = 0x10;
+    params[1] = 0;
+    params[3] = 0;
+    params[4] = 0;
+    params[5] = 0x30;
+    params[6] = 0x30;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078F00);
 
@@ -1321,20 +1336,58 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007920C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800796B8);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079A8C);
+/* Reset the bout: effects, glow and the round settings. */
+void func_80079A8C(void) {
+    func_800732CC();
+    func_8008DC28();
+    func_80088AF8();
+    D_80099D9D = 1;
+    D_80099DA1 = 3;
+    D_8009292C = 0x100;
+    D_80099D9E = 0;
+    D_80099D9A = 0;
+    D_80099DA2 = 0;
+    D_80099DA4 = 0x100;
+}
 
 void func_80079B04(void) {
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079B0C);
+/* Clear the per-round counters. */
+void func_80079B0C(void) {
+    D_80092950 = 0;
+    D_8009872C.unkF2 = 0;
+    D_80097010.unkF2 = 0;
+    D_80092918 = 0;
+    D_80092944 = 0;
+    D_800928FC = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079B44);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079D08);
+/* Mirror actor flags 2, 15 and 19 into its pose. */
+void func_80079D08(Actor *actor) {
+    actor->pose->unkA = (actor->pose->unkA & ~0x100) | ((actor->flags << 6) & 0x100);
+    actor->pose->flags = (actor->pose->flags & ~0x2000) | ((actor->flags >> 2) & 0x2000);
+    actor->pose->flags = (actor->pose->flags & ~0x4000) | ((actor->flags >> 5) & 0x4000);
+}
 
+#ifdef NON_MATCHING
+/* Restore actor flags 2, 15 and 19 from its pose. Does not match: the
+ * original extracts pose bit 14 as a signed bit-field (sll 17; slti). */
+void func_80079D6C(Actor *actor) {
+    actor->flags = (actor->flags & ~4) | ((actor->pose->unkA >> 6) & 4);
+    actor->flags = (actor->flags & ~0x8000) | ((actor->pose->flags << 2) & 0x8000);
+    actor->flags = (actor->flags & ~0x80000) | (((actor->pose->flags >> 14) & 1) << 19);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079D6C);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079DE0);
+/* Clear D_80092640. */
+void func_80079DE0(void) {
+    D_80092640 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80079DF0);
 

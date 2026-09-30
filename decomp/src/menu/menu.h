@@ -102,7 +102,9 @@ typedef struct {
  * its facing; bit 15 marks a charged pose. */
 typedef struct {
     s16 x, y, z;
-    u16 flags;
+    u16 flags;       /* bit 13, 14: mirrored actor flags 15, 19 */
+    s16 unk8;
+    u16 unkA;        /* bit 8: mirrored actor flag 2 */
 } Pose;
 
 /* An actor's current move. */
@@ -135,6 +137,10 @@ typedef struct {
 typedef struct {
     u8 unk0[0x4];
     ModelData *data;
+    u8 unk8[0x2C];
+    s32 x, y, z;     /* 0x34 */
+    u8 unk40[0x6];
+    s16 angle;       /* 0x46 */
 } Model;
 
 /* Per-side hit bookkeeping (D_80096FB8, one record per side). */
@@ -193,7 +199,9 @@ typedef struct Actor {
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
-    u8 unkEC[0x14];
+    u8 unkEC[0x6];
+    s16 unkF2;
+    u8 unkF4[0xC];
     s32 unk100;
     Trail trails[16];    /* 0x104 */
     s32 unk644;
@@ -262,13 +270,6 @@ typedef struct {
     SceneHeader *header; /* 0x8FC */
 } SceneData;
 
-/* A placed scene model: its position is at 0x34. */
-typedef struct {
-    u8 unk0[0x34];
-    s32 x;
-    s32 y;
-    s32 z;
-} SceneModel;
 
 /* Where a hit effect goes: model part and vertex of one or two points. */
 typedef struct {
@@ -364,7 +365,16 @@ extern DrTpage D_800929E4[2];
 extern s32 D_80092A00;
 extern s32 D_80092A10;
 extern s32 D_80092A20;
+extern u8 D_80099D9A;
 extern u8 D_80099D9D;
+extern u8 D_80099DA1;
+extern u8 D_80099DA2;
+extern s16 D_80099DA4;
+extern u8 D_800928FC;
+extern s32 D_80092918;
+extern s32 D_80092944;
+extern s32 D_80092950;
+extern s32 D_80092640;
 extern u8 D_80099D9E;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
@@ -469,6 +479,9 @@ void func_80083C0C(s32 arg);
 s32 func_80083CD8(void);
 s32 func_8008F4F4(Actor *actor, s32 mask);
 void func_8008EB4C(s32 id);
+void func_800732CC(void);
+void func_8008DC28(void);
+void func_80088AF8(void);
 void func_8007E954(s32 arg);
 void func_8007F834(void);
 void func_80078F00(SceneData *scene);
