@@ -900,7 +900,51 @@ void func_8008BFD4(s32 index, VECTOR *position, s32 x, s32 z) {
     D_8009BD04 = (D_8009BD04 + 1) & 0x1F;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008C040);
+/* Find the first queued placement that overlaps a cylinder at `position`
+ * (radius, height): *hit is 2 inside its radius, 1 within 16 more units. */
+void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor) {
+    VECTOR delta;
+    VECTOR unused; /* unreferenced; the original frame reserves it */
+    PlaceRequest *request;
+    s32 i;
+    s32 top;
+    s32 bottom;
+    s32 distance;
+    s32 reach;
+
+    *hit = 0;
+    *actor = 0;
+    request = D_8009BE6C;
+    if (D_8009BD04 <= 0) {
+        return;
+    }
+    for (i = 0; i < D_8009BD04; i++, request++) {
+        top = position->vy;
+        if (top < request->py) {
+            bottom = top - (height << 12);
+            top = request->py;
+        } else {
+            bottom = request->py - (request->z << 12);
+        }
+        if ((top - bottom) >> 12 < height + request->z) {
+            delta.vx = (request->px - position->vx) >> 12;
+            delta.vz = (request->pz - position->vz) >> 12;
+            func_80093534(&delta);
+            distance = SquareRoot0(delta.vx * delta.vx + delta.vz * delta.vz);
+            reach = request->x + radius;
+            if (distance < reach) {
+                *hit = 2;
+                *actor = request->actor;
+                return;
+            }
+            if (distance < reach + 0x10) {
+                *hit = 1;
+                *actor = request->actor;
+                return;
+            }
+        }
+    }
+}
 
 /* Emit effect `effect` at the actor while it stands on terrain type 3,
  * otherwise stop the effect group. */

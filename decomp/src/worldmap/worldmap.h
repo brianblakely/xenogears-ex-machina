@@ -760,6 +760,7 @@ typedef struct {
 
 extern TrailPoint D_8009CEC4[32];
 extern s16 D_8009D154; /* trail index */
+void func_80093534(VECTOR *delta); /* wrap a world-unit offset */
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif
