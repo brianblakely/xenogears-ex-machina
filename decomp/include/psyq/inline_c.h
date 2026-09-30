@@ -111,6 +111,18 @@
                      :                                                         \
                      : "r"(r0))
 
+#define gte_ldv1(r0)                                                           \
+    __asm__ volatile("lwc2 $2, 0(%0);"                                         \
+                     "lwc2 $3, 4(%0)"                                          \
+                     :                                                         \
+                     : "r"(r0))
+
+#define gte_ldv2(r0)                                                           \
+    __asm__ volatile("lwc2 $4, 0(%0);"                                         \
+                     "lwc2 $5, 4(%0)"                                          \
+                     :                                                         \
+                     : "r"(r0))
+
 #define gte_ldv3(r0, r1, r2)                                                   \
     __asm__ volatile("lwc2 $0, 0(%0);"                                         \
                      "lwc2 $1, 4(%0);"                                         \

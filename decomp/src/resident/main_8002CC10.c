@@ -837,7 +837,121 @@ s32 func_80030EE8(void) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003101C);
+/* Halfway from a to b. */
+#define HALFWAY(a, b) ((a) + ((b) - (a)) / 2)
+
+/* Whether a sprite model's bounding box is off screen: none of the
+ * triangles tested reaches the screen (80030EE8). Mode bit 0 tests the box
+ * diagonal and three faces' diagonals, bit 1 four triangles through the
+ * edge midpoints. */
+s32 func_8003101C(SpriteModel *model, u16 mode) {
+    SVECTOR v;
+
+    if (mode & 1) {
+        gte_ldv0(&model->box_min);
+        gte_ldv1(&model->box_max);
+        v.vx = HALFWAY(model->box_min.vx, model->box_max.vx);
+        v.vy = HALFWAY(model->box_min.vy, model->box_max.vy);
+        v.vz = HALFWAY(model->box_min.vz, model->box_max.vz);
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+        v.vx = model->box_max.vx;
+        v.vy = model->box_min.vy;
+        v.vz = model->box_min.vz;
+        gte_ldv0(&v);
+        v.vx = model->box_min.vx;
+        v.vy = model->box_max.vy;
+        v.vz = model->box_min.vz;
+        gte_ldv1(&v);
+        v.vx = model->box_max.vx;
+        v.vy = model->box_max.vy;
+        v.vz = model->box_min.vz;
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+        v.vx = model->box_min.vx;
+        v.vy = model->box_min.vy;
+        v.vz = model->box_max.vz;
+        gte_ldv0(&v);
+        v.vx = model->box_max.vx;
+        v.vy = model->box_min.vy;
+        v.vz = model->box_max.vz;
+        gte_ldv1(&v);
+        v.vx = model->box_min.vx;
+        v.vy = model->box_max.vy;
+        v.vz = model->box_max.vz;
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+    }
+    if (mode & 2) {
+        v.vx = HALFWAY(model->box_min.vx, model->box_max.vx);
+        v.vy = model->box_min.vy;
+        v.vz = model->box_min.vz;
+        gte_ldv0(&v);
+        v.vx = model->box_min.vx;
+        v.vy = model->box_min.vy;
+        v.vz = HALFWAY(model->box_min.vz, model->box_max.vz);
+        gte_ldv1(&v);
+        v.vx = model->box_min.vx;
+        v.vy = HALFWAY(model->box_min.vy, model->box_max.vy);
+        v.vz = model->box_min.vz;
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+        v.vx = model->box_max.vx;
+        v.vy = HALFWAY(model->box_max.vy, model->box_min.vy);
+        v.vz = model->box_min.vz;
+        gte_ldv0(&v);
+        v.vx = HALFWAY(model->box_max.vx, model->box_min.vx);
+        v.vy = model->box_max.vy;
+        v.vz = model->box_min.vz;
+        gte_ldv1(&v);
+        v.vx = model->box_max.vx;
+        v.vy = model->box_max.vy;
+        v.vz = HALFWAY(model->box_min.vz, model->box_max.vz);
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+        v.vx = model->box_min.vx;
+        v.vy = model->box_max.vy;
+        v.vz = HALFWAY(model->box_max.vz, model->box_min.vz);
+        gte_ldv0(&v);
+        v.vx = model->box_min.vx;
+        v.vy = HALFWAY(model->box_max.vy, model->box_min.vy);
+        v.vz = model->box_max.vz;
+        gte_ldv1(&v);
+        v.vx = HALFWAY(model->box_min.vx, model->box_max.vx);
+        v.vy = model->box_max.vy;
+        v.vz = model->box_max.vz;
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+        v.vx = model->box_max.vx;
+        v.vy = model->box_min.vy;
+        v.vz = HALFWAY(model->box_max.vz, model->box_min.vz);
+        gte_ldv0(&v);
+        v.vx = HALFWAY(model->box_max.vx, model->box_min.vx);
+        v.vy = model->box_min.vy;
+        v.vz = model->box_max.vz;
+        gte_ldv1(&v);
+        v.vx = model->box_max.vx;
+        v.vy = HALFWAY(model->box_min.vy, model->box_max.vy);
+        v.vz = model->box_max.vz;
+        gte_ldv2(&v);
+        if (func_80030EE8()) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800315A0);
 

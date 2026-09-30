@@ -76,13 +76,16 @@ typedef struct {
 typedef struct {
     u16 flags;          /* bit 4: has normals; bit 5: relocated */
     u16 vertex_count;
-    u8 unk4[4];
+    u16 primitive_count;
+    u16 group_count;    /* primitive groups */
     SVECTOR *vertices;
     SVECTOR *normals;
-    u8 *unk10;
+    u8 *unk10;          /* primitive groups */
     u8 *unk14;
-    u8 unk18[4];
+    u8 *unk18;
     MorphTable *morphs; /* optional */
+    SVECTOR box_min;    /* bounding box */
+    SVECTOR box_max;
 } SpriteModel;
 
 /* A morph channel: its update function steps `weight` toward `target`. */
@@ -142,5 +145,6 @@ s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 void func_8002C700(void *model, void *packets, s32 ot, s32 flags); /* draw primitive groups */
+s32 func_8003101C(SpriteModel *model, u16 mode); /* bounding box off screen */
 
 #endif
