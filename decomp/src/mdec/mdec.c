@@ -29,8 +29,8 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     product = width * height * (scale << 1);
     movie_vlc_limit = limit;
     movie_color_mode = mode & 3;
-    movie_vlc_buffers[0] = func_80031BDC(product / 256, 0);
-    movie_vlc_buffers[1] = func_80031BDC(product / 256, 0);
+    movie_decoder.vlc_buffers[0] = func_80031BDC(product / 256, 0);
+    movie_decoder.vlc_buffers[1] = func_80031BDC(product / 256, 0);
     if (movie_color_mode & 1) {
         slice = (u32)(slice * 3) >> 1;
         width = (u32)(width * 3) >> 1;
@@ -38,24 +38,24 @@ s32 movie_open(u16 width, u16 height, u16 scale, u16 slice, u16 sectors, u16 lim
     movie_image_width = width;
     movie_image_height = height;
     slice_bytes = (slice * height) * 2;
-    movie_slice_buffer0 = func_80031BDC(slice_bytes, 0);
-    movie_slice_buffer1 = func_80031BDC(slice_bytes, 0);
-    movie_display_buffers[0][0] = 0;
-    movie_display_buffers[0][1] = 0;
-    movie_display_buffers[0][2] = width;
-    movie_display_buffers[0][3] = height;
-    movie_display_buffers[1][0] = 0;
-    movie_display_buffers[1][1] = 0;
-    movie_display_buffers[1][2] = width;
-    movie_display_buffers[1][3] = height;
-    movie_slice_rects[0][0] = 0;
-    movie_slice_rects[0][1] = 0;
-    movie_slice_rects[0][2] = slice;
-    movie_slice_rects[0][3] = height;
-    movie_slice_rects[1][0] = 0;
-    movie_slice_rects[1][1] = 0;
-    movie_slice_rects[1][2] = slice;
-    movie_slice_rects[1][3] = height;
+    movie_decoder.slice_buffers[0] = func_80031BDC(slice_bytes, 0);
+    movie_decoder.slice_buffers[1] = func_80031BDC(slice_bytes, 0);
+    movie_decoder.display[0].x = 0;
+    movie_decoder.display[0].y = 0;
+    movie_decoder.display[0].right = width;
+    movie_decoder.display[0].bottom = height;
+    movie_decoder.display[1].x = 0;
+    movie_decoder.display[1].y = 0;
+    movie_decoder.display[1].right = width;
+    movie_decoder.display[1].bottom = height;
+    movie_decoder.slice[0].x = 0;
+    movie_decoder.slice[0].y = 0;
+    movie_decoder.slice[0].w = slice;
+    movie_decoder.slice[0].h = height;
+    movie_decoder.slice[1].x = 0;
+    movie_decoder.slice[1].y = 0;
+    movie_decoder.slice[1].w = slice;
+    movie_decoder.slice[1].h = height;
     if (movie_host_stream != 0) {
         movie_ring_buffer = func_8002A260(sectors, 0);
     } else {
@@ -127,27 +127,27 @@ void movie_start(u16 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
     movie_frame_callback = callback;
     if (movie_color_mode & 1) {
         /* Three bytes per pixel: VRAM units are two thirds of pixels. */
-        movie_display_buffers[0][0] = (x0 * 3) >> 1;
-        movie_display_buffers[1][0] = (x1 * 3) >> 1;
-        movie_display_buffers[0][1] = y0;
+        movie_decoder.display[0].x = (x0 * 3) >> 1;
+        movie_decoder.display[1].x = (x1 * 3) >> 1;
+        movie_decoder.display[0].y = y0;
         movie_slice_width = 24;
     } else {
-        movie_display_buffers[0][0] = x0;
-        movie_display_buffers[0][1] = y0;
-        movie_display_buffers[1][0] = x1;
+        movie_decoder.display[0].x = x0;
+        movie_decoder.display[0].y = y0;
+        movie_decoder.display[1].x = x1;
         movie_slice_width = 16;
     }
-    movie_display_buffers[1][1] = y1;
+    movie_decoder.display[1].y = y1;
     movie_mdec_idle = 1;
     movie_frame_waiting = 1;
     movie_shown_frame = -1;
     movie_load_restart = 1;
     movie_load_enabled = 1;
     movie_first_frame = first_frame;
-    movie_vlc_buffer_index = 0;
-    movie_slice_buffer_index = 0;
-    movie_decode_display = 0;
-    movie_load_display = 0;
+    movie_decoder.vlc_index = 0;
+    movie_decoder.slice_index = 0;
+    movie_decoder.decode_display = 0;
+    movie_decoder.load_display = 0;
     movie_frame_width = 0;
     movie_frame_height = 0;
     movie_stall_count = 0;
@@ -160,9 +160,101 @@ void movie_start(u16 file, s32 sector, u16 first_frame, u16 last_frame, u16 chan
 INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_start);
 #endif
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_next_bitstream);
+/* The next frame's bitstream from the ring, or NULL when no frame is complete;
+ * its first sector's header goes to `header`. A frame of another size moves
+ * the display buffers' far corners and the rows each slice loads. */
+u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header) {
+    u32 *data;
+    MovieSectorHeader *sector;
+    u32 columns;
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_decode);
+    if (movie_host_stream != 0) {
+        if (func_80028F30(&data, &sector) != 0) {
+            return NULL;
+        }
+        movie_ring_frame = sector->frame;
+        if (movie_ring_frame >= end_frame) {
+            func_8002A498(0);
+        }
+    } else {
+        if (StGetNext(&data, &sector) != 0) {
+            movie_stall_count++;
+            return NULL;
+        }
+        movie_stall_count = 0;
+        movie_previous_frame = movie_ring_frame;
+        movie_ring_frame = sector->frame;
+        if (movie_previous_frame + 1 < movie_ring_frame) {
+            movie_skipped_frames++;
+        }
+    }
+    if (movie_frame_width != sector->width || movie_frame_height != sector->height) {
+        movie_frame_width = sector->width;
+        movie_frame_height = sector->height;
+        if (movie_color_mode & 1) {
+            columns = (movie_frame_width * 3) >> 1;
+            movie_decoder.display[0].right = movie_decoder.display[0].x + columns;
+            movie_decoder.display[1].right = movie_decoder.display[1].x + columns;
+        } else {
+            movie_decoder.display[0].right = movie_decoder.display[0].x + movie_frame_width;
+            movie_decoder.display[1].right = movie_decoder.display[1].x + movie_frame_width;
+        }
+        movie_decoder.display[0].bottom = movie_decoder.display[0].y + movie_frame_height;
+        movie_decoder.display[1].bottom = movie_decoder.display[1].y + movie_frame_height;
+        if (movie_frame_height > movie_image_height) {
+            movie_decoder.slice[0].h = movie_image_height;
+            movie_decoder.slice[1].h = movie_image_height;
+        } else {
+            movie_decoder.slice[0].h = movie_frame_height;
+            movie_decoder.slice[1].h = movie_frame_height;
+        }
+    }
+    *header = sector;
+    return data;
+}
+
+/* Start the MDEC on the frame decoded last when it is idle, then decode the
+ * next frame's bitstream into a run-level buffer, or continue a partial
+ * decode; a finished bitstream's ring sectors are freed. */
+void movie_decode(void) {
+    u32 *bitstream;
+    void *output;
+
+    if (movie_vlc_pending == 0) {
+        if (movie_frame_waiting == 0) {
+            movie_decoder.slice[movie_decoder.decode_display].x = movie_decoder.display[movie_decoder.decode_display].x;
+            movie_decoder.slice[movie_decoder.decode_display].y = movie_decoder.display[movie_decoder.decode_display].y;
+            movie_loaded_frame = movie_ring_frame;
+            DecDCTin(movie_decoder.vlc_buffers[movie_decoder.vlc_index], movie_color_mode);
+            DecDCTout(movie_decoder.slice_buffers[movie_decoder.slice_index],
+                      (movie_decoder.slice[movie_decoder.decode_display].w * movie_decoder.slice[movie_decoder.decode_display].h) / 2);
+            movie_mdec_idle = 0;
+            movie_decoder.decode_display = 1 - movie_decoder.decode_display;
+            movie_decoder.vlc_index = 1 - movie_decoder.vlc_index;
+        }
+        movie_frame_bitstream = movie_next_bitstream(movie_end_frame, &movie_decoded_bitstream);
+        if (movie_frame_bitstream == NULL) {
+            movie_frame_waiting = 1;
+            return;
+        }
+        movie_frame_waiting = 0;
+        DecDCTvlcSize(movie_vlc_limit);
+        bitstream = movie_frame_bitstream;
+        output = movie_decoder.vlc_buffers[movie_decoder.vlc_index];
+    } else {
+        bitstream = NULL;
+        output = NULL;
+    }
+    movie_vlc_pending = DecDCTvlc(bitstream, output);
+    if (movie_vlc_pending != 0) {
+        return;
+    }
+    if (movie_host_stream != 0) {
+        func_800294B4(movie_decoded_bitstream);
+    } else {
+        StFreeRing(movie_frame_bitstream);
+    }
+}
 
 /* One step of playback: fade the CD audio in once past the first frame and
  * out three frames before the end, stop or loop at the end, decode, and seek
@@ -273,15 +365,15 @@ void movie_stop(void) {
 /* Stop, then release the run-level and slice buffers and the ring. */
 void movie_close(void) {
     movie_stop();
-    func_800320E8(movie_vlc_buffers[0]);
-    func_800320E8(movie_vlc_buffers[1]);
-    func_800320E8(movie_slice_buffer0);
-    func_800320E8(movie_slice_buffer1);
+    func_800320E8(movie_decoder.vlc_buffers[0]);
+    func_800320E8(movie_decoder.vlc_buffers[1]);
+    func_800320E8(movie_decoder.slice_buffers[0]);
+    func_800320E8(movie_decoder.slice_buffers[1]);
     func_800320E8(movie_ring_buffer);
-    movie_vlc_buffers[0] = NULL;
-    movie_vlc_buffers[1] = NULL;
-    movie_slice_buffer0 = NULL;
-    movie_slice_buffer1 = NULL;
+    movie_decoder.vlc_buffers[0] = NULL;
+    movie_decoder.vlc_buffers[1] = NULL;
+    movie_decoder.slice_buffers[0] = NULL;
+    movie_decoder.slice_buffers[1] = NULL;
     movie_ring_buffer = NULL;
 }
 
