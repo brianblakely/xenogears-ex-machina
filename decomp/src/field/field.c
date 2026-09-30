@@ -1594,7 +1594,28 @@ void func_80085634(s32 id, s32 channel) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085678);
+/* Play the movie sound effects whose time (from 800c3a2c) has come: each
+ * timeline entry holds a time and a sound (id in the low byte, voice pair
+ * in bits 8-10). */
+void func_80085678(void) {
+    u16 *times;
+    u16 *sounds;
+    s32 sound;
+
+    if (D_800C3A38 == 0xFF) {
+        return;
+    }
+    times = &D_800AE060[0][0];
+    sounds = &D_800AE060[0][1];
+    for (;;) {
+        if (D_800B06A0 < times[D_800C3A64 * 2] + D_800C3A2C) {
+            return;
+        }
+        sound = sounds[D_800C3A64 * 2];
+        func_80039EC4((sound & 0xFF) | (D_800B235C->id << 16), ((sound >> 8) & 7) * 2);
+        D_800C3A64++;
+    }
+}
 
 /* Release a movie's sound-effect bank, when one is loaded. */
 void func_80085738(void) {
@@ -2349,7 +2370,14 @@ void func_800884CC(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088508);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008861C);
+/* Clear the eight pairs at +30 of the current emitter record. */
+void func_8008861C(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        D_800B02CC[D_800B2078.unk2384].unk30[i][0] = D_800B02CC[D_800B2078.unk2384].unk30[i][1] = 0;
+    }
+}
 
 /* Event: start effect op3 (0..3 map to 0, 0x10, 0x20, 0x30) with op5 and op7
  * for actor op1, using four batch steps. */
@@ -3365,7 +3393,17 @@ void func_8008D780(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D808);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008DA04);
+/* Write a 0x4b instruction with operands `a` and `b` into the event code at
+ * pc+0xc (followed by ff ff 80) and advance the pc by 0xc. */
+void func_8008DA04(s32 a, s32 b) {
+    EVENT_OPERAND_BYTE(0xC) = 0x4B;
+    func_8008D2E0(a, D_800B0078->pc + 0xD);
+    func_8008D2E0(b, D_800B0078->pc + 0xF);
+    EVENT_OPERAND_BYTE(0x11) = 0xFF;
+    EVENT_OPERAND_BYTE(0x12) = 0xFF;
+    EVENT_OPERAND_BYTE(0x13) = 0x80;
+    D_800B0078->pc += 0xC;
+}
 
 /* Event: clear the actor's +75 (0xff). */
 void func_8008DAFC(void) {
