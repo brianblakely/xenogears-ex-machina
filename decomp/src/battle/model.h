@@ -84,5 +84,9 @@ void func_8003F738(SVector *angles, Matrix *m);              /* RotMatrix */
 void func_8004A92C(SVector *angles, Matrix *m);              /* RotMatrixYXZ */
 void func_8004920C(Matrix *m0, Matrix *m1, Matrix *out);     /* MulMatrix0 */
 void func_8004931C(Matrix *m0, Matrix *m1, Matrix *out);     /* CompMatrix */
+void func_80049EFC(Matrix *m);                               /* SetRotMatrix */
+void func_80049F2C(Matrix *m);                               /* SetLightMatrix */
+void func_80049F8C(Matrix *m);                               /* SetTransMatrix */
+void func_8002C700(Model *model, void *packets, s32 arg2, s32 arg3); /* draw a model */
 
 #endif

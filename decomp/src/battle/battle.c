@@ -2629,12 +2629,128 @@ u16 func_8009EF3C(ModelPart *part, s32 scale) {
     return count;
 }
 
+#ifdef NON_MATCHING
+/* Pose a model hierarchy with per-part scales: as 8009EF3C, but a changed
+ * part's transform is scaled by its own scale and by the inverse of its
+ * parent's, and a part changes or is marked with its parent. Clears the marks
+ * and returns the part count. */
+u16 func_8009F1C4(ModelPart *part, s32 scale) {
+    Matrix *diagonal = (Matrix *)0x1F800000;
+    ModelPart *root = part;
+    u32 count = root->index;
+    u32 i;
+
+    root->world.t[0] = root->translation[0];
+    root->world.t[1] = root->translation[1];
+    root->world.t[2] = root->translation[2];
+    if (root->flag6) {
+        func_8004A92C(&root->rotation, &root->world);
+    } else {
+        func_8003F738(&root->rotation, &root->world);
+    }
+    diagonal->m[0][0] = scale * part->scale[0] >> 12;
+    diagonal->m[0][1] = 0;
+    diagonal->m[0][2] = 0;
+    diagonal->m[1][0] = 0;
+    diagonal->m[1][1] = scale * part->scale[1] >> 12;
+    diagonal->m[1][2] = 0;
+    diagonal->m[2][0] = 0;
+    diagonal->m[2][1] = 0;
+    diagonal->m[2][2] = scale * part->scale[2] >> 12;
+    func_8004920C(&part->world, diagonal, &part->transform);
+    part->transform.t[0] = part->world.t[0];
+    part->transform.t[1] = part->world.t[1];
+    part->transform.t[2] = part->world.t[2];
+    for (i = 1; i < count; i++) {
+        part++;
+        if (part->parent != NULL) {
+            if (part->parent->flag5 == 1) {
+                part->flag5 = 1;
+            }
+            if (part->parent->flag4 == 1) {
+                part->flag4 = 1;
+            }
+        }
+        if (part->flag5) {
+            if (part->flag6) {
+                func_8004A92C(&part->rotation, &part->transform);
+            } else {
+                func_8003F738(&part->rotation, &part->transform);
+            }
+            diagonal->m[0][0] = part->scale[0];
+            diagonal->m[0][1] = 0;
+            diagonal->m[0][2] = 0;
+            diagonal->m[1][0] = 0;
+            diagonal->m[1][1] = part->scale[1];
+            diagonal->m[1][2] = 0;
+            diagonal->m[2][0] = 0;
+            diagonal->m[2][1] = 0;
+            diagonal->m[2][2] = part->scale[2];
+            func_8004920C(&part->transform, diagonal, &part->transform);
+            if (part->parent != NULL) {
+                diagonal->m[0][0] = 0x1000000 / part->parent->scale[0];
+                diagonal->m[0][1] = 0;
+                diagonal->m[0][2] = 0;
+                diagonal->m[1][0] = 0;
+                diagonal->m[1][1] = 0x1000000 / part->parent->scale[1];
+                diagonal->m[1][2] = 0;
+                diagonal->m[2][0] = 0;
+                diagonal->m[2][1] = 0;
+                diagonal->m[2][2] = 0x1000000 / part->parent->scale[2];
+                func_8004920C(diagonal, &part->transform, &part->transform);
+            }
+        }
+        if (part->flag4) {
+            part->transform.t[0] = part->translation[0];
+            part->transform.t[1] = part->translation[1];
+            part->transform.t[2] = part->translation[2];
+            if (part->parent != NULL) {
+                func_8004931C(&part->parent->world, &part->transform, &part->world);
+            } else {
+                part->world = part->transform;
+            }
+        }
+    }
+    for (i = 1; i < count; i++) {
+        root++;
+        root->flag5 = 0;
+        root->flag4 = 0;
+    }
+    return count;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F1C4);
+#endif
 
 void func_8009F5B0(void) {
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F5B8);
+/* Draw a posed hierarchy's parts into packet buffer `buffer`: each part's light
+ * matrix from `light` and its world matrix, and its rotation and translation
+ * composed with `view` and the root's transform, then its model (8002C700). */
+void func_8009F5B8(ModelList *list, ModelPart *part, Matrix *view, Matrix *light, s32 arg4, s32 arg5,
+                   s32 buffer) {
+    Matrix *scratch = (Matrix *)0x1F800000;
+    Matrix *lighting = (Matrix *)0x1F800020;
+    Matrix *camera = (Matrix *)0x1F800040;
+    u32 count;
+    u32 i;
+
+    func_8004920C(light, &part->world, lighting);
+    func_8004931C(view, &part->transform, camera);
+    count = part->index;
+    part++;
+    for (i = 1; i < count; i++, part++) {
+        if (part->modelId != 0xFFFF) {
+            func_8004920C(lighting, &part->world, scratch);
+            func_80049F2C(scratch);
+            func_8004931C(camera, &part->world, scratch);
+            func_80049EFC(scratch);
+            func_80049F8C(scratch);
+            func_8002C700(list->models[part->modelId], part->packets[buffer], arg5, arg4);
+        }
+    }
+}
 
 /* Free a model hierarchy: every part's packets, then the parts. */
 void func_8009F708(ModelPart *root) {
