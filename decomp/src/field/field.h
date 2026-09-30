@@ -109,7 +109,8 @@ typedef struct FieldActor {
     u16 sound;       /* 10A */
     u8 sound_volume; /* 10C */
     u8 sound_mode;   /* 10D: 0xff off */
-    u8 unk10E[0x114 - 0x10E];
+    u8 unk10E[0x110 - 0x10E];
+    void *unk110;    /* 110 */
     void *unk114;    /* 114 */
     s32 *list;       /* 118 */
     u8 unk11C[2];
@@ -120,7 +121,8 @@ typedef struct FieldActor {
     s16 unk128;      /* 128 */
     u8 unk12A[2];
     u32 unk12C;      /* 12C */
-    u8 unk130[0x138 - 0x130];
+    u8 unk130[4];
+    u32 unk134;      /* 134 */
 } FieldActor;
 
 /* The actor's two flag words as four halfwords; events test and store them
@@ -136,18 +138,22 @@ typedef struct {
 
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
-    u8 unk000[0x28];
+    u8 unk000[0x18];
+    u8 text[0x10];   /* 018: text state (80034614/800345e0/800346d4) */
     u16 flags;       /* 028: bit 2 keeps the window open */
     u8 unk02A[0xAC - 0x2A];
     RECT rect;       /* 0AC */
-    u8 unk0B4[0x408 - 0xB4];
+    u8 unk0B4[0x37C - 0xB4];
+    s16 status;      /* 37C: zero while displayed */
+    u8 unk37E[0x408 - 0x37E];
     s16 timer;       /* 408 */
     u8 unk40A[0x40E - 0x40A];
     s16 busy;        /* 40E */
     u16 age;         /* 410: 0xffff when free */
-    u8 unk412[2];
+    s16 unk412;      /* 412 */
     s16 cleared;     /* 414 */
-    u8 unk416[0x498 - 0x416];
+    s16 owner;       /* 416: owning event actor */
+    u8 unk418[0x498 - 0x418];
 } DialogueWindow;
 
 typedef struct {
@@ -184,7 +190,7 @@ typedef struct {
 typedef struct FieldDescriptor {
     FieldInstance *instance; /* 00 */
     FieldModel *model; /* 04 */
-    u8 unk08[4];
+    void *unk08;       /* 08 */
     MATRIX matrix;     /* 0C */
     u8 unk2C[0x4C - 0x2C];
     FieldActor *actor; /* 4C */
@@ -351,7 +357,8 @@ typedef struct GameState {
 typedef struct {
     u8 unk2078[0x20C4 - 0x2078];
     FadeChannel fades[2];      /* 20C4: screen fade channels */
-    u8 unk2174[0x2184 - 0x2174];
+    u16 open_windows;          /* 2174: bit per open dialogue window */
+    u8 unk2176[0x2184 - 0x2176];
     SVECTOR sprite_angles;     /* 2184: sprite view rotation */
     s16 scale;                 /* 218C: offset scale (8007b614) */
     s16 unk218E;               /* 218E: colour pass-through gate (80075b08) */
@@ -469,6 +476,11 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_800230A8(FieldModel *model);
+extern void func_800345E0(void *text);
+extern void func_80034614(void *text);
+extern void func_800346D4(void *text);
+extern void func_80044764(RECT *rect, s32 r, s32 g, s32 b); /* ClearImage */
 extern void func_80043CB0(POLY_FT4 *poly); /* setPolyFT4 */
 extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 extern u16 func_80043A58(s32 x, s32 y); /* GetClut */
@@ -603,7 +615,7 @@ extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
 extern s32 func_80099A4C(s32 dx, s32 dz);
 extern s32 func_8007D8B4(s32 x, s32 y, s32 z);
-extern void func_8007F6F8(s16 window);
+extern s32 func_8007F6F8(s16 window);
 extern void func_800775F8(void);
 extern void func_80071EE8(void);
 extern void func_80077884(void);
@@ -651,6 +663,8 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern s16 D_800ADB54;
+extern s32 D_800B068C[4];
 extern s32 D_800ADB98;
 extern s32 D_800ADC0C;
 extern s16 D_800AEA2C[4]; /* party masks */

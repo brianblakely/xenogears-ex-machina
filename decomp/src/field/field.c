@@ -1199,7 +1199,30 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007EE0C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F5AC);
 
+#ifdef NON_MATCHING
+/* Close dialogue window `window` unless it is busy; -1 when busy. */
+s32 func_8007F6F8(s16 window) {
+    s32 result = -1;
+
+    if (D_800C2698[window].busy == 0) {
+        func_80034614(&D_800C2698[window].text);
+        func_800345E0(&D_800C2698[window].text);
+        func_800346D4(&D_800C2698[window].text);
+        result = 0;
+        D_800C2698[window].status = -1;
+        D_800C2698[window].busy = -1;
+        D_800C2698[window].cleared = -1;
+        D_800C2698[window].age = 0xFFFF;
+        D_800B068C[window] = -1;
+        D_800B2078.open_windows &= (1 << window) ^ 0xFF;
+        D_800C2698[window].owner = 0xFF;
+        D_800C2698[window].unk412 = 0;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F6F8);
+#endif
 
 /* The screen position of a point `height` above descriptor `index`. */
 void func_8007F814(s32 index, s32 *x, s32 *y, s32 height) {
@@ -1313,7 +1336,30 @@ s32 func_800807B4(void) {
     return 0xFFFF;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008083C);
+/* Release an event actor's blocks, its record, its descriptor block and
+ * its model. */
+void func_8008083C(s32 index) {
+    FieldActor *actor;
+
+    if (index < D_800ADBFC) {
+        actor = D_800AF880.components.descriptors[index].actor;
+        if (actor->unk134 & 0x80) {
+            func_800320E8(actor->unk110);
+        }
+        if (actor->unk12C & 0x1000) {
+            func_800320E8(actor->unk114);
+        }
+        if (D_800AF880.components.descriptors[index].flags & 0x2000) {
+            func_800320E8(actor->list);
+        }
+        if (actor->unk124 != -1) {
+            func_800320E8(actor->unk120);
+        }
+        func_800320E8(actor);
+        func_800320E8(D_800AF880.components.descriptors[index].unk08);
+        func_800230A8(D_800AF880.components.descriptors[index].model);
+    }
+}
 
 /* The collision attribute under an actor on its layer, or 0 when the layer
  * is switched off for it. */
@@ -1822,7 +1868,35 @@ void func_80086DE0(void) {
     D_800B0078->pc += 2;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086E1C);
+/* Event: switch to the 640-wide display (op1 0), or set (1) / clear (2)
+ * 800adb54. */
+void func_80086E1C(void) {
+    RECT rect;
+
+    switch (func_800ACDEC(1)) {
+    case 0:
+        rect.w = 0x500;
+        rect.x = 0;
+        rect.y = 0;
+        rect.h = 0x200;
+        func_80044764(&rect, 0, 0, 0);
+        func_800445D0(0);
+        func_8004B54C(0);
+        func_80043928(&D_800B249C[0].draw, 0, 0, 0x280, 0xE0);
+        func_80043928(&D_800B249C[1].draw, 0, 0x100, 0x280, 0xE0);
+        func_800439E0(&D_800B249C[0].disp, 0, 0x100, 0x280, 0xE0);
+        func_800439E0(&D_800B249C[1].disp, 0, 0, 0x280, 0xE0);
+        func_80086D8C();
+        break;
+    case 1:
+        D_800ADB54 = 1;
+        break;
+    case 2:
+        D_800ADB54 = 0;
+        break;
+    }
+    D_800B0078->pc += 3;
+}
 
 /* Event: set the current actor's +128 to (op1 << 12) | op3. */
 void func_80086F7C(void) {
