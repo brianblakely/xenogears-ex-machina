@@ -1405,4 +1405,8 @@ void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 #define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
+/* lead: screen fade (80090A84) */
+extern DR_TPAGE D_8009D310;       /* fade blend mode */
+extern PolyG4v D_8009CE6C[2];    /* full-screen fade, per display buffer */
+
 #endif

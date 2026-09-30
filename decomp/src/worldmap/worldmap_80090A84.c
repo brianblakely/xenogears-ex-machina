@@ -269,7 +269,47 @@ s32 func_800922AC(s32 index) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800923A8);
+/* Set up the full-screen fade quad (both display copies) at brightness 0xF8. */
+s32 func_800923A8(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->u.step = 0xF8;
+    SetDrawTPage(&D_8009D310, 1, 0, GetTPage(0, D_8009CCA4, 0x380, 0x100));
+    setPrimLen(&D_8009CE6C[0], 8);
+    D_8009CE6C[0].code = 0x38;
+    D_8009CE6C[0].r0 = actor->u.step;
+    D_8009CE6C[0].g0 = actor->u.step;
+    D_8009CE6C[0].b0 = actor->u.step;
+    D_8009CE6C[0].r1 = actor->u.step;
+    D_8009CE6C[0].g1 = actor->u.step;
+    D_8009CE6C[0].b1 = actor->u.step;
+    D_8009CE6C[0].r2 = actor->u.step;
+    D_8009CE6C[0].g2 = actor->u.step;
+    D_8009CE6C[0].b2 = actor->u.step;
+    D_8009CE6C[0].r3 = actor->u.step;
+    D_8009CE6C[0].g3 = actor->u.step;
+    D_8009CE6C[0].b3 = actor->u.step;
+    SetSemiTrans(&D_8009CE6C[0], 1);
+    D_8009CE6C[1] = D_8009CE6C[0];
+    D_8009CE6C[0].x0 = 0;
+    D_8009CE6C[0].y0 = 0;
+    D_8009CE6C[0].x1 = 0x140;
+    D_8009CE6C[0].y1 = 0;
+    D_8009CE6C[0].x2 = 0;
+    D_8009CE6C[0].y2 = 0xD8;
+    D_8009CE6C[0].x3 = 0x140;
+    D_8009CE6C[0].y3 = 0xD8;
+    D_8009CE6C[1].x0 = 0;
+    D_8009CE6C[1].y0 = 0;
+    D_8009CE6C[1].x1 = 0x140;
+    D_8009CE6C[1].y1 = 0;
+    D_8009CE6C[1].x2 = 0;
+    D_8009CE6C[1].y2 = 0xD8;
+    D_8009CE6C[1].x3 = 0x140;
+    D_8009CE6C[1].y3 = 0xD8;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800925A0);
 
