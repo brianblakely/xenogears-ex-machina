@@ -249,6 +249,8 @@ typedef struct {
     s16 unk394[(0x7A4 - 0x394) / 2];
     POLY_FT4 unk7A4[2];
     u8 unk7F4;
+    u8 unk7F5[0x800 - 0x7F5];
+    u8 unk800;
 } BattleUnk3278;
 
 extern BattleUnk3278 *D_800D3278;
@@ -451,7 +453,61 @@ extern u16 D_800595D4;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
+/* Battle setup (80070f40). */
+extern u8 D_80059180;      /* battle music playing */
+extern u8 D_8005947C;      /* pending scene + 1 */
+extern void *D_80059480;
+extern Formation *D_8005949C; /* the formation data */
+extern void *D_800594AC;
+extern u8 D_800594D0;      /* battle result: 0 won, 1, 2, 3 */
+extern u8 D_800594F8;      /* the 801e0000 module runs first */
+extern u8 D_80059508;      /* scene index */
+extern u8 D_8005954C;      /* battle kind */
+extern u8 *D_800595D0;     /* scene texture block */
+extern s32 D_80062528;     /* battle music */
+extern u8 D_80062648[];
+extern u8 D_800658DC[][0x20]; /* scene settings */
+extern u8 D_8006F9DC[0x20];   /* the current scene settings */
+extern u8 D_800C3D44;
+extern u8 D_800C3D5C;
+extern s32 D_800C3DEC;
+extern u8 D_800C3E28;
+extern u8 D_800C3E29;
+extern Formation *D_800C3EB0;
+extern s32 D_800D2D3C;     /* 801de000 module blocks */
+extern s32 D_800D2F60;
+extern u8 D_800D2D50;
+extern u8 D_800D2FC4;      /* battle exit requested */
+
+/* Party members' battle masks (from the character battle data). */
+typedef struct {
+    u16 mask0;
+    u16 mask2;
+} MemberMasks;
+
+extern MemberMasks D_800C3E0C[3];
+
+void func_80070EB0(s32 value);
+void func_80070EDC(void);
+void func_800723E0(void);
+void func_8007252C(void);
+void func_8007819C(void);
+void func_80077990(void);
+void func_8009892C(void);
+void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_800B8098(u8 kind);
+void func_800B81BC(s32 a);
+void func_800B853C(u8 mode);
+void func_800B8D7C(void);
+void func_800C0F70(void);
+void func_801E0A34(void);
+void func_801E252C(void);
+
 /* Resident services. */
+void func_80028A60(s32 a);
+s32 func_800397FC(u8 *a, s32 b, s32 c);
+void func_8003A094(u8 *texture);
+void *memmove(void *to, const void *from, u32 size);
 void func_80039DB8(s32 effect);
 u8 func_8001BD40(u8 low, u8 high);
 void func_80034888(s32 arg0, u32 *ot, s32 buffer);

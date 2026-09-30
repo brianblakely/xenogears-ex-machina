@@ -40,7 +40,170 @@ void func_80070EDC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070F40);
+/* The battle: allocate the battle state, load the modules and the scene,
+ * run turns until an outcome or an exit is set, then settle the outcome
+ * (result code in D_800594D0) and hand over to the 801de000 module. */
+void func_80070F40(void) {
+    s32 span;
+    s32 block;
+    u8 result;
+    u8 mode = 1;
+    u8 *state;
+    s32 i;
+    u8 outcome;
+
+    D_800C3EA4 = (BattleGraphics *)func_8008ABB8(0xA2B4, 0);
+    D_800D2D28 = (BattleUi *)func_8008ABB8(0x10C, 0);
+    D_800C3EAC = (TurnState *)func_8008ABB8(0x2F8, 0);
+    bzero(D_800C3EA4, 0xA2B4);
+    bzero(D_800D2D28, 0x10C);
+    bzero(D_800C3EAC, 0x2F8);
+    D_8005959C = 0;
+    D_800C3E29 = 0xFF;
+    D_800C3E28 = 0xFF;
+    D_800D366C = 0;
+    D_800C3E54 = D_80062528;
+    if (D_8005947C != 0) {
+        D_80059508 = D_8005947C - 1;
+        if (D_80059180 != 0) {
+            D_80059180 = 0;
+            func_8003A89C(D_80062528, 0x7F, 0x3C);
+        }
+        if (D_800594F8 == 0) {
+            D_8005947C = 0;
+        }
+    }
+    if (D_800594F8 != 0) {
+        func_80028470(0x10, 2);
+        block = func_8008ABB8(4, 1);
+        span = func_8008ABB8(block - 0x801E0000, 1);
+        func_800295D8(1, 0x801E0000, 0, 0x80);
+        func_80028A60(0);
+        func_800320E8((void *)block);
+        func_800320E8((void *)span);
+        if (D_8005947C == 0) {
+            func_801E0A34();
+        } else {
+            D_80059508 = D_8005947C - 1;
+            D_8005947C = 0;
+        }
+    }
+    if (*D_8005917C != -1) {
+        func_80028470(0x10, 2);
+        func_800295D8(6, 0x80280000, 0, 0x80);
+        func_80028A60(0);
+    }
+    memmove(D_8006F9DC, D_800658DC[D_80059508], 0x20);
+    func_800B8098(D_8005954C);
+    func_8007252C();
+    D_800C3E4C = 2;
+    func_800B81BC(D_800C3DEC);
+    func_800B39C0(0, 2, 0xFF, 0xFF, 0xFF);
+    if (D_800C3D48 == 0) {
+        func_800B39C0(0x14, 2, 0, 0, 0);
+    }
+    if (D_800594F8 != 0) {
+        D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
+    }
+    D_800D3364 = D_8005949C;
+    D_800C3EB0 = D_8005949C;
+    func_80077990();
+    D_800D3298 = 1;
+    func_800BC404(D_800D39DC);
+    func_800716D8();
+    func_8007819C();
+    while (D_800CCC58 == 0) {
+        func_800716D8();
+    }
+    func_800320E8(D_800595D0);
+    if (D_8005954C != 4) {
+        func_8003A094(D_800595D0);
+    }
+    func_8003852C(D_800595D0);
+    func_800320E8(D_80059480);
+    func_800320E8(D_800594AC);
+    func_80070E2C();
+    func_80070EB0(1);
+    if (D_800D2FC4 == 0) {
+        D_800C3E4C = 1;
+    }
+    func_8009892C();
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] != 0x7F) {
+            D_800C3E0C[i].mask0 = D_8006ECF4[D_800D2D24[i]].mask0;
+            D_800C3E0C[i].mask2 = D_8006ECF4[D_800D2D24[i]].mask2;
+        }
+    }
+    while (D_800C48EA == 0 && D_800D2FC4 == 0) {
+        if (D_800CCC58 != 0) {
+            func_800723E0();
+        }
+        func_800716D8();
+    }
+    state = &D_800C48EA;
+    if (!(*state & 0xC0)) {
+        result = 0;
+    } else if (*state & 0x40) {
+        result = 1;
+    } else if (D_800C3D48 == 0) {
+        result = 2;
+    } else if (D_800C3D5C != 0) {
+        result = 3;
+        D_800594D0 = result;
+        *state = 1;
+    }
+    switch (result) {
+    case 0:
+        D_800594D0 = 0;
+        mode = 0;
+    case 3:
+        if (D_800C3D48 != 0) {
+            D_800D3278->unk394[0] = 0xFF;
+            if (D_800C3D44 != 0 || D_800D2FC4 == 0) {
+                u8 *battleOutcome = &D_800C48EA;
+
+                D_800D3278->unk800 = 0;
+                outcome = *battleOutcome;
+                *battleOutcome = 0;
+                for (i = 0; i < 3; i++) {
+                    D_800D3278->unk394[0x10 + i] = D_800CCCE8.records[i].pilot.status7C & 0x8000;
+                    D_800D3278->unk394[0x10 + i] |= D_800CCCE8.records[i].gear.status7C & 0x8000;
+                }
+                func_800C0F70();
+                func_80070EB0(1);
+                D_800C48EA = outcome;
+            }
+        }
+        break;
+    case 1:
+        D_800594D0 = 2;
+        mode = 2;
+        break;
+    case 2:
+        D_800594D0 = 1;
+        mode = 1;
+        break;
+    }
+    func_800B8D7C();
+    if (D_800D2D50 != 0) {
+        mode = 1;
+    }
+    func_80028470(0x10, 0);
+    D_800D2D3C = func_8008ABB8(4, 1);
+    D_800D2F60 = func_8008ABB8(D_800D2D3C - 0x801DE000, 1);
+    func_800295D8(4, 0x801DE000, 0, 0x80);
+    func_800B853C(mode);
+    while (D_800CCC58 != 0) {
+        func_800716D8();
+    }
+    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(D_8006F9DC[1] & 8)) {
+        func_800B39C0(0x40, 2, 0x40, 0x40, 0x40);
+    }
+    func_80070EDC();
+    func_801E252C();
+    func_800320E8((void *)D_800D2D3C);
+    func_800320E8((void *)D_800D2F60);
+}
 
 /* One battle frame: the 80280000 module's hook when present, then the task
  * runner. */
