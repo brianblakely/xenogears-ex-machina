@@ -827,7 +827,88 @@ s32 func_800923A8(s32 index) {
     return 1;
 }
 
+/* Screen fade actor: command 12 fades in (to clear), 13 fades out (to
+ * black), stepping the fade quad's brightness by D_8009D3CC; returns 3 when
+ * the fade-in has finished. */
+#ifdef NON_MATCHING /* the fade quad base, view pointer and tag masks get different registers */
+s32 func_800925A0(s32 index) {
+    u8 unused[0xC0]; /* unreferenced local: the original frame reserves it */
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    switch (actor->unk4) {
+    case 13:
+        actor->unk4 = 0;
+        actor->state = 1;
+        D_8009C178 = 1;
+        SetDrawTPage(&D_8009D310, 1, 0, GetTPage(0, D_8009CCA4, 0x380, 0x100));
+        break;
+    case 12:
+        actor->unk4 = 0;
+        actor->state = 0;
+        D_8009C178 = 1;
+        SetDrawTPage(&D_8009D310, 1, 0, GetTPage(0, D_8009CCA4, 0x380, 0x100));
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        D_8009CE6C[D_8009D7F0].r0 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g0 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b0 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].r1 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g1 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b1 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].r2 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g2 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b2 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
+        ((P_TAG *)&D_8009CE6C[D_8009D7F0])->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
+        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009CE6C[D_8009D7F0];
+        ((P_TAG *)&D_8009D310)->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
+        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009D310;
+        actor->u.step -= D_8009D3CC;
+        if (actor->u.step < 0) {
+            result = 3;
+            actor->u.step = 0;
+            D_8009C178 = 0;
+        }
+        break;
+    case 1:
+        D_8009CE6C[D_8009D7F0].r0 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g0 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b0 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].r1 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g1 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b1 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].r2 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g2 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b2 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
+        D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
+        ((P_TAG *)&D_8009CE6C[D_8009D7F0])->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
+        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009CE6C[D_8009D7F0];
+        ((P_TAG *)&D_8009D310)->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
+        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009D310;
+        actor->u.step += D_8009D3CC;
+        if (actor->u.step >= 0xFF) {
+            actor->u.step = 0xFF;
+            D_8009C178 = 0;
+        }
+        break;
+    default:
+        return result;
+    }
+    actor->wait++;
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800925A0);
+#endif
 
 /* Open the text window. */
 s32 func_80092BE4(void) {
