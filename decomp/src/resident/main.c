@@ -1,5 +1,6 @@
 #include "common.h"
 #include "mode.h"
+#include "menu.h"
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80019524);
 
@@ -875,27 +876,168 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B6C4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B844);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B94C);
+/* Battle draw environment: clear the background to (0x3c, 0x78, 0x78) with dithering. */
+void func_8001B94C(DRAWENV *env) {
+    env->isbg = 1;
+    env->dtd = 1;
+    env->r0 = 0x3C;
+    env->g0 = 0x78;
+    env->b0 = 0x78;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001B970);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BB0C);
+/* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
+void func_8001BB0C(void) {
+    func_800379D8(D_8006F9DE, 0, D_80059470, D_80059520, D_8005949C);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BB50);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BBAC);
 
+/* A random byte in [low, high]; 0xff for an unset low, 0 for an unset high, any byte when the range is 0xff or wider. */
+/* Nonmatching under GCC 2.7.2 and 2.6.3: the low == high return merges with a shared exit. */
+#ifdef NON_MATCHING
+u8 func_8001BD40(u8 low, u8 high) {
+    s32 span;
+
+    if (low == 0xFF) {
+        return 0xFF;
+    }
+    if (high == 0) {
+        return 0;
+    }
+    span = high - low;
+    if (low == high) {
+        return low;
+    }
+    if (span >= 0xFF) {
+        return func_8003FA38();
+    }
+    return low + (u8)func_8003FA38() % (span + 1);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BD40);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BDDC);
+/* Menu buffer: no background clear, dithering, and a 256x216 display area 10 lines down. */
+void func_8001BDDC(MenuBuffer *buffer) {
+    buffer->draw.dtd = 1;
+    buffer->draw.isbg = 0;
+    buffer->draw.r0 = 0;
+    buffer->draw.g0 = 0;
+    buffer->draw.b0 = 0;
+    buffer->disp.screen.x = 0;
+    buffer->disp.screen.y = 0xA;
+    buffer->disp.screen.w = 0x100;
+    buffer->disp.screen.h = 0xD8;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BE14);
+/* Menu display set-up: GTE projection and the two 320x224 buffers. */
+void func_8001BE14(void) {
+    func_8004A12C(0xA0, 0x70);
+    func_8004A14C(0x200);
+    func_800439E0(&D_800625A0->buffers[0].disp, 0, 0xE0, 0x140, 0xE0);
+    func_80043928(&D_800625A0->buffers[0].draw, 0, 0, 0x140, 0xE0);
+    func_800439E0(&D_800625A0->buffers[1].disp, 0, 0, 0x140, 0xE0);
+    func_80043928(&D_800625A0->buffers[1].draw, 0, 0xE0, 0x140, 0xE0);
+    func_8001BDDC(&D_800625A0->buffers[0]);
+    func_8001BDDC(&D_800625A0->buffers[1]);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BEEC);
+/* Reset the menu's two views to the origin at distance 0x800. */
+void func_8001BEEC(void) {
+    MenuWork *work = D_800625A0;
 
+    work->offset.vz = 0x800;
+    work->offset2.vz = 0x800;
+    work->angles.vx = work->angles.vy = work->angles.vz = 0;
+    work->offset.vx = work->offset.vy = 0;
+    work->angles2.vx = work->angles2.vy = work->angles2.vz = 0;
+    work->offset2.vx = work->offset2.vy = 0;
+    work->word2e8 = 1;
+    work->view_motion = 0;
+}
+
+/* Decode the menu input of this frame: directions 0-3, confirm 4, debug toggles; 8 when nothing applies. */
+/* Matches under GCC 2.6.3 (which reloads debug_value), not under 2.7.2. */
+#ifdef NON_MATCHING
+void func_8001BF38(void) {
+    s32 input = 8;
+    u16 buttons;
+
+    if (func_80036410() != 0) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC() != 0) {
+            buttons = D_800594A4;
+            if (buttons & 0x2000) {
+                input = 0;
+                break;
+            }
+            if (buttons & 0x4000) {
+                input = 1;
+                break;
+            }
+            if (buttons & 0x8000) {
+                input = 2;
+                break;
+            }
+            if (buttons & 0x1000) {
+                input = 3;
+                break;
+            }
+            if (buttons & 0x20) {
+                input = 4;
+                break;
+            }
+            if (buttons & 0x100) {
+                D_800625A0->debug_show = D_800625A0->debug_show == 0;
+                input = 0xC;
+                break;
+            }
+            if (buttons & 0x4) {
+                if (D_800625A0->debug_value != 0) {
+                    D_800625A0->debug_value--;
+                }
+                break;
+            }
+            if (buttons & 0x1) {
+                D_800625A0->debug_value++;
+                break;
+            }
+        }
+    }
+    D_800625A0->input = input;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001BF38);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C074);
+/* Menu frame: decode input, flip buffers, clear the ordering table, draw the debug overlays, then present. */
+void func_8001C074(void) {
+    MenuWork *work;
+
+    func_8001BF38();
+    work = D_800625A0;
+    work->current = work->current == &work->buffers[0] ? &work->buffers[1] : &work->buffers[0];
+    work->buffer_index = work->buffer_index == 0;
+    func_80044AD8(work->current->ot, 16);
+    if (*D_8005917C != -1) {
+        if (D_800625A0->debug_show) {
+            func_8003278C(3, D_800625A0->debug_value, 0xF, 0x80AC);
+        }
+        if (*D_8005917C != -1) {
+            func_80037324(D_800625A0->current->ot);
+        }
+    }
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80044C44(&D_800625A0->current->draw);
+    func_80044E9C(&D_800625A0->current->disp);
+    func_80044BD0(&D_800625A0->current->ot[15]);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C1A8);
 

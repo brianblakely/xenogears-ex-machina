@@ -41,6 +41,11 @@ extern LifeTile *D_800592DC[2]; /* tile buffers per display buffer */
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern u16 D_800594A4;           /* pad buttons repeated */
 extern u16 D_8005948C;           /* pad buttons pressed */
+extern s32 *D_8005917C;
+extern u8 D_8006F9DE;
+extern u8 D_80059470[];
+extern u8 D_80059520[];
+extern u8 D_8005949C[];
 extern u8 D_80059484;            /* play time hours */
 extern u8 D_80059420;            /* play time minutes */
 extern u8 D_80059418;            /* play time seconds */
@@ -174,7 +179,8 @@ void func_80032EB4(void *source, void *destination);
 void func_80033558(void *a0);
 void func_800335F4(void *a0);
 s32 func_80035734(s32 a0);
-void func_80035CDC(void);
+s32 func_80035CDC(void); /* next queued pad entry (8005 94a4), 0 when none */
+s32 func_80036410(void);
 void func_80035DB0(void);
 void func_80036288(void);
 void func_8003634C(void);
@@ -189,6 +195,8 @@ void func_80037DC0(void);
 s32 func_80037FD8(void *a0, s32 a1);
 void func_8003BDFC(s32 a0);
 s32 func_8003FA38(void); /* rand */
+void func_800379D8(s32 scene, s32 a1, void *a2, void *a3, void *a4);
+void func_8003278C(s32 a0, s32 a1, s32 a2, s32 a3);
 void func_80038310(s32 bank);   /* release a wave bank */
 void func_800399D4(s32 sequence); /* release a sequence */
 void func_80039C4C(s32 sequence); /* stop a sequence */
