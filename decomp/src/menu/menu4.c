@@ -1189,7 +1189,110 @@ stick_done:
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8007008C);
 
+#ifdef NON_MATCHING
+/* The controller menu pair (menus 5 and 6) for the current mode: run the
+ * menu of the available port (both in mode 2, where an unavailable port's
+ * menu returns to menu 5 instead of 4), note when neither port is
+ * available, set which sides the pads drive, then draw. Does not match:
+ * the original rereads D_80092710 after each store, does not keep menu 5's
+ * address in a register, and cross-jumps less. */
+void func_80081A44(void) {
+    switch (D_800928C8) {
+    case 1:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            D_80092754 = 1;
+            func_8008162C(&D_800915AC[6], 0);
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 1;
+        break;
+    case 2:
+        D_80092754 = 1;
+        D_800915AC[5].parent = (D_80092710 & 1) ? 5 : 4;
+        D_800915AC[6].parent = (D_80092710 & 2) ? 5 : 4;
+        func_8008162C(&D_800915AC[5], 0);
+        func_8008162C(&D_800915AC[6], 1);
+        if (D_80092710 == 3) {
+            D_80092924 = 1;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 0;
+        break;
+    case 3:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            D_80092754 = 1;
+            func_8008162C(&D_800915AC[6], 0);
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 1;
+        D_80099D9E = 1;
+        break;
+    case 4:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            D_80092754 = 1;
+            func_8008162C(&D_800915AC[6], 0);
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 1;
+        break;
+    case 5:
+        switch (D_80092710) {
+        case 0:
+            D_80092754 = 0;
+            func_8008162C(&D_800915AC[5], 0);
+            break;
+        case 1:
+            if (D_80092704 == 3) {
+                D_80092710 = 3;
+            } else {
+                D_80092704++;
+                if (D_80092704 > D_80092888) {
+                    D_80092704 -= D_80092888;
+                }
+                if (D_80092704 < 0) {
+                    D_80092704 += D_80092888;
+                }
+            }
+            break;
+        case 3:
+            D_80092924 = 1;
+            break;
+        }
+        D_80099D9D = 0;
+        D_80099D9E = 1;
+        break;
+    }
+    func_8007FBEC();
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80081A44);
+#endif
 
 /* One frame of the menu layer: pending refresh, the shown menu's input
  * (with the extra-speed button) and its drawing. */
