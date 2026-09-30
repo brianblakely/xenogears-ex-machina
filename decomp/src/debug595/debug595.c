@@ -213,10 +213,9 @@ void func_80281B00(char *name) {
  * 6 event variables, 7 particle editor, 8 items, 9 accessories, 10
  * encounters, 11 fog colours, 12 CPU/GPU summary, 13 RGB calculation.
  * Returns the screen shown.
- * Under GCC 2.7.2 this differs from the original only in where the GearNum
- * list pointer's setup is scheduled and in the original reloading
- * D_800AFB10 for each argument group of the "P0=" line (under the unit's
- * GCC 2.6.3 more: operand order, delay slots, the step's placement). */
+ * Differs from the original only in where the GearNum list pointer's setup
+ * is scheduled and in the original reloading D_800AFB10 for each argument
+ * group of the "P0=" line. */
 #ifdef NON_MATCHING
 s32 func_80281B90(u32 *ot) {
     void *seq;
