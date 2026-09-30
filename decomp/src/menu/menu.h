@@ -98,6 +98,21 @@ typedef struct {
     s32 z;
 } SceneModel;
 
+/* A sprite effect from the overlay's effect pool (func_8008D3F4). */
+typedef struct {
+    s16 kind;
+    u8 unk2[0x42];
+    s16 unk44;
+    u8 unk46[0x2];
+    s16 unk48;
+    s16 unk4A;
+    u8 unk4C[0x1C];
+    s16 unk68;
+    s16 unk6A;
+    u8 unk6C[0x8];
+    u8 r, g, b; /* 0x74 */
+} Effect;
+
 /* Menu window (resident window code at 80032f54). */
 typedef struct {
     s16 unk0[3];
@@ -182,6 +197,7 @@ extern u16 D_80092632;
 extern s16 D_800928D0;
 extern Vector D_80096FA8; /* scene origin */
 extern Matrix D_80091C0C;
+extern Effect *D_80092644;
 
 /* PsyQ SDK (resident). */
 void func_80043B48(void *ot, void *prim);                   /* AddPrim */
@@ -238,5 +254,7 @@ s32 func_8008A3E0(s32 arg);
 void func_8008A5BC(s32 arg);
 void func_8008BC04(void);
 s32 func_8008C2C0(s32 arg);
+Effect *func_8008D3F4(s32 kind, s32 arg);
+void func_8008D5C0(Effect *effect, s32 arg);
 
 #endif

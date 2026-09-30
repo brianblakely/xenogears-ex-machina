@@ -514,7 +514,22 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800731F8);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800732AC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800732CC);
+/* Create the menu's glow effect. */
+void func_800732CC(void) {
+    Effect *effect = func_8008D3F4(3, 0);
+
+    effect->r = 0x80;
+    effect->g = 0x80;
+    effect->b = 0xC0;
+    func_8008D5C0(effect, 0x60);
+    effect->kind = 4;
+    effect->unk44 = 0x300;
+    effect->unk48 = 8;
+    effect->unk4A = 0x20;
+    effect->unk68 = 0;
+    effect->unk6A = 0x20;
+    D_80092644 = effect;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007334C);
 
