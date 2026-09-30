@@ -42,9 +42,9 @@ extern LifeTile *D_800592DC[2]; /* tile buffers per display buffer */
 extern s32 D_8004F2D8;           /* kernel menu cursor */
 extern s32 *D_8005917C;
 extern u8 D_8006F9DE;
-extern u8 D_80059470[];
-extern u8 D_80059520[];
-extern u8 D_8005949C[];
+extern u8 *D_80059470;  /* the scene music sequence */
+extern s32 D_80059520;
+extern u8 *D_8005949C;  /* the scene music instrument data */
 
 /* Game state reset by 8001aadc. */
 extern s32 D_8004F2F4, D_8004F2F8, D_8004F2FC, D_8004F300, D_8004F304, D_8004F308;

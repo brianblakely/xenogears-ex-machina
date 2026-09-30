@@ -10,6 +10,8 @@
 #include "pad.h"
 #include "console.h"
 #include "sound.h"
+#include "cd.h"
+#include "heap.h"
 
 /* Unpacked size of packed data (its first word). */
 s32 func_80032E7C(s32 *packed) {
@@ -1500,7 +1502,57 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379C8);
 void func_800379D0(void) {
 }
 
+extern FileRequest D_8005A1DC[3]; /* the music file list */
+extern u8 *D_800658C8;            /* the loaded music's instrument data */
+
+/* Load the music of `scene` from directory 12/3: its sequence (file
+ * 6 + 2 * scene) and wave bank (file 7 + 2 * scene + `variant`). Returns 0
+ * with the sequence, 0 and the bank data after its first word, or -1 with
+ * zeros when the directory has no such scene.
+ * Nonmatching: the original computes the bank's file number twice, in
+ * forms GCC here folds into one, and so keeps more values in registers. */
+#ifdef NON_MATCHING
+s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank) {
+    s32 group;
+    s32 index;
+    s32 result = 0;
+    u8 *samples;
+    u8 *data;
+    s32 file;
+
+    func_800284B4(&group, &index);
+    func_80028470(12, 3);
+    func_80032498(4, 0);
+    if (scene >= func_80028928(5) / 2) {
+        result = -1;
+        *sequence = NULL;
+        *unused = 0;
+        *bank = NULL;
+    } else {
+        scene *= 2;
+        samples = func_80031BDC(func_800288EC(scene + (variant + 7)), 1);
+        func_800320A4(samples);
+        file = scene + 6;
+        data = func_80031BDC(func_800288EC(file), 1);
+        func_800320A4(data);
+        D_8005A1DC[0].file = file;
+        D_8005A1DC[0].destination = data;
+        D_8005A1DC[1].file = scene + 7 + variant;
+        D_8005A1DC[1].destination = samples;
+        D_8005A1DC[2].file = 0;
+        D_8005A1DC[2].destination = NULL;
+        func_80029AFC(D_8005A1DC, 0, 0);
+        *sequence = data;
+        *unused = 0;
+        *bank = (u8 *)D_8005A1DC[1].destination + 4;
+        D_800658C8 = (u8 *)D_8005A1DC[1].destination + 4;
+    }
+    func_80028470(group, index);
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379D8);
+#endif
 
 /* The driver's SPU common attributes, the volumes they are built from and
  * the master and CD volume fades (16.16 levels stepping toward targets). */
