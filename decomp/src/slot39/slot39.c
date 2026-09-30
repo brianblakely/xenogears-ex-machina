@@ -2908,7 +2908,31 @@ void func_801D5CF8(s32 x, s32 y) {
     D_800625A0->fieldMenu2->start = D_800625A0->bufferIndex;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D5ED4);
+/* Lay out the detail panel's frame (sheet 14b + slot) and the portrait of
+ * party slot `slot`: its character, or its gear (further left) when `gear`. */
+void func_801D5ED4(u8 slot, u8 gear) {
+    s32 shift;
+    s32 w;
+
+    shift = gear ? 0x18 : 0;
+    func_8002675C(D_800625A0->sheet, slot + 0x14b, D_800625A0->block358->frame, D_800625A0->bufferIndex,
+                  0x18 - shift, 0xe, 0x1000);
+    func_801C851C(D_800625A0->block358->frameAt, D_800625A0->block358->frame[D_800625A0->bufferIndex].x0,
+                  D_800625A0->block358->frame[D_800625A0->bufferIndex].y0, 0x30, 0x30);
+    func_801E927C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex]);
+    D_800625A0->block358->portrait[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (!gear) {
+        D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
+            (D_800625A0->party->ids[slot] & 1) ? D_80059414 : D_800595D4;
+    } else {
+        D_800625A0->block358->portrait[D_800625A0->bufferIndex].clut =
+            ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+    }
+    w = gear * 0x18 + 0x48;
+    func_801E920C(&D_800625A0->block358->portrait[D_800625A0->bufferIndex], 0, 0,
+                  (u8)(D_801EA578[gear * 3 + slot] * 4), (u8)D_801EA5C4[gear * 3 + slot], (u16)w, 13);
+    func_801C851C(D_800625A0->block358->portraitAt, D_801E9D38 - shift, D_801E9D3C, w, 13);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D6194);
 

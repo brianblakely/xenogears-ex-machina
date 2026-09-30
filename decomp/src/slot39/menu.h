@@ -471,11 +471,19 @@ typedef struct MenuFieldMenu2 {
     u8 pad371[0x3];
 } MenuFieldMenu2;
 
-/* The status panel block (*(state + 358)). */
+/* The detail panel block (*(state + 358)): a frame, a portrait and up to 96
+ * sprite parts, two quads per piece. */
 typedef struct MenuBlock358 {
-    u8 pad0[0x2AE0];
-    u8 buffer; /* 2AE0 */
-    u8 pad2AE1[0xF];
+    POLY_FT4 frame[2];      /* 0 */
+    POLY_FT4 portrait[2];   /* 50 */
+    POLY_FT4 parts[192];    /* A0 */
+    SVECTOR frameAt[4];     /* 1EA0 */
+    SVECTOR portraitAt[4];  /* 1EC0 */
+    SVECTOR partsAt[96][4]; /* 1EE0 */
+    u8 buffer;              /* 2AE0 */
+    u8 pad2AE1[0xB];
+    u8 count;               /* 2AEC: parts built */
+    u8 pad2AED[0x3];
 } MenuBlock358;
 
 /* The equipment panel block (*(state + 35c)). */
@@ -788,6 +796,11 @@ extern s32 D_801E9B48;   /* exp */
 extern s32 D_801E9B4C;
 extern s32 D_801E9B50;   /* exp to next level */
 extern s32 D_801E9B54;
+extern s32 D_801E9B60[2][24]; /* detail panel part positions per layout: x */
+extern s32 D_801E9C20[2][24]; /* y */
+extern s32 D_801EA39C[2][24]; /* detail panel part sprites, ffff none */
+extern s32 D_801E9D38;   /* detail panel portrait position: x */
+extern s32 D_801E9D3C;   /* y */
 extern s32 D_801E9B58;   /* field block portrait offset: x */
 extern s32 D_801E9B5C;   /* y */
 extern s32 D_801E9AC8[20];
