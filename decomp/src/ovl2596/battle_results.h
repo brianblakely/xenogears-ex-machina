@@ -127,7 +127,8 @@ typedef struct {
  * character id byte. */
 typedef struct {
     u8 id;                /* 0x7f: empty */
-    u8 pad[0x1B];
+    u8 flag01;            /* nonzero: no rewards for this enemy */
+    u8 pad[0x1A];
 } SlotInfo;
 
 extern BattleUi *D_800D2D28;
@@ -367,11 +368,12 @@ typedef struct {
     u8 gearId;                /* 0xA0 */
     u8 padA1[3];
     Gear gear;                /* 0xA4 */
-    u8 pad148[8];
+    u8 pad148[4];
+    u32 experience;           /* 0x14C: enemy experience */
     u8 dropChances[2];        /* 0x150: enemy drop chances (percent) */
     u8 dropIds[2];            /* 0x152 */
     u8 dropCategories[2];     /* 0x154 */
-    u8 pad156[2];
+    u16 gold;                 /* 0x156: enemy gold */
     u8 weightA;               /* 0x158: experience share weights of levels A and B */
     u8 weightB;               /* 0x159 */
     u8 flags15A;              /* 0x15A: 0x80 (character 7) HP from the gear HP */
@@ -416,7 +418,25 @@ extern Combatant *D_801E44EC;   /* the record being processed */
 extern u16 D_8006F8EA;          /* option flags */
 extern u32 D_801E44F0;          /* experience pool for level A */
 extern u32 D_801E44F4;
-extern u8 D_801E44F8[3][2];     /* levels A and B per slot before the battle */
+extern u8 D_801E44F8[3][2];
+
+/* The battle's winnings (800ccce8 + 0x5f9c). */
+typedef struct {
+    u32 experience;           /* 0x00 */
+    u8 pad4[0x14];
+    u16 defeated;             /* 0x18: 800d2c9c */
+} Winnings;
+extern Winnings D_800D2C84;
+extern u8 D_800D2FC4;           /* rewards are skipped */
+extern u8 D_800D2DCC[11];       /* per slot: present */
+extern u8 D_800C3D1B[8][4];     /* per enemy: [0] nonzero, no rewards */
+extern u8 D_800D3294;
+extern u8 D_800D2D50;
+extern u8 D_8006F9DD;
+u16 func_80089C08(u8 enemy);
+void func_800BCD98(s32 arg);
+void func_801E1FB8(u32 experience);
+void func_801E2794(void);     /* levels A and B per slot before the battle */
 void func_801E2EB0(u32 experience, s16 slot, s16 reserve);
 void func_801E308C(void);          /* experience pool for level B */
 void func_801E335C(void);

@@ -1069,7 +1069,47 @@ void func_801E211C(void) {
     func_80076EA4();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2280);
+/* Total the experience and gold of the defeated enemies, add the gold (up
+ * to 9999999), clear empty party slots, grant the rewards and run the
+ * result screens. */
+void func_801E2280(void) {
+    s32 i;
+    u32 gold;
+    u32 *partyGold;
+
+    gold = 0;
+    D_800D2C84.experience = 0;
+    D_800D2C84.defeated = 0;
+    if (D_800D2FC4 == 0) {
+        for (i = 0; i < 8; i++) {
+            if (D_800D2DCC[i + 3] != 0 && D_800C3EB6[i + 3].flag01 == 0
+                && (D_800CCCE8[i + 3].flags7C & 0x8000) && D_800C3D1B[i][0] == 0) {
+                D_800D2C84.experience += D_800CCCE8[i + 3].experience;
+                gold += D_800CCCE8[i + 3].gold;
+                D_800D2C84.defeated |= func_80089C08(i);
+            }
+        }
+        partyGold = &D_8006EF58;
+        *partyGold += gold;
+        if (*partyGold > 9999999) {
+            *partyGold = 9999999;
+        }
+        func_800BCD98(0);
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] == 0x7F) {
+            D_800D2D24[i] = 0xFF;
+        }
+    }
+    if (D_800D3294 != 0) {
+        D_800D2D24[1] = D_800D2D24[2] = 0xFF;
+        D_800C3EB6[1].id = D_800C3EB6[2].id = 0x7F;
+    }
+    func_801E2794();
+    if (D_800D2D50 == 0 && !(D_8006F9DD & 8)) {
+        func_801E1FB8(gold);
+    }
+}
 
 /* Write the battle item counts back to inventory list 2. */
 void func_801E24B0(void) {
