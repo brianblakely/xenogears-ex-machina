@@ -495,7 +495,6 @@ void func_80072270(void) {
 /* Give every enemy in the act-together mask its turn: clear the event types,
  * queue action 0x17 and run the turn procedure. The cleared 0x100-byte action
  * buffer pointer is never initialised in the original. */
-#ifdef NON_MATCHING
 void func_80072324(void) {
     s32 slot;
     s32 offset;
@@ -513,16 +512,13 @@ void func_80072324(void) {
             for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
                 ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
             }
-            D_800D2E5C[0].type = 4;
-            D_800D2E5C[0].param = 0x17;
+            D_800D2E5C->type = 4;
+            D_800D2E5C->param = 0x17;
             func_80085AC4(slot);
             func_80071B94(1);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80072324);
-#endif
 
 /* Select the next slot to act: the forced slot, else the next ready slot in
  * the turn order from the cursor; then run the turn procedure. With slots
