@@ -1079,7 +1079,27 @@ void func_8003890C(SoundBank *bank, s32 enable) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038AD4);
+extern s32 D_800595A4;
+extern s32 D_800595DC;
+extern s32 D_800595E0;
+extern s32 func_80038F18(s32 size);
+extern void func_8003F6B0(s32 error);
+extern void func_80038B4C(void);
+
+/* Start the reverb work area with parameters a/b, reserving its SPU memory
+ * on first use. */
+void func_80038AD4(s32 a, s32 b) {
+    D_800595DC = a;
+    D_800595E0 = b;
+    if (D_800595A4 == 0) {
+        D_800595A4 = func_80038F18(0x840);
+        if (D_800595A4 == 0) {
+            func_8003F6B0(0x1E);
+        }
+    }
+    D_8005957C |= 0x20;
+    func_80038B4C();
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038B4C);
 
@@ -1087,13 +1107,84 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038C68);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038D18);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038DB4);
+/* The driver's SPU common attributes and the volumes they are built from. */
+typedef struct {
+    SpuCommonAttr attr;
+    s16 master;
+    s16 cd;
+    s16 unk2C;
+    s16 cd_request;
+} SoundVolumes;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038DF4);
+extern SoundVolumes D_8005A3C0;
+extern void func_8004D988(SpuCommonAttr *attr);
 
+/* Set the CD audio reverb and mix switches. */
+void func_80038DB4(s32 reverb, s32 mix) {
+    D_8005A3C0.attr.cd.reverb = reverb;
+    D_8005A3C0.attr.cd.mix = mix;
+    D_8005A3C0.attr.mask |= 0x300;
+    func_8004D988(&D_8005A3C0.attr);
+}
+
+extern SpuVolume D_8005940C;
+extern void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
+
+/* Apply the master and CD volumes. */
+void func_80038DF4(void) {
+    func_80038E6C(D_8005A3C0.master, &D_8005A3C0.attr.mvol, 0);
+    D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd;
+    func_80038E6C(D_8005A3C0.unk2C, &D_8005940C, 1);
+    D_8005A3C0.attr.mask |= 0xC3;
+}
+
+/* Set a stereo volume pair, inverting one side for the surround modes.
+ * Nonmatching: register allocation and branch layout differ. */
+#ifdef NON_MATCHING
+void func_80038E6C(s32 volume, SpuVolume *out, u8 channel) {
+    out->right = volume;
+    out->left = volume;
+    if (D_8005957C & 0x600) {
+        if (!(D_8005957C & 0x200)) {
+            if (channel == 1) {
+                out->right = -volume;
+            } else {
+                out->left = -volume;
+            }
+        } else if (channel != 0) {
+            out->left = -volume;
+        } else {
+            out->right = -volume;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038E6C);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038EC0);
+extern SpuBlock *D_80059410;
+extern s32 D_8005951C;
+extern u32 D_800595E4;
+
+/* Make [start, start + size) the SPU memory pool, aligned to 16 bytes. */
+void func_80038EC0(u32 start, s32 size) {
+    SpuBlock *block;
+
+    size &= ~0xF;
+    if (start & 0xF) {
+        size -= 0x10;
+        start = (start + 0xF) & ~0xF;
+    }
+    D_800595E4 = start + size;
+    block = (SpuBlock *)start;
+    block->flags = 0x8000;
+    D_80059410 = block;
+    D_8005951C = size;
+    block->unk2 = 0;
+    block->unk4 = 0;
+    block->next = start + 0x10;
+    block->unkC = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038F18);
 
@@ -1105,7 +1196,30 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800391CC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039248);
 
+/* Clear `size` bytes: sixteen at a time, then words, then bytes.
+ * Nonmatching: the pointer and its offset copy swap registers. */
+#ifdef NON_MATCHING
+void func_800392EC(u32 *p, s32 size) {
+    s32 n;
+
+    for (n = size >> 4; n != 0; n--) {
+        p[3] = 0;
+        p[2] = 0;
+        p[1] = 0;
+        p[0] = 0;
+        p += 4;
+    }
+    for (n = (size >> 2) & 3; n != 0; n--) {
+        *p++ = 0;
+    }
+    for (n = size & 3; n != 0; n--) {
+        *(u8 *)p = 0;
+        p = (u32 *)((u8 *)p + 1);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800392EC);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039360);
 
@@ -1119,7 +1233,9 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800396E0);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039748);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003977C);
+s32 func_8003977C(void) {
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039784);
 

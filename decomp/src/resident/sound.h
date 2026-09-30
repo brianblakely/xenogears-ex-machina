@@ -45,6 +45,36 @@ typedef struct SoundSequence {
     struct SoundSequence *next;
 } SoundSequence;
 
+/* PsyQ libspu common attributes. */
+typedef struct {
+    s16 left;
+    s16 right;
+} SpuVolume;
+
+typedef struct {
+    SpuVolume volume;
+    s32 reverb;
+    s32 mix;
+} SpuExtAttr;
+
+typedef struct {
+    u32 mask;
+    SpuVolume mvol;
+    SpuVolume mvolmode;
+    SpuVolume mvolx;
+    SpuExtAttr cd;
+    SpuExtAttr ext;
+} SpuCommonAttr;
+
+/* A block of the driver's SPU memory pool. */
+typedef struct {
+    u16 flags;
+    u16 unk2;
+    u32 unk4;
+    u32 next;
+    u32 unkC;
+} SpuBlock;
+
 extern SpuVoice *D_800508E4;          /* SPU voice registers */
 extern u16 D_8005957C;                /* driver state flags */
 extern SoundChannel *D_8006252C[24];  /* channel of each voice */
