@@ -3424,7 +3424,26 @@ void func_801E6AE8(u8 index, MenuViewSet *set) {
                   D_800625A0->bufferIndex, D_801EA004[index], D_801EA010[index], 0x1000);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6B70);
+/* Lay out view `index`'s number (the set's +16 value) as up to three digit
+ * sprites, and reset its second digit row for the +19 value. */
+void func_801E6B70(u8 index, MenuViewSet *set) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(set->levels[index]);
+    D_800625A0->block34C->views[index].digitCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[i + 6];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].digitCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block34C->views[index].digits[D_800625A0->block34C->views[index].digitCount],
+                              D_800625A0->bufferIndex, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
+        }
+    }
+    func_801C80B8(set->unk19[index]);
+    D_800625A0->block34C->views[index].unk871 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6CFC);
 

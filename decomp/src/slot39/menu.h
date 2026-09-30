@@ -349,7 +349,9 @@ typedef struct MenuImageBlock {
 
 /* The record 801e76ec passes to 801e6ae8. */
 typedef struct MenuViewSet {
-    u8 pad0[0x1C];
+    u8 pad0[0x16];
+    u8 levels[3]; /* 16: per view: number shown in the first digit row */
+    u8 unk19[3]; /* 19: per view: number of the second digit row */
     u8 images[4]; /* 1C: sheet image per view (+14e), ff none */
 } MenuViewSet;
 
@@ -374,7 +376,11 @@ typedef struct MenuGearViews {
 
 /* A save information view (801e76ec). */
 typedef struct MenuView {
-    u8 pad0[0x877];
+    u8 pad0[0x320];
+    POLY_FT4 digits[17][2]; /* 320: digit sprite list, per buffer */
+    u8 digitCount; /* 870 */
+    u8 unk871; /* 871 */
+    u8 pad872[0x5];
     u8 buffer; /* 877 */
     u8 shown; /* 878 */
     u8 pad879[0x3];
@@ -761,6 +767,8 @@ extern s32 D_801EA71C;
 extern s32 D_801EA720;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
+extern s32 D_801EA01C;         /* view digit row x */
+extern s32 D_801EA020;         /* view digit row y */
 extern s32 D_801EA900[2];
 extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
