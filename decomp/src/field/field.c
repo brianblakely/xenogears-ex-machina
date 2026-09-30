@@ -11015,7 +11015,138 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
     }
 }
 
+#ifdef NON_MATCHING
+/* Step a particle: while delayed count down and at launch place it and
+ * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
+ * owner's transform, 3 owner-facing and scaled); afterwards move it,
+ * fade its colour, draw it and count its life down. Differs in keeping
+ * &m in a saved register for the module and transform frames. */
+void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
+    VECTOR v;
+    SVECTOR sv;
+    MATRIX m;
+    MATRIX camera;
+    VECTOR origin;
+    VECTOR up;
+    VECTOR rotated;
+    VECTOR scale;
+    s32 flag;
+    s32 scaled;
+
+    if (particle->unk02 != 0) {
+        if (--particle->unk02 == 0) {
+            m.t[0] = m.t[1] = m.t[2] = 0;
+            scaled = 0;
+            switch ((emitter->flags >> 4) & 3) {
+            case 3:
+                sv.vx = 0;
+                sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
+                sv.vz = 0;
+                func_8003F738(&sv, &m);
+                origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
+                origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
+                origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
+                emitter->unk50 = D_800AF880.components.descriptors[emitter->unk52].actor->scale[0];
+                scaled = 1;
+                break;
+            case 0:
+                sv.vx = 0;
+                sv.vy = D_800AF880.components.descriptors[emitter->unk52].actor->unk108;
+                sv.vz = 0;
+                func_8003F738(&sv, &m);
+                origin.vx = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[0]);
+                origin.vy = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[1]);
+                origin.vz = WHOLE(D_800AF880.components.descriptors[emitter->unk52].actor->position[2]);
+                emitter->unk50 = 0x1000;
+                break;
+            case 1:
+                func_801E72CC(&m, &camera, emitter->unk72, emitter->unk74);
+                goto place;
+            case 2:
+                m = D_800AF880.components.descriptors[emitter->unk52].transform;
+            place:
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                sv.vx = emitter->unk0C.vx;
+                sv.vy = emitter->unk0C.vy;
+                sv.vz = emitter->unk0C.vz;
+                func_8004A6DC(&sv, &origin.vx, &flag);
+                emitter->unk50 = 0x1000;
+                break;
+            }
+            m.t[0] = m.t[1] = m.t[2] = 0;
+            SetRotMatrix(&m);
+            SetTransMatrix(&m);
+            sv.vx = particle->velocity.vx;
+            sv.vy = particle->velocity.vy;
+            sv.vz = particle->velocity.vz;
+            func_800495DC(&sv, &v);
+            func_80048D7C(&v, &particle->velocity);
+            particle->velocity.vx = (particle->velocity.vx * emitter->unk08 >> 12) * emitter->unk24;
+            particle->velocity.vy = (particle->velocity.vy * emitter->unk08 >> 12) * emitter->unk24;
+            particle->velocity.vz = (particle->velocity.vz * emitter->unk08 >> 12) * emitter->unk24;
+            if (scaled == 1) {
+                particle->position.vx = particle->position.vx * emitter->unk50 >> 12;
+                particle->position.vy = particle->position.vy * emitter->unk50 >> 12;
+                particle->position.vz = particle->position.vz * emitter->unk50 >> 12;
+            }
+            SetRotMatrix(&m);
+            SetTransMatrix(&m);
+            sv.vx = particle->position.vx;
+            sv.vy = particle->position.vy;
+            sv.vz = particle->position.vz;
+            func_8004A6DC(&sv, &v.vx, &flag);
+            if (scaled == 1) {
+                sv.vz = 0;
+                sv.vx = D_800B00B4 - 0x400;
+                sv.vy = -D_800AF880.view_angle;
+                func_8004ABBC(&sv, &camera);
+                SetRotMatrix(&camera);
+                SetTransMatrix(&camera);
+                up.vx = 0;
+                up.vz = 0;
+                up.vy = v.vy;
+                func_8004998C(&up, &rotated);
+                v.vx += rotated.vx;
+                v.vy = rotated.vy;
+                v.vz += rotated.vz;
+                particle->position.vx = (origin.vx + v.vx) * (0x1000000 / emitter->unk50);
+                particle->position.vy = (origin.vy + v.vy) * (0x1000000 / emitter->unk50);
+                particle->position.vz = (origin.vz + v.vz) * (0x1000000 / emitter->unk50);
+                return;
+            }
+            particle->position.vx = (origin.vx + v.vx) << 12;
+            particle->position.vy = (origin.vy + v.vy) << 12;
+            particle->position.vz = (origin.vz + v.vz) << 12;
+        }
+    } else {
+        particle->velocity.vx += particle->unk28.vx;
+        particle->velocity.vy += particle->unk28.vy;
+        particle->velocity.vz += particle->unk28.vz;
+        particle->unk38.vy += particle->unk40.vy;
+        particle->unk38.vx += particle->unk40.vx;
+        particle->unk38.vz += particle->unk40.vz;
+        particle->position.vx += particle->velocity.vx;
+        particle->position.vy += particle->velocity.vy;
+        particle->position.vz += particle->velocity.vz;
+        particle->unk48[0] = func_800A9B1C(particle->unk48[0], particle->unk4C[0]);
+        particle->unk48[1] = func_800A9B1C(particle->unk48[1], particle->unk4C[1]);
+        particle->unk48[2] = func_800A9B1C(particle->unk48[2], particle->unk4C[2]);
+        scale.vx = emitter->unk50;
+        scale.vy = emitter->unk50;
+        scale.vz = emitter->unk50;
+        if (particle->unk04 != 1) {
+            func_800A9B54(particle, view, particle->angle, (emitter->flags >> 1) & 3, &scale,
+                          (emitter->flags >> 4) & 3);
+        }
+        if (--particle->unk04 == 0) {
+            particle->unk00 = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9F18);
+#endif
 
 extern u8 D_800AF474[8]; /* spawn offset per view octant */
 

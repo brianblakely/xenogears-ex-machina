@@ -581,8 +581,8 @@ typedef struct {
  * them per effect slot (*800c3918). */
 typedef struct {
     s16 unk00;       /* 00: alive */
-    s16 unk02;       /* 02: start delay */
-    s16 unk04;       /* 04: life; set to 1 to release */
+    u16 unk02;       /* 02: start delay */
+    u16 unk04;       /* 04: life; set to 1 to release */
     u16 angle;       /* 06 */
     VECTOR position; /* 08 */
     VECTOR velocity; /* 18 */
