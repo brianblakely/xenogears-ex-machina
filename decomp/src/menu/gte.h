@@ -42,6 +42,21 @@
 #define gte_stsz2(r0) __asm__ volatile("swc2 $18, 0(%0)" : : "r"(r0) : "memory")
 #define gte_stsz3(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 
+/* Depth-cue the colour (DPCS). */
+#define gte_dpcs() __asm__ volatile("nop;nop;.word 0x4A780010")
+
+/* Store the three screen Z values of the last RTPT (SZ1-SZ3). */
+#define gte_stsz3v(r0, r1, r2)                                                 \
+    __asm__ volatile("swc2 $17, 0(%0);"                                        \
+                     "swc2 $18, 0(%1);"                                        \
+                     "swc2 $19, 0(%2)"                                         \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2)                               \
+                     : "memory")
+
+/* Store the last colour of the colour FIFO (RGB2). */
+#define gte_strgb(r0) __asm__ volatile("swc2 $22, 0(%0)" : : "r"(r0) : "memory")
+
 /* Load three short vectors into V0-V2. */
 #define gte_ldv3(r0, r1, r2)                                                   \
     __asm__ volatile("lwc2 $0, 0(%0);"                                         \
