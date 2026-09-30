@@ -19,7 +19,103 @@ s32 func_80083FE4(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084068);
+/* Drive the lift of scene objects 7 and 8: a command (1-4) selects the
+ * route state and stops the effect groups of the previous one; each state
+ * lowers the actor and moves its effect groups with it. */
+s32 func_80084068(s32 index) {
+    WorldmapActor *actor;
+    ActorScratch *scratch;
+    SceneObject *objects;
+    SceneObject *lift;
+
+    actor = &D_8009BE24[index];
+    objects = D_8009C620;
+    lift = &objects[7];
+    scratch = (ActorScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 1;
+        objects[8].visible = 0;
+        objects[7].visible = 0;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 2;
+        func_800894C8(3);
+        func_800894C8(5);
+        func_800894C8(6);
+        func_800894C8(7);
+        func_800894C8(10);
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 3;
+        func_800894C8(7);
+        func_800894C8(8);
+        func_800894C8(9);
+        break;
+    case 4:
+        actor->unk4 = 0;
+        actor->state = 4;
+        func_800894C8(5);
+        func_800894C8(6);
+        func_800894C8(7);
+        func_800894C8(10);
+        func_800894C8(11);
+        func_800894C8(12);
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        func_80089160(3, &scratch->position, NULL);
+        func_80089160(5, &scratch->position, NULL);
+        func_80089160(6, &scratch->position, NULL);
+        func_80089160(7, &scratch->position, NULL);
+        func_80089160(10, &scratch->position, NULL);
+        break;
+    case 2:
+        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        func_80089160(7, &scratch->position, NULL);
+        func_80089160(8, &scratch->position, NULL);
+        func_80089160(9, &scratch->position, NULL);
+        break;
+    case 3:
+        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        func_80089160(5, &scratch->position, NULL);
+        func_80089160(6, &scratch->position, NULL);
+        func_80089160(7, &scratch->position, NULL);
+        func_80089160(10, &scratch->position, NULL);
+        func_80089160(11, &scratch->position, NULL);
+        func_80089160(12, &scratch->position, NULL);
+        break;
+    case 4:
+        actor->position.vy = func_800771D8(actor->position.vy, -0x180000, -0x400);
+        scratch->position.vx = actor->position.vx >> 12;
+        scratch->position.vz = actor->position.vz >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        func_80089160(13, &scratch->position, NULL);
+        scratch->position.vy = 0;
+        func_80089160(14, &scratch->position, NULL);
+        break;
+    }
+    lift[0].position.vx = lift[1].position.vx = actor->position.vx >> 12;
+    lift[0].position.vy = lift[1].position.vy = actor->position.vy >> 12;
+    lift[0].position.vz = lift[1].position.vz = actor->position.vz >> 12;
+    return 1;
+}
 
 /* Unpack the area image to VRAM, then build 15 CLUT rows fading the
  * 0,0x1F0 CLUT row towards a pale blue and record the 16 CLUT ids. */
