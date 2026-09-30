@@ -934,7 +934,7 @@ u8 func_801CF780(void) {
             if (dims[row] != 0 && D_800625A0->details->amounts[top + row] + (D_801D2260 + 1) < 100) {
                 total += price;
                 new_gold -= price;
-                D_800625A0->details->amounts[top + row]++;
+                D_800625A0->details->amounts[top + row] += 1;
                 redraw = 1;
             }
             break;
@@ -942,7 +942,7 @@ u8 func_801CF780(void) {
             if (D_800625A0->details->amounts[top + row] != 0) {
                 total -= price;
                 new_gold += price;
-                D_800625A0->details->amounts[top + row]--;
+                D_800625A0->details->amounts[top + row] -= 1;
                 redraw = 1;
             }
             break;

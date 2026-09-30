@@ -892,7 +892,9 @@ void func_801D6738(GearTable *table, u8 id);
 extern u8 D_801D9084;      /* gear being edited */
 extern u8 *D_801D9088;     /* name pixel buffer */
 extern u8 D_801D697C;
-void func_801D498C(u8 unk0, u8 unk1);
+u8 func_801D498C(u8 page, u8 fit);
+u32 func_801D2B74(s32 top, s32 gold, u8 *dims);
+u32 func_801D3C78(s32 row, s32 top, u8 *dims);
 void func_801D5398(void);
 void func_801D6150(GearTable *table, u8 id);
 void func_801CBA2C(void);
@@ -912,6 +914,7 @@ void func_801CC528(void);
 u8 func_801D5828(void);
 void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
 extern u8 D_801D6A24[];    /* sell list label text ids */
+extern u8 D_801D6A2C[];    /* buy list label text ids */
 extern s32 D_801D6A40[];   /* gear list label x offsets */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
 /* The camera's move between two points (801d9050). */
