@@ -3,7 +3,38 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800951A8);
+/* Probe a move and choose the direction to slide along: 1 when free, 0 when
+ * the obstacle deflects it (out holds the slide direction). */
+s32 func_800951A8(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s16 mode) {
+    s32 result;
+
+    switch (func_80094A5C(position, direction, scale, mode)) {
+    case 0:
+        result = 1;
+        break;
+    case 1:
+        if (func_80094088(SCRATCH_VECTOR, direction, out) == 0) {
+            out->vz = 0;
+            out->vy = 0;
+            out->vx = 0;
+        }
+        result = 0;
+        break;
+    case 2:
+        out->vx = direction->vx < 0 ? -0x1000 : 0x1000;
+        out->vz = 0;
+        out->vy = 0;
+        result = 0;
+        break;
+    case 3:
+        out->vy = 0;
+        out->vx = 0;
+        out->vz = direction->vz < 0 ? -0x1000 : 0x1000;
+        result = 0;
+        break;
+    }
+    return result;
+}
 
 /* Orient `normal` towards `direction` on the ground plane (zero when
  * perpendicular). */
@@ -24,7 +55,35 @@ void func_800952B0(VECTOR *direction, VECTOR *out, VECTOR *normal) {
     out->vy = 0;
 }
 
+/* Orient the horizontal tangent of a wall normal towards `direction` (zero
+ * when perpendicular). */
+#ifdef NON_MATCHING /* second product lands in v0 instead of v1 */
+void func_80095324(VECTOR *normal, VECTOR *direction, VECTOR *out) {
+    s32 tangent;
+    s32 dot;
+
+    SCRATCH_VECTOR[1].vz = 0;
+    SCRATCH_VECTOR[1].vx = 0;
+    SCRATCH_VECTOR[1].vy = -0x1000;
+    func_8004A480(normal, &SCRATCH_VECTOR[1], &SCRATCH_VECTOR[2]);
+    func_80048D7C(&SCRATCH_VECTOR[2], &SCRATCH_VECTOR[0]);
+    tangent = SCRATCH_VECTOR[0].vx;
+    dot = tangent * direction->vx + SCRATCH_VECTOR[0].vz * direction->vz;
+    if (dot < 0) {
+        out->vx = -tangent;
+        out->vz = -SCRATCH_VECTOR[0].vz;
+    } else if (dot > 0) {
+        out->vx = tangent;
+        out->vz = SCRATCH_VECTOR[0].vz;
+    } else {
+        out->vz = 0;
+        out->vx = 0;
+    }
+    out->vy = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095324);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095414);
 

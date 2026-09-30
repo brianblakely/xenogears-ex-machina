@@ -801,4 +801,7 @@ extern BlockGrid D_8009D318; /* previous */
 
 extern s8 D_8009C588[8];
 
+s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode);
+s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out);
+
 #endif
