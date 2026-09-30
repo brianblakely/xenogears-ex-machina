@@ -62,7 +62,9 @@ typedef struct {
     u32 octant : 3; /* 9-11 */
     u32 unk12 : 1;  /* 12 */
     u32 layer : 3;  /* 13-15: 801e layer */
-    u32 unk16 : 16;
+    u32 unk16 : 2;  /* 16-17 */
+    u32 unk18 : 10; /* 18-27 */
+    u32 unk28 : 4;
 } ActorState;
 
 /* One 0x138-byte event actor record. */
@@ -140,7 +142,8 @@ typedef struct FieldActor {
         u32 word;
         ActorState bits;
     } state;             /* 12C */
-    u8 unk130[4];
+    u32 unk130 : 9;      /* 130 */
+    u32 unk130_9 : 23;
     u32 unk134;          /* 134 */
 } FieldActor;
 
@@ -178,6 +181,14 @@ typedef struct {
     u8 unk496[0x498 - 0x496];
 } DialogueWindow;
 
+/* A model's animation state (model +7C). */
+typedef struct {
+    u8 unk00[0xC];
+    u16 unk0C;       /* 0C */
+    u8 unk0E[0x18 - 0x0E];
+    s16 *unk18;      /* 18 */
+} FieldAnimation;
+
 /* The model object at descriptor offset 04. */
 typedef struct {
     s32 position[3]; /* 00 */
@@ -187,7 +198,9 @@ typedef struct {
     s32 unk18;       /* 18 */
     u8 unk1C[0x2C - 0x1C];
     s16 unk2C;       /* 2C */
-    u8 unk2E[0x82 - 0x2E];
+    u8 unk2E[0x7C - 0x2E];
+    FieldAnimation *animation; /* 7C */
+    u8 unk80[2];
     s16 unk82;       /* 82 */
     u16 unk84;       /* 84 */
 } FieldModel;

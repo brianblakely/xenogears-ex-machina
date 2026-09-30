@@ -1434,9 +1434,66 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081F80);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800821F4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008237C);
+typedef struct {
+    u8 unk00[0x18];
+    u16 half_x;  /* 18 */
+    u8 unk1A[2];
+    u16 half_z;  /* 1C */
+    u8 unk1E[4];
+    s16 x;       /* 22 */
+    u8 unk24[6];
+    s16 z;       /* 2A */
+} FieldBox;
+extern void func_80281678(FieldBox *box);
+/* -1 unless point (x, z) lies inside `box` grown by `margin`; inside, run
+ * 80281678 on it (unless 800c268c is set) and return 0. */
+s32 func_8008237C(s32 x, s32 z, FieldBox *box, s32 margin) {
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082494);
+    point = (x << 16) + z;
+    a = ((box->x - box->half_x - margin) << 16) + (box->z + box->half_z + margin);
+    b = ((box->x + box->half_x + margin) << 16) + (box->z + box->half_z + margin);
+    c = ((box->x + box->half_x + margin) << 16) + (box->z - box->half_z - margin);
+    d = ((box->x - box->half_x - margin) << 16) + (box->z - box->half_z - margin);
+    if (func_8004A70C(a, b, point) < 0 || func_8004A70C(b, c, point) < 0 ||
+        func_8004A70C(c, d, point) < 0 || func_8004A70C(d, a, point) < 0) {
+        return -1;
+    }
+    if (D_800C268C == 0) {
+        func_80281678(box);
+    }
+    return 0;
+}
+
+/* 0 when the actor has no quad (state bit 12); else -1 unless its position
+ * plus `offset` lies inside the quad at +114. */
+s32 func_80082494(s32 *offset, FieldActor *actor) {
+    s16 *quad;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    s32 d;
+
+    if (!(actor->state.word & 0x1000)) {
+        return 0;
+    }
+    point = (((actor->position[0] + offset[0]) >> 16) << 16) + ((actor->position[2] + offset[2]) >> 16);
+    quad = actor->unk114;
+    a = (quad[0] << 16) + quad[1];
+    b = (quad[2] << 16) + quad[3];
+    c = (quad[4] << 16) + quad[5];
+    d = (quad[6] << 16) + quad[7];
+    if (func_8004A70C(a, b, point) < 0 || func_8004A70C(b, c, point) < 0 ||
+        func_8004A70C(c, d, point) < 0) {
+        return -1;
+    }
+    return func_8004A70C(d, a, point) >> 31;
+}
 
 /* Planar distance between two descriptors' actors (integer positions). */
 s32 func_800825AC(s32 from, s32 to) {
@@ -1964,7 +2021,36 @@ void func_80086BA8(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086C34);
+/* Event: selector byte 1: 0 skips; 1 starts emitter record 0 on the current
+ * actor with operand 4 (0x27 selects mode 0x20, else 0x22). */
+void func_80086C34(void) {
+    s32 kind;
+
+    switch (EVENT_OPERAND_BYTE(1)) {
+    case 0:
+        D_800B0078->pc += 2;
+        break;
+    case 1:
+        func_800ACDEC(2);
+        kind = func_800ACDEC(4);
+        func_800ACDEC(6);
+        func_800A94A4(D_800AFD1C);
+        D_800B02CC[0].flags = 0x14;
+        D_800B02CC[0].unk00 = 1;
+        D_800B02CC[0].count = 0x10;
+        D_800B02CC[0].unk72 = 0;
+        D_800B02CC[0].unk74 = kind;
+        if (kind == 0x27) {
+            D_800B02CC[0].unk74 = 0x20;
+        } else {
+            D_800B02CC[0].unk74 = 0x22;
+        }
+        D_800B02CC[0].unk04 = 0x1000;
+        func_800A99A8(D_800AFD1C);
+        D_800B0078->pc += 8;
+        break;
+    }
+}
 
 /* Event opcode e2: call resident 80019cd0, yield and step over the opcode. */
 void func_80086D4C(void) {
@@ -2368,7 +2454,28 @@ void func_800884CC(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088508);
+/* Event: for party member operand 5 (0xff none), store its model's
+ * animation +0c in variable operand 1 and its descriptor in variable
+ * operand 3, clearing +0c unless it is 1; four batch steps. */
+void func_80088508(void) {
+    s32 member;
+    FieldModel *model;
+
+    member = D_8005A444[func_800ACDEC(5)];
+    D_800AFC7C += 4;
+    if (member != 0xFF) {
+        model = D_800AF880.components.descriptors[member].model;
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, model->animation->unk0C);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, member);
+        if (model->animation->unk0C != 1) {
+            model->animation->unk0C = 0;
+        }
+    } else {
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, 0);
+    }
+    D_800B0078->pc += 7;
+}
 
 /* Clear the eight pairs at +30 of the current emitter record. */
 void func_8008861C(void) {
@@ -2441,7 +2548,24 @@ void func_80088790(void) {
     D_800AFC7C += 4;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800888A4);
+extern void func_8002303C(FieldModel *model, s32, s32);
+/* Event: set the current actor's model frame from operands 1 and 3. */
+void func_800888A4(void) {
+    FieldModel *model;
+    u16 low;
+    s32 frame;
+
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    low = func_800ACDEC(1) & 0xF;
+    frame = ((func_800ACDEC(1) >> 4) << 8) + func_800ACDEC(3);
+    func_8002303C(model, 2, 0);
+    model->animation->unk18[2] = low << 6;
+    D_800B0078->state.bits.unk18 = low << 6;
+    model->animation->unk18[3] = frame;
+    D_800B0078->unk130 = frame;
+    D_800B0078->state.bits.unk16 = 1;
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800889BC);
 
