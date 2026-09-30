@@ -3370,20 +3370,24 @@ void func_801E91C4(POLY_FT4 *poly) {
 }
 
 /* Place `poly` at (x, y) with size (w, h) and texture origin (u, v). */
-#ifdef NON_MATCHING
-void func_801E920C(POLY_FT4 *poly, s32 x, s32 y, s32 u, s32 v, s32 w, s32 h) {
-    poly->x2 = poly->x0 = x;
-    poly->y1 = poly->y0 = y;
-    poly->x3 = poly->x1 = x + w;
-    poly->y3 = poly->y2 = y + h;
-    poly->u2 = poly->u0 = u;
-    poly->v1 = poly->v0 = v;
-    poly->u3 = poly->u1 = u + w;
-    poly->v3 = poly->v2 = v + h;
+void func_801E920C(POLY_FT4 *poly, s16 x, s16 y, u8 u, u8 v, s16 w, s16 h) {
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->x1 = x + w;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    poly->u0 = u;
+    poly->v0 = v;
+    poly->u1 = u + w;
+    poly->v1 = v;
+    poly->u2 = u;
+    poly->v2 = v + h;
+    poly->u3 = u + w;
+    poly->v3 = v + h;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E920C);
-#endif
 
 /* Initialise `poly` as an opaque textured quad at neutral colour. */
 void func_801E927C(POLY_FT4 *poly) {
