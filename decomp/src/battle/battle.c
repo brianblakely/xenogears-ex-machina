@@ -2936,7 +2936,59 @@ void func_80088990(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088B80);
+/* Draw the stepped line effect while UI +0xad is set: once a line ends,
+ * start another towards a random end point (a 4 in 100 chance per frame);
+ * otherwise advance it. Place its glyphs at the current point (lists
+ * extra1-extra3 and +0x32a0) and, while the line runs, twenty random
+ * glyphs (+0x46a0) in two rows. */
+void func_80088B80(void) {
+    s32 i;
+    s32 j;
+    s32 n;
+
+    if (D_800D2D28->unkAD != 0) {
+        if (D_800C207C != 0 && func_8001BD40(0, 99) >= 0x60) {
+            func_8008887C(D_800D2DB4->lineX, D_800D2DB4->lineY, D_800C2054[0][func_8001BD40(0, 4)],
+                          D_800C2054[1][func_8001BD40(0, 4)]);
+        }
+        if (D_800C207C == 0) {
+            func_80088990();
+            D_800D2DB4->lineX = D_800C3A7C + D_800C2080 / 256;
+            D_800D2DB4->lineY = D_800C3A80 + D_800C2084 / 256;
+        }
+        D_800D2DB4->extraCounts[2] = func_80076A10(0xB9, D_800D2DB4->extra2, D_800D2DB4->lineX, D_800D2DB4->lineY);
+        D_800D2DB4->extraBuffers[2] = D_800CCB04.buffer;
+        D_800D2DB4->extraCounts[1] = func_80076A10((D_800D2DB4->lineX & 0xF) + 0xA9, D_800D2DB4->extra1, 0xA0, 0x64);
+        D_800D2DB4->extraBuffers[1] = D_800CCB04.buffer;
+        D_800D2DB4->extraCounts[3] = func_80076A10(0x82, D_800D2DB4->extra3, D_800D2DB4->lineX, D_800D2DB4->lineY);
+        D_800D2DB4->extraBuffers[3] = D_800CCB04.buffer;
+        for (i = 0; i < D_800D2DB4->extraCounts[2]; i++) {
+            func_80076B68(&D_800D2DB4->extra2[i * 2 + D_800D2DB4->extraBuffers[2]]);
+        }
+        for (i = 0; i < D_800D2DB4->extraCounts[3]; i++) {
+            func_80076B68(&D_800D2DB4->extra3[i * 2 + D_800D2DB4->extraBuffers[3]]);
+        }
+        for (i = 0; i < D_800D2DB4->extraCounts[1]; i++) {
+            func_80076B68(&D_800D2DB4->extra1[i * 2 + D_800D2DB4->extraBuffers[1]]);
+        }
+        D_800D2DB4->count32A0 = func_80076A10((D_800D2DB4->lineY & 0xF) + 0xC9, D_800D2DB4->unk32A0,
+                                              D_800D2DB4->lineX, D_800D2DB4->lineY);
+        D_800D2DB4->buffer32A0 = D_800CCB04.buffer;
+        for (i = 0; i < D_800D2DB4->count32A0; i++) {
+            func_80076BF0(&D_800D2DB4->unk32A0[i * 2 + D_800D2DB4->buffer32A0]);
+        }
+        if (D_800C207C == 0) {
+            for (i = 0; i < 2; i++) {
+                for (j = 0; j < 10; j++) {
+                    n = i * 10 + j;
+                    func_80076A10(func_8001BD40(0, 9) + 0xBA, &D_800D2DB4->unk46A0[n * 2], 0x82 + j * 6, 0xA + i * 0xBD);
+                    func_80076B68(&D_800D2DB4->unk46A0[n * 2 + D_800CCB04.buffer]);
+                }
+            }
+            D_800D2DB4->buffer46A0 = D_800CCB04.buffer;
+        }
+    }
+}
 
 /* Build the glyphs of the flags set in 800d2c30 (up to five, 10 pixels
  * apart from y 0x6e) into the +0x4ce0 primitives. */

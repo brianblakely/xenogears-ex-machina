@@ -362,8 +362,8 @@ typedef struct {
     u8 buffer32A0;            /* +0x5D97 */
     u8 buffer46A0;            /* +0x5D98 */
     u8 unk5D99[3];
-    s16 unk5D9C;              /* +0x5D9C the stepped line's point */
-    s16 unk5D9E;
+    u16 lineX;                /* +0x5D9C the stepped line's current point */
+    u16 lineY;
     u8 buffer4CE0;            /* +0x5DA0 */
     u8 count4CE0;             /* +0x5DA1 */
     s16 blink;                /* +0x5DA2 frame counter of the blinking list */
@@ -481,7 +481,7 @@ extern s32 D_800C3A90;
 extern u8 D_800C3A94;
 extern u8 D_800C3A98;
 extern s32 D_800C3A9C;
-extern s8 D_800C207C;
+extern u8 D_800C207C; /* the stepped line reached its end */
 extern s32 D_800C2080;
 extern s32 D_800C2084;
 extern s32 D_800C2054[2][5]; /* end points (x, then y) of the stepped line */
