@@ -157,12 +157,16 @@ typedef struct {
 /* A character moved in the menu scene. */
 typedef struct Actor {
     Vector pos;          /* 0x00 */
-    u8 unk10[0x30];
+    Vector velocity;     /* 0x10: vy is the vertical speed */
+    Vector push;         /* 0x20: horizontal push (vx, vz) */
+    u8 unk30[0x10];
     s32 unk40;
     u8 unk44[0x4];
     s32 state;           /* 0x48 */
     u8 anim;             /* 0x4C */
-    u8 unk4D[0x7];
+    u8 unk4D;
+    u8 unk4E;
+    u8 unk4F[0x5];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     Model *model;        /* 0x5C */
@@ -176,10 +180,15 @@ typedef struct Actor {
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
     s16 unkBE;
-    u8 unkC0[0xE];
+    u8 unkC0[0x4];
+    u8 unkC4;
+    u8 unkC5;
+    u8 unkC6[0x4];
+    s16 unkCA;
+    u8 unkCC[0x2];
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
-    u8 unkD4[0x4];
+    u32 unkD4;
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
@@ -196,7 +205,10 @@ typedef struct Actor {
     u8 *visible;         /* 0x904: objects shown by the current move */
     u8 visible_count;
     u8 unk909;
-    u8 unk90A[0x42];
+    u8 unk90A;
+    u8 unk90B[0xB];
+    s16 unk916;
+    u8 unk918[0x34];
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0x42];
     s16 unk99E;
@@ -427,6 +439,8 @@ void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(u8 *arg);
 void func_80076424(Actor *actor);
+void func_8007639C(Actor *actor, u8 input);
+s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s32 arg1, s32 arg2);
 void func_8008B0D8(ModelAnim *anim);

@@ -1207,15 +1207,55 @@ void func_800764CC(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007661C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800767C8);
+/* Queue input 5 for an actor when both actors are in the 0x40000 state
+ * near the ground, unless it is blocked (bit 24, move 4, or the 0x20000000
+ * stance without permission bit 1). */
+s32 func_800767C8(Actor *actor) {
+    if (D_8009284C > 0x200 || actor->unkC5 == 4) {
+        return;
+    }
+    if (actor->flags & 0x1000000) {
+        return;
+    }
+    if ((actor->flags & 0x40000) && (actor->opponent->flags & 0x40000)
+        && ((actor->flags & 0x60000000) != 0x20000000 || (actor->unk90A & 2))) {
+        func_80076424(actor);
+        func_8007639C(actor, 5);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80076884);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80077038);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80077584);
+/* Push an actor along an angle (scaled down by shift) and let it rise by
+ * lift, never faster than 0x82 upward. */
+s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift) {
+    actor->push.vx += func_8003F8B0(angle) >> shift;
+    actor->push.vz += func_8003F8CC(angle) >> shift;
+    if (actor->velocity.vy >= -0x8B) {
+        actor->velocity.vy -= lift;
+    }
+    if (actor->velocity.vy < -0x82) {
+        actor->velocity.vy = -0x82;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007762C);
+/* Put an actor into its jump: animation, timers and flags, then the
+ * initial push. */
+void func_8007762C(Actor *actor, s32 angle, s32 shift, s32 lift) {
+    actor->anim = 8;
+    actor->unk4E = 0xFF;
+    actor->unkCA = 0x3C;
+    actor->unk916 = 0x28;
+    actor->unkE8 = 0x28;
+    actor->unkC4 = 4;
+    actor->unkC5 = 0;
+    actor->flags |= 0x1000;
+    actor->unkD4 &= ~0x10;
+    actor->flags &= ~0x400;
+    func_80077584(actor, angle, shift, lift);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800776A8);
 
