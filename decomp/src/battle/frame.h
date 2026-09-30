@@ -27,15 +27,30 @@ typedef struct {
 
 /* A slot's sprite (a resident sprite; fields as far as used). */
 typedef struct {
-    u8 pad0[0x74];
+    s32 x, y, z;  /* 16.16 */
+    u8 padC[0x74 - 0xC];
     s32 field74;  /* 0x74 */
     u8 pad78[0xA0 - 0x78];
-    u16 x;        /* 0xA0 */
+    s16 targetX;  /* 0xA0 */
     u8 padA2[2];
-    u16 z;        /* 0xA4 */
+    s16 targetZ;  /* 0xA4 */
     u8 padA6[0xAF - 0xA6];
     s8 mode;      /* 0xAF: 10 while running commands */
 } SlotSprite;
+
+/* A point on the ground passed by value. */
+typedef struct {
+    s16 x;
+    s16 z;
+} GroundPoint;
+
+/* Switch the stack to top for the calls up to STACK_LEAVE. */
+#define STACK_ENTER(top)                                                                           \
+    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"            \
+                     :                                                                             \
+                     : "r"(top)                                                                    \
+                     : "$8", "memory")
+#define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
 
 /* The battle's frame state from D_800C3EB0. */
 typedef struct {
@@ -97,6 +112,12 @@ typedef struct BattleMenu {
 } BattleMenu;
 
 extern BattleMenu *D_800C3610;
+extern s32 D_800C360C;
+extern s32 D_800C3E20;
+extern s16 D_800D2E54;
+extern u8 D_800591B0;    /* the battle module is loaded */
+extern u8 D_800591B2;    /* the loaded battle module */
+extern u8 D_800591B3;    /* the requested battle module */
 
 /* SDK calls of the frame loop. */
 void ClearOTagR(u32 *ot, s32 n);
@@ -117,7 +138,17 @@ s32 func_800286CC(void); /* the disc is busy */
 void func_80037324(u32 *ot);
 void func_80280A9C(void); /* the debugger's frame hook */
 void func_800245D8(SlotSprite *sprite, s32 mode);
-u16 func_8003569C(s32 pad);
+s32 func_8003569C(s32 pad);
+s16 func_80023124(GroundPoint to, GroundPoint from); /* the direction between points */
+void *func_80031BDC(u32 size, s32 mode);
+void func_800320E8(void *block);
+void func_800295D8(s32, s32, s32, s32);
+void func_800284B4(s32 *a, s32 *b);
+void func_80028470(s32 a, s32 b);
+void func_800B8354(void);
+void func_800B9F78(BattleMenu *menu);
+void func_800BF0B4(s32 arg0);
+void func_800AA320(u16 index, u16 mask, s32 arg2);
 
 void func_80076544(void);
 void func_8008A9C0(s32 skipped);

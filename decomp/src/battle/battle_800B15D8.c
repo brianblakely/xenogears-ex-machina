@@ -704,25 +704,172 @@ void func_800BE790(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE790);
 #endif
 
+#ifdef NON_MATCHING
+/* Load the requested battle module (D_800591B3) into 0x801FC000 when it
+ * changed, around the module switch 800B8354, and mark it loaded. */
+void func_800BEB04(void) {
+    s32 saved0;
+    s32 saved1;
+    u8 module = D_800591B3;
+
+    if (D_800591B2 != module) {
+        D_800591B2 = D_800591B3;
+        func_800B8354();
+        func_800284B4(&saved0, &saved1);
+        func_80028470(0xC, 2);
+        func_800295D8(module + 2, 0x801FC000, 0, 0x80);
+        func_800B8354();
+        func_80028470(saved0, saved1);
+        DrawSync(0);
+        VSync(0);
+        EnterCriticalSection();
+        FlushCache();
+        ExitCriticalSection();
+    }
+    D_800591B0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEB04);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEBC4);
+/* Read the controllers; holding select (0x100) slows the frame down. */
+void func_800BEBC4(void) {
+    func_800BEC18();
+    if (BATTLE_FRAME.held & 0x100) {
+        VSync(8);
+        D_80059494 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEC18);
+/* Read both controllers: held, newly pressed and released buttons, and a
+ * history of the first controller's last changes. */
+void func_800BEC18(void) {
+    s32 held;
+    u16 old;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BED30);
+    held = func_8003569C(0) & 0xFFFF;
+    old = BATTLE_FRAME.held;
+    BATTLE_FRAME.held = held;
+    BATTLE_FRAME.pressed = ~old & held;
+    BATTLE_FRAME.released = old & ~held;
+    held = func_8003569C(1);
+    BATTLE_FRAME.pressed2 = ~BATTLE_FRAME.held2 & held;
+    BATTLE_FRAME.held2 = held;
+    BATTLE_FRAME.heldOnly = BATTLE_FRAME.held & ~held;
+    if (BATTLE_FRAME.held != BATTLE_FRAME.history[0].held) {
+        BATTLE_FRAME.history[3] = BATTLE_FRAME.history[2];
+        BATTLE_FRAME.history[2] = BATTLE_FRAME.history[1];
+        BATTLE_FRAME.history[1] = BATTLE_FRAME.history[0];
+        BATTLE_FRAME.history[0].held = BATTLE_FRAME.held;
+        BATTLE_FRAME.history[0].pressed = BATTLE_FRAME.pressed;
+        BATTLE_FRAME.history[0].released = BATTLE_FRAME.released;
+        BATTLE_FRAME.history[0].time = D_800D30E4;
+    }
+}
 
+/* Clear the battle menu state. */
+void func_800BED30(void) {
+    D_800C3E20 = 0;
+    D_800C3610 = NULL;
+    D_800D2E54 = 0;
+}
+
+#ifdef NON_MATCHING
+/* Open the battle menu (800B9F78 its update). */
+BattleMenu *func_800BED4C(void) {
+    BattleMenu *menu = func_80031BDC(sizeof(BattleMenu), 0);
+
+    menu->update = func_800B9F78;
+    D_800C3610 = menu;
+    D_800C360C = 0;
+    menu->field4A = 0;
+    D_800C3610->field48 = 1;
+    D_800C3610->field30 = 0;
+    D_800C3610->field49 = 0;
+    D_800C3610->field2C = 1;
+    D_800C3610->field4 = 0;
+    D_800C3610->field34 = 0;
+    func_800BF0B4(0);
+    D_80059464 = 0;
+    D_800591AC = 1;
+    return D_800C3610;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BED4C);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEDE8);
+/* Close the battle menu. */
+void func_800BEDE8(void) {
+    func_800320E8(D_800C3610);
+    D_80059464 = 0;
+    D_800C3610 = NULL;
+    D_800591AC = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEE2C);
+/* Run 800AA320 on a 4 KB stack of its own. */
+void func_800BEE2C(s32 index, s32 mask, s32 arg2) {
+    u8 *stack = func_80031BDC(0x1000, 1);
 
+    STACK_ENTER(stack + 0xF9C);
+    func_800AA320(index, mask, arg2);
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
+
+#ifdef NON_MATCHING
+/* List the slot sprites of the slots in mask (up to 11, NULL-terminated),
+ * setting their field74 to value; their count. */
+s32 func_800BEEB4(u32 mask, SlotSprite **list, s32 value) {
+    s32 i;
+    s32 count;
+    SlotSprite **out;
+    SlotSprite *sprite;
+
+    i = 0;
+    count = i;
+    out = list;
+
+    for (; i != 11; i++, mask = (mask & 0xFFFF) >> 1) {
+        if (mask & 1) {
+            sprite = BATTLE_FRAME.slotSprites[i];
+            if (sprite != NULL) {
+                sprite->field74 = value;
+                *out++ = sprite;
+                count++;
+            }
+        }
+    }
+    list[count] = NULL;
+    return count;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEEB4);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEF24);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEF8C);
+/* The direction from sprite from to sprite to on the ground. */
+s16 func_800BEF24(SlotSprite *from, SlotSprite *to) {
+    GroundPoint a;
+    GroundPoint b;
+
+    a.x = from->x >> 16;
+    a.z = from->z >> 16;
+    b.x = to->x >> 16;
+    b.z = to->z >> 16;
+    return func_80023124(b, a);
+}
+
+/* The direction from sprite to its target point on the ground. */
+s16 func_800BEF8C(SlotSprite *sprite) {
+    GroundPoint a;
+    GroundPoint b;
+
+    a.x = sprite->x >> 16;
+    a.z = sprite->z >> 16;
+    b.x = sprite->targetX;
+    b.z = sprite->targetZ;
+    return func_80023124(b, a);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BEFF4);
 
