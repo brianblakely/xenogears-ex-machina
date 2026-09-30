@@ -1557,7 +1557,112 @@ void func_80079DE0(void) {
     D_80092640 = 0;
 }
 
+#ifdef NON_MATCHING
+/* One frame of the bout (every D_80099D9A + 1 frames): record the pose
+ * slot, read the pads (letting a player on the free port take over while
+ * the pause is open), then run both actors' frame: moves, AI, physics,
+ * separation, model placement, anchors and frame events.
+ * Does not match: only the pose slot setup is scheduled differently: the original loads the slot index and the frame delay (and sets the first call's argument) before the pose stores, one instruction shorter. */
+void func_80079DF0(Actor *first, Actor *second) {
+    if (D_80092664 != 0) {
+        D_80092664--;
+        return;
+    }
+    D_80092664 = D_80099D9A;
+    first->pose = (Pose *)first->unk9CC + D_800928C0;
+    second->pose = (Pose *)second->unk9CC + D_800928C0;
+    first->move = (Move *)first->pose;
+    D_800928C0++;
+    second->move = (Move *)second->pose;
+    first->flags = (first->flags & ~0x40) | ((D_80099D9D & 1) << 6);
+    second->flags = (second->flags & ~0x40) | ((D_80099D9E & 1) << 6);
+    func_80073644(first);
+    func_80073644(second);
+    func_800764CC(first);
+    func_800764CC(second);
+    D_80092648 = 0;
+    func_80075B50(first);
+    func_80075B50(second);
+    func_8003708C(0xA, 0x60);
+    func_8007E528(0);
+    if (D_800928D4 != 0) {
+        if (func_80036410()) {
+            func_80035DB0();
+        } else {
+        poll:
+            if (func_80035CDC()) {
+                if ((((D_8005948C | D_80059490) & 0x800) && D_8009263C < 0x14) || !func_80035734(0) ||
+                    (!func_80035734(1) && D_800928C8 == 2)) {
+                    if ((D_8005948C & 0x800) || !func_80035734(0)) {
+                        D_800928FC = 0;
+                    } else {
+                        if (second->flags & 0x40) {
+                            goto next;
+                        }
+                        D_800928FC = 1;
+                    }
+                    if (D_800928C4 == 0) {
+                        func_80080C48(D_800928C8 == 4 ? 2 : 1);
+                    }
+                }
+            next:
+                func_80076884(first);
+                func_80076884(second);
+                goto poll;
+            }
+        }
+    } else {
+        func_80036420();
+    }
+    if (D_800928D4 != 0) {
+        if (D_80092944 != 0x2BF1F) {
+            D_80092944++;
+        }
+        if (D_800928C8 == 4) {
+            func_8008F280(second);
+        } else {
+            func_80090E10(first);
+            func_80090E10(second);
+        }
+    }
+    if (D_80092638 != 0) {
+        first->state = 0;
+        second->state = 0;
+        func_80076424(first);
+        func_80076424(second);
+    }
+    func_800751C8(first, second);
+    func_80077038(first);
+    func_80077038(second);
+    func_8003708C(0x4A, 0);
+    func_80077A9C(first);
+    func_8003708C(0x6A, 0);
+    func_80077A9C(second);
+    func_8003708C(0xA, 0x80);
+    func_80078194(first);
+    func_80078194(second);
+    func_80078D20(second);
+    func_80078D20(first);
+    func_80078920(first, second);
+    func_80078E94(second);
+    func_80078E94(first);
+    func_80072170();
+    func_80074BA4(first);
+    func_80074BA4(second);
+    func_80079D08(first);
+    func_80079D08(second);
+    func_8007920C(first);
+    func_8007920C(second);
+    func_80074678(first, first->unk998, first->unk99A);
+    func_80074678(second, second->unk998, second->unk99A);
+    func_8007BACC();
+    if (D_80092884 != 0) {
+        func_8007D65C(&first->core, &second->core, 0x13);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079DF0);
+#endif
 
 /* Save both actors' positions and homes (at height 0x100) and set the
  * countdown from the given frame count. */
