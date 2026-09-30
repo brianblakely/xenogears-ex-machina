@@ -98,7 +98,10 @@ typedef struct Actor {
     u8 unkB8[0x2];
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
-    u8 unkBE[0xE];
+    s16 unkBE;           /* 0xBE: charge a special move needs */
+    u8 unkC0[0x4];
+    u8 unkC4;
+    u8 unkC5[0x7];
     s16 unkCC;
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */

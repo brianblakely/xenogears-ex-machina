@@ -14,7 +14,13 @@ typedef struct Brain {
     s16 unkC;
     u8 unkE;
     u8 unkF;
-    u8 unk10[0x1C];
+    s32 unk10;          /* 0x10: attack eagerness */
+    s32 unk14;
+    s32 unk18;          /* 0x18: chance to press an attack */
+    s32 unk1C;          /* 0x1C: eagerness when not keen */
+    s32 unk20;
+    s32 unk24;          /* 0x24: charge it waits for */
+    s32 unk28;
     u32 unk2C_0 : 13;
     u32 defending : 1;  /* 0x2C bit 13 */
     u32 unk2C_14 : 18;
@@ -30,5 +36,6 @@ void func_800767C8(Actor *actor);
 void func_8008FE80(Actor *actor);
 void func_8007639C(Actor *actor, s32 input); /* queue a command input */
 void func_80090E10(Actor *actor);
+s32 func_80073DE4(Actor *actor, s32 amount);
 
 #endif

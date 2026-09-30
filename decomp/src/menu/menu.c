@@ -2613,15 +2613,72 @@ void func_8008F280(Actor *actor) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F280);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F4F4);
+/* Whether an actor's hp is still above the given fraction (of 255) of
+ * its maximum. */
+s32 func_8008F4F4(Actor *actor, s32 fraction) {
+    return actor->max_hp * fraction / 255 < actor->hp;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F530);
+/* Whether an actor lacks the charge for its special move (or, with a
+ * flag, whether spending it is allowed). */
+s32 func_8008F530(Actor *actor, s32 check) {
+    if (check) {
+        return func_80073DE4(actor, actor->unkBE);
+    }
+    return actor->unkB6 < 0x1000 - actor->unkBE;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F570);
+/* The charge left over after a special move. */
+s32 func_8008F570(Actor *actor) {
+    return 0x1000 - actor->unkBE;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F580);
+/* Compare an actor's charge with the level its brain waits for: 2 while
+ * well below, else 1 up to the level and 0 above it. */
+s32 func_8008F580(Actor *actor) {
+    Brain *brain = actor->brain;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F5B4);
+    if (brain->unk24 - 0x200 >= actor->unkB6) {
+        return 2;
+    }
+    return !(brain->unk24 < actor->unkB6);
+}
+
+/* Decide whether the opponent attacks now, weighing its eagerness, its
+ * charge and hp and the other actor's hp. */
+s32 func_8008F5B4(Actor *actor) {
+    Brain *brain = actor->brain;
+
+    if ((func_8003FA38() & 0xFF) < (brain->unk10 * 320) >> 4) {
+        if (func_8008F530(actor, 0)) {
+            goto press;
+        }
+        if (func_8008F4F4(actor, 0xC0)) {
+            goto press;
+        }
+        if ((func_8003FA38() & 0xFF) < (brain->unk1C * 192) >> 4) {
+            goto press;
+        }
+        if (!func_8008F4F4(actor, 0x80) || actor->opponent->hp >= actor->hp) {
+            return 0;
+        }
+    } else if ((func_8003FA38() & 0xFF) >= (brain->unk1C * 320) >> 4) {
+        return 0;
+    }
+press:
+    if ((func_8003FA38() & 0xFF) < brain->unk18) {
+        if (actor->opponent->unkC4 == 4) {
+            return 0;
+        }
+        if (func_8008F4F4(actor->opponent, 0x20)) {
+            return 1;
+        }
+        if (actor->opponent->hp < actor->hp) {
+            return 0;
+        }
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F720);
 
