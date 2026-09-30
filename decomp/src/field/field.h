@@ -32,7 +32,7 @@ typedef struct {
 
 /* One screen fade channel (800b20c4 + 0x58 * channel). Levels are 8.8. */
 typedef struct {
-    u8 modes[2][12]; /* DR_MODE per draw buffer */
+    DR_MODE modes[2]; /* per draw buffer */
     TILE tiles[2];   /* per draw buffer */
     s32 level[3];
     s32 step[3];
@@ -802,7 +802,7 @@ extern void func_8007AD8C(void *pad0, void *pad1);
 extern void func_8007ADA4(s32 left, s32 right, s32 top, s32 bottom);
 extern void func_8007AE14(s32 x_divisor, s32 y_divisor);
 extern void func_8007AE2C(s32 port, s32 x, s32 y);
-extern void func_8007DA44(void *ot, s32 buffer);
+extern void func_8007DA44(u32 *ot, s32 buffer);
 extern void func_80074038(MATRIX *to, MATRIX *from);
 extern void func_80074078(MATRIX *to, MATRIX *from);
 extern void func_8007409C(MATRIX *to, MATRIX *from);
@@ -928,6 +928,7 @@ extern s32 D_800ADB5C; /* list position */
 extern u16 D_800B14AC;
 extern DialogueWindow D_800C2698[4];
 extern RECT D_800AFC80[16]; /* text texture windows */
+extern RECT D_800AFE3C[2]; /* fade texture windows */
 extern DR_MODE D_800B1DF4[2][16]; /* text draw modes per buffer */
 extern void func_8007EE0C(s32 window);
 extern u16 D_800C3900; /* pad buttons that move a window's choice */

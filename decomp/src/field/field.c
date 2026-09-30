@@ -1360,7 +1360,42 @@ void func_8007D93C(s32 channel) {
     D_800B2078.fades[channel].abr = 2;
 }
 
+#ifdef NON_MATCHING
+/* Link each active fade channel's tile and draw mode into `ot` (channel 1
+ * one entry further); a channel whose levels reached zero stops. */
+void func_8007DA44(u32 *ot, s32 buffer) {
+    DR_MODE *mode;
+    TILE *tile;
+    u32 *entry;
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        if (D_800B2078.fades[i].active != 0) {
+            D_800AFE3C[i].w = 0x140;
+            D_800AFE3C[i].x = 0;
+            D_800AFE3C[i].y = 0;
+            D_800AFE3C[i].h = 0xE0;
+            mode = &D_800B2078.fades[i].modes[buffer];
+            SetDrawMode(mode, 0, 0, GetTPage(0, D_800B2078.fades[i].abr, 0, 0), &D_800AFE3C[i]);
+            tile = &D_800B2078.fades[i].tiles[buffer];
+            tile->r0 = D_800B2078.fades[i].level[0] >> 8;
+            tile->g0 = D_800B2078.fades[i].level[1] >> 8;
+            tile->b0 = D_800B2078.fades[i].level[2] >> 8;
+            entry = &ot[i == 1];
+            addPrim(entry, tile);
+            addPrim(entry, mode);
+            if (D_800B2078.fades[i].level[0] >> 8 == 0 && D_800B2078.fades[i].level[1] >> 8 == 0
+                && D_800B2078.fades[i].level[2] >> 8 == 0) {
+                D_800B2078.fades[i].active = 0;
+                D_800B2078.fades[i].steps = 0;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DA44);
+#endif
+
 
 /* Move a displayed window's choice (+382 over +380 lines) with the pad and
  * light its line; a window with +410 set lights none. */
