@@ -799,4 +799,6 @@ typedef struct {
 extern BlockGrid D_8009D570; /* current */
 extern BlockGrid D_8009D318; /* previous */
 
+extern s8 D_8009C588[8];
+
 #endif

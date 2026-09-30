@@ -30,7 +30,43 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095CD4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80095F78);
+/* Reset the stream queue and allocate its command buffers (disc or host). */
+void func_80095F78(void) {
+    s32 first;
+    s32 second;
+    s32 i;
+    s8 *flag;
+
+    first = func_8002C3D8();
+    second = func_8002C3D8();
+    if ((first == 0) | (second == -1)) {
+        D_8009BCB8 = 0;
+        D_8009BE44 = 0;
+        D_8009CD44 = 0;
+        for (i = 0xF; i >= 0; i--) {
+            D_8009D788[i] = NULL;
+        }
+        D_8009BE08 = func_80031BDC(0x4200, 0);
+        D_8009D7D4 = func_80031BDC(0x800, 0);
+        D_8009D808 = 0;
+        for (i = 7, flag = &D_8009C588[7]; i >= 0; i--) {
+            *flag-- = 0;
+        }
+    } else {
+        D_8009BCB8 = 0;
+        D_8009BE44 = 0;
+        D_8009CD44 = 0;
+        for (i = 0xF; i >= 0; i--) {
+            D_8009C624[i] = NULL;
+        }
+        D_8009D3C0 = func_80031BDC(0x5800, 0);
+        D_8009D7D4 = func_80031BDC(0x800, 0);
+        D_8009D808 = 0;
+        for (i = 7, flag = &D_8009C588[7]; i >= 0; i--) {
+            *flag-- = 0;
+        }
+    }
+}
 
 /* Free the effect command buffers. */
 void func_800960BC(void) {
@@ -47,7 +83,25 @@ void func_800960BC(void) {
     func_800320E8(D_8009D7D4);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096130);
+/* Wait until the current write slot of the stream queue is free. */
+void func_80096130(void) {
+    s32 first;
+    s32 second;
+
+    first = func_8002C3D8();
+    second = func_8002C3D8();
+    if ((first == 0) | (second == -1)) {
+        while (D_8009D788[D_8009BE44] != NULL) {
+            VSync(0);
+            func_800967E4();
+        }
+    } else {
+        while (D_8009C624[D_8009BE44] != NULL) {
+            VSync(0);
+            func_800967E4();
+        }
+    }
+}
 
 /* Append a three-word effect command to the current frame's list. */
 s32 func_8009623C(s32 a, s32 b, s32 c) {
