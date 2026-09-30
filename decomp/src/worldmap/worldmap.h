@@ -416,11 +416,11 @@ typedef struct SceneObject {
 extern SceneObject *D_8009C620; /* scene objects */
 extern u16 D_8009A450;
 extern u16 D_8009A46C[];
-extern u16 D_8009A4D8;
+extern u16 D_8009A4D8[];
 extern u16 D_8009A4E8[];
-extern u16 D_8009A698;
+extern u16 D_8009A698[];
 extern u16 D_8009A6AC[];
-extern u16 D_8009A6C0;
+extern u16 D_8009A6C0[];
 extern u16 D_8009A70C[];
 extern s16 D_8009A758[], D_8009AC60[]; /* scripts */
 

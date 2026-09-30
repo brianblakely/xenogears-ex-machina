@@ -83,16 +83,13 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_8008106C);
 
 /* Start an actor's timed sequence: first state and its duration. */
-#ifdef NON_MATCHING /* state constant is loaded before the step reset */
 s32 func_80081174(s32 index) {
     WorldmapActor *actor;
 
     actor = &D_8009BE24[index];
     actor->u.step = 0;
-    actor->state = D_8009A6C0;
-    actor->wait = D_8009A70C[actor->u.step++];
+    actor->state = D_8009A6C0[0];
+    actor->wait = D_8009A70C[actor->u.step];
+    actor->u.step++;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80081174);
-#endif

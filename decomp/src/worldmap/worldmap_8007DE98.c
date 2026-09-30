@@ -89,7 +89,7 @@ s32 func_8008032C(s32 index) {
 
     actor = &D_8009BE24[index];
     actor->u.step = 0;
-    actor->state = D_8009A698;
+    actor->state = D_8009A698[0];
     actor->wait = D_8009A6AC[actor->u.step];
     return 1;
 }
