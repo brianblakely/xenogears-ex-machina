@@ -739,10 +739,14 @@ s32 func_8004C398(s32 fd, void *buffer, s32 size); /* PCread */
 #define SCRATCH_MATRIX_A ((MATRIX *)0x1F8000F0)
 #define SCRATCH_MATRIX_B ((MATRIX *)0x1F800110)
 #define SCRATCH_MATRIX_C ((MATRIX *)0x1F800130)
+#define SCRATCH_MATRIX_D ((MATRIX *)0x1F800150)
+#define SCRATCH_SVECTOR ((SVECTOR *)0x1F8000A0)
+#define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
 
 MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out);
 MATRIX *func_8004AFEC(s32 angle, MATRIX *m); /* RotMatrixY */
 MATRIX *func_8004AE4C(s32 angle, MATRIX *m); /* RotMatrixX */
+MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
 
 /* Camera placement: eye, target and up direction. */
 typedef struct {
@@ -767,5 +771,6 @@ void func_80048D7C(VECTOR *v, VECTOR *out);           /* VectorNormal */
 void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v, VECTOR *out);
 MATRIX *TransMatrix(MATRIX *m, VECTOR *t);
+VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
 
 #endif
