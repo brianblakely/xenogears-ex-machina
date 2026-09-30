@@ -19,4 +19,13 @@ s32 func_800907C4(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008E190", func_800907F4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008E190", func_80090A18);
+/* Track the two-button combination and latch its press edge. */
+void func_80090A18(void) {
+    if ((D_8009CD4C & 1) && (D_8009CD4C & 2)) {
+        D_8009CEC0 = 1;
+    } else {
+        D_8009CEC0 = 0;
+    }
+    D_8009BD34 = (D_8009CEC0 ^ D_8009C7E8) & D_8009CEC0;
+    D_8009C7E8 = D_8009CEC0;
+}

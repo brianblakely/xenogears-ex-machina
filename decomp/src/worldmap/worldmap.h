@@ -479,6 +479,15 @@ extern PathTable *D_8009D7D8;
 extern u16 D_8009BD24;
 extern u8 D_8009D738, D_8009BD60;
 
+extern u16 D_8009CD4C; /* pad buttons held */
+extern s32 D_8009CEC0, D_8009C7E8, D_8009BD34;
+extern u8 D_8009D498[], D_8009BD64[];
+extern s16 D_8009BAC8[]; /* 8 columns per row */
+
+void func_800346D4(void *object);
+s32 func_80093E8C(Vec3 *position); /* terrain attribute at a position */
+u8 *func_80093660(s32 x, s32 z);   /* terrain cell at a position */
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];
