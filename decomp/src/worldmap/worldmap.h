@@ -716,7 +716,7 @@ extern EffectCommand3 *volatile D_8009D3BC; /* next disc request (shared with th
 extern s32 D_8009BE48, D_8009CCB0, D_8009CCA8, D_8009CCA0;
 extern s32 D_8009D7F4, D_8009D614, D_8009CEB8, D_8009C590;
 extern u32 D_8009D56C; /* sectors left */
-extern s32 D_8009BCD4, D_8009BCD0, D_8009BCCC;
+extern s32 D_8009BCCC[3]; /* sector header */
 
 #include "psyq/libcd.h"
 extern CdlLOC D_8009CEBC; /* request position */
@@ -730,6 +730,7 @@ s32 func_800968E0(void);
 void CdSyncCallback(void (*func)(s32 status, u8 *result));
 void CdReadyCallback(void (*func)(s32 status, u8 *result));
 s32 CdControlF(u8 com, u8 *param);
+void CdGetSector(void *dest, s32 words);
 s32 PCopen(char *name, s32 flags, s32 perms);
 s32 PCclose(s32 fd);
 s32 func_8004C398(s32 fd, void *buffer, s32 size); /* PCread */

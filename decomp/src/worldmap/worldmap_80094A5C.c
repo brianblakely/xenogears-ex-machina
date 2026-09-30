@@ -283,9 +283,9 @@ void func_80096A6C(s32 status, u8 *result) {
         switch (D_8009CD44) {
         case 1:
             D_8009CD44 = 2;
-            D_8009BCD4 = 0;
-            D_8009BCD0 = 0;
-            D_8009BCCC = 0;
+            D_8009BCCC[2] = 0;
+            D_8009BCCC[1] = 0;
+            D_8009BCCC[0] = 0;
             CdReadyCallback(func_80096C0C);
             CdControlF(0x1B, NULL);
             break;
@@ -324,7 +324,77 @@ void func_80096A6C(s32 status, u8 *result) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096C0C);
+/* CD data-ready callback of the stream reader: copy the sector to the
+ * request's destination and continue with the next request, seeking when it
+ * is not close ahead; pause at the end of the list. */
+void func_80096C0C(s32 status, u8 *result) {
+    EffectCommand3 *request;
+    s32 sector;
+    s32 next;
+
+    if (status == 1) {
+        CdGetSector(D_8009BCCC, 3);
+        sector = CdPosToInt((CdlLOC *)D_8009BCCC);
+        if (sector == D_8009D7F4) {
+            if (D_8009D614 == sector) {
+                if (D_8009CEB8 < 0x800) {
+                    CdGetSector((void *)D_8009C590, D_8009CEB8 / 4);
+                    CdGetSector(D_8009D7D4, (0x800 - D_8009CEB8) / 4);
+                } else {
+                    CdGetSector((void *)D_8009C590, 0x200);
+                    D_8009CEB8 -= 0x800;
+                }
+                if (--D_8009D56C != 0) {
+                    D_8009D614++;
+                    D_8009C590 += 0x800;
+                } else {
+                    request = D_8009D3BC++;
+                    next = request->a;
+                    D_8009D614 = next;
+                    D_8009D56C = (u32)(request->b + 0x7FF) >> 11;
+                    D_8009CEB8 = request->b;
+                    D_8009C590 = request->c;
+                    if (next != 0) {
+                        if (next - D_8009D7F4 >= 0x13) {
+                            D_8009D7F4 = next;
+                            D_8009CD44 = 1;
+                            CdIntToPos(next, &D_8009CEBC);
+                            CdControlF(CdlSetloc, (u8 *)&D_8009CEBC);
+                            return;
+                        }
+                    } else {
+                        D_8009CD44 = 3;
+                        CdReadyCallback(NULL);
+                        CdControlF(CdlPause, NULL);
+                    }
+                }
+            }
+            D_8009D7F4++;
+            return;
+        }
+        D_8009CCA0++;
+        CdReadyCallback(NULL);
+        if (result[0] & 0x10) {
+            D_8009CD44 = 0xA;
+            D_8009CCA8++;
+            CdControlF(1, NULL);
+        } else {
+            D_8009CD44 = 0xB;
+            CdControlF(0x13, NULL);
+        }
+    } else {
+        D_8009CCA0++;
+        CdReadyCallback(NULL);
+        if (result[0] & 0x10) {
+            D_8009CD44 = 0xA;
+            D_8009CCA8++;
+            CdControlF(1, NULL);
+        } else {
+            D_8009CD44 = 0xB;
+            CdControlF(0x13, NULL);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096F18);
 
