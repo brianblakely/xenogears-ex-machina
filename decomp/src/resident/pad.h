@@ -20,6 +20,7 @@ typedef struct {
 } Actuator;
 
 extern PadBuffer D_800625FC[];
+extern u8 D_8005938C;
 extern u8 D_80059388;     /* kind of the last read controller */
 extern u16 D_800501E8[8]; /* button bits */
 extern u8 D_80050238[8];  /* button assignment */

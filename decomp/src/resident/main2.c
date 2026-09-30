@@ -574,19 +574,124 @@ u8 func_800358A0(s32 buttons) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800358BC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035C0C);
+/* Queued controller states (16 entries of the six state words). */
+extern u32 D_8005937C; /* queued count */
+extern u32 D_80059380; /* write index */
+extern u32 D_80059384; /* read index */
+extern s32 D_80050208; /* queue overflowed */
+extern u16 D_80059570;
+extern u16 D_80059574;
+extern u16 D_8005948C;
+extern u16 D_80059490;
+extern u16 D_800594A4;
+extern u16 D_800594A8;
+extern u16 D_8005A0FC[16];
+extern u16 D_8005A11C[16];
+extern u16 D_8005A13C[16];
+extern u16 D_8005A15C[16];
+extern u16 D_8005A17C[16];
+extern u16 D_8005A19C[16];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035CDC);
+/* Queue the current controller state (flag an overflow when full). */
+void func_80035C0C(void) {
+    s32 i;
 
-extern s32 D_8005937C;
+    if (D_8005937C < 16) {
+        D_8005937C++;
+        i = D_80059380 & 0xF;
+        D_8005A0FC[i] = D_80059570;
+        D_8005A11C[i] = D_80059574;
+        D_8005A13C[i] = D_8005948C;
+        D_8005A15C[i] = D_80059490;
+        D_8005A17C[i] = D_800594A4;
+        D_8005A19C[i] = D_800594A8;
+        D_80059380++;
+        return;
+    }
+    D_80050208 = 1;
+}
 
-s32 func_80035DA0(void) {
+/* Take the oldest queued controller state as the current one. Returns the
+ * count before, 0 when empty. */
+u32 func_80035CDC(void) {
+    u32 count = D_8005937C;
+    s32 i;
+
+    if (count == 0) {
+        return 0;
+    }
+    D_8005937C = count - 1;
+    i = D_80059384 & 0xF;
+    D_80059384++;
+    D_80059570 = D_8005A0FC[i];
+    D_80059574 = D_8005A11C[i];
+    D_8005948C = D_8005A13C[i];
+    D_80059490 = D_8005A15C[i];
+    D_800594A4 = D_8005A17C[i];
+    D_800594A8 = D_8005A19C[i];
+    return count;
+}
+
+/* Number of queued controller states. */
+u32 func_80035DA0(void) {
     return D_8005937C;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035DB0);
+extern s32 D_80050200;
+extern u16 D_800594DC;
+extern u16 D_800594E0;
+extern u16 D_800594E8;
+extern u16 D_800594EC;
+extern u16 D_800595C8;
+extern u16 D_800595CC;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035E44);
+/* Clear the controller queue and states. */
+void func_80035DB0(void) {
+    D_8005937C = 0;
+    D_80059380 = 0;
+    D_80059384 = 0;
+    D_80050208 = 0;
+    D_80050200 = 1;
+    D_800594EC = 0;
+    D_800594E8 = 0;
+    D_800594E0 = 0;
+    D_800594DC = 0;
+    D_800595CC = 0;
+    D_800595C8 = 0;
+    D_800594A8 = 0;
+    D_800594A4 = 0;
+    D_80059490 = 0;
+    D_8005948C = 0;
+    D_80059574 = 0;
+    D_80059570 = 0;
+}
+
+extern u8 D_800501F8; /* play time stopped at 100 hours */
+extern u8 D_80059370; /* frames */
+extern u8 D_80059418; /* seconds */
+extern u8 D_80059420; /* minutes */
+extern u8 D_80059484; /* hours */
+
+/* Advance the play time by one frame. */
+void func_80035E44(void) {
+    if (D_800501F8 == 0) {
+        if (++D_80059370 == 60) {
+            D_80059370 = 0;
+            D_80059418++;
+        }
+        if (D_80059418 == 60) {
+            D_80059418 = 0;
+            D_80059420++;
+        }
+        if (D_80059420 == 60) {
+            D_80059420 = 0;
+            D_80059484++;
+        }
+        if (D_80059484 == 100) {
+            D_800501F8 = 1;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035F1C);
 
@@ -642,9 +747,33 @@ void func_80036270(s32 port, u8 disabled) {
     D_8005A1BC[port].disabled = disabled;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036288);
+extern s32 D_80050204;
+extern s32 D_80059390;
+extern void func_80040828(u8 *buffer0, s32 size0, u8 *buffer1, s32 size1);
+extern void func_800408C4(void);
+extern void func_800405D4(s32 clear);
 
-extern u8 D_8005938C;
+/* Start the controllers and reset the queue, actuators and assignment. */
+void func_80036288(void) {
+    u8 *entry;
+    s32 i;
+
+    func_80040828((u8 *)&D_800625FC[0], 0x22, (u8 *)&D_800625FC[1], 0x22);
+    func_800408C4();
+    func_800405D4(0);
+    func_80035DB0();
+    func_8003611C();
+    D_80050204 = 0;
+    D_8005938C = 1;
+    D_80059390 = 0;
+    for (i = 7, entry = &D_80050238[7]; i >= 0; i--) {
+        *entry-- = i;
+    }
+    D_80050238[0] = 1;
+    D_80050238[2] = 3;
+    D_80050238[1] = 0;
+    D_80050238[3] = 2;
+}
 
 void func_8003633C(u8 value) {
     D_8005938C = value;
@@ -676,7 +805,32 @@ s32 func_80036410(void) {
     return D_80050208;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036420);
+/* Merge every queued controller state into the current one (or reset
+ * after an overflow). */
+void func_80036420(void) {
+    u16 s0, s1, s2, s3, s4, s5;
+
+    s0 = s1 = s2 = s3 = s4 = s5 = 0;
+
+    if (func_80036410() != 0) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC() != 0) {
+            s0 |= D_80059570;
+            s1 |= D_80059574;
+            s2 |= D_8005948C;
+            s3 |= D_80059490;
+            s4 |= D_800594A4;
+            s5 |= D_800594A8;
+        }
+    }
+    D_80059570 = s0;
+    D_80059574 = s1;
+    D_8005948C = s2;
+    D_80059490 = s3;
+    D_800594A4 = s4;
+    D_800594A8 = s5;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036528);
 
