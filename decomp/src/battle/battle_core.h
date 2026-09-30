@@ -667,6 +667,8 @@ extern u8 D_800D2D54[7]; /* panel maximum digits */
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode);
 void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
 void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
+void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page);
+void *func_80033784(u8 character, u8 id); /* a character text */
 
 /* A menu icon cell of the icon image (4 bytes, 800d2f68). */
 typedef struct {
