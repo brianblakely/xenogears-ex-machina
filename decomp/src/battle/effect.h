@@ -81,6 +81,44 @@ typedef struct {
     s16 step[3];  /* 0x6A */
 } ColorFade;
 
+/* A frame curve mapping time to a frame (800A3490-800A35C8, called without
+ * a prototype: time, divisor, base); negative ends the animation. */
+typedef s16 (*FrameCurve)();
+
+/* A row of three colours. */
+typedef struct {
+    u16 c[3];
+} ColorRow;
+
+/* An image animation (0x30 bytes): a VRAM rectangle whose pixels are rebuilt
+ * each time the curve selects another frame. */
+typedef struct ImageAnim {
+    struct ImageAnim *target; /* 0x00: image the frames are copied into */
+    u16 *pixels;              /* 0x04 */
+    u16 *pixels2;             /* 0x08 */
+    u16 *work;                /* 0x0C */
+    u8 mode;                  /* 0x10: 0/1 resident decoders, 4/5 fades */
+    u8 dirty;                 /* 0x11 */
+    s16 size;                 /* 0x12: pixel count */
+    u16 time;                 /* 0x14 */
+    u16 speed;                /* 0x16 */
+    u16 frame;                /* 0x18 */
+    u16 active;               /* 0x1A */
+    ColorRow *colors;         /* 0x1C */
+    s16 divisor;              /* 0x20 */
+    s16 base;                 /* 0x22 */
+    FrameCurve curve;         /* 0x24 */
+    RECT rect;                /* 0x28 */
+} ImageAnim;
+
+/* Resident image decoders. */
+void func_80026F44(s32 size, s32 frame, u16 *out, u16 *pixels);
+void func_80026FE8(s32 size, s32 frame, u16 *out, u16 *pixels2, u16 *pixels);
+
+void func_800A429C(ImageAnim *anim);
+void func_800A4348(ImageAnim *anim, s16 level);
+void func_800A43F8(ImageAnim *anim, s16 level);
+
 extern s32 D_80050100;
 
 s32 func_8003F8CC(s32 angle); /* cosine (4096 = 1.0) */ /* ordering-table depth shift */
