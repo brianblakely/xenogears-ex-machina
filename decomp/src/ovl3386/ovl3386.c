@@ -175,16 +175,17 @@ INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC110);
 
 /* Keep the actor at its held position and draw its sprite sixteen times in a
  * row, offset by the scroll (wrapped to the sprite's width). */
-#ifdef NON_MATCHING
 void func_801FC5C4(TaskNode *node) {
+    SVECTOR unused; /* allocated but never used */
     ScrollTask *scroll;
     Actor *actor;
     Bounds bounds;
     MATRIX matrix;
-    s32 position[3];
+    VECTOR position;
     s32 width, height;
     s32 count;
     s32 i, x;
+    SpriteCell *cells;
 
     scroll = node->object;
     actor = scroll->actor;
@@ -193,22 +194,20 @@ void func_801FC5C4(TaskNode *node) {
     actor->position[2] = scroll->position[2];
     count = func_801FC000(actor, &width, &height, &bounds);
     func_80022038(actor);
-    position[0] = actor->position[0] >> 16;
-    position[1] = actor->position[1] >> 16;
-    position[2] = actor->position[2] >> 16;
-    TransMatrix(&actor->sprite->matrix, position);
+    position.vx = actor->position[0] >> 16;
+    position.vy = actor->position[1] >> 16;
+    position.vz = actor->position[2] >> 16;
+    TransMatrix(&actor->sprite->matrix, &position);
     CompMatrix(&D_8004FBB8, &actor->sprite->matrix, &matrix);
     SetRotMatrix(&matrix);
     SetTransMatrix(&matrix);
     x = (s16)(scroll->scroll >> 16) % width - width;
+    cells = actor->sprite->cells;
     for (i = 0; i != 16; i++) {
-        func_801FC110(actor->sprite->cells, count, x, 0, actor);
+        func_801FC110(cells, count, x, 0, actor);
         x += width;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC5C4);
-#endif
 
 /* Opcode entry: hold `actor` where it is under the scrolling effect. */
 void func_801FC6FC(Actor *actor) {
