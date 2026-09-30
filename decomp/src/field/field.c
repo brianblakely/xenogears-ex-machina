@@ -3801,27 +3801,119 @@ void func_8009A1AC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A1E4);
+extern s32 D_8005A444[];
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A2A8);
+/* Face the actor of party slot operand 1. */
+void func_8009A1E4(void) {
+    s32 index;
+    FieldActor *other;
+    s16 facing;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A34C);
+    index = D_8005A444[EVENT_OPERAND_BYTE(1)];
+    if (index != 0xFF) {
+        other = D_800AFA64.descriptors[index].actor;
+        facing = -func_8004B32C(other->position[2].value - D_800B0078->position[2].value,
+                                other->position[0].value - D_800B0078->position[0].value) | 0x8000;
+        D_800B0078->unk104 = facing;
+        D_800B0078->unk106 = facing;
+    }
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A420);
+/* Face a selected actor. */
+void func_8009A2A8(void) {
+    s32 index;
+    FieldActor *other;
+    s16 facing;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A490);
+    index = func_8009CDB4(1);
+    if (index != 0xFF) {
+        other = D_800AFA64.descriptors[index].actor;
+        facing = -func_8004B32C(other->position[2].value - D_800B0078->position[2].value,
+                                other->position[0].value - D_800B0078->position[0].value) | 0x8000;
+        D_800B0078->unk104 = facing;
+        D_800B0078->unk106 = facing;
+    }
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A514);
+/* Blend the camera distance toward operand 1 over operand-3 frames. */
+void func_8009A34C(void) {
+    s32 step;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A534);
+    D_800AF930.steps = EVENT_OPERAND_BYTE(3);
+    if (D_800AF930.steps == 0) {
+        D_800AF930.steps++;
+        D_800B2174.camera_counter += 2;
+    }
+    step = -((D_800AF930.distance - func_800ACDEC(1)) << 16) / D_800AF930.steps;
+    D_800AF930.start = D_800AF930.distance << 16;
+    D_800AF930.flags |= 1;
+    D_800AF930.step = step;
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A58C);
+/* Blend the camera elevation toward `target` over `steps` frames. */
+void func_8009A420(s32 target, s32 steps) {
+    if (steps == 0) {
+        D_800B2174.camera_counter = 2;
+        steps = 1;
+    }
+    D_800AF930.elevation_steps = steps;
+    D_800AF930.elevation_value = (s16)D_800AF930.elevation << 16;
+    D_800AF930.flags |= 8;
+    D_800AF930.elevation_step = -(((s16)D_800AF930.elevation - target) << 16) / steps;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A5E0);
+/* Blend the camera elevation (selected operand 1, steps operand 3 & 0x7F). */
+void func_8009A490(void) {
+    func_8009A420(func_8009CF78(1, EVENT_OPERAND_BYTE(3)), EVENT_OPERAND_BYTE(3) & 0x7F);
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A634);
+/* Camera angle octant (0..7). */
+s32 func_8009A514(void) {
+    return (7 - ((D_800AF930.angle - 0x100) >> 9)) & 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A670);
+/* Store the camera angle octant in a variable. */
+void func_8009A534(void) {
+    s32 reference;
+
+    reference = func_800ACDB8(1) & 0xFFFF;
+    func_800A3074(reference, func_8009A514() & 0xFFFF);
+    D_800B0078->pc += 3;
+}
+
+/* Yield while any camera flag in operand byte 1 is set. */
+void func_8009A58C(void) {
+    if (!(D_800AF930.flags & EVENT_OPERAND_BYTE(1))) {
+        D_800B0078->pc += 2;
+        return;
+    }
+    D_800B00C0 = 1;
+}
+
+/* Yield while any camera flag in operand byte 1 is set (second opcode). */
+void func_8009A5E0(void) {
+    if (!(D_800AF930.flags & EVENT_OPERAND_BYTE(1))) {
+        D_800B0078->pc += 2;
+        return;
+    }
+    D_800B00C0 = 1;
+}
+
+/* Set camera heading block 0. */
+void func_8009A634(void) {
+    D_800AF930.heading_blocks[0] = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
+
+/* Set camera heading block 1. */
+void func_8009A670(void) {
+    D_800AF930.heading_blocks[1] = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A6AC);
 
