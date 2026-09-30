@@ -14,18 +14,18 @@
 
 /* Advance the effect one frame (two variants), fading it out after 100 or 24
  * frames. The empty loops over a 2x14x20 grid are left from removed work. */
-#ifdef NON_MATCHING
 void func_801FC000(TaskNode *node) {
     Burst *burst = node->object;
+    SVECTOR unused; /* allocated but never used (the removed work's) */
     s32 i, j, k;
 
     if (D_801FCE14 != 0) {
         burst->speed++;
-        burst->frame++;
         burst->angle += 0x80;
-        burst->twist += 0x40;
-        burst->trans.vz -= 0x1E;
         burst->angle += burst->speed >> 2;
+        burst->twist += 0x40;
+        burst->frame++;
+        burst->trans.vz -= 0x1E;
         if (burst->frame > 100) {
             burst->brightness -= 4;
         }
@@ -46,9 +46,6 @@ void func_801FC000(TaskNode *node) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC000);
-#endif
 
 /* Draw the captured screen's cells: each corner rises by the sine (variant
  * 1: of the angle plus its distance; otherwise the cosine of its distance)
