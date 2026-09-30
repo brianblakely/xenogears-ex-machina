@@ -420,19 +420,14 @@ s32 func_80023124(DVECTOR from, DVECTOR to) {
 }
 
 /* Show a frame with the given mirroring, restarting the frame countdown and step. */
-/* Nonmatching: same operations, different register allocation and scheduling of the two bitfield updates. */
-#ifdef NON_MATCHING
 void func_80023170(Sprite *sprite, s32 frame, s32 flip, s32 flip_y) {
     sprite->countdown = 0;
-    sprite->render.bits.flip_y = flip_y;
-    sprite->render.bits.flip = flip;
     sprite->frame_bits.phase = 0;
     sprite->frame_bits.step = 0;
+    sprite->render.bits.flip_y = flip_y;
+    sprite->render.bits.flip = flip;
     func_8001D2B0(sprite, frame);
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023170);
-#endif
 
 /* The first word of the section a block's fourth word locates. */
 s32 func_800231E0(s32 *block) {
@@ -445,8 +440,6 @@ s32 func_800231F8(s32 *block) {
 }
 
 /* Count down the frame timer once per displayed frame, running the next command when it expires. */
-/* Nonmatching: the original reads the countdown twice (lh to test, lhu to decrement), which GCC 2.7.2/2.6.3 do not reproduce here. */
-#ifdef NON_MATCHING
 void func_80023210(Sprite *sprite) {
     s32 i;
 
@@ -458,9 +451,6 @@ void func_80023210(Sprite *sprite) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023210);
-#endif
 
 /* Set a sprite's blend rate; type 8 and 9 sprites keep it one lower, the others recolour their parts. */
 void func_80023290(Sprite *sprite, s32 rate) {
