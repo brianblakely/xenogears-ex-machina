@@ -2371,7 +2371,42 @@ void func_80038EC0(u32 start, s32 size) {
     block->next = NULL;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038F18);
+/* Allocate `size` bytes of driver memory, cleared, from the first gap that
+ * fits (between blocks or after the last one). Returns the data or NULL
+ * (then the driver event stays disabled). */
+void *func_80038F18(s32 size) {
+    SoundBlock *block;
+    SoundBlock *new;
+    u32 need;
+    u32 limit;
+    u8 *data;
+
+    DisableEvent(D_800595BC);
+    need = ((size + 0xF) & ~0xF) + 0x10;
+    for (block = D_80059410; block->next != NULL; block = block->next) {
+        limit = (u32)block->next;
+        if (limit - block->end >= need) {
+            goto found;
+        }
+    }
+    limit = D_800595E4;
+    if (limit - block->end >= need) {
+    found:
+        new = (SoundBlock *)((block->end + 0xF) & ~0xF);
+        data = (u8 *)(new + 1);
+        new->end = (u32)(data + size);
+        new->next = NULL;
+        new->unk4 = 0;
+        new->flags = 2;
+        new->unk2 = 0;
+        new->next = block->next;
+        block->next = new;
+        EnableEvent(D_800595BC);
+        func_800392EC((u32 *)data, size);
+        return data;
+    }
+    return NULL;
+}
 
 /* Allocate `size` bytes of driver memory, cleared, from the highest gap
  * that fits (between blocks or after the last one). Returns the data or
