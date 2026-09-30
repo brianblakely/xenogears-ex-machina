@@ -1232,7 +1232,100 @@ void func_800981C8(Camera *camera) {
     }
 }
 
+/* Classify the 5x5 terrain blocks around the camera: test each block's
+ * quad for visibility, and its four quarters when partly visible; blocks
+ * near the camera are always visible. */
+#ifdef NON_MATCHING /* frame and structure match; the block pointer is spilled instead of an address */
+void func_800983A0(Camera *camera) {
+    s16 *block;
+    u32 *quarters;
+    u32 *always;
+    u32 visible;
+    s32 row;
+    s32 column;
+    s32 quadrant;
+    s16 result;
+    GridScratch *scratch;
+
+    scratch = GRID_SCRATCH;
+    GRID_SCRATCH->local = D_8009D534;
+    CompMatrix(&D_8009C808, &GRID_SCRATCH->local, &GRID_SCRATCH->world);
+    SetRotMatrix(&GRID_SCRATCH->world);
+    SetTransMatrix(&GRID_SCRATCH->world);
+    block = D_8009D618;
+    quarters = (u32 *)D_8009D650[0];
+    GRID_SCRATCH->x0 = -((camera->target.vx >> 12) & 0x7FF) - 0x1000;
+    GRID_SCRATCH->v[8].vy = 0;
+    GRID_SCRATCH->v[7].vy = 0;
+    GRID_SCRATCH->v[6].vy = 0;
+    GRID_SCRATCH->v[5].vy = 0;
+    GRID_SCRATCH->v[4].vy = 0;
+    GRID_SCRATCH->v[3].vy = 0;
+    GRID_SCRATCH->v[2].vy = 0;
+    GRID_SCRATCH->v[1].vy = 0;
+    GRID_SCRATCH->v[0].vy = 0;
+    GRID_SCRATCH->z0 = -((camera->target.vz >> 12) & 0x7FF) - 0x1000;
+    GRID_SCRATCH->v[0].vz = -GRID_SCRATCH->z0;
+    for (row = 0; row < 5; row++) {
+        scratch->v[0].vx = scratch->x0;
+        for (column = 0; column < 5; column++) {
+            scratch->v[1].vx = scratch->v[0].vx + 0x800;
+            scratch->v[2].vz = scratch->v[0].vz - 0x800;
+            scratch->v[1].vz = scratch->v[0].vz;
+            scratch->v[2].vx = scratch->v[0].vx;
+            scratch->v[3].vx = scratch->v[0].vx + 0x800;
+            scratch->v[3].vz = scratch->v[0].vz - 0x800;
+            result = func_800987AC(&scratch->v[0], &scratch->v[1], &scratch->v[2],
+                                   &scratch->v[3]);
+            *block = result;
+            if (result == 0) {
+                scratch->v[5].vz = scratch->v[0].vz - 0x400;
+                scratch->v[4].vx = scratch->v[0].vx + 0x400;
+                scratch->v[5].vx = scratch->v[0].vx;
+                scratch->v[6].vx = scratch->v[1].vx;
+                scratch->v[4].vz = scratch->v[0].vz;
+                scratch->v[7].vz = scratch->v[2].vz;
+                scratch->v[6].vz = scratch->v[5].vz;
+                scratch->v[7].vx = scratch->v[4].vx;
+                scratch->v[8].vx = scratch->v[4].vx;
+                scratch->v[8].vz = scratch->v[5].vz;
+                visible = func_800987AC(&scratch->v[0], &scratch->v[4], &scratch->v[5],
+                                        &scratch->v[8]) & 0xFFFF;
+                visible |= func_800987AC(&scratch->v[4], &scratch->v[1], &scratch->v[8],
+                                         &scratch->v[6]) << 16;
+                quarters[0] = visible;
+                visible = func_800987AC(&scratch->v[5], &scratch->v[8], &scratch->v[2],
+                                        &scratch->v[7]) & 0xFFFF;
+                visible |= func_800987AC(&scratch->v[8], &scratch->v[6], &scratch->v[7],
+                                         &scratch->v[3]) << 16;
+            } else {
+                visible = result & 0xFFFF;
+                visible |= visible << 16;
+                quarters[0] = visible;
+            }
+            quarters[1] = visible;
+            quarters += 2;
+            scratch->v[0].vx += 0x800;
+            block++;
+        }
+        scratch->v[0].vz -= 0x800;
+    }
+    quadrant = ((camera->target.vx >> 12) & 0x7FF) >= 0x400;
+    if (((camera->target.vz >> 12) & 0x7FF) >= 0x400) {
+        quadrant |= 2;
+    }
+    always = D_8009B7A8[quadrant][0];
+    quarters = (u32 *)D_8009D650[0];
+    for (row = 0; row < 25; row++) {
+        quarters[0] |= always[0];
+        quarters[1] |= always[1];
+        always += 2;
+        quarters += 2;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800983A0);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800987AC);
 
@@ -1372,7 +1465,69 @@ void func_80098CC0(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80098CC0);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009932C);
+/* Draw the visible 5x5 terrain blocks around the camera: all four quarters
+ * of a block, or only the quarters whose flag differs when the combined
+ * flags are all set. */
+void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
+    TerrainDrawScratch *scratch;
+    u8 *data;
+    s32 row;
+    s32 column;
+    s32 cell;
+    s16 all;
+
+    scratch = (TerrainDrawScratch *)0x1F800000;
+    for (column = 0; column < 0x40; column++) {
+        scratch->clut[column] = D_8009CCB4[column];
+    }
+    for (column = 0; column < 7; column++) {
+        scratch->tpage[column] = D_8009CD54[column];
+    }
+    scratch->local = D_8009D534;
+    CompMatrix(&D_8009C808, &scratch->local, &scratch->world);
+    SetRotMatrix(&scratch->world);
+    SetTransMatrix(&scratch->world);
+    scratch->x0 = -((camera->target.vx >> 12) & 0x7FF) - 0x1000;
+    cell = 0;
+    scratch->z0 = -((camera->target.vz >> 12) & 0x7FF) - 0x1000;
+    D_8009D7DC = 0;
+    scratch->corner[0].vz = -scratch->z0;
+    for (row = 0; row < 5; row++) {
+        scratch->corner[0].vx = scratch->x0;
+        for (column = 0; column < 5; column++, cell++, scratch->corner[0].vx += 0x800) {
+            if (D_8009D618[cell] != -1) {
+                data = D_8009C184[D_8009D570.cells[(row + D_8009C838.vz) * 9 + column + D_8009C838.vx]];
+                scratch->corner[3].vx = scratch->corner[1].vx = scratch->corner[0].vx + 0x400;
+                scratch->corner[1].vz = scratch->corner[0].vz;
+                scratch->corner[2].vx = scratch->corner[0].vx;
+                scratch->corner[3].vz = scratch->corner[2].vz = scratch->corner[0].vz - 0x400;
+                all = (u16)D_8009D650[cell][3] |
+                      ((u16)D_8009D650[cell][2] |
+                       ((u16)D_8009D650[cell][0] | (u16)D_8009D650[cell][1]));
+                if (all != -1) {
+                    func_80099708((u32 *)data, ot, packets + (D_8009D7DC << 5), &scratch->corner[0]);
+                    func_80099708((u32 *)(data + 0x144), ot, packets + (D_8009D7DC << 5), &scratch->corner[1]);
+                    func_80099708((u32 *)(data + 0x288), ot, packets + (D_8009D7DC << 5), &scratch->corner[2]);
+                    func_80099708((u32 *)(data + 0x3CC), ot, packets + (D_8009D7DC << 5), &scratch->corner[3]);
+                } else {
+                    if (D_8009D650[cell][0] != all) {
+                        func_80099708((u32 *)data, ot, packets + (D_8009D7DC << 5), &scratch->corner[0]);
+                    }
+                    if (D_8009D650[cell][1] != all) {
+                        func_80099708((u32 *)(data + 0x144), ot, packets + (D_8009D7DC << 5), &scratch->corner[1]);
+                    }
+                    if (D_8009D650[cell][2] != all) {
+                        func_80099708((u32 *)(data + 0x288), ot, packets + (D_8009D7DC << 5), &scratch->corner[2]);
+                    }
+                    if (D_8009D650[cell][3] != all) {
+                        func_80099708((u32 *)(data + 0x3CC), ot, packets + (D_8009D7DC << 5), &scratch->corner[3]);
+                    }
+                }
+            }
+        }
+        scratch->corner[0].vz -= 0x800;
+    }
+}
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
