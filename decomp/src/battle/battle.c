@@ -4,6 +4,7 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "menu_pages.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -5266,7 +5267,116 @@ void func_8008FDE4(void) {
     func_8008FC1C(0x20, 0x5C, 0xCC, 0x60, 0xE);
 }
 
+/* Build the item list page: (with `open`) set up the graphics block and the
+ * message frame, then render every list entry's two item names and their
+ * two-digit counts into VRAM text images (names at 0x380, digits at 0x3c0,
+ * one 13-line row per entry pair). Nonmatching: the digit image table
+ * address is hoisted out of the entry loop into $s4. */
+#ifdef NON_MATCHING
+void func_8008FE18(u8 column, u8 row, u8 open) {
+    u32 *images[32];
+    RECT nameRect;
+    RECT tensRect;
+    RECT onesRect;
+    RECT tens2Rect;
+    RECT ones2Rect;
+    RECT rect;
+    s32 unused[2];
+    u8 counts[48];
+    u8 ids[48];
+    s32 i;
+    s16 x;
+    s16 y;
+    u8 tens;
+    u32 *digit;
+    u32 **image;
+
+    if (open != 0) {
+        func_80077610();
+        func_80076EA4();
+        func_8008FC1C(0x20, 0x5C, 0xCC, 0x60, 0xE);
+    }
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    for (i = 0; i < 48; i++) {
+        ids[i] = D_800D2CE0[i];
+        counts[i] = D_800D2CB0[i];
+    }
+    for (i = 0; i < 32; i++) {
+        image = &images[i];
+        *image = (u32 *)func_8008AC00(0x1B);
+        bzero(*image, 0x30C);
+        y = (i / 2) * 13 + 0x100;
+        x = (i % 2) * 16;
+        nameRect.x = (i % 2) * 30 + 0x380;
+        nameRect.y = y;
+        nameRect.w = 30;
+        nameRect.h = 13;
+        tensRect.x = x + 0x3C0;
+        tensRect.y = y;
+        tensRect.w = 6;
+        tensRect.h = 13;
+        onesRect.x = x + 0x3C2;
+        onesRect.y = y;
+        onesRect.w = 6;
+        onesRect.h = 13;
+        tens2Rect.x = x + 0x3C4;
+        tens2Rect.y = y;
+        tens2Rect.w = 6;
+        tens2Rect.h = 13;
+        ones2Rect.x = x + 0x3C6;
+        ones2Rect.y = y;
+        ones2Rect.w = 6;
+        ones2Rect.h = 13;
+        if (ids[i] != 0) {
+            func_80034EAC(func_80033818(ids[i]), *image, 0x1B, 0);
+        }
+        if (ids[i + 16] != 0) {
+            func_80034EAC(func_80033818(ids[i + 16]), *image, 0x1B, 1);
+        }
+        func_800769E8(&nameRect, *image);
+        tens = counts[i] / 10;
+        if (tens != 0) {
+            digit = D_800C3E5C[tens];
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&tensRect, digit);
+        if (ids[i] != 0) {
+            digit = D_800C3E5C[(u8)(counts[i] % 10)];
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&onesRect, digit);
+        if ((u8)(D_800D2CC0[i] / 10) != 0) {
+            digit = D_800C3E5C[counts[i + 16] / 10];
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&tens2Rect, digit);
+        if (ids[i + 16] != 0) {
+            digit = D_800C3E5C[(u8)(counts[i + 16] % 10)];
+        } else {
+            digit = D_800D2DB0;
+        }
+        func_800769E8(&ones2Rect, digit);
+    }
+    for (i = 0; i < 32; i++) {
+        func_800320E8(images[i]);
+    }
+    func_800320E8(D_800D2DB0);
+    func_800716D8();
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008FE18);
+#endif
 
 /* Build nine glyph rows (0x66) from y + 0x64 into the +0xba8 primitives. */
 void func_8009023C(s32 y) {
@@ -5306,7 +5416,41 @@ void func_80090310(u8 column, u8 row) {
                   (index / 2) * 13, 0x10);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800904A0);
+/* Point the item page icon quads at the images for the item in list cell
+ * (column, row): its state icon (9 bit 0x4000, 7 bit 0x1000, else 8) and its
+ * level frame (12, 13 or 21 for levels 0-2), each with its CLUT. */
+void func_800904A0(u8 column, u8 row) {
+    u16 flags;
+    s32 icon;
+    u8 frame;
+
+    flags = D_800D2200[D_800D2CE0[row * 2 + column]].target;
+    if (flags & 0x4000) {
+        icon = 9;
+    } else {
+        icon = 8;
+        if (flags & 0x1000) {
+            icon = 7;
+        }
+    }
+    switch (flags & 0xF) {
+    case 0:
+        frame = 12;
+        break;
+    case 1:
+        frame = 13;
+        break;
+    case 2:
+        frame = 21;
+        break;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk320[D_800CCB04.buffer], 0xA8, 0x33, D_800D2F68[icon].u, D_800D2F68[icon].v,
+                  D_800D2F68[icon].w);
+    D_800C3EA4->unkA230->unk320[D_800CCB04.buffer].clut = D_800D2F68[icon].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk370[D_800CCB04.buffer], 0xD0, 0x33, D_800D2F68[frame].u,
+                  D_800D2F68[frame].v, D_800D2F68[frame].w);
+    D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
+}
 
 /* Render the name of the item in the list cell (column, row) into a text
  * image and place it on the graphics block's +0x280 quad. */
