@@ -1,6 +1,86 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007C3B8);
+/* Vehicle scene director: step through its timed sequence and run each cue (actor commands, sounds, fog). */
+s32 func_8007C3B8(s32 index) {
+    WorldmapActor *actor;
+    ActorScratch *scratch;
+
+    actor = &D_8009BE24[index];
+    scratch = (ActorScratch *)0x1F800000;
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = D_8009A4D8[actor->u.step];
+            actor->wait = D_8009A4E8[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 2:
+        func_80097770(2, 1);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 0xD);
+        func_80039E60((D_8006259C->id << 16) | 0xE);
+        func_80039E60((D_8006259C->id << 16) | 0xF);
+        break;
+    case 0x10:
+        scratch->position.vy = 0;
+        scratch->position.vx = D_8009BE28.target.vx >> 12;
+        scratch->position.vz = D_8009BE28.target.vz >> 12;
+        func_80089160(0x14, &scratch->position, NULL);
+        func_80039E60((D_8006259C->id << 16) | 0x10);
+        func_80039E60((D_8006259C->id << 16) | 0x11);
+        func_80039E60((D_8006259C->id << 16) | 0x12);
+        actor->state = 1;
+        break;
+    case 0x11:
+        func_80097770(2, 2);
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 1;
+        actor->state = 1;
+        D_8009D3CC = 0x40;
+        func_80039E60((D_8006259C->id << 16) | 0x13);
+        func_80039E60((D_8006259C->id << 16) | 0x14);
+        func_80039E60((D_8006259C->id << 16) | 0x15);
+        break;
+    case 0x12:
+        func_80097770(2, 3);
+        func_80097770(3, 1);
+        func_80097770(4, 1);
+        func_80097770(5, 1);
+        func_80097770(6, 1);
+        func_80097770(7, 1);
+        func_80097770(0, 0xC);
+        D_8009CCA4 = 1;
+        D_8009D3CC = 1;
+        actor->state = 1;
+        break;
+    case 0x13:
+        func_80097770(2, 4);
+        func_80097770(9, 1);
+        actor->state = 1;
+        break;
+    case 0x14:
+        func_80097770(2, 6);
+        func_80097770(3, 2);
+        func_80097770(9, 2);
+        actor->state = 1;
+        break;
+    case 0x16:
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 2;
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 0x40:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 1;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera close behind the player. */
 s32 func_8007C724(s32 index) {
