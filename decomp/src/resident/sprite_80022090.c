@@ -253,7 +253,7 @@ void func_80022B2C(Sprite *sprite) {
     if (!((sprite->render.word >> 26) & 1)) {
         func_800BA8F4(sprite);
         if (sprite->speed_y > 0 && sprite->word1c > 0) {
-            if (((s16 *)&sprite->y)[1] == sprite->ground) {
+            if (WHOLE(sprite->y) == sprite->ground) {
                 return;
             }
             sprite->y += func_80022CAC(sprite, sprite->speed_y >> 4) << 4;
@@ -361,8 +361,8 @@ void func_80022EB8(Task *task) {
     Sprite *sprite = task->data;
     SpriteTask *node = (SpriteTask *)task;
 
-    if (sprite->renderer != NULL && sprite->renderer->parts != NULL) {
-        func_80025180((u32)sprite->renderer->parts);
+    if (sprite->renderer != NULL && sprite->renderer->parts[0] != NULL) {
+        func_80025180((u32)sprite->renderer->parts[0]);
     }
     if ((sprite->render.word & 3) == 1 && sprite->renderer->pointer34 != NULL) {
         func_800320E8(sprite->renderer->pointer34);
@@ -383,10 +383,10 @@ void func_80022EB8(Task *task) {
 
 /* Replace a sprite renderer's part list with room for `count` parts. */
 void func_80022FC4(Sprite *sprite, s32 count, s32 from_top) {
-    if (sprite->renderer->parts != NULL) {
-        func_800320E8(sprite->renderer->parts);
+    if (sprite->renderer->parts[0] != NULL) {
+        func_800320E8(sprite->renderer->parts[0]);
     }
-    sprite->renderer->part_cursor = sprite->renderer->parts = func_80031BDC(count * 24, from_top);
+    sprite->renderer->parts[1] = sprite->renderer->parts[0] = func_80031BDC(count * 24, from_top);
 }
 
 /* Allocate a sprite sequencer's buffer of `count` words and store the image's
@@ -404,7 +404,7 @@ void func_800230A8(Sprite *sprite) {
         func_800320E8(((SpriteSequencer *)sprite->sequencer)->buffer);
     }
     func_8001D3F4(sprite);
-    func_800320E8(sprite->renderer->parts);
+    func_800320E8(sprite->renderer->parts[0]);
     func_800320E8(sprite);
 }
 
@@ -485,8 +485,8 @@ void func_80023290(Sprite *sprite, s32 rate) {
 
 /* Replace a sprite renderer's part list with room for `count` parts (from the heap bottom). */
 void func_80023340(Sprite *sprite, s32 count) {
-    func_800320E8(sprite->renderer->parts);
-    sprite->renderer->parts = sprite->renderer->part_cursor = func_80031BDC(count * 24, 0);
+    func_800320E8(sprite->renderer->parts[0]);
+    sprite->renderer->parts[0] = sprite->renderer->parts[1] = func_80031BDC(count * 24, 0);
 }
 
 /* Create a sprite task (with `extra` bytes after the sprite) under `owner`: its auxiliary node, default sprite and update/destroy callbacks. */
@@ -649,7 +649,7 @@ void func_80023804(Sprite *sprite) {
     sprite->render.bits.flip = 0;
     sprite->render.bits.flip_y = 0;
     sprite->render.bits.mode = 0;
-    sprite->render.bits.bit24 = 0;
+    sprite->render.bits.no_view = 0;
     sprite->render.bits.field16 = 0;
     sprite->flags &= ~0xFC;
     sprite->flags &= ~0x1F00;
@@ -679,7 +679,7 @@ void func_8002393C(SpriteRenderer *renderer) {
     renderer->angle_x = 0;
     renderer->angle_y = 0;
     renderer->angle_z = 0;
-    renderer->parts = NULL;
+    renderer->parts[0] = NULL;
 }
 
 void func_80023950(Sprite *sprite) {
@@ -708,7 +708,7 @@ void func_800239A0(Sprite *sprite) {
 void func_800239F4(Sprite *sprite) {
     sprite->renderer = (SpriteRenderer *)(sprite + 1);
     func_8002393C(sprite->renderer);
-    sprite->renderer->part_cursor = (SpritePart *)((u8 *)sprite + 0xF4);
+    sprite->renderer->parts[1] = (SpritePart *)((u8 *)sprite + 0xF4);
     sprite->renderer->pointer34 = NULL;
     sprite->renderer->next_pending = NULL;
 }
@@ -796,7 +796,7 @@ Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 he
     sprite->block = sprite;
     sprite->render.bits.mode = D_800591B8;
     sprite->render.bits.field16 = D_800591B8;
-    sprite->renderer->part_cursor = sprite->renderer->parts = func_80031BDC(func_8001EE74((u16 *)(block[2] + (s32)block)) * 24, 0);
+    sprite->renderer->parts[1] = sprite->renderer->parts[0] = func_80031BDC(func_8001EE74((u16 *)(block[2] + (s32)block)) * 24, 0);
     ((SpriteResource *)sprite->image)->origin.vx = width;
     ((SpriteResource *)sprite->image)->origin.vy = height;
     ((SpriteResource *)sprite->image)->origin.vz = x;
@@ -938,7 +938,29 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_8002
 void func_80025710(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80025718);
+/* Sprite task draw: rebuild the orientation if needed and, with a renderer
+ * block, place the model at the sprite's position (in view space unless
+ * render bit 24 is set) and draw it (8002c700) with the part list of the
+ * queue being filled. */
+void func_80025718(Task *task) {
+    MATRIX matrix;
+    VECTOR position;
+    Sprite *sprite = task->data;
+
+    func_80022038(sprite);
+    if (sprite->renderer->pointer34 != NULL) {
+        position.vx = WHOLE(sprite->x);
+        position.vy = WHOLE(sprite->y);
+        position.vz = WHOLE(sprite->z);
+        TransMatrix(&sprite->renderer->matrix, &position);
+        if (!sprite->render.bits.no_view) {
+            CompMatrix(&D_8004FBB8, &sprite->renderer->matrix, &matrix);
+        }
+        SetRotMatrix(&matrix);
+        SetTransMatrix(&matrix);
+        func_8002C700(sprite->renderer->pointer34, sprite->renderer->parts[D_800592F8], D_8005956C, ((u16 *)&sprite->flags)[1] & 4); /* flags bit 18, as a halfword */
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800257F0);
 

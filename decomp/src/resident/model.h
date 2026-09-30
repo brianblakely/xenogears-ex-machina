@@ -141,4 +141,6 @@ void func_8002DB84(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *normal); /* f
 s32 func_8002DDE4(s32 *images, s16 mode, s32 x, s32 y, s16 mode2, u16 x2, u16 y2); /* upload an image list */
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
+void func_8002C700(void *model, void *packets, s32 ot, s32 flags); /* draw primitive groups */
+
 #endif

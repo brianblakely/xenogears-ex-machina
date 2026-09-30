@@ -595,7 +595,7 @@ void func_8001F6B0(Sprite *sprite) {
     }
     size = ((SpriteImage *)sprite->image)->size;
     colour = *(u32 *)&sprite->red;
-    part = sprite->renderer->part_cursor;
+    part = sprite->renderer->parts[1];
     for (i = 0; i != (u8)sprite->flags >> 2; i++) {
         part[i].colour = colour;
         part[i].tpage = (part[i].tpage & 0xFF9F) | (blend << 5);

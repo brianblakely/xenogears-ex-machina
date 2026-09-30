@@ -28,6 +28,9 @@ typedef struct Task {
     struct Task *next;                   /* +0x18 */
 } Task;
 
+/* The whole part of a 16.16 coordinate, read as its high halfword. */
+#define WHOLE(v) (((s16 *)&(v))[1])
+
 /* Task lists: the main list runs first each frame, then the second list. */
 extern Task *D_8005958C;   /* main task list */
 extern Task *D_80059594;   /* second task list */
@@ -67,8 +70,7 @@ typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
     s16 scale_x, scale_y, scale_z; /* +0x6 */
     MATRIX matrix;                 /* +0xc: local screen matrix */
-    void *parts;                   /* +0x2c: 0x18 bytes per part */
-    SpritePart *part_cursor;       /* +0x30 */
+    SpritePart *parts[2];          /* +0x2c: two part lists (0x18 bytes per part); 80025718 draws the one of the queue being filled */
     SpriteRendererEntry *pointer34; /* +0x34: 8 entries */
     struct Sprite *next_pending;   /* +0x38 */
     s8 offset_x;                   /* +0x3c: screen offset, before scaling */
@@ -104,7 +106,7 @@ typedef struct Sprite {
         unsigned unknown8 : 8;
         unsigned field16 : 4;
         unsigned mode : 4;       /* resource binding mode (80022224) */
-        unsigned bit24 : 1;
+        unsigned no_view : 1;    /* drawn without the view matrix */
         unsigned unknown25 : 3;
         unsigned dirty : 1;      /* orientation needs rebuilding */
         unsigned unknown29 : 3;
