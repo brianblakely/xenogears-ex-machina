@@ -5704,7 +5704,81 @@ void func_80095BAC(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095D4C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096018);
+/* Chance roll (attacker +0x60 or the descriptor's +0x1c, by +0x18), then the
+ * amount by the descriptor's kind +0x1a: target HP / power, HP - 1, the
+ * attacker's missing HP, EP * 10, 1, HP, the maximum HP (capped at 9999)
+ * or the target's down state (gears refuse it). */
+void func_80096018(void) {
+    u8 chance;
+
+    switch (D_800C3DFC->chanceSource) {
+    case 0:
+        chance = D_800C3E00->pilot.field60;
+        break;
+    case 1:
+        chance = D_800C3DFC->field1C;
+        break;
+    }
+    if (chance < rand() % 100) {
+        D_800C34B0->resultCode[D_800C3E50] = 6;
+        return;
+    }
+    D_800C34B0->resultCode[D_800C3E50] = 0;
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp / D_800C3DFC->power;
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.hp / D_800C3DFC->power;
+        }
+        break;
+    case 1:
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2DC8->hp - 1;
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.hp - 1;
+        }
+        break;
+    case 2:
+        if (D_800C34B0->records[D_800C3E04].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2D6C->maxHp - D_800D2D6C->hp;
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E00->pilot.maxHp - D_800C3E00->pilot.hp;
+        }
+        break;
+    case 3:
+        D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.ep * 10;
+        break;
+    case 4:
+        D_800C34B0->damage[D_800C3E50] = 1;
+        break;
+    case 5:
+        D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.hp;
+        break;
+    case 6:
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        if (D_800CCCE8.records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->damage[D_800C3E50] = D_800D2DC8->maxHp;
+            if (D_800D2DC8->maxHp >= 10000) {
+                D_800D2DC8->maxHp = 9999;
+            }
+        } else {
+            D_800C34B0->damage[D_800C3E50] = D_800C3E34->pilot.maxHp;
+            if (D_800C3E34->pilot.maxHp >= 10000) {
+                D_800C3E34->pilot.maxHp = 9999;
+            }
+        }
+        break;
+    case 7:
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            D_800C34B0->resultCode[D_800C3E50] = 6;
+            return;
+        }
+        D_800C3E34->pilot.status7C |= 1;
+        D_800C3E34->pilot.status80 |= 1;
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096494);
 
