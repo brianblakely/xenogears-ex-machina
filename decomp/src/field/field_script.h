@@ -38,4 +38,6 @@ extern u16 D_800C3A32;
 extern u16 D_800C3A34;
 extern s32 D_800ADB70; /* movie requested */
 
+extern void func_800379C8(char *format, ...); /* resident debug print */
+
 #endif

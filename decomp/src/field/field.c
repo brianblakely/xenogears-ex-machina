@@ -7729,7 +7729,16 @@ void func_800984EC(void) {
     D_800B0078->pc += 8;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800985BC);
+/* Event 0x74 (debug): print variable op1 unless 800c268c is set. */
+void func_800985BC(void) {
+    s32 value;
+
+    if (D_800C268C == 0) {
+        value = func_800A3018(func_800ACDB8(1) & 0xFFFF);
+        func_800379C8("DEB=%xh %d \n", value, value);
+    }
+    D_800B0078->pc += 3;
+}
 
 /* Store the planar length of (x2 - x1, z2 - z1) from selected operands in
  * a variable. */
