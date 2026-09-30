@@ -28,6 +28,8 @@ u32 D_80059184;
 s32 D_80059188;
 s32 D_8005918C;
 Sprite *D_80059190;
+s16 D_80059194; /* texture area row (0-2) of the next image */
+s16 D_80059196; /* texture area column of the next image */
 Task *D_800594C0;
 Task *D_8005958C;
 Task *D_80059590;
@@ -549,7 +551,27 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001EE88);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F1D4);
 
+/* Reserve `width` columns of the sprite texture area (three 64-line rows from
+ * (0x300, 0x140), 0x40 columns each) and return their position. */
+/* Nonmatching: the original copies the width argument to $a3 and stores the column after the result copy. */
+#ifdef NON_MATCHING
+DVECTOR func_8001F530(s32 width) {
+    DVECTOR position;
+
+    if (D_80059196 + width > 0x40) {
+        D_80059196 = 0;
+        if (++D_80059194 >= 3) {
+            D_80059194 = 0;
+        }
+    }
+    position.vx = D_80059196 + 0x300;
+    position.vy = D_80059194 * 64 + 0x140;
+    D_80059196 += width;
+    return position;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F530);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F5BC);
 
@@ -559,7 +581,19 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F750);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F8E8);
 
+/* Unpack and upload the image at 8004fbd8 to (x, y). */
+/* Nonmatching: the original keeps x in $s1 and the image in $s0; GCC swaps them. */
+#ifdef NON_MATCHING
+void func_8001FAB4(s32 x, s32 y) {
+    void *image = func_80032E88(D_8004FBD8, 0);
+
+    func_8002DDE4(image, 1, x, y, 0, 0, 0);
+    DrawSync(0);
+    func_800320E8(image);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FAB4);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FB30);
 

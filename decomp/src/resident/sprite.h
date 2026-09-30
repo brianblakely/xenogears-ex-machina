@@ -148,6 +148,7 @@ extern s32 D_8005956C[];
 
 /* The view matrix sprites are placed with (80024ff4 sets it). */
 extern MATRIX D_8004FBB8;
+extern u8 D_8004FBD8[]; /* packed image uploaded by 8001fab4 */
 extern void (*D_8004FD40[])(Task *); /* task update callbacks by kind */
 void func_8001CD64(Task *task, void (*update)(Task *));
 void func_8001CA58(Task *owner, Task *node);

@@ -34,6 +34,7 @@ typedef struct {
 
 extern RenderPacket *D_80059424;
 
+void func_8002DDE4(void *image, s32 mode, s32 x, s32 y, s32 a4, s32 a5, s32 a6); /* upload an image */
 u8 *func_8002DFE0(void); /* the shared unpack buffer */
 
 #endif
