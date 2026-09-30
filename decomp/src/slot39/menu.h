@@ -240,12 +240,27 @@ typedef struct MenuEffect {
 
 /* A character record of the game data (D_8006D8A0; gears follow from 11). */
 typedef struct CharRecord {
-    u8 pad0[0x4C];
+    u8 pad0[0x4];
+    u8 level; /* 4 */
+    u8 pad5[0x17];
+    u8 unk1C; /* 1C */
+    u8 pad1D[0xB];
+    u8 bonus[8]; /* 28: equipment bonuses of the base values (58) */
+    u8 pad30[0x1C];
     u16 hp; /* 4C */
     u16 hpMax; /* 4E */
-    u8 pad50[0xB];
+    u8 pad50[0x6];
+    u8 unk56; /* 56 */
+    u8 pad57[0x1];
+    u8 unk58; /* 58 */
+    u8 unk59; /* 59 */
+    u8 unk5A; /* 5A */
     u8 unk5B; /* 5B */
-    u8 pad5C[0x6];
+    u8 unk5C; /* 5C */
+    u8 pad5D[0x1];
+    u8 unk5E; /* 5E */
+    u8 unk5F; /* 5F */
+    u8 pad60[0x2];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
     u8 pad64[0xB];
@@ -277,7 +292,8 @@ typedef struct MenuTables {
     u8 unkB4; /* B4 */
     u8 padB5[0x3];
     u16 shown[6]; /* B8: stats shown on the equipment screen */
-    u8 padC4[0x8];
+    u16 unkC4; /* C4 */
+    u8 padC6[0x6];
 } MenuTables;
 
 /* A gear record of the game data (D_8006DFAC). */

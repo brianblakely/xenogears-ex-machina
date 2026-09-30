@@ -3180,7 +3180,46 @@ void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E36D4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3A80);
+/* Compute character `id`'s shown stats: base values plus equipment bonuses
+ * (the first from the level, scaled 6/10 with +1c for kind 4), capped at
+ * 250, 99 or 16. */
+void func_801E3A80(MenuTables *tables, u8 id) {
+    CharRecord *chara;
+
+    chara = &D_8006D8A0[id];
+    if (chara->unk56 == 4) {
+        tables->shown[0] = (chara->level + chara->unk1C) * 6 / 10;
+    } else {
+        tables->shown[0] = chara->level + (chara->unk58 + chara->bonus[0]);
+    }
+    tables->shown[1] = chara->unk5E + chara->bonus[6];
+    tables->shown[2] = chara->bonus[5] + (chara->unk59 + chara->bonus[1]);
+    tables->shown[3] = chara->unk5F + chara->bonus[7];
+    tables->shown[4] = chara->unk5B + chara->bonus[3];
+    tables->shown[5] = chara->unk5C + chara->bonus[4];
+    tables->unkC4 = chara->unk5A + chara->bonus[2];
+    if (tables->shown[0] >= 251) {
+        tables->shown[0] = 250;
+    }
+    if (tables->shown[1] >= 100) {
+        tables->shown[1] = 99;
+    }
+    if (tables->shown[2] >= 251) {
+        tables->shown[2] = 250;
+    }
+    if (tables->shown[3] >= 100) {
+        tables->shown[3] = 99;
+    }
+    if (tables->shown[4] >= 251) {
+        tables->shown[4] = 250;
+    }
+    if (tables->shown[5] >= 251) {
+        tables->shown[5] = 250;
+    }
+    if (tables->unkC4 >= 21) {
+        tables->unkC4 = 16;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3C2C);
 
