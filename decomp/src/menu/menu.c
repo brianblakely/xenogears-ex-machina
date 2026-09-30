@@ -618,7 +618,62 @@ u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
     return (low & 0x7F) | ((flag << 7) & 0x80) | (top << 24) | ((middle << 8) & 0xFFFF00);
 }
 
+#ifdef NON_MATCHING
+/* Start a line segment of a key between two positions for the current
+ * owner (once per key and owner), with the given texture column, linked to
+ * the segment started on the previous frame.
+ * Does not match: loads are scheduled ahead of the original statement order. */
+void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
+    Sparkle *sparkle;
+    Sparkle *other;
+    PolyFT4 *prim;
+    s32 i;
+
+    for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active && sparkle->u.line.key == key && sparkle->u.line.owner == D_800928E8) {
+            return;
+        }
+    }
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active) {
+            break;
+        }
+    }
+    if (i == SPARKLE_COUNT) {
+        return;
+    }
+    sparkle->frame_count = 7;
+    sparkle->type = 2;
+    sparkle->active = 1;
+    sparkle->frame = 0;
+    sparkle->x = from->vx;
+    sparkle->y = from->vy;
+    sparkle->u.line.owner = D_800928E8;
+    sparkle->z = from->vz;
+    sparkle->u.line.x = to->vx;
+    sparkle->u.line.y = to->vy;
+    prim = sparkle->prim;
+    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
+    prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
+    sparkle->u.line.key = key;
+    sparkle->u.line.prev = NULL;
+    sparkle->u.line.stamp = D_800926A4;
+    sparkle->u.line.z = to->vz;
+    prim->tpage = D_80092694;
+    prim->clut = D_800926A0;
+    prim->code &= ~1;
+    sparkle->prim[1] = *prim;
+    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+        if (other->active && other->u.line.key == key && other != sparkle && other->type == 2 &&
+            other->u.line.stamp == (u16)(D_800926A4 - 1)) {
+            sparkle->u.line.prev = other;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CD44);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CF78);
 
