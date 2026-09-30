@@ -574,7 +574,30 @@ s32 func_8008B498(s32 index) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B54C);
+/* Create party member 2's model sprite at the saved world-map position. */
+s32 func_8008B54C(s32 index) {
+    WorldmapActor *actor;
+    s16 heading;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x1800);
+    ((s32 *)actor->handle)[15] &= ~4;
+    actor->position.vx = D_8006EE54.x << 12;
+    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    heading = D_8006EE54.heading;
+    actor->unk24 = 1;
+    actor->unk4A = 8;
+    actor->state = 2;
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->unk58 = 0xF;
+    actor->unk48 = heading;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B644);
 
@@ -598,7 +621,30 @@ s32 func_8008BD1C(s32 index) {
     return result;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BDD0);
+/* Create party member 3's model sprite at the saved world-map position. */
+s32 func_8008BDD0(s32 index) {
+    WorldmapActor *actor;
+    s16 heading;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x1800);
+    ((s32 *)actor->handle)[15] &= ~4;
+    actor->position.vx = D_8006EE54.x << 12;
+    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    heading = D_8006EE54.heading;
+    actor->unk24 = 1;
+    actor->unk4A = 8;
+    actor->state = 2;
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->unk58 = 0x1E;
+    actor->unk48 = heading;
+    return 1;
+}
 
 /* Step the actor towards its target (x, z in world units) at half its
  * speed; bit 0/1 of the result report x/z arrival. */
