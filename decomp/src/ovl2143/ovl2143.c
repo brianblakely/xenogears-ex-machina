@@ -1,10 +1,97 @@
 #include "ovl2143.h"
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC22C);
+/* Relocate a model group and list its model records (0x38 bytes each after the
+ * 0x10-byte header) in a new block. */
+ModelList *func_801DC22C(u8 *group, ModelList *list) {
+    u32 count;
+    u32 i;
+
+    func_80032498(4, 0);
+    count = func_8002C3E8(group);
+    list->models = func_80031BDC(count * 4, 0);
+    list->count = count;
+    if (list->models != NULL) {
+        for (i = 0; i < count; i++) {
+            list->models[i] = group + 0x10 + i * 0x38;
+        }
+    }
+    return list;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC2D0);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC5C0);
+/* Recompose a hierarchy's matrices: the root's world matrix from its rotation
+ * and position, its local one scaled by `scale`; each other node's local
+ * matrix from its rotation when flagged and its world matrix from its parent
+ * when it or its parent changed. Returns the node count. */
+u32 func_801DC5C0(ModelPart *parts, s32 scale) {
+    MATRIX *scaling = (MATRIX *)0x1F800000;
+    ModelPart *part;
+    s32 product;
+    u32 count;
+    u32 i;
+
+    part = parts;
+    count = part->count;
+    part->world.t[0] = part->pos[0];
+    part->world.t[1] = part->pos[1];
+    part->world.t[2] = part->pos[2];
+    if (part->yxz) {
+        func_8004A92C(&part->rot, &part->world);
+    } else {
+        func_8003F738(&part->rot, &part->world);
+    }
+    product = scale * parts->scale[0];
+    product >>= 12;
+    scaling->m[0][0] = product;
+    scaling->m[0][1] = 0;
+    scaling->m[0][2] = 0;
+    scaling->m[1][0] = 0;
+    product = scale * parts->scale[1];
+    product >>= 12;
+    scaling->m[1][1] = product;
+    scaling->m[1][2] = 0;
+    scaling->m[2][0] = 0;
+    scaling->m[2][1] = 0;
+    product = scale * parts->scale[2];
+    product >>= 12;
+    scaling->m[2][2] = product;
+    func_8004920C(&parts->world, scaling, &parts->local);
+    parts->local.t[0] = parts->world.t[0];
+    parts->local.t[1] = parts->world.t[1];
+    parts->local.t[2] = parts->world.t[2];
+
+    for (i = 1; i < count; i++) {
+        parts++;
+        if (parts->rotate) {
+            if (parts->yxz) {
+                func_8004A92C(&parts->rot, &parts->local);
+                parts->rotate = 0;
+            } else {
+                func_8003F738(&parts->rot, &parts->local);
+                parts->rotate = 0;
+            }
+        }
+        if (parts->parent != NULL && parts->parent->dirty == 1) {
+            parts->dirty = 1;
+        }
+        if (parts->dirty) {
+            parts->local.t[0] = parts->pos[0];
+            parts->local.t[1] = parts->pos[1];
+            parts->local.t[2] = parts->pos[2];
+            if (parts->parent != NULL) {
+                func_8004931C(&parts->parent->world, &parts->local, &parts->world);
+            } else {
+                parts->world = parts->local;
+            }
+        }
+    }
+    for (i = 1; i < count; i++) {
+        part++;
+        part->dirty = 0;
+    }
+    return count;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC848);
 
