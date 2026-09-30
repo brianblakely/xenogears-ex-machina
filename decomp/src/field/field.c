@@ -1304,8 +1304,6 @@ void func_80090DEC(void) {
     D_800B0078->pc += 7;
 }
 
-u32 func_80099A04(s32 dx, s32 dy, s32 dz);
-s32 func_80099A4C(s32 dx, s32 dz);
 
 /* Derive a scripted heading, pitch and zoom from point A looking at point B
  * and store them in three variables. */
@@ -1322,7 +1320,7 @@ void func_80090E70(void) {
     b.vx.value = D_800AF920.vx.value;
     b.vy.value = D_800AF920.vy.value;
     b.vz.value = D_800AF920.vz.value;
-    zoom = (s32)func_80099A04((b.vx.value - a.vx.value) >> 16, (b.vy.value - a.vy.value) >> 16,
+    zoom = func_80099A04((b.vx.value - a.vx.value) >> 16, (b.vy.value - a.vy.value) >> 16,
                               (b.vz.value - a.vz.value) >> 16) / 2;
     D_800AF930.scripted_scale = 0x1000;
     heading = ((-func_8004B32C(a.vz.value - b.vz.value, a.vx.value - b.vx.value) & 0xFFFF) - 0x400) & 0xFFF;
@@ -3697,31 +3695,111 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098CAC);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099214);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099980);
+/* Turn-move in mode 0 at the default speed. */
+void func_80099980(void) {
+    D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    if (func_80099AC0(0xFFFF) == 0) {
+        D_800B0078->pc += 6;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099A04);
+/* Length of (dx, dy, dz). */
+s32 func_80099A04(s32 dx, s32 dy, s32 dz) {
+    VECTOR v;
+    VECTOR squares;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099A4C);
+    v.vx.value = dx;
+    v.vy.value = dy;
+    v.vz.value = dz;
+    func_8004A414(&v, &squares);
+    return func_80048C4C(squares.vx.value + squares.vy.value + squares.vz.value);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099A8C);
+/* Length of (dx, dz). */
+s32 func_80099A4C(s32 dx, s32 dz) {
+    VECTOR v;
+    VECTOR squares;
+
+    v.vx.value = dx;
+    v.vy.value = dz;
+    v.vz.value = 0;
+    func_8004A414(&v, &squares);
+    return func_80048C4C(squares.vx.value + squares.vy.value);
+}
+
+/* Absolute value through the GTE square and square root. */
+s32 func_80099A8C(s32 x) {
+    VECTOR v;
+    VECTOR squares;
+
+    v.vx.value = x;
+    func_8004A414(&v, &squares);
+    return func_80048C4C(squares.vx.value);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099AC0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099EF8);
+/* Store the current actor's unkE4 in a variable. */
+void func_80099EF8(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, D_800B0078->unkE4);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099F48);
+/* Store the controlled actor's unkE4 in a variable. */
+void func_80099F48(void) {
+    FieldActor *player;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80099FC4);
+    player = D_800AFA64.descriptors[D_800B226C].actor;
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, player->unkE4);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A024);
+/* Store the current actor's facing octant in a variable. */
+void func_80099FC4(void) {
+    func_800A3074(func_800ACDB8(1) & 0xFFFF, (((D_800B0078->unk106 + 0x100) >> 9) + 2) & 7);
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A0FC);
+/* Store a selected descriptor's translation x, z, y in three variables. */
+void func_8009A024(void) {
+    s32 index;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A130);
+    index = func_8009CDB4(1);
+    if (index != 0xFF) {
+        func_800A3074(func_800ACDB8(2) & 0xFFFF, D_800AFA64.descriptors[index].transform.t[0]);
+        func_800A3074(func_800ACDB8(4) & 0xFFFF, D_800AFA64.descriptors[index].transform.t[2]);
+        func_800A3074(func_800ACDB8(6) & 0xFFFF, D_800AFA64.descriptors[index].transform.t[1]);
+    }
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A174);
+/* Set the current actor's unkE6 from an operand byte. */
+void func_8009A0FC(void) {
+    D_800B0078->unkE6 = EVENT_OPERAND_BYTE(1);
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A1AC);
+/* Clear layer flag 0x1000000 and set unkEA from an operand byte. */
+void func_8009A130(void) {
+    D_800B0078->layer_flags &= ~0x1000000;
+    D_800B0078->unkEA = EVENT_OPERAND_BYTE(1);
+    D_800B0078->pc += 2;
+}
+
+/* As func_8009A130, also clearing layer flag 0x10000. */
+void func_8009A174(void) {
+    func_8009A130();
+    D_800B0078->layer_flags &= ~0x10000;
+}
+
+/* Once layer flag 0x10000 is set, set unkEA to 0xFF and advance. */
+void func_8009A1AC(void) {
+    if (D_800B0078->layer_flags & 0x10000) {
+        D_800B0078->unkEA = 0xFF;
+        D_800B0078->pc += 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A1E4);
 

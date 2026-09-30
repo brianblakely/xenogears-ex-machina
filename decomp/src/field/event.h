@@ -50,7 +50,12 @@ typedef struct FieldActor {
     s32 target[3];       /* 0D0: move target x, y, z */
     u8 unk0DC[0x0E2 - 0x0DC];
     u8 unkE2;            /* 0E2 */
-    u8 unk0E3[0x0EE - 0x0E3];
+    u8 unk0E3[0x0E4 - 0x0E3];
+    s16 unkE4;           /* 0E4 */
+    s16 unkE6;           /* 0E6 */
+    u8 unk0E8[0x0EA - 0x0E8];
+    s16 unkEA;           /* 0EA */
+    u8 unk0EC[0x0EE - 0x0EC];
     s16 unkEE;          /* 0EE */
     u8 unk0F0[0xFC - 0x0F0];
     u8 color0[3];       /* 0FC */
@@ -249,6 +254,8 @@ s32 func_8009D154(s32 offset, s32 flags); /* bit 0x01 */
 extern s32 D_800AFC7C;              /* batch limit */
 
 void func_80072254(s32 index);    /* reapply a descriptor's rotation */
+s32 func_80099A04(s32 dx, s32 dy, s32 dz); /* vector length */
+s32 func_80099A4C(s32 dx, s32 dz);         /* planar length */
 void func_80085634(s32 a, s32 b);
 
 #define EVENT_OPERAND_BYTE(offset) (D_800ADC00[D_800B0078->pc + (offset)])

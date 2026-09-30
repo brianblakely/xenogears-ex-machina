@@ -45,7 +45,9 @@ MATRIX *func_8004931C(MATRIX *a, MATRIX *b, MATRIX *out); /* compose */
 void func_80049EFC(MATRIX *m);                             /* set rotation */
 void func_80049F8C(MATRIX *m);                             /* set translation */
 s32 func_8004A64C(SVECTOR *v, DVECTOR *xy, s32 *p, s32 *flag); /* project */
-s32 func_8004B32C(s32 y, s32 x);                           /* atan2 */
+s32 func_8004B32C(s32 y, s32 x);
+VECTOR *func_8004A414(VECTOR *v, VECTOR *squares);          /* square each */
+s32 func_80048C4C(s32 value);                              /* square root */                           /* atan2 */
 s32 func_8003F8B0(s32 angle);                              /* trig */
 s32 func_8003F8CC(s32 angle);                              /* trig */
 
