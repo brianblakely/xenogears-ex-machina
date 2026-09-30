@@ -186,7 +186,8 @@ typedef struct {
     s16 unk26;
     VECTOR position; /* 0x28 */
     VECTOR motion;   /* 0x38 */
-    s32 unk48;
+    s16 heading;  /* 0x48 */
+    s16 turn;     /* 0x4A: turn step */
     s32 handle;   /* 0x4C */
     union {
         s16 *script; /* script position */
@@ -783,5 +784,159 @@ typedef struct {
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
 extern SVECTOR D_8009A674[]; /* flight path start per entry */
 void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b);
+/* worldmap_80094A5C, 8008C364, 8008E190 */
+
+/* Stream reader: disc read requests (sector, bytes, destination) and
+ * host-file requests (name, offset, bytes, destination), sorted by position. */
+
+extern EffectCommand3 *volatile D_8009D3BC; /* next disc request (shared with the CD callbacks) */
+extern s32 D_8009BE48, D_8009CCB0, D_8009CCA8, D_8009CCA0;
+extern s32 D_8009D7F4, D_8009D614, D_8009CEB8, D_8009C590;
+extern u32 D_8009D56C; /* sectors left */
+extern s32 D_8009BCCC[3]; /* sector header */
+
+#include "psyq/libcd.h"
+extern CdlLOC D_8009CEBC; /* request position */
+
+void func_80096A6C(s32 status, u8 *result);
+void func_80096C0C(s32 status, u8 *result);
+void func_8009699C(EffectCommand3 *request);
+void func_800966CC(EffectCommand4 *request);
+s32 func_800968E0(void);
+
+void CdSyncCallback(void (*func)(s32 status, u8 *result));
+void CdReadyCallback(void (*func)(s32 status, u8 *result));
+s32 CdControlF(u8 com, u8 *param);
+void CdGetSector(void *dest, s32 words);
+s32 PCopen(char *name, s32 flags, s32 perms);
+s32 PCclose(s32 fd);
+s32 func_8004C398(s32 fd, void *buffer, s32 size); /* PCread */
+
+/* Scratchpad matrices of the angle and camera helpers. */
+#define SCRATCH_MATRIX_A ((MATRIX *)0x1F8000F0)
+#define SCRATCH_MATRIX_B ((MATRIX *)0x1F800110)
+#define SCRATCH_MATRIX_C ((MATRIX *)0x1F800130)
+#define SCRATCH_MATRIX_D ((MATRIX *)0x1F800150)
+#define SCRATCH_SVECTOR ((SVECTOR *)0x1F8000A0)
+#define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
+
+MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out);
+MATRIX *func_8004AFEC(s32 angle, MATRIX *m); /* RotMatrixY */
+MATRIX *func_8004AE4C(s32 angle, MATRIX *m); /* RotMatrixX */
+MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
+
+/* Camera placement: eye, target and up direction. */
+typedef struct {
+    SVECTOR eye;
+    SVECTOR target;
+    VECTOR up;
+} LookAt;
+
+/* Scratchpad work area of the look-at camera. */
+typedef struct {
+    VECTOR work;
+    VECTOR right;
+    VECTOR up;
+    VECTOR forward;
+    SVECTOR eye;
+    MATRIX view;
+} LookAtScratch;
+
+#define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
+
+void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
+VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v, VECTOR *out);
+MATRIX *TransMatrix(MATRIX *m, VECTOR *t);
+VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
+
+/* Actor slot entry points (kind: start, update: step); they return the
+ * next command. */
+typedef s32 (*ActorFunc)(s32 index);
+
+/* Terrain streaming origin (world units, wrapped to the map) and the block
+ * cell the camera is in. */
+#define TERRAIN_ORIGIN (*(VECTOR *)D_8009BBB4)
+extern SVECTOR D_8009C838; /* block cell */
+
+/* Terrain palettes: 64 CLUT ids (two 256-colour palettes faded in 32 steps
+ * towards the background colour) and seven texture pages. */
+extern u16 D_8009CCB4[0x40];
+extern u16 D_8009CD54[7];
+
+void func_8002DD20(void *image); /* upload an image file */
+void StoreImage(RECT *rect, void *data);
+void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour);
+
+/* 9x9 terrain blocks around the camera: block numbers, row-major. */
+typedef struct {
+    s16 cells[81];
+} BlockGrid;
+
+extern BlockGrid D_8009D570; /* current */
+extern BlockGrid D_8009D318; /* previous */
+
+extern s8 D_8009C588[8];
+
+s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode);
+s32 func_80094088(VECTOR *position, VECTOR *direction, VECTOR *out);
+
+s32 func_800289D0(s32 file); /* first sector of a disc file */
+s32 func_80028998(s32 file); /* host path of a file */
+s32 func_8009623C(s32 a, s32 b, s32 c);
+s32 func_800962B0(s32 a, s32 b, s32 c, s32 d);
+s32 func_80096328(void);
+s32 func_800965A4(void);
+
+extern s16 D_800523F0[0x1000][2]; /* PsyQ rcossin_tbl: sine, cosine */
+void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (assembly) */
+
+/* Model instance returned by func_80024524 (actor handle). */
+typedef struct {
+    u8 pad0[0x3C];
+    s32 flags; /* 0x3C: 4 hidden */
+} ModelInstance;
+
+/* Parked vehicle state (world units), per party slot. */
+typedef struct {
+    u16 flags; /* 0x3FFF part >= 0x400: parked on the map */
+    u16 x;
+    u16 z;
+} VehicleSpot;
+
+extern VehicleSpot D_8006EF8E[3];
+extern VECTOR D_8009C5AC;
+
+void func_8008C28C(WorldmapActor *actor, s32 member);
+
+/* Recent positions of the player's vehicle (ring of 32). */
+typedef struct {
+    VECTOR position;
+    u16 heading;
+    u16 pad;
+} TrailPoint;
+
+extern TrailPoint D_8009CEC4[32];
+extern s16 D_8009D154; /* trail index */
+
+MATRIX *func_8004ABBC(SVECTOR *angle, MATRIX *m); /* rotation matrix from angles */
+extern s32 D_8009C5A8; /* arrival kind */
+void func_8008E034(VECTOR *position);
+
+/* Movement probe: the scratchpad position a move is tested at. */
+#define SCRATCH_PROBE ((VECTOR *)0x1F800060)
+
+extern u16 D_8009D718[]; /* probe hits: object pairs */
+
+s16 func_80084D00(s32 probe, s16 *hit);
+s32 func_80085418(VECTOR *probe, s32 radius, u16 object, u16 other);
+void func_80093354(VECTOR *position);
+
+extern s16 D_8009BBAC[4]; /* grid corner cells */
+/* Parked vehicle headings and the flying vehicle's heading: scalars inside
+ * D_8006EE54 (unk5A-unk5E, vehicle_heading) that some vehicle starts address
+ * as separate variables. */
+extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E, D_8006EE66;
+
+s32 func_80093978(s32 x, s32 z); /* ground height at a position */
 
 #endif
