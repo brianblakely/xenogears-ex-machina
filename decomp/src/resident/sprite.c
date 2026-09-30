@@ -577,10 +577,8 @@ void func_8001F5BC(Sprite *sprite, s32 unused, s32 *width, s32 *height, s32 *dep
 
 /* Recolour a one-sided sprite's parts: the sprite's colour word and blend
  * mode (its blend rate - 1). */
-/* Nonmatching: same instructions; the original numbers its registers differently (sprite in $t1, part in $a0). */
-#ifdef NON_MATCHING
 void func_8001F6B0(Sprite *sprite) {
-    SpriteImageSize size;
+    SpriteImageSize size; /* copied, unused */
     SpritePart *part;
     u32 colour;
     s32 blend;
@@ -589,21 +587,18 @@ void func_8001F6B0(Sprite *sprite) {
     if ((sprite->render.word & 3) != 1) {
         return;
     }
-    blend = (sprite->render.word >> 5) & 7;
+    blend = sprite->render.bits.blend;
     if (blend != 0) {
         blend--;
     }
     size = ((SpriteImage *)sprite->image)->size;
-    colour = *(u32 *)&sprite->red;
     part = sprite->renderer->parts[1];
+    colour = *(u32 *)&sprite->red;
     for (i = 0; i != (u8)sprite->flags >> 2; i++) {
         part[i].colour = colour;
         part[i].tpage = (part[i].tpage & 0xFF9F) | (blend << 5);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001F6B0);
-#endif
 
 /* Apply the control bytes of frame `frame`'s parts: for each part, bytes
  * with bit 7 set precede it; with bit 6 they set entry (bits 0-2) of the
