@@ -315,7 +315,71 @@ void func_800739B8(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073B04);
 
+/* Initialise the overlay picture quad (both buffers), its texture page, eight
+ * red Gouraud triangles and 64 small tiles. */
+#ifdef NON_MATCHING /* x3 store addressed from the copy base register */
+void func_80073E30(void) {
+    PolyG3 *triangle;
+    Tile *tile;
+    s32 i;
+
+    setPrimLen(&D_8009C5C0[0], 9);
+    D_8009C5C0[0].code = 0x2C;
+    D_8009C5C0[0].x0 = 0xD0;
+    D_8009C5C0[0].y0 = 0x78;
+    D_8009C5C0[0].x1 = 0x137;
+    D_8009C5C0[0].y1 = 0x78;
+    D_8009C5C0[0].x2 = 0xD0;
+    D_8009C5C0[0].y2 = 0xD7;
+    D_8009C5C0[0].x3 = 0x137;
+    D_8009C5C0[0].y3 = 0xD7;
+    D_8009C5C0[0].u0 = 0;
+    D_8009C5C0[0].v0 = 0x80;
+    D_8009C5C0[0].u1 = 0x7F;
+    D_8009C5C0[0].v1 = 0x80;
+    D_8009C5C0[0].u2 = 0;
+    D_8009C5C0[0].v2 = 0xFF;
+    D_8009C5C0[0].u3 = 0x7F;
+    D_8009C5C0[0].v3 = 0xFF;
+    D_8009C5C0[0].r0 = 0x80;
+    D_8009C5C0[0].g0 = 0x80;
+    D_8009C5C0[0].b0 = 0x80;
+    D_8009C5C0[0].tpage = GetTPage(0, 0, 0x380, 0x100);
+    D_8009C5C0[0].clut = GetClut(0x100, 0x1FE);
+    SetSemiTrans(&D_8009C5C0[0], 1);
+    D_8009C5C0[1] = D_8009C5C0[0];
+    SetDrawTPage(&D_8009C5A0, 1, 0, GetTPage(0, 1, 0x380, 0x100));
+    triangle = D_8009C664;
+    for (i = 0; i < 8; i++) {
+        ((u8 *)triangle)[3] = 6;
+        triangle->code = 0x30;
+        triangle->r0 = 0xFF;
+        triangle->g0 = 0x40;
+        triangle->b0 = 0x40;
+        triangle->r1 = 0;
+        triangle->g1 = 0;
+        triangle->b1 = 0;
+        triangle->r2 = 0;
+        triangle->g2 = 0;
+        triangle->b2 = 0;
+        SetSemiTrans(triangle, 1);
+        triangle++;
+    }
+    tile = D_8009C898;
+    for (i = 0; i < 0x40; i++) {
+        ((u8 *)tile)[3] = 3;
+        tile->code = 0x60;
+        tile->r0 = 0x80;
+        tile->g0 = 0x80;
+        tile->b0 = 0x10;
+        tile->w = 2;
+        tile->h = 2;
+        tile++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073E30);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800740B8);
 

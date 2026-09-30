@@ -867,4 +867,44 @@ typedef struct {
     SVECTOR view;     /* 0xA0: swap space */
 } CameraScratch;
 
+/* Gouraud triangle packet (PsyQ POLY_G3 layout). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+} PolyG3;
+
+/* Flat rectangle packet (PsyQ TILE layout). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 w, h;
+} Tile;
+
+typedef struct {
+    u32 tag;
+    u32 code[1];
+} DR_TPAGE;
+
+void SetDrawTPage(DR_TPAGE *p, s32 dfe, s32 dtd, s32 tpage);
+
+extern PolyFT4 D_8009C5C0[2]; /* overlay picture, per buffer */
+extern DR_TPAGE D_8009C5A0;
+extern PolyG3 D_8009C664[8];
+extern Tile D_8009C898[0x40];
+
+/* PsyQ primitive tag view (libgpu P_TAG). */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+    u8 r0, g0, b0, code;
+} P_TAG;
+
+#define setPrimLen(p, n) (((P_TAG *)(p))->len = (n))
+
 #endif
