@@ -6,6 +6,9 @@
 /* Scratchpad work area of the scene drawing. */
 typedef struct {
     Vector camera; /* 0x00: camera position of this frame */
+    u8 unk10[0x8];
+    SVector from;  /* 0x18: line end points relative to the camera */
+    SVector to;    /* 0x20 */
 } SceneScratch;
 
 #define SCENE_SCRATCH ((SceneScratch *)0x1F800000)
@@ -233,7 +236,7 @@ void func_80085134(s32 side);
 void *func_800289D0(s32 index);
 void func_8002954C(void *entry, void *dst, s32 size, s32 a3, s32 a4);
 
-void func_8007E3CC(void *arg);
+void func_8007E3CC(u32 *ot);
 Glyph *func_8007E8AC(s32 ch);
 s32 func_8007E964(s32 ch);
 s32 func_8007EB6C(u8 *text);

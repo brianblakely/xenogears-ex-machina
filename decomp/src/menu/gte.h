@@ -37,6 +37,9 @@
                      : "r"(r0), "r"(r1)                                        \
                      : "memory")
 
+/* Store the second-last screen Z (SZ2). */
+#define gte_stsz1(r0) __asm__ volatile("swc2 $18, 0(%0)" : : "r"(r0) : "memory")
+
 /* Store MAC1-MAC3 as a 32-bit vector. */
 #define gte_stlvnl(r0)                                                         \
     __asm__ volatile("swc2 $25, 0(%0);"                                        \

@@ -1620,7 +1620,38 @@ void func_8007E31C(Vector *from, Vector *to, Color *color) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007E3CC);
+/* Project this frame's queued 3D line segments (relative to the camera in
+ * the scratchpad) and link each into the ordering table by depth. */
+void func_8007E3CC(u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    SceneLine *line = D_80094818;
+    s32 cx = scratch->camera.vx;
+    s32 cy = scratch->camera.vy;
+    s32 cz = scratch->camera.vz;
+    s32 i;
+    s32 z;
+    u32 prev;
+    u32 addr;
+
+    for (i = 0; i < D_800926B4; i++, line++) {
+        scratch->from = line->from;
+        scratch->to = line->to;
+        scratch->from.vx -= cx;
+        scratch->from.vy -= cy;
+        scratch->from.vz -= cz;
+        scratch->to.vx -= cx;
+        scratch->to.vy -= cy;
+        scratch->to.vz -= cz;
+        gte_ldv01(&scratch->from, &scratch->to);
+        gte_rtpt();
+        gte_stsxy01(&line->line.x0, &line->line.x1);
+        gte_stsz1(&z);
+        prev = ot[z >> 4];
+        addr = (u32)line & 0xFFFFFF;
+        ot[z >> 4] = addr;
+        *(u32 *)addr = prev | 0x03000000;
+    }
+}
 
 /* Set the scene state, playing sound 0x24 when state 10 starts from 0. */
 void func_8007E528(s32 state) {
