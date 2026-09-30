@@ -1,6 +1,41 @@
+/* Battle setup module (overlay slot 2615, directory 12 file 4, loaded at
+ * 0x801E4000 by the resident battle entry 8001bbac together with the effect
+ * header and archive files 2 and 3). It places the formation, builds the
+ * combatant records and turn tables, sets up the stage, gauges and intro,
+ * and runs as the battle's setup task (801e5840 phases, 801e7098 task). */
 #include "battle_setup.h"
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4048);
+
+/* Clear the battle outcome flags, publish the party ids and reset every
+ * slot's flags (demo battles place everyone alone). */
+void func_801E4048(void) {
+    s32 i;
+
+    D_800D3338 = 0;
+    D_800C3D44 = 0;
+    D_800D2D50 = 0;
+    D_800D2FC4 = 0;
+    D_800C3D5C = 0;
+    D_800D2D44 = 0;
+    D_800C492A = 0;
+    D_8005941C = 0;
+    D_8005942C = 0;
+    for (i = 0; i < 3; i++) {
+        D_80059468[i] = D_800D2D24[i];
+        D_800C3EB4[i].id = D_800D2D24[i];
+    }
+    for (i = 0; i < SLOT_COUNT; i++) {
+        D_800C3EB4[i].flag3 = 0;
+        if (D_800D3294 == 0) {
+            D_800C3EB4[i].alone = D_8006F8E5[i];
+        } else {
+            D_800C3EB4[i].alone = 1;
+        }
+        D_800C3EB4[i].flag5 = 0;
+    }
+    D_800C48EA = 0;
+    D_800D2DC0 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4160);
 
@@ -8,7 +43,56 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4870);
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4AC0);
 
+/* Build the battle item lists from the inventory (counts capped at 99, empty
+ * slots cleared) and the special item list from ids 50..72. */
+#ifdef NON_MATCHING
+void func_801E4CD0(void) {
+    s32 i;
+    u8 *count;
+    u8 listed;
+    u32 id;
+
+    for (i = 0; i < BATTLE_ITEMS; i++) {
+        D_800D2CE0[i] = 0;
+        D_800D2CB0[i] = 0;
+        D_800D2FE4[i] = 0;
+    }
+    for (i = 0, count = D_8006F5C4; i < INVENTORY_SLOTS; i++) {
+        if (*count >= 100) {
+            *count = 99;
+        }
+        if (*count++ == 0) {
+            D_8006F65A[i] = 0;
+        }
+    }
+    listed = 0;
+    for (i = 0; i < INVENTORY_SLOTS && listed < BATTLE_ITEMS; i++) {
+        id = D_8006F65A[i];
+        if (id != 0 && id < 49) {
+            D_800D2CE0[listed] = id;
+            D_800D2CB0[listed] = D_8006F5C4[i];
+            D_800D2FE4[listed] = D_8006F65A[i];
+            listed++;
+        }
+    }
+    D_800C3EAC->last_item = 47;
+    listed = 0;
+    for (i = 0; i < 100; i++) {
+        id = D_8006F3D0[i];
+        if ((u32)(id - 50) < 23) {
+            D_800C3D70[listed] = id;
+            D_800D3688[listed] = D_8006F36C[i];
+            listed++;
+        }
+    }
+    for (; listed < BATTLE_ITEMS; listed++) {
+        D_800C3D70[listed] = 0;
+        D_800D3688[listed] = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4CD0);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E4E7C);
 
@@ -16,19 +100,61 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5014);
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5384);
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5840);
+/* Run one battle setup phase: 0 the party, 1 the formation and combatant
+ * records, 2 the items, turn timers and turn tables, 3 the gauges and texts. */
+void func_801E5840(u8 phase) {
+    switch (phase) {
+    case 0:
+        func_801E5384();
+        break;
+    case 1:
+        func_801E4048();
+        func_801E4160();
+        func_801E4870();
+        func_801E4AC0();
+        break;
+    case 2:
+        func_801E4CD0();
+        func_801E4E7C();
+        func_801E5014();
+        D_800C3E24 = func_8008ABB8(0xEC, 0);
+        func_8003F8E8(D_800C3E24, 0xEC);
+        break;
+    case 3:
+        func_801E6290();
+        func_801E62B8();
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5924);
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5D2C);
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5E78);
+/* Render the ten battle messages 0-9 into text images. */
+void func_801E5E78(void) {
+    s32 unused[2]; /* an 8-byte local the original frame reserves */
+    s32 i;
+
+    for (i = 0; i < 10; i++) {
+        D_800C3E5C[i] = func_8008AC00(4);
+        func_80034EAC(func_800338D8(i), D_800C3E5C[i], 2, 0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5EE8);
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E6290);
+/* Setup phase 3, first frame: the gauge panels and each member's glyphs. */
+void func_801E6290(void) {
+    func_801E5924();
+    func_801E5EE8();
+}
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E62B8);
+/* Setup phase 3, second frame: the panel backdrops and the message images. */
+void func_801E62B8(void) {
+    func_801E5D2C();
+    func_801E5E78();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E62E0);
 
@@ -66,7 +192,26 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7210);
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7914);
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7EC4);
+/* Register the stage actors and light entries; clear each light's active
+ * flag. Without lights both pointers are cleared. */
+void func_801E7EC4(void *actors, StageLight *lights, s32 count) {
+    s32 unused[1]; /* an 8-byte local the original frame reserves */
+    s32 i;
+
+    D_800D3344 = actors;
+    D_800D39CC = lights;
+    D_800D3348 = count;
+    D_800D2F64 = 1;
+    if (lights != NULL) {
+        for (i = 0; i < D_800D3348; i++) {
+            D_800D39CC[i].active = 0;
+        }
+    }
+    if (count == 0) {
+        D_800D3344 = NULL;
+        D_800D39CC = NULL;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E7F4C);
 
