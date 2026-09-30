@@ -5110,7 +5110,7 @@ void func_8008083C(s32 index) {
     if (index < D_800ADBFC) {
         actor = D_800AF880.components.descriptors[index].actor;
         if (actor->unk134 & 0x80) {
-            func_800320E8(actor->unk110);
+            func_800320E8(actor->link);
         }
         if (actor->state.word & 0x1000) {
             func_800320E8(actor->unk114);
@@ -5609,7 +5609,133 @@ s32 func_800825AC(s32 from, s32 to) {
     return func_80099A4C(to_x - from_x, to_z - from_z);
 }
 
+#ifdef NON_MATCHING
+/* An actor's additive motion before it moves: the terrain push and conveyor
+ * of the floor it stands on, the platform it rides and its gear layer's
+ * drift. */
+void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
+    u32 terrain;
+    VECTOR conveyor;
+    VECTOR slope;
+    VECTOR normal;
+    VECTOR unused;
+    SVECTOR turn;
+    FieldModel *model;
+    FieldActor *platform;
+    LayerObject **entry;
+    s32 push_x;
+    s32 push_z;
+    s32 speed;
+    s32 limit;
+    s32 self_x;
+    s32 self_z;
+    s32 other_x;
+    s32 other_z;
+    s32 radius;
+    s32 angle;
+
+    push_x = 0;
+    push_z = 0;
+    terrain = 0;
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1) && D_800B2078.party_processing_mode == 0) {
+        terrain = actor->unk014;
+    }
+    model = descriptor->model;
+    func_8007B614(&conveyor, D_800ADFC4[(terrain >> 9) & 3],
+                  (D_800ADFA8[(terrain >> 11) & 7] + (u16)D_800B2078.terrain_angle) & 0xFFF);
+    if (!(actor->flags & 0x41800)) {
+        speed = actor->unkF0;
+        if (terrain & 0x420000) {
+            slope.vx = -(actor->unk50[0] * actor->unk50[1]) >> 15;
+            slope.vy = 0;
+            slope.vz = -(actor->unk50[2] * actor->unk50[1]) >> 15;
+            if (slope.vx == 0) {
+                slope.vx = 1;
+            }
+            slope.vy = 1;
+            if (slope.vz == 0) {
+                slope.vz = 1;
+            }
+            func_80048D7C(&slope, &normal);
+            if (normal.vx == 0) {
+                normal.vx = 1;
+            }
+            if (normal.vy == 0) {
+                normal.vy = 1;
+            }
+            if (normal.vz == 0) {
+                normal.vz = 1;
+            }
+            push_x = normal.vx * (speed >> 17) << 4;
+            push_z = normal.vz * (speed >> 17) << 4;
+            limit = 0xC;
+            if (terrain & 0x400000) {
+                limit = 0x18;
+            }
+            if ((actor->unkF0 >> 16) >= limit) {
+                actor->unkF0 = limit << 16;
+            } else {
+                actor->unkF0 += model->unk1C;
+            }
+            model->velocity[1] = actor->unkF0 >> 1;
+        }
+        if (terrain & 0x400000) {
+            actor->unk40[0] += push_x;
+            actor->unk40[2] += push_z;
+            actor->heading |= 0x8000;
+        }
+        if (actor->unk074 != 0xFF) {
+            goto linked;
+        }
+        if (terrain & 0x20000) {
+            actor->unk40[0] += push_x;
+            actor->unk40[2] += push_z;
+        }
+        if (!(terrain & 0x8000)) {
+            goto conveyed;
+        }
+    } else if (!(terrain & 0x4000)) {
+        goto conveyed;
+    }
+    actor->unk40[0] += conveyor.vx;
+    actor->unk40[1] += conveyor.vy;
+    actor->unk40[2] += conveyor.vz;
+conveyed:
+    if (actor->unk074 != 0xFF) {
+    linked:
+        if ((D_800AF880.components.descriptors[actor->unk074].actor->layer_flags & 0xC0) == 0xC0) {
+            if (!(actor->unk134 & 0x80)) {
+                actor->link = func_80031BDC(sizeof(PlatformLink), 0);
+                actor->unk134 |= 0x80;
+            }
+            turn.vx = D_800AF880.components.descriptors[actor->unk074].rotation.vx - actor->link->rotation.vx;
+            angle = turn.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy - actor->link->rotation.vy;
+            turn.vz = D_800AF880.components.descriptors[actor->unk074].rotation.vz - actor->link->rotation.vz;
+            actor->link->rotation.vy = D_800AF880.components.descriptors[actor->unk074].rotation.vy;
+            self_x = actor->position[0];
+            self_z = actor->position[2];
+            platform = D_800AF880.components.descriptors[actor->unk074].actor;
+            other_x = platform->position[0];
+            other_z = platform->position[2];
+            if (!(actor->heading & 0x8000)) {
+                actor->link->radius = func_800825AC(index, actor->unk074);
+            }
+            radius = actor->link->radius;
+            angle = (s16)ratan2(other_z - self_z, other_x - self_x) - angle - 0x800;
+            actor->unk40[0] += other_x + func_8003F8CC(angle) * radius * 16 - self_x;
+            actor->unk40[2] += other_z + func_8003F8B0(angle) * radius * 16 - self_z;
+        }
+    }
+    if ((actor->layer_flags & 0x22000) == 0x22000) {
+        entry = (LayerObject **)&D_801E8670[D_800AF858];
+        actor->unk40[0] -= (((*entry)->speed_x << 16) / (u16)actor->unk76) << 8;
+        actor->unk40[2] -= (((*entry)->speed_z << 16) / (u16)actor->unk76) << 8;
+        D_800AF858++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082620);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082BB8);
 

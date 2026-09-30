@@ -60,6 +60,17 @@ typedef struct {
 extern FieldHistory D_800B14F0[32];
 extern s32 D_800C3910; /* history reset */
 
+/* An actor's link to the platform it rides (actor +110, 12 bytes). */
+typedef struct PlatformLink {
+    SVECTOR rotation; /* 0: platform rotation last frame */
+    s16 radius;       /* 8: distance to the platform */
+    s16 unkA;
+} PlatformLink;
+
+extern s16 D_800ADFC4[4]; /* terrain push speeds */
+extern u16 D_800ADFA8[8]; /* terrain push angles */
+extern s32 func_800825AC(s32 from, s32 to);
+
 /* The per-actor motion stages of the field update (8008110c). */
 extern s32 D_800AF858;
 extern void func_800815F0(void);

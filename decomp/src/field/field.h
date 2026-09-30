@@ -122,7 +122,7 @@ typedef struct FieldActor {
     s16 unk0EA;          /* 0EA */
     s16 unkEC;           /* 0EC */
     s16 unkEE;           /* 0EE */
-    u8 unk0F0[4];
+    s32 unkF0;           /* 0F0: 16.16 push speed */
     s16 scale[3];        /* 0F4 */
     u8 unk0FA[2];
     u8 color0[3];        /* 0FC */
@@ -135,7 +135,7 @@ typedef struct FieldActor {
     u8 sound_volume;     /* 10C */
     u8 sound_mode;       /* 10D: 0xff off */
     u8 unk10E[0x110 - 0x10E];
-    void *unk110;        /* 110 */
+    struct PlatformLink *link; /* 110: linked platform state (allocated) */
     void *unk114;        /* 114 */
     s32 *list;           /* 118 */
     u16 unk11C;          /* 11C */
