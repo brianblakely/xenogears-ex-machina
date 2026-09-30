@@ -775,6 +775,9 @@ extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
 extern u8 D_801E9778;    /* a card message is pending */
+extern s32 D_801E9788[3]; /* arts screen window sizes per kind */
+extern s32 D_801E9794[3];
+extern s32 D_801E97A0[3];
 extern u8 D_801E9785;    /* the target panels are allocated */
 extern MenuAnchor D_801EA054[]; /* target panel layouts: x and y anchors */
 extern MenuAnchor D_801EA098[];
@@ -1004,6 +1007,7 @@ u16 func_801C865C(u16 flags, u8 bit);
 void func_801DA5BC(s32 row);
 void func_801DC3D8(u8 slot, u8 kind);
 void func_801DCE60(u8 slot, u8 row, u8 kind);
+void func_801DD790(u8 slot, s32 row, u8 kind);
 void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear);
 void func_801DA9A8(s32 entry, s32 row);
 void func_801DB39C(u8 mode);
@@ -1023,7 +1027,7 @@ u8 func_801DBE54(void);
 void func_801DC2CC(u8 kind);
 void func_801DE36C(void);
 void func_801DE400(void);
-void func_801DDF24(u8 slot, u8 arg1, s32 arg2);
+void func_801DDF24(u8 slot, u8 zoom, u8 kind);
 u8 func_801DE29C(u8 slot, u8 arg1);
 void func_801E05D0(u8 slot, u8 arg1, s32 arg2);
 u8 func_801E0F78(u8 slot, u8 arg1);

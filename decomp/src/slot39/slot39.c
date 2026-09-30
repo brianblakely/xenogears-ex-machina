@@ -3815,7 +3815,102 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD790);
 #endif
 
+#ifdef NON_MATCHING
+/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table (the
+ * original's is at 801c512c, only 4-aligned). */
+/* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
+ * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
+ * one for kind 2), the selected art's description; confirm uses a usable
+ * art, 9/10 switch party members, cancel leaves. `zoom` first zooms in. */
+void func_801DDF24(u8 slot, u8 zoom, u8 kind) {
+    s32 cursor;
+    s32 cursorShown;
+    u8 slotShown;
+    u8 windows;
+    u8 running;
+
+    windows = 1;
+    cursor = 0;
+    cursorShown = 0xff;
+    slotShown = 0xff;
+    running = 1;
+    func_801DC1D4(kind);
+    func_801DB02C(0);
+    do {
+        func_801C7BF4();
+        if (slot != slotShown) {
+            func_801DC3D8(slot, kind);
+            slotShown = slot;
+            cursorShown = 0xff;
+        }
+        func_801DB0A8(cursor, 0, 2, 0);
+        if (cursor != cursorShown) {
+            func_801DCE60(slot, cursor, kind);
+            cursorShown = cursor;
+        }
+        if (windows) {
+            func_801D397C(6, 0x10, 0xa, D_801E9788[kind], 0x70, 0, 1, 4, 0);
+            func_801D397C(5, 0xc, 0x86, 0xac, 0x38, 0, 1, 4, 0);
+            func_801D397C(4, D_801E9794[kind], 0xa6, D_801E97A0[kind], 0x18, 0, 1, 4, 0);
+            func_801D397C(3, 0xc8, 0x86, 0x50, 0x18, 0, 1, 4, 0);
+            windows = 0;
+            if (zoom) {
+                func_801D1E80();
+                func_801D29A8(0, 0);
+                func_801C7BF4();
+            }
+            D_800625A0->party->redraw6 = 0;
+            D_800625A0->party->unk20[1] = 0;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            if (D_800625A0->block430->shown[cursor] & 0x80) {
+                func_801DD790(slot, cursor, kind);
+                slotShown = 0xff;
+                cursorShown = 0xff;
+            }
+            break;
+        case 5:
+            running = 0;
+            break;
+        case 0:
+            if (kind != 2) {
+                if (++cursor >= 12) {
+                    cursor = 11;
+                }
+            }
+            break;
+        case 2:
+            if (kind != 2) {
+                if (--cursor < 0) {
+                    cursor = 0;
+                }
+            }
+            break;
+        case 1:
+            if (cursor + 2 < 12) {
+                cursor += 2;
+            }
+            break;
+        case 3:
+            if (cursor - 2 >= 0) {
+                cursor -= 2;
+            }
+            break;
+        case 9:
+            slot = func_801D9704(slot, 0, kind);
+            break;
+        case 10:
+            slot = func_801D9704(slot, 1, kind);
+            break;
+        }
+    } while (running);
+    func_801E8044(8, D_800625A0->party->unk38);
+    func_801DB340(0);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DDF24);
+#endif
 
 /* Run the 801ddf24 screen for party slot `slot`; always continues the menu. */
 u8 func_801DE29C(u8 slot, u8 arg1) {
