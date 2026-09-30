@@ -80,7 +80,7 @@ typedef struct MenuParty {
     u8 unk2E; /* 2E */
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30 */
-    u8 pad33[0x1];
+    u8 messageShown; /* 33: a card message is shown */
     u8 unk34[4]; /* 34 */
     u8 unk38[8]; /* 38: character ids of the party slots, ff empty */
     u8 unk40[6]; /* 40 */
@@ -156,7 +156,7 @@ typedef struct MenuCard {
     u8 pad4FDA[0xA];
     u8 present[2]; /* 4FE4: per port: card present */
     u8 mode; /* 4FE6 */
-    u8 pad4FE7[0x1];
+    u8 busy; /* 4FE7 */
     u8 presentShown[2]; /* 4FE8 */
     u8 pad4FEA[0x2];
     s32 events[4]; /* 4FEC: card event descriptors */
@@ -781,9 +781,9 @@ void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void CloseEvent(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
 void func_800405C4(s32 code);
-void CdSyncCallback(s32 event);  /* CloseEvent */
-void CdReadyCallback(s32 event);
-void CdReadCallback(s32 arg0);
+s32 CdSyncCallback(s32 callback);  /* previous callback */
+s32 CdReadyCallback(s32 callback);
+s32 CdReadCallback(s32 callback);
 s32 open(char *name, s32 mode);  /* open */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
@@ -954,6 +954,7 @@ s32 func_80038824(void);
 void func_800386C4(s32 mode);
 void func_801E86C8(u8 row);
 void func_801E8B4C(u8 row);
+u8 func_801C93A8(void);
 void func_801D9E3C(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);

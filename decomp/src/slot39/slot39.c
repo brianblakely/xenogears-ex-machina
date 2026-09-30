@@ -2657,7 +2657,47 @@ void func_801D9B08(void) {
     ExitCriticalSection();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9C84);
+/* Enter the file screen's card mode: show message 20, wait for the view to
+ * stop, restart card access with the CD callbacks saved and cleared, forget
+ * the card presence and listings and check the cards now. Returns 1 when the
+ * check found a card; otherwise closes the message. */
+u8 func_801D9C84(void) {
+    MenuCard *card;
+    u8 found;
+
+    found = 1;
+    func_801D2F4C(0x20);
+    D_800625A0->party->messageShown = 1;
+    while (D_800625A0->viewMotion != 0) {
+        func_801C7BF4();
+    }
+    D_800625A0->card->busy = 1;
+    func_801C7BF4();
+    func_801D9B08();
+    DrawSync(0);
+    VSync(0);
+    EnterCriticalSection();
+    D_801EA718 = CdSyncCallback(0);
+    D_801EA71C = CdReadyCallback(0);
+    D_801EA720 = CdReadCallback(0);
+    ExitCriticalSection();
+    card = D_800625A0->card;
+    card->presentShown[0] = card->presentShown[1] = 0xff;
+    D_800625A0->card->scanned[0] = 0;
+    D_800625A0->card->scanned[1] = 0;
+    D_800625A0->card->mode = 2;
+    D_800625A0->cardPollTimer = 0x3c;
+    func_801C7BF4();
+    func_801C7BF4();
+    if (func_801C93A8() == 0) {
+        if (D_800625A0->party->messageShown != 0) {
+            func_801D32B4();
+            D_800625A0->party->messageShown = 0;
+        }
+        found = 0;
+    }
+    return found;
+}
 
 /* Leave the save/load screen: clear its images and listing, and close the
  * card events and handlers. */
