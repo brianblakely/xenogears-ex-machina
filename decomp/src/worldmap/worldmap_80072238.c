@@ -776,7 +776,77 @@ void func_80073E30(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073E30);
 #endif
 
+/* Draw the map overlay: the player marker (four triangles rotated by the camera
+ * yaw at the player's map position) and one dot per set bit of the resident
+ * map flags; bits 24-26 are the vehicles. */
+#ifdef NON_MATCHING /* original keeps the scratch, matrix and camera addresses and the link masks in saved registers */
+void func_800740B8(void) {
+    MapScratch *scratch;
+    MATRIX *matrix;
+    VECTOR *target;
+    SVECTOR *corners;
+    PolyG3 *marker;
+    Tile *dot;
+    u32 bits;
+    s32 i;
+
+    scratch = (MapScratch *)0x1F800000;
+    corners = D_8009A340[0];
+    i = 0;
+    matrix = &scratch->matrix;
+    target = &D_8009D55C.target;
+    marker = &D_8009C664[D_8009D7F0 * 4];
+    scratch->angle.vy = 0;
+    scratch->angle.vx = 0;
+    scratch->angle.vz = D_8009BD38.vy;
+    func_8003F738(&scratch->angle, matrix);
+    matrix->t[0] = (target->vx >> 12) / 315 + 0x30;
+    matrix->t[2] = D_8009BCDC;
+    matrix->t[1] = (target->vz >> 12) / 341 + 0x78 - D_8009BE0C;
+    gte_SetRotMatrix(matrix);
+    gte_SetTransMatrix(matrix);
+    do {
+        gte_ldv3(&corners[0], &corners[1], &corners[2]);
+        gte_rtpt();
+        gte_stsxy3(&marker->x0, &marker->x1, &marker->x2);
+        i++;
+        corners += 3;
+        addPrim(D_8009BE3C->ot, marker);
+        marker++;
+    } while (i < 4);
+    dot = &D_8009C898[D_8009D7F0 * 32];
+    addPrim(D_8009BE3C->ot, &D_8009C5A0);
+    bits = STATE_U32(0x30C);
+    for (i = 0; i < 32; i++) {
+        if (bits & 1) {
+            switch (i) {
+            case 24:
+                dot->x0 = STATE_U16(0xC) / 315 + 0xCF;
+                dot->y0 = STATE_U16(0x10) / 341 + 0x77;
+                break;
+            case 25:
+                dot->x0 = STATE_U16(0x2E) / 315 + 0xCF;
+                dot->y0 = STATE_U16(0x32) / 341 + 0x77;
+                break;
+            case 26:
+                dot->x0 = STATE_U16(0x24) / 315 + 0xCF;
+                dot->y0 = STATE_U16(0x26) / 341 + 0x77;
+                break;
+            default:
+                dot->x0 = D_8009B6F4[i][0] + 0xD0;
+                dot->y0 = D_8009B6F4[i][1] + 0x78;
+                break;
+            }
+            addPrim(D_8009BE3C->ot, dot);
+        }
+        bits >>= 1;
+        dot++;
+    }
+    addPrim(D_8009BE3C->ot, &D_8009C5C0[D_8009D7F0]);
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800740B8);
+#endif
 
 /* Allocate the recent-position ring and the two buffers of 16 footprint quads,
  * and initialise them. */
