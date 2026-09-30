@@ -116,7 +116,7 @@ typedef struct {
 } LINE_F2;
 
 /*
- * The import screen's packets (menu state + 450, 4788h bytes): sprite groups
+ * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
  * with their part counts and buffers, the bars and frames of nine rows, the
  * name labels and the resources unpacked from file 2.
  */
@@ -457,9 +457,9 @@ typedef struct {
     u8 unk1DF0[0x1E20 - 0x1DF0];
     void *unk1E20;       /* 1e20: dech bytes */
     u8 unk1E24[0x1E2C - 0x1E24];
-    u8 *unk1E2C;         /* 1e2c: 5ch-byte records, one per card port */
-    u8 import_values[0x30]; /* 1e30: the import file's nonzero entries */
-    u8 import_pages[0x30];  /* 1e60: their page (entry / 30) */
+    u8 *unk1E2C;         /* 1e2c: shop tables, 5ch bytes (three kinds of 30 ids) per shop */
+    u8 shop_items[0x30]; /* 1e30: the shop's item ids */
+    u8 shop_kinds[0x30];  /* 1e60: their kind (0 weapon, 1 armour, 2 item) */
     u8 unk1E90[0x1E94 - 0x1E90];
     u8 select_toggle;    /* 1e94: flipped by select */
     u8 unk1E95;          /* 1e95: counts button-1 presses */
@@ -473,8 +473,8 @@ extern u8 D_801D2018[];  /* label text ids */
 extern s32 D_801D1F54[]; /* command picture pairs */
 extern u8 D_801D1FCC[];  /* command label text ids */
 extern s32 D_801D1FD8[]; /* command label x offsets */
-extern u8 D_801D1FD0[];  /* transfer list label text ids */
-extern s32 D_801D1FE8[]; /* transfer list label x offsets */
+extern u8 D_801D1FD0[];  /* sell list label text ids */
+extern s32 D_801D1FE8[]; /* sell list label x offsets */
 extern s32 D_801D1F6C[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D1FF8[]; /* marker x */
 extern s32 D_801D2008[]; /* marker y */
@@ -489,7 +489,7 @@ extern s32 D_801D2218[]; /* heading x */
 extern s32 D_801D2228[]; /* alternative heading x */
 extern s32 D_801D2230[]; /* heading y */
 extern s32 D_801D2240[]; /* alternative heading y */
-extern s32 D_801D1F50;   /* import entries found */
+extern s32 D_801D1F50;   /* items the shop sells */
 extern u16 D_801D2260;   /* count of the item last looked up */
 extern s32 D_801D2248;   /* first number x */
 extern s32 D_801D224C;   /* first number y */
@@ -511,7 +511,7 @@ extern u16 D_80059414;   /* highlighted text CLUT */
 extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
-extern u8 D_80059171;                    /* card port in use */
+extern u8 D_80059171;                    /* shop number */
 void func_80043D78(LINE_F2 *prim);       /* SetLineF2 */
 extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
 void func_80019CA0(void);                /* soft reset combination */

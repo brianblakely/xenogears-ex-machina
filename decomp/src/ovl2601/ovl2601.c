@@ -1,10 +1,14 @@
 /*
- * ovl2601 (Disc 1 slot 2601, Disc 2 slot 2596; loaded at 801c5000): a
- * stand-alone memory-card screen built from the same card code as the menu's
- * save overlay (slot 2597), but for the file prefix "BISLPS-00800" instead of
- * this game's "BASLUS-00664". It loads its own menu resources (sprite sheet,
- * label text, icon TIM, sound bank), keeps the card directory and file heads
- * in the menu state's card block and draws the file list and details panel.
+ * ovl2601 (Disc 1 slot 2601, Disc 2 slot 2596; loaded at 801c5000): the item
+ * shop screen. Its entry (801ccd28) builds its own menu state blocks and
+ * resources, then runs a three-command screen: leave, sell (four lists: a
+ * member's equipment and the three inventories) and buy (the shop's weapons,
+ * armour and items, chosen by the shop number 80059171, with prices, the
+ * party's gold and the members who can use each). It is built from the menu's
+ * shared screen code: the 3D panels, labels, cursor and yes/no prompt, and
+ * the card state block whose save header it still fills in, with the file
+ * name prefix "BISLPS-00800" (unused by the shop itself; ovl2600 and ovl2602
+ * carry the same string).
  */
 #include "menu_card.h"
 
@@ -130,7 +134,7 @@ void func_801C53EC(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the import screen's packet block. */
+/* Allocate (nonzero) or release the shop screen's packet block. */
 void func_801C5450(u8 allocate) {
     if (allocate) {
         D_800625A0->details = func_80031BDC(sizeof(DetailBlock), 0);
@@ -408,7 +412,7 @@ void func_801C64DC(void) {
     }
 }
 
-/* Unpack (mode 0) or release (mode 10h) the screen's resources from file 2. */
+/* Unpack (mode 0) or release (mode 10h) the item tables and pictures from file 2. */
 void func_801C6828(u8 mode) {
     void **list;
 
@@ -441,7 +445,7 @@ void func_801C6828(u8 mode) {
     }
 }
 
-/* Collect the import file's nonzero entries (value, page of 30), unpack the resources and set up the bars and frame lines. */
+/* Collect the shop's items (id and kind), unpack the item tables and set up the bars and frame lines. */
 #ifdef NON_MATCHING
 void func_801C6A6C(void) {
     u8 *entry;
@@ -451,13 +455,13 @@ void func_801C6A6C(void) {
     j = 0;
     entry = D_800625A0->unk1E2C + D_80059171 * 0x5C;
     for (i = 0; i < 0x30; i++) {
-        D_800625A0->import_values[i] = 0;
-        D_800625A0->import_pages[i] = 0;
+        D_800625A0->shop_items[i] = 0;
+        D_800625A0->shop_kinds[i] = 0;
     }
     for (i = 0; i < 0x5A; i++) {
         if (entry[i] != 0) {
-            D_800625A0->import_values[j] = entry[i];
-            D_800625A0->import_pages[j] = i / 30;
+            D_800625A0->shop_items[j] = entry[i];
+            D_800625A0->shop_kinds[j] = i / 30;
             j++;
         }
     }
@@ -1975,7 +1979,7 @@ u8 func_801CC97C(void) {
     return running;
 }
 
-/* The command screen: move between the three commands and run the chosen one until leaving. */
+/* The command screen: move between leave, sell and buy and run the chosen one until leaving. */
 void func_801CCAD8(void) {
     u8 running;
 
@@ -2368,22 +2372,22 @@ INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D0E68);
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801D1658);
 
-/* Run the transfer list for inventory 1 (200 entries). */
+/* Run the sell list for inventory 1 (200 entries). */
 void func_801D18A8(void) {
     func_801D0E68(200, D_8006F4FC, D_8006F4FC - 200, 1, 1, D_8006F4FC - 200, 0);
 }
 
-/* Run the transfer list for inventory 0 (100 entries). */
+/* Run the sell list for inventory 0 (100 entries). */
 void func_801D18E8(void) {
     func_801D0E68(100, D_8006F3D0, D_8006F3D0 - 100, 0, 1, D_8006F3D0 - 100, 0);
 }
 
-/* Run the transfer list for inventory 2 (150 entries). */
+/* Run the sell list for inventory 2 (150 entries). */
 void func_801D1928(void) {
     func_801D0E68(150, D_8006F65A, D_8006F65A - 150, 2, 1, D_8006F65A - 150, 0);
 }
 
-/* Hide the transfer screen's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
+/* Hide the shop list's packets; with `close` also close its panels (5 too with `all`), scroll bar and marker. */
 void func_801D1968(u8 close, u8 all) {
     s32 i;
 
@@ -2414,7 +2418,7 @@ void func_801D1968(u8 close, u8 all) {
     }
 }
 
-/* Run the chosen transfer list (0 imports, 1-3 the three inventories), then restore the list labels. */
+/* Run the chosen sell list (0 a member's equipment, 1-3 the three inventories), then restore the list labels. */
 void func_801D1B18(void) {
     u8 close;
 
@@ -2444,7 +2448,7 @@ void func_801D1B18(void) {
     func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FD0, D_800625A0->flags->list_label_shown);
 }
 
-/* Command 1: choose one of the transfer lists until cancelled. */
+/* Command 1 (sell): choose one of the sell lists until cancelled. */
 u8 func_801D1CA4(void) {
     u8 running;
     u8 first;

@@ -1,3 +1,13 @@
+/*
+ * ovl2602 (Disc 1 slot 2602, Disc 2 slot 2597; loaded at 801c5000): the Gear
+ * parts shop. Its entry (801ce024) sets up the same shop screen as ovl2601
+ * (sell lists, buying with prices and gold, yes/no prompts) and adds the
+ * Gear side: the gear records at 8006dfac and their part tables, a 3D model
+ * of the chosen Gear drawn through the resident-loaded module at 801e7xxx
+ * with its own ordering table, the member switch and the gear screen block
+ * at menu state +454. Functions shared with ovl2601 are recovered from the
+ * same source; the ones that differ keep their own versions here.
+ */
 #include "menu_card.h"
 
 /* A random value in [min, max] (ffff stays ffff, a zero max gives 0). */
@@ -158,7 +168,7 @@ void func_801C559C(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the import screen's packet block. */
+/* Allocate (nonzero) or release the shop screen's packet block. */
 void func_801C5600(u8 allocate) {
     if (allocate) {
         D_800625A0->details = func_80031BDC(sizeof(DetailBlock), 0);
@@ -2133,7 +2143,7 @@ void func_801D0D4C(u32 value) {
     D_800625A0->flags->price_shown = 1;
 }
 
-/* Hide the transfer screen's packets; with `close` also close its panels, scroll bar and marker. */
+/* Hide the shop list's packets; with `close` also close its panels, scroll bar and marker. */
 void func_801D0EC8(u8 close) {
     s32 i;
 
@@ -2199,17 +2209,17 @@ void func_801D1F20(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_c
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D2054);
 
-/* Run the transfer list for inventory 3 (150 entries). */
+/* Run the sell list for inventory 3 (150 entries). */
 void func_801D2784(void) {
     func_801D2054(150, D_8006F84E, D_8006F84E - 150, 3, 1, D_8006F84E - 150, 0);
 }
 
-/* Run the transfer list for inventory 4 (100 entries). */
+/* Run the sell list for inventory 4 (100 entries). */
 void func_801D27C4(void) {
     func_801D2054(100, D_8006F754, D_8006F754 - 100, 4, 1, D_8006F754 - 100, 0);
 }
 
-/* Run transfer list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
+/* Run sell list `page` * 3 + cursor (3 and 4 are the two inventories), then restore the list labels. */
 void func_801D2804(u8 page) {
     u8 close;
 
@@ -2315,24 +2325,24 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D3C78);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D44FC);
 
-/* Whether import entry `index` is still wanted: the edited gear holds less than its value. */
+/* Whether shop part `index` differs from the edited gear's part of that kind (0 when the gear already has it or better). */
 u8 func_801D4888(s32 index) {
     u8 wanted;
 
     wanted = 1;
-    switch (D_800625A0->import_pages[index]) {
+    switch (D_800625A0->shop_kinds[index]) {
     case 0:
-        if (D_8006DFAC[D_801D9084].unk8 >= D_800625A0->import_values[index]) {
+        if (D_8006DFAC[D_801D9084].unk8 >= D_800625A0->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 1:
-        if (D_8006DFAC[D_801D9084].unk2 >= D_800625A0->import_values[index]) {
+        if (D_8006DFAC[D_801D9084].unk2 >= D_800625A0->shop_items[index]) {
             wanted = 0;
         }
         break;
     case 2:
-        if (D_8006DFAC[D_801D9084].unk3 >= D_800625A0->import_values[index]) {
+        if (D_8006DFAC[D_801D9084].unk3 >= D_800625A0->shop_items[index]) {
             wanted = 0;
         }
         break;
@@ -2344,7 +2354,7 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D498C);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801D5398);
 
-/* Leave the gear list: hide the cursor and labels and the transfer packets. */
+/* Leave the gear list: hide the cursor and labels and the shop list packets. */
 u8 func_801D573C(void) {
     D_800625A0->flags->unk4 = 0;
     D_800625A0->flags->cursor_shown = 0;

@@ -116,7 +116,7 @@ typedef struct {
 } LINE_F2;
 
 /*
- * The import screen's packets (menu state + 450, 4788h bytes): sprite groups
+ * The shop screen's packets (menu state + 450, 4788h bytes): sprite groups
  * with their part counts and buffers, the bars and frames of nine rows, the
  * name labels and the resources unpacked from file 2.
  */
@@ -457,9 +457,9 @@ typedef struct {
     u8 unk1DF0[0x1E20 - 0x1DF0];
     void *unk1E20;       /* 1e20: dech bytes */
     u8 unk1E24[0x1E2C - 0x1E24];
-    u8 *unk1E2C;         /* 1e2c: 5ch-byte records, one per card port */
-    u8 import_values[0x30]; /* 1e30: the import file's nonzero entries */
-    u8 import_pages[0x30];  /* 1e60: their page (entry / 30) */
+    u8 *unk1E2C;         /* 1e2c: shop tables, 5ch bytes (three kinds of 30 ids) per shop */
+    u8 shop_items[0x30]; /* 1e30: the shop's item ids */
+    u8 shop_kinds[0x30];  /* 1e60: their kind (0 weapon, 1 armour, 2 item) */
     u8 unk1E90[0x1E94 - 0x1E90];
     u8 select_toggle;    /* 1e94: flipped by select */
     u8 unk1E95;          /* 1e95: counts button-1 presses */
@@ -503,7 +503,7 @@ extern u16 D_80059414;   /* highlighted text CLUT */
 extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
-extern u8 D_80059171;                    /* card port in use */
+extern u8 D_80059171;                    /* shop number */
 void func_80043D78(LINE_F2 *prim);       /* SetLineF2 */
 extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
 void func_80019CA0(void);                /* soft reset combination */
@@ -739,7 +739,7 @@ void func_801CC9A0(void);
 void func_801CC528(void);
 u8 func_801D5828(void);
 void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
-extern u8 D_801D6A24[];    /* transfer list label text ids */
+extern u8 D_801D6A24[];    /* sell list label text ids */
 extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
 extern s32 D_801D905C, D_801D9060, D_801D9064; /* camera target */
 extern s32 D_801D9050, D_801D9054, D_801D9058; /* previous camera target */
