@@ -957,7 +957,6 @@ void func_8008F76C(void) {
     func_8008F7B8();
 }
 
-extern s32 D_800ADB1C;
 extern s32 D_8004F308;
 extern s32 D_8004F324;
 extern s32 D_8004F354;
@@ -3915,25 +3914,129 @@ void func_8009A670(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A6AC);
+/* Store (sin(selected angle) * selected length) >> 12 in a variable. */
+void func_8009A6AC(void) {
+    s32 reference;
+    s32 angle;
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A768);
+    reference = func_800ACDB8(1) & 0xFFFF;
+    angle = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
+    length = func_8009D000(5, EVENT_OPERAND_BYTE(7));
+    func_800A3074(reference, (func_8003F8B0(angle) * length) >> 12);
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A824);
+/* Store (cos(selected angle) * selected length) >> 12 in a variable. */
+void func_8009A768(void) {
+    s32 reference;
+    s32 angle;
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A8DC);
+    reference = func_800ACDB8(1) & 0xFFFF;
+    angle = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
+    length = func_8009D000(5, EVENT_OPERAND_BYTE(7));
+    func_800A3074(reference, (func_8003F8CC(angle) * length) >> 12);
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A904);
+/* Store atan2(selected y, selected x) in a variable. */
+void func_8009A824(void) {
+    s32 reference;
+    s32 y;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009A958);
+    reference = func_800ACDB8(1) & 0xFFFF;
+    y = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
+    func_800A3074(reference, (s16)func_8004B32C(y, func_8009D000(5, EVENT_OPERAND_BYTE(7))));
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AA00);
+/* The current actor's facing octant (0..7). */
+s32 func_8009A8DC(void) {
+    return (((D_800B0078->unk106 + 0x100) >> 9) + 2) & 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AB08);
+/* Face `angle`; outside D_800ADB1C also sets the rest facing. */
+void func_8009A904(u16 angle) {
+    if (D_800ADB1C == 0) {
+        D_800B0078->unk104 = angle | 0x8000;
+        D_800B0078->unk106 = angle | 0x8000;
+        D_800B0078->unk108 = angle | 0x8000;
+    }
+    D_800B0078->unk104 = angle | 0x8000;
+    D_800B0078->unk106 = angle | 0x8000;
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AB5C);
+/* A selected actor faces `angle`. */
+void func_8009A958(u16 angle) {
+    FieldActor *actor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ABAC);
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        if (D_800ADB1C == 0) {
+            actor->unk104 = angle | 0x8000;
+            actor->unk106 = angle | 0x8000;
+            actor->unk108 = angle | 0x8000;
+        }
+        actor->unk104 = angle | 0x8000;
+        actor->unk106 = angle | 0x8000;
+    }
+    D_800B0078->pc += 4;
+}
+
+/* Selected actor operand 1 faces selected actor operand 2. */
+void func_8009AA00(void) {
+    FieldActor *actor;
+    FieldActor *other;
+    s16 facing;
+
+    if (func_8009CDB4(1) != 0xFF && func_8009CDB4(2) != 0xFF) {
+        other = D_800AFA64.descriptors[func_8009CDB4(2)].actor;
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        facing = -func_8004B32C(other->position[2].value - actor->position[2].value,
+                                other->position[0].value - actor->position[0].value) | 0x8000;
+        if (D_800ADB1C == 0) {
+            actor->unk104 = facing;
+            actor->unk106 = facing;
+            actor->unk108 = facing;
+        }
+        actor->unk104 = facing;
+        actor->unk106 = facing;
+    }
+    D_800B0078->pc += 3;
+}
+
+/* Face `angle` relative to the camera. */
+void func_8009AB08(s32 angle) {
+    s16 facing;
+
+    facing = ((angle - D_800AF930.angle) & 0xFFF) | 0x8000;
+    D_800B0078->unk104 = facing;
+    D_800B0078->unk106 = facing;
+    if (D_800ADB1C == 0) {
+        D_800B0078->unk108 = facing;
+    }
+    D_800B0078->pc += 3;
+}
+
+extern s16 D_800AEA34[8];
+
+/* Turn clockwise by operand-1 octants. */
+void func_8009AB5C(void) {
+    s32 turn;
+
+    turn = func_800ACDEC(1);
+    func_8009A904(D_800AEA34[(turn + func_8009A8DC()) & 7]);
+}
+
+/* Turn counter-clockwise by operand-1 octants. */
+void func_8009ABAC(void) {
+    s32 turn;
+
+    turn = func_800ACDEC(1);
+    func_8009A904(D_800AEA34[(func_8009A8DC() - turn) & 7]);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ABFC);
 

@@ -63,7 +63,8 @@ typedef struct FieldActor {
     u8 unk102[0x104 - 0x102];
     u16 unk104;          /* 104 */
     s16 unk106;          /* 106: facing */
-    u8 unk108[0x118 - 0x108];
+    s16 unk108;          /* 108 */
+    u8 unk10A[0x118 - 0x10A];
     s32 *words;         /* 118 */
     u8 unk11C[0x12C - 0x11C];
     u32 unk12C;          /* 12C */
@@ -230,6 +231,7 @@ extern u8 *D_800ADC00;              /* event bytecode */
 extern s32 D_800AFD1C;              /* current actor index */
 extern FieldActor *D_800B0078;      /* current actor */
 extern s32 D_800B00C0;              /* yield: stop this actor's batch */
+extern s32 D_800ADB1C;
 
 /* Operand readers; each takes the byte offset from the working PC. */
 s32 func_800ACD7C(s32 offset);  /* signed halfword */
