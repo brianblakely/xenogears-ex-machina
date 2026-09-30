@@ -1269,11 +1269,23 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0C78);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0D90);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0E20);
+/* A short busy delay (eight iterations). */
+void func_801D0E20(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0E38);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0EBC);
+/* A short busy delay (six iterations). */
+void func_801D0EBC(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0ED4);
 
@@ -1319,21 +1331,43 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1CA0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1D40);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1E80);
+/* Start the view moving in (3) with its sound. */
+void func_801D1E80(void) {
+    D_800625A0->viewMotion = 3;
+    func_801C8574(0x5b);
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1EB0);
+/* Start the view moving out (4) with its sound. */
+void func_801D1EB0(void) {
+    D_800625A0->viewMotion = 4;
+    func_801C8574(0x5c);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1EE0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D22C4);
+/* Hide the party panels (redraw flags 3 and 4). */
+void func_801D22C4(void) {
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D22F4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2484);
+/* Clear the party block flag at +2f. */
+void func_801D2484(void) {
+    D_800625A0->party->unk2F = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D249C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D25E4);
+/* Clear the party block's six bytes at +14. */
+void func_801D25E4(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        D_800625A0->party->unk14[i] = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D261C);
 
@@ -1341,7 +1375,12 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D28A8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D28FC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2968);
+/* Draw the element at (d0, ca) while party flag 6 is set. */
+void func_801D2968(void) {
+    if (D_800625A0->party->redraw6 != 0) {
+        func_801D5CF8(0xd0, 0xca);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
 
@@ -1355,7 +1394,11 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D32B4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3344);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3444);
+/* Clear party flag +49 and free the block at state +43c. */
+void func_801D3444(void) {
+    D_800625A0->party->unk49 = 0;
+    func_800320E8(D_800625A0->block43C);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3488);
 
@@ -1491,7 +1534,11 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD790);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DDF24);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE29C);
+/* Run the 801ddf24 screen for party slot `slot`; always continues the menu. */
+u8 func_801DE29C(u8 slot, u8 arg1) {
+    func_801DDF24(slot, arg1, 0);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DE2C8);
 
@@ -1637,9 +1684,19 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7C50);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E7E68);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8018);
+/* Lay out `count` labels from `table` into `labels` (the placement is unused). */
+void func_801E8018(u8 count, u8 *labels, u8 *table, u8 *placement) {
+    func_801E7E68(labels, table, 4, count);
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8044);
+/* Clear `count` label flags. */
+void func_801E8044(u8 count, u8 *flags) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        flags[i] = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8070);
 

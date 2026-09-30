@@ -44,9 +44,14 @@ typedef struct MenuParty {
     u8 redraw9; /* 9 */
     u8 redrawA; /* A */
     u8 padB[0x1];
-    u8 labels[0x24]; /* C: label placement of the command window */
+    u8 labels[8]; /* C: shown flags of the command labels */
+    u8 unk14[6]; /* 14 */
+    u8 pad1A[0x15];
+    u8 unk2F; /* 2F */
     u8 ids[3]; /* 30: character ids of the party slots, ff empty */
-    u8 pad33[0x2D];
+    u8 pad33[0x16];
+    u8 unk49; /* 49 */
+    u8 pad4A[0x16];
     u8 ready; /* 60 */
     u8 pad61[0xB];
 } MenuParty;
@@ -182,7 +187,9 @@ typedef struct MenuState {
     u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 pad3A8[0x80];
     u8 *markers; /* 428: marker block (14c bytes) */
-    u8 pad42C[0x40];
+    u8 pad42C[0x10];
+    u8 *block43C; /* 43C */
+    u8 pad440[0x2C];
     s32 sheetEntries[4][6]; /* 46C: sprite sheet records (80026338) */
     s32 unk4CC; /* 4CC */
     s32 unk4D0; /* 4D0 */
@@ -313,6 +320,7 @@ void func_801D2484(void);
 void func_801D2968(void);
 void func_801D2D38(void);
 void func_801D2F4C(u8 message);
+void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);
 u8 func_801D9808(void);
 u8 func_801D9F98(u8 mode, u8 save);
@@ -320,6 +328,7 @@ void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
 void func_801D3674(void);
 u8 func_801DBE54(void);
+void func_801DDF24(u8 slot, u8 arg1, s32 arg2);
 u8 func_801DE29C(u8 slot, u8 arg1);
 u8 func_801E0F78(u8 slot, u8 arg1);
 u8 func_801E23CC(void);
@@ -327,7 +336,7 @@ u8 func_801E2BE4(void);
 void func_801E3088(u8 command);
 void func_801E7E68(u8 *records, u8 *layout, s32 arg2, s32 count);
 void func_801E8018(u8 count, u8 *labels, u8 *table, u8 *placement);
-void func_801E8044(u8 count, u8 *placement);
+void func_801E8044(u8 count, u8 *flags);
 void func_801E8070(u8 count, u8 *labels, u8 *table, u8 *arg3, u8 *placement, u8 selected, s32 arg6,
                    s32 arg7);
 void func_801E8474(u8 count, u8 *positions);
