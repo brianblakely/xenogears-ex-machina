@@ -1932,11 +1932,12 @@ void func_80095690(void) {
 
 /* The target defends: a +0x56 state 2 target first leaves it (8009ac48),
  * its status words clear, result code 2 and a tenth of its +0x4e times the
- * descriptor's +0x11 as the amount; its timer is held. Nonmatching: the
- * original addresses the held mask (800d2c9e) with its own %hi/%lo on the
- * load and the store instead of one address register. */
-#ifdef NON_MATCHING
+ * descriptor's +0x11 as the amount; its timer is held (the held mask
+ * 800d2c9e is addressed as its own variable here). */
 void func_800957D8(void) {
+    s32 *amount;
+    u8 slot;
+
     if (D_800CCCE8.records[D_800C3E50].pilot.characterId == 2) {
         func_8009AC48(D_800C3E50, 1);
     }
@@ -1946,12 +1947,11 @@ void func_800957D8(void) {
     D_800C3E34->pilot.status88.half.active = 0;
     D_800C3E34->pilot.status8C.half.active = 0;
     D_800D2C88[D_800C3E50] = 2;
-    D_800D2C54[D_800C3E50] = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
-    D_800D2C94.held |= 1 << D_800C3E50;
+    slot = D_800C3E50;
+    amount = &D_800D2C54[slot];
+    *amount = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
+    D_800D2C9E |= 1 << slot;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_800957D8);
-#endif
 
 /* With the command's chance (+0x1c in percent) and kind 0x6e, clear the
  * target's status words named by the command's bits 0x8000-0x400 (message

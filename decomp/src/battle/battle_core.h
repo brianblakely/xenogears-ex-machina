@@ -413,6 +413,7 @@ typedef struct {
 } ActionCommit;
 
 extern ActionCommit D_800D2C94;
+extern u16 D_800D2C9E;            /* D_800D2C94.held addressed on its own */
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
 extern u8 D_800C3D70[0x30];

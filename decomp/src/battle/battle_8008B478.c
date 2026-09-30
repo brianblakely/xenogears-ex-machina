@@ -239,28 +239,22 @@ void func_8008BC98(u8 member) {
  * character list) starts its effect with target selection, 1 when started;
  * a gear part (from the gear list, inGear) is applied and its count taken,
  * 2 when applied. An empty entry buzzes (0x4f). */
-#ifdef NON_MATCHING
 u8 func_8008BD50(member, column, row, inGear)
 u8 member;
 u8 column;
 u8 row;
 u8 inGear;
 {
-    u8 *id;
-    s32 index;
     u16 effect;
     u8 item;
     u8 result;
 
-    id = D_800D2CE0;
-    index = row * 2 + column;
-    id += index;
-    effect = D_800D2200[*id].target;
+    effect = D_800D2200[D_800D2CE0[row * 2 + column]].target;
     result = 0;
     if (!inGear) {
-        item = *id;
+        item = D_800D2CE0[row * 2 + column];
     } else {
-        item = D_800C3D70[index];
+        item = D_800C3D70[row * 2 + column];
     }
     if (item != 0) {
         if (!inGear) {
@@ -287,9 +281,6 @@ u8 inGear;
     }
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008B478", func_8008BD50);
-#endif
 
 /* Run the member's item menu: two windows, a two-column list of sixteen
  * visible cells (48 entries) scrolled a 13-pixel row at a time (800d3288,
