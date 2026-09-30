@@ -308,7 +308,9 @@ typedef struct {
     POLY_FT4 unk4E70[8];    /* list 3 */
     POLY_FT4 unk4FB0[6];    /* list 4 */
     POLY_FT4 unk50A0[8];    /* list 5 */
-    POLY_FT4 unk51E0[22];   /* list 6 */
+    POLY_FT4 unk51E0[4];    /* list 6 */
+    POLY_FT4 unk5280[8];    /* list 7 */
+    POLY_FT4 unk53C0[10];   /* list 8 */
     POLY_FT4 unk5550[6];    /* list 11 */
     POLY_FT4 unk5640[40];   /* list 12 */
     POLY_FT4 unk5C80[6];    /* list 13 */

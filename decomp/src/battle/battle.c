@@ -4903,7 +4903,43 @@ void func_800897CC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800898F0);
+/* Build the member's gear fuel as glyphs at y 0xcc: the fuel's last four
+ * digits into list 7 (from x 0x20, blanks keep their place) and the maximum
+ * fuel's into list 8 (from x 0x48, packed), then the separator glyph 0x9c
+ * at x 0x41. */
+void func_800898F0(u8 member) {
+    s32 i;
+    s32 x; /* 16.16 */
+    u8 digit;
+
+    i = 0;
+    D_800D2DB4->counts[7] = 0;
+    x = 0x20 << 16;
+    func_8008AAA0(D_800CCCE8.records[member].gear.fuel);
+    for (; i < 4; i++) {
+        digit = D_800C3CF4[i + 5];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[7] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk5280[D_800D2DB4->counts[7] * 2], x >> 16, 0xCC);
+        }
+        x += 8 << 16;
+    }
+    i = 0;
+    D_800D2DB4->buffers[7] = D_800CCB04.buffer;
+    D_800D2DB4->counts[8] = 0;
+    x = 0x48 << 16;
+    func_8008AAA0(D_800CCCE8.records[member].gear.maxFuel);
+    for (; i < 4; i++) {
+        digit = D_800C3CF4[i + 5];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[8] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk53C0[D_800D2DB4->counts[8] * 2], x >> 16, 0xCC);
+            x += 8 << 16;
+        }
+    }
+    D_800D2DB4->counts[8] += func_80076A10(0x9C, &D_800D2DB4->unk53C0[D_800D2DB4->counts[8] * 2], 0x41, 0xCC);
+    D_800D2DB4->buffers[8] = D_800CCB04.buffer;
+}
 
 /* Run the eight 8008860c..800897cc steps. */
 void func_80089AF8(void) {
