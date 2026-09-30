@@ -1428,4 +1428,14 @@ s32 func_8008BEC8(WorldmapActor *actor);
 void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
 void func_80074794(s16 id, VECTOR *position);
 
+/* Player vehicle updater (worldmap_8008C364). */
+#define SCRATCH_HIT ((VECTOR *)0x1F800090) /* move probe result */
+
+extern s16 D_8009B180[]; /* per landing kind: may stand there */
+
+s32 func_80090C68(WorldmapActor *actor);
+void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor);
+s32 func_80094238(VECTOR *position, s32 table);
+void func_8007528C(void);
+
 #endif

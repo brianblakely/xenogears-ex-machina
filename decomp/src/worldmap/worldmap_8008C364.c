@@ -145,7 +145,303 @@ s32 func_8008C75C(s32 index) {
     return 1;
 }
 
+/* Update the player's vehicle (actor slot 4): drive it by the pad, record
+ * the trail, board and park the other party vehicles on command, and save
+ * its spot and heading. */
+#ifdef NON_MATCHING /* draft: register allocation (constant 1 kept in s5) and layout differ */
+s32 func_8008C844(s32 index) {
+    VECTOR unused0; /* unreferenced locals: the original frame reserves them */
+    VECTOR unused1;
+    SVECTOR unused2;
+    WorldmapActor *actor;
+    WorldmapActor *target;
+    ActorScratch *scratch;
+    TrailPoint *point;
+    s32 hit;
+    u8 landing;
+    s32 i;
+
+    actor = &D_8009BE24[index];
+    scratch = (ActorScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 4:
+        actor->state = 0x10;
+        actor->unk4 = 0;
+        actor->unk58 = 1;
+        D_8006F8E5 = 1;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 0x30;
+        break;
+    case 8:
+        actor->unk4 = 0;
+        actor->state = 0x18;
+        break;
+    case 7:
+        actor->unk4 = 0;
+        if (D_8009C170 == ++actor->unk58) {
+            actor->state = 1;
+            D_8009BE10 = 2;
+            D_8009BD04 = 0;
+        }
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+    case 1:
+        if (D_8006F8E5 == 1) {
+            switch (func_80090C68(actor)) {
+            case 1:
+                D_8009D554 = 0;
+                D_8009D7CC = 0;
+                break;
+            case 3:
+                actor->state = 8;
+                break;
+            case 4:
+                if (func_80094060(1, func_80093F18(&actor->position)) != 0) {
+                    actor->state = 0x20;
+                }
+                break;
+            default:
+                if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
+                    if (((ModelInstance *)actor->handle)->animation != 0) {
+                        func_800245D8(actor->handle, 0);
+                        func_800894C8(0x2C);
+                    }
+                } else {
+                    if (((ModelInstance *)actor->handle)->animation != 1) {
+                        func_800245D8(actor->handle, 1);
+                    }
+                    func_8008C1DC(0x2C, actor, scratch);
+                }
+                hit = func_80095414(&actor->position, &actor->motion, SCRATCH_HIT, actor->turn << 12, D_8009BE10);
+                if (hit == 0) {
+                    actor->motion = *SCRATCH_HIT;
+                    hit = func_80095414(&actor->position, &actor->motion, SCRATCH_HIT, actor->turn << 12,
+                                        D_8009BE10);
+                    if (hit == 0) {
+                        actor->motion.vz = 0;
+                        actor->motion.vx = 0;
+                    }
+                }
+                if (hit == 1) {
+                    func_8008C040(SCRATCH_HIT, 0x18, 0x30, &D_8009D738, &D_8009BD60);
+                    landing = D_8009D738;
+                    if (D_8009BD60 == 7) {
+                        landing += 3;
+                    }
+                    if (D_8009B180[landing] != 0) {
+                        actor->position = *SCRATCH_HIT;
+                        if (actor->motion.vx | actor->motion.vz) {
+                            D_8009D154 = (D_8009D154 + 1) & 0x1F;
+                            point = &D_8009CEC4[D_8009D154];
+                            point->position = actor->position;
+                            point->heading = actor->heading;
+                            func_8007528C();
+                        }
+                    }
+                } else {
+                    func_8008C040(&actor->position, 0x18, 0x30, &D_8009D738, &D_8009BD60);
+                }
+                func_80094238(&actor->position, 1);
+                actor->motion.vz = 0;
+                actor->motion.vy = 0;
+                actor->motion.vx = 0;
+                D_8009D55C.target = actor->position;
+                D_8009D52C = actor->heading;
+                break;
+            }
+            D_8009BD04 = 0;
+        } else if (((ModelInstance *)actor->handle)->animation != 3) {
+            func_800245D8(actor->handle, 3);
+            func_800894C8(0x2C);
+        }
+        break;
+    case 2:
+        actor->position.vx = D_8009BE24[7].position.vx;
+        actor->position.vz = D_8009BE24[7].position.vz;
+        actor->heading = D_8009BE24[7].heading;
+        break;
+    case 8:
+        if (D_8006F368[1] != 0xFF) {
+            if (D_8006F8E6 == 1) {
+                if (func_80097770(5, 1) != 0) {
+                    actor[1].unk6 = D_8009BD60;
+                    actor->state++;
+                }
+            } else {
+                func_80097770(2, 1);
+                D_8009BE24[2].unk6 = D_8009BD60;
+                func_80097770(5, 8);
+                actor->state++;
+            }
+        } else {
+            actor->state++;
+        }
+        break;
+    case 9:
+        if (D_8006F368[2] != 0xFF) {
+            if (D_8006F8E7 == 1) {
+                if (func_80097770(6, 1) != 0) {
+                    actor[2].unk6 = D_8009BD60;
+                    actor->state++;
+                }
+            } else {
+                func_80097770(3, 1);
+                D_8009BE24[3].unk6 = D_8009BD60;
+                func_80097770(6, 8);
+                actor->state++;
+            }
+        } else {
+            actor->state++;
+        }
+        break;
+    case 10:
+        func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
+        target = &D_8009BE24[D_8009BD60];
+        actor->u.step = target->position.vx >> 12;
+        actor->unk54 = target->position.vz >> 12;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+    case 11:
+        if (func_8008BEC8(actor) == 3) {
+            actor->state++;
+        }
+        D_8009D55C.target = actor->position;
+        D_8009D52C = actor->heading;
+        func_8008C1DC(0x2C, actor, scratch);
+        break;
+    case 12:
+        if (func_80097770(D_8009BD60, 4) != 0) {
+            actor->unk24 = 1;
+            actor->state = 2;
+            func_800894C8(0x2C);
+        }
+        break;
+    case 0x10:
+        switch (D_8009C170) {
+        case 1:
+            actor->state = 1;
+            break;
+        case 2:
+            if (D_8006F8E6 != 0) {
+                actor->state++;
+            }
+            break;
+        case 3:
+            if (D_8006F8E7 & D_8006F8E6) {
+                actor->state++;
+            }
+            break;
+        }
+        break;
+    case 0x11:
+        if (D_8006F368[1] == 0xFF || func_80097770(5, 5) != 0) {
+            actor->state++;
+        }
+        break;
+    case 0x12:
+        if (D_8006F368[2] == 0xFF || func_80097770(6, 5) != 0) {
+            actor->state = 0x40;
+        }
+        break;
+    case 0x18:
+        if (D_8006F364[index] == 7) {
+            actor->wait = 1;
+            actor->state = 0x1A;
+        } else {
+            scratch->position.vx = actor->position.vx >> 12;
+            scratch->position.vy = actor->position.vy >> 12;
+            scratch->position.vz = actor->position.vz >> 12;
+            func_80089160(5, &scratch->position, NULL);
+            actor->wait = 8;
+            actor->state++;
+        }
+        break;
+    case 0x19:
+        if (--actor->wait <= 0) {
+            actor->unk24 = 1;
+            actor->wait = 0x10;
+            actor->state++;
+        }
+        break;
+    case 0x1A:
+        if (--actor->wait <= 0) {
+            func_800245D8(actor->handle, 3);
+            actor->unk24 = 1;
+            actor->state = 2;
+        }
+        break;
+    case 0x20:
+        func_800245D8(actor->handle, 0);
+        if (D_8006F368[1] != 0xFF) {
+            func_80097770(5, 2);
+        }
+        if (D_8006F368[2] != 0xFF) {
+            func_80097770(6, 2);
+        }
+        actor->motion.vz = 0;
+        actor->motion.vy = 0;
+        actor->motion.vx = 0;
+        actor->state++;
+    case 0x21:
+        if (func_80097770(1, 2) != 0) {
+            D_8009BE24[1].unk6 = index;
+            actor->state++;
+        }
+        break;
+    case 0x22:
+        actor->state = 0;
+        break;
+    case 0x30:
+        func_8008DFF4(&actor->position);
+        actor->unk24 = 0;
+        actor->heading = D_8009BE24[7].unk78;
+        scratch->work.vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x60;
+        scratch->work.vz = actor->position.vz + -func_8003F8CC(actor->heading) * 0x60;
+        func_800941C4(&actor->position, &scratch->work, &actor->motion, &actor->heading);
+        actor->u.step = scratch->work.vx >> 12;
+        actor->unk54 = scratch->work.vz >> 12;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+    case 0x31:
+        if (func_8008BEC8(actor) == 3) {
+            func_800245D8(actor->handle, 0);
+            actor->motion.vz = 0;
+            actor->motion.vy = 0;
+            actor->motion.vx = 0;
+            actor->state++;
+        }
+        D_8009D55C.target = actor->position;
+        D_8009D52C = actor->heading;
+        break;
+    case 0x32:
+        D_8009D154 = 0;
+        SCRATCH_VECTOR[3] = actor->position;
+        scratch->position.vx = actor->heading;
+        for (i = 0x1F, point = D_8009CEC4; i != -1; i--, point++) {
+            point->position = SCRATCH_VECTOR[3];
+            point->heading = scratch->position.vx;
+        }
+        actor->state = 1;
+        D_8009BE10 = 2;
+        break;
+    case 0x40:
+        break;
+    }
+    if (actor->state != 2 && (D_8009BE10 == 2 || D_8006F368[0] != 7)) {
+        func_80074794(1, &actor->position);
+    }
+    D_8006EF8E[0].x = actor->position.vx >> 12;
+    D_8006EF8E[0].z = actor->position.vz >> 12;
+    D_8006EE54.unk5A = actor->heading;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008C844);
+#endif
 
 /* Start party vehicle 1: place it, and while its member rides (movement
  * modes 1-3) put it under the player; modes 4-7 mark it boarded. Save its
