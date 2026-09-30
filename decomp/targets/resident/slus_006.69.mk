@@ -10,7 +10,5 @@ LINKER_EXTRA := .local/decomp/resident2/undefined_syms_auto.txt .local/decomp/re
 OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
-# The resident game code outside 0x8001c76c-0x8002709c is assembled with `li`
-# of a positive constant expanded to `ori` (no `addiu` form there): maspsx's
-# ASPSX-before-2.50 behaviour. The middle unit uses `addiu` (ASPSX 2.50+).
-override MASPSXFLAGS := --aspsx-version=2.34
+# The unit around 0x8001c944-0x8002709c assembles positive `li` as `addiu`
+# (ASPSX 2.50+); the rest of the game code uses `ori` (the default 2.34).
