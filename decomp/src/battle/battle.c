@@ -1,16 +1,104 @@
 #include "common.h"
+#include "battle_core.h"
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070E2C);
+/* Start the 801e5000 module: reserve its heap span and load it. */
+void func_80070E2C(void) {
+    s32 block;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070EB0);
+    if (D_800C3D48 != 0) {
+        func_8008AB4C();
+        block = func_8008ABB8(4, 1);
+        D_800D3284 = block;
+        D_800D328C = func_8008ABB8(block - 0x801E5000, 1);
+        func_800295D8(1, 0x801E5000, 0, 0x80);
+        func_8008AC50();
+        func_801E5160();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070EDC);
+/* Forward a byte argument to the 801e5000 module when it is loaded. */
+void func_80070EB0(s32 value) {
+    if (D_800C3D48 != 0) {
+        func_801E879C(value & 0xFF);
+    }
+}
+
+/* Fade the battle music out once the escape outcome is set, unless the
+ * 801e5000 module handled it. */
+void func_80070EDC(void) {
+    s32 handled = 0;
+
+    if (D_800C3D48 != 0) {
+        handled = func_801E563C();
+    }
+    if ((handled & 0xFF) == 0 && D_800C48EA == 0x81) {
+        func_8003A89C(D_800C3E54, 0, 0xF0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070F40);
 
+/* One battle frame: the 80280000 module's hook when present, then the task
+ * runner. */
+#ifdef NON_MATCHING
+s32 func_800716D8(void) {
+    if (*D_8005917C != -1) {
+        func_8028022C();
+    }
+    func_800BE790();
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800716D8);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007171C);
+/* One ATB tick for every present slot that is not yet ready. */
+void func_8007171C(void) {
+    s32 slot;
+    s32 step;
+    u8 *ready;
+    u16 flags;
+    u8 delay;
+    u16 *toggle;
+    s16 *timer;
+
+    if (D_800D3298 != 0) {
+        slot = 0;
+        ready = D_800D2DE4;
+        for (; slot < 11; ready++, slot++) {
+            if (D_800D2DCC[slot] == 0 || *ready != 0) {
+                continue;
+            }
+            step = 1;
+            if ((D_800CCCE8[slot].status84 | D_800CCCE8[slot].status86) & 0x8000) {
+                step = 2;
+            }
+            if (D_800CCCE8[slot].flags7C & 0x1000) {
+                toggle = &D_800D2E1C[slot];
+                if ((*toggle ^= 1) != 0) {
+                    continue;
+                }
+            }
+            flags = D_800CCCE8[slot].flags7C;
+            if (flags & 0x2000) {
+                delay = D_800CCCE8[slot].delay15C -= step;
+                if (delay == 0) {
+                    D_800CCCE8[slot].delay15C = 0;
+                    D_800CCCE8[slot].flags7C &= 0xDFFF;
+                }
+                continue;
+            }
+            if ((flags & 0x80) || (D_800CCCE8[slot].flags80 & 0x1000)) {
+                continue;
+            }
+            timer = &D_800D2E06[slot];
+            if ((*timer -= step) <= 0) {
+                *ready = 1;
+                *timer = 0;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800718BC);
 
