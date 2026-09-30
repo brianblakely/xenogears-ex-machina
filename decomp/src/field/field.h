@@ -473,16 +473,16 @@ typedef struct {
     u8 unk207E[2];
     s32 effect_value[6];       /* 2080: 16.16 */
     s32 effect_step[6];        /* 2098 */
-    u8 unk20B0[4];
+    s16 unk20B0[2];            /* 20B0 */
     void *effect_buffers[4];   /* 20B4 */
     FadeChannel fades[2];      /* 20C4: screen fade channels */
     u16 open_windows;          /* 2174: bit per open dialogue window; talk
                                 * is inhibited while any is set */
     s16 encounter_inhibition;  /* 2176 */
     s16 terrain_angle;         /* 2178 */
-    s16 input_mask;            /* 217A */
+    u16 input_mask;            /* 217A */
     s32 unk217C;               /* 217C */
-    u8 unk2180[4];
+    s32 unk2180;               /* 2180 */
     SVECTOR sprite_angles;     /* 2184: sprite view rotation */
     s16 scale;                 /* 218C: offset scale (8007b614) */
     s16 sprite_gate;           /* 218E: colour pass-through gate (80075b08) */
@@ -497,7 +497,8 @@ typedef struct {
     s16 unk21B4;               /* 21B4 */
     u8 unk21B6[2];
     s32 last_sound_effect;     /* 21B8 */
-    u8 unk21BC[0x21CC - 0x21BC];
+    s32 unk21BC[3];            /* 21BC */
+    u8 unk21C8[0x21CC - 0x21C8];
     u8 party_processing_mode;  /* 21CC */
     u8 camera_floor_fixed;     /* 21CD */
     u8 preserve_nonplayer_motion; /* 21CE */
@@ -519,7 +520,8 @@ typedef struct {
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
-    u8 unk2270[0x2294 - 0x2270];
+    s16 unk2270[17];           /* 2270 */
+    u8 unk2292[2];
     s32 unk2294;               /* 2294 */
     s32 unk2298;               /* 2298 */
     s32 unk229C;               /* 229C: at most 32 */
@@ -968,8 +970,49 @@ typedef struct {
     s16 lengths[32];
 } WindowList;
 extern WindowList D_800AFEA8;
+extern u16 D_800ADB00;
+extern s16 D_800ADB02;
+extern u8 D_800ADB04;
+extern u8 D_800ADB05; /* 1 while character drawing is off */
+extern s32 D_800ADB18;
+extern s32 D_800ADB24; /* screen effect buffers allocated */
+extern s32 D_800ADB44; /* last effect owner */
+extern s32 D_800ADB64;
+extern s32 D_800ADB68;
+extern s32 D_800ADB70;
+extern s32 D_800ADB84;
+extern s32 D_800ADB94;
+extern s32 D_800ADBA8;
+extern s32 D_800ADBB4;
+extern s32 D_800ADBD4;
+extern s32 D_800ADBEC;
+extern s32 D_800AFD04;
+extern s32 D_800AFD14;
+extern u16 D_800AFE9C;
+extern s16 D_800AFEA0;
+extern s32 D_800B0048;
+extern s32 D_800B0064;
+extern u8 D_800B02C8;
+extern s32 D_800B14A4;
+extern s16 D_800C2694;
+extern s16 D_800C38F8;
+extern s16 D_800C3900;
+extern s16 D_800C3908;
+extern s32 D_800C3A5C;
+extern s32 D_800C3A60;
+extern s32 D_8004F30C;
+extern s32 D_8006F990[3];
+extern s32 D_80050100; /* ordering-table depth shift */
+extern MATRIX D_800AF85C;
+extern MATRIX D_800B00E8;
+extern void func_8028125C(void);
+extern void func_80035DB0(void);
+extern void func_8007254C(void);
+extern void func_80070C84(void);
+extern void func_800864B4(void);
+extern void func_800A9274(void);
+extern void func_800ABD18(void);
 extern void *D_800ADBF0;
-extern s16 D_800B00B2;
 extern s32 D_800B2264; /* 801e module buffers loaded */
 extern void *D_800ADB20;
 extern void func_8001C8DC(void);

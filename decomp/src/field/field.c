@@ -98,7 +98,7 @@ void func_800700B0(void) {
     func_800320E8(D_800AF880.components.collision);
     func_800320E8(D_800AF880.components.geometry);
     func_800320E8(D_800AF880.components.sprites);
-    if (D_800B00B2 != 0) {
+    if (D_800B0080.enabled != 0) {
         func_80027D40(D_800B007C);
     }
     for (i = 0; i < D_800AFEA8.count; i++) {
@@ -193,7 +193,196 @@ void func_80070594(MATRIX *m) {
     m->t[0] = 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800705DC);
+/* Reset the field state for a new map: flags, counters, the screen and
+ * camera defaults, the event variables from the saved game, and the view
+ * matrices. */
+void func_800705DC(void) {
+    VECTOR unused; /* unreferenced, but part of the frame */
+    SVECTOR angles;
+    s32 i;
+
+    if (D_800C268C == 0) {
+        func_8028125C();
+    }
+    func_80071F64(0, 0, 0x140, 0xE0);
+    func_80035DB0();
+    D_800ADB00 = 0xFFFF;
+    D_800AFE9C = 0;
+    D_800AFEA0 = 0;
+    D_800C2694 = 0;
+    D_800C38F8 = 0;
+    D_800C3900 = 0;
+    D_800C3908 = 0;
+    D_800B2078.unk2356 = 5;
+    D_800B2078.animation_mode = 3;
+    D_800B2078.unk234A = 0x40;
+    D_800B2078.battle_override = 0xFF;
+    D_800C3A38 = 0xFF;
+    D_800C3A60 = 0;
+    D_800C3A5C = 0;
+    D_800B2078.unk21BC[0] = 0;
+    D_800B2078.unk21BC[1] = 0;
+    D_800B2078.unk21BC[2] = 0;
+    D_800B2078.unk2264 = 0;
+    D_800B2078.last_sound_effect = 0;
+    D_800B2078.script_control[1] = 0;
+    D_800B2078.script_control[0] = 0;
+    D_800B2078.effect_value[5] = 0;
+    D_800B2078.effect_value[4] = 0;
+    D_800B2078.effect_value[3] = 0;
+    D_800B2078.effect_value[2] = 0;
+    D_800B2078.effect_value[1] = 0;
+    D_800B2078.effect_value[0] = 0;
+    D_800B2078.unk20B0[1] = 0;
+    D_800B2078.unk20B0[0] = 0;
+    D_800B2078.unk2268 = 0;
+    D_800B2078.preserve_nonplayer_motion = 0;
+    D_800B2078.piece_drift[1] = 0;
+    D_800B2078.piece_drift[2] = 0;
+    D_800B2078.piece_drift[0] = 0;
+    D_800B2078.unk2078 = 0;
+    D_800B2078.camera_floor_fixed = 0;
+    D_800B2078.party_bits = 0;
+    D_800B2078.clear_color[2] = 0;
+    D_800B2078.clear_color[1] = 0;
+    D_800B2078.clear_color[0] = 0;
+    D_800B2078.party_processing_mode = 0;
+    D_800B2078.forced_position = 0;
+    D_800B2078.piece_drift_mode = 0;
+    D_800ADB74 = 0;
+    D_800ADB4C = 0;
+    D_800ADB90 = 0;
+    D_800ADB24 = 0;
+    D_800ADB98 = 0;
+    D_800ADB94 = 0;
+    D_800ADB70 = 0;
+    D_800ADB2C = 0;
+    D_800ADB68 = 0;
+    D_800ADB88 = 0;
+    D_800ADBA8 = 0;
+    D_800B0064 = 0;
+    D_800ADB18 = 0;
+    D_800ADB50 = 0;
+    D_800AFE84 = 0;
+    D_800AFD04 = 0;
+    D_800B02C8 = 0;
+    D_800ADBD4 = 0;
+    D_800ADBD0 = 0;
+    D_800B2078.unk22E0 = 0;
+    D_800B2078.effects_kept = 0;
+    D_800B14A4 = 0;
+    D_800B2078.unk236C = 0;
+    D_800ADB38 = 0;
+    D_800ADB3C = 0;
+    D_800AFD14 = 0x20;
+    D_800B0048 = 2;
+    D_800B2078.emitter_range = 0x3FF;
+    D_800ADC18 = 4;
+    D_800ADB44 = 0;
+    D_800ADB02 = 0;
+    D_800B2078.unk233E = 0;
+    D_800B2078.jump_mode = 0;
+    D_800B2078.repeat_remaining = 0;
+    D_800B2078.unk2348 = 0;
+    D_800B2078.followers_idle = 0;
+    D_800B2078.unk2355 = 0;
+    D_800ADB04 = 0;
+    D_800ADB05 = 0;
+    D_800B2078.unk2357 = 0;
+    D_800B2078.unk2354 = 0;
+    D_800ADBB4 = 0;
+    D_800B2078.unk2350 = 0;
+    D_800ADB54 = 0;
+    D_800B2078.unk2358 = 0;
+    D_800ADB84 = 0;
+    D_800ADB7C = 0;
+    D_800ADB8C = 0;
+    D_800ADB64 = 0xFF;
+    angles.vx = 0;
+    angles.vy = 0;
+    angles.vz = 0;
+    func_8003F738(&angles, &D_800B00E8);
+    for (i = 0; i < 3; i++) {
+        D_800B2078.emitter_descriptor[i] = -1;
+    }
+    D_800AF880.scripted_scale = 0x1000;
+    D_800ADC08 = 1;
+    D_800B2078.unk21D4 = 0x720;
+    D_800B2078.unk21A0[2] = 0x100;
+    D_800B2078.unk21A0[1] = 0x100;
+    D_800B2078.unk21A0[0] = 0x100;
+    D_800B2078.unk21A0[5] = 0x200;
+    D_800B2078.unk21A0[4] = 0x200;
+    D_800B2078.unk21A0[3] = 0x200;
+    D_800B2078.unk21B4 = 0x80;
+    D_800ADBC4 = 0xFF;
+    D_800B2078.scale = 0x1000;
+    D_800B2078.sprite_angles.vx = 0;
+    D_800B2078.sprite_angles.vy = 0;
+    D_800B2078.sprite_angles.vz = 0;
+    D_800ADB6C = -1;
+    for (i = 0; i < 16; i++) {
+        D_800B2078.unk2270[i] = 0x1D;
+    }
+    D_800B2078.unk2270[16] = 0x1D;
+    D_800ADBEC = -1;
+    D_800B2078.camera_counter = 2;
+    D_800B2078.input_mask = 0xFFFF;
+    D_800B2078.fog_color[2] = 0x80;
+    D_800B2078.fog_color[1] = 0x80;
+    D_800B2078.fog_color[0] = 0x80;
+    D_800B2078.far_color[2] = 0xFF;
+    D_800B2078.far_color[1] = 0xFF;
+    D_800B2078.far_color[0] = 0xFF;
+    D_800B2078.fog_range[0] = 0x15E0;
+    D_800B2078.fog_range[1] = 0x300C;
+    D_800ADB08 = 0;
+    D_800ADC0C = 0;
+    D_800AFEA8.count = 0;
+    D_800B2078.controlled = 0;
+    D_800B2078.terrain_angle = 0;
+    D_800B2078.open_windows = 0;
+    D_800B2078.encounter_inhibition = 0;
+    D_800B2078.unk2180 = 0;
+    D_800B2078.unk217C = 0;
+    D_800B2078.sprite_gate = 0;
+    D_800B2078.text_speed = 8;
+    if (D_8004F30C == 0) {
+        for (i = 0; i < 3; i++) {
+            D_8005A444[i] = 0xFF;
+            D_8006F990[i] = 0xFF;
+        }
+    }
+    for (i = 0; i < 32; i++) {
+        D_800B2078.unk22A0[i] = 0xFFFF;
+    }
+    D_800B2078.unk229C = 0;
+    D_800B2078.unk2298 = 0;
+    D_80050100 = 2;
+    for (i = 0; i < 0x200; i++) {
+        D_800C3A68[i] = D_8005A39C->vars[i];
+        D_800C3A68[i + 0x200] = 0;
+    }
+    SetGeomScreen(0x200);
+    func_80070594(&D_800AF880.previous_view);
+    func_80070594(&D_800AF85C);
+    func_80070594(&D_800AF880.scaled_world);
+    func_80070594(&D_800AF880.world_matrix);
+    D_800AF880.world_angles.vx = 0;
+    D_800AF880.world_angles.vy = 0;
+    D_800AF880.world_angles.vz = 0;
+    D_800AF880.anchor.vx = 0;
+    D_800AF880.anchor.vy = 0;
+    D_800AF880.anchor.vz = 0;
+    D_800AF880.scale = 0x3000;
+    func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
+    D_800C426C = &D_800B249C[0];
+    func_8007254C();
+    func_80070C84();
+    func_800864B4();
+    func_800A9274();
+    func_800ABD18();
+}
 
 /* Reset the three slots at 800b06a4 and clear 800adb0c. */
 void func_80070C84(void) {
