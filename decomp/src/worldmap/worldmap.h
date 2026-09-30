@@ -1673,6 +1673,43 @@ typedef struct {
 
 extern s32 D_8009D7DC; /* packet depth */
 
+
+/* Model and object of the scene overlay at 0x801E0000. */
+typedef struct {
+    u8 pad0[0x54];
+    SVECTOR angle;    /* 0x54 */
+    s32 x, y, z;      /* 0x5C */
+} OverlayModel;
+
+typedef struct {
+    u8 pad0[4];
+    OverlayModel *model; /* 0x04 */
+    u8 pad8[0x14];
+    s16 unk1C;
+    u8 pad1E[0x3E];
+    s16 unk5C;
+} OverlayObject;
+
+extern OverlayObject *D_801E8670[]; /* scene overlay objects; [0] is the landmark */
+extern MATRIX *D_801E8644;
+void func_801E7D14(MATRIX *view, MATRIX *light, u32 *ot, s32 buffer, s32 mode);
+
+/* Scratchpad work area of the distant landmark. */
+typedef struct {
+    VECTOR position;  /* 0x00 */
+    u8 pad10[0x10];
+    s32 flag;         /* 0x20 */
+    u8 pad24[4];
+    s32 depth;        /* 0x28 */
+    u8 pad2C[0x74];
+    SVECTOR origin;   /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX local;     /* 0xF0 */
+    MATRIX view;      /* 0x110 */
+} LandmarkScratch;
+
+#define LANDMARK_SCRATCH ((LandmarkScratch *)0x1F800000)
+
 /* PsyQ inline_c.h style GTE macros (worldmap_80083A00). */
 #define gte_SetRotMatrix(r0) \
     __asm__ volatile("lw $12, 0(%0);" \
@@ -1858,5 +1895,68 @@ typedef struct {
 
 extern ParticleShape D_8009B040[];
 extern ParticleUV D_8009AFF0[];
+
+extern SVECTOR D_8009A340[4][3]; /* map player marker triangles */
+extern u16 D_8009B6F4[32][2];    /* map dot positions */
+
+/* Resident words of the world state relative to D_8006EE54. */
+#define STATE_U16(offset) (*(u16 *)((u8 *)&D_8006EE54 + (offset)))
+#define STATE_U32(offset) (*(u32 *)((u8 *)&D_8006EE54 + (offset)))
+
+/* Scratchpad work area of the map overlay. */
+typedef struct {
+    u8 pad0[0xB8];
+    SVECTOR angle;    /* 0xB8 */
+    u8 padC0[0x30];
+    MATRIX matrix;    /* 0xF0 */
+} MapScratch;
+
+#define MAP_SCRATCH ((MapScratch *)0x1F800000)
+
+/* worldmap_8008E190: flying vehicle (round 4) */
+s32 func_80090E14(WorldmapActor *actor);
+s32 func_80090FB4(WorldmapActor *actor);
+s32 func_8008E0F0(VECTOR *position, s32 unused, s32 range);
+s32 func_80095CD4(VECTOR *position, VECTOR *direction, VECTOR *out, s32 scale, s32 mode);
+void func_800767D4(void *data, s32 file);
+void func_8008E078(void);
+extern SVECTOR D_8009B1AC[], D_8009B1D4[]; /* scripted flight waypoints */
+
+/* Scratchpad work area of the flying vehicle. */
+typedef struct {
+    VECTOR target;     /* 0x00: waypoint */
+    u8 pad10[0x80];
+    VECTOR hit;        /* 0x90: move probe (SCRATCH_HIT) */
+    SVECTOR rotation;  /* 0xA0: model tilt/heading, or an effect spot */
+    SVECTOR spot;      /* 0xA8: effect spot */
+} VehicleScratch;
+
+#define VEHICLE_SCRATCH ((VehicleScratch *)0x1F800000)
+
+/* worldmap.c entry (round 4) */
+typedef struct {
+    void (*enter)(void);
+    void (*start)(void);
+    void (*leave)(void);
+} WorldmapMode;
+
+extern WorldmapMode D_8009A058[]; /* per mode */
+extern u8 D_800591AE, D_800594F8;
+extern u16 D_8006F952;            /* area carried into the world map */
+extern u32 D_8006F160;            /* map flags */
+extern s16 D_8006EF68;
+extern s32 D_8009BD0C;
+extern u8 D_8003634C[];           /* resident VSync callback */
+
+void VSyncCallback(void *func);
+void InitGeom(void);
+void ClearImage(RECT *rect, s32 r, s32 g, s32 b);
+void func_800199CC(s32 mode);
+void func_8001996C(s32 mode);
+void func_80019ACC(s32 mode);
+void func_80095F78(void);
+void func_8007369C(void);
+void func_80073300(void);
+s32 func_80094364(VECTOR *position, s32 table, s32 kind);
 
 #endif
