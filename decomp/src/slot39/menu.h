@@ -354,9 +354,10 @@ typedef struct GearRecord {
     u8 pad6[0x1];
     u8 part2; /* 7: third slot weapon of gears 5, d */
     u8 frame; /* 8 */
-    u8 pad9[0x3];
+    u8 unk9[3]; /* 9: copied to the gear's other form (801e3ecc) */
     u8 weapon; /* C: record of table +18 */
-    u8 padD[0x3];
+    u8 padD[0x2];
+    u8 unkF; /* F */
     GearSlot slots[3]; /* 10 */
     u8 pad28[0x10];
     u16 unk38; /* 38 */
@@ -1006,6 +1007,8 @@ void SetPolyF4(POLY_F4 *poly);       /* SetPolyF4 */
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 GetClut(s32 x, s32 y);          /* GetClut */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+void func_801E433C(MenuTables *tables, u8 gear);
+void func_801E4754(MenuTables *tables, u8 gear);
 void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
 void func_801E927C(POLY_FT4 *poly);

@@ -3223,7 +3223,72 @@ void func_801E3A80(MenuTables *tables, u8 id) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3C2C);
 
+/* Compute gear `gear`'s part and weapon values, then mirror its +9 values
+ * (and for gears 4, 5 its weapons) into its other form (gears 1, 15, 10-14)
+ * and compute that too. Matches except the jump table address: its original
+ * table sits 4 mod 8 (jtbl_801C522C), so this code belongs to a separate
+ * unit whose rodata starts 4 mod 8. */
+#ifdef NON_MATCHING
+void func_801E3ECC(MenuTables *tables, u8 gear) {
+    u8 i;
+
+    func_801E433C(tables, gear);
+    func_801E4754(tables, gear);
+    switch (gear) {
+    case 0:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[1].unk9[i] = D_8006DFAC[0].unk9[i];
+        }
+        func_801E433C(tables, 1);
+        break;
+    case 1:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[15].unk9[i] = D_8006DFAC[1].unk9[i];
+        }
+        func_801E433C(tables, 15);
+        break;
+    case 2:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[10].unk9[i] = D_8006DFAC[2].unk9[i];
+        }
+        func_801E433C(tables, 10);
+        break;
+    case 3:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[11].unk9[i] = D_8006DFAC[3].unk9[i];
+        }
+        func_801E433C(tables, 11);
+        break;
+    case 4:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[12].unk9[i] = D_8006DFAC[4].unk9[i];
+        }
+        func_801E433C(tables, 12);
+        D_8006DFAC[12].weapon = D_8006DFAC[4].weapon;
+        func_801E4754(tables, 12);
+        break;
+    case 5:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[13].unk9[i] = D_8006DFAC[5].unk9[i];
+        }
+        func_801E433C(tables, 13);
+        D_8006DFAC[13].weapon = D_8006DFAC[5].weapon;
+        D_8006DFAC[13].unkF = D_8006DFAC[5].unkF;
+        D_8006DFAC[13].part = D_8006DFAC[5].part;
+        D_8006DFAC[13].part2 = D_8006DFAC[5].part2;
+        func_801E4754(tables, 13);
+        break;
+    case 6:
+        for (i = 0; i < 3; i++) {
+            D_8006DFAC[14].unk9[i] = D_8006DFAC[6].unk9[i];
+        }
+        func_801E433C(tables, 14);
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3ECC);
+#endif
 
 /* Recompute gear `gear`'s derived values from the data tables. */
 void func_801E4170(MenuTables *tables, u8 gear) {
