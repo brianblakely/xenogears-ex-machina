@@ -338,7 +338,7 @@ s32 func_80081D80(void) {
         quad->v2 = next;
         quad->v3 = next;
         row = next;
-        addPrimTag(D_8009BE3C->ot, quad);
+        addPrim(D_8009BE3C->ot, quad);
         quad++;
     } while (row < 0xC0);
     rect.x = 0x40;
@@ -346,7 +346,7 @@ s32 func_80081D80(void) {
     rect.h = 0xD8;
     rect.y = D_8009D7F0 * 0xD8;
     SetDrawMove(&D_8009D164[D_8009D7F0], &rect, 0x280, 0x100);
-    addPrimTag(D_8009BE3C->ot, &D_8009D164[D_8009D7F0]);
+    addPrim(D_8009BE3C->ot, &D_8009D164[D_8009D7F0]);
     return 1;
 }
 

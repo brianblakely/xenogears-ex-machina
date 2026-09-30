@@ -94,10 +94,33 @@ typedef struct {
     u_long code[2];
 } DR_MODE;
 
+typedef struct {
+    u_long tag;
+    u_long code[2];
+} DR_TWIN;
+
+typedef struct {
+    u_long tag;
+    u_long code[1];
+} DR_TPAGE;
+
+typedef struct {
+    u_long tag;
+    u_long code[5];
+} DR_MOVE;
+
 #define setlen(p, _len) (((P_TAG *)(p))->len = (u_char)(_len))
 #define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u_long)(_addr))
 #define setcode(p, _code) (((P_TAG *)(p))->code = (u_char)(_code))
 #define getaddr(p) (u_long)(((P_TAG *)(p))->addr)
+#define getcode(p) (u_char)(((P_TAG *)(p))->code)
+#define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
+#define setSemiTrans(p, abe) \
+    ((abe) ? setcode(p, getcode(p) | 0x02) : setcode(p, getcode(p) & ~0x02))
+#define setShadeTex(p, tge) \
+    ((tge) ? setcode(p, getcode(p) | 0x01) : setcode(p, getcode(p) & ~0x01))
+#define setPolyFT4(p) setlen(p, 9), setcode(p, 0x2c)
+#define setPolyG4(p) setlen(p, 8), setcode(p, 0x38)
 #define setSprt(p) setlen(p, 4), setcode(p, 0x64)
 #define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
 
@@ -122,6 +145,9 @@ void SetTile(TILE *p);
 void SetSprt(SPRT *p);
 void SetSemiTrans(void *p, int abe);
 void SetDrawMode(DR_MODE *p, int dfe, int dtd, int tpage, RECT *tw);
+void SetTexWindow(DR_TWIN *p, RECT *tw);
+void SetDrawTPage(DR_TPAGE *p, int dfe, int dtd, int tpage);
+void SetDrawMove(DR_MOVE *p, RECT *rect, int x, int y);
 u_short GetClut(int x, int y);
 u_short GetTPage(int tp, int abr, int x, int y);
 DRAWENV *SetDefDrawEnv(DRAWENV *env, int x, int y, int w, int h);

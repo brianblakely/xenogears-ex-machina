@@ -792,7 +792,7 @@ s32 func_800923A8(s32 index) {
     actor = &D_8009BE24[index];
     actor->u.step = 0xF8;
     SetDrawTPage(&D_8009D310, 1, 0, GetTPage(0, D_8009CCA4, 0x380, 0x100));
-    setPrimLen(&D_8009CE6C[0], 8);
+    setlen(&D_8009CE6C[0], 8);
     D_8009CE6C[0].code = 0x38;
     D_8009CE6C[0].r0 = actor->u.step;
     D_8009CE6C[0].g0 = actor->u.step;
@@ -962,7 +962,7 @@ s32 func_80092DF8(void) {
     D_8009BD64.unk68 = 8;
     D_8009D498.flags |= 2;
     func_80034614(&D_8009BD64);
-    setPrimLen(&D_8009D2B8[0], 9);
+    setlen(&D_8009D2B8[0], 9);
     D_8009D2B8[0].code = 0x2C;
     D_8009D2B8[0].y0 = 0x70;
     D_8009D2B8[0].y1 = 0x70;

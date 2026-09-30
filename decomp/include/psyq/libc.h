@@ -5,6 +5,8 @@
 int sprintf(char *s, const char *format, ...);
 int strlen(const char *s);
 void *bzero(unsigned char *p, int n);
+void *memcpy(void *dest, void *src, int n);
 int rand(void);
+int abs(int i);
 
 #endif

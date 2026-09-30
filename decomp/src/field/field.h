@@ -6,6 +6,8 @@
 #include "psyq/libcd.h"
 #include "psyq/libgte.h"
 #include "psyq/libetc.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
 
 /* A 16.16 fixed-point value; code also reads its whole part alone. */
 typedef union {
@@ -666,7 +668,6 @@ extern void func_8002DFF0(s32 w, s32 h);
 extern void func_80038428(void *bank);
 extern void func_8003A344(s32 voice, s32 volume);
 extern void func_8003A55C(s32 voice, s32 pan);
-extern void memcpy(void *to, void *from, s32 size);
 extern void func_800379B4(s32);
 extern void func_8003A838(s32 sequence, s32, s32);
 extern void func_8003A89C(s32 sequence, s32, s32);
@@ -694,9 +695,6 @@ extern void func_8003A20C(s32 voice);
 extern void func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
-extern void FlushCache(void);
-extern void EnterCriticalSection(void);
-extern void ExitCriticalSection(void);
 extern s32 func_8001B484(s32 file, s32);
 extern void func_80028470(s32 directory, s32);
 extern s32 func_800286CC(void);
@@ -705,7 +703,6 @@ extern void func_80032498(s32 tag, s32);
 extern void func_80033698(s32, s32);
 extern void func_8003747C(s32);
 extern void func_800374E8(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
-extern s32 rand(void);
 extern void func_80021B98(void *, s32 r, s32 g, s32 b);
 extern void func_80028A60(s32);
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);

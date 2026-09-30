@@ -2,6 +2,13 @@
 #define WORLDMAP_H
 
 #include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/libsn.h"
 
 #define ABS(x) ((x) < 0 ? -(x) : (x))
 
@@ -72,8 +79,6 @@ typedef struct {
     s32 xy3;
 } PolyG4;
 
-#define setPolyG4(p) (((u8 *)(p))[3] = 8, ((u8 *)(p))[7] = 0x38)
-
 extern PolyG4 D_8009D194[4][2]; /* sky gradient bands, per buffer */
 
 /* Resident world-map return state. */
@@ -101,10 +106,6 @@ typedef struct {
 extern WorldmapReturn D_8006EE54;
 extern u8 D_8006F8E5, D_8006F8E6, D_8006F8E7;
 
-typedef struct {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
 /* Camera: its target and orientation. */
 typedef struct {
     VECTOR target;
@@ -128,26 +129,6 @@ extern WorldmapSpot *D_8009D3F4;
 void func_8008DFF4(VECTOR *position);
 void func_800848B4(s32 parent, s32 child);
 
-/* PsyQ libgpu environments. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    RECT clip;
-    s16 ofs[2];
-    RECT tw;
-    u16 tpage;
-    u8 dtd, dfe, isbg, r0, g0, b0;
-    u32 dr_env[16];
-} DRAWENV;
-
-typedef struct {
-    RECT disp;
-    RECT screen;
-    u8 isinter, isrgb24, pad0, pad1;
-} DISPENV;
-
 typedef struct {
     DRAWENV draw;
     DISPENV disp;
@@ -159,14 +140,8 @@ extern DisplayBuffer D_8009BBC8[2];
 extern s32 D_8009BCDC;
 extern u8 D_8009BB48[3]; /* background colour */
 
-void ResetGraph(s32 mode);
-void SetGeomScreen(s32 value);
-DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h);
-DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h);
 void func_8002C6E0(s32 r, s32 g, s32 b);
-void SetBackColor(s32 r, s32 g, s32 b);
 void func_8004A10C(s32 r, s32 g, s32 b);
-void SetFogNearFar(s32 a, s32 b, s32 c);
 
 /* Actor slots (0x80 bytes each). */
 typedef struct {
@@ -282,21 +257,9 @@ extern TexAnimSlot D_8009A1E8[], D_8009A250[];
 extern TexAnim *D_8009D780, *D_8009D7D0;
 extern s32 D_8009CC9C, D_8009CD64;
 
-void LoadImage(RECT *rect, void *data); /* upload to VRAM */
-
 extern void *D_8009BE14, *D_8009BE18;
 extern WorldmapSpot *D_8009D30C; /* ring of 16 recent positions */
 extern s32 D_8009BE38;
-
-/* PsyQ libgte types. */
-typedef struct {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-typedef struct {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
 
 /* Scratchpad work area of the sky renderer. */
 typedef struct {
@@ -309,21 +272,12 @@ typedef struct {
 
 #define SKY_SCRATCH ((SkyScratch *)0x1F800000)
 
-#define addPrim(ot, p) \
-    (*(u32 *)(p) = (*(u32 *)(p) & 0xFF000000) | (*(u32 *)(ot) & 0xFFFFFF), \
-     *(u32 *)(ot) = (*(u32 *)(ot) & 0xFF000000) | ((u32)(p) & 0xFFFFFF))
-
 extern SVECTOR D_8009A280[4][4]; /* sky band corners */
 extern MATRIX D_8009C808;       /* camera matrix */
 extern s32 D_8009D7F0;          /* current buffer */
 extern s32 D_80050100;          /* ordering-table depth shift */
 
 void func_8004A92C(SVECTOR *angle, MATRIX *m); /* RotMatrix */
-MATRIX *CompMatrix(MATRIX *a, MATRIX *b, MATRIX *out); /* MulMatrix0 */
-void SetRotMatrix(MATRIX *m); /* SetRotMatrix */
-void SetTransMatrix(MATRIX *m); /* SetTransMatrix */
-s32 RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1,
-                  s32 *sxy2, s32 *sxy3, s32 *p, s32 *flag); /* RotAverage4 */
 
 /* Textured quad packet (PsyQ POLY_FT4 layout). */
 typedef struct {
@@ -343,25 +297,8 @@ typedef struct {
     u16 pad2;
 } PolyFT4;
 
-#define setlen(p, n) (((u8 *)(p))[3] = (n))
-#define setcode(p, c) (((u8 *)(p))[7] = (c))
-#define setPolyFT4(p) (setlen(p, 9), setcode(p, 0x2C))
-#define setRGB0(p, r, g, b) ((p)->r0 = (r), (p)->g0 = (g), (p)->b0 = (b))
-#define setSemiTrans(p, abe) \
-    ((abe) ? (((u8 *)(p))[7] |= 2) : (((u8 *)(p))[7] &= ~2))
-
-typedef struct {
-    u32 tag;
-    u32 code[2];
-} DR_TWIN;
-
 extern PolyFT4 D_8009C744[4];
 extern DR_TWIN D_8009D3D8[2];
-
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-u16 GetClut(s32 x, s32 y);                  /* GetClut */
-void SetSemiTrans(void *p, s32 abe);             /* SetSemiTrans */
-void SetTexWindow(DR_TWIN *p, RECT *tw);         /* SetTexWindow */
 
 extern s16 D_8009C854[16];
 extern s32 D_8009D64C, D_8009BE40, D_8009BCC4, D_8009D80C;
@@ -370,11 +307,6 @@ extern s32 D_8009D554, D_8009CCA4, D_8009D3CC;
 extern u8 D_80062648[];
 #define SCRIPT_VECTOR ((SVECTOR *)0x1F8000A0) /* scratchpad script vector */
 
-void DrawSync(s32 mode);
-void VSync(s32 mode);
-void EnterCriticalSection(void);
-void FlushCache(void);
-void ExitCriticalSection(void);
 void func_80039CC4(void);
 void func_800399D4(void *seq);
 void *func_80039850(void *header);
@@ -446,8 +378,6 @@ typedef struct {
 
 void func_80083108(SceneObject *object, PolyFT3 *prims, s32 count, s32 mode);
 
-void memcpy(void *dest, void *src, s32 size); /* copy memory */
-
 extern void *D_8009D7E8[2], *D_8009D7F8[2]; /* quad buffers, per display buffer */
 extern u16 D_8009B64C[][2]; /* per area: two scene objects */
 extern u16 D_8009B674[];    /* per area: scene object */
@@ -505,8 +435,6 @@ typedef struct {
     s32 a, b, c, d;
 } EffectCommand4;
 
-s32 SquareRoot0(s32 value);                  /* SquareRoot0 */
-s32 ratan2(s32 y, s32 x);               /* ratan2 */
 s32 func_8003F8B0(s32 angle);                  /* rsin */
 s32 func_8003F8CC(s32 angle);                  /* rcos */
 s32 func_8002C3D8(void);
@@ -592,10 +520,6 @@ typedef struct {
 #define SVECTOR_ZERO(v) (*(s32 *)&(v)->vx = 0, (v)->vz = 0)
 #define SVECTOR_COPY(d, s) (*(s32 *)&(d)->vx = *(s32 *)&(s)->vx, (d)->vz = (s)->vz)
 
-typedef struct {
-    u8 r, g, b, cd;
-} CVECTOR;
-
 /* Particle life word: low half frames left, high half nonzero while live. */
 #define EFFECT_COUNT(slot) (((s16 *)&(slot)->timer)[0])
 #define EFFECT_ENABLED(slot) (((s16 *)&(slot)->timer)[1])
@@ -639,8 +563,6 @@ extern VECTOR D_8009BB4C, D_8009BB5C, D_8009BB6C, D_8009BB7C, D_8009BB8C, D_8009
 extern VECTOR D_8009C7F0, D_8009C828, D_8009C844, D_8009C874;
 extern s16 D_8009AFA0[]; /* object link pairs; -1 ends */
 extern u16 D_8009B688[];
-
-void OuterProduct0(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct0 */
 
 extern s16 D_8009D7E0; /* scene object count */
 extern u16 D_8009D52C;
@@ -713,7 +635,6 @@ extern s32 D_8009C5BC;
 extern WorldmapView *D_8009BE3C;
 extern u8 D_8009BBB4[], D_8009BD40[];
 
-
 void func_80073B04(void);
 void func_800737EC(void);
 void func_800740B8(void);
@@ -754,7 +675,6 @@ extern s16 D_8009CE68; /* destination id, -1 none */
 extern u16 D_8009A5CC[]; /* resident flag word per exit */
 
 /* Scene set-up. */
-void MoveImage(RECT *rect, s32 x, s32 y);
 s32 func_800286CC(void);
 void func_80028A60(s32 mode);
 void func_8001B66C(void);
@@ -817,7 +737,6 @@ typedef struct {
 
 #define SCALE_SCRATCH ((ScaleScratch *)0x1F800000)
 
-MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
 extern SVECTOR D_8009A674[]; /* flight path start per entry */
 void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b);
 /* worldmap_80094A5C, 8008C364, 8008E190 */
@@ -831,8 +750,6 @@ extern s32 D_8009D7F4, D_8009D614, D_8009CEB8, D_8009C590;
 extern u32 D_8009D56C; /* sectors left */
 extern s32 D_8009BCCC[3]; /* sector header */
 
-#include "psyq/libcd.h"
-#include "psyq/libsn.h"
 extern CdlLOC D_8009CEBC; /* request position */
 
 void func_80096A6C(s32 status, u8 *result);
@@ -840,7 +757,6 @@ void func_80096C0C(s32 status, u8 *result);
 void func_8009699C(EffectCommand3 *request);
 void func_800966CC(EffectCommand4 *request);
 s32 func_800968E0(void);
-
 
 /* Scratchpad matrices of the angle and camera helpers. */
 #define SCRATCH_MATRIX_A ((MATRIX *)0x1F8000F0)
@@ -850,10 +766,8 @@ s32 func_800968E0(void);
 #define SCRATCH_SVECTOR ((SVECTOR *)0x1F8000A0)
 #define SCRATCH_VECTOR ((VECTOR *)0x1F800000)
 
-MATRIX *MulMatrix0(MATRIX *a, MATRIX *b, MATRIX *out);
 MATRIX *func_8004AFEC(s32 angle, MATRIX *m); /* RotMatrixY */
 MATRIX *func_8004AE4C(s32 angle, MATRIX *m); /* RotMatrixX */
-MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
 
 /* Camera placement: eye, target and up direction. */
 typedef struct {
@@ -875,9 +789,6 @@ typedef struct {
 #define LOOKAT_SCRATCH ((LookAtScratch *)0x1F800000)
 
 void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
-VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v, VECTOR *out);
-MATRIX *TransMatrix(MATRIX *m, VECTOR *t);
-VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
 
 /* Actor slot entry points (kind: start, update: step); they return the
  * next command. */
@@ -894,7 +805,6 @@ extern u16 D_8009CCB4[0x40];
 extern u16 D_8009CD54[7];
 
 void func_8002DD20(void *image); /* upload an image file */
-void StoreImage(RECT *rect, void *data);
 void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour);
 
 /* 9x9 terrain blocks around the camera: block numbers, row-major. */
@@ -970,9 +880,6 @@ extern u16 D_8006EE5A, D_8006EE5C, D_8006EE5E, D_8006EE66;
 
 s32 func_80093978(s32 x, s32 z); /* ground height at a position */
 
-#define setShadeTex(p, tge) \
-    ((tge) ? (((u8 *)(p))[7] |= 1) : (((u8 *)(p))[7] &= ~1))
-
 /* Shared quad pool (192 quads), one copy per display buffer. */
 typedef struct {
     PolyFT4 quads[0xC0];
@@ -992,7 +899,6 @@ extern PolyFT4 D_8009D2B8[2]; /* destination marker, per display buffer */
 
 void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
 
-s32 rand(void);
 void func_80093484(VECTOR *offset);
 
 /* Sixteen footprint quads, copied between display buffers as a whole. */
@@ -1034,10 +940,6 @@ typedef struct {
 } WorldmapSave;
 
 extern WorldmapSave D_8005A4E4;
-
-void StoreImage(RECT *rect, void *pixels);
-void MoveImage(RECT *rect, s32 x, s32 y);
-void ClearOTagR(u32 *ot, s32 count);
 
 extern void *D_8009C7E4; /* free memory block kept while away */
 extern void *D_8009C800, *D_8009C890; /* saved VRAM areas */
@@ -1084,8 +986,6 @@ extern u16 D_8005948C, D_80059490; /* buttons pressed */
 extern u16 D_800594A4, D_800594A8;
 extern u16 D_8009CD50, D_8009BD10, D_8009BD14, D_8009BD18, D_8009BD1C;
 
-void PutDispEnv(DISPENV *env);
-void PutDrawEnv(DRAWENV *env);
 s32 func_80035CDC(void); /* dequeue one input event */
 void func_80037E8C(void);
 void func_80037EE4(void);
@@ -1107,9 +1007,6 @@ extern void (*D_8009CD40)(void); /* per-frame hook */
 
 void func_80073530(void);
 void func_80085F58(void);
-
-MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
-
 
 /* Scratchpad work area of the camera steering. */
 typedef struct {
@@ -1137,26 +1034,10 @@ typedef struct {
     s16 w, h;
 } Tile;
 
-typedef struct {
-    u32 tag;
-    u32 code[1];
-} DR_TPAGE;
-
-void SetDrawTPage(DR_TPAGE *p, s32 dfe, s32 dtd, s32 tpage);
-
 extern PolyFT4 D_8009C5C0[2]; /* overlay picture, per buffer */
 extern DR_TPAGE D_8009C5A0;
 extern PolyG3 D_8009C664[8];
 extern Tile D_8009C898[0x40];
-
-/* PsyQ primitive tag view (libgpu P_TAG). */
-typedef struct {
-    u32 addr : 24;
-    u32 len : 8;
-    u8 r0, g0, b0, code;
-} P_TAG;
-
-#define setPrimLen(p, n) (((P_TAG *)(p))->len = (n))
 
 void func_80076954(void);
 void func_80074E58(void);
@@ -1190,10 +1071,6 @@ void func_80074594(void);
 void func_8007565C(void);
 void func_80097CB8(Camera *camera);
 void func_800976FC(s32 kind, s32 index);
-
-void DrawOTag(u32 *ot);
-#define setShadeTex(p, tge) \
-    ((tge) ? (((u8 *)(p))[7] |= 1) : (((u8 *)(p))[7] &= ~1))
 
 /* PsyQ POLY_G4 with per-vertex fields. */
 typedef struct {
@@ -1246,7 +1123,6 @@ s32 func_80094154(VECTOR *a, VECTOR *b);
 void func_80097070(MATRIX *m, SVECTOR *angle);
 void func_8003A2E4(s32 sound, s32 volume);
 
-
 /* worldmap_80083A00 */
 void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* outer product */
 void func_8004A8EC(MATRIX *in, MATRIX *out);
@@ -1278,10 +1154,8 @@ s32 func_8008868C(void);
 
 extern u16 D_8009BCE0[16]; /* faded CLUT ids */
 void func_8002DD20(void *image);                            /* unpack an image to VRAM */
-void StoreImage(RECT *rect, void *data);                     /* read back from VRAM */
 
 extern Drift D_8009AF30[5]; /* drift template points */
-s32 rand(void);
 
 void func_80093534(VECTOR *delta); /* wrap a world-unit offset */
 
@@ -1318,7 +1192,6 @@ typedef struct {
 
 extern s16 D_8009D618[25]; /* 5x5 visible blocks; -1 empty */
 extern s16 D_8009BE04;     /* quads used this frame */
-MATRIX *RotMatrixZ(s32 angle, MATRIX *m);
 void func_80099BFC(u8 *data, s32 count, u32 *ot, PolyFT4 *quads);
 
 /* Scene object placement (16 bytes; the list follows a count halfword). */
@@ -1341,8 +1214,6 @@ extern MATRIX D_8009A140, D_8009A160; /* colour and light matrices */
 s32 func_8002C3E8(void *defs);
 void func_8002CB54(SpriteDef *def, void **prims, void **prims2, SceneObject *object);
 void func_8002C8CC(SpriteDef *def, void *prims, s32 mode);
-void SetColorMatrix(MATRIX *m);
-void SetLightMatrix(MATRIX *m);
 
 /* Scratchpad work area of the face probe. */
 typedef struct {
@@ -1353,8 +1224,6 @@ typedef struct {
     MATRIX m;         /* 0xF0 */
     MATRIX probe;     /* 0x110: rows are the probe segment ends */
 } FaceScratch;
-
-VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v, VECTOR *out);
 
 #define FACE_SCRATCH ((FaceScratch *)0x1F800000)
 
@@ -1418,7 +1287,6 @@ typedef struct {
 
 void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
 
-MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
 void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 
@@ -1536,17 +1404,7 @@ s32 func_80094238(VECTOR *position, s32 table);
 void func_8007528C(void);
 
 /* lead: heat-haze rows (800811C0) */
-typedef struct {
-    u32 tag;
-    u32 code[5];
-} DR_MOVE;
-
-void SetDrawMove(DR_MOVE *p, RECT *rect, s32 x, s32 y);
 extern DR_MOVE D_8009D164[2]; /* haze copy-back, per display buffer */
-
-/* libgpu addPrim through the P_TAG view (struct stores). */
-#define addPrimTag(ot, p) \
-    (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
 
 /* Pulsing effect settings per slot: position x, y, z, then the actor's
  * step..unk74 words (see func_80082F64). */
@@ -1567,7 +1425,6 @@ void func_80074794(s16 id, VECTOR *position);
 void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
 
 /* worldmap.c main loop (round 3) */
-void SetGeomOffset(s32 x, s32 y);
 void func_800250E0(s32 buffer);
 void func_8001D468(void);
 void func_80097800(void);
@@ -1672,7 +1529,6 @@ typedef struct {
 } TerrainDrawScratch;
 
 extern s32 D_8009D7DC; /* packet depth */
-
 
 /* Model and object of the scene overlay at 0x801E0000. */
 typedef struct {
@@ -1948,9 +1804,6 @@ extern s16 D_8006EF68;
 extern s32 D_8009BD0C;
 extern u8 D_8003634C[];           /* resident VSync callback */
 
-void VSyncCallback(void *func);
-void InitGeom(void);
-void ClearImage(RECT *rect, s32 r, s32 g, s32 b);
 void func_800199CC(s32 mode);
 void func_8001996C(s32 mode);
 void func_80019ACC(s32 mode);

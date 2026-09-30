@@ -957,18 +957,6 @@ void func_800796FC(void) {
     PutDrawEnv(&D_800C426C->draw);
 }
 
-#ifndef addPrim
-/* A primitive's tag: the next primitive's address and this one's length. */
-typedef struct {
-    u32 addr : 24;
-    u32 len : 8;
-} P_TAG;
-
-#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
-#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
-#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
-#endif
-
 extern DR_MODE D_800AFE24[2]; /* fade draw mode per buffer */
 extern RECT D_800AFE4C;       /* fade copy source */
 extern TILE D_800AFE54[2];    /* fade tile per buffer */

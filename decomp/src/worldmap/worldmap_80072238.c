@@ -718,7 +718,7 @@ void func_80073E30(void) {
     Tile *tile;
     s32 i;
 
-    setPrimLen(&D_8009C5C0[0], 9);
+    setlen(&D_8009C5C0[0], 9);
     D_8009C5C0[0].code = 0x2C;
     D_8009C5C0[0].x0 = 0xD0;
     D_8009C5C0[0].y0 = 0x78;
@@ -1644,17 +1644,17 @@ void func_80076DA4(WorldmapActor *actor, VECTOR *work) {
         work[1].vx = work[0].vx >> 3;
         work[1].vy = work[0].vy >> 3;
         work[1].vz = work[0].vz >> 3;
-        if (ABS(work[1].vx) < 0x40) {
+        if (abs(work[1].vx) < 0x40) {
             actor->motion.vx = actor->u.step;
         } else {
             actor->motion.vx += work[1].vx;
         }
-        if (ABS(work[1].vy) < 0x40) {
+        if (abs(work[1].vy) < 0x40) {
             actor->motion.vy = actor->unk54;
         } else {
             actor->motion.vy += work[1].vy;
         }
-        if (ABS(work[1].vz) < 0x40) {
+        if (abs(work[1].vz) < 0x40) {
             actor->motion.vz = actor->unk58;
         } else {
             actor->motion.vz += work[1].vz;
@@ -1693,19 +1693,19 @@ void func_80076FA8(WorldmapActor *actor, VECTOR *work) {
         work[1].vx = work[0].vx >> 3;
         work[1].vy = work[0].vy >> 3;
         work[1].vz = work[0].vz >> 3;
-        if (ABS(work[1].vx) < 0x200) {
+        if (abs(work[1].vx) < 0x200) {
             GROUND_SCROLL[0] += work[0].vx;
             actor->position.vx = D_8009D55C.target.vx;
         } else {
             GROUND_SCROLL[0] += work[1].vx;
             actor->position.vx += work[1].vx;
         }
-        if (ABS(work[1].vy) < 0x200) {
+        if (abs(work[1].vy) < 0x200) {
             actor->position.vy = D_8009D55C.target.vy;
         } else {
             actor->position.vy += work[1].vy;
         }
-        if (ABS(work[1].vz) < 0x200) {
+        if (abs(work[1].vz) < 0x200) {
             GROUND_SCROLL[2] += work[0].vz;
             actor->position.vz = D_8009D55C.target.vz;
         } else {

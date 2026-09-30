@@ -1,6 +1,8 @@
 #ifndef PSYQ_LIBGTE_H
 #define PSYQ_LIBGTE_H
 
+#include "psyq/types.h"
+
 /* PsyQ libgte. */
 typedef struct {
     long vx, vy, vz, pad;
@@ -15,6 +17,10 @@ typedef struct {
 } DVECTOR;
 
 typedef struct {
+    u_char r, g, b, cd;
+} CVECTOR;
+
+typedef struct {
     short m[3][3];
     long t[3];
 } MATRIX;
@@ -25,9 +31,15 @@ void InitGeom(void);
 void SetGeomOffset(long ofx, long ofy);
 void SetGeomScreen(long h);
 void SetBackColor(long rbk, long gbk, long bbk);
+void SetFogNearFar(long a, long b, long h);
+void SetColorMatrix(MATRIX *m);
+void SetLightMatrix(MATRIX *m);
 void PushMatrix(void);
 void PopMatrix(void);
 MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2);
+MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2);
+MATRIX *RotMatrixZ(long r, MATRIX *m);
+MATRIX *TransMatrix(MATRIX *m, VECTOR *v);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrixLV(MATRIX *m, VECTOR *v0, VECTOR *v1);
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *v);
@@ -35,8 +47,11 @@ void SetRotMatrix(MATRIX *m);
 void SetTransMatrix(MATRIX *m);
 void RotTransSV(SVECTOR *v0, SVECTOR *v1, long *flag);
 long RotTransPers(SVECTOR *v0, long *sxy, long *p, long *flag);
+long RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1,
+                   long *sxy2, long *sxy3, long *p, long *flag);
 long RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1,
                  long *sxy2, long *sxy3, long *p, long *flag);
+void OuterProduct0(VECTOR *v0, VECTOR *v1, VECTOR *v2);
 long ratan2(long y, long x);
 long SquareRoot0(long a);
 

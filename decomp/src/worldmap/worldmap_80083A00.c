@@ -1891,7 +1891,7 @@ void func_80089C78(void) {
             *(u16 *)&quad->u1 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[1];
             *(u16 *)&quad->u2 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[2];
             *(u16 *)&quad->u3 = D_8009AFF0[EFFECT_ENABLED(slot)].uv[3];
-            addPrimTag(&D_8009BE3C->ot[scratch->sz >> 4], quad);
+            addPrim(&D_8009BE3C->ot[scratch->sz >> 4], quad);
             quad++;
         }
     }
