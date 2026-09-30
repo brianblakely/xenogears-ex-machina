@@ -3950,7 +3950,41 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8EAC);
 #endif
 
+/* Set the blending of portrait `index`'s quads of the current buffer: plain
+ * (2), or dim (3) when `dim`. Every edge list is walked four pairs deep, so
+ * each pass also covers the list after it, as the original does. */
+#ifdef NON_MATCHING
+void func_801E8F60(u8 index, u8 dim) {
+    u8 mode;
+    s32 i;
+
+    mode = 2;
+    if (dim) {
+        mode = 3;
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->frame[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edgeA[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edgeB[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edgeC[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 4; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->edgeD[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    for (i = 0; i < 2; i++) {
+        func_801E8EAC(&D_800625A0->portraits[index]->top[i * 2 + D_800625A0->portraits[index]->buffer], mode);
+    }
+    func_801E8EAC(&D_800625A0->portraits[index]->side[D_800625A0->portraits[index]->buffer], mode);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8F60);
+#endif
 
 /* Make `poly` semi-transparent, textured without shading, at neutral colour. */
 void func_801E91C4(POLY_FT4 *poly) {

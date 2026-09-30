@@ -655,7 +655,11 @@ typedef struct MenuBlock434 {
 
 /* A portrait frame (*(state + 364)). */
 typedef struct MenuPortrait {
-    u8 pad0[0x3C0];
+    POLY_FT4 frame[8]; /* 0: per buffer pairs */
+    POLY_FT4 edgeA[4]; /* 140 */
+    POLY_FT4 edgeB[4]; /* 1E0 */
+    POLY_FT4 edgeC[4]; /* 280 */
+    POLY_FT4 edgeD[4]; /* 320 */
     POLY_FT4 side[2]; /* 3C0 */
     POLY_FT4 top[2]; /* 410 */
     POLY_FT4 bottom[2]; /* 460 */
@@ -917,6 +921,7 @@ void SetLineF3(LINE_F3 *line);       /* SetLineF3 */
 void SetPolyF4(POLY_F4 *poly);       /* SetPolyF4 */
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E927C(POLY_FT4 *poly);
 void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
 void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
