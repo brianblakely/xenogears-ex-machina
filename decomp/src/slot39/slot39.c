@@ -3868,7 +3868,34 @@ void func_801E8978(u8 count, u8 cursor, MenuCommandImages *images) {
     D_800625A0->party->redraw4 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8B4C);
+/* Lay out the choice cursor sprites of the command at `offset` past the top
+ * cursor (the chosen one lit), then mark the window for redraw. */
+void func_801E8B4C(u8 offset) {
+    s32 i;
+    s32 image;
+
+    D_800625A0->spriteLists->firstCount = 0;
+    D_800625A0->spriteLists->secondCount = 0;
+    for (i = 0; i < D_800625A0->choiceCount; i++) {
+        if (i == D_800625A0->choice) {
+            image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2] + 0xd;
+        } else {
+            image = D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2];
+        }
+        D_800625A0->spriteLists->firstCount +=
+            func_8002675C(D_800625A0->sheet, image,
+                          &D_800625A0->spriteLists->first[D_800625A0->spriteLists->firstCount * 2],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+        D_800625A0->spriteLists->secondCount +=
+            func_8002675C(D_800625A0->sheet, D_801EA1EC[(offset + D_800625A0->cursor) * 8 + i * 2 + 1],
+                          &D_800625A0->spriteLists->second[D_800625A0->spriteLists->secondCount * 2],
+                          D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+    }
+    D_800625A0->spriteLists->firstStart = D_800625A0->bufferIndex;
+    D_800625A0->spriteLists->secondStart = D_800625A0->bufferIndex;
+    func_801D1EE0(D_800625A0->choice + 7, 1);
+    D_800625A0->party->redraw4 = 1;
+}
 
 /* Render the two name lines of name pair `image` (ff: blank) and upload them
  * to the label area of row `row` (rows pair up on one 40x13 image). */

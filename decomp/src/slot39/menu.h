@@ -820,6 +820,7 @@ extern u8 D_801E9E84[];
 extern u8 D_801E9EA0[];
 extern MenuCommandImages D_801EA19C[]; /* field menu command cursor images */
 extern MenuCommandImages D_801EA1D4[]; /* title file screen cursor images */
+extern s32 D_801EA1EC[]; /* per command: four choices of cursor and label images */
 extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];
