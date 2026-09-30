@@ -6406,7 +6406,83 @@ u8 func_800941A4(void) {
     return D_800D2DB8;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800946F4);
+/* Per-target follow-up of a party or enemy action. On a hit (result 0): a
+ * party attacker's counter +0x3a rises when the damage equals the target's
+ * HP; the target loses status80 bit 0x1000 and, on 70%, 0x2000; an ether
+ * command (flags 0x100) gets result 2 against flags36 0x4000 (or 0x2000
+ * without attribute 2 bits); flags32 0x80 halves (60%, 80% for character
+ * 0) or raises damage by half; flags32 0x20 turns it on the attacker; a
+ * party attack clears the target's status7c bit 2 (restoring status7a); a
+ * blow at least character 3's HP clears every enemy's status80 bit 0x20.
+ * Then flags36 0x8000 swaps results 0/5 and 2, status84 0x80 doubles
+ * result-2 damage and status88 0x200 nullifies result-1 damage. */
+void func_800946F4(void) {
+    s32 chance;
+    u8 slot;
+
+    if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+        if (D_800C34B0->damage[D_800C3E50] == D_800C3E34->pilot.hp && D_800C3E04 < 3) {
+            if (++D_800C3E00->pilot.field3A > 0xFDE8) {
+                D_800C3E00->pilot.field3A--;
+            }
+        }
+        D_800C3E34->pilot.status80 &= ~0x1000;
+        if ((D_800C3E34->pilot.status80 & 0x2000) && rand() % 100 < 70) {
+            D_800C3E34->pilot.status80 &= ~0x2000;
+        }
+        if (D_800C3DFC->flagsA & 0x100) {
+            if (D_800C3E34->pilot.flags36 & 0x4000) {
+                D_800C34B0->resultCode[D_800C3E50] = 2;
+            }
+            if ((D_800C3E34->pilot.flags36 & 0x2000) && !(D_800C3DFC->attributes[2] & 0xF)) {
+                D_800C34B0->resultCode[D_800C3E50] = 2;
+            }
+        }
+        if (D_800C3E34->pilot.flags32 & 0x80) {
+            chance = 60;
+            if (D_800C3E34->pilot.characterId == 0) {
+                chance = 80;
+            }
+            if (rand() % 100 < chance) {
+                D_800C34B0->damage[D_800C3E50] >>= 1;
+            } else {
+                D_800C34B0->damage[D_800C3E50] += D_800C34B0->damage[D_800C3E50] >> 1;
+            }
+        }
+        if (D_800C3E34->pilot.flags32 & 0x20) {
+            D_800C34B0->resultCode[D_800C3E04] = 0;
+            D_800C34B0->damage[D_800C3E04] = D_800C34B0->damage[D_800C3E50];
+        }
+        if (D_800C3E04 < 3 && D_800C3E04 != D_800C3E50) {
+            if (D_800C34B0->records[D_800C3E50].pilot.status7C & 2) {
+                D_800C34B0->records[D_800C3E50].pilot.status7C &= ~2;
+                D_800C34B0->records[D_800C3E50].pilot.status7A = D_800C3AA4[D_800C3E50];
+            }
+        }
+        if (D_800C3E34->pilot.characterId == 3 && (u32)D_800D2C54[D_800C3E50] >= D_800C3E34->pilot.hp) {
+            for (slot = 3; slot < 11; slot++) {
+                D_800CCCE8.records[slot].pilot.status80 &= ~0x20;
+            }
+        }
+    }
+    if (D_800C3E34->pilot.flags36 & 0x8000) {
+        switch (D_800C34B0->resultCode[D_800C3E50]) {
+        case 0:
+        case 5:
+            D_800C34B0->resultCode[D_800C3E50] = 2;
+            break;
+        case 2:
+            D_800C34B0->resultCode[D_800C3E50] = 0;
+            break;
+        }
+    }
+    if ((D_800C3E34->pilot.status84.half.permanent & 0x80) && D_800C34B0->resultCode[D_800C3E50] == 2) {
+        D_800C34B0->damage[D_800C3E50] *= 2;
+    }
+    if ((D_800C3E34->pilot.status88.half.permanent & 0x200) && D_800C34B0->resultCode[D_800C3E50] == 1) {
+        D_800C34B0->damage[D_800C3E50] = 0;
+    }
+}
 
 /* Add the damage dealt to the target to each hit party member's running
  * total (+0x5f60 with record flag 0x80 at +0x15a, else +0x5f54). */

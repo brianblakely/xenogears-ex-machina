@@ -9,6 +9,7 @@
 extern u8 D_800D2DB8;             /* resolve status returned to the caller */
 extern u8 D_800C34AE;             /* character 4's item bookkeeping done */
 extern void (*D_800C348C[])(void); /* formula table */
+extern u16 D_800C3AA4[11];        /* per slot: status 7a restored when status 7c bit 2 wears off */
 
 void func_800946F4(void);
 void func_800968C0(void);
