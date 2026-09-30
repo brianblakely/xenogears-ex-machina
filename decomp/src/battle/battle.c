@@ -319,9 +319,29 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073A58);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073B64);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073E88);
+/* Draw both 100-primitive lists at graphics +0x641c when UI +0xcb is set. */
+void func_80073E88(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073F08);
+    if (D_800D2D28->unkCB != 0) {
+        for (i = 0; i < 2; i++) {
+            func_800728B8(D_800C3EA4->unk641C[i], D_800D2D28->unkD0[i], D_800D2D28->unkA3);
+        }
+    }
+}
+
+/* Draw the three primitive lists the UI enables at +0x9c..+0x9e. */
+void func_80073F08(void) {
+    if (D_800D2D28->unk9C != 0) {
+        func_800728B8(D_800C3EA4->unkBA8, D_800D2D28->unkF8, D_800D2D28->unkA5);
+    }
+    if (D_800D2D28->unk9E != 0) {
+        func_800728B8(D_800C3EA4->unk27C8, D_800D2D28->unk100, D_800D2D28->unkA7);
+    }
+    if (D_800D2D28->unk9D != 0) {
+        func_800728B8(D_800C3EA4->unk1E68, D_800D2D28->unkFC, D_800D2D28->unkA6);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073FB8);
 
@@ -329,9 +349,27 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800742A0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800743A4);
 
+/* Add the graphics block's current +0x320 and +0x370 quads to the ordering
+ * table. */
+#ifdef NON_MATCHING
+void func_800744BC(void) {
+    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk320[D_800C3EA4->unkA230->buffer]);
+    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk370[D_800C3EA4->unkA230->buffer]);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800744BC);
+#endif
 
+/* Add the graphics block's current +0x280 and +0x2d0 quads to the ordering
+ * table. */
+#ifdef NON_MATCHING
+void func_80074554(void) {
+    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk280[D_800C3EA4->unkA230->buffer]);
+    func_80043B48(D_800CCB04 + 1, &D_800C3EA4->unkA230->unk2D0[D_800C3EA4->unkA230->buffer]);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074554);
+#endif
 
 INCLUDE_RODATA(".local/decomp/battle/asm/nonmatchings/battle", D_8006FAF0);
 
@@ -341,9 +379,25 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074AB8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074D4C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074EEC);
+/* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
+void func_80074EEC(void) {
+    if (D_800D2D28->unkA8 != 0) {
+        func_800728B8(D_800D2DB4->unk5550, D_800D2DB4->unk5D80[0], D_800D2DB4->unk5D8F[0]);
+        func_800728B8(D_800D2DB4->unk5640, D_800D2DB4->unk5D80[1], D_800D2DB4->unk5D8F[1]);
+        func_800728B8(D_800D2DB4->unk5C80, D_800D2DB4->unk5D80[2], D_800D2DB4->unk5D8F[2]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074F70);
+/* Add the current *800d3278 quad (UI +0xc8) and draw the 800d2dac object
+ * (UI +0xc9). */
+void func_80074F70(void) {
+    if (D_800D2D28->unkC8 != 0) {
+        func_80043B48(D_800CCB04 + 1, &D_800D3278->unk7A4[D_800D3278->unk7F4]);
+    }
+    if (D_800D2D28->unkC9 != 0) {
+        func_80034888(D_800D2DAC, D_800CCB04 + 1, D_800CCB34);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007500C);
 
@@ -537,7 +591,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077454);
 
 /* Allocate and clear the 0x670-byte graphics block, then initialise it. */
 void func_80077610(void) {
-    void *block = (void *)func_8008ABB8(0x670, 0);
+    GraphicsBlock *block = (GraphicsBlock *)func_8008ABB8(0x670, 0);
 
     D_800C3EA4->unkA230 = block;
     func_8003F8E8(block, 0x670);

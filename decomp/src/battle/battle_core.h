@@ -3,6 +3,28 @@
 
 #include "common.h"
 
+/* PsyQ GPU types. */
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
  * addressed absolutely from 800ccce8. */
 typedef struct {
@@ -64,44 +86,63 @@ extern TurnState *D_800C3EAC;
 typedef struct {
     u8 unk0[0x7C];
     u8 reaction[3];    /* +0x7C */
-    u8 unk7F[0xB4 - 0x7F];
+    u8 unk7F[0x9C - 0x7F];
+    u8 unk9C;
+    u8 unk9D;
+    u8 unk9E;
+    u8 unk9F[0xA3 - 0x9F];
+    u8 unkA3;
+    u8 unkA4;
+    u8 unkA5;
+    u8 unkA6;
+    u8 unkA7;
+    u8 unkA8;
+    u8 unkA9[0xB4 - 0xA9];
     u8 unkB4;
     u8 unkB5;
     u8 unkB6[0xC6 - 0xB6];
     u8 unkC6;
+    u8 unkC7;
+    u8 unkC8;
+    u8 unkC9;
+    u8 unkCA;
+    u8 unkCB;
+    u8 unkCC[4];
+    s32 unkD0[2];
+    u8 unkD8[0xF8 - 0xD8];
+    s32 unkF8;
+    s32 unkFC;
+    s32 unk100;
 } BattleUi;
 
 extern BattleUi *D_800D2D28;
 
+/* The 0x670-byte graphics block (*800c3ea4 + 0xa230). */
+typedef struct {
+    u8 unk0[0x280];
+    POLY_FT4 unk280[2];
+    POLY_FT4 unk2D0[2];
+    POLY_FT4 unk320[2];
+    POLY_FT4 unk370[2];
+    u8 unk3C0[0x66A - 0x3C0];
+    u8 buffer;         /* +0x66A */
+    u8 unk66B[0x670 - 0x66B];
+} GraphicsBlock;
+
 /* Battle graphics state (*800c3ea4). */
 typedef struct {
-    u8 unk0[0xA230];
-    void *unkA230;
+    u8 unk0[0xBA8];
+    POLY_FT4 unkBA8[120];
+    POLY_FT4 unk1E68[60];
+    POLY_FT4 unk27C8[1];
+    u8 unk27F0[0x641C - 0x27F0];
+    POLY_FT4 unk641C[2][100];
+    u8 unk835C[0xA230 - 0x835C];
+    GraphicsBlock *unkA230;
 } BattleGraphics;
 
 extern BattleGraphics *D_800C3EA4;
 extern u8 D_800C492A;
-
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
 
 extern u32 *D_800CCB04; /* current ordering table */
 extern s32 D_800CCB34;  /* draw buffer index */
@@ -178,10 +219,26 @@ extern s32 D_800D2C60[8];
 
 typedef struct {
     u8 unk0[0x394];
-    s16 unk394[1];
+    s16 unk394[(0x7A4 - 0x394) / 2];
+    POLY_FT4 unk7A4[2];
+    u8 unk7F4;
 } BattleUnk3278;
 
 extern BattleUnk3278 *D_800D3278;
+
+typedef struct {
+    u8 unk0[0x5550];
+    POLY_FT4 unk5550[6];
+    POLY_FT4 unk5640[40];
+    POLY_FT4 unk5C80[6];
+    u8 unk5D70[0x10];
+    u8 unk5D80[3];
+    u8 unk5D83[0xC];
+    u8 unk5D8F[3];
+} BattleUnk2DB4;
+
+extern BattleUnk2DB4 *D_800D2DB4;
+extern s32 D_800D2DAC;
 
 /* Enemy AI block (0x40 bytes per enemy slot 3..10, from 800d3400). */
 typedef struct {
@@ -252,6 +309,7 @@ void func_80043BFC(void *prim, s32 tge);
 void func_800445D0(s32 mode);
 void func_8003F8E8(void *block, s32 size);
 void func_800320E8(void *block);
+void func_80034888(s32 arg0, u32 *ot, s32 buffer);
 s32 func_8002675C(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y, s32 scale);
 void *func_80033728(void *table, s32 index);
 s32 func_80034EAC(void *text, u32 *pixels, s32 width, s32 mode);
@@ -286,6 +344,7 @@ void func_80074D4C(void);
 void func_80077074(void);
 void func_800785D4(u8 actor, u8 index);
 void func_80079934(u8 **pc);
+void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);
