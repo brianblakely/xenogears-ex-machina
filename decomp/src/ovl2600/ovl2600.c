@@ -1165,7 +1165,14 @@ void func_801C9338(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C97FC);
+/* Draw all labels, the name entry labels and the message lines. */
+void func_801C97FC(void) {
+    func_801C8E38();
+    func_801C8EC8();
+    func_801C8F58();
+    func_801C90D0();
+    func_801C9160();
+}
 
 /* Per-frame screen drawing: panels, markers, labels and the name entry while
  * active, then the fade. */
