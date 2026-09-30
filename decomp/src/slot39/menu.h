@@ -108,9 +108,13 @@ typedef struct MenuCardHeader {
 } MenuCardHeader;
 
 /* The second half of a listed file's header block (+100). */
+typedef struct MenuSaveName {
+    u8 text[0x14]; /* two-byte text */
+} MenuSaveName;
+
 typedef struct MenuSaveInfo {
     u8 pad0[0x24];
-    u8 names[4][0x14]; /* 24: names of the sheet entries (two-byte text) */
+    MenuSaveName names[4]; /* 24: names of the sheet entries */
 } MenuSaveInfo;
 
 /* Memory-card state (*(state + 32c)). */

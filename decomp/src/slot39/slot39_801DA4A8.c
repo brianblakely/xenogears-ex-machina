@@ -4149,7 +4149,6 @@ void func_801E6F5C(u8 index, MenuViewSet *set) {
 /* Render the name of view `index`'s sheet entry from listed file `file`'s
  * header (up to ten two-byte characters) and upload it to label row
  * `index` of the view rows. */
-#ifdef NON_MATCHING
 void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
     RECT rect;
     u8 name[24];
@@ -4160,8 +4159,8 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
 
     info = (MenuSaveInfo *)(D_800625A0->card->headers[file] + 0x100);
     for (i = 0; i < 20; i += 2) {
-        name[i] = info->names[set->images[index]][i];
-        name[i + 1] = info->names[set->images[index]][i + 1];
+        name[i] = info->names[set->images[index]].text[i];
+        name[i + 1] = info->names[set->images[index]].text[i + 1];
         if (name[i] == 0 && name[i + 1] == 0) {
             break;
         }
@@ -4178,9 +4177,6 @@ void func_801E71B4(u8 index, MenuViewSet *set, s32 file) {
     DrawSync(0);
     func_800320E8(pixels);
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DA4A8", func_801E71B4);
-#endif
 
 /* Lay out the 16 character quads of the save title image (row f0 of the
  * 140 page, 12-pixel glyphs 16 apart) in the current buffer. */
