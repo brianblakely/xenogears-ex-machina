@@ -3225,7 +3225,35 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4348);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A43F8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A44C0);
+/* Update the active trackers' positions: an offset from a part of a stage
+ * object's hierarchy when the object exists, else the offset itself. */
+void func_800A44C0(BattleObject **objects) {
+    Matrix *m = (Matrix *)0x1F800000;
+    s32 i;
+    ModelPart *root;
+    Vector position;
+
+    for (i = 0; i < 2; i++) {
+        if (D_800D3304[i].active != 0) {
+            if (D_800D3304[i].object >= 0 && objects[D_800D3304[i].object] != NULL) {
+                root = objects[D_800D3304[i].object]->hierarchy;
+                func_8004931C(&root->transform, &root[D_800D3304[i].part + 1].world, m);
+                func_80049EFC(m);
+                func_80049F8C(m);
+                gte_ldv0(&D_800D3304[i].offset);
+                gte_rtv0tr();
+                gte_stlvnl(&position);
+                D_800D3304[i].x = position.vx;
+                D_800D3304[i].y = position.vy;
+                D_800D3304[i].z = position.vz;
+            } else {
+                D_800D3304[i].x = D_800D3304[i].offset.vx;
+                D_800D3304[i].y = D_800D3304[i].offset.vy;
+                D_800D3304[i].z = D_800D3304[i].offset.vz;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4654);
 
@@ -3493,7 +3521,7 @@ void func_800A8B0C(void) {
         D_800C3ACC[j].value = 0;
     }
     for (k = 1; k >= 0; k--) {
-        D_800D330A[k].value = 0;
+        D_800D3304[k].active = 0;
     }
 }
 #else

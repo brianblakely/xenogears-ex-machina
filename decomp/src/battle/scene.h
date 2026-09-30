@@ -137,11 +137,17 @@ typedef struct {
     s32 field4;
 } SceneEntry8;
 
-/* A 0x14-byte entry of D_800D330A. */
+/* A position tracker (0x14 bytes, D_800D3304): an offset from a part of a
+ * stage object. */
 typedef struct {
-    s16 value;
-    u8 pad2[0x14 - 2];
-} SceneEntry14;
+    s16 x;
+    s16 y;
+    s16 z;
+    s16 active;     /* 0x06 */
+    SVector offset; /* 0x08 */
+    s16 object;     /* 0x10: stage object, negative none */
+    s16 part;       /* 0x12: its part less one */
+} Tracker;
 
 /* The battle's two loaded sound banks (0x18 bytes). */
 typedef struct {
@@ -188,7 +194,7 @@ extern s32 D_800C3E88;
 extern s16 D_800C3CF0;
 extern s16 D_800C3B7C;
 extern SceneEntry8 D_800C3ACC[20];
-extern SceneEntry14 D_800D330A[2];
+extern Tracker D_800D3304[2];
 extern s32 D_800D2D40;
 extern s32 D_800D2D48;
 extern EffectEntry *D_800C3BAC[9];
