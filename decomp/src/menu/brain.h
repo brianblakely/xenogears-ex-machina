@@ -36,6 +36,7 @@ extern s32 D_8009284C;
 extern u8 D_80099DA2; /* the opponent's current command */
 extern u8 D_80092848; /* the command the brain last started */
 extern u8 D_80099D9E; /* nonzero while the opponent is being driven */
+extern u8 D_800928C4; /* enables the retreat rule */
 
 s32 func_8008B650(s32 angle, s16 target, s32 step); /* turn angle toward target */
 void func_800767C8(Actor *actor);
@@ -43,5 +44,7 @@ void func_8008FE80(Actor *actor);
 void func_8007639C(Actor *actor, s32 input); /* queue a command input */
 void func_80090E10(Actor *actor);
 s32 func_80073DE4(Actor *actor, s32 amount);
+void func_80076424(Actor *actor);
+void func_8008F7B8(struct Brain *brain);
 
 #endif

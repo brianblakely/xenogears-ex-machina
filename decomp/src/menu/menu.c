@@ -2748,11 +2748,75 @@ s32 func_8008FA2C(Actor *actor, Brain *brain) {
     return 0;
 }
 
+#ifdef NON_MATCHING
+/* Opponent retreat rule (when enabled and on side 1): leave the far
+ * quadrant toward the centre; when the other actor is there, dodge its
+ * shots by turning to face away while they are close and stop once they
+ * are far. Returns whether the rule took over.
+ * Does not match: the far-shot branch keeps the return value in $v0
+ * across its stores (temporaries in $v1/$a0). */
+s32 func_8008FACC(Actor *actor, Brain *brain) {
+    s32 dist;
+
+    if (!D_800928C4 || !(actor->flags & 0x08000000)) {
+        return 0;
+    }
+    if (func_8008F9B0(actor)) {
+        func_8008FA2C(actor, brain);
+        return 1;
+    }
+    if (func_8008F9B0(actor->opponent)) {
+        dist = actor->opponent->nearest_dist;
+        if (dist < 0x800) {
+            actor->flags |= 0x8000;
+            brain->unkE = 1;
+            brain->unkC = 0xFF;
+            brain->unkA = 0x800;
+            actor->target_angle = 0x800;
+            return 1;
+        }
+        if (dist > 0x1000) {
+            actor->flags &= ~0x8000;
+            brain->unkE = 0;
+            brain->unkC = 0;
+            actor->target_angle = 0x800;
+            return 1;
+        }
+        return 1;
+    }
+    /* falls off the end: the original returns the failed check (0) */
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FACC);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FBD8);
+/* Opponent guard reaction: always at level 2, else on a random roll
+ * (every other round at level 1, one in six at level 0). */
+void func_8008FBD8(Actor *actor, Brain *brain) {
+    if (brain->unkF >= 2) {
+        actor->flags |= 2;
+        func_80076424(actor);
+    } else if (brain->unkF != 0) {
+        if (brain->roll & 1) {
+            actor->flags |= 2;
+            func_80076424(actor);
+        }
+    } else if (brain->roll % 6 == 0) {
+        actor->flags |= 2;
+        func_80076424(actor);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FC7C);
+/* Start a new opponent round: idle mode, a pause that is shorter at
+ * higher levels, and fresh rolls. */
+void func_8008FC7C(Actor *actor) {
+    Brain *brain = actor->brain;
+
+    brain->unk20 = 0;
+    brain->mode = 0;
+    brain->timer = (2 - brain->unkF) * 30 + 90;
+    func_8008F7B8(brain);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008FCC8);
 
