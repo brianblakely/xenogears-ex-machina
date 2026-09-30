@@ -334,6 +334,14 @@ typedef struct MenuLabels360 {
     u8 count; /* 299 */
 } MenuLabels360;
 
+/* The marker block (*(state + 428)): two quads per marker. */
+typedef struct MenuMarkers {
+    POLY_FT4 polys[8]; /* 0 */
+    u8 visible[4]; /* 140 */
+    u8 pad144[0x4];
+    u8 current[4]; /* 148 */
+} MenuMarkers;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -382,7 +390,7 @@ typedef struct MenuState {
     u8 pad398[0x4];
     u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 *images[32]; /* 3A8 */
-    u8 *markers; /* 428: marker block (14c bytes) */
+    MenuMarkers *markers; /* 428: marker block (14c bytes) */
     u8 *block42C; /* 42C: 1198 bytes */
     u8 pad430[0x4];
     u8 *block434; /* 434 */
@@ -458,6 +466,9 @@ extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
 extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
+extern s16 D_801EA724;   /* item list scroll bar */
+extern s32 D_801EA728;
+extern s16 D_801EA72C;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
 extern s32 D_801EA900[2];
@@ -510,6 +521,8 @@ void func_80044C44(void *env);           /* PutDrawEnv */
 void func_80044E9C(void *env);           /* PutDispEnv */
 void func_8004B54C(s32 mode);            /* VSync */
 s32 func_80041248(s32 command, s32 arg1, u8 *result);
+void func_8004A73C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1, s32 *sxy2,
+                   s32 *sxy3, s32 *p, s32 *flag); /* RotTransPers4 */
 s32 func_8004C318(s32 arg0, s32 arg1, s32 arg2);
 void func_8004C338(s32 handle);
 void func_8004C398(s32 handle, s32 arg1, s32 arg2);
@@ -572,6 +585,10 @@ void func_801D1030(void);
 void func_801D10DC(void);
 void func_801D1160(void);
 void func_801D12D4(u8 *panel, s32 arg1);
+void func_801D1B20(void);
+void func_801D1BE8(void);
+void func_801D1C48(void);
+void func_801D1258(void);
 void func_801D1CA0(void);
 void func_801D1D40(void);
 void func_801D1E80(void);
@@ -579,6 +596,7 @@ void func_801D22C4(void);
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);
 void func_801D2968(void);
+void func_801D249C(s32 arg0);
 void func_801D2D38(void);
 void func_801D2F4C(u8 message);
 void func_801D3B00(void);
@@ -596,10 +614,12 @@ u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
 void func_801D3444(void);
+void func_801D3488(s32 arg0, s32 arg1);
 void func_801D3674(void);
 u8 func_801DBE54(void);
 void func_801DDF24(u8 slot, u8 arg1, s32 arg2);
 u8 func_801DE29C(u8 slot, u8 arg1);
+void func_801E05D0(u8 slot, u8 arg1, s32 arg2);
 u8 func_801E0F78(u8 slot, u8 arg1);
 u8 func_801E23CC(void);
 u8 func_801E2BE4(void);

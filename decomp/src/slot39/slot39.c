@@ -1289,7 +1289,19 @@ void func_801CE338(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE3C8);
+/* While party flag +2f is set, add the current quad of each visible marker. */
+void func_801CE3C8(void) {
+    s32 i;
+
+    if (D_800625A0->party->unk2F != 0) {
+        for (i = 0; i < 4; i++) {
+            if (D_800625A0->markers->visible[i] != 0) {
+                func_80043B48(&D_800625A0->current->ot[4],
+                              &D_800625A0->markers->polys[i * 2 + D_800625A0->markers->current[i]]);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE464);
 
@@ -1350,7 +1362,18 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D01D0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D02D8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0954);
+/* Project the four vertices `v` into quad `index` of `polys` and add it at
+ * depth `otz`. */
+void func_801D0954(SVECTOR *v, POLY_FT4 *polys, s32 index, s32 otz) {
+    s32 p;
+    s32 flag;
+    POLY_FT4 *poly;
+
+    poly = &polys[index];
+    func_8004A73C(&v[0], &v[1], &v[2], &v[3], (s32 *)&poly->x0, (s32 *)&poly->x1, (s32 *)&poly->x2,
+                  (s32 *)&poly->x3, &p, &flag);
+    func_80043B48(&D_800625A0->current->ot[otz], poly);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D09F0);
 
@@ -1555,7 +1578,23 @@ void func_801D1C48(void) {
     func_801CF308();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1CA0);
+/* Build the screen of the menu kind (when drawing), then the shared prims. */
+void func_801D1CA0(void) {
+    if (D_800625A0->drawing != 0) {
+        switch (D_80059460) {
+        case 0:
+            func_801D1B20();
+            break;
+        case 2:
+            func_801D1BE8();
+            break;
+        case 6:
+            func_801D1C48();
+            break;
+        }
+    }
+    func_801D1258();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1D40);
 
@@ -1850,7 +1889,28 @@ void func_801DBD4C(s32 a, s32 b) {
     D_8006F5C4[b] = tmp;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DBDB4);
+/* Size the item list's scroll bar from the last occupied inventory entry. */
+void func_801DBDB4(void) {
+    s32 i;
+    s32 last;
+    s32 pages;
+
+    for (i = 0; i < 150; i++) {
+        if (D_8006F65A[i] != 0) {
+            last = i;
+        }
+    }
+    if (last < 16) {
+        D_801EA724 = 0x74;
+        D_801EA728 = 0;
+        D_801EA72C = 0;
+    } else {
+        pages = (last - 16) / 2 + 1;
+        D_801EA724 = 0x4a;
+        D_801EA728 = pages;
+        D_801EA72C = 0x1068 / pages;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DBE54);
 
@@ -1919,7 +1979,21 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E0434);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E05D0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E0F78);
+/* Run the 801e05d0 screen for party slot `slot` with its blocks; views 3 and 13. */
+u8 func_801E0F78(u8 slot, u8 arg1) {
+    void *block;
+
+    block = func_80031BDC(0x32f4, 0);
+    D_800625A0->block35C = block;
+    func_8003F8E8(block, 0x32f4);
+    block = func_80031BDC(0x2ac, 0);
+    D_800625A0->labels360 = block;
+    func_8003F8E8(block, 0x2ac);
+    func_801C72BC(3);
+    func_801E05D0(slot, arg1, 0);
+    func_801C72BC(0x13);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1014);
 
@@ -1959,7 +2033,23 @@ void func_801E2368(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E23CC);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2AE0);
+/* Open the 801d3488 screen: its three blocks and view 3. */
+void func_801E2AE0(void) {
+    void *block;
+
+    func_801D249C(1);
+    block = func_80031BDC(0x2af0, 0);
+    D_800625A0->block358 = block;
+    func_8003F8E8(block, 0x2af0);
+    block = func_80031BDC(0x32f4, 0);
+    D_800625A0->block35C = block;
+    func_8003F8E8(block, 0x32f4);
+    block = func_80031BDC(0x2ac, 0);
+    D_800625A0->labels360 = block;
+    func_8003F8E8(block, 0x2ac);
+    func_801C72BC(3);
+    func_801D3488(0, 0);
+}
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
 void func_801E2B80(void) {
@@ -2145,7 +2235,26 @@ void func_801E64E0(void) {
     D_800625A0->party->unkB = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6544);
+/* Pack each of the 16 rows of `rows` in place, merging bytes 1-2, 5-6, 9-10
+ * and 13-14. */
+void func_801E6544(u8 rows[16][16]) {
+    s32 i;
+
+    for (i = 0; i < 16; i++) {
+        rows[i][0] = rows[i][0];
+        rows[i][1] = rows[i][1] | rows[i][2];
+        rows[i][2] = rows[i][3];
+        rows[i][3] = rows[i][4];
+        rows[i][4] = rows[i][5] | rows[i][6];
+        rows[i][5] = rows[i][7];
+        rows[i][6] = rows[i][8];
+        rows[i][7] = rows[i][9] | rows[i][10];
+        rows[i][8] = rows[i][11];
+        rows[i][9] = rows[i][12];
+        rows[i][10] = rows[i][13] | rows[i][14];
+        rows[i][11] = rows[i][15];
+    }
+}
 
 /* Print the character at `s`: ASCII is converted to its two-byte code
  * (control characters to a space), two-byte codes pass through. */
