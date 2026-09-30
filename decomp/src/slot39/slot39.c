@@ -3565,7 +3565,32 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DC3D8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DCE60);
 
+/* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
+ * each built name and value of the first twelve rows, the cursor, the
+ * heading and the two extra labels. */
+#ifdef NON_MATCHING
+/* One instruction differs, as in 801db39c: the original copies the converted
+ * mode for the first loop from the earlier conversion. */
+void func_801DD5E8(s32 mode) {
+    s32 i;
+
+    func_801E8F60(5, mode);
+    func_801E8F60(6, mode);
+    for (i = 0; i < 12; i++) {
+        if (D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count].r0 != 0x20) {
+            func_801E8EAC(&D_800625A0->block430->names[i].polys[D_800625A0->block430->names[i].count], mode);
+            func_801E8EAC(&D_800625A0->block430->values[i].polys[D_800625A0->block430->values[i].count], mode);
+        }
+    }
+    func_801E8EAC(&D_800625A0->blocks444[0]->polys[D_800625A0->blocks444[0]->count], mode);
+    func_801E8EAC(&D_800625A0->block430->headA.polys[D_800625A0->block430->headA.count], mode);
+    for (i = 0; i < 2; i++) {
+        func_801E8EAC(&D_800625A0->block430->extra[i].polys[D_800625A0->block430->extra[i].count], mode);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD5E8);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD790);
 
