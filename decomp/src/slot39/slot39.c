@@ -2659,13 +2659,13 @@ void func_801D9B08(void) {
 
 /* Enter the file screen's card mode: show message 20, wait for the view to
  * stop, restart card access with the CD callbacks saved and cleared, forget
- * the card presence and listings and check the cards now. Returns 1 when the
- * check found a card; otherwise closes the message. */
+ * the card presence and listings and check the cards now. Returns nonzero
+ * when the check fails (the message stays up); otherwise closes the message. */
 u8 func_801D9C84(void) {
     MenuCard *card;
-    u8 found;
+    u8 failed;
 
-    found = 1;
+    failed = 1;
     func_801D2F4C(0x20);
     D_800625A0->party->messageShown = 1;
     while (D_800625A0->viewMotion != 0) {
@@ -2694,9 +2694,9 @@ u8 func_801D9C84(void) {
             func_801D32B4();
             D_800625A0->party->messageShown = 0;
         }
-        found = 0;
+        failed = 0;
     }
-    return found;
+    return failed;
 }
 
 /* Leave the save/load screen: clear its images and listing, and close the
@@ -2733,7 +2733,128 @@ void func_801D9F34(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9F98);
+/* The file screen (save or load by `save`): on the first pass build the card
+ * panels, zoom in, show the header and enter card mode; then each frame
+ * check the cards, show the choice labels and handle the input: confirm runs
+ * the file command (and ends the screen outside the title), cancel ends it.
+ * Returns 0 when a `loading` screen was left by the player, the cards failed
+ * outside the field menu or there is no card outside the field menu. */
+u8 func_801D9F98(u8 loading, u8 save) {
+    u8 running;
+    u8 first;
+    u8 result;
+    u8 header;
+
+    running = 1;
+    first = 1;
+    result = 1;
+    D_801E9784 = 0;
+    D_800625A0->choice = 2;
+    header = 0;
+    if (D_80059460 == 0 && D_80059171 == 0) {
+        D_800625A0->choice = 1;
+    }
+    D_800625A0->choiceShown = 0xff;
+    func_801D9F34();
+    func_801C7BF4();
+    while (running) {
+        D_800625A0->party->unkB = 0;
+        D_800625A0->loadState = 1;
+        if (first) {
+            func_801E6450();
+            func_801E5ACC();
+            D_800625A0->card->present[0] = 1;
+            D_800625A0->card->present[1] = 1;
+            func_801D1E80();
+            switch (D_80059460) {
+            case 0:
+                func_801D29A8(0, 0);
+                if (D_80059171 == 0) {
+                    header = 9;
+                }
+                break;
+            case 2:
+                header = 7;
+                break;
+            case 6:
+                break;
+            }
+            func_801E86C8(header);
+            D_800625A0->party->redraw6 = 0;
+            first = 0;
+            D_800625A0->party->unk20[1] = 0;
+            if (func_801D9C84()) {
+                if (D_80059460 != 0) {
+                    result = 0;
+                }
+                break;
+            }
+            D_800625A0->party->cardMode = 1;
+        }
+        if (D_801E9778 != 0) {
+            func_801D2F4C(0x20);
+        }
+        if (func_801C93A8()) {
+            running = 0;
+        }
+        if (D_801E9778 != 0) {
+            func_801D32B4();
+            D_801E9778 = 0;
+        }
+        if (!running) {
+            break;
+        }
+        if (D_800625A0->choice != D_800625A0->choiceShown) {
+            func_801E8070(6, D_800625A0->fileLabels, D_801EA542, D_801E9EA0, D_800625A0->party->unk1A,
+                          D_800625A0->choice, 7, 0);
+            if (D_80059460 != 2) {
+                func_801E8B4C(0);
+            } else {
+                func_801E8B4C(7);
+            }
+            D_800625A0->choiceShown = D_800625A0->choice;
+        }
+        switch (D_800625A0->input) {
+        case 4:
+            func_801D22C4();
+            func_801E8044(6, D_800625A0->party->unk1A);
+            running = func_801CD710(save);
+            D_800625A0->choiceShown = 0xff;
+            func_801D9F34();
+            if (D_80059460 == 2) {
+                break;
+            }
+        case 5:
+            running = 0;
+            if (loading) {
+                result = 0;
+            }
+            break;
+        case 1:
+            if (D_800625A0->choice != 0) {
+                D_800625A0->choice--;
+            } else {
+                D_800625A0->choice = D_800625A0->choiceCount - 1;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->choice >= D_800625A0->choiceCount) {
+                D_800625A0->choice = 0;
+            }
+            break;
+        }
+    }
+    if (*(u16 *)D_800625A0->card->present == 0 && D_80059460 != 0) {
+        result = 0;
+    }
+    D_800625A0->party->cardMode = 0;
+    D_800625A0->party->unkB = 0;
+    D_800625A0->party->redraw4 = 0;
+    D_800625A0->party->redraw3 = 0;
+    func_801E8044(6, D_800625A0->party->unk1A);
+    func_801C8960();
+    return result;
+}
 
 /* Open the save/load screen: its labels, its 1198-byte block and view 0. */
 void func_801DA4A8(void) {

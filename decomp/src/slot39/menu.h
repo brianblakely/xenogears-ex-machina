@@ -102,7 +102,8 @@ typedef struct MenuParty {
     u8 ready[3]; /* 60 */
     u8 pad63[0x4];
     u8 unk67; /* 67 */
-    u8 pad68[0x4];
+    u8 cardMode; /* 68: the file screen is in card mode */
+    u8 pad69[0x3];
 } MenuParty;
 
 /* Screen images (*(state + 350)). */
@@ -742,6 +743,7 @@ extern s32 D_801E9A68[4];
 extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
+extern u8 D_801E9778;    /* a card message is pending */
 extern s32 D_801EA718;   /* card event and handler ids */
 extern s32 D_801EA71C;
 extern s32 D_801EA720;
@@ -956,6 +958,8 @@ void func_801E86C8(u8 row);
 void func_801E8B4C(u8 row);
 u8 func_801C93A8(void);
 void func_801D9E3C(void);
+void func_801E5ACC(void);
+void func_801E6450(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
 void func_801D29A8(u8 arg0, u8 arg1);
