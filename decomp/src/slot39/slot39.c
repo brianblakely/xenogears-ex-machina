@@ -2441,7 +2441,32 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3088);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E31C0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E35BC);
+/* Apply `user`'s restoring effect: to `target`'s HP (its +5b times the
+ * effect's +11, capped at the maximum), or with `gear` to the user's gear
+ * (+60 up by a tenth of +64, capped at +64). */
+void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
+    GearRecord *source;
+    GearRecord *dest;
+    GearRecord *machine;
+    MenuEffect *record;
+
+    source = &D_8006D8A0[user];
+    dest = &D_8006D8A0[target];
+    machine = &D_8006D8A0[D_8006D8A0[user].gear + 11];
+    if (!gear) {
+        record = tables->effects[user];
+        record += effect;
+        dest->unk4C += source->unk5B * record->unk11;
+        if (dest->unk4C > dest->unk4E) {
+            dest->unk4C = dest->unk4E;
+        }
+    } else {
+        machine->unk60 += machine->unk64 / 10;
+        if (machine->unk64 < machine->unk60) {
+            machine->unk60 = machine->unk64;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E36D4);
 

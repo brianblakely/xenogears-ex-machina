@@ -218,6 +218,13 @@ typedef struct GearPart {
     u8 padF[0x1];
 } GearPart;
 
+/* A per-character effect record of the data tables (+20). */
+typedef struct MenuEffect {
+    u8 pad0[0x11];
+    u8 unk11; /* 11 */
+    u8 pad12[0x16];
+} MenuEffect;
+
 /* The data table directory (*(state + 330)). */
 typedef struct MenuTables {
     u8 *weapons; /* 0 */
@@ -227,7 +234,8 @@ typedef struct MenuTables {
     GearFrame *frames; /* 10 */
     u8 pad14[0x8];
     u8 *items; /* 1C */
-    u8 pad20[0xAC];
+    MenuEffect *effects[11]; /* 20: per character */
+    u8 pad4C[0x80];
 } MenuTables;
 
 /* A gear record of the game data (D_8006DFAC). */
@@ -246,7 +254,12 @@ typedef struct GearRecord {
     u8 unk3F; /* 3F */
     u8 pad40[0x4];
     u16 unk44; /* 44 */
-    u8 pad46[0x1A];
+    u8 pad46[0x6];
+    u16 unk4C; /* 4C */
+    u16 unk4E; /* 4E */
+    u8 pad50[0xB];
+    u8 unk5B; /* 5B */
+    u8 pad5C[0x4];
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
     u8 pad68[0x8];
@@ -260,7 +273,8 @@ typedef struct GearRecord {
     u8 unk9D; /* 9D */
     u8 unk9E; /* 9E */
     u8 unk9F; /* 9F */
-    u8 padA0[0x4];
+    u8 gear; /* A0: characters: their gear record (+11), ff none */
+    u8 padA1[0x3];
 } GearRecord;
 
 /* A laid-out label: its quads and sprite list. */
@@ -532,7 +546,8 @@ extern u8 D_80059460;         /* menu kind: 0 field menu, 2 title file screen, 6
 extern u8 D_80059171;         /* the triangle menu opened the menu */
 extern u8 D_80059178;         /* menu sound effects loaded */
 extern u8 D_800594CC;         /* field menu cursor kept between openings */
-extern GearRecord D_8006DFAC[]; /* game data: gear records */
+extern GearRecord D_8006D8A0[]; /* game data: character records, then gears from 11 */
+extern GearRecord D_8006DFAC[]; /* game data: gear records (D_8006D8A0 + 11) */
 extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u16 D_8006F958[16];    /* game data */
