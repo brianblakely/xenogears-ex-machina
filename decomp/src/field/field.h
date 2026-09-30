@@ -83,7 +83,9 @@ typedef struct FieldActor {
     s32 unk030[3];       /* 030 */
     u8 unk03C[4];
     s32 unk40[3];        /* 040 */
-    u8 unk04C[0x60 - 0x4C];
+    u8 unk04C[4];
+    s32 unk50[3];        /* 050 */
+    u8 unk05C[4];
     s16 unk60;           /* 060 */
     u8 unk062[2];
     s16 unk64;           /* 064 */
@@ -142,8 +144,10 @@ typedef struct FieldActor {
         u32 word;
         ActorState bits;
     } state;             /* 12C */
-    u32 unk130 : 9;      /* 130 */
-    u32 unk130_9 : 23;
+    u32 unk130 : 9;      /* 130: bits 0-8 */
+    u32 unk130_9 : 10;   /* bits 9-18 */
+    u32 unk130_19 : 9;   /* bits 19-27 */
+    u32 unk130_28 : 4;
     u32 unk134;          /* 134 */
 } FieldActor;
 

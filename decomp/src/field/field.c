@@ -2640,7 +2640,32 @@ void func_800888A4(void) {
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800889BC);
+/* Event: set the current actor's two model frames from operands 1/3 and
+ * 5/7. */
+void func_800889BC(void) {
+    FieldModel *model;
+    u16 low0;
+    s32 frame0;
+    u16 low1;
+    s32 frame1;
+
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    low0 = func_800ACDEC(1) & 0xF;
+    frame0 = ((func_800ACDEC(1) >> 4) << 8) + func_800ACDEC(3);
+    low1 = func_800ACDEC(5) & 0xF;
+    frame1 = ((func_800ACDEC(5) >> 4) << 8) + func_800ACDEC(7);
+    func_8002303C(model, 3, 0);
+    model->animation->unk18[2] = low0 << 6;
+    D_800B0078->state.bits.unk18 = low0 << 6;
+    model->animation->unk18[3] = frame0;
+    D_800B0078->unk130 = frame0;
+    model->animation->unk18[4] = low1 << 6;
+    D_800B0078->unk130_9 = low1 << 6;
+    model->animation->unk18[5] = frame1;
+    D_800B0078->unk130_19 = frame1;
+    D_800B0078->pc += 9;
+    D_800B0078->state.bits.unk16 = 2;
+}
 
 /* Event: set flag 0x80 (op1 1) or 0x40 (op1 2) of the current record's +2a,
  * using four batch steps. */
@@ -2724,7 +2749,18 @@ void func_80089574(void) {
     D_800B0078->pc += 11;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800896D4);
+/* Event: set the current emitter record's +5a and +62 vectors from the
+ * selected operands 1/3 and 5/7 (flags byte 9); four batch steps. */
+void func_800896D4(void) {
+    D_800B02CC[D_800B2078.unk2384].unk5A.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2078.unk2384].unk5A.vy = func_8009CFBC(3, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2078.unk2384].unk5A.vz = 0;
+    D_800B02CC[D_800B2078.unk2384].unk62.vx = func_8009D000(5, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2078.unk2384].unk62.vy = func_8009D044(7, EVENT_OPERAND_BYTE(9));
+    D_800B02CC[D_800B2078.unk2384].unk62.vz = 0;
+    D_800AFC7C += 4;
+    D_800B0078->pc += 10;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089880);
 
@@ -2761,7 +2797,21 @@ done:
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089BF0);
+/* Event: set emitter operand 1's start (22e8) and end (2300) points and its
+ * step count (2318) from the selected operands 3-15 (flags byte 0x11). */
+void func_80089BF0(void) {
+    s32 emitter;
+
+    emitter = func_8009CF78(1, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk22E8[emitter][0] = func_8009CFBC(3, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk22E8[emitter][1] = func_8009D000(5, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk22E8[emitter][2] = func_8009D044(7, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk2300[emitter][0] = func_8009D088(9, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk2300[emitter][1] = func_8009D0CC(0xB, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk2300[emitter][2] = func_8009D110(0xD, EVENT_OPERAND_BYTE(0x11));
+    D_800B2078.unk2318[emitter] = func_8009D154(0xF, EVENT_OPERAND_BYTE(0x11));
+    D_800B0078->pc += 0x12;
+}
 
 /* Event: place sound emitter op1 at (op3, op7, op5) and attach it to the
  * actor byte 10 selects (-1 for none). */
@@ -3542,7 +3592,37 @@ s32 func_8008D30C(s32 a, s32 b) {
                            D_800AF880.components.descriptors[a].matrix.t[2] - D_800AF880.components.descriptors[b].matrix.t[2]) >= 0x10);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008D380);
+/* Copy descriptor `from`'s actor placement (collision triangles, layer,
+ * position, +50, +14, +72, +ec), model position and +84, and matrix
+ * translation onto descriptor `to`. */
+void func_8008D380(s32 to, s32 from) {
+    FieldActor *target;
+    FieldActor *source;
+    s32 i;
+
+    source = D_800AF880.components.descriptors[from].actor;
+    target = D_800AF880.components.descriptors[to].actor;
+    for (i = 0; i < 4; i++) {
+        target->triangle[i] = source->triangle[i];
+    }
+    target->layer = source->layer;
+    target->unk50[0] = source->unk50[0];
+    target->unk50[1] = source->unk50[1];
+    target->unk50[2] = source->unk50[2];
+    target->position[0] = source->position[0];
+    target->position[1] = source->position[1];
+    target->position[2] = source->position[2];
+    target->unkEC = source->unkEC;
+    target->unk72 = source->unk72;
+    target->unk014 = source->unk014;
+    D_800AF880.components.descriptors[to].model->unk84 = D_800AF880.components.descriptors[from].model->unk84;
+    D_800AF880.components.descriptors[to].model->position[0] = D_800AF880.components.descriptors[from].model->position[0];
+    D_800AF880.components.descriptors[to].model->position[1] = D_800AF880.components.descriptors[from].model->position[1];
+    D_800AF880.components.descriptors[to].model->position[2] = D_800AF880.components.descriptors[from].model->position[2];
+    D_800AF880.components.descriptors[to].matrix.t[0] = D_800AF880.components.descriptors[from].matrix.t[0];
+    D_800AF880.components.descriptors[to].matrix.t[1] = D_800AF880.components.descriptors[from].matrix.t[1];
+    D_800AF880.components.descriptors[to].matrix.t[2] = D_800AF880.components.descriptors[from].matrix.t[2];
+}
 
 /* Clear the current actor's party bit in 800b219f. */
 void func_8008D570(void) {
