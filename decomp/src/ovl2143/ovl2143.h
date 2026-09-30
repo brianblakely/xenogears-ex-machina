@@ -635,6 +635,7 @@ void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buf
                    s32 floor);
 
 void func_80048D7C(VECTOR *v0, VECTOR *v1);   /* VectorNormal */
+VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 
 /* This overlay. */
 SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);

@@ -652,7 +652,433 @@ void func_801DCEC8(Actor *actor, MATRIX *m, MATRIX *light, s32 mode, s32 ticks, 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
 #endif
 
+/* Step the tweens attached to each node of a hierarchy: its rotation
+ * (attachment 0: set, delta or add from a track, interpolate, approach,
+ * spin, or turn toward a point within a growing limit), position
+ * (attachment 1: the same, or a move in the node's frame scaled by `scale`)
+ * and scale (attachment 2: interpolate, approach, spin). A finished tween is
+ * released (or restarted when looping: tracks rewind, others stop). Returns
+ * flags: 0x100/0x200/0x400 some tween ran/ended/looped (1/2/4 when it has
+ * `tag`). As in the original, the "spin" stop clears the step of the last
+ * slot a computing kind used, which may belong to an earlier node. */
+#ifdef NON_MATCHING
+s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 tag, s16 scale) {
+    ModelPart *part = parts;
+    PoolSlot *slot;
+    PoolSlot *last;
+    u8 *track;
+    SVECTOR move;
+    VECTOR moved;
+    u32 count;
+    u32 i;
+    s32 result = 0;
+    s32 kind;
+    s32 time;
+    s32 dx, dy, dz, dist, limit, turn, angle;
+    s16 sx, sy, sz;
+
+    count = parts->count;
+    for (i = 0; i < count; i++, part++) {
+        slot = part->attachments[0];
+        if (slot != NULL) {
+            kind = slot->kind;
+            switch (kind & 0xF) {
+            case 0:
+                track = slot->u.track.pos;
+                if (!(kind & 0x10)) {
+                    part->rot.vx = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->rot.vy = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->rot.vz = *(u16 *)track;
+                    slot->u.track.pos += 2;
+                }
+                goto check_rot;
+            case 1:
+                if (!(kind & 0x10)) {
+                    track = slot->u.track.pos++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rot.vx += (s8)track[0];
+                    } else {
+                        slot->u.track.pos = track + 2;
+                        slot->u.track.pos = track + 3;
+                        part->rot.vx = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x20)) {
+                    track = slot->u.track.pos++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rot.vy += (s8)track[0];
+                    } else {
+                        slot->u.track.pos = track + 2;
+                        slot->u.track.pos = track + 3;
+                        part->rot.vy = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x40)) {
+                    track = slot->u.track.pos++;
+                    if ((s8)track[0] != -0x80) {
+                        part->rot.vz += (s8)track[0];
+                    } else {
+                        slot->u.track.pos = track + 2;
+                        slot->u.track.pos = track + 3;
+                        part->rot.vz = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                goto check_rot;
+            case 2:
+                track = slot->u.track.pos;
+                if (!(kind & 0x10)) {
+                    part->rot.vx += *(u16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->rot.vy += *(u16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->rot.vz += *(u16 *)track;
+                    slot->u.track.pos += 2;
+                }
+                goto check_rot;
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->rot.vx = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
+                part->rot.vy = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                last = slot;
+                part->rot.vz = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                goto check_rot;
+            case 4:
+                sx = (slot->u.value[3] - part->rot.vx) / slot->duration;
+                sy = (slot->u.value[4] - part->rot.vy) / slot->duration;
+                sz = (slot->u.value[5] - part->rot.vz) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->rot.vx = slot->u.value[3];
+                    part->rot.vy = slot->u.value[4];
+                    part->rot.vz = slot->u.value[5];
+                } else {
+                    part->rot.vx += sx;
+                    part->rot.vz += sz;
+                    part->rot.vy += sy;
+                    slot->time = 0;
+                }
+                goto check_rot;
+            case 5:
+                slot->u.value[0] += slot->u.value[3];
+                part->rot.vx += slot->u.value[0];
+                slot->u.value[1] += slot->u.value[4];
+                part->rot.vy += slot->u.value[1];
+                slot->u.value[2] += slot->u.value[5];
+                last = slot;
+                part->rot.vz += slot->u.value[2];
+                goto check_rot;
+            case 7:
+            case 8:
+                dx = slot->u.value[3] - part->pos[0];
+                dy = slot->u.value[4] - part->pos[1];
+                dz = slot->u.value[5] - part->pos[2];
+                dist = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
+                last = slot;
+                turn = (ratan2(-dx, -dz) - part->rot.vy) & 0xFFF;
+                if (turn >= 0x800) {
+                    turn -= 0x1000;
+                }
+                limit = slot->u.value[1] + (dist + slot->time) * slot->u.value[2] / slot->u.value[0];
+                angle = turn < 0 ? -turn : turn;
+                if (angle < limit) {
+                    part->rot.vy += turn;
+                } else if (turn < 0) {
+                    part->rot.vy -= limit;
+                } else {
+                    part->rot.vy += limit;
+                }
+                if ((kind & 0xF) == 7) {
+                    turn = (ratan2(dy, SquareRoot0(dx * dx + dz * dz)) - part->rot.vx) & 0xFFF;
+                    if (turn >= 0x800) {
+                        turn -= 0x1000;
+                    }
+                    angle = turn < 0 ? -turn : turn;
+                    if (angle < limit) {
+                        part->rot.vx += turn;
+                    } else if (turn < 0) {
+                        part->rot.vx -= limit;
+                    } else {
+                        part->rot.vx += limit;
+                    }
+                }
+                if (last->time < 0x7D00) {
+                    last->time += last->duration;
+                }
+                goto rot_done;
+            default:
+            check_rot:
+                if (++slot->time < slot->duration) {
+                    if (slot->tag == tag) {
+                        result |= 1;
+                    }
+                    result |= 0x100;
+                } else if (!slot->flag) {
+                    if (slot->tag == tag) {
+                        result |= 2;
+                    }
+                    result |= 0x200;
+                    func_801DF7A8(pool, slot);
+                    part->attachments[0] = NULL;
+                } else {
+                    if (slot->tag == tag) {
+                        result |= 4;
+                    }
+                    result |= 0x400;
+                    if ((kind & 0xF) < 3) {
+                        slot->time = 0;
+                        slot->u.track.pos = slot->u.track.start;
+                    } else {
+                        slot->time = -1;
+                        if ((kind & 0xF) == 5) {
+                            last->u.value[3] = 0;
+                            last->u.value[4] = 0;
+                            last->u.value[5] = 0;
+                        }
+                    }
+                }
+                break;
+            }
+        rot_done:
+            part->rotate = 1;
+            part->dirty = 1;
+        }
+        slot = part->attachments[1];
+        if (slot != NULL) {
+            kind = slot->kind;
+            switch (kind & 0xF) {
+            case 0:
+                track = slot->u.track.pos;
+                if (!(kind & 0x10)) {
+                    part->pos[0] = *(s16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                }
+                if (!(kind & 0x20)) {
+                    part->pos[1] = *(s16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                }
+                if (!(kind & 0x40)) {
+                    part->pos[2] = *(s16 *)track;
+                    slot->u.track.pos += 2;
+                }
+                break;
+            case 1:
+                if (!(kind & 0x10)) {
+                    track = slot->u.track.pos++;
+                    if ((s8)track[0] != -0x80) {
+                        part->pos[0] += (s8)track[0];
+                    } else {
+                        slot->u.track.pos = track + 2;
+                        slot->u.track.pos = track + 3;
+                        part->pos[0] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x20)) {
+                    track = slot->u.track.pos++;
+                    if ((s8)track[0] != -0x80) {
+                        part->pos[1] += (s8)track[0];
+                    } else {
+                        slot->u.track.pos = track + 2;
+                        slot->u.track.pos = track + 3;
+                        part->pos[1] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                if (!(kind & 0x40)) {
+                    track = slot->u.track.pos++;
+                    if ((s8)track[0] != -0x80) {
+                        part->pos[2] += (s8)track[0];
+                    } else {
+                        slot->u.track.pos = track + 2;
+                        slot->u.track.pos = track + 3;
+                        part->pos[2] = track[1] | ((s8)track[2] << 8);
+                    }
+                }
+                break;
+            case 2:
+                track = slot->u.track.pos;
+                if (!(kind & 0x10)) {
+                    move.vx = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                } else {
+                    move.vx = 0;
+                }
+                if (!(kind & 0x20)) {
+                    move.vy = *(u16 *)track;
+                    track += 2;
+                    slot->u.track.pos += 2;
+                } else {
+                    move.vy = 0;
+                }
+                if (!(kind & 0x40)) {
+                    move.vz = *(u16 *)track;
+                    slot->u.track.pos += 2;
+                } else {
+                    move.vz = 0;
+                }
+                move.vx = move.vx * part->scale[0] >> 12;
+                move.vy = move.vy * part->scale[1] >> 12;
+                move.vz = move.vz * part->scale[2] >> 12;
+                ApplyMatrix(&part->world, &move, &moved);
+                part->pos[0] += scale * moved.vx >> 12;
+                part->pos[1] += scale * moved.vy >> 12;
+                part->pos[2] += scale * moved.vz >> 12;
+                break;
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->pos[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
+                part->pos[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                last = slot;
+                part->pos[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                break;
+            case 4:
+                sx = (slot->u.value[3] - part->pos[0]) / slot->duration;
+                sy = (slot->u.value[4] - part->pos[1]) / slot->duration;
+                sz = (slot->u.value[5] - part->pos[2]) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->pos[0] = slot->u.value[3];
+                    part->pos[1] = slot->u.value[4];
+                    part->pos[2] = slot->u.value[5];
+                } else {
+                    part->pos[0] += sx;
+                    part->pos[1] += sy;
+                    part->pos[2] += sz;
+                    slot->time = 0;
+                }
+                break;
+            case 5:
+                slot->u.value[0] += slot->u.value[3];
+                part->pos[0] += slot->u.value[0];
+                slot->u.value[1] += slot->u.value[4];
+                part->pos[1] += slot->u.value[1];
+                slot->u.value[2] += slot->u.value[5];
+                last = slot;
+                part->pos[2] += slot->u.value[2];
+                break;
+            }
+            if (++slot->time < slot->duration) {
+                if (slot->tag == tag) {
+                    result |= 1;
+                }
+                result |= 0x100;
+            } else if (!slot->flag) {
+                if (slot->tag == tag) {
+                    result |= 2;
+                }
+                result |= 0x200;
+                func_801DF7A8(pool, slot);
+                part->attachments[1] = NULL;
+            } else {
+                if (slot->tag == tag) {
+                    result |= 4;
+                }
+                result |= 0x400;
+                if ((kind & 0xF) < 3) {
+                    slot->time = 0;
+                    slot->u.track.pos = slot->u.track.start;
+                } else {
+                    slot->time = -1;
+                    if ((kind & 0xF) == 5) {
+                        last->u.value[3] = 0;
+                        last->u.value[4] = 0;
+                        last->u.value[5] = 0;
+                    }
+                }
+            }
+            part->dirty = 1;
+        }
+        slot = part->attachments[2];
+        if (slot != NULL) {
+            kind = slot->kind & 0xF;
+            switch (kind) {
+            case 3:
+                time = (s16)(slot->time + 1);
+                part->scale[0] = slot->u.value[0] + slot->u.value[3] * time / slot->duration;
+                part->scale[1] = slot->u.value[1] + slot->u.value[4] * time / slot->duration;
+                last = slot;
+                part->scale[2] = slot->u.value[2] + slot->u.value[5] * time / slot->duration;
+                break;
+            case 4:
+                sx = (slot->u.value[3] - slot->u.value[0]) / slot->duration;
+                sy = (slot->u.value[4] - slot->u.value[1]) / slot->duration;
+                sz = (slot->u.value[5] - slot->u.value[2]) / slot->duration;
+                last = slot;
+                if (sx == 0 && sy == 0 && sz == 0) {
+                    slot->time = slot->duration;
+                    part->scale[0] = slot->u.value[3];
+                    part->scale[1] = slot->u.value[4];
+                    part->scale[2] = slot->u.value[5];
+                } else {
+                    last->u.value[0] += sx;
+                    last->u.value[1] += sy;
+                    last->u.value[2] += sz;
+                    part->scale[0] = last->u.value[0];
+                    part->scale[1] = last->u.value[1];
+                    part->scale[2] = last->u.value[2];
+                    slot->time = 0;
+                }
+                break;
+            case 5:
+                slot->u.value[0] += slot->u.value[3];
+                part->scale[0] += slot->u.value[0];
+                slot->u.value[1] += slot->u.value[4];
+                part->scale[1] += slot->u.value[1];
+                slot->u.value[2] += slot->u.value[5];
+                last = slot;
+                part->scale[2] += slot->u.value[2];
+                break;
+            }
+            if (++slot->time < slot->duration) {
+                if (slot->tag == tag) {
+                    result |= 1;
+                }
+                result |= 0x100;
+            } else if (!slot->flag) {
+                if (slot->tag == tag) {
+                    result |= 2;
+                }
+                result |= 0x200;
+                func_801DF7A8(pool, slot);
+                part->attachments[2] = NULL;
+            } else {
+                if (slot->tag == tag) {
+                    result |= 4;
+                }
+                result |= 0x400;
+                slot->time = -1;
+                if (kind == 5) {
+                    last->u.value[3] = 0;
+                    last->u.value[4] = 0;
+                    last->u.value[5] = 0;
+                }
+            }
+            part->rotate = 1;
+            part->dirty = 1;
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DDBF8);
+#endif
 
 /* Apply a keyframe to the nodes after the root: each rotation or position
  * that changed is set unless the node's tween is kept (tag 0xff). Returns
