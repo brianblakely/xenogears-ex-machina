@@ -2942,43 +2942,216 @@ void func_800960E4(s32 value) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096150);
+extern u16 D_800AFE9C;
+extern u16 D_800AFC6C;
+void func_80096078(s32 bits);
+void func_800960E4(s32 value);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096178);
+/* Branch unless the held buttons equal raw operand 1. */
+void func_80096150(void) {
+    func_800960E4(D_800AFE9C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800961A0);
+/* Branch unless D_800AFC6C equals raw operand 1. */
+void func_80096178(void) {
+    func_800960E4(D_800AFC6C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800961C8);
+/* Branch unless a held button is among raw operand 1. */
+void func_800961A0(void) {
+    func_80096078(D_800AFE9C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800961F0);
+/* Branch unless D_800AFC6C shares a bit with raw operand 1. */
+void func_800961C8(void) {
+    func_80096078(D_800AFC6C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096214);
+/* Clear D_800AFC6C. */
+void func_800961F0(void) {
+    D_800AFC6C = 0;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800962C0);
+s32 func_80095124(s32 item);
+u8 *func_800950A0(s32 item);
+u8 *func_8009501C(s32 item);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009631C);
+/* Store the carried count of item operand 1 in a variable. */
+void func_80096214(void) {
+    s32 item;
+    s32 slot;
+    u8 *counts;
 
+    item = func_800ACDEC(1);
+    slot = func_80095124(item);
+    counts = func_800950A0(item);
+    func_8009501C(item);
+    if (slot != -1) {
+        func_800A3074(func_800ACDB8(3), counts[slot]);
+    } else {
+        func_800A3074(func_800ACDB8(3), 0);
+    }
+    D_800B0078->pc += 5;
+}
+
+/* Continue when item operand 1 is carried, otherwise jump to operand 3. */
+void func_800962C0(void) {
+    if (func_80095124(func_800ACDEC(1)) != -1) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
+
+void func_8009635C(s32 item);
+
+/* Give one of item operand 1. */
+void func_8009631C(void) {
+    func_8009635C(func_800ACDEC(1));
+    D_800B0078->pc += 3;
+}
+
+s32 func_800951B8(s32 item);
+
+
+#ifdef NON_MATCHING
+/* Add one of `item` (list in the high byte) up to 99, or take a free slot. */
+void func_8009635C(s32 item) {
+    s32 slot;
+    u8 *counts;
+    u8 *ids;
+    u8 *count;
+
+    slot = func_80095124(item);
+    counts = func_800950A0(item);
+    ids = func_8009501C(item);
+    if (slot != -1) {
+        count = &counts[slot];
+        if (*count < 99) {
+            *count += 1;
+        }
+    } else {
+        slot = func_800951B8(item);
+        count = &counts[slot];
+        if (slot != -1) {
+            ids[slot] = item;
+            *count = 1;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009635C);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009640C);
+/* Take one of item operand 1; an emptied slot's id becomes 0xFF. */
+void func_8009640C(void) {
+    s32 item;
+    s32 slot;
+    u8 *ids;
+    u8 *counts;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800964B0);
+    item = func_800ACDEC(1);
+    slot = func_80095124(item);
+    if (slot != -1) {
+        ids = func_8009501C(item);
+        counts = func_800950A0(item);
+        if (--counts[slot] == 0) {
+            ids[slot] = 0xFF;
+        }
+    }
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096534);
+extern s32 D_80062590[3];
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800965A8);
+/* Continue when character operand 1 is in the party, otherwise jump to
+ * operand 2. */
+void func_800964B0(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800965F4);
+    for (i = 0; i < 3; i++) {
+        if (EVENT_OPERAND_BYTE(1) == D_80062590[i]) {
+            D_800B0078->pc += 4;
+            return;
+        }
+    }
+    D_800B0078->pc = func_800ACDB8(2);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096644);
+/* Continue when game flag bit operand 1 (of unk1D30) is set, otherwise
+ * jump to operand 2. */
+void func_80096534(void) {
+    if ((D_8005A39C->unk1D30 >> EVENT_OPERAND_BYTE(1)) & 1) {
+        D_800B0078->pc += 4;
+        return;
+    }
+    D_800B0078->pc = func_800ACDB8(2);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800966B4);
+/* Set game flag bit operand 1 of unk1D30. */
+void func_800965A8(void) {
+    D_8005A39C->unk1D30 |= 1 << EVENT_OPERAND_BYTE(1);
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096724);
+/* Clear game flag bit operand 1 of unk1D30. */
+void func_800965F4(void) {
+    D_8005A39C->unk1D30 &= ~(1 << EVENT_OPERAND_BYTE(1));
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096790);
+/* Continue when variable 0 is below operand 1, otherwise jump. */
+void func_80096644(void) {
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800967E8);
+    value = func_800ACDEC(1);
+    if (func_800A3018(0) < value) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
+
+/* Continue when variable 0 is above operand 1, otherwise jump. */
+void func_800966B4(void) {
+    s32 value;
+
+    value = func_800ACDEC(1);
+    if (value < func_800A3018(0)) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
+
+/* Continue when variable 0 equals operand 1, otherwise jump. */
+void func_80096724(void) {
+    s32 value;
+
+    value = func_800ACDEC(1);
+    if (func_800A3018(0) == value) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
+
+/* Store an operand in variable 0 (extending the batch limit). */
+void func_80096790(void) {
+    D_800AFC7C += 32;
+    func_800A3074(0, func_800ACDEC(1));
+    D_800B0078->pc += 3;
+}
+
+/* Copy variable 0 into a variable. */
+void func_800967E8(void) {
+    s32 reference;
+
+    reference = func_800ACDB8(1) & 0xFFFF;
+    func_800A3074(reference, func_800A3018(0));
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096844);
 

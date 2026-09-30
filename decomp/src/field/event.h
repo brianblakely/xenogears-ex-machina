@@ -77,7 +77,9 @@ typedef struct GameState {
     s32 gold;            /* 1924 */
     u8 unk1928[0x1932 - 0x1928];
     s16 unk1932;         /* 1932 */
-    u8 unk1934[0x1D38 - 0x1934];
+    u8 unk1934[0x1D30 - 0x1934];
+    u16 unk1D30;         /* 1D30: flag bits */
+    u8 unk1D32[0x1D38 - 0x1D32];
     u8 count1[100];      /* 1D38: inventory list 1 */
     u8 id1[100];         /* 1D9C */
     u8 count2[200];      /* 1E00: inventory list 2 */
