@@ -3679,13 +3679,13 @@ void func_801E6B70(u8 index, MenuViewSet *set) {
     u8 digit;
 
     func_801C80B8(set->levels[index]);
-    D_800625A0->block34C->views[index].digitCount = 0;
+    D_800625A0->block34C->views[index].levelCount = 0;
     for (i = 0; i < 3; i++) {
         digit = D_800625A0->digits[i + 6];
         if (digit != 0xff) {
-            D_800625A0->block34C->views[index].digitCount +=
+            D_800625A0->block34C->views[index].levelCount +=
                 func_8002675C(D_800625A0->sheet, digit,
-                              &D_800625A0->block34C->views[index].digits[D_800625A0->block34C->views[index].digitCount],
+                              &D_800625A0->block34C->views[index].levelDigits[D_800625A0->block34C->views[index].levelCount],
                               D_800625A0->bufferIndex, D_801EA01C + index * 0x50 + i * 8, D_801EA020, 0x1000);
         }
     }
@@ -3693,7 +3693,38 @@ void func_801E6B70(u8 index, MenuViewSet *set) {
     D_800625A0->block34C->views[index].unk871 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6CFC);
+/* Lay out view `index`'s values A (+4) and B (+a) as up to three digit
+ * sprites each (B packed without leading blanks). */
+void func_801E6CFC(u8 index, MenuViewSet *set) {
+    s32 i;
+    s32 drawn;
+    u8 digit;
+
+    func_801C80B8(set->valueA[index]);
+    D_800625A0->block34C->views[index].aCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[i + 6];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].aCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].aDigits[D_800625A0->block34C->views[index].aCount],
+                              D_800625A0->bufferIndex, D_801EA02C + index * 0x50 + i * 8, D_801EA030, 0x1000);
+        }
+    }
+    drawn = 0;
+    func_801C80B8(set->valueB[index]);
+    D_800625A0->block34C->views[index].bCount = 0;
+    for (i = 0; i < 3; i++) {
+        digit = D_800625A0->digits[i + 6];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].bCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].bDigits[D_800625A0->block34C->views[index].bCount],
+                              D_800625A0->bufferIndex, D_801EA034 + index * 0x50 + drawn * 8, D_801EA038, 0x1000);
+            drawn++;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6F5C);
 

@@ -423,7 +423,10 @@ typedef struct MenuImageBlock {
 /* The record 801e76ec passes to 801e6ae8. */
 typedef struct MenuViewSet {
     s32 time; /* 0: play time in frames */
-    u8 pad4[0x12];
+    u16 valueA[3]; /* 4: per view */
+    u16 valueB[3]; /* A: per view */
+    u8 valueC[3]; /* 10: per view */
+    u8 valueD[3]; /* 13: per view */
     u8 levels[3]; /* 16: per view: number shown in the first digit row */
     u8 unk19[3]; /* 19: per view: number of the second digit row */
     u8 images[4]; /* 1C: sheet image per view (+14e), ff none */
@@ -453,10 +456,19 @@ typedef struct MenuGearViews {
 /* A save information view (801e76ec). */
 typedef struct MenuView {
     u8 pad0[0x320];
-    POLY_FT4 digits[17][2]; /* 320: digit sprite list, per buffer */
-    u8 digitCount; /* 870 */
+    POLY_FT4 levelDigits[6][2]; /* 320: digit sprite list of the set's level (+16), per buffer */
+    POLY_FT4 aDigits[3][2]; /* 500: of value A (+4) */
+    POLY_FT4 bDigits[3][2]; /* 5F0: of value B (+a) */
+    POLY_FT4 cDigits[2][2]; /* 6E0: of value C (+10) */
+    POLY_FT4 dDigits[2][2]; /* 780: of value D (+13) */
+    u8 pad820[0x50];
+    u8 levelCount; /* 870 */
     u8 unk871; /* 871 */
-    u8 pad872[0x5];
+    u8 aCount; /* 872 */
+    u8 bCount; /* 873 */
+    u8 cCount; /* 874 */
+    u8 dCount; /* 875 */
+    u8 pad876[0x1];
     u8 buffer; /* 877 */
     u8 shown; /* 878 */
     u8 pad879[0x3];
@@ -893,6 +905,14 @@ extern s32 D_801EA010[];
 extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
 extern s32 D_801EA01C;         /* view digit row x */
 extern s32 D_801EA020;         /* view digit row y */
+extern s32 D_801EA02C;         /* value A digits x, y */
+extern s32 D_801EA030;
+extern s32 D_801EA034;         /* value B digits x, y */
+extern s32 D_801EA038;
+extern s32 D_801EA03C;         /* value C digits x, y */
+extern s32 D_801EA040;
+extern s32 D_801EA044;         /* value D digits x, y */
+extern s32 D_801EA048;
 extern s32 D_801EA900[2];
 extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
