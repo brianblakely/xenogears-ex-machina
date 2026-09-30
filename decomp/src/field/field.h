@@ -90,16 +90,17 @@ typedef struct FieldActor {
     s32 unk50[3];        /* 050 */
     u8 unk05C[4];
     s16 unk60;           /* 060 */
-    u8 unk062[2];
+    s16 unk62;           /* 062 */
     s16 unk64;           /* 064 */
-    u8 unk066[0x70 - 0x66];
+    u8 unk066[0x6E - 0x66];
+    s16 unk6E;           /* 06E */
     s16 unk70;           /* 070 */
     s16 unk72;           /* 072 */
     u8 unk074;           /* 074 */
     u8 unk075;           /* 075 */
     s16 unk76;           /* 076 */
     u16 call_stack[4];   /* 078: return PCs */
-    s8 character;        /* 080 */
+    u8 character;        /* 080 */
     u8 unk081;
     u8 unk82;            /* 082 */
     u8 unk83;            /* 083 */
@@ -142,7 +143,7 @@ typedef struct FieldActor {
     s16 unk124;          /* 124: -1 when +120 is free */
     u8 unk126;           /* 126 */
     u8 unk127;           /* 127: sprite slot */
-    s16 unk128;          /* 128 */
+    u16 unk128;          /* 128 */
     u8 unk12A[2];
     union {
         u32 word;
@@ -776,6 +777,7 @@ extern void func_800A94A4(s32 actor);
 extern void func_8007AF74(s32 port);
 extern void func_8007AA44(FieldMarker *marker);
 extern void func_80080A74(s32 index);
+extern u32 func_80080968(struct FieldActor *actor);
 extern void func_8008B978(s32);
 extern void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
 extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag 0x20 */

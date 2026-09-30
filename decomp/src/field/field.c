@@ -3921,7 +3921,129 @@ s32 func_80080A18(void) {
     return D_800AF880.components.descriptors[D_800ADB58].actor->list[D_800ADB5C++];
 }
 
+#ifdef NON_MATCHING
+/* Reset event actor `index` to its defaults and settle it on the floor of
+ * each collision layer under its descriptor's position. */
+void func_80080A74(s32 index) {
+    VECTOR normal[4];
+    SVECTOR point[4];
+    FieldActor *actor;
+    s32 i;
+
+    actor = D_800AF880.components.descriptors[index].actor;
+    actor->flags = 0xB0;
+    actor->layer_flags = 0x800;
+    actor->unk18 = 0x10;
+    actor->gravity.s.fraction = 0x10;
+    actor->height = 0x60;
+    actor->unk074 = 0xFF;
+    actor->unk075 = 0xFF;
+    actor->unk40[0] = 0;
+    actor->unk40[1] = 0;
+    actor->unk40[2] = 0;
+    actor->unk030[0] = 0;
+    actor->unk030[1] = 0;
+    actor->unk030[2] = 0;
+    actor->unk64 = 0;
+    actor->unk60 = 0;
+    actor->unk62 = 0;
+    actor->target[0] = 0;
+    actor->target[1] = 0;
+    actor->target[2] = 0;
+    actor->unkE6 = 0;
+    actor->unk0EA = 0xFF;
+    actor->unkE2 = 0;
+    actor->pc = 0;
+    actor->unk6E = 0;
+    actor->state.bits.unk5 = 0;
+    actor->unk11E = 0x200;
+    actor->gravity.s.whole = actor->unk18;
+    actor->state.bits.mode = 0;
+    actor->color1[2] = 0x80;
+    actor->color1[1] = 0x80;
+    actor->color1[0] = 0x80;
+    actor->color0[2] = 0x80;
+    actor->color0[1] = 0x80;
+    actor->color0[0] = 0x80;
+    actor->unk128 = 0xFFFF;
+    actor->state.bits.unk16 = 0;
+    actor->unk130_19 = 0;
+    actor->unk130 = 0;
+    actor->unk130_9 = 0;
+    actor->state.bits.unk18 = 0;
+    for (i = 0; i < 8; i++) {
+        actor->slots[i].countdown = 0;
+        actor->slots[i].resume_pc = 0xFFFF;
+        actor->slots[i].tag = 0xFF;
+        actor->slots[i].unk16 = 0;
+        actor->slots[i].unk22 = 0;
+        actor->slots[i].move_mode = 0;
+        actor->slots[i].priority = 15;
+        actor->slots[i].value = 0xFFFF;
+    }
+    actor->unk120 = NULL;
+    actor->unkE4 = 0xFF;
+    actor->unk76 = 0x100;
+    actor->unk83 = 0;
+    actor->unk82 = 0;
+    actor->unk8A = 0;
+    actor->unk88 = 0;
+    actor->unk84 = 0;
+    actor->unk0CF = 0;
+    actor->slot = 0;
+    actor->unkE8 = 0;
+    actor->layer = 0;
+    actor->unkEC = 0;
+    actor->unk134 &= ~0x80;
+    actor->state.bits.depth = 0;
+    actor->state.bits.octant = 0;
+    actor->state.bits.unk12 = 0;
+    actor->unk134 &= ~0x60;
+    actor->unk102 = rand();
+    actor->scale[0] = 0x1000;
+    actor->scale[1] = 0x1000;
+    actor->scale[2] = 0x1000;
+    actor->sound_mode = 0xFF;
+    actor->character = 0xFF;
+    actor->heading_goal = 0x8000;
+    actor->heading = 0x8000;
+    actor->unk108 = 0x8000;
+    actor->unk124 = -1;
+    actor->unk0E3 = 0;
+    actor->triangle[3] = 0;
+    actor->triangle[2] = 0;
+    actor->triangle[1] = 0;
+    actor->triangle[0] = 0;
+    actor->state.bits.unk2 = 0;
+    for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
+        actor->triangle[i] = func_8007B1C4((s16)D_800AF880.components.descriptors[index].matrix.t[0],
+                                           (s16)D_800AF880.components.descriptors[index].matrix.t[2], i,
+                                           point + i, &normal[i]);
+        if (actor->triangle[i] != -1 && (u32)actor->triangle[i] >= D_800AF880.components.triangle_counts[i]) {
+            D_800AF880.components.triangle_counts[i] = 0;
+            normal[i].vx = 0;
+            normal[i].vy = 0;
+            normal[i].vz = 0;
+            point[i].vx = 0;
+            point[i].vy = 0;
+            point[i].vz = 0;
+        }
+    }
+    actor->unk014 = func_80080968(actor);
+    actor->unk50[0] = normal[actor->layer].vx;
+    actor->unk50[1] = normal[actor->layer].vy;
+    actor->unk50[2] = normal[actor->layer].vz;
+    if (!(D_800AF880.components.descriptors[index].flags & 0x80)) {
+        D_800AF880.components.descriptors[index].matrix.t[1] = point[actor->layer].vy;
+    }
+    actor->position[0] = D_800AF880.components.descriptors[index].matrix.t[0] << 16;
+    actor->position[1] = D_800AF880.components.descriptors[index].matrix.t[1] << 16;
+    actor->position[2] = D_800AF880.components.descriptors[index].matrix.t[2] << 16;
+    actor->unk72 = D_800AF880.components.descriptors[index].matrix.t[1];
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080A74);
+#endif
 
 /* Create event actor `index`: a cleared 0x138-byte record, the fetch hooks of
  * an animated model's channels, its defaults (80080a74) and its ground
