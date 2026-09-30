@@ -2076,7 +2076,53 @@ void func_8009C134(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C198);
+/* Resolve a gear's action against every target in the target mask: select the
+ * current command descriptor, run its gear formula (table D_800C34DC) per
+ * target with the status step it asks for (8009DBFC), then the per-target
+ * follow-ups and the command's wear and element. */
+void func_8009C198(void) {
+    s32 bit;
+
+    if (D_800C3E04 < 3) {
+        D_800C3DFC = &D_800C34B0->gearCommands[D_800C34B0->attackerIndex][D_800C34B0->commandIndex];
+    } else {
+        D_800C3DFC = &D_800C34B0->enemyCommands[D_800C34B0->commandIndex];
+    }
+    /* Called without its second argument (an unprototyped call). */
+    ((void (*)())func_8009AC48)(D_800C3E04);
+    D_800C3D3C = &D_800C34B0->records[D_800C34B0->attackerIndex].field148;
+    D_800D2DC4 = 0;
+    if ((D_800C3DFC->flagsA & 0x100) && D_800C3E00->pilot.characterId == 1) {
+        func_80096824();
+    }
+    if ((D_800C3E00->pilot.gearId == 5 || D_800C3E00->pilot.gearId == 13) && D_800C34B0->commandIndex == 1) {
+        D_800C3DFC->attributes[2] = D_800D2D6C->entries[1].valueE;
+    }
+    bit = 1;
+    for (D_800C3E50 = 0; D_800C3E50 < 11; D_800C3E50++, bit <<= 1) {
+        if (bit & D_800C34B0->targetMask) {
+            D_800C3E34 = &D_800C34B0->records[D_800C3E50];
+            D_800D2DC8 = &D_800C34B0->records[D_800C3E50].gear;
+            D_800C3D60 = &D_800C34B0->records[D_800C3E50].field148;
+            func_8009CA90();
+            D_800C34DC[D_800C3DFC->formula]();
+            if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+                if (D_800C3DFC->flagsA & 0x800) {
+                    func_8009DBFC(1);
+                } else if (D_800C3DFC->flagsA & 0x4000) {
+                    func_8009DBFC(0);
+                }
+            }
+            D_800C34B0->shownCommand = D_800C3DFC->name;
+            func_8009C4B4();
+            func_8009CB68(D_800C3E50);
+        }
+    }
+    if (D_800C3E00->pilot.characterId == 4) {
+        func_8009E788();
+    }
+    func_8009C9C4();
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C4B4);
 

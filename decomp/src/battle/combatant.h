@@ -167,7 +167,8 @@ typedef struct {
  * member, their gears' 42. */
 typedef struct {
     u16 state;              /* 0x00: 1 usable, 0x2000 sealed */
-    u8 pad2[0x8 - 0x2];
+    u16 name;               /* 0x02: shown while it runs */
+    u8 pad4[0x8 - 0x4];
     u16 elements;           /* 0x08: element bits */
     u16 flagsA;             /* 0x0A */
     u8 padC[0x10 - 0xC];
@@ -175,7 +176,9 @@ typedef struct {
     u8 power;               /* 0x11 */
     u8 pad12[0x14 - 0x12];
     u8 accuracy;            /* 0x14 */
-    u8 pad15[0x20 - 0x15];
+    u8 pad15;
+    u8 formula;             /* 0x16: index into the formula table */
+    u8 pad17[0x20 - 0x17];
     u8 attributes[4];       /* 0x20: copied to the battle's current command */
     u8 pad24[0x28 - 0x24];
 } CommandDescriptor;
@@ -186,7 +189,8 @@ typedef struct {
     u8 padFD0[0x1058 - 0xFD0];
     CommandDescriptor partyCommands[3][38]; /* 0x1058 */
     CommandDescriptor gearCommands[3][42];  /* 0x2228 */
-    u8 pad35D8[0x54F8 - 0x35D8];
+    CommandDescriptor enemyCommands[199];   /* 0x35D8 */
+    u8 pad54F0[0x54F8 - 0x54F0];
     BattleItemLists lists;                  /* 0x54F8 */
     u8 pad5B74[0x5F6C - 0x5B74];
     u32 damage[12];                         /* 0x5F6C */
@@ -194,7 +198,8 @@ typedef struct {
     u8 resultCode[12];                      /* 0x5FA0: 0xFF untouched */
     u16 targetMask;                         /* 0x5FAC */
     u16 targetMask2;                        /* 0x5FAE */
-    u8 pad5FB0[0x5FBC - 0x5FB0];
+    u16 shownCommand;                       /* 0x5FB0 */
+    u8 pad5FB2[0x5FBC - 0x5FB2];
     u8 commandAttributes[4];                /* 0x5FBC */
     u8 commandIndexCopy;                    /* 0x5FC0 */
     u8 attackerIndex;                       /* 0x5FC1 */
@@ -242,6 +247,9 @@ extern GearRecord *D_800D2D6C;          /* attacker's gear record */
 extern u8 D_800C3E04;                   /* attacker slot */
 extern Combatant *D_800C3E34;           /* target record */
 extern u8 *D_800C3D60;                  /* the target's field 0x148 */
+extern u8 *D_800C3D3C;                  /* the attacker's field 0x148 */
+extern u8 D_800D2DC4;                   /* an ether check failed */
+extern void (*D_800C34DC[])(void);      /* gear formula table */
 extern u8 D_800C3E50;                   /* target slot */
 extern GearRecord *D_800D2DC8;          /* target's gear record */
 extern u8 D_800D2C34;
@@ -252,6 +260,13 @@ s32 func_8003FA38(void);                /* resident rand: 0..0x7FFF */
 void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers);
 void func_8009B104(u8 slot, Combatant *chuchu);
 void func_8009BE0C(void);
+void func_80096824(void);
+void func_8009AC48(u8 member, u8 checked);
+void func_8009C4B4(void);
+void func_8009C9C4(void);
+void func_8009CA90(void);
+void func_8009CB68(u8 slot);
+void func_8009E788(void);
 s8 func_8009DBFC(s32 arg0);
 u16 func_80096FBC(void);
 u16 func_80097610(void);
