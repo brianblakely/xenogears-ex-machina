@@ -535,7 +535,6 @@ void func_800723E0(void) {
     s32 position;
     u8 *cursor;
     s32 slot;
-    u8 next;
 
     if (D_800D39E0 == 0) {
         if (D_800D2DC0 != 0) {
@@ -552,8 +551,8 @@ void func_800723E0(void) {
                 slot = D_800D2DCC.order[position];
                 if (D_800D2DCC.ready[slot] == 1) {
                     D_800C3EAC->actor = slot + 1;
-                    *cursor = next = position + 1;
-                    if (next == 11) {
+                    *cursor = position + 1;
+                    if (*cursor == 11) {
                         *cursor = 0;
                     }
                 }
@@ -914,19 +913,14 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800735
 
 /* When enabled, shade the current flat quad at graphics +0x63c8 grey by
  * +0x6410 and add it with its draw mode to the ordering table. */
-#ifdef NON_MATCHING
 void func_80073A58(void) {
     if (D_800C3EA4->unk6415 != 0) {
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].r0 = D_800C3EA4->unk6410;
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].g0 = D_800C3EA4->unk6410;
-        D_800C3EA4->unk63C8[D_800C3EA4->unk6414].b0 = D_800C3EA4->unk6410;
+        setRGB0(&D_800C3EA4->unk63C8[D_800C3EA4->unk6414], D_800C3EA4->unk6410, D_800C3EA4->unk6410,
+                D_800C3EA4->unk6410);
         AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63C8[D_800C3EA4->unk6414]);
         AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk63F8[D_800C3EA4->unk6414]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80073A58);
-#endif
 
 /* Draw the party panel: the list separator lines, the status glyphs, each
  * member's panel value and digits, the command portrait and name glyphs,
@@ -2084,15 +2078,14 @@ void func_80078508(u8 *order) {
 
 /* Close the current event for `actor` with the action entry's parameter and
  * advance the event count. */
-#ifdef NON_MATCHING
 void func_800785D4(u8 actor, u8 index) {
+    u16 parameter;
+
+    parameter = (D_800D2E5C[index].unk5 << 8) | D_800D2E5C[index].param;
     D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8);
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = parameter;
     D_800C3EAC->eventCount++;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800785D4);
-#endif
 
 /* Show the name of action `index` in the next battle message (up to eight)
  * and queue its event (0xfa) for `actor`. */

@@ -2587,7 +2587,6 @@ void func_80080C6C(u8 index) {
  * when its EP cover the cost, or defend in the gear (4); anything else, or
  * too little EP, passes the turn. Then wait for the menu or the events to
  * finish. */
-#ifdef NON_MATCHING
 void func_80080C94(u8 member) {
     u8 choice[2];
     u8 targets[11];
@@ -2595,7 +2594,6 @@ void func_80080C94(u8 member) {
     u8 *next;
     u8 pass = 1;
     u8 cost;
-    u16 ep;
 
     func_800716D8();
     for (i = 0; i < 11; i++) {
@@ -2634,20 +2632,19 @@ void func_80080C94(u8 member) {
         } else {
             D_800C3EAC->unk2DC = choice[1];
         }
-        pass = 0;
         func_800B89FC(func_800877E0(member, D_800C3EAC->slots[member].defaultTarget), member,
                       D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
         func_80087AF0(member, choice[1] + 1);
         func_80080B64(member);
+        pass = 0;
         break;
     case 2:
         cost = D_800CCCE8.partyCommands[member][choice[1] + 0x16].cost;
-        ep = D_800CCCE8.records[member].pilot.ep;
-        if (ep >= cost) {
-            D_800CCCE8.records[member].pilot.ep = ep - cost;
+        if (D_800CCCE8.records[member].pilot.ep >= cost) {
+            D_800CCCE8.records[member].pilot.ep -= cost;
             D_800C3EAC->unk2E6 = choice[1];
-            pass = 0;
             func_8008ADD0(member);
+            pass = 0;
         }
         break;
     case 4:
@@ -2666,6 +2663,3 @@ void func_80080C94(u8 member) {
     }
     D_800C204C = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80079ED8", func_80080C94);
-#endif
