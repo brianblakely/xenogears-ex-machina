@@ -1392,7 +1392,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C20);
 #endif
 
 /* Pop a halfword from a sprite's stack. */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: the original reads the stack index twice (lb for the index, lbu for the update). */
+/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
 #ifdef NON_MATCHING
 s16 func_80021C3C(Sprite *sprite) {
     s16 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8);
@@ -1405,7 +1405,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80021C3C);
 #endif
 
 /* Pop three bytes from a sprite's stack. */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: the original reads the stack index twice (lb for the index, lbu for the update). */
+/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
 #ifdef NON_MATCHING
 s32 func_80021C6C(Sprite *sprite) {
     s32 value = sprite->stack[sprite->stack_top] + (sprite->stack[sprite->stack_top + 1] << 8) +
@@ -1719,13 +1719,28 @@ void func_80023950(Sprite *sprite) {
 void func_80023958(Sprite *sprite) {
     sprite->renderer = (SpriteRenderer *)(sprite + 1);
     func_8002393C(sprite->renderer);
-    sprite->renderer->word34 = 0;
+    sprite->renderer->pointer34 = NULL;
     sprite->renderer->word40 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800239A0);
+/* Give a sprite its inline renderer, sequencer and image storage (after the sprite). */
+void func_800239A0(Sprite *sprite) {
+    sprite->renderer = (SpriteRenderer *)(sprite + 1);
+    func_8002393C(sprite->renderer);
+    sprite->sequencer = (u8 *)sprite + 0xF4;
+    sprite->renderer->pointer34 = (u8 *)sprite + 0x124;
+    sprite->image = (u8 *)sprite + 0x110;
+    sprite->renderer->pointer38 = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800239F4);
+/* Give a sprite its inline renderer with an inline part list. */
+void func_800239F4(Sprite *sprite) {
+    sprite->renderer = (SpriteRenderer *)(sprite + 1);
+    func_8002393C(sprite->renderer);
+    sprite->renderer->part_cursor = (u8 *)sprite + 0xF4;
+    sprite->renderer->pointer34 = NULL;
+    sprite->renderer->pointer38 = NULL;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80023A48);
 
@@ -1753,9 +1768,19 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024F64);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024FB8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024FE4);
+void func_80024FE4(s32 value) {
+    D_8005956C = value;
+}
 
+/* Copy the current light settings. */
+/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
+#ifdef NON_MATCHING
+void func_80024FF4(SpriteLight *light) {
+    D_8004FBB8 = *light;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80024FF4);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025044);
 
@@ -1765,7 +1790,15 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025180);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800251C8);
 
+/* Set a task's update callback from the table at 8004fd40. */
+/* Sprite-unit code (GCC 2.7.2-cdk, -G8, ASPSX 2.5+): this C matches under that configuration (object compare with relocations masked), not in this build. */
+#ifdef NON_MATCHING
+void func_80025224(Task *task, s32 kind) {
+    func_8001CD64(task, D_8004FD40[kind]);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025224);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80025258);
 
@@ -2329,8 +2362,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002945C);
 #endif
 
 /* Release a run of ring chunks (the chunk header's halfword 3 counts them), merge the freed run and return the first slot's old state. */
-/* Nonmatching under GCC 2.7.2 and 2.6.3: the ring stays in a1 in the original. */
-#ifdef NON_MATCHING
 u16 func_800294B4(u8 *chunk) {
     StreamRing *ring = D_8004FE30;
     StreamSlot *slots;
@@ -2356,9 +2387,6 @@ u16 func_800294B4(u8 *chunk) {
     func_80028ECC(index);
     return state;
 }
-#else
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800294B4);
-#endif
 
 /* Read `size` bytes from a raw disc sector (CD only); -1 with the PC file server. */
 s32 func_8002954C(s32 sector, void *destination, s32 size, s32 a3, s32 a4) {

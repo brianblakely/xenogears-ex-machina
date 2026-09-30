@@ -23,8 +23,9 @@ typedef struct {
     u8 unknownc[0x20];
     void *parts;                   /* +0x2c: 0x18 bytes per part */
     void *part_cursor;             /* +0x30 */
-    s32 word34;                    /* +0x34 */
-    u8 unknown38[8];
+    void *pointer34;               /* +0x34 */
+    void *pointer38;               /* +0x38 */
+    u8 unknown3c[4];
     s32 word40;                    /* +0x40 */
 } SpriteRenderer;
 
@@ -34,7 +35,7 @@ typedef struct {
     s32 speed;                  /* +0x18: walking speed */
     s32 word1c;                 /* +0x1c */
     SpriteRenderer *renderer;   /* +0x20 */
-    u8 unknown24[4];
+    void *image;                /* +0x24 */
     u8 red, green, blue;     /* +0x28: colour of one-sided parts */
     u8 colour_flags;         /* +0x2b: bit 0 set: no colour */
     s16 scale;               /* +0x2c */
@@ -63,7 +64,9 @@ typedef struct {
     u8 unknown58[0xC];
     s32 frames_left;         /* +0x64 */
     void *callback;          /* +0x68: completion callback */
-    u8 unknown6c[0x1C];
+    u8 unknown6c[0x10];
+    void *sequencer;         /* +0x7c */
+    u8 unknown80[8];
     u8 *frames;              /* +0x88 */
     s8 stack_top;            /* +0x8c: byte stack index, growing down */
     u8 unknown8d;
@@ -101,6 +104,15 @@ typedef struct {
 } SpriteTask;
 
 extern u8 D_800591AF; /* allocation mode for sprite tasks */
+extern s32 D_8005956C;
+
+/* 0x20 bytes of lighting state copied by 80024ff4. */
+typedef struct {
+    s32 words[8];
+} SpriteLight;
+extern SpriteLight D_8004FBB8;
+extern void (*D_8004FD40[])(Task *); /* task update callbacks by kind */
+void func_8001CD64(Task *task, void (*update)(Task *));
 void func_8001CA58(Task *owner, Task *node);
 void func_8001CC18(Task *owner, Task *node);
 void func_8001CD6C(Task *task, void (*update)(Task *));
