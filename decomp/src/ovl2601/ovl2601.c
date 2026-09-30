@@ -441,7 +441,67 @@ void func_801C6828(u8 mode) {
     }
 }
 
+/* Collect the import file's nonzero entries (value, page of 30), unpack the resources and set up the bars and frame lines. */
+#ifdef NON_MATCHING
+void func_801C6A6C(void) {
+    u8 *entry;
+    s32 j;
+    s32 i;
+
+    j = 0;
+    entry = D_800625A0->unk1E2C + D_80059171 * 0x5C;
+    for (i = 0; i < 0x30; i++) {
+        D_800625A0->import_values[i] = 0;
+        D_800625A0->import_pages[i] = 0;
+    }
+    for (i = 0; i < 0x5A; i++) {
+        if (entry[i] != 0) {
+            D_800625A0->import_values[j] = entry[i];
+            D_800625A0->import_pages[j] = i / 30;
+            j++;
+        }
+    }
+    D_801D1F50 = j;
+    func_801C6828(0);
+    for (i = 0; i < 9; i++) {
+        for (j = 0; j < 2; j++) {
+            func_80043DA0(D_800625A0->details->bar_upper + (i * 2 + j));
+            (D_800625A0->details->bar_upper + (i * 2 + j))->r0 = 0xFF;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->g0 = 0;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->b0 = 0;
+            func_80043DA0(D_800625A0->details->bar_lower + (i * 2 + j));
+            (D_800625A0->details->bar_lower + (i * 2 + j))->r0 = 0xFF;
+            (D_800625A0->details->bar_lower + (i * 2 + j))->g0 = 0;
+            (D_800625A0->details->bar_lower + (i * 2 + j))->b0 = 0;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->x0 = D_801D21CC[i];
+            (D_800625A0->details->bar_upper + (i * 2 + j))->y0 = 0xA6;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->x1 = D_801D21CC[i] + 0x18;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->y1 = 0xA6;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->x2 = D_801D21CC[i] + 0x18;
+            (D_800625A0->details->bar_upper + (i * 2 + j))->y2 = 0xBC;
+            (D_800625A0->details->bar_lower + (i * 2 + j))->x0 = D_801D21CC[i];
+            (D_800625A0->details->bar_lower + (i * 2 + j))->y0 = 0xA6;
+            (D_800625A0->details->bar_lower + (i * 2 + j))->x1 = D_801D21CC[i];
+            (D_800625A0->details->bar_lower + (i * 2 + j))->y1 = 0xBC;
+            (D_800625A0->details->bar_lower + (i * 2 + j))->x2 = D_801D21CC[i] + 0x18;
+            (D_800625A0->details->bar_lower + (i * 2 + j))->y2 = 0xBC;
+        }
+        D_800625A0->details->bar_shown[i] = 0;
+    }
+    for (i = 0; i < 2; i++) {
+        func_80043D78(&D_800625A0->details->frame[i]);
+        (D_800625A0->details->frame + i)->r0 = 0xFF;
+        (D_800625A0->details->frame + i)->g0 = 0xFF;
+        (D_800625A0->details->frame + i)->b0 = 0xFF;
+        (D_800625A0->details->frame + i)->x0 = D_801D2250 - 8;
+        (D_800625A0->details->frame + i)->y0 = D_801D2254 + 9;
+        (D_800625A0->details->frame + i)->x1 = D_801D2250 + 0x4E;
+        (D_800625A0->details->frame + i)->y1 = D_801D2254 + 9;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801C6A6C);
+#endif
 
 /* Set a quad's four corners for the rectangle (x, y, w, h), centred on the screen. */
 void func_801C6E90(SVECTOR *quad, u16 x, u16 y, u16 w, u16 h) {

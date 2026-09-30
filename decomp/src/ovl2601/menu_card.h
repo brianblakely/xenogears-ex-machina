@@ -411,8 +411,10 @@ typedef struct {
     u8 unk1DF0[0x1E20 - 0x1DF0];
     void *unk1E20;       /* 1e20: dech bytes */
     u8 unk1E24[0x1E2C - 0x1E24];
-    void *unk1E2C;       /* 1e2c */
-    u8 unk1E30[0x1E94 - 0x1E30];
+    u8 *unk1E2C;         /* 1e2c: 5ch-byte records, one per card port */
+    u8 import_values[0x30]; /* 1e30: the import file's nonzero entries */
+    u8 import_pages[0x30];  /* 1e60: their page (entry / 30) */
+    u8 unk1E90[0x1E94 - 0x1E90];
     u8 select_toggle;    /* 1e94: flipped by select */
     u8 unk1E95;          /* 1e95: counts button-1 presses */
 } MenuState;
@@ -441,6 +443,7 @@ extern s32 D_801D2218[]; /* heading x */
 extern s32 D_801D2228[]; /* alternative heading x */
 extern s32 D_801D2230[]; /* heading y */
 extern s32 D_801D2240[]; /* alternative heading y */
+extern s32 D_801D1F50;   /* import entries found */
 extern u16 D_801D2260;   /* count of the item last looked up */
 extern s32 D_801D2248;   /* first number x */
 extern s32 D_801D224C;   /* first number y */
@@ -462,6 +465,8 @@ extern u16 D_80059414;   /* highlighted text CLUT */
 extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
+extern u8 D_80059171;                    /* card port in use */
+void func_80043D78(LINE_F2 *prim);       /* SetLineF2 */
 extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
 void func_80019CA0(void);                /* soft reset combination */
 void func_80044AD8(u32 *ot, s32 n);      /* ClearOTagR */
