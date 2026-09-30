@@ -359,7 +359,7 @@ typedef struct MenuLabelSlot {
     SVECTOR verts[4]; /* 50 */
     RECT image; /* 70: the label's image area */
     u8 *pixels; /* 78 */
-    u8 pad7C[0x1];
+    u8 palette; /* 7C: 0 the plain palette (D_800595D4), else D_80059414 */
     u8 count; /* 7D: the quad shown */
     u8 width; /* 7E */
     u8 visible; /* 7F */
@@ -742,8 +742,8 @@ extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
-extern u8 D_8006F8E5[];
-extern u16 D_8006F8EA;        /* game data: flags */       /* game data */
+extern u8 D_8006F8E5[];       /* game data */
+extern u16 D_8006F8EA;        /* game data: flags */
 extern u8 D_8006F36C[];       /* game data inventory lists (counts, ids) */
 extern u8 D_8006F3D0[];
 extern u8 D_8006F434[];
@@ -759,6 +759,8 @@ extern u16 D_8006EF64;
 extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
+extern u16 D_80059414;         /* label palette (clut) */
+extern u16 D_800595D4;         /* plain label palette (clut) */
 extern u16 D_8005948C;         /* pad buttons pressed this frame */
 extern u16 D_800594A4;         /* pad buttons of the dequeued input (repeating) */
 extern s32 D_80059488;         /* play time in frames */
