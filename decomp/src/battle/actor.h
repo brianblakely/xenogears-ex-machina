@@ -65,7 +65,7 @@ typedef struct {
     struct {
         u8 pad0[8];
         s32 field8;
-        s32 fieldC;
+        s16 fieldC;
     } *sequencer;   /* 0x7C */
     u16 field80;
     u16 field82;    /* 0x82 */
@@ -77,7 +77,8 @@ typedef struct {
     union {
         u32 word;
         struct {
-            unsigned pad0 : 30;
+            unsigned sequencerOwned : 1;
+            unsigned pad1 : 29;
             unsigned slotLow : 2; /* the slot's low bits */
         } bits;
     } frame;        /* 0xA8 */
@@ -190,6 +191,8 @@ extern u16 D_800C3CDC;
 extern Matrix D_800D30BC; /* the battle view matrix */
 
 /* This unit. */
+void func_800BB13C(ActorTask *task);
+void func_800BB760(s32 slot);
 void func_800BAB0C(ActorTask *task);
 void func_800BABDC(ActorTask *task);
 void func_800BAC50(ActorTask *task);

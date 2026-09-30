@@ -547,7 +547,39 @@ void func_800BAEB8(s32 slot) {
 void func_800BAF40(void) {
 }
 
+#ifdef NON_MATCHING
+/* Send party slot's sprite off: select it (800BC404), run its exit
+ * animation 0x16 and wait for it and its tasks, then remove the sprite and
+ * load the slot's gear object in its place (800BB760), waiting for it.
+ * Nonmatching: battle_core.h declares slot u8 and 800BC404's mask u16; the
+ * original takes and passes words, unextended. */
+void func_800BAF48(u8 slot) {
+    BattleSprite *sprite;
+    s32 tasks;
+
+    func_800BC404(1 << slot);
+    func_800BC404(0);
+    tasks = D_80059188;
+    sprite = BATTLE_AREA.sprites[slot];
+    func_800B8D7C();
+    func_800245D8(sprite, 0x16);
+    while (sprite->countdown != 0 && sprite->motion.bytes[3] == 0x16) {
+        func_800BE790();
+    }
+    while (D_80059188 != tasks) {
+        func_800BE790();
+    }
+    func_800BADD4(slot);
+    func_800BE790();
+    func_800BE790();
+    func_800BB760(slot);
+    while (D_800C35D8 != 0) {
+        func_800BE790();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BAF48);
+#endif
 
 /* Destroy the party members' sprites other than keep's that are not in
  * use, then end their stage objects (800B14CC). */
@@ -568,13 +600,13 @@ void func_800BB080(s32 keep) {
     func_800B14CC(keep);
 }
 
-#ifdef NON_MATCHING
 /* Update of a sprite following its slot's stage object: step its animation
  * while it runs, then put it at the object's position. */
 void func_800BB13C(ActorTask *task) {
     SVector unused; /* the original's frame has this unused local */
     BattleSprite *sprite = task->data;
-    BattleObject *object = D_800D3368[sprite->frame.bits.slotLow | sprite->motion.bits.slotHigh << 2];
+    u32 low = sprite->frame.bits.slotLow;
+    BattleObject *object = D_800D3368[sprite->motion.bits.slotHigh << 2 | low];
 
     if (object != NULL) {
         if (sprite->countdown == 0) {
@@ -593,11 +625,30 @@ void func_800BB13C(ActorTask *task) {
         sprite->z = object->hierarchy->translation[2] << 16;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB13C);
-#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB248);
+/* Draw of a slot-following sprite: its size from the slot's object and its
+ * depth in the view. */
+void func_800BB248(ActorTask *task) {
+    SVector point;
+    s32 result[2]; /* screen position, then the GTE flags */
+    BattleSprite *sprite = task->data;
+    s32 depth;
+    u32 low;
+
+    low = sprite->frame.bits.slotLow;
+    sprite->size = func_800AA600(sprite->motion.bits.slotHigh << 2 | low);
+    sprite->halfSize = sprite->size / 2;
+    point.vx = sprite->x >> 16;
+    point.vy = sprite->y >> 16;
+    point.vz = sprite->z >> 16;
+    SetRotMatrix(&D_800D30BC);
+    SetTransMatrix(&D_800D30BC);
+    depth = (RotTransPers(&point, &result[0], &result[0], &result[1]) >> D_80050100) + sprite->depthBias;
+    if (result[1] & 0x8000) {
+        depth = 0;
+    }
+    sprite->depth = depth;
+}
 
 /* Destroy a task node. */
 void func_800BB314(ActorTask *task) {
@@ -608,7 +659,47 @@ void func_800BB314(ActorTask *task) {
     func_800320E8(task);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BB350);
+/* Create slot's sprite following its stage object (800BB13C, 800BB248),
+ * unless it has one. */
+void func_800BB350(u32 slot) {
+    ActorTask *task;
+    BattleSprite *sprite;
+    u8 saved;
+
+    if (BATTLE_AREA.sprites[slot] == NULL) {
+        saved = D_800591AC;
+        D_800591AC = 0;
+        task = func_8001D1D8(0x19C, NULL, func_800BB13C, func_800BB248, func_800BB314);
+        sprite = (BattleSprite *)(task + 1);
+        sprite->task = task;
+        task->data = sprite;
+        task->field20 = sprite;
+        func_80023804(sprite);
+        func_800239A0(sprite);
+        sprite->flags.bits.group = 4;
+        sprite->task = task;
+        sprite->render &= ~3;
+        sprite->frame.bits.sequencerOwned = 0;
+        sprite->sequencer->field8 = 0;
+        sprite->sequencer->fieldC = 0;
+        sprite->field82 = D_800591A8;
+        sprite->x = (u16)BATTLE_AREA.slots[slot].x << 16;
+        sprite->z = (u16)BATTLE_AREA.slots[slot].z << 16;
+        sprite->y = 0;
+        sprite->size = func_800AA600(slot);
+        sprite->field82 = 0x2000;
+        sprite->halfSize = sprite->size >> 1;
+        func_80022000(&sprite->x, 0x2000);
+        sprite->resource = D_8006BE10;
+        BATTLE_AREA.sprites[slot] = sprite;
+        BATTLE_AREA.tasks[slot] = task;
+        sprite->field4C = 0;
+        sprite->field48 = 0;
+        D_800591AC = saved;
+        sprite->frame.bits.slotLow = slot;
+        sprite->motion.bits.slotHigh = slot >> 2;
+    }
+}
 
 /* Task step: take a free stage place (of three), create the gear object of
  * the task's slot there, its sprite (800BB350), and end the task; the last
