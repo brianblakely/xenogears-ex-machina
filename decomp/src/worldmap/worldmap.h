@@ -707,4 +707,8 @@ void func_800983A0(Camera *);
 void func_80098CC0(void);
 void func_8009932C(u32 *ot, s32, Camera *);
 
+/* lead: worldmap_8007A9F8, 8007C3B8, 8007DE98, 80080370, 800811C0, 80090A84 */
+extern VECTOR D_8009B364[16]; /* terrain split-plane normal per type */
+extern VECTOR D_8009B464[16]; /* terrain split-plane point per type */
+
 #endif

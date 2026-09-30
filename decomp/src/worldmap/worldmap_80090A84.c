@@ -194,7 +194,27 @@ void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal) {
     point->vy += origin->vy;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093660);
+/* Terrain cell (4 bytes) under a position: blocks hold four quadrants of 9x9 cells. */
+u8 *func_80093660(s32 x, s32 z) {
+    s16 block;
+    s16 quadrant;
+    s16 cell;
+
+    block = ((z >> 20) / 8) * D_8009D160 + (x >> 20) / 8;
+    x = (x >> 12) & 0x7FF;
+    z = (z >> 12) & 0x7FF;
+    quadrant = 0;
+    if (x >= 0x400) {
+        quadrant = 1;
+        x -= 0x400;
+    }
+    if (z >= 0x400) {
+        quadrant |= 2;
+        z -= 0x400;
+    }
+    cell = ((z >> 4) / 8) * 9 + (x >> 4) / 8;
+    return (u8 *)D_8009C184[block] + quadrant * 0x144 + cell * 4;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093740);
 
@@ -203,26 +223,35 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093A5C);
 
 /* Terrain attribute of the cell under a position. */
-#ifdef NON_MATCHING /* final address sum operands swapped */
 s32 func_80093E8C(VECTOR *position) {
-    s32 x;
-    s32 z;
-    s32 row;
+    s32 x, z;
     s16 block;
-    TerrainBlock *terrain;
+    s32 row;
+    s16 *attributes;
 
     z = position->vz;
     row = (z >> 20) / 8;
     x = position->vx;
     block = row * D_8009D160 + (x >> 20) / 8;
-    terrain = D_8009C184[block];
-    return terrain->attributes[(((z & 0x7FF000) >> 19) << 4) | ((x & 0x7FF000) >> 19)];
+    attributes = ((TerrainBlock *)D_8009C184[block])->attributes;
+    return attributes[(((z & 0x7FF000) >> 19) << 4) | ((x & 0x7FF000) >> 19)];
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093E8C);
-#endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093F18);
+/* Terrain layer (0-7) at a position: the cell's split plane picks attribute bits 4-6 or 7-9. */
+s16 func_80093F18(VECTOR *position) {
+    u32 attribute;
+    s32 type;
+    s32 dx, dz;
+
+    attribute = func_80093E8C(position);
+    type = attribute & 0xF;
+    dx = (u16)(position->vx / 8) - D_8009B464[type].vx;
+    dz = (u16)(position->vz / 8) - D_8009B464[type].vz;
+    if ((dx * D_8009B364[type].vx >> 12) + (dz * D_8009B364[type].vz >> 12) > 0) {
+        return (attribute >> 4) & 7;
+    }
+    return (attribute >> 7) & 7;
+}
 
 /* Terrain type (low four attribute bits) at a position. */
 s32 func_80093FE4(VECTOR *position) {
