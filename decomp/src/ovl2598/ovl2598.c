@@ -13,6 +13,8 @@ void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
 void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
 void func_801CAD14(void);
+void func_801CA690(u8 first);
+u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 prev_page);
 extern u8 D_801CB400[];
 extern s32 D_801CB180[]; /* marker home x */
 extern s32 D_801CB190[]; /* marker home y */
@@ -1505,7 +1507,122 @@ u8 func_801CAB48(u8 list, s32 row, s32 page, u8 prev_list, s32 prev_row, s32 pre
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAB48);
 #endif
 
+/* The party screen loop: open the list panel, then move the cursor between
+ * the party (list 0) and the member list (list 1) and pick two entries to
+ * swap them, until cancelled; finally store the party. */
+#ifdef NON_MATCHING
+void func_801CAD14(void) {
+    u8 running = 1;
+    s32 row = 0;
+    s32 page = 0;
+    s32 shown_page;
+    s32 list;
+    u8 picking;
+    u8 prev_list;
+    s32 prev_row;
+    s32 prev_page;
+    s32 i;
+
+    func_801C9908();
+    func_801C7788(2, 0x78, 6, 0xB8, 0xC8, 1, 0, 4, 0);
+    func_801CA944(1);
+    shown_page = 0xFF;
+    list = 0;
+    picking = 0;
+    while (D_800625A0->growth[2]->open == 0) {
+        func_801C94A0();
+    }
+    while (running) {
+        func_801C94A0();
+        if (page != shown_page) {
+            func_801CA690(page);
+            shown_page = page;
+        }
+        func_801CA810(list, row, 0);
+        switch (D_800625A0->input_code) {
+        case 5:
+            func_801C9270(3);
+            if (picking) {
+                picking = 0;
+                D_800625A0->markers->shown[running] = 0;
+            } else {
+                running = 0;
+            }
+            break;
+        case 4:
+            if (!picking) {
+                picking = 1;
+                func_801CA810(list, row, 1);
+                prev_row = row;
+                row = 0;
+                prev_list = list;
+                list ^= 1;
+                prev_page = page;
+                func_801C9270(2);
+            } else if (func_801CAB48(list, row, page, prev_list, prev_row, prev_page)) {
+                picking = 0;
+                shown_page = 0xFF;
+                D_800625A0->markers->shown[running] = 0;
+                func_801C9270(2);
+            } else {
+                func_801C9270(4);
+            }
+            break;
+        case 1:
+            if (!list) {
+                func_801C9270(1);
+                if (++row >= 3) {
+                    row = 0;
+                }
+            } else {
+                if (++row >= 6) {
+                    row = 5;
+                }
+                func_801C9270(1);
+            }
+            break;
+        case 3:
+            if (!list) {
+                func_801C9270(1);
+                if (--row < 0) {
+                    row = 2;
+                }
+            } else {
+                if (--row < 0) {
+                    row = 0;
+                    if (--page < 0) {
+                        page = 0;
+                        break;
+                    }
+                }
+                func_801C9270(1);
+            }
+            break;
+        case 2:
+            if (!picking && list) {
+                func_801C9270(1);
+                list = 0;
+                row = 0;
+            }
+            break;
+        case 0:
+            if (!picking && !list) {
+                func_801C9270(1);
+                list = 1;
+                row = 0;
+            }
+            break;
+        }
+    }
+    func_801CAB04();
+    func_801C76FC(2);
+    for (i = 0; i < 3; i++) {
+        D_8006F368[i] = D_800625A0->flags->party[i];
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAD14);
+#endif
 
 /* Overlay entry: allocate and set up the party screen, run it and leave. */
 void func_801CB0A8(void) {
