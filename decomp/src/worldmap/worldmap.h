@@ -761,6 +761,34 @@ typedef struct {
 extern TrailPoint D_8009CEC4[32];
 extern s16 D_8009D154; /* trail index */
 void func_80093534(VECTOR *delta); /* wrap a world-unit offset */
+
+/* Model sprite object behind an actor's handle. */
+typedef struct {
+    VECTOR position; /* world units << 4 */
+} ModelObject;
+
+/* Scratchpad work area of the actor sprite pass. */
+typedef struct {
+    SVECTOR vertex;
+    VECTOR offset;
+    s32 depth[64];
+} DepthScratch;
+
+#define DEPTH_SCRATCH ((DepthScratch *)0x1F800000)
+
+void func_80093484(VECTOR *offset);
+void func_80024FF4(MATRIX *m);
+void func_8001E298(s32 model, u32 *ot);
+void func_800223B0(s32 model, s32 angle);
+void func_80023210(s32 model);
+
+#define gte_ldv0(r0) \
+    __asm__ volatile("lwc2 $0, 0(%0);" \
+                     "lwc2 $1, 4(%0)" \
+                     : \
+                     : "r"(r0))
+#define gte_rtps() __asm__ volatile("nop;nop;.word 0x4A180001")
+#define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif

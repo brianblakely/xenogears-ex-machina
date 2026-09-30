@@ -113,7 +113,77 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085760);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80085CDC);
+/* Draw the actors' model sprites: place each visible model relative to the
+ * camera target, project it for its depth, then add it to the ordering
+ * table and turn its facing towards the actor heading, 0x100 per frame. */
+void func_80085CDC(void) {
+    WorldmapActor *actor;
+    ModelObject *model;
+    s32 i;
+    s32 offset;
+    s32 diff;
+    s32 facing;
+    s32 heading;
+    DepthScratch *scratch;
+
+    scratch = DEPTH_SCRATCH;
+    actor = D_8009BE24;
+    for (i = 0; i < 0x40; i++, actor++) {
+        if ((actor->unk24 == 0) & (actor->handle != 0)) {
+            scratch->offset.vx = actor->position.vx - D_8009BE28.target.vx;
+            scratch->offset.vz = actor->position.vz - D_8009BE28.target.vz;
+            func_80093484(&scratch->offset);
+            ((ModelObject *)actor->handle)->position.vx = scratch->offset.vx * 16;
+            ((ModelObject *)actor->handle)->position.vz = -scratch->offset.vz * 16;
+            ((ModelObject *)actor->handle)->position.vy = actor->position.vy * 16;
+        }
+    }
+    SetRotMatrix(&D_8009C808);
+    SetTransMatrix(&D_8009C808);
+    actor = D_8009BE24;
+    for (i = 0; i < 0x40; i++, actor++) {
+        model = (ModelObject *)actor->handle;
+        if ((actor->unk24 == 0) & (model != NULL)) {
+            scratch->vertex.vx = model->position.vx >> 16;
+            scratch->vertex.vy = ((ModelObject *)actor->handle)->position.vy >> 16;
+            scratch->vertex.vz = ((ModelObject *)actor->handle)->position.vz >> 16;
+            gte_ldv0(&scratch->vertex);
+            gte_rtps();
+            gte_stsz(&scratch->depth[i]);
+        }
+    }
+    func_80024FF4(&D_8009C808);
+    actor = D_8009BE24;
+    for (i = 0; i < 0x40; i++, actor++) {
+        if ((actor->unk24 == 0) & (actor->handle != 0) & (scratch->depth[i] < 0xB00)) {
+            func_8001E298(actor->handle, &D_8009BE3C->ot[scratch->depth[i] >> 4]);
+            heading = actor->unk48;
+            facing = actor->unk5C;
+            diff = heading - facing;
+            if (diff < 0) {
+                diff += 0x1000;
+            }
+            /* diff becomes the new facing, turned at most 0x100 */
+            if (diff < 0x801) {
+                if (diff < 0x100) {
+                    diff = heading;
+                } else {
+                    diff = facing + 0x100;
+                }
+            } else {
+                diff -= 0x1000;
+                if (diff >= -0xFF) {
+                    diff = heading;
+                } else {
+                    diff = facing - 0x100;
+                }
+            }
+            actor->unk5C = diff;
+            func_800223B0(actor->handle, (diff - (u16)D_8009BD38.vy - 0x400) & 0xFFF);
+            func_80023210(actor->handle);
+        }
+    }
+}
 
 /* Resolve the terrain texture offsets and create the terrain CLUTs. */
 void func_80085F58(void) {
