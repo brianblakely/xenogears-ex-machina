@@ -886,7 +886,59 @@ void func_80081E6C(void) {
     D_8009A2B8.h = D_8009286C;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081ECC);
+/* Build the menu backdrop packets: the sky gradient quads, the backdrop
+ * texture pages, the six backdrop sprites; scale the map heights and set
+ * up the map drawing pools. */
+void func_80081ECC(void) {
+    PolyG4 *sky;
+    s16 *height;
+    s32 i;
+
+    func_800875EC();
+    sky = &D_80095580[0];
+    ((PacketTag *)sky)->len = 8;
+    sky->code = 0x38;
+    sky->r0 = 0x10;
+    sky->g0 = 0x60;
+    sky->b0 = 0x7F;
+    *(u16 *)&sky->r1 = 0x6010;
+    sky->b1 = 0x7F;
+    *(u16 *)&sky->r2 = 0x7F7F;
+    sky->b2 = 0x7F;
+    *(u16 *)&sky->r3 = 0x7F7F;
+    sky->b3 = 0x7F;
+    *(u32 *)&sky->x0 = 0;
+    *(u32 *)&sky->x1 = 0x140;
+    *(u32 *)&sky->x2 = 0x600000;
+    *(u32 *)&sky->x3 = 0x600140;
+    D_80095580[1] = D_80095580[0];
+    func_80043E20(&D_800955C8[0], 0, 0, func_80043A1C(2, 2, 0, 0x100));
+    func_80043E20(&D_800955C8[1], 0, 0, func_80043A1C(2, 2, 0, 0));
+    func_80043E20(&D_800955C8[2], 0, 0, func_80043A1C(2, 2, 0x100, 0x100));
+    func_80043E20(&D_800955C8[3], 0, 0, func_80043A1C(2, 2, 0x100, 0));
+    ((PacketTag *)&D_800955F8[0])->len = 4;
+    *(u32 *)&D_800955F8[0].r0 = 0x64707070;
+    D_800955F8[0].code &= ~1; /* texture not shaded */
+    D_800955F8[0].code |= 2;  /* semi-transparent */
+    *(u32 *)&D_800955F8[0].x0 = 0;
+    *(u16 *)&D_800955F8[0].u0 = 0;
+    *(u32 *)&D_800955F8[0].w = 0xDB0080;
+    func_800732AC(&D_800955F8[1], &D_800955F8[0], sizeof(Sprite) * 5);
+    D_800955F8[3].u0 = 0x80;
+    D_800955F8[2].u0 = 0x80;
+    D_800955F8[3].x0 = 0x80;
+    D_800955F8[2].x0 = 0x80;
+    D_800955F8[5].x0 = 0x100;
+    D_800955F8[4].x0 = 0x100;
+    D_800955F8[5].w = 0x40;
+    D_800955F8[4].w = 0x40;
+    height = (s16 *)D_800928DC;
+    for (i = 0; i < 0x4000; i++) {
+        *height *= 12;
+        height += 2;
+    }
+    func_80087830();
+}
 
 /* Draw the large direction arrow at a map position (8.8 fixed point). Does not match:
  * the start point is stored and re-read from the stack, and s5/s6 are swapped. */

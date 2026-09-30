@@ -183,6 +183,18 @@ typedef struct {
 void func_80085E90(s32 mirrored, s16 *out, s32 x);
 void func_80085EAC(s32 mirrored, s16 *out, s32 y);
 
+/* Backdrop texture pages and sprites. */
+typedef struct {
+    u32 tag;
+    u32 code[1];
+} DrawTPage;
+
+extern DrawTPage D_800955C8[4];
+extern Sprite D_800955F8[6];
+void func_80043E20(DrawTPage *packet, s32 dither, s32 draw, s32 tpage);
+void func_800875EC(void);
+void func_80087830(void);
+
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */
 extern s32 D_80092784;
