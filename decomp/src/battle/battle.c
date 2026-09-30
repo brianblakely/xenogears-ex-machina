@@ -5725,7 +5725,48 @@ void func_800916D4(u8 column, u8 row, u8 member) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009187C);
+/* Point the art page icon quads at the images for art (column, row) of the
+ * member (its gear's arts in a gear): its state icon (9 sealed, 7 flag
+ * 0x1000, else 8) and its level frame (13 level 1, 21 level 2, else 12). */
+void func_8009187C(u8 member, u8 column, u8 row) {
+    u16 state;
+    s32 icon;
+    s32 frame;
+
+    if (D_800D32A0[member].unk1 == 0) {
+        state = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
+    } else {
+        state = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
+    }
+    if (state & 0x4000) {
+        icon = 9;
+    } else {
+        icon = 8;
+        if (state & 0x1000) {
+            icon = 7;
+        }
+    }
+    switch (state & 0xF) {
+    case 0:
+        frame = 12;
+        break;
+    case 1:
+        frame = 13;
+        break;
+    case 2:
+        frame = 21;
+        break;
+    default:
+        frame = 12;
+        break;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk320[D_800CCB04.buffer], 0xDA, 0xAA, D_800D2F68[icon].u, D_800D2F68[icon].v,
+                  D_800D2F68[icon].w);
+    D_800C3EA4->unkA230->unk320[D_800CCB04.buffer].clut = D_800D2F68[icon].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk370[D_800CCB04.buffer], 0xFE, 0xAA, D_800D2F68[frame].u,
+                  D_800D2F68[frame].v, D_800D2F68[frame].w);
+    D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091B38);
 
