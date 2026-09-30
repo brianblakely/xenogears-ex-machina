@@ -1734,11 +1734,8 @@ void func_8008D304(Emitter *source, SVector *pos) {
     pos->vz = source->origin.vz + r.vz;
 }
 
-#ifdef NON_MATCHING
 /* Create an emitter of the given spark shape and placement rule: unit
- * spread centred on the origin, white, no sparks yet.
- * Does not match: the placement-rule store is scheduled after the
- * update-rule load. */
+ * spread centred on the origin, white, no sparks yet. */
 Emitter *func_8008D3F4(s32 shape, s32 placement) {
     Emitter *emitter;
     SparkShape *kind;
@@ -1770,7 +1767,7 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     emitter->offset.vy = emitter->range.vy / 2;
     emitter->offset.vz = emitter->range.vz / 2;
     emitter->place = D_80091CC4[(s16)placement];
-    emitter->update = D_80091CDC;
+    emitter->update = D_80091CDC[0];
     emitter->sparks = NULL;
     emitter->shape = shape;
     emitter->unk64 = 0;
@@ -1786,9 +1783,6 @@ Emitter *func_8008D3F4(s32 shape, s32 placement) {
     emitter->setup = kind->setup;
     return emitter;
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008D3F4);
-#endif
 
 /* Mark every spark of an emitter for restart. */
 void func_8008D580(Emitter *emitter) {

@@ -228,7 +228,7 @@ struct Emitter {
 
 extern SparkShape D_80091C74[];
 extern void (*D_80091CC4[])(Emitter *emitter, SVector *pos);
-extern void (*D_80091CDC)(Spark *spark);
+extern void (*D_80091CDC[1])(Spark *spark);
 extern Emitter *D_80092834; /* the menu's spark emitter */
 extern Emitter *D_80092644; /* the menu's glow emitter */
 extern s32 D_80092838;      /* spark burst strength, fading by 4 per frame */
