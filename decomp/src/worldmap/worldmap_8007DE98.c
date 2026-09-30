@@ -1,5 +1,17 @@
 #include "worldmap.h"
 
+/* Actor handlers this unit installs by address (see func_80097718). */
+s32 func_8008032C();
+s32 func_80080370();
+s32 func_80080578();
+s32 func_80080600();
+s32 func_80080900();
+s32 func_80080944();
+s32 func_80080A28();
+s32 func_80080AC4();
+s32 func_80076A14();
+s32 func_80076A1C();
+
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007DE98);
 
 /* Start a scripted camera at the player position (step 0, speed 0x40). */
@@ -168,7 +180,65 @@ s32 func_8007FD30(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FD30);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FF70);
+/* Set up the third cutscene mode: display, terrain loader, scene objects and
+ * its actors. */
+void func_8007FF70(void) {
+    RECT rect;
+
+    func_80072BB0();
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 0x140;
+    rect.h = 0xD8;
+    MoveImage(&rect, 0x2C0, 0x100);
+    DrawSync(0);
+    func_80072DB4(0x40, 0, 4, 2);
+    while (func_800286CC() >= 3) {
+    }
+    func_80076954();
+    func_8009766C();
+    D_8009BE4C = D_8009A180;
+    D_8009CCA4 = 2;
+    D_8009D3CC = 0x10;
+    D_8009D804 = 0;
+    D_8009D144 = 0;
+    D_8009CD40 = func_80086700;
+    func_80098044();
+    func_80028A60(0);
+    func_800721E4();
+    D_8009C5AC.vx = 0x4100000;
+    D_8009C5AC.vy = -0x80000;
+    D_8009C5AC.vz = 0x13C0000;
+    func_80084580();
+    func_8008440C();
+    func_800979C8();
+    func_800736DC();
+    func_80085F58();
+    func_800863E0();
+    func_80074E58();
+    func_80075030();
+    func_800739B8();
+    func_80088F64();
+    func_80028A60(0);
+    func_80038428(D_8006259C);
+    func_80028470(0x24, 0);
+    func_80097BC0(&D_8009C5AC);
+    do {
+        func_800967E4();
+        VSync(0);
+    } while (func_80096668() > 0);
+    func_80097718((s32)func_800923A8, (s32)func_800925A0);
+    func_80097718((s32)func_8008032C, (s32)func_80080370);
+    func_80097718((s32)func_80080578, (s32)func_80080600);
+    func_80097718((s32)func_80080900, (s32)func_80080944);
+    func_80097718((s32)func_80080A28, (s32)func_80080AC4);
+    func_80097718((s32)func_80076A14, (s32)func_80076A1C);
+    func_800978FC();
+    func_8008901C();
+    func_800865A0();
+    func_80085FE0();
+    func_80075228();
+}
 
 /* Leave the world map for scene 0x84 (flag word 2). */
 void func_80080218(void) {
