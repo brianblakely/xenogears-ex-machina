@@ -145,7 +145,40 @@ s32 func_80079538(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_800795E4);
+/* Link scene objects 1-13 to object 0, put the camera on the player, tilt
+ * object 0 and play sound 0x36 of the area bank. */
+s32 func_800795E4(s32 index) {
+    WorldmapActor *actor;
+
+    func_800848B4(0, 1);
+    func_800848B4(0, 2);
+    func_800848B4(0, 3);
+    func_800848B4(0, 4);
+    func_800848B4(0, 5);
+    func_800848B4(0, 6);
+    func_800848B4(0, 7);
+    func_800848B4(0, 8);
+    func_800848B4(0, 9);
+    func_800848B4(0, 0xA);
+    func_800848B4(0, 0xB);
+    func_800848B4(0, 0xC);
+    func_800848B4(0, 0xD);
+    actor = &D_8009BE24[index];
+    actor->state = 0;
+    actor->position = D_8009C5AC;
+    actor->unk54 = 0x40;
+    actor->unk58 = 0x200;
+    actor->unk5C = 0x60;
+    actor->unk60 = 0x300;
+    actor->u.script = NULL;
+    actor->unk64 = 0x50;
+    D_8009BE28.target = actor->position;
+    D_8009C620[0].angle.vx = -0x100;
+    D_8009C620[0].angle.vy = 0;
+    D_8009C620[0].angle.vz = -0x40;
+    func_80039E60((D_8006259C->id << 16) | 0x36);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80079778);
 

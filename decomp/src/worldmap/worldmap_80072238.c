@@ -456,7 +456,49 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075B58);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075D4C);
+/* Apply party slots that joined or left since the last update, then pick the
+ * movement mode from the members present. */
+void func_80075D4C(void) {
+    WorldmapActor *actors;
+    u8 *applied;  /* state last applied per slot (2-byte records) */
+    s16 *timers;  /* per-slot timer (6-byte records) */
+    s32 i;
+    s32 count;
+    u8 state;
+
+    i = 0;
+    actors = D_8009BE24;
+    applied = (u8 *)&D_8006EE54.unk70;
+    timers = (s16 *)(applied + 0x11E);
+    do {
+        state = (&D_8006F8E5)[i];
+        if (state != applied[i * 2]) {
+            if (state == 0) {
+                actors[i + 1].position.vx = actors[i + 4].position.vx;
+                actors[i + 1].position.vy = actors[i + 4].position.vy;
+                actors[i + 1].position.vz = actors[i + 4].position.vz;
+                actors[i + 1].unk58 = actors[i + 4].unk58;
+            } else {
+                timers[i * 3] = 0x400;
+                actors[i + 4].unk24 = 0;
+                actors[i + 4].position.vx = actors[i + 1].position.vx;
+                actors[i + 4].position.vy = actors[i + 1].position.vy;
+                actors[i + 4].position.vz = actors[i + 1].position.vz;
+                actors[i + 4].unk58 = actors[i + 1].unk58;
+            }
+        }
+        i++;
+    } while (i < 3);
+    count = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_8006F368[i] != 0xFF && (&D_8006F8E5)[i] == 1) {
+            count++;
+        }
+    }
+    if (!(D_8006EE54.flags & 0x4000)) {
+        D_8009BE10 = count != 0 ? 2 : 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075E7C);
 
@@ -720,7 +762,33 @@ void func_80077480(void) {
     D_8006F950 = D_8009BD38.vy;
 }
 
+/* Start a scripted camera looking along the player's heading from above. */
+#ifdef NON_MATCHING /* the swap reuses &D_8009BD48; original rematerialises it */
+s32 func_8007756C(s32 index) {
+    WorldmapActor *actor;
+
+    D_8009BD38.vx = -0x80;
+    D_8009BD38.vy = 0x200;
+    D_8009D3F0 = 0x400000;
+    D_8009BD38.vz = 0;
+    actor = &D_8009BE24[index];
+    actor->position.vx = -0x80000;
+    D_8009BE0C = 0x78;
+    actor->position.vy = D_8009BD38.vy << 12;
+    actor->motion = actor->position;
+    D_8009D144 = 0;
+    D_8009BE28.target.vx = D_8009C5AC.vx;
+    D_8009BE28.target.vy = D_8009C5AC.vy;
+    D_8009BE28.target.vz = D_8009C5AC.vz;
+    func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    *SCRIPT_VECTOR = *(SVECTOR *)D_8009BD40;
+    *(SVECTOR *)D_8009BD40 = D_8009BD48;
+    D_8009BD48 = *SCRIPT_VECTOR;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007756C);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800776E0);
 

@@ -707,4 +707,10 @@ void func_800983A0(Camera *);
 void func_80098CC0(void);
 void func_8009932C(u32 *ot, s32, Camera *);
 
+/* worldmap_80072238, 80077E68, worldmap */
+
+extern SVECTOR D_8009BD48; /* swapped with D_8009BD40 */
+
+void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
+
 #endif
