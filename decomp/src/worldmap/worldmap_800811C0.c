@@ -62,7 +62,35 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800819C8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081B24);
+/* Fade scene objects 0 and 1 in (command 1 starts it). */
+s32 func_80081B24(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+
+    actor = &D_8009BE24[index];
+    object = D_8009C620;
+    if (actor->unk4 == 1) {
+        actor->unk4 = 0;
+        actor->state = 1;
+    }
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        actor->u.step += 4;
+        actor->unk54 += 2;
+        actor->unk58 += 1;
+        if (actor->u.step >= 0xFC) {
+            actor->u.step = 0xFC;
+            actor->state = 0;
+        }
+        break;
+    }
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    object++;
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081C3C);
 
@@ -82,7 +110,31 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80082324);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800826B4);
+/* Leave the world map for scene 0x269 (flag word 2). */
+void func_800826B4(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086124();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x269;
+    D_8006F954[0] = 2;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Give an actor its script. */
 s32 func_800827C8(s32 index) {
@@ -90,7 +142,33 @@ s32 func_800827C8(s32 index) {
     return 1;
 }
 
+/* Start a scripted camera on the player: pitch -0x220 at distance 0x50. */
+#ifdef NON_MATCHING /* actor pointer and distance constant swap registers */
+s32 func_800827EC(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->unk7C = 0x1000;
+    actor->position.vx = D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    actor->state = 0;
+    actor->unk4 = 0;
+    actor->unk5C = 0x500000;
+    D_8009BD38.vx = -0x220;
+    D_8009BD38.vy = 0;
+    D_8009BD38.vz = 0;
+    actor->motion.vx = actor->u.step = -0x220 << 12;
+    D_8009D144 = 0;
+    D_8009D3F0 = 0x500000;
+    actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+    D_8009BE0C = 0x78;
+    actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800827EC);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800828DC);
 
@@ -158,7 +236,30 @@ s32 func_800834D8(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_8008355C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800837DC);
+/* Leave the world map for scene 0x269 (flag word 4). */
+void func_800837DC(void) {
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    func_80084818();
+    func_80086568();
+    func_800866C8();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38[0]);
+    func_800320E8(D_8009BCB0[0]);
+    func_800320E8(D_8009BC38[1]);
+    func_800320E8(D_8009BCB0[1]);
+    func_800320E8(D_8009C180);
+    func_800976A0();
+    D_8006F94E = 0x269;
+    D_8006F954[0] = 4;
+    D_8009BBC4 = 1;
+    D_8006F950 = D_8009BD38.vy;
+}
 
 /* Give an actor its script. */
 s32 func_800838E8(s32 index) {
@@ -166,4 +267,30 @@ s32 func_800838E8(s32 index) {
     return 1;
 }
 
+/* Start a scripted camera on the player: pitch -0x20, yaw 0x400 at distance 0x96. */
+#ifdef NON_MATCHING /* actor pointer and distance constant swap registers */
+s32 func_8008390C(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    actor->unk7C = 0x1000;
+    actor->position.vx = D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    actor->position.vy = D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    actor->position.vz = D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    actor->state = 0;
+    actor->unk4 = 0;
+    actor->unk5C = 0x960000;
+    D_8009BD38.vx = -0x20;
+    D_8009BD38.vy = 0x400;
+    D_8009BD38.vz = 0;
+    actor->motion.vx = actor->u.step = -0x20 << 12;
+    D_8009D144 = 0;
+    D_8009D3F0 = 0x960000;
+    actor->motion.vy = actor->unk54 = D_8009BD38.vy << 12;
+    D_8009BE0C = 0x78;
+    actor->motion.vz = actor->unk58 = D_8009BD38.vz << 12;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_8008390C);
+#endif
