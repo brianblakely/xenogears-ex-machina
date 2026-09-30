@@ -67,9 +67,20 @@ typedef struct {
     u8 unk7F[0xB4 - 0x7F];
     u8 unkB4;
     u8 unkB5;
+    u8 unkB6[0xC6 - 0xB6];
+    u8 unkC6;
 } BattleUi;
 
 extern BattleUi *D_800D2D28;
+
+/* Battle graphics state (*800c3ea4). */
+typedef struct {
+    u8 unk0[0xA230];
+    void *unkA230;
+} BattleGraphics;
+
+extern BattleGraphics *D_800C3EA4;
+extern u8 D_800C492A;
 
 typedef struct {
     s16 x, y, w, h;
@@ -239,6 +250,8 @@ void func_80043B48(u32 *ot, void *prim);
 void func_80043C24(void *prim, s32 abe);
 void func_80043BFC(void *prim, s32 tge);
 void func_800445D0(s32 mode);
+void func_8003F8E8(void *block, s32 size);
+void func_800320E8(void *block);
 s32 func_8002675C(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y, s32 scale);
 void *func_80033728(void *table, s32 index);
 s32 func_80034EAC(void *text, u32 *pixels, s32 width, s32 mode);
@@ -262,6 +275,17 @@ void func_80076418(void);
 void func_800764B4(void);
 void func_800764EC(void);
 void func_80076AC8(POLY_FT4 *prim);
+void func_800742A0(void);
+void func_80075938(void);
+void func_80073A58(void);
+void func_80073B64(void);
+void func_80073E88(void);
+void func_80074EEC(void);
+void func_800745EC(void);
+void func_80074D4C(void);
+void func_80077074(void);
+void func_800785D4(u8 actor, u8 index);
+void func_80079934(u8 **pc);
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);

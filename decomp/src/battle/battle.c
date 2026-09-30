@@ -351,7 +351,27 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075168);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075938);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076418);
+/* Battle end, outcome state 1: unless 800c492a is set, release every battle
+ * resource. */
+void func_80076418(void) {
+    if (D_800C492A == 0) {
+        func_8008FAD8();
+        func_800742A0();
+        func_80075938();
+        func_80073538();
+        func_80073A58();
+        func_80073B64();
+        func_80073E88();
+        func_80073F08();
+        func_8007500C();
+        func_80074EEC();
+        func_800745EC();
+        func_80074D4C();
+        func_80073FB8();
+        func_80088B80();
+        func_80074AB8();
+    }
+}
 
 /* Battle end, outcome state 0: leave the result screens (8008fad8), run the
  * post-battle module's exit and release the battle display. */
@@ -515,13 +535,27 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077364);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077454);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077610);
+/* Allocate and clear the 0x670-byte graphics block, then initialise it. */
+void func_80077610(void) {
+    void *block = (void *)func_8008ABB8(0x670, 0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007765C);
+    D_800C3EA4->unkA230 = block;
+    func_8003F8E8(block, 0x670);
+    func_80077074();
+}
+
+/* Wait a frame, then release the graphics block. */
+void func_8007765C(void) {
+    func_800716D8();
+    func_800320E8(D_800C3EA4->unkA230);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077698);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077980);
+/* Clear UI byte +0xc6. */
+void func_80077980(void) {
+    D_800D2D28->unkC6 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077990);
 
@@ -547,21 +581,38 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078998);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078B34);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078C9C);
+/* Queue event type 0xfc for the actor. */
+void func_80078C9C(u8 actor, u8 index) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFC;
+    func_800785D4(actor, index);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078CEC);
+/* Queue the action entry's parameter as the event type for the actor. */
+void func_80078CEC(u8 actor, u8 index) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].param;
+    func_800785D4(actor, index);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078D48);
+/* The action entry's targets act together. */
+void func_80078D48(u8 actor, u8 index) {
+    D_800D39E0 = D_800D2E5C[index].targets;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078D6C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078E24);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079054);
+/* Set the actor's attribute arg1 to the entry's parameter byte. */
+void func_80079054(u8 actor, u8 index) {
+    func_80079ED8(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param, 0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079098);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079114);
+/* Set the actor's 16-bit attribute arg1 to the entry's parameter halfword. */
+void func_80079114(u8 actor, u8 index) {
+    func_8007A280(actor, D_800D2E5C[index].arg1, D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8), 0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007916C);
 
@@ -579,9 +630,21 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079778);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079840);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079934);
+/* Advance the AI script by one four-byte instruction. */
+void func_80079934(u8 **pc) {
+    *pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079948);
+/* Skip the script's conditions (0x80 and up), then everything but
+ * actions 0x80..0xef. */
+void func_80079948(u8 **pc) {
+    while (**pc >= 0x80) {
+        func_80079934(pc);
+    }
+    while ((u8)(**pc - 0x80) >= 0x70) {
+        func_80079934(pc);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800799C8);
 
