@@ -116,11 +116,11 @@ void func_801E6314(u8 *data) {
 INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6314);
 #endif
 
-/* Each enemy slot's sprite from its type's row, when that row has data. */
-#ifdef NON_MATCHING
-void func_801E6710(void) {
+/* Each enemy slot's sprite from its type's row, when that row has data
+ * (`data`, the enemy set file, is passed but unused). */
+void func_801E6710(u8 *data) {
     s32 slot;
-    u8 type;
+    s32 type;
 
     for (slot = 3; slot != SLOT_COUNT; slot++) {
         type = D_800C3EB0.slots[slot].id;
@@ -129,9 +129,6 @@ void func_801E6710(void) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6710);
-#endif
 
 /* Create `slot`'s sprite task from sprite row `row` showing `animation`,
  * placed and facing as its placement record says. */
@@ -168,24 +165,21 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E67A
 
 /* Read the party members' sprite files (directory 2c, file by type) into new
  * blocks, recording them in the members' rows, by the file list `list`. */
-#ifdef NON_MATCHING
 void func_801E693C(FileEntry *list) {
-    FileEntry *entry = list;
-    s32 member, entries = 0;
+    s32 member, entries;
     s32 file;
-    u8 type;
+    s32 type;
     void *block;
 
     func_80028470(0x2C, 1);
-    for (member = 0; member != 3; member++) {
+    for (entries = member = 0; member != 3; member++) {
         type = D_800C3EB0.slots[member].id;
         if (type < 0x11 && D_800C3EB0.slots[member].alone == 0) {
             file = D_801E95BC[type].file;
-            entries++;
-            entry->file = file;
+            list[entries].file = file;
             block = func_80031BDC(func_800288EC(file), 0);
-            entry->dest = block;
-            entry++;
+            list[entries].dest = block;
+            entries++;
             D_800C3EB0.rows[member].data = block;
             D_800C3EB0.rows[member].variant = 0;
         }
@@ -194,24 +188,19 @@ void func_801E693C(FileEntry *list) {
     list[entries].dest = NULL;
     func_80029AFC((u16 *)list, 0, 0);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E693C);
-#endif
 
 /* Set up the members placed with a model (800bb760). */
-#ifdef NON_MATCHING
 void func_801E6A4C(void) {
     s32 member;
+    s32 type;
 
     for (member = 0; member != 3; member++) {
-        if (D_800C3EB0.slots[member].id < 0x11 && D_800C3EB0.slots[member].alone != 0) {
+        type = D_800C3EB0.slots[member].id;
+        if (type < 0x11 && D_800C3EB0.slots[member].alone != 0) {
             func_800BB760(member);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6A4C);
-#endif
 
 /* Each party member's sprite: its row takes the next image columns at row
  * 1c0, its sequencer word and a fresh 0x300-byte part block; then (unless
@@ -220,7 +209,7 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6A4
 void func_801E6AC4(void) {
     BattleSprite *sprite;
     s32 member;
-    u8 type;
+    s32 type;
 
     for (member = 0; member != 3; member++) {
         type = D_800C3EB0.slots[member].id;
@@ -254,28 +243,24 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6AC
 
 /* Loading state: after the delay, wait until every member sprite has
  * reached the ground, then mark loading done and end the task. */
-#ifdef NON_MATCHING
 void func_801E6C80(TaskNode *node) {
     LoaderTask *task = (LoaderTask *)node;
     BattleSprite *sprite;
     s32 member;
 
-    if (task->timer != 0) {
-        task->timer--;
-        return;
-    }
-    for (member = 0; member != 3; member++) {
-        if (D_800C3EB0.slots[member].alone == 0 && (sprite = D_800C3EB0.sprites[member]) != NULL &&
-            sprite->y != sprite->ground) {
-            return;
+    if (task->timer == 0) {
+        for (member = 0; member != 3; member++) {
+            if (D_800C3EB0.slots[member].alone == 0 &&
+                (sprite = D_800C3EB0.sprites[member]) != NULL && sprite->y != sprite->ground) {
+                return;
+            }
         }
+        D_800C3EB0.loaded = 1;
+        func_8001CE44(node);
+    } else {
+        task->timer--;
     }
-    D_800C3EB0.loaded = 1;
-    func_8001CE44(node);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6C80);
-#endif
 
 /* Loading state: once the members stop moving, wait 16 frames and settle. */
 void func_801E6D34(TaskNode *node) {
@@ -335,35 +320,32 @@ void func_801E6E48(TaskNode *node) {
 
 /* Loading state: once the member files are read, create the member sprites
  * and read battle files 1-3 (images, shared data, effects). */
-#ifdef NON_MATCHING
 void func_801E6F00(TaskNode *node) {
     LoaderTask *task = (LoaderTask *)node;
+    FileEntry *files;
     s32 busy;
 
     busy = func_800286CC();
     func_80028470(0x2C, 0);
     if (busy == 0) {
         func_801E6AC4();
-        task->files[0].dest = task->images = func_80031BDC(func_800288EC(1), 1);
-        task->files[0].file = 1;
-        D_800D2D54 = task->files[1].dest = task->shared = func_80031BDC(func_800288EC(2), 0);
-        task->files[1].file = 2;
-        task->files[2].dest = task->effects = func_80031BDC(func_800288EC(3), 0);
-        task->files[2].file = 3;
-        task->files[3].dest = NULL;
-        task->files[3].file = 0;
-        func_80029AFC((u16 *)task->files, 0, 0);
+        files = task->files;
+        task->images = files[0].dest = func_80031BDC(func_800288EC(1), 1);
+        files[0].file = 1;
+        D_800D2D54 = task->shared = files[1].dest = func_80031BDC(func_800288EC(2), 0);
+        files[1].file = 2;
+        task->effects = files[2].dest = func_80031BDC(func_800288EC(3), 0);
+        files[2].file = 3;
+        files[3].dest = NULL;
+        files[3].file = 0;
+        func_80029AFC((u16 *)files, 0, 0);
         func_8001CD6C(node, func_801E6E48);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6F00);
-#endif
 
 /* Loading state: once the disc is idle, build the enemy rows and sprites on
  * a private 16 KB stack, release the enemy set file and read the member
  * sprite files. */
-#ifdef NON_MATCHING
 void func_801E6FEC(TaskNode *node) {
     LoaderTask *task = (LoaderTask *)node;
     u8 *stack;
@@ -375,7 +357,7 @@ void func_801E6FEC(TaskNode *node) {
                          : "r"(stack + 0x3FFC)
                          : "$8", "memory");
         func_801E6314(task->data);
-        func_801E6710();
+        func_801E6710(task->data);
         __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
         func_800320E8(stack);
         DrawSync(0);
@@ -384,9 +366,6 @@ void func_801E6FEC(TaskNode *node) {
         func_801E693C(task->members);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6FEC);
-#endif
 
 /* Create the loading task for the enemy set file `data`. */
 void func_801E7098(u8 *data) {
