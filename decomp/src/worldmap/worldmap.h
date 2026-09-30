@@ -1399,4 +1399,19 @@ void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 #define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
+/* worldmap_8007DE98 (round 2) */
+
+/* Scratchpad work area of the exhaust-flame actors. */
+typedef struct {
+    VECTOR scale;      /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+} FlameScratch;
+
+extern u16 D_8009A684[]; /* flame sizes per actor */
+
 #endif

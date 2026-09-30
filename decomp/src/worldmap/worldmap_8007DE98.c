@@ -112,7 +112,104 @@ s32 func_8007F8AC(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007F968);
+/* Exhaust flame on scene object `index`: commands 1-5 stop, start or restart
+ * it; it follows actor 3, emits effects 0x23/0x24 and shrinks away; done (3)
+ * once its size runs out. */
+s32 func_8007F968(s32 index) {
+    WorldmapActor *actor;
+    WorldmapActor *leader;
+    SceneObject *object;
+    FlameScratch *scratch;
+    s32 unused[2]; /* unreferenced; the original frame reserves it */
+
+    actor = &D_8009BE24[index];
+    leader = &D_8009BE24[3];
+    object = &D_8009C620[index];
+    scratch = (FlameScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 1;
+        break;
+    case 3:
+        actor->wait = 0x3C;
+        actor->motion.vx = -0x85A;
+        actor->motion.vz = 0xDA6;
+        actor->unk4 = 0;
+        actor->state = 0;
+        actor->motion.vy = 0;
+        actor->unk5C = D_8009A684[index];
+        object->visible = 0;
+        object->angle.vx = object->angle.vy = object->angle.vz = 0;
+        func_8004A92C(&object->angle, &object->matrix);
+        func_800894C8(0x23);
+        func_800894C8(0x24);
+        break;
+    case 4:
+        actor->wait = 4;
+        actor->state = 1;
+        actor->unk4 = 0;
+        actor->unk5C = D_8009A684[index];
+        object->visible = 0;
+        object->angle.vx = object->angle.vy = object->angle.vz = 0;
+        func_8004A92C(&object->angle, &object->matrix);
+        func_800894C8(0x23);
+        func_800894C8(0x24);
+        break;
+    case 5:
+        actor->state = 1;
+        actor->unk4 = 0;
+        actor->wait = 0x1E;
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        actor->position.vx = leader->position.vx;
+        actor->position.vy = leader->position.vy;
+        actor->position.vz = leader->position.vz;
+        scratch->position.vx = (actor->position.vx + 0x42D000) >> 12;
+        scratch->position.vy = actor->position.vy >> 12;
+        scratch->position.vz = (actor->position.vz - 0x6D3000) >> 12;
+        scratch->angle.vx = scratch->angle.vz = 0;
+        scratch->angle.vy = ratan2(0x85A, 0xDA6) & 0xFFF;
+        func_80089160(0x23, &scratch->position, &scratch->angle);
+        func_80089160(0x24, &scratch->position, &scratch->angle);
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->wait = 0;
+            actor->unk5C -= 0x80;
+        }
+        break;
+    }
+    scratch->base.m[0][0] = 0xDA6;
+    scratch->base.m[0][1] = 0;
+    scratch->base.m[0][2] = 0x85A;
+    scratch->base.m[1][0] = 0;
+    scratch->base.m[1][1] = -0x1000;
+    scratch->base.m[1][2] = 0;
+    scratch->base.m[2][0] = -0x85A;
+    scratch->base.m[2][1] = 0;
+    scratch->base.m[2][2] = 0xDA6;
+    object->angle.vz = (object->angle.vz + 0x100) & 0xFFF;
+    func_8004A92C(&object->angle, &scratch->rotation);
+    MulMatrix0(&scratch->base, &scratch->rotation, &object->matrix);
+    object->position.vx = actor->position.vx >> 12;
+    object->position.vy = actor->position.vy >> 12;
+    object->position.vz = actor->position.vz >> 12;
+    scratch->scale.vx = scratch->scale.vy = actor->unk5C;
+    scratch->scale.vz = 0x2000;
+    ScaleMatrix(&object->matrix, &scratch->scale);
+    if (actor->unk5C < 0) {
+        actor->unk5C = 0;
+        object->visible = 1;
+        return 3;
+    }
+    return 1;
+}
 
 /* Rebuild scene objects 9 and 10 and start a descent at a fixed point. */
 #ifdef NON_MATCHING /* return value loaded before the stores */
