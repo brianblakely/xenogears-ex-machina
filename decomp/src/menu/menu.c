@@ -1126,11 +1126,33 @@ s32 func_80075A4C(Vector *quad, s32 px, s32 pz, s32 radius) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80075B50);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007639C);
+/* Queue a pad input for an actor (dropped when 32 are pending). */
+void func_8007639C(Actor *actor, u8 input) {
+    if (actor->input_count < 32) {
+        actor->inputs[actor->input_head++ & 0x1F] = input;
+        actor->input_count++;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800763E4);
+/* Take the oldest queued input of an actor, 0 when none. */
+u8 func_800763E4(Actor *actor) {
+    u8 input;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80076424);
+    if (actor->input_count == 0) {
+        return 0;
+    }
+    input = actor->inputs[actor->input_tail++ & 0x1F];
+    actor->input_count--;
+    return input;
+}
+
+/* Empty an actor's input queue. */
+void func_80076424(Actor *actor) {
+    actor->input_count = 0;
+    actor->input_head = 0;
+    actor->input_tail = 0;
+    actor->unk9C3 = 0;
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FC3C);
 

@@ -189,7 +189,12 @@ typedef struct Actor {
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0x42];
     s16 unk99E;
-    u8 unk9A0[0xC2C];
+    u8 inputs[32];       /* 0x9A0: queued pad inputs (ring) */
+    u8 input_head;
+    u8 input_tail;
+    u8 input_count;
+    u8 unk9C3;
+    u8 unk9C4[0xC08];
     Pose *pose;          /* 0x15CC */
     Move *move;          /* 0x15D0 */
     u8 unk15D4[0x14];
