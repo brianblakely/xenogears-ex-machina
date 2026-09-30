@@ -4,7 +4,170 @@
 /* Declared here only: other units call it without a prototype. */
 void func_80093354(VECTOR *position);
 
+/* Move a position along a direction across the terrain cells: probe the
+ * cell boundaries crossed (by the corner's side for diagonal moves); 1 when
+ * the target cell is walkable (step[0] = target), else the boundary result. */
+#ifdef NON_MATCHING /* saved registers of the position and the probe are swapped */
+s32 func_80094A5C(VECTOR *position, VECTOR *direction, s32 scale, s32 mode) {
+    CellProbe *probe;
+    s32 from;
+    s32 to;
+    u32 crossing;
+    s32 result;
+    s32 side;
+
+    SCRATCH_VECTOR[1].vx = position->vx + ((direction->vx * scale) >> 12);
+    SCRATCH_VECTOR[1].vz = position->vz + ((direction->vz * scale) >> 12);
+    crossing = 0;
+    from = position->vx >> 19;
+    to = SCRATCH_VECTOR[1].vx >> 19;
+    ((SVECTOR *)0x1F8000A0)->vx = from;
+    ((SVECTOR *)0x1F8000A8)->vx = to;
+    ((SVECTOR *)0x1F8000A8)->vz = SCRATCH_VECTOR[1].vz >> 19;
+    ((SVECTOR *)0x1F8000A0)->vz = position->vz >> 19;
+    probe = CELL_PROBE;
+    result = 0;
+    if (to < from) {
+        crossing = 2;
+    } else if (from < to) {
+        crossing = 1;
+    }
+    if (probe->cell[0].vz > probe->cell[1].vz) {
+        crossing |= 8;
+    } else if (probe->cell[0].vz < probe->cell[1].vz) {
+        crossing |= 4;
+    }
+    switch (crossing) {
+    case 0:
+    case 3:
+    case 7:
+        break;
+    case 1:
+        result = func_8009443C(position, direction, probe->step, mode);
+        break;
+    case 2:
+        result = func_800945C8(position, direction, probe->step, mode);
+        break;
+    case 4:
+        result = func_80094750(position, direction, probe->step, mode);
+        break;
+    case 8:
+        result = func_800948D8(position, direction, probe->step, mode);
+        break;
+    case 5:
+        probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
+        probe->step[0].vz = (position->vz & 0xFFF80000) + 0x80000;
+        probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
+        probe->step[4].vy = 0;
+        probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
+        probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
+        probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
+        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        if (side < 0) {
+            result = func_8009443C(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_80094750(position, direction, probe->step, mode);
+            }
+        } else if (side > 0) {
+            result = func_80094750(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_8009443C(position, direction, probe->step, mode);
+            }
+        } else {
+            result = func_8009443C(position, direction, probe->step, mode);
+        }
+        break;
+    case 6:
+        probe->step[0].vx = (position->vx & 0xFFF80000);
+        probe->step[0].vz = (position->vz & 0xFFF80000) + 0x80000;
+        probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
+        probe->step[4].vy = 0;
+        probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
+        probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
+        probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
+        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        if (side < 0) {
+            result = func_80094750(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_800945C8(position, direction, probe->step, mode);
+            }
+        } else if (side > 0) {
+            result = func_800945C8(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_80094750(position, direction, probe->step, mode);
+            }
+        } else {
+            result = func_800945C8(position, direction, probe->step, mode);
+        }
+        break;
+    case 9:
+        probe->step[0].vx = (position->vx & 0xFFF80000) + 0x80000;
+        probe->step[0].vz = (position->vz & 0xFFF80000);
+        probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
+        probe->step[4].vy = 0;
+        probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
+        probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
+        probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
+        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        if (side < 0) {
+            result = func_800948D8(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_8009443C(position, direction, probe->step, mode);
+            }
+        } else if (side > 0) {
+            result = func_8009443C(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_800948D8(position, direction, probe->step, mode);
+            }
+        } else {
+            result = func_8009443C(position, direction, probe->step, mode);
+        }
+        break;
+    case 10:
+        probe->step[0].vx = (position->vx & 0xFFF80000);
+        probe->step[0].vz = (position->vz & 0xFFF80000);
+        probe->step[2].vx = (position->vx - probe->step[0].vx) >> 12;
+        probe->step[4].vy = 0;
+        probe->step[3].vx = (probe->step[1].vx - probe->step[0].vx) >> 12;
+        probe->step[3].vz = (probe->step[1].vz - probe->step[0].vz) >> 12;
+        probe->step[2].vz = (position->vz - probe->step[0].vz) >> 12;
+        probe->step[4].vx = (probe->step[2].vz << 16) | (probe->step[2].vx & 0xFFFF);
+        probe->step[4].vz = (probe->step[3].vz << 16) | (probe->step[3].vx & 0xFFFF);
+        side = func_8004A70C(probe->step[4].vx, probe->step[4].vy, probe->step[4].vz);
+        if (side < 0) {
+            result = func_800945C8(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_800948D8(position, direction, probe->step, mode);
+            }
+        } else if (side > 0) {
+            result = func_800948D8(position, direction, probe->step, mode);
+            if (result == 0) {
+                result = func_800945C8(position, direction, probe->step, mode);
+            }
+        } else {
+            result = func_800945C8(position, direction, probe->step, mode);
+        }
+        break;
+    }
+    if (result == 0) {
+        func_80093354(probe->step);
+        if (func_80094060(mode, func_80093F18(probe->step)) == 0) {
+            probe->step[0] = probe->step[1];
+            return 1;
+        }
+        return 0;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
+#endif
 
 /* Probe a move and choose the direction to slide along: 1 when free, 0 when
  * the obstacle deflects it (out holds the slide direction). */
@@ -395,7 +558,28 @@ void func_800966CC(EffectCommand4 *request) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800967E4);
+/* Step the stream queue: from disc, advance the reader and start the next
+ * queued list when idle; from the host, read the next list at once. */
+s32 func_800967E4(void) {
+    s32 first;
+    s32 second;
+    s32 status;
+
+    status = 0;
+    first = func_8002C3D8();
+    second = func_8002C3D8();
+    if ((first == 0) | (second == -1)) {
+        status = func_800968E0();
+        if (status == 0 && D_8009D788[D_8009BCB8] != NULL) {
+            func_8009699C(D_8009D788[D_8009BCB8]);
+        }
+    } else if (D_8009C624[D_8009BCB8] != NULL) {
+        func_800966CC(D_8009C624[D_8009BCB8]);
+        D_8009C624[D_8009BCB8] = NULL;
+        D_8009BCB8 = (D_8009BCB8 + 1) & 0xF;
+    }
+    return status;
+}
 
 /* Step the stream reader: 0 idle, 1 busy, 2 finished a frame, 3 error. */
 s32 func_800968E0(void) {

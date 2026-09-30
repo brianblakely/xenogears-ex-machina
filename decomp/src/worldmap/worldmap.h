@@ -509,7 +509,7 @@ s32 ratan2(s32 y, s32 x);               /* ratan2 */
 s32 func_8003F8B0(s32 angle);                  /* rsin */
 s32 func_8003F8CC(s32 angle);                  /* rcos */
 s32 func_8002C3D8(void);
-void func_800967E4(void);
+s32 func_800967E4(void); /* stream step: func_800968E0 status */
 s32 func_80096668(void);
 
 extern void *D_8009C184[0x100]; /* terrain block buffers */
@@ -627,7 +627,8 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *hit, s32 range, s
 
 /* Scratchpad work area of the actor updaters. */
 typedef struct {
-    u8 pad0[0xA0];
+    VECTOR work;      /* 0x00 */
+    u8 pad10[0x90];
     SVECTOR position; /* 0xA0 */
     SVECTOR angle;    /* 0xA8 */
 } ActorScratch;
@@ -898,6 +899,8 @@ void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (ass
 typedef struct {
     u8 pad0[0x3C];
     s32 flags; /* 0x3C: 4 hidden */
+    u8 pad40[0x6F];
+    s8 animation; /* 0xAF */
 } ModelInstance;
 
 /* Parked vehicle state (world units), per party slot. */
@@ -1474,5 +1477,41 @@ typedef struct {
 } HorizonScratch;
 
 #define HORIZON_SCRATCH ((HorizonScratch *)0x1F800000)
+
+/* Scratchpad work area of the cell-crossing probe: step[0] result,
+ * step[1] target, step[2..4] corner test; cells crossed from and to. */
+typedef struct {
+    VECTOR step[5];
+    u8 pad50[0x50];
+    SVECTOR cell[2]; /* 0xA0 */
+} CellProbe;
+
+#define CELL_PROBE ((CellProbe *)0x1F800000)
+
+s32 func_8004A70C(s32 sxy0, s32 sxy1, s32 sxy2); /* NormalClip */
+s32 func_8009443C(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s32 func_800945C8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s32 func_80094750(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s32 func_800948D8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s16 func_80094060(s16 row, s16 column);
+
+/* Party vehicle updaters (worldmap_8008C364). */
+extern u8 D_8006F364[]; /* per actor slot: party member state (slots 4-6) */
+extern u8 D_8006F8E1[]; /* per actor slot: riding flag (slots 4-6) */
+
+void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
+s32 func_8008BEC8(WorldmapActor *actor);
+void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
+void func_80074794(s16 id, VECTOR *position);
+
+/* Player vehicle updater (worldmap_8008C364). */
+#define SCRATCH_HIT ((VECTOR *)0x1F800090) /* move probe result */
+
+extern s16 D_8009B180[]; /* per landing kind: may stand there */
+
+s32 func_80090C68(WorldmapActor *actor);
+void func_8008C040(VECTOR *position, s32 radius, s32 height, u8 *hit, u8 *actor);
+s32 func_80094238(VECTOR *position, s32 table);
+void func_8007528C(void);
 
 #endif
