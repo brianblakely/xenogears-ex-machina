@@ -163,7 +163,7 @@ void func_801E4870(void) {
     for (i = 3; i < SLOT_COUNT; i++) {
         D_800C3D0C[i].b3 = 0;
         if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            func_8003F99C(&D_800CCCE8.record[i], records + D_800C3EB4.slot[i].id * sizeof(CombatantRecord),
+            memmove(&D_800CCCE8.record[i], records + D_800C3EB4.slot[i].id * sizeof(CombatantRecord),
                           sizeof(CombatantRecord));
             scripts = (u16 *)(D_800C3DD0 + ((u16 *)D_800C3DD0)[D_800C3EB4.slot[i].id]);
             D_800D3400[i - 3].main = (u8 *)scripts + scripts[0];
@@ -190,7 +190,7 @@ void func_801E4870(void) {
                 D_800D3400[i - 3].bvars[j] = 0;
             }
         } else {
-            func_8003F8E8(&D_800CCCE8.record[i], sizeof(CombatantRecord));
+            bzero(&D_800CCCE8.record[i], sizeof(CombatantRecord));
             D_800C3D0C[i].script_armed = 0;
             D_800C3D0C[i].reaction_armed = 0;
         }
@@ -421,7 +421,7 @@ void func_801E5384(void) {
     archive = D_800595A8;
     for (i = 0; i < 3; i++) {
         if (D_800CCCE8.party_ids[i] != NO_COMBATANT) {
-            func_8003F99C(&D_800CCCE8.record[i], D_8006D8A0[D_800CCCE8.party_ids[i]], 0xA4);
+            memmove(&D_800CCCE8.record[i], D_8006D8A0[D_800CCCE8.party_ids[i]], 0xA4);
             if (D_800D3294 != 0 && (u32)(i - 1) < 2) {
                 D_800CCCE8.record[i].bA0 = 0x11;
             }
@@ -429,20 +429,20 @@ void func_801E5384(void) {
             if (gear == 0xFF) {
                 gear = 0;
             }
-            func_8003F99C(D_800CCCE8.record[i].gear, D_8006DFAC[gear], 0xA4);
+            memmove(D_800CCCE8.record[i].gear, D_8006DFAC[gear], 0xA4);
             block = func_80032E88(archive[5 + D_800CCCE8.party_ids[i]], 1);
-            func_8003F99C(D_800CCCE8.member_data[i], block, 0x5F0);
+            memmove(D_800CCCE8.member_data[i], block, 0x5F0);
             func_800320E8(block);
             block = func_80032E88(archive[0x11 + gear], 1);
-            func_8003F99C(D_800CCCE8.member_gear[i], block, 0x690);
+            memmove(D_800CCCE8.member_gear[i], block, 0x690);
             func_800320E8(block);
         }
     }
     block = func_80032E88(archive[4], 1);
-    func_8003F99C(D_800CCCE8.data35D8, block, 0x1F40);
+    memmove(D_800CCCE8.data35D8, block, 0x1F40);
     func_800320E8(block);
     block = func_80032E88(archive[3], 1);
-    func_8003F99C(D_800CCCE8.data5518, block, 0x300);
+    memmove(D_800CCCE8.data5518, block, 0x300);
     func_800320E8(block);
     block = func_80032E88(archive[2], 1);
     func_8002DDE4(block, 0, 0, 0, 0, 0, 0);
@@ -454,7 +454,7 @@ void func_801E5384(void) {
     func_80078310(block, 0x61);
     func_800320E8(block);
     block = func_80032E88(archive[0x25], 1);
-    func_8003F99C(D_800CCCE8.data5818, (u8 *)block + 0x320, 0x300);
+    memmove(D_800CCCE8.data5818, (u8 *)block + 0x320, 0x300);
     func_800320E8(block);
     D_800D39F0 = func_80032E88(archive[0x26], 0);
     func_800320E8(D_800595A8);
@@ -489,7 +489,7 @@ void func_801E5840(u8 phase) {
         func_801E4E7C();
         func_801E5014();
         D_800C3E24 = func_8008ABB8(0xEC, 0);
-        func_8003F8E8(D_800C3E24, 0xEC);
+        bzero(D_800C3E24, 0xEC);
         break;
     case 3:
         func_801E6290();
@@ -509,13 +509,13 @@ void func_801E5924(void) {
     func_80026338(D_800D2F5C, 0x5C, &D_800C3EA4->glyph_a234, &D_800C3EA4->tpage_tp,
                   &D_800C3EA4->clut_x, &D_800C3EA4->clut_y, &D_800C3EA4->tpage_x,
                   &D_800C3EA4->tpage_y);
-    D_800C3EA4->gauge_clut[1] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y);
-    D_800C3EA4->gauge_clut[0] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 1);
-    D_800C3EA4->gauge_clut[3] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 2);
-    D_800C3EA4->gauge_clut[2] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 3);
+    D_800C3EA4->gauge_clut[1] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y);
+    D_800C3EA4->gauge_clut[0] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 1);
+    D_800C3EA4->gauge_clut[3] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 2);
+    D_800C3EA4->gauge_clut[2] = GetClut(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 3);
     for (i = 0; i < 8; i++) {
-        func_80043CD8(&D_800C3EA4->gauge[i]);
-        func_80043C24(&D_800C3EA4->gauge[i], 0);
+        SetPolyGT4(&D_800C3EA4->gauge[i]);
+        SetShadeTex(&D_800C3EA4->gauge[i], 0);
         (D_800C3EA4->gauge + i)->r0 = 0x80;
         (D_800C3EA4->gauge + i)->g0 = 0x80;
         (D_800C3EA4->gauge + i)->b0 = 0x80;
@@ -529,8 +529,8 @@ void func_801E5924(void) {
         (D_800C3EA4->gauge + i)->g3 = 0;
         (D_800C3EA4->gauge + i)->b3 = 0;
         D_800C3EA4->gauge[i].tpage =
-            func_80043A1C(D_800C3EA4->tpage_tp, 0, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y);
-        func_80043CC4(&D_800C3EA4->gauge_shade[i]);
+            GetTPage(D_800C3EA4->tpage_tp, 0, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y);
+        SetPolyG4(&D_800C3EA4->gauge_shade[i]);
         (D_800C3EA4->gauge_shade + i)->r2 = 0x4F;
         (D_800C3EA4->gauge_shade + i)->g2 = 0x4F;
         (D_800C3EA4->gauge_shade + i)->b2 = 0x4F;
@@ -539,7 +539,7 @@ void func_801E5924(void) {
         (D_800C3EA4->gauge_shade + i)->b3 = 0x4F;
     }
     for (i = 0; i < 12; i++) {
-        func_80043D78(&D_800C3EA4->gauge_line[i]);
+        SetLineF2(&D_800C3EA4->gauge_line[i]);
         (D_800C3EA4->gauge_line + i)->r0 = 0xFF;
         (D_800C3EA4->gauge_line + i)->g0 = 0xFF;
         (D_800C3EA4->gauge_line + i)->b0 = 0xFF;
@@ -557,13 +557,13 @@ void func_801E5D2C(void) {
     window.h = 0x100;
     window.w = 0x100;
     for (i = 0; i < 2; i++) {
-        func_80043C9C(&D_800C3EA4->panel[i]);
+        SetPolyF4(&D_800C3EA4->panel[i]);
         (D_800C3EA4->panel + i)->r0 = 0xFF;
         (D_800C3EA4->panel + i)->g0 = 0xFF;
         (D_800C3EA4->panel + i)->b0 = 0xFF;
-        func_80043BFC(&D_800C3EA4->panel[i], 1);
-        func_800454DC(&D_800C3EA4->panel_mode[i], 0, 0,
-                      func_80043A1C(0, 2, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y), &window);
+        SetSemiTrans(&D_800C3EA4->panel[i], 1);
+        SetDrawMode(&D_800C3EA4->panel_mode[i], 0, 0,
+                      GetTPage(0, 2, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y), &window);
     }
     D_800C3EA4->panel6415 = 0;
     D_800C3EA4->panel_alpha = 0xFF;

@@ -156,28 +156,28 @@ void func_8002CB54(ModelRecord *model, void **packets0, void **packets1); /* all
 void func_8002C8CC(ModelRecord *model, void *packets, s32 mode); /* build a model's packets */
 void func_8002CC10(s16 a, s16 b);
 void func_8002CC74(s16 a, s16 b);
-void *func_8003F968(void *dst, void *src, s32 size); /* memcpy */
+void *memcpy(void *dst, void *src, s32 size); /* memcpy */
 void func_8002C700(ModelRecord *model, void *packets, s32 arg2, s32 arg3); /* draw a model's packets */
 void func_8002CBBC(ModelRecord *model);       /* release a model's own packets */
 
 /* libgpu. */
-u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-u16 func_80043A58(s32 x, s32 y);                  /* GetClut */
-void func_80043BFC(void *p, s32 abe);            /* SetSemiTrans */
-void func_80043CB0(POLY_FT4 *p);                 /* SetPolyFT4 */
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 GetClut(s32 x, s32 y);                  /* GetClut */
+void SetSemiTrans(void *p, s32 abe);            /* SetSemiTrans */
+void SetPolyFT4(POLY_FT4 *p);                 /* SetPolyFT4 */
 
 /* Resident maths. */
 s32 func_8003F8CC(s16 angle);                    /* cosine (4096 = 1.0) */
-s32 func_80048C4C(s32 value);                    /* square root */
+s32 SquareRoot0(s32 value);                    /* square root */
 
 /* libgte. */
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m);        /* RotMatrix */
 MATRIX *func_8004A92C(SVECTOR *rot, MATRIX *m);        /* RotMatrixYXZ */
-MATRIX *func_8004920C(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* MulMatrix0 */
-MATRIX *func_8004931C(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* CompMatrix */
-void func_80049EFC(MATRIX *m);                /* SetRotMatrix */
-void func_80049F2C(MATRIX *m);                /* SetLightMatrix */
-void func_80049F8C(MATRIX *m);                /* SetTransMatrix */
+MATRIX *MulMatrix0(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* MulMatrix0 */
+MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* CompMatrix */
+void SetRotMatrix(MATRIX *m);                /* SetRotMatrix */
+void SetLightMatrix(MATRIX *m);                /* SetLightMatrix */
+void SetTransMatrix(MATRIX *m);                /* SetTransMatrix */
 
 /* This overlay's data. */
 typedef struct {

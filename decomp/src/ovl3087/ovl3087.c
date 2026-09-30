@@ -36,9 +36,9 @@ void func_801E5160(void) {
     D_800D3340 = func_80032E88(((ScriptSet *)((u8 *)archive + D_8006F9DF.scriptSet * 8))->data, 0);
     func_800320E8(archive);
     D_800D3278 = func_8008ABB8(sizeof(ScriptState), 0);
-    func_8003F8E8(D_800D3278, sizeof(ScriptState));
+    bzero(D_800D3278, sizeof(ScriptState));
     D_800D2DAC = func_8008ABB8(0x98, 0);
-    func_8003F8E8(D_800D2DAC, 0x78);
+    bzero(D_800D2DAC, 0x78);
     D_800D39D0 = script;
     D_800D3278->code = (u8 *)D_800D39D0 + D_800D39D0->threadCount * 16 + 0x44;
     for (i = 0; i < 16; i++) {
@@ -64,12 +64,12 @@ void func_801E5160(void) {
         D_800D3278->window[i] = D_801E9C10[i];
     }
     for (i = 0; i < 2; i++) {
-        func_80043CB0(&D_800D3278->quads[i]);
+        SetPolyFT4(&D_800D3278->quads[i]);
         setRGB0(&D_800D3278->quads[i], 0x80, 0x80, 0x80);
-        func_80043BFC(&D_800D3278->quads[i], 0);
-        func_80043C24(&D_800D3278->quads[i], 1);
-        D_800D3278->quads[i].clut = func_80043A58(0, 0x1D0);
-        D_800D3278->quads[i].tpage = func_80043A1C(1, 0, 0x3C0, 0x100);
+        SetSemiTrans(&D_800D3278->quads[i], 0);
+        SetShadeTex(&D_800D3278->quads[i], 1);
+        D_800D3278->quads[i].clut = GetClut(0, 0x1D0);
+        D_800D3278->quads[i].tpage = GetTPage(1, 0, 0x3C0, 0x100);
     }
     D_800D2D28->unkCA = 1;
     D_800D2D28->unkCF = 0;
@@ -511,15 +511,15 @@ void func_801E6750(u8 actor, s32 flags, s32 x, s32 y, s32 width) {
     data = func_8008ABB8(func_800288EC(file), 1);
     func_800295D8(file, data, 0, 0x80);
     func_8008AC50();
-    func_800471B4(data);
-    func_800471C4(&tim);
+    OpenTIM(data);
+    ReadTIM(&tim);
     tim.crect->x = 0;
     tim.crect->y = 0x1D0;
     tim.prect->x = 0x3C0;
     tim.prect->y = 0x100;
-    func_80044894(tim.crect, tim.caddr);
-    func_80044894(tim.prect, tim.paddr);
-    func_800445D0(0);
+    LoadImage(tim.crect, tim.caddr);
+    LoadImage(tim.prect, tim.paddr);
+    DrawSync(0);
     func_800320E8(data);
     if (mirrored) {
         setXY4(&D_800D3278->quads[D_800CCB34.index], x + width - 4, y + 4, x + width - 0x44, y + 4,
@@ -947,7 +947,7 @@ void func_801E7CD0(s16 music, u8 volume) {
     D_800D3278->music = D_80062648;
     func_800295D8(music + 4, D_80062648, 0, 0x80);
     func_8008AC50();
-    func_8003F99C(D_80062648, D_800D3278->music, size);
+    memmove(D_80062648, D_800D3278->music, size);
     D_800D3278->musicPlaying = 1;
     D_800D3278->musicId = music;
     D_800D3278->musicVolume = volume;

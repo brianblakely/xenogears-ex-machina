@@ -112,7 +112,7 @@ ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 c
                 func_8002CC74(param2, param3);
             }
             func_8002C8CC(group->models[model], part->packets[0], mode);
-            func_8003F968(part->packets[1], part->packets[0], group->models[model]->packet_bytes);
+            memcpy(part->packets[1], part->packets[0], group->models[model]->packet_bytes);
             part->rot.vx = 0;
         } else {
             part->packets[0] = NULL;
@@ -171,7 +171,7 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
     product = scale * parts->scale[2];
     product >>= 12;
     scaling->m[2][2] = product;
-    func_8004920C(&parts->world, scaling, &parts->local);
+    MulMatrix0(&parts->world, scaling, &parts->local);
     parts->local.t[0] = parts->world.t[0];
     parts->local.t[1] = parts->world.t[1];
     parts->local.t[2] = parts->world.t[2];
@@ -195,7 +195,7 @@ u32 func_801DC5C0(ModelPart *parts, s32 scale) {
             parts->local.t[1] = parts->pos[1];
             parts->local.t[2] = parts->pos[2];
             if (parts->parent != NULL) {
-                func_8004931C(&parts->parent->world, &parts->local, &parts->world);
+                CompMatrix(&parts->parent->world, &parts->local, &parts->world);
             } else {
                 parts->world = parts->local;
             }
@@ -244,7 +244,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
     product = scale * parts->scale[2];
     product >>= 12;
     scaling->m[2][2] = product;
-    func_8004920C(&parts->world, scaling, &parts->local);
+    MulMatrix0(&parts->world, scaling, &parts->local);
     parts->local.t[0] = parts->world.t[0];
     parts->local.t[1] = parts->world.t[1];
     parts->local.t[2] = parts->world.t[2];
@@ -275,7 +275,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
             scratch->m[2][0] = 0;
             scratch->m[2][1] = 0;
             scratch->m[2][2] = parts->scale[2];
-            func_8004920C(&parts->local, scratch, &parts->local);
+            MulMatrix0(&parts->local, scratch, &parts->local);
             if (parts->parent != NULL) {
                 scratch->m[0][0] = 0x1000000 / parts->parent->scale[0];
                 scratch->m[0][1] = 0;
@@ -286,7 +286,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
                 scratch->m[2][0] = 0;
                 scratch->m[2][1] = 0;
                 scratch->m[2][2] = 0x1000000 / parts->parent->scale[2];
-                func_8004920C(scratch, &parts->local, &parts->local);
+                MulMatrix0(scratch, &parts->local, &parts->local);
             }
         }
         if (parts->dirty) {
@@ -294,7 +294,7 @@ u32 func_801DC848(ModelPart *parts, s32 scale) {
             parts->local.t[1] = parts->pos[1];
             parts->local.t[2] = parts->pos[2];
             if (parts->parent != NULL) {
-                func_8004931C(&parts->parent->world, &parts->local, &parts->world);
+                CompMatrix(&parts->parent->world, &parts->local, &parts->world);
             } else {
                 parts->world = parts->local;
             }
@@ -323,18 +323,18 @@ void func_801DCC3C(ModelList *group, ModelPart *parts, MATRIX *view, MATRIX *lig
     u32 count;
     u32 i;
 
-    func_8004920C(light, &parts->world, light_root);
-    func_8004931C(view, &parts->local, view_root);
+    MulMatrix0(light, &parts->world, light_root);
+    CompMatrix(view, &parts->local, view_root);
     count = parts->count;
     parts++;
     for (i = 1; i < count; parts++) {
         i++;
         if (parts->model != 0xFFFF) {
-            func_8004920C(light_root, &parts->world, m);
-            func_80049F2C(m);
-            func_8004931C(view_root, &parts->world, m);
-            func_80049EFC(m);
-            func_80049F8C(m);
+            MulMatrix0(light_root, &parts->world, m);
+            SetLightMatrix(m);
+            CompMatrix(view_root, &parts->world, m);
+            SetRotMatrix(m);
+            SetTransMatrix(m);
             func_8002C700(group->models[parts->model], parts->packets[buffer], arg5, arg4);
         }
     }
@@ -572,10 +572,10 @@ void func_801E011C(ParticlePool *pool) {
         particle->lifetime = 0;
         for (j = 0; j < 2; j++) {
             poly = &particle->poly[j];
-            func_80043CB0(poly);
-            func_80043BFC(poly, 1);
-            particle->poly[j].clut = func_80043A58(0, 0x1CD);
-            particle->poly[j].tpage = func_80043A1C(0, 1, 0x340, 0x100);
+            SetPolyFT4(poly);
+            SetSemiTrans(poly, 1);
+            particle->poly[j].clut = GetClut(0, 0x1CD);
+            particle->poly[j].tpage = GetTPage(0, 1, 0x340, 0x100);
             particle->poly[j].u0 = 0;
             particle->poly[j].v0 = 0xBD;
             particle->poly[j].u1 = 0;
@@ -604,8 +604,8 @@ Particle *func_801E0248(ParticlePool *pool, s16 semi_trans) {
                 }
                 pool->next++;
             }
-            func_80043BFC(&particle->poly[0], semi_trans);
-            func_80043BFC(&particle->poly[1], semi_trans);
+            SetSemiTrans(&particle->poly[0], semi_trans);
+            SetSemiTrans(&particle->poly[1], semi_trans);
             return particle;
         }
     }
@@ -767,7 +767,7 @@ void func_801E5B50(SlotPool *pool, ModelPart *part, s32 type, s32 arg3, s32 arg4
         dx = x - part->pos[0];
         dy = y - part->pos[1];
         dz = z - part->pos[2];
-        tween->value[0] = func_80048C4C(dx * dx + dy * dy + dz * dz) + 1;
+        tween->value[0] = SquareRoot0(dx * dx + dy * dy + dz * dz) + 1;
         tween->value[1] = arg3;
         tween->value[2] = arg4;
         tween->value[3] = x;

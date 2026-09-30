@@ -591,6 +591,7 @@ tools/authoring/package.json
 tools/authoring/qualification.ts
 tools/authoring/qualify.py
 tools/authoring/tsconfig.json
+tools/decomp_rename.py
 tools/extraction/README.md
 tools/extraction/disc_files.py
 tools/extraction/overlays.py

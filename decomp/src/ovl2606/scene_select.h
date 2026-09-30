@@ -33,13 +33,13 @@ typedef struct {
     u8 pad0, pad1;
 } DISPENV;
 
-extern void func_800445D0(s32 mode);         /* DrawSync */
-extern void func_80044AD8(u32 *ot, s32 n);   /* ClearOTagR */
-extern void func_80044BD0(u32 *ot);          /* DrawOTag */
-extern void func_8004B54C(s32 mode);         /* VSync */
-extern void func_80044534(s32 mask);         /* SetDispMask */
-extern void func_80044C44(DRAWENV *env);     /* PutDrawEnv */
-extern void func_80044E9C(DISPENV *env);     /* PutDispEnv */
+extern void DrawSync(s32 mode);         /* DrawSync */
+extern void ClearOTagR(u32 *ot, s32 n);   /* ClearOTagR */
+extern void DrawOTag(u32 *ot);          /* DrawOTag */
+extern void VSync(s32 mode);         /* VSync */
+extern void SetDispMask(s32 mask);         /* SetDispMask */
+extern void PutDrawEnv(DRAWENV *env);     /* PutDrawEnv */
+extern void PutDispEnv(DISPENV *env);     /* PutDispEnv */
 
 /* The battle's two frame buffers (resident BSS, 0x4070 bytes each): the
  * environments come first, then the frame's ordering table and packets. */
@@ -93,7 +93,7 @@ extern void func_80028A60(s32);                 /* wait for the disc */
 extern void func_80032498(s32 tag, s32);        /* select the heap owner tag */
 extern void func_800320E8(void *block);         /* free */
 extern void func_8003748C(void);
-extern void *func_8003F99C(void *dst, void *src, s32 n); /* memmove */
+extern void *memmove(void *dst, void *src, s32 n); /* memmove */
 extern void func_8008AB70(void);
 extern void *func_8008ABB8(s32 size, s32 mode); /* battle allocation */
 extern void func_8009B1E4(void);

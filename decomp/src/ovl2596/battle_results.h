@@ -234,9 +234,9 @@ extern u8 D_800C3268[18];
 extern s16 D_800C327C[18];
 extern s16 D_800C32A0[18];
 
-void func_80043B48(void *ot, void *prim);                   /* AddPrim */
-void func_80043C24(void *prim, s32 textured);               /* SetShadeTex */
-void func_80043CC4(POLY_G4 *prim);                          /* SetPolyG4 */
+void AddPrim(void *ot, void *prim);                   /* AddPrim */
+void SetShadeTex(void *prim, s32 textured);               /* SetShadeTex */
+void SetPolyG4(POLY_G4 *prim);                          /* SetPolyG4 */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 

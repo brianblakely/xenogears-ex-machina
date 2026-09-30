@@ -17,11 +17,11 @@ void func_801E0124(void) {
     s32 i;
     s32 j;
 
-    func_80044C44(&D_800C4A20[0].draw);
-    func_80044C44(&D_800C4A20[1].draw);
-    func_80044E9C(&D_800C4A20[0].disp);
-    func_80044E9C(&D_800C4A20[1].disp);
-    func_80044534(1);
+    PutDrawEnv(&D_800C4A20[0].draw);
+    PutDrawEnv(&D_800C4A20[1].draw);
+    PutDispEnv(&D_800C4A20[0].disp);
+    PutDispEnv(&D_800C4A20[1].disp);
+    SetDispMask(1);
     D_8006F364.party[1] = 1;
     D_8006F364.party[2] = 2;
     D_801E1DA0[0][0] = 3;
@@ -68,7 +68,7 @@ void func_801E0238(void) {
             frame++;
         }
         D_800CCB00 = frame;
-        func_80044AD8(frame->ot, 0x1000);
+        ClearOTagR(frame->ot, 0x1000);
         switch (D_800D3014) {
         case 14: /* Start */
             running = 0;
@@ -253,11 +253,11 @@ void func_801E0238(void) {
         func_8003700C("\n   LL  LR     Maru   +");
         func_8003700C("\n     LD       Batsu  -");
         func_80037324(D_800CCB00->ot);
-        func_800445D0(0);
-        func_8004B54C(0);
-        func_80044C44(&D_800CCB00->draw);
-        func_80044E9C(&D_800CCB00->disp);
-        func_80044BD0(&D_800CCB00->ot[0xFFF]);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_800CCB00->draw);
+        PutDispEnv(&D_800CCB00->disp);
+        DrawOTag(&D_800CCB00->ot[0xFFF]);
     } while (running);
 }
 
@@ -311,7 +311,7 @@ void func_801E0A34(void) {
     data = func_8008ABB8(size, 1);
     func_800295D8(i, data, 0, 0x80);
     func_80028A60(0);
-    func_8003F99C(D_800658DC, data, 0x200);
+    memmove(D_800658DC, data, 0x200);
     func_800320E8(data);
     func_8001B66C();
     func_8008AB70();
@@ -319,7 +319,7 @@ void func_801E0A34(void) {
     D_800D39D8 = func_8008ABB8(size, 1);
     func_800295D8(4, D_800D39D8, 0, 0x80);
     func_80028A60(0);
-    func_8003F99C(D_80062648, D_800D39D8, size);
+    memmove(D_80062648, D_800D39D8, size);
     func_800320E8(D_800D39D8);
     func_8009B1E4();
     for (i = 0; i < 11; i++) {

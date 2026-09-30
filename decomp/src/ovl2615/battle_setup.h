@@ -72,7 +72,7 @@ extern u8 D_800D2F64;
 extern void *D_800C3E24; /* direction arrow state (0xEC bytes) */
 
 void *func_8008ABB8(s32 size, s32 flags); /* heap allocation */
-void func_8003F8E8(void *dest, s32 size);  /* clear memory */
+void bzero(void *dest, s32 size);  /* clear memory */
 
 void func_801E4048(void);
 void func_801E4160(void);
@@ -236,16 +236,16 @@ typedef struct {
     u32 code[2];
 } DR_MODE;
 
-void func_80043CD8(POLY_GT4 *poly);                 /* SetPolyGT4 */
-void func_80043CC4(POLY_G4 *poly);                  /* SetPolyG4 */
-void func_80043D78(LINE_F2 *line);                  /* SetLineF2 */
-void func_80043C24(void *prim, s32 tge);            /* SetShadeTex */
-u16 func_80043A58(s32 x, s32 y);                    /* GetClut */
+void SetPolyGT4(POLY_GT4 *poly);                 /* SetPolyGT4 */
+void SetPolyG4(POLY_G4 *poly);                  /* SetPolyG4 */
+void SetLineF2(LINE_F2 *line);                  /* SetLineF2 */
+void SetShadeTex(void *prim, s32 tge);            /* SetShadeTex */
+u16 GetClut(s32 x, s32 y);                    /* GetClut */
 
-void func_80043C9C(POLY_F4 *poly);                  /* SetPolyF4 */
-void func_80043BFC(void *prim, s32 semi);           /* SetSemiTrans */
-u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);   /* GetTPage */
-void func_800454DC(DR_MODE *mode, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
+void SetPolyF4(POLY_F4 *poly);                  /* SetPolyF4 */
+void SetSemiTrans(void *prim, s32 semi);           /* SetSemiTrans */
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);   /* GetTPage */
+void SetDrawMode(DR_MODE *mode, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 
 /* A glyph's primitives, double-buffered (0x28 bytes per buffer). */
 typedef struct {
@@ -347,7 +347,7 @@ extern u8 *D_800C3DD0;
 extern u8 *D_800C3DDC;
 extern s16 D_800D39E0;
 
-void func_8003F99C(void *dest, void *src, s32 size); /* memmove */
+void memmove(void *dest, void *src, s32 size); /* memmove */
 
 /* The battle formation record (resident game data at 0x8006F9DC). Its
  * per-combatant bytes are laid out relative to the slot number. */

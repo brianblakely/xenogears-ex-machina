@@ -43,8 +43,8 @@ void func_801DE1C4(void) {
         func_800728B8(D_800D334C->glyphs17C0, D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
         func_800728B8(D_800D334C->glyphs1900, D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
         for (i = 0; i < 7; i++) {
-            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
-            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
+            AddPrim(D_800CCB00.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
+            AddPrim(D_800CCB00.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
             func_800728B8(D_800D334C->rowA[i], D_800D334C->rowACount[i], D_800D334C->rowABuffer[i]);
             func_800728B8(D_800D334C->rowB[i], D_800D334C->rowBCount[i], D_800D334C->rowBBuffer[i]);
         }
@@ -53,7 +53,7 @@ void func_801DE1C4(void) {
     if (D_800D2D28->show8F != 0) {
         func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
         for (; i < 2; i++) {
-            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
+            AddPrim(D_800CCB00.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
         }
     }
 }
@@ -67,11 +67,11 @@ void func_801DE408(void) {
         func_800728B8(D_800D334C->glyphs2F60[0], D_800D334C->run2F60.count, D_800D334C->run2F60.buffer);
         func_800728B8(D_800D334C->glyphs3140[0], D_800D334C->run3140.count, D_800D334C->run3140.buffer);
         for (i = 0; i < D_800D334C->listCount; i++) {
-            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->listA[i][D_800D334C->listBuffer]);
-            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->listB[i][D_800D334C->listBuffer]);
+            AddPrim(D_800CCB00.ot + 1, &D_800D334C->listA[i][D_800D334C->listBuffer]);
+            AddPrim(D_800CCB00.ot + 1, &D_800D334C->listB[i][D_800D334C->listBuffer]);
         }
         for (i = 0; i < 2; i++) {
-            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->glyphs3410[i][D_800D334C->buffer3410]);
+            AddPrim(D_800CCB00.ot + 1, &D_800D334C->glyphs3410[i][D_800D334C->buffer3410]);
         }
     }
 }
@@ -111,9 +111,9 @@ void func_801DE69C(void) {
             if (D_800D32F8[0]->flag15F8 != 0) {
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE8, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x20);
                 D_800D32F8[i]->runs[1].count += func_80076A10(0xE9, &D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2], 0x88, i * 0x20 + 0x28);
-                func_80043C24(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800CCB00.buffer], 0);
+                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 2) * 2 + D_800CCB00.buffer], 0);
                 setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 4, 0x80, 0x40, 0x40);
-                func_80043C24(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800CCB00.buffer], 0);
+                SetShadeTex(&D_800D32F8[i]->labels[(D_800D32F8[i]->runs[1].count - 1) * 2 + D_800CCB00.buffer], 0);
                 setRGB0(&D_800D32F8[i]->labels[D_800D32F8[i]->runs[1].count * 2 + D_800CCB34] - 2, 0x40, 0x80, 0x40);
             }
         }
@@ -216,11 +216,11 @@ void func_801DEDC0(u8 fromGameData) {
                 }
                 D_800D32F8[i]->runs[3].buffer = D_800CCB34;
                 for (j = 0; j < D_800D32F8[i]->runs[2].count; j++) {
-                    func_80043C24(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0);
+                    SetShadeTex(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0);
                     setRGB0(&D_800D32F8[i]->field780[j * 2 + D_800CCB34], 0x80, 0x40, 0x40);
                 }
                 for (j = 0; j < D_800D32F8[i]->runs[3].count; j++) {
-                    func_80043C24(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0);
+                    SetShadeTex(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0);
                     setRGB0(&D_800D32F8[i]->field870[j * 2 + D_800CCB34], 0x40, 0x80, 0x40);
                 }
             }
@@ -328,7 +328,7 @@ void func_801DF710(POLY_G4 *bar, u8 colour) {
         break;
     }
     for (i = 0; i < 2; i++) {
-        func_80043CC4(&bar[i]);
+        SetPolyG4(&bar[i]);
         bar[i].r0 = rgb[0];
         bar[i].g0 = rgb[1];
         bar[i].b0 = rgb[2];
@@ -358,7 +358,7 @@ void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer) {
         rgb[2] = 0x80;
     }
     for (i = 0; i < count; i++) {
-        func_80043C24(&prims[i * 2 + buffer], 0);
+        SetShadeTex(&prims[i * 2 + buffer], 0);
         setRGB0(&prims[i * 2 + buffer], rgb[0], rgb[1], rgb[2]);
     }
 }
@@ -421,7 +421,7 @@ void func_801DFAA8(u8 member) {
             D_800D334C->runs[1].count += func_80076A10(D_800C32C4[i].glyph, &D_800D334C->text[start * 2], D_800C3318[i], D_800C3350[i]);
             if (D_800C32C4[i].shaded != 0) {
                 for (k = start; k < D_800D334C->runs[1].count; k++) {
-                    func_80043C24(&D_800D334C->text[k * 2 + D_800CCB34], 0);
+                    SetShadeTex(&D_800D334C->text[k * 2 + D_800CCB34], 0);
                     setRGB0(&D_800D334C->text[k * 2 + D_800CCB34], colours[D_800C32C4[i].colour][0], colours[D_800C32C4[i].colour][1], colours[D_800C32C4[i].colour][2]);
                 }
             }
@@ -505,7 +505,7 @@ void func_801DFF50(u8 member) {
             }
         }
         for (k = 0; k < D_800D334C->runs[3].count; k++) {
-            func_80043C24(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0);
+            SetShadeTex(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0);
             setRGB0(&D_800D334C->glyphs17C0[k * 2 + D_800CCB34], 0x80, 0x40, 0x40);
         }
         D_800D334C->runs[3].buffer = D_800CCB34;
@@ -547,7 +547,7 @@ void func_801E0184(u8 member) {
             }
         }
         for (k = 0; k < D_800D334C->runs[5].count; k++) {
-            func_80043C24(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0);
+            SetShadeTex(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0);
             setRGB0(&D_800D334C->glyphs1900[k * 2 + D_800CCB34], 0x80, 0x40, 0x40);
         }
         D_800D334C->runs[5].buffer = D_800CCB34;
