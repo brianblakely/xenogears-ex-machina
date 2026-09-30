@@ -1856,55 +1856,210 @@ void func_8007E934(void) {
     func_80078508(order);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E954);
+/* AI condition 81: byte variable b1 == b2. */
+s32 func_8007E954(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
 
+    return D_800D3400[enemy].bytes[op[1]] == op[2];
+}
+
+/* AI condition 82: variable b1 == b2 | b3 << 8. */
+#ifdef NON_MATCHING
+s32 func_8007E98C(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return D_800D3400[enemy].vars[op[1]] == (op[2] | (op[3] << 8));
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E98C);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E9D0);
+/* AI condition 83: byte variable b1 <= b2. */
+s32 func_8007E9D0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
 
+    return D_800D3400[enemy].bytes[op[1]] <= op[2];
+}
+
+/* AI condition 84: variable b1 <= b2 | b3 << 8. */
+#ifdef NON_MATCHING
+s32 func_8007EA08(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return D_800D3400[enemy].vars[op[1]] <= (op[2] | (op[3] << 8));
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EA08);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EA4C);
+/* AI condition 85: byte variable b1 >= b2. */
+s32 func_8007EA4C(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
 
+    return D_800D3400[enemy].bytes[op[1]] >= op[2];
+}
+
+/* AI condition 86: variable b1 >= b2 | b3 << 8. */
+#ifdef NON_MATCHING
+s32 func_8007EA84(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return D_800D3400[enemy].vars[op[1]] >= (op[2] | (op[3] << 8));
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EA84);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EAC8);
+/* AI condition 87: byte variable b1 == byte variable b2. */
+s32 func_8007EAC8(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EB08);
+    return bytes[op[1]] == bytes[op[2]];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EB50);
+/* AI condition 88: variable b1 == variable b2. */
+s32 func_8007EB08(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EB90);
+    return vars[op[1]] == vars[op[2]];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EBD8);
+/* AI condition 89: byte variable b1 <= byte variable b2. */
+s32 func_8007EB50(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
 
+    return bytes[op[1]] <= bytes[op[2]];
+}
+
+/* AI condition 8a: variable b1 <= variable b2. */
+s32 func_8007EB90(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
+
+    return vars[op[1]] <= vars[op[2]];
+}
+
+/* AI condition 8b: byte variable b1 & b2. */
+s32 func_8007EBD8(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return (D_800D3400[enemy].bytes[op[1]] & op[2]) != 0;
+}
+
+/* AI condition 8c: variable b1 & (b2 | b3 << 8). */
+#ifdef NON_MATCHING
+s32 func_8007EC10(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return (D_800D3400[enemy].vars[op[1]] & (op[2] + (op[3] << 8))) != 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EC10);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EC54);
+/* AI condition 8d: byte variable b1 & byte variable b2. */
+s32 func_8007EC54(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EC94);
+    return (bytes[op[1]] & bytes[op[2]]) != 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ECDC);
+/* AI condition 8e: variable b1 & variable b2. */
+s32 func_8007EC94(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
 
+    return (vars[op[1]] & vars[op[2]]) != 0;
+}
+
+/* AI condition 8f: byte variable b1 != b2. */
+s32 func_8007ECDC(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return D_800D3400[enemy].bytes[op[1]] != op[2];
+}
+
+/* AI condition 90: variable b1 != b2 | b3 << 8. */
+#ifdef NON_MATCHING
+s32 func_8007ED14(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    return D_800D3400[enemy].vars[op[1]] != (op[2] | (op[3] << 8));
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ED14);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ED58);
+/* AI condition 91: byte variable b1 != byte variable b2. */
+s32 func_8007ED58(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007ED98);
+    return bytes[op[1]] != bytes[op[2]];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EDE0);
+/* AI condition 92: variable b1 != variable b2. */
+s32 func_8007ED98(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EE28);
+    return vars[op[1]] != vars[op[2]];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EE70);
+/* AI condition 93: long b1 == long b2. */
+s32 func_8007EDE0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    s32 *longs = D_800D3400[enemy].longs;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EEA8);
+    return longs[op[1]] == longs[op[2]];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EED0);
+/* AI condition 94: long b1 <= long b2 (unsigned). */
+s32 func_8007EE28(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u32 *longs = (u32 *)D_800D3400[enemy].longs;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EEE8);
+    return longs[op[1]] <= longs[op[2]];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EF44);
+/* AI condition 95: slot b1's record +0x7c bit 0x8000. */
+s32 func_8007EE70(u8 **pc) {
+    return D_800CCCE8[(*pc)[1]].flags7C >> 15;
+}
+
+/* AI condition 96: formation group b1 is empty. */
+s32 func_8007EEA8(u8 **pc) {
+    return D_800D301C[(*pc)[1]].count == 0;
+}
+
+/* AI condition 97: no party member (slots 0 and 1) is alive. */
+s32 func_8007EED0(void) {
+    return (D_800D39DC & 3) == 0;
+}
+
+/* AI condition 98: false while any enemy without slot info bit 0x80 is
+ * listed and the alive mask has a bit above 4 set. */
+s32 func_8007EEE8(void) {
+    s32 result = 1;
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if ((D_800D39DC >> 5) != 0 && !(D_800C3EB4[i + 3].hidden & 0x80)) {
+            result = 0;
+            break;
+        }
+    }
+    return result;
+}
+
+/* AI condition 9b: the enemy's slot info +3 bit 0x80. */
+s32 func_8007EF44(u8 enemy) {
+    return D_800C3EB4[enemy + 3].hidden >> 7;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007EF6C);
 

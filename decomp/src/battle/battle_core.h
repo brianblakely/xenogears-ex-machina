@@ -202,6 +202,15 @@ typedef struct {
 } SlotFlags;
 
 extern SlotFlags D_800D32A0[11];
+
+/* Formation group entries (4 bytes from 800d301c). */
+typedef struct {
+    u8 count;
+    u8 unk1[3];
+} GroupEntry;
+
+extern GroupEntry D_800D301C[16];
+extern u16 D_800D39DC;     /* alive mask */
 extern u8 D_800D2DC0;      /* forced next turn: slot + 1 */
 extern u8 D_800D2DD7;      /* turn order cursor */
 extern u8 D_800D2DD8[11];  /* turn order */      /* decoded menu input code; 8 = none */
