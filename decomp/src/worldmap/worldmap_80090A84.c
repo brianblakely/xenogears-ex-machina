@@ -866,10 +866,8 @@ s32 func_800925A0(s32 index) {
         D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
         D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
         D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
-        ((P_TAG *)&D_8009CE6C[D_8009D7F0])->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009CE6C[D_8009D7F0];
-        ((P_TAG *)&D_8009D310)->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009D310;
+        addPrim(D_8009BE3C->ot, &D_8009CE6C[D_8009D7F0]);
+        addPrim(D_8009BE3C->ot, &D_8009D310);
         actor->u.step -= D_8009D3CC;
         if (actor->u.step < 0) {
             result = 3;
@@ -890,10 +888,8 @@ s32 func_800925A0(s32 index) {
         D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
         D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
         D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
-        ((P_TAG *)&D_8009CE6C[D_8009D7F0])->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009CE6C[D_8009D7F0];
-        ((P_TAG *)&D_8009D310)->addr = ((P_TAG *)D_8009BE3C->ot)->addr;
-        ((P_TAG *)D_8009BE3C->ot)->addr = (u32)&D_8009D310;
+        addPrim(D_8009BE3C->ot, &D_8009CE6C[D_8009D7F0]);
+        addPrim(D_8009BE3C->ot, &D_8009D310);
         actor->u.step += D_8009D3CC;
         if (actor->u.step >= 0xFF) {
             actor->u.step = 0xFF;
