@@ -866,9 +866,20 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DD20);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DDE4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DFE0);
+extern u8 D_8006FAF0[];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DFF0);
+/* The shared unpack buffer. */
+u8 *func_8002DFE0(void) {
+    return D_8006FAF0;
+}
+
+extern s32 D_800500F8;
+extern s32 D_800500FC;
+
+void func_8002DFF0(s32 a, s32 b) {
+    D_800500FC = (b - 1) << 16;
+    D_800500F8 = a;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002E010);
 
@@ -902,7 +913,22 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002FF0C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003014C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800301C8);
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+/* Copy the vertices listed in `indices` (last first) from `in` to `out`. */
+void func_800301C8(SVECTOR *out, SVECTOR *in, s32 count, s16 *indices) {
+    s32 i;
+    s32 k;
+
+    for (i = count - 1; i != -1; i--) {
+        k = indices[i];
+        out[k].vx = in[k].vx;
+        out[k].vy = in[k].vy;
+        out[k].vz = in[k].vz;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030228);
 
