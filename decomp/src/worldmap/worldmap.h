@@ -1658,9 +1658,26 @@ typedef struct {
 
 #define GRID_SCRATCH ((GridScratch *)0x1F800000)
 
-extern u32 D_8009D650[25][2]; /* per block: visibility of its 4 quarters */
+extern s16 D_8009D650[25][4]; /* per block: visibility of its 4 quarters */
 extern u32 D_8009B7A8[4][25][2]; /* per quadrant: always-visible quarters */
 
 s16 func_800987AC(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *d); /* quad visibility */
+
+/* Scratchpad work area of the terrain draw. */
+typedef struct {
+    u8 pad0[0x288];
+    u16 clut[0x40];  /* 0x288 */
+    u16 tpage[8];    /* 0x308 */
+    s32 x0;          /* 0x318 */
+    s32 pad31C;
+    s32 z0;          /* 0x320 */
+    s32 pad324;
+    SVECTOR corner[4]; /* 0x328: quarter origins */
+    u8 pad348[8];
+    MATRIX local;    /* 0x350 */
+    MATRIX world;    /* 0x370 */
+} TerrainDrawScratch;
+
+extern s32 D_8009D7DC; /* packet depth */
 
 #endif

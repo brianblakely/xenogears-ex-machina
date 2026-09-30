@@ -1253,7 +1253,7 @@ void func_800983A0(Camera *camera) {
     SetRotMatrix(&GRID_SCRATCH->world);
     SetTransMatrix(&GRID_SCRATCH->world);
     block = D_8009D618;
-    quarters = D_8009D650[0];
+    quarters = (u32 *)D_8009D650[0];
     GRID_SCRATCH->x0 = -((camera->target.vx >> 12) & 0x7FF) - 0x1000;
     GRID_SCRATCH->v[8].vy = 0;
     GRID_SCRATCH->v[7].vy = 0;
@@ -1315,7 +1315,7 @@ void func_800983A0(Camera *camera) {
         quadrant |= 2;
     }
     always = D_8009B7A8[quadrant][0];
-    quarters = D_8009D650[0];
+    quarters = (u32 *)D_8009D650[0];
     for (row = 0; row < 25; row++) {
         quarters[0] |= always[0];
         quarters[1] |= always[1];
@@ -1465,7 +1465,69 @@ void func_80098CC0(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80098CC0);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009932C);
+/* Draw the visible 5x5 terrain blocks around the camera: all four quarters
+ * of a block, or only the quarters whose flag differs when the combined
+ * flags are all set. */
+void func_8009932C(u32 *ot, s32 packets, Camera *camera) {
+    TerrainDrawScratch *scratch;
+    u8 *data;
+    s32 row;
+    s32 column;
+    s32 cell;
+    s16 all;
+
+    scratch = (TerrainDrawScratch *)0x1F800000;
+    for (column = 0; column < 0x40; column++) {
+        scratch->clut[column] = D_8009CCB4[column];
+    }
+    for (column = 0; column < 7; column++) {
+        scratch->tpage[column] = D_8009CD54[column];
+    }
+    scratch->local = D_8009D534;
+    CompMatrix(&D_8009C808, &scratch->local, &scratch->world);
+    SetRotMatrix(&scratch->world);
+    SetTransMatrix(&scratch->world);
+    scratch->x0 = -((camera->target.vx >> 12) & 0x7FF) - 0x1000;
+    cell = 0;
+    scratch->z0 = -((camera->target.vz >> 12) & 0x7FF) - 0x1000;
+    D_8009D7DC = 0;
+    scratch->corner[0].vz = -scratch->z0;
+    for (row = 0; row < 5; row++) {
+        scratch->corner[0].vx = scratch->x0;
+        for (column = 0; column < 5; column++, cell++, scratch->corner[0].vx += 0x800) {
+            if (D_8009D618[cell] != -1) {
+                data = D_8009C184[D_8009D570.cells[(row + D_8009C838.vz) * 9 + column + D_8009C838.vx]];
+                scratch->corner[3].vx = scratch->corner[1].vx = scratch->corner[0].vx + 0x400;
+                scratch->corner[1].vz = scratch->corner[0].vz;
+                scratch->corner[2].vx = scratch->corner[0].vx;
+                scratch->corner[3].vz = scratch->corner[2].vz = scratch->corner[0].vz - 0x400;
+                all = (u16)D_8009D650[cell][3] |
+                      ((u16)D_8009D650[cell][2] |
+                       ((u16)D_8009D650[cell][0] | (u16)D_8009D650[cell][1]));
+                if (all != -1) {
+                    func_80099708((u32 *)data, ot, packets + (D_8009D7DC << 5), &scratch->corner[0]);
+                    func_80099708((u32 *)(data + 0x144), ot, packets + (D_8009D7DC << 5), &scratch->corner[1]);
+                    func_80099708((u32 *)(data + 0x288), ot, packets + (D_8009D7DC << 5), &scratch->corner[2]);
+                    func_80099708((u32 *)(data + 0x3CC), ot, packets + (D_8009D7DC << 5), &scratch->corner[3]);
+                } else {
+                    if (D_8009D650[cell][0] != all) {
+                        func_80099708((u32 *)data, ot, packets + (D_8009D7DC << 5), &scratch->corner[0]);
+                    }
+                    if (D_8009D650[cell][1] != all) {
+                        func_80099708((u32 *)(data + 0x144), ot, packets + (D_8009D7DC << 5), &scratch->corner[1]);
+                    }
+                    if (D_8009D650[cell][2] != all) {
+                        func_80099708((u32 *)(data + 0x288), ot, packets + (D_8009D7DC << 5), &scratch->corner[2]);
+                    }
+                    if (D_8009D650[cell][3] != all) {
+                        func_80099708((u32 *)(data + 0x3CC), ot, packets + (D_8009D7DC << 5), &scratch->corner[3]);
+                    }
+                }
+            }
+        }
+        scratch->corner[0].vz -= 0x800;
+    }
+}
 
 /* Build a terrain block's 9x9 vertices in the scratchpad (heights of
  * water cells follow two travelling sine waves), then draw the block. */
