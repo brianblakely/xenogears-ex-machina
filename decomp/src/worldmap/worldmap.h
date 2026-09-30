@@ -1527,4 +1527,8 @@ extern DR_MOVE D_8009D164[2]; /* haze copy-back, per display buffer */
 #define addPrimTag(ot, p) \
     (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
 
+/* Pulsing effect settings per slot: position x, y, z, then the actor's
+ * step..unk74 words (see func_80082F64). */
+extern s16 D_8009AABC[], D_8009AB48[], D_8009ABD4[]; /* 14 per slot */
+
 #endif

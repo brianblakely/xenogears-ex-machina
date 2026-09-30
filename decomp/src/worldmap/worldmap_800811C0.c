@@ -1,6 +1,74 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800811C0);
+/* Effect scene director: step through its timed sequence and run each cue. */
+s32 func_800811C0(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = D_8009A6C0[actor->u.step];
+            actor->wait = D_8009A70C[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 0x2:
+        func_80097770(6, 1);
+        actor->state = 1;
+        break;
+    case 0x3:
+        func_80097770(6, 0);
+        actor->state = 1;
+        break;
+    case 0x4:
+        func_80097770(6, 2);
+        actor->state = 1;
+        break;
+    case 0x5:
+        func_80097770(6, 3);
+        actor->state = 1;
+        break;
+    case 0x6:
+        func_80097770(6, 4);
+        actor->state = 1;
+        break;
+    case 0x7:
+        func_80097770(6, 5);
+        actor->state = 1;
+        break;
+    case 0x8:
+        func_80039E60((D_8006259C->id << 16) | 0x2E);
+        func_80039E60((D_8006259C->id << 16) | 0x2F);
+        func_80039E60((D_8006259C->id << 16) | 0x30);
+        actor->state = 1;
+        break;
+    case 0x10:
+        func_80097770(3, 1);
+        func_80097770(4, 1);
+        actor->state = 1;
+        break;
+    case 0x11:
+        func_80097770(3, 2);
+        actor->state = 1;
+        break;
+    case 0x3F:
+        func_8003A89C(D_80062528, 0, 0xF0);
+        func_80097770(0, 0xD);
+        D_8009CCA4 = 2;
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 0x40:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 0;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera at the player position. */
 s32 func_800813E8(s32 index) {
@@ -357,7 +425,62 @@ s32 func_80083214(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80083264);
+/* Pulsing effect slot: commands 1/2/4 load one of three settings, 3 stops it; then pulse and tint its object. */
+s32 func_80083264(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+    s32 *params;
+    s32 slot;
+    s32 i;
+
+    slot = index - 3;
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[81 + slot];
+    switch (actor->unk4) {
+    case 0:
+        break;
+    case 1:
+        params = &actor->u.step;
+        actor->state = 1;
+        actor->unk4 = 0;
+        object->position.vx = D_8009AABC[slot * 14];
+        object->position.vy = D_8009AABC[slot * 14 + 1];
+        object->position.vz = D_8009AABC[slot * 14 + 2];
+        for (i = 3; i < 14; i++) {
+            *params++ = D_8009AABC[slot * 14 + i];
+        }
+        break;
+    case 2:
+        params = &actor->u.step;
+        actor->state = 1;
+        actor->unk4 = 0;
+        object->position.vx = D_8009AB48[slot * 14];
+        object->position.vy = D_8009AB48[slot * 14 + 1];
+        object->position.vz = D_8009AB48[slot * 14 + 2];
+        for (i = 3; i < 14; i++) {
+            *params++ = D_8009AB48[slot * 14 + i];
+        }
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 0;
+        break;
+    case 4:
+        params = &actor->u.step;
+        actor->state = 1;
+        actor->unk4 = 0;
+        object->position.vx = D_8009ABD4[slot * 14];
+        object->position.vy = D_8009ABD4[slot * 14 + 1];
+        object->position.vz = D_8009ABD4[slot * 14 + 2];
+        for (i = 3; i < 14; i++) {
+            *params++ = D_8009ABD4[slot * 14 + i];
+        }
+        break;
+    }
+    func_80082F64(actor, object, (ScaleScratch *)0x1F800000);
+    func_800831D8((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
+    return 1;
+}
 
 /* Mode step that has nothing to do; always reports done. */
 s32 func_800834D0(void) {
