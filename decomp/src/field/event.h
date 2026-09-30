@@ -141,9 +141,12 @@ typedef struct FieldSettings {
     u8 far_color[4];            /* 194 */
     s16 fog_range[2];           /* 198 */
     u8 clear_color[4];          /* 19c */
-    u8 unk1A0[0x1D0 - 0x1A0];
+    u8 unk1A0[0x1AE - 0x1A0];
+    s16 piece_drift[3];  /* 1AE */
+    u8 unk1B4[0x1D0 - 0x1B4];
     u8 script_control[2];       /* 1d0 */
-    u8 unk1D2[0x1D6 - 0x1D2];
+    u8 piece_drift_mode; /* 1D2 */
+    u8 unk1D3[0x1D6 - 0x1D3];
     s16 text_speed;             /* 1d6 */
     s32 camera_counter;         /* 1d8 */
 } FieldSettings;

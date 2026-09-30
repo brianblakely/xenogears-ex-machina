@@ -3496,19 +3496,93 @@ void func_800979F0(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097A50);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098038);
+s32 func_80099AC0(s32 speed);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800980FC);
+/* Turn-move (mode 2) with speed operand 2 latched in the slot. */
+void func_80098038(void) {
+    D_800B0078->slots[D_800B0078->slot].move_mode = 2;
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(2);
+    }
+    if (func_80099AC0(func_800ACDEC(2)) == 0) {
+        D_800B0078->pc += 4;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098184);
+/* Turn-move (mode 2) at the default speed. */
+void func_800980FC(void) {
+    D_800B0078->slots[D_800B0078->slot].move_mode = 2;
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    if (func_80099AC0(0xFFFF) == 0) {
+        D_800B0078->pc += 2;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098274);
+/* Turn-move in mode 3 from the current position, speed operand 3. */
+void func_80098184(void) {
+    if (D_800B0078->slots[D_800B0078->slot].move_mode == 0) {
+        D_800B0078->slots[D_800B0078->slot].move_mode = 3;
+        D_800B0078->target[0] = D_800B0078->position[0].s.whole;
+        D_800B0078->target[1] = D_800B0078->position[1].s.whole;
+        D_800B0078->target[2] = D_800B0078->position[2].s.whole;
+    }
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(3);
+    }
+    if (func_80099AC0(func_800ACDEC(3)) == 0) {
+        D_800B0078->pc += 5;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098370);
+/* Turn-move in mode 1 from the current position, speed operand 6. */
+void func_80098274(void) {
+    if (D_800B0078->slots[D_800B0078->slot].move_mode == 0) {
+        D_800B0078->slots[D_800B0078->slot].move_mode = 1;
+        D_800B0078->target[0] = D_800B0078->position[0].s.whole;
+        D_800B0078->target[1] = D_800B0078->position[1].s.whole;
+        D_800B0078->target[2] = D_800B0078->position[2].s.whole;
+    }
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(6);
+    }
+    if (func_80099AC0(func_800ACDEC(6)) == 0) {
+        D_800B0078->pc += 8;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80098430);
+/* Turn-move in mode 1 at the default speed. */
+void func_80098370(void) {
+    if (D_800B0078->slots[D_800B0078->slot].move_mode == 0) {
+        D_800B0078->slots[D_800B0078->slot].move_mode = 1;
+        D_800B0078->target[0] = D_800B0078->position[0].s.whole;
+        D_800B0078->target[1] = D_800B0078->position[1].s.whole;
+        D_800B0078->target[2] = D_800B0078->position[2].s.whole;
+    }
+    D_800B0078->slots[D_800B0078->slot].value = 0xFFFF;
+    if (func_80099AC0(0xFFFF) == 0) {
+        D_800B0078->pc += 6;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800984EC);
+/* Turn-move in mode 0, speed operand 6. */
+void func_80098430(void) {
+    D_800B0078->slots[D_800B0078->slot].move_mode = 0;
+    if (D_800B0078->slots[D_800B0078->slot].value == 0xFFFF) {
+        D_800B0078->slots[D_800B0078->slot].value = func_800ACDEC(6);
+    }
+    if (func_80099AC0(func_800ACDEC(6)) == 0) {
+        D_800B0078->pc += 8;
+    }
+}
+
+/* Set the piece drift vector from selected operands and enable it. */
+void func_800984EC(void) {
+    D_800B2174.piece_drift[0] = func_8009CF78(1, EVENT_OPERAND_BYTE(7));
+    D_800B2174.piece_drift[1] = func_8009CFBC(3, EVENT_OPERAND_BYTE(7));
+    D_800B2174.piece_drift[2] = func_8009D000(5, EVENT_OPERAND_BYTE(7));
+    D_800B2174.piece_drift_mode |= 0x80;
+    D_800B0078->pc += 8;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800985BC);
 
