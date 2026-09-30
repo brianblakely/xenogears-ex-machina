@@ -8,6 +8,7 @@
 #include "name_entry.h"
 
 extern u16 D_801CC114[];
+extern u8 D_801CBF98[];
 
 /* Test character `index`'s bit (table D_801CC114) in `flags`. */
 s32 func_801C5040(s32 flags, u8 index) {
@@ -93,23 +94,138 @@ void func_801C52B4(u8 allocate) {
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5318);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C58B8);
+/* Reset the screen state, mark which characters may join, take the current
+ * party (members that may not join become empty) and load the resources. */
+void func_801C58B8(void) {
+    s32 i;
+    u16 flags;
+    s32 id;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5A30);
+    D_800625A0->top_cursor = 4;
+    D_800625A0->b_337 = 0xFF;
+    D_800625A0->card_poll_timer = 60;
+    D_800625A0->b_334 = 0;
+    D_800625A0->b_335 = 0;
+    flags = D_8006F364 & D_8006F366 & 0x7FF;
+    for (i = 0; i < 16; i++) {
+        if (func_801C5040(flags, i) & 0xFFFF) {
+            D_800625A0->available[i] = 1;
+        } else {
+            D_800625A0->available[i] = 0;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        id = D_8006F368[i];
+        if (id != 0xFF && D_800625A0->available[id]) {
+            D_800625A0->party->ids[i] = id;
+        } else {
+            D_800625A0->party->ids[i] = 0xFF;
+        }
+    }
+    func_801C5318();
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5A40);
+/* Start building draw buffer 0. */
+void func_801C5A30(void) {
+    D_800625A0->buffer_index = 0;
+}
+
+/* Upload the text CLUT: 16 black entries except white entry 1 at (0, 0x1C0). */
+void func_801C5A40(void) {
+    RECT rect;
+    u8 unused[8];
+    u16 *clut = func_80031BDC(0x20, 0);
+
+    func_8003F8E8(clut, 0x20);
+    clut[1] = 0x7FFF;
+    rect.x = 0;
+    rect.y = 0x1C0;
+    rect.w = 0x10;
+    rect.h = 1;
+    func_80044894(&rect, clut);
+    func_800445D0(0);
+    func_800320E8(clut);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5ABC);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5CFC);
+/* Render `count` label texts (pairs of text ids) into VRAM, two per line,
+ * and set up their quads. */
+void func_801C5CFC(MenuLabel *labels, u8 *text_ids, s32 row, s32 count) {
+    s32 i;
+    RECT *rect;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5EAC);
+    for (i = 0; i < count; i += 2) {
+        labels[i].width = func_80034EAC(func_80033728(D_800625A0->label_text, text_ids[i]),
+                                        D_800625A0->labels[0].image, 0x18, 0);
+        rect = &labels[i].rect;
+        labels[i + 1].width =
+            func_80034EAC(func_80033728(D_800625A0->label_text, text_ids[i + 1]),
+                          D_800625A0->labels[0].image, 0x18, 1);
+        labels[i].rect.x = (((i / 2) & 1) << 5) + 0x140;
+        labels[i].rect.y = ((i + row) / 4) * 13;
+        labels[i].rect.w = 0x1C;
+        labels[i].rect.h = 13;
+        labels[i + 1].rect = labels[i].rect;
+        func_801C5ABC(&labels[i], i, row, 0);
+        func_801C5ABC(&labels[i + 1], i + 1, row, 0);
+        func_80044894(rect, D_800625A0->labels[0].image);
+        func_800445D0(0);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C5F08);
+/* Set up the four command labels and the text CLUT. */
+void func_801C5EAC(void) {
+    func_80033698(0, 0x1D1);
+    D_800625A0->labels[0].image = func_80031BDC(0x38E, 0);
+    func_801C5CFC(D_800625A0->labels, D_801CBF98, 0, 4);
+    func_801C5A40();
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C6010);
+/* Look up the four cursor/frame sprites of the sheet. */
+void func_801C5F08(void) {
+    u8 unused[0x28];
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C6040);
+    func_80026338(D_800625A0->sprite_sheet, 0xFE, &D_800625A0->sprites[0].value[0],
+                  &D_800625A0->sprites[0].value[1], &D_800625A0->sprites[0].value[2],
+                  &D_800625A0->sprites[0].value[3], &D_800625A0->sprites[0].value[4],
+                  &D_800625A0->sprites[0].value[5]);
+    func_80026338(D_800625A0->sprite_sheet, 0x103, &D_800625A0->sprites[1].value[0],
+                  &D_800625A0->sprites[1].value[1], &D_800625A0->sprites[1].value[2],
+                  &D_800625A0->sprites[1].value[3], &D_800625A0->sprites[1].value[4],
+                  &D_800625A0->sprites[1].value[5]);
+    func_80026338(D_800625A0->sprite_sheet, 0x100, &D_800625A0->sprites[2].value[0],
+                  &D_800625A0->sprites[2].value[1], &D_800625A0->sprites[2].value[2],
+                  &D_800625A0->sprites[2].value[3], &D_800625A0->sprites[2].value[4],
+                  &D_800625A0->sprites[2].value[5]);
+    func_80026338(D_800625A0->sprite_sheet, 0x101, &D_800625A0->sprites[3].value[0],
+                  &D_800625A0->sprites[3].value[1], &D_800625A0->sprites[3].value[2],
+                  &D_800625A0->sprites[3].value[3], &D_800625A0->sprites[3].value[4],
+                  &D_800625A0->sprites[3].value[5]);
+}
+
+/* Clear the party list's flags 3 and 4. */
+void func_801C6010(void) {
+    D_800625A0->party->flag_4 = 0;
+    D_800625A0->party->flag_3 = 0;
+}
+
+/* Make `poly` a gouraud quad fading from (r, g, b) at the top to black. */
+void func_801C6040(POLY_G4 *poly, u8 r, u8 g, u8 b) {
+    func_80043CC4(poly);
+    poly->r0 = r;
+    poly->g0 = g;
+    poly->b0 = b;
+    poly->r1 = r;
+    poly->g1 = g;
+    poly->b1 = b;
+    poly->r2 = 0;
+    poly->g2 = 0;
+    poly->b2 = 0;
+    poly->r3 = 0;
+    poly->g3 = 0;
+    poly->b3 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C60BC);
 
