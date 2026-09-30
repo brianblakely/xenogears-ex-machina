@@ -111,9 +111,37 @@ s16 func_80094060(s16 row, s16 column) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094088);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094154);
+/* Distance between two positions on the ground plane, in world units. */
+#ifdef NON_MATCHING /* delta held in the argument register */
+s32 func_80094154(Vec3 *a, Vec3 *b) {
+    s32 dx;
+    s32 dz;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800941C4);
+    dx = a->vx - b->vx;
+    if (dx < 0) {
+        dx = -dx;
+    }
+    dx >>= 12;
+    dz = a->vz - b->vz;
+    if (dz < 0) {
+        dz = -dz;
+    }
+    dz >>= 12;
+    return func_80048C4C(dx * dx + dz * dz);
+}
+#else
+INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094154);
+#endif
+
+/* Heading from `from` to `to` (0..0xFFF) and its unit direction. */
+void func_800941C4(Vec3 *from, Vec3 *to, Vec3 *direction, s16 *heading) {
+    s32 x;
+
+    x = to->vx;
+    *heading = (func_8004B32C(to->vz - from->vz, x - from->vx) + 0x400) & 0xFFF;
+    direction->vx = func_8003F8B0(*heading);
+    direction->vz = -func_8003F8CC(*heading);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80094238);
 

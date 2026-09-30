@@ -488,6 +488,25 @@ void func_800346D4(void *object);
 s32 func_80093E8C(Vec3 *position); /* terrain attribute at a position */
 u8 *func_80093660(s32 x, s32 z);   /* terrain cell at a position */
 
+extern void *D_8009BE08, *D_8009D3C0, *D_8009D7D4; /* effect command buffers */
+extern s32 D_8009D808, D_8009BE44, D_8009BCB8;
+
+typedef struct {
+    s32 a, b, c;
+} EffectCommand3;
+
+typedef struct {
+    s32 a, b, c, d;
+} EffectCommand4;
+
+s32 func_80048C4C(s32 value);                  /* SquareRoot0 */
+s32 func_8004B32C(s32 y, s32 x);               /* ratan2 */
+s32 func_8003F8B0(s32 angle);                  /* rsin */
+s32 func_8003F8CC(s32 angle);                  /* rcos */
+s32 func_8002C3D8(void);
+void func_800967E4(void);
+s32 func_80096668(void);
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];
