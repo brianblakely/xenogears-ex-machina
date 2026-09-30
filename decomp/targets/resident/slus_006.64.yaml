@@ -1,0 +1,55 @@
+# Disc 1 resident boot program. Paths are relative to the repository root.
+# Original bytes, generated assembly and build output stay under .local/.
+name: SLUS_006.64
+sha1: 560bbdbeb9264c935294ecad5a3d4ab230a006a9
+options:
+  basename: slus_006.64
+  base_path: ../../..
+  target_path: .local/extract/disc1/SLUS_006.64
+  elf_path: .local/decomp/build/slus_006.64.elf
+  platform: psx
+  compiler: PSYQ
+  asm_path: .local/decomp/resident/asm
+  asset_path: .local/decomp/resident/assets
+  src_path: decomp/src/resident
+  build_path: .local/decomp/build/resident
+  ld_script_path: .local/decomp/resident/slus_006.64.ld
+  cache_path: .local/decomp/resident/.splat_cache
+  symbol_addrs_path:
+    - decomp/targets/resident/symbol_addrs.txt
+  undefined_funcs_auto_path: .local/decomp/resident/undefined_funcs_auto.txt
+  undefined_syms_auto_path: .local/decomp/resident/undefined_syms_auto.txt
+  find_file_boundaries: False
+  gp_value: 0x80059170
+  ld_gp_expression: "0x80059170"
+  o_as_suffix: True
+  ld_bss_is_noload: True
+  ld_align_segment_vram_end: False
+  ld_align_section_vram_end: False
+  use_legacy_include_asm: False
+  section_order: [".rodata", ".text", ".data", ".bss"]
+  subalign: 4
+  string_encoding: ASCII
+  data_string_encoding: ASCII
+  rodata_string_guesser_level: 2
+  data_string_guesser_level: 2
+  include_asm_macro_style: maspsx_hack
+segments:
+  - name: header
+    type: header
+    start: 0x0
+
+  - name: main
+    type: code
+    start: 0x800
+    vram: 0x80010000
+    bss_size: 0x16830
+    subsegments:
+      # Disc-specific copies of the sector-24 file index and sector-40
+      # directory table (EVID-REF-007); user-supplied disc data, not code.
+      - [0x800, rodatabin, disc_index]
+      - [0x8880, .rodata, main]
+      - [0x9D24, c, main]
+      - [0x3F288, data, data]
+      - { start: 0x49ABC, type: bss, vram: 0x800592BC }
+  - [0x4A000]

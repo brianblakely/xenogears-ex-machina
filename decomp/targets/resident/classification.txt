@@ -1,0 +1,6 @@
+# START END CLASS NOTE (hex VRAM, END exclusive). Reviewed assembly that is not
+# recoverable game C: PsyQ SDK library objects and original hand-written code.
+# The SDK range is the library link region after the game objects; objects were
+# identified with tools/psyq_signatures.py (PsyQ 3.x-4.x library signatures),
+# and the few unmatched members inside it were inspected by hand.
+8003f8e8 8004ea88 sdk PsyQ libc/libc2/libapi/libcd/libds/libgpu/libgte/libetc/libspu/libcard/libsn

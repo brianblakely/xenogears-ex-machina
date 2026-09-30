@@ -39,6 +39,7 @@ ALLOWED_SUFFIXES = {
     ".h",
     ".hpp",
     ".in",
+    ".inc",
     ".yml",
     ".yaml",
     ".ts",

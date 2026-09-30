@@ -108,6 +108,16 @@ analysis/templates/finding.json
 cmake/ProjectOptions.cmake
 decomp/Makefile
 decomp/README.md
+decomp/include/common.h
+decomp/include/include_asm.h
+decomp/include/macro.inc
+decomp/src/resident/main.c
+decomp/targets/resident/classification.txt
+decomp/targets/resident/slus_006.64.mk
+decomp/targets/resident/slus_006.64.yaml
+decomp/targets/resident/slus_006.69.mk
+decomp/targets/resident/slus_006.69.yaml
+decomp/targets/resident/symbol_addrs.txt
 docs/agent/README.md
 docs/agent/acceptance.json
 docs/agent/emulator-parity.json
@@ -474,7 +484,10 @@ tools/authoring/qualification.ts
 tools/authoring/qualify.py
 tools/authoring/tsconfig.json
 tools/extraction/README.md
+tools/extraction/disc_files.py
 tools/matching.py
+tools/matching_coverage.py
+tools/psyq_signatures.py
 tools/reference/README.md
 tools/reference/capture.py
 tools/reference/fingerprint_survey.py
