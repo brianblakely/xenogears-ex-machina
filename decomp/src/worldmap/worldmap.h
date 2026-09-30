@@ -877,6 +877,19 @@ extern FerryHeading D_8009CD68[32];
 s32 func_80094154(VECTOR *a, VECTOR *b); /* distance */
 s32 func_80087F60(void);
 
+/* Scratchpad work area of the airship update. */
+typedef struct {
+    VECTOR work;
+    u8 pad10[0x90];
+    SVECTOR rotor;       /* 0xA0 */
+    SVECTOR tail;        /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX rotor_matrix; /* 0xF0 */
+    MATRIX tail_matrix;  /* 0x110 */
+} FlightScratch;
+
+#define FLIGHT_SCRATCH ((FlightScratch *)0x1F800000)
+
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
 void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
