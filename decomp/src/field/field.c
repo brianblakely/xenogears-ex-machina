@@ -9744,15 +9744,153 @@ void func_800A6924(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6998);
+#include "field_screen.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6C40);
+/* Darken corner `corner` of a grid quad by 6 (to 0) while it lies within
+ * `radius` of the screen centre (a0, 70). */
+void func_800A6998(POLY_GT4 *quad, s32 corner, s32 radius, s16 *shade) {
+    VECTOR offset;
+    VECTOR squares;
+    s32 centre_x;
+    s32 centre_y;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A6E70);
+    centre_x = 0xA0;
+    centre_y = 0x70;
+    offset.vz = 0;
+    switch (corner) {
+    case 0:
+        offset.vx = centre_x - quad->x0;
+        offset.vy = centre_y - quad->y0;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r0 = *shade;
+            quad->g0 = *shade;
+            quad->b0 = *shade;
+        }
+        break;
+    case 1:
+        offset.vx = centre_x - quad->x1;
+        offset.vy = centre_y - quad->y1;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r1 = *shade;
+            quad->g1 = *shade;
+            quad->b1 = *shade;
+        }
+        break;
+    case 2:
+        offset.vx = centre_x - quad->x2;
+        offset.vy = centre_y - quad->y2;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r2 = *shade;
+            quad->g2 = *shade;
+            quad->b2 = *shade;
+        }
+        break;
+    case 3:
+        offset.vx = centre_x - quad->x3;
+        offset.vy = centre_y - quad->y3;
+        func_8004A414(&offset, &squares);
+        if (SquareRoot0(squares.vx + squares.vy) >> 1 < radius) {
+            *shade -= 6;
+            if (*shade < 0) {
+                *shade = 0;
+            }
+            quad->r3 = *shade;
+            quad->g3 = *shade;
+            quad->b3 = *shade;
+        }
+        break;
+    }
+}
 
-extern void *D_800B00C4;
+/* Fade the grid quads of the current buffer and link them, then the grid
+ * draw mode, into the overlay ordering table. */
+void func_800A6C40(void) {
+    POLY_GT4 *quad;
+    s32 row;
+    s32 column;
 
-/* Release the block at 800b00c4. */
+    for (row = 0; row < GRID_ROWS; row++) {
+        for (column = 0; column < GRID_COLUMNS; column++) {
+            quad = &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column];
+            func_800A6998(quad, 0, D_800C3A40, &D_800B00C4->shade[0][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 1, D_800C3A40, &D_800B00C4->shade[1][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 2, D_800C3A40, &D_800B00C4->shade[2][row * GRID_COLUMNS + column]);
+            func_800A6998(quad, 3, D_800C3A40, &D_800B00C4->shade[3][row * GRID_COLUMNS + column]);
+            addPrim(&D_800C426C->overlay_ot[0], &D_800B00C4->quads[D_800ADB08][row * GRID_COLUMNS + column]);
+        }
+    }
+    addPrim(&D_800C426C->overlay_ot[0], &D_800B1E24[D_800ADB08]);
+}
+
+/* Build the screen grid: 16x16 half-bright quads textured from the
+ * 15-bit screen copy at (2c0, 100), their corners at full shade. */
+void func_800A6E70(void) {
+    POLY_GT4 *quad;
+    POLY_GT4 *copy;
+    s32 row;
+    s32 column;
+    s32 k;
+
+    D_800B00C4 = func_80031BDC(sizeof(ScreenGrid), 1);
+    for (row = 0; row < GRID_ROWS; row++) {
+        for (column = 0; column < GRID_COLUMNS; column++) {
+            k = row * GRID_COLUMNS + column;
+            quad = &D_800B00C4->quads[0][k];
+            copy = &D_800B00C4->quads[1][k];
+            D_800B00C4->shade[0][k] = 0x80;
+            D_800B00C4->shade[1][k] = 0x80;
+            D_800B00C4->shade[2][k] = 0x80;
+            D_800B00C4->shade[3][k] = 0x80;
+            SetPolyGT4(quad);
+            setRGB0(quad, 0x80, 0x80, 0x80);
+            quad->r1 = 0x80;
+            quad->g1 = 0x80;
+            quad->b1 = 0x80;
+            quad->r2 = 0x80;
+            quad->g2 = 0x80;
+            quad->b2 = 0x80;
+            quad->r3 = 0x80;
+            quad->g3 = 0x80;
+            quad->b3 = 0x80;
+            quad->x0 = column * 16;
+            quad->y0 = row * 16;
+            quad->x1 = column * 16 + 16;
+            quad->y1 = row * 16;
+            quad->x2 = column * 16;
+            quad->y2 = row * 16 + 16;
+            quad->x3 = column * 16 + 16;
+            quad->y3 = row * 16 + 16;
+            quad->u0 = (column * 16) & 0x3F;
+            quad->v0 = row * 16;
+            quad->u1 = ((column * 16) & 0x3F) + 16;
+            quad->v1 = row * 16;
+            quad->u2 = (column * 16) & 0x3F;
+            quad->v2 = row * 16 + 16;
+            quad->u3 = ((column * 16) & 0x3F) + 16;
+            quad->v3 = row * 16 + 16;
+            quad->tpage = GetTPage(2, 1, 0x2C0 + column / 4 * 0x40, 0x100);
+            SetSemiTrans(quad, 1);
+            *copy = *quad;
+        }
+    }
+}
+
+/* Release the screen grid. */
 void func_800A7064(void) {
     func_800320E8(D_800B00C4);
 }
