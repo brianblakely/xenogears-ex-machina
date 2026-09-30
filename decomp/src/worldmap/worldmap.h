@@ -627,7 +627,8 @@ s32 func_80095414(VECTOR *position, VECTOR *direction, VECTOR *hit, s32 range, s
 
 /* Scratchpad work area of the actor updaters. */
 typedef struct {
-    u8 pad0[0xA0];
+    VECTOR work;      /* 0x00 */
+    u8 pad10[0x90];
     SVECTOR position; /* 0xA0 */
     SVECTOR angle;    /* 0xA8 */
 } ActorScratch;
@@ -896,6 +897,8 @@ void func_8009980C(u32 *heights, u32 *ot, s32 depth); /* terrain block draw (ass
 typedef struct {
     u8 pad0[0x3C];
     s32 flags; /* 0x3C: 4 hidden */
+    u8 pad40[0x6F];
+    s8 animation; /* 0xAF */
 } ModelInstance;
 
 /* Parked vehicle state (world units), per party slot. */
@@ -1415,5 +1418,14 @@ s32 func_800945C8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s32 func_80094750(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s32 func_800948D8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
 s16 func_80094060(s16 row, s16 column);
+
+/* Party vehicle updaters (worldmap_8008C364). */
+extern u8 D_8006F364[]; /* per actor slot: party member state (slots 4-6) */
+extern u8 D_8006F8E1[]; /* per actor slot: riding flag (slots 4-6) */
+
+void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
+s32 func_8008BEC8(WorldmapActor *actor);
+void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
+void func_80074794(s16 id, VECTOR *position);
 
 #endif
