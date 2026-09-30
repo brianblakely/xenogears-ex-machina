@@ -5889,8 +5889,8 @@ void func_80092298(u8 member, u8 *shown) {
 /* Build the member's gear page: set up the graphics block, render the name
  * and two-digit count of each of the seven gear parts in `ids` (0xff none)
  * and the fixed eighth entry (system text 10) into VRAM text images, then
- * the page glyphs and quads. Nonmatching: scheduling of the row rectangle
- * address and the name rectangle width register. */
+ * the page glyphs and quads. Nonmatching: the original keeps the name
+ * rectangle width 30 in $t0 on both paths. */
 #ifdef NON_MATCHING
 void func_80092784(u8 member, u8 *ids, u8 *counts) {
     RECT nameRect;
@@ -5901,8 +5901,6 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     RECT rect;
     TextImage images[8];
     s32 i;
-    s16 x;
-    s32 y;
     u8 tens;
     u32 *digit;
 
@@ -5918,18 +5916,16 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
     for (i = 0; i < 8; i++) {
         images[i].pixels = (u32 *)func_8008AC00(0x1B);
         bzero(images[i].pixels, 0x30C);
-        x = (i % 2) * 30 + 0x380;
-        y = (i / 2) * 16;
-        rowRect.x = x;
-        rowRect.y = y + 0x100;
+        rowRect.x = (i % 2) * 30 + 0x380;
+        rowRect.y = (i / 2) * 16 + 0x100;
         rowRect.w = 0x1B;
         rowRect.h = 16;
         func_800769E8(&rowRect, D_800D2DB0);
         if (i != 7) {
             if (ids[i] != 0xFF) {
                 func_80034EAC(func_80033784(D_800D2D24[member], ids[i]), images[i].pixels, 0x1B, 0);
-                nameRect.x = x;
-                nameRect.y = y + 0x102;
+                nameRect.x = (i % 2) * 30 + 0x380;
+                nameRect.y = (i / 2) * 16 + 0x102;
                 nameRect.w = 30;
                 nameRect.h = 13;
                 func_800769E8(&nameRect, images[i].pixels);
@@ -5966,9 +5962,9 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
             onesRect.w = 6;
             onesRect.h = 13;
             if (ids[i] != 0xFF) {
-                digit = D_800C3E5C[(u8)(counts[i] % 10)].pixels;
+                func_800769E8(&onesRect, D_800C3E5C[(u8)(counts[i] % 10)].pixels);
             } else {
-                digit = D_800D2DB0;
+                func_800769E8(&onesRect, D_800D2DB0);
             }
         } else {
             func_800769E8(&tensRect, D_800D2DB0);
@@ -5976,9 +5972,8 @@ void func_80092784(u8 member, u8 *ids, u8 *counts) {
             onesRect.y = 0x132;
             onesRect.w = 6;
             onesRect.h = 13;
-            digit = D_800D2DB0;
+            func_800769E8(&onesRect, D_800D2DB0);
         }
-        func_800769E8(&onesRect, digit);
     }
     func_80092298(member, ids);
     for (i = 0; i < 8; i++) {
