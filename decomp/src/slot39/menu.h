@@ -387,10 +387,43 @@ typedef struct MenuMarkers {
 
 /* The save/load screen block (*(state + 42c)). */
 typedef struct MenuBlock42C {
-    u8 pad0[0x1180];
+    MenuLabelSlot names[16]; /* 0 */
+    MenuLabelSlot values[16]; /* 800 */
+    MenuLabelSlot extra[3]; /* 1000 */
     u8 *unk1180; /* 1180 */
-    u8 pad1184[0x14];
+    u8 shown[16]; /* 1184 */
+    u8 extraShown; /* 1194 */
+    u8 pad1195[0x3];
 } MenuBlock42C;
+
+/* The file list block (*(state + 430)). */
+typedef struct MenuBlock430 {
+    MenuLabelSlot names[14]; /* 0 */
+    MenuLabelSlot values[14]; /* 700 */
+    MenuLabelSlot headA; /* E00 */
+    MenuLabelSlot headB; /* E80 */
+    MenuLabelSlot extra[2]; /* F00 */
+    MenuLabelSlot footer; /* 1000 */
+    u8 pad1080[0x4];
+    u8 shown[14]; /* 1084 */
+    u8 extraShown; /* 1092 */
+    u8 pad1093[0x1];
+} MenuBlock430;
+
+/* The status list block (*(state + 438)). */
+typedef struct MenuBlock438 {
+    MenuLabelSlot names[13]; /* 0 */
+    MenuLabelSlot values[13]; /* 680 */
+    MenuLabelSlot title; /* D00 */
+    POLY_FT4 lists[13][10]; /* D80 */
+    POLY_G4 gauges[13][2]; /* 21D0 */
+    u8 *unk2578; /* 2578 */
+    u8 counts[13]; /* 257C */
+    u8 starts[13]; /* 2589 */
+    u8 shown[13]; /* 2596 */
+    u8 gaugeShown[13]; /* 25A3 */
+    u8 gaugeBuffer[13]; /* 25B0 */
+} MenuBlock438;
 
 /* The field menu command block (*(state + 340)). */
 typedef struct MenuFieldMenu {
@@ -501,6 +534,18 @@ typedef struct MenuMark {
     u8 unk13; /* 13 */
 } MenuMark;
 
+/* A list screen block (*(state + 434)). */
+typedef struct MenuBlock434 {
+    MenuLabelSlot names[8]; /* 0 */
+    MenuLabelSlot values[8]; /* 400 */
+    MenuLabelSlot title; /* 800 */
+    MenuLabelSlot extra[3]; /* 880 */
+    u8 padA00[0x10];
+    u8 shown[8]; /* A10 */
+    u8 extraShown; /* A18 */
+    u8 padA19[0x3];
+} MenuBlock434;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -552,9 +597,9 @@ typedef struct MenuState {
     u8 *images[32]; /* 3A8 */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
     MenuBlock42C *block42C; /* 42C: 1198 bytes */
-    u8 *block430; /* 430: 1094 bytes */
-    u8 *block434; /* 434 */
-    u8 *block438; /* 438 */
+    MenuBlock430 *block430; /* 430: 1094 bytes */
+    MenuBlock434 *block434; /* 434 */
+    MenuBlock438 *block438; /* 438 */
     MenuBlock43C *block43C; /* 43C */
     MenuBlock440 *block440; /* 440 */
     MenuImageBlock *blocks444[10]; /* 444 */

@@ -1690,13 +1690,111 @@ void func_801D14B0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D14FC);
+/* While party flag +48 is set, draw the save/load screen list (+42c): each
+ * shown row's name and value and, when shown, the three extra labels. */
+void func_801D14FC(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1640);
+    if (D_800625A0->party->unk48 != 0) {
+        for (i = 0; i < 16; i++) {
+            if (D_800625A0->block42C->shown[i] != 0) {
+                func_801CE198(1, D_800625A0->block42C->names[i].verts, D_800625A0->block42C->names[i].polys,
+                              D_800625A0->block42C->names[i].count);
+                func_801CE198(1, D_800625A0->block42C->values[i].verts, D_800625A0->block42C->values[i].polys,
+                              D_800625A0->block42C->values[i].count);
+            }
+        }
+        if (D_800625A0->block42C->extraShown != 0) {
+            func_801CE198(1, D_800625A0->block42C->extra[0].verts, D_800625A0->block42C->extra[0].polys,
+                          D_800625A0->block42C->extra[0].count);
+            func_801CE198(1, D_800625A0->block42C->extra[1].verts, D_800625A0->block42C->extra[1].polys,
+                          D_800625A0->block42C->extra[1].count);
+            func_801CE198(1, D_800625A0->block42C->extra[2].verts, D_800625A0->block42C->extra[2].polys,
+                          D_800625A0->block42C->extra[2].count);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D17C4);
+/* While party flag +4a is set, draw the file list (+430): each shown row's
+ * name and value, when shown the header labels, and the footer. */
+void func_801D1640(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1914);
+    if (D_800625A0->party->unk4A != 0) {
+        for (i = 0; i < 14; i++) {
+            if (D_800625A0->block430->shown[i] != 0) {
+                func_801CE198(1, D_800625A0->block430->names[i].verts, D_800625A0->block430->names[i].polys,
+                              D_800625A0->block430->names[i].count);
+                func_801CE198(1, D_800625A0->block430->values[i].verts, D_800625A0->block430->values[i].polys,
+                              D_800625A0->block430->values[i].count);
+            }
+        }
+        if (D_800625A0->block430->extraShown != 0) {
+            func_801CE198(1, D_800625A0->block430->headA.verts, D_800625A0->block430->headA.polys,
+                          D_800625A0->block430->headA.count);
+            func_801CE198(1, D_800625A0->block430->headB.verts, D_800625A0->block430->headB.polys,
+                          D_800625A0->block430->headB.count);
+            for (i = 0; i < 2; i++) {
+                func_801CE198(1, D_800625A0->block430->extra[i].verts, D_800625A0->block430->extra[i].polys,
+                              D_800625A0->block430->extra[i].count);
+            }
+        }
+        func_801CE198(1, D_800625A0->block430->footer.verts, D_800625A0->block430->footer.polys,
+                      D_800625A0->block430->footer.count);
+    }
+}
+
+/* While party flag +4c is set, draw the list of the block at +434: each shown
+ * row's name and value, the title and, when shown, the three extra labels. */
+void func_801D17C4(void) {
+    s32 i;
+
+    if (D_800625A0->party->unk4C != 0) {
+        for (i = 0; i < 8; i++) {
+            if (D_800625A0->block434->shown[i] != 0) {
+                func_801CE198(1, D_800625A0->block434->names[i].verts, D_800625A0->block434->names[i].polys,
+                              D_800625A0->block434->names[i].count);
+                func_801CE198(1, D_800625A0->block434->values[i].verts, D_800625A0->block434->values[i].polys,
+                              D_800625A0->block434->values[i].count);
+            }
+        }
+        func_801CE198(1, D_800625A0->block434->title.verts, D_800625A0->block434->title.polys,
+                      D_800625A0->block434->title.count);
+        if (D_800625A0->block434->extraShown != 0) {
+            for (i = 0; i < 3; i++) {
+                func_801CE198(1, D_800625A0->block434->extra[i].verts, D_800625A0->block434->extra[i].polys,
+                              D_800625A0->block434->extra[i].count);
+            }
+        }
+    }
+}
+
+/* While party flag +4d is set, draw the status list (+438): each shown row's
+ * name and value quads, the title, each row's parts and its gauge. */
+void func_801D1914(void) {
+    s32 i;
+
+    if (D_800625A0->party->unk4D != 0) {
+        for (i = 0; i < 13; i++) {
+            if (D_800625A0->block438->shown[i] != 0) {
+                func_80043B48(&D_800625A0->current->ot[4],
+                              &D_800625A0->block438->names[i].polys[D_800625A0->block438->names[i].count]);
+                func_80043B48(&D_800625A0->current->ot[4],
+                              &D_800625A0->block438->values[i].polys[D_800625A0->block438->names[i].count]);
+            }
+        }
+        func_801CE198(1, D_800625A0->block438->title.verts, D_800625A0->block438->title.polys,
+                      D_800625A0->block438->title.count);
+        for (i = 0; i < 13; i++) {
+            func_801CE2B4(D_800625A0->block438->counts[i], D_800625A0->block438->lists[i],
+                          D_800625A0->block438->starts[i]);
+            if (D_800625A0->block438->gaugeShown[i] != 0) {
+                func_80043B48(&D_800625A0->current->ot[4],
+                              &D_800625A0->block438->gauges[i][D_800625A0->block438->gaugeBuffer[i]]);
+            }
+        }
+    }
+}
 
 /* Draw the sprites of the two image blocks (+444) whose party flags are set. */
 void func_801D1AAC(void) {
