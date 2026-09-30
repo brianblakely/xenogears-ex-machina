@@ -326,7 +326,9 @@ typedef struct {
     u8 member;         /* +0x1 */
     u8 unk2;           /* 0x7f: none */
     u8 hidden;         /* +0x3 */
-    u8 unk4[0x1C - 4];
+    u8 unk4[6];
+    u16 unkA;
+    u8 unkC[0x1C - 0xC];
 } SlotInfo;
 
 extern SlotInfo D_800C3EB4[11];
@@ -348,6 +350,10 @@ typedef struct {
 
 extern GroupEntry D_800D301C[16];
 extern u16 D_800D39DC;     /* alive mask */
+extern u16 D_800C3448[16]; /* slot bits */
+extern u16 D_800C3468[16]; /* flag bits */
+extern u8 D_800D2D5C[11];  /* running result code per slot */
+extern s16 D_800D2D70[11]; /* running result amount per slot */
 extern u8 D_800D2DC0;      /* forced next turn: slot + 1 */
 extern u8 D_800D2DD7;      /* turn order cursor */
 extern u8 D_800D2DD8[11];  /* turn order */      /* decoded menu input code; 8 = none */
@@ -372,6 +378,7 @@ extern s32 D_8006EF58;     /* party gold */
 
 /* Resident services. */
 u8 func_8001BD40(u8 low, u8 high);
+s32 func_8003FA38(void);
 void func_80043B48(u32 *ot, void *prim);
 void func_80043C24(void *prim, s32 abe);
 void func_80043BFC(void *prim, s32 tge);
@@ -436,8 +443,8 @@ void func_80072DA8(s32 member, u8 value);
 void func_80072A9C(s32 member, u8 value);
 void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
 s32 func_80098AF8(s32 slot, s32 mode);
-void func_80079E18(s32);
-void func_80079E4C(s32);
+void func_80079E18(u8 index);
+void func_80079E4C(u8 index);
 s32 func_800716D8(void);
 u8 func_80079E7C(u16 mask);
 u8 func_8007A628(u8 slot, u8 any);

@@ -1020,9 +1020,17 @@ s32 func_80079AB0(u8 slot) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079C24);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079E18);
+/* Show battle message window `index`. */
+void func_80079E18(u8 index) {
+    D_800D2D28->unkB4 = 1;
+    D_800D36C8[index].shown = 1;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079E4C);
+/* Hide battle message window `index`. */
+void func_80079E4C(u8 index) {
+    D_800D2D28->unkB4 = 0;
+    D_800D36C8[index].shown = 0;
+}
 
 /* The first slot in `mask`; 11 when none. */
 u8 func_80079E7C(u16 mask) {
@@ -1040,11 +1048,50 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079ED8);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A280);
 
+/* Whether `slot` can be targeted: present, visible and not down (+0x7c
+ * 0xc002); without `any` also not flagged 0x20 at +0x84. */
+#ifdef NON_MATCHING
+u8 func_8007A628(u8 slot, u8 any) {
+    u8 result = 0;
+    u16 status;
+
+    if (D_800D2DCC[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
+        result = 1;
+        if (any == 0) {
+            status = D_800CCCE8[slot].status84 & 0x20;
+            result = status == 0;
+        }
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A628);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A6C8);
+/* As 8007a628 without the visibility test. */
+u8 func_8007A6C8(u8 slot, u8 any) {
+    u8 result = 0;
+    u16 status;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A744);
+    if (D_800D2DCC[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
+        result = 1;
+        if (any == 0) {
+            status = D_800CCCE8[slot].status84 & 0x20;
+            result = status == 0;
+        }
+    }
+    return result;
+}
+
+/* Whether `slot` is present, visible and alive (+0x7c without 0xc000). */
+u8 func_8007A744(u8 slot) {
+    u8 result = 0;
+
+    if (D_800D2DCC[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
+        result = (D_800CCCE8[slot].flags7C & 0xC000) == 0;
+    }
+    return result;
+}
 
 /* AI action default: queue an entry of type 0x80 carrying the four opcode
  * bytes. Returns the new entry count. */
@@ -2720,9 +2767,20 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084DE4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085084);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085310);
+/* Whether slot b's slot-info +0xa is below slot a's. */
+s32 func_80085310(u8 a, u8 b) {
+    return D_800C3EB4[a].unkA > D_800C3EB4[b].unkA;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085350);
+/* Reset the running result accumulation of every slot. */
+void func_80085350(void) {
+    s32 slot;
+
+    for (slot = 0; slot < 11; slot++) {
+        D_800D2D5C[slot] = 0xFF;
+        D_800D2D70[slot] = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085388);
 
@@ -2800,19 +2858,73 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800898F0);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089AF8);
 
+/* A random value in low..high (0xffff for low 0xffff, 0 for high 0). */
+#ifdef NON_MATCHING
+u16 func_80089B50(u16 low, u16 high) {
+    s32 span;
+
+    if (low == 0xFFFF) {
+        return 0xFFFF;
+    }
+    if (high == 0) {
+        return 0;
+    }
+    span = high - low;
+    if (low == high) {
+        return low;
+    }
+    if (span >= 0xFFFF) {
+        return func_8003FA38();
+    }
+    return low + (u16)func_8003FA38() % (span + 1);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089B50);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089BEC);
+/* The mask bit `bit`. */
+u16 func_80089BEC(u8 bit) {
+    return D_800C3468[bit];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089C08);
+/* The mask bit of `slot`. */
+u16 func_80089C08(u8 slot) {
+    return D_800C3448[slot];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089C24);
+/* Every mask bit but `bit`. */
+u16 func_80089C24(u8 bit) {
+    return ~D_800C3468[bit];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089C48);
+/* Every slot bit but `slot`'s. */
+u16 func_80089C48(u8 slot) {
+    return ~D_800C3448[slot];
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089C6C);
+/* Bit `bit` of `mask`; 0 for bits past 15. */
+u16 func_80089C6C(u16 mask, u8 bit) {
+    u16 result;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089C9C);
+    if (bit < 16) {
+        result = D_800C3468[bit] & mask;
+    } else {
+        result = 0;
+    }
+    return result;
+}
+
+/* The bit of `slot` in `mask`; 0 for slots past 15. */
+u16 func_80089C9C(u16 mask, u8 slot) {
+    u16 result;
+
+    if (slot < 16) {
+        result = D_800C3448[slot] & mask;
+    } else {
+        result = 0;
+    }
+    return result;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089CCC);
 
