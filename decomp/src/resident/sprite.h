@@ -203,13 +203,16 @@ typedef struct {
 typedef struct {
     u16 u;             /* +0x0: texture column, in its top bits */
     s16 v;             /* +0x2 */
-    u8 unknown4[0xC];
+    u16 w, h;          /* +0x4: size */
+    u16 x, y;          /* +0x8: placement from the sheet origin */
+    u8 unknownc[4];
     s16 mode;          /* +0x10: nonzero: 8-bit texture (column / 4, else / 16) */
     s16 clut_x;        /* +0x12 */
     s16 clut_y;        /* +0x14 */
     u16 page_x;        /* +0x16 */
     u16 page_y;        /* +0x18 */
-} SheetPart;
+    u8 flip_x, flip_y; /* +0x1a */
+} SheetPart; /* 0x1c bytes */
 
 /* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
@@ -401,6 +404,7 @@ typedef struct {
     VECTOR out;     /* +0x14 */
 } ColourScratch;
 #define COLOUR_SCRATCH ((ColourScratch *)0x1F800000)
+extern SVECTOR D_8004FDC0[4]; /* corners of a sheet part being drawn */
 extern MATRIX D_8004FD80; /* light colour matrix of lit sprite models */
 extern MATRIX D_8004FDA0; /* light direction matrix of lit sprite models */
 void func_800B1F6C(SpriteRendererEntry *model, SpritePart *parts, s32 ot, s32 unused, s32 depth, s32 blend); /* battle overlay: draw a lit model */

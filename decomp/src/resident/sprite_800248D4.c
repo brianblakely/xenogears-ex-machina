@@ -749,7 +749,121 @@ void func_80025D4C(s32 count, u16 *src, u16 *base, u16 *dst, s32 red, s32 green,
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025D4C);
 #endif
 
+/* Draw entry `id` of a sprite sheet at screen (x, y), scaled and turned
+ * by `angle`: each of its parts becomes a textured quad (every second one
+ * of `prims`, from `index`) through the GTE with the geometry offset at
+ * (x, y), mirrored by its flip bytes; unturned parts drawn mirrored lose a
+ * texel at the edge. Returns the number of parts. */
+/* Nonmatching: the original spills the `prims` argument to its home slot and walks the list in a separate register; this build keeps `prims` in a callee-saved register throughout. */
+#ifdef NON_MATCHING
+s32 func_80025FA8(u16 *sheet, s32 id, POLY_FT4 *prims, s32 index, s16 x, s16 y, s16 scale_x, s16 scale_y,
+                  s16 angle) {
+    MATRIX matrix = {{{0x1000, 0, 0}, {0, 0x1000, 0}, {0, 0, 0x1000}}, {0, 0, 0}};
+    VECTOR scale;
+    long offset_x;
+    long offset_y;
+    long interpolation;
+    long flag;
+    long screen;
+    s16 *entry;
+    SheetPart *part;
+    POLY_FT4 *poly;
+    s32 i;
+    s16 u;
+    s16 v;
+    s16 w;
+    s16 h;
+    s16 left;
+    s16 top;
+
+    scale.vx = scale_x;
+    scale.vy = scale_y;
+    scale.vz = 0x1000;
+    PushMatrix();
+    ScaleMatrixL(&matrix, &scale);
+    RotMatrixZ(angle, &matrix);
+    ReadGeomOffset(&offset_x, &offset_y);
+    screen = ReadGeomScreen();
+    SetGeomOffset(x, y);
+    SetGeomScreen(0x1000);
+    SetRotMatrix(&matrix);
+    SetTransMatrix(&matrix);
+    entry = (s16 *)(sheet[id + 2] + (s32)sheet);
+    for (i = 0; i != entry[0]; i++) {
+        poly = &prims[index];
+        part = &((SheetPart *)(entry + 2))[i];
+        SetPolyFT4(poly);
+        SetSemiTrans(poly, 0);
+        SetShadeTex(poly, 1);
+        poly->tpage = GetTPage(part->mode, 0, (s16)part->page_x, (s16)part->page_y);
+        poly->clut = GetClut(part->clut_x, part->clut_y);
+        w = part->w;
+        h = part->h;
+        left = part->x;
+        top = part->y;
+        if (!part->flip_x) {
+            D_8004FDC0[0].vx = left;
+            D_8004FDC0[1].vx = left + w;
+            D_8004FDC0[2].vx = left + w;
+            D_8004FDC0[3].vx = left;
+        } else {
+            D_8004FDC0[0].vx = left + w;
+            D_8004FDC0[1].vx = left;
+            D_8004FDC0[2].vx = left;
+            D_8004FDC0[3].vx = left + w;
+        }
+        if (!part->flip_y) {
+            D_8004FDC0[2].vy = top + h;
+            D_8004FDC0[3].vy = top + h;
+            D_8004FDC0[0].vy = top;
+            D_8004FDC0[1].vy = top;
+        } else {
+            D_8004FDC0[2].vy = top;
+            D_8004FDC0[3].vy = top;
+            D_8004FDC0[0].vy = top + h;
+            D_8004FDC0[1].vy = top + h;
+        }
+        RotTransPers4(&D_8004FDC0[0], &D_8004FDC0[1], &D_8004FDC0[2], &D_8004FDC0[3], (long *)&poly->x0,
+                      (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &interpolation, &flag);
+        u = part->u;
+        v = part->v;
+        w = part->w;
+        h = part->h;
+        if ((angle & 0xFFF) == 0xC00) {
+            u--;
+        }
+        if ((angle & 0xFFF) == 0) {
+            if (poly->x3 < poly->x0) {
+                if (--u < 0) {
+                    u = 0;
+                    w--;
+                }
+            }
+            if (poly->y3 < poly->y0) {
+                if (--v < 0) {
+                    v = 0;
+                    h--;
+                }
+            }
+        }
+        poly->u0 = u;
+        poly->v0 = v;
+        poly->u1 = u + w;
+        poly->v1 = v;
+        poly->u2 = u;
+        poly->v2 = v + h;
+        poly->u3 = u + w;
+        poly->v3 = v + h;
+        prims += 2;
+    }
+    SetGeomOffset(offset_x, offset_y);
+    SetGeomScreen(screen);
+    PopMatrix();
+    return entry[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_800248D4", func_80025FA8);
+#endif
 
 /* The texture of sheet entry `id`: its first word, mode, CLUT position and
  * the VRAM position of its pixels (page plus column and row). */
