@@ -2028,7 +2028,92 @@ void func_800A5E9C(s32 first, s32 second) {
     D_800D2D48 = second;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A5EB4);
+/* Set up the stage lighting: turn the light slots off, make the stage image
+ * (the w x h VRAM rectangle at (x, y), with a working copy) the target of
+ * the stage object's active image animations, and save the stage's colours
+ * twice (as loaded and a working copy). */
+void func_800A5EB4(void) {
+    CVector *color;
+    ImageAnim *anim;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        D_800C3AAC[i].active = 0;
+    }
+    anim = D_800D3368[31]->images;
+    for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+        if (anim->active) {
+            anim->target = &D_800D3600;
+        }
+    }
+    func_800A3640(&D_800D3600, NULL, 1, 0x601, NULL, D_800D2D30, D_800D2D34, 0, 0, 0, 0, D_800D2D30, D_800D2D34,
+                  D_800D2D2C, D_800C3EA8, 0, 0, 0, NULL);
+    D_800D3600.work = NULL;
+    D_800C3AC4 = func_80031BDC(sizeof(StageColors), 1);
+    D_800C3AC8 = func_80031BDC(sizeof(StageColors), 1);
+    color = (CVector *)D_800C3AC4;
+    for (i = 0; i < 4; i++) {
+        if (D_800C3EA0 != NULL) {
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r0;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g0;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b0;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r1;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g1;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b1;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r2;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g2;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b2;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->quads[i].r3;
+            color->g = ((StageGeometry *)D_800C3EA0)->quads[i].g3;
+            color->b = ((StageGeometry *)D_800C3EA0)->quads[i].b3;
+            color++;
+            color->r = ((StageGeometry *)D_800C3EA0)->flats[i].r0;
+            color->g = ((StageGeometry *)D_800C3EA0)->flats[i].g0;
+            color->b = ((StageGeometry *)D_800C3EA0)->flats[i].b0;
+            color++;
+        } else {
+            color += 5;
+        }
+        if (D_800C3D50[0] != NULL) {
+            color->r = ((StageBackdrop *)D_800C3D50[0])->flats[i].r0;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->flats[i].g0;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->flats[i].b0;
+        }
+        color++;
+    }
+    for (i = 0; i < 2; i++) {
+        if (D_800C3D50[0] != NULL) {
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r0;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g0;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b0;
+            color++;
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r1;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g1;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b1;
+            color++;
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r2;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g2;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b2;
+            color++;
+            color->r = ((StageBackdrop *)D_800C3D50[0])->quads[i].r3;
+            color->g = ((StageBackdrop *)D_800C3D50[0])->quads[i].g3;
+            color->b = ((StageBackdrop *)D_800C3D50[0])->quads[i].b3;
+            color++;
+        } else {
+            color += 4;
+        }
+    }
+    color->r = ((u8 *)D_800D2D40)[0];
+    color->g = ((u8 *)D_800D2D40)[1];
+    color->b = ((u8 *)D_800D2D40)[2];
+    color++;
+    color->r = ((u8 *)D_800D2D48)[0];
+    color->g = ((u8 *)D_800D2D48)[1];
+    color->b = ((u8 *)D_800D2D48)[2];
+}
 
 /* Set light slot index (0-3) to a color and two values; a negative red turns
  * it off. */
