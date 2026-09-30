@@ -44,6 +44,31 @@ typedef struct {
 
 typedef struct {
     u32 tag;
+    u32 code[15];
+} DR_ENV;
+
+typedef struct {
+    RECT clip;
+    s16 ofs[2];
+    RECT tw;
+    u16 tpage;
+    u8 dtd;
+    u8 dfe;
+    u8 isbg;
+    u8 r0, g0, b0;
+    DR_ENV dr_env;
+} DRAWENV;
+
+typedef struct {
+    RECT disp;
+    RECT screen;
+    u8 isinter;
+    u8 isrgb24;
+    u8 pad0, pad1;
+} DISPENV;
+
+typedef struct {
+    u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
     s16 x1, y1;
@@ -148,6 +173,12 @@ void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
 u16 GetClut(s32 x, s32 y);
 void DrawSync(s32 mode);
+DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h);
+DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h);
+DRAWENV *PutDrawEnv(DRAWENV *env);
+DISPENV *PutDispEnv(DISPENV *env);
+void SetDispMask(s32 mask);
+void ClearOTagR(u32 *ot, s32 n);
 void LoadImage(RECT *rect, u32 *pixels);
 void MoveImage(RECT *rect, s32 x, s32 y);
 void StoreImage(RECT *rect, u32 *pixels);

@@ -128,6 +128,7 @@ decomp/src/battle/battle_800792F8.c
 decomp/src/battle/battle_80079ED8.c
 decomp/src/battle/battle_8009E53C.c
 decomp/src/battle/battle_800B15D8.c
+decomp/src/battle/battle_800B8098.c
 decomp/src/battle/battle_core.h
 decomp/src/battle/combatant.h
 decomp/src/battle/effect.h

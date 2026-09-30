@@ -126,7 +126,10 @@ typedef struct {
     u8 ambient[3]; /* 0x474: the objects' back colour */
     u8 pad477;
     u8 shadow[3]; /* 0x478: the shadow sprites' colour */
-    u8 pad47B[0x4DC - 0x47B];
+    u8 pad47B;
+    s16 lookAt[3]; /* 0x47C: the camera's look-at point */
+    s16 eye[3];    /* 0x482: the camera's eye */
+    u8 pad488[0x4DC - 0x488];
     SVector centre; /* 0x4DC */
 } BattleSceneData;
 

@@ -18,8 +18,8 @@
 
 /* One of the two display buffers (0x4070 bytes). */
 typedef struct {
-    u8 drawEnv[0x5C];  /* DRAWENV */
-    u8 dispEnv[0x14];  /* 0x5C: DISPENV */
+    DRAWENV drawEnv;
+    DISPENV dispEnv;   /* 0x5C */
     u32 ot[0x1000];    /* 0x70: cleared in reverse */
 } FrameBuffer;
 
@@ -86,7 +86,8 @@ typedef struct {
     struct ActorTask *tasks[11]; /* 0x8CB8: their tasks */
     u8 pad8CE4[0x8D24 - 0x8CE4];
     SpriteSource sources[11];   /* 0x8D24 */
-    u8 pad8DA8[0x8DAC - 0x8DA8];
+    u8 field8DA8;               /* 0x8DA8 */
+    u8 pad8DA9[0x8DAC - 0x8DA9];
     s32 frameTicks;             /* 0x8DAC: vertical blanks of the last frame */
 } BattleArea;
 
@@ -135,10 +136,7 @@ extern u8 D_800591B2;    /* the loaded battle module */
 extern u8 D_800591B3;    /* the requested battle module */
 
 /* SDK calls of the frame loop. */
-void ClearOTagR(u32 *ot, s32 n);
 void DrawOTag(u32 *ot);
-void PutDrawEnv(void *env);
-void PutDispEnv(void *env);
 
 /* Resident services. */
 void func_80019CA0(void);
@@ -167,6 +165,31 @@ void func_80024F64(s32 a, s32 b);
 extern u8 D_800591B1;  /* the sound request is done */
 extern u8 D_800591AD;
 extern u8 D_800D2FDC;
+extern u8 D_800D36B8;  /* the battle's start mode */
+extern u8 D_800C4A39;  /* BATTLE_AREA.buffers[0].drawEnv.r0, which 800B8098 addresses apart from the area */
+extern s32 D_800C3D58; /* gear enemies present */
+extern s32 D_80059520;
+extern s32 D_80059470;
+extern s32 D_800595AC; /* the battle's wave bank */
+void func_8001BBAC(void);
+void func_800A8B0C(void);
+void func_800B7870(void);
+void func_800B8284(void);
+void func_800B88C4(void);
+void func_800B8840(void);
+void func_800A5E9C(u8 *first, u8 *second); /* the two buffers' background colours */
+u8 func_801E7210(Formation **formation, s32 a, s32 b, u8 *c, u8 *d, u8 *colour);
+void func_801E62E0(s32 arg0);
+void func_801E8588(void);
+void func_801E893C(void);
+void func_801E91E8(void);
+void func_801E9594(void);
+void func_80024FB8(void);
+void func_8001C8DC(void);
+void func_800A9F94(void);
+void func_800A4820(void);
+void func_800BADD4(s32 slot);
+void func_800B9B54(BattleSprite *sprite, BattleSprite *other);
 void func_800B9F78(BattleMenu *menu);
 void func_800BF0B4(s32 arg0);
 void func_800AA320(u16 index, u16 mask, s32 arg2);
@@ -191,7 +214,7 @@ extern u16 D_800D3634;               /* the current event's targets */
 extern BattleSprite *D_800D363C[];     /* their sprites, NULL ended */
 extern s16 D_800D3678;               /* their count */
 
-void func_800B9C00(BattleSprite *sprite);
+void func_800B9C00(); /* unprototyped (sprite, other) */
 s32 func_800BEEB4(u32 mask, BattleSprite **list, BattleSprite *target);
 s16 func_800BEF24(BattleSprite *from, BattleSprite *to);
 s16 func_800BEF8C(BattleSprite *sprite);

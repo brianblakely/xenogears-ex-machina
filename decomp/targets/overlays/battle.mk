@@ -16,3 +16,5 @@ CONTAINERS := 1:38 2:33
 # stores through a register for %hi, positive li as addiu; docs/matching.md).
 CC_battle_800B15D8 := 2.7.2-cdk
 MASPSX_battle_800B15D8 := --aspsx-version=2.56
+CC_battle_800B8098 := 2.7.2-cdk
+MASPSX_battle_800B8098 := --aspsx-version=2.56

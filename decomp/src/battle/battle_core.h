@@ -616,7 +616,7 @@ void func_800780A8(BattleMessage *message, u32 row);
 void func_80077990(void);
 void func_8009892C(void);
 void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e);
-void func_800B8098(u8 kind);
+void func_800B8098(s32 kind);
 void func_800B81BC(s32 a);
 void func_800B853C(u8 mode);
 void func_800B8D7C(void);
