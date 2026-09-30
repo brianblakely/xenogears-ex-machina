@@ -2624,23 +2624,22 @@ empty:
     return result;
 }
 
-#ifdef NON_MATCHING
 /* Wait frames (800BE790) until no stage object is busy (field38) and 800BF6F8
  * reports nothing pending; then, when an object holds packets, stop the
  * resident transfer (8002A498) and free their packets once it is idle. */
 void func_800B136C(void) {
     s32 i;
-    s32 busy = 0;
+    s32 busy;
     s32 loaded = 0;
-    s32 pending;
 
     for (;;) {
+        busy = 0;
         for (i = 0; i < 11; i++) {
             if (D_800D3368[i] != NULL) {
                 if (D_800D3368[i]->field38) {
                     busy = 1;
                 }
-                if (D_800D3368[i]->packets != NULL) {
+                if (D_800D3368[i]->extra != NULL) {
                     loaded = 1;
                 }
             }
@@ -2651,31 +2650,27 @@ void func_800B136C(void) {
         if (!busy) {
             break;
         }
-        busy = 0;
         func_800BE790();
     }
     if (loaded) {
         func_8002A498(0);
-        pending = 1;
+        busy = 1;
         for (;;) {
             if (func_800286CC() == 0) {
                 for (i = 0; i < 11; i++) {
-                    if (D_800D3368[i] != NULL && D_800D3368[i]->packets != NULL) {
+                    if (D_800D3368[i] != NULL && D_800D3368[i]->extra != NULL) {
                         func_800B0060(D_800D3368[i]);
                     }
                 }
-                pending = 0;
+                busy = 0;
             }
-            if (!pending) {
+            if (!busy) {
                 break;
             }
             func_800BE790();
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800B136C);
-#endif
 
 /* Set the flag D_800C3D6C. */
 void func_800B14B8(void) {
