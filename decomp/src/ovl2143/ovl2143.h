@@ -13,18 +13,24 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVECTOR;
 
-/* A model group: the resident relocates its offsets (8002c3e8); its 0x38-byte
- * model records follow a 0x10-byte header. */
+/* A model record of a relocated model group (0x38 bytes; the resident
+ * relocates the group's offsets, 8002c3e8). */
 typedef struct {
-    u32 w0;
-    u32 count;
-} ModelGroupHeader;
+    u8 header[0x34];
+    s32 packet_bytes; /* +34: size of one buffer's packets */
+} ModelRecord;
 
-/* The model records of a relocated group. */
+/* The model records of a relocated group (they follow its 0x10-byte header). */
 typedef struct {
-    u8 **models;
+    ModelRecord **models;
     u32 count;
 } ModelList;
+
+/* A hierarchy entry: a model index (ffff: none) and its parent entry. */
+typedef struct {
+    u16 model;
+    u16 parent;
+} HierarchyLink;
 
 /* One node of a model hierarchy (0x7c bytes); element 0 is the root and holds
  * the node count. */
@@ -55,11 +61,24 @@ void func_800320E8(void *block);              /* release */
 
 /* Resident models. */
 u32 func_8002C3E8(void *group);               /* relocate a model group; returns model count */
+void func_8002CB54(ModelRecord *model, void **packets0, void **packets1); /* allocate both packet buffers */
+void func_8002C8CC(ModelRecord *model, void *packets, s32 mode); /* build a model's packets */
+void func_8002CC10(s16 a, s16 b);
+void func_8002CC74(s16 a, s16 b);
+void *func_8003F968(void *dst, void *src, s32 size); /* memcpy */
+void func_8002C700(ModelRecord *model, void *packets, s32 arg2, s32 arg3); /* draw a model's packets */
+void func_8002CBBC(ModelRecord *model);       /* release a model's own packets */
 
 /* libgte. */
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m);        /* RotMatrix */
 MATRIX *func_8004A92C(SVECTOR *rot, MATRIX *m);        /* RotMatrixYXZ */
 MATRIX *func_8004920C(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* MulMatrix0 */
 MATRIX *func_8004931C(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* CompMatrix */
+void func_80049EFC(MATRIX *m);                /* SetRotMatrix */
+void func_80049F2C(MATRIX *m);                /* SetLightMatrix */
+void func_80049F8C(MATRIX *m);                /* SetTransMatrix */
+
+/* This overlay. */
+void func_801DCD8C(ModelPart *parts);
 
 #endif

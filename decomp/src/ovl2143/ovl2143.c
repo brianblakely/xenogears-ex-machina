@@ -12,13 +12,116 @@ ModelList *func_801DC22C(u8 *group, ModelList *list) {
     list->count = count;
     if (list->models != NULL) {
         for (i = 0; i < count; i++) {
-            list->models[i] = group + 0x10 + i * 0x38;
+            list->models[i] = (ModelRecord *)(group + 0x10 + i * 0x38);
         }
     }
     return list;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC2D0);
+/* Build a model hierarchy: a root node and one node per link up to the first
+ * model index past the group; each model node gets its packets for both
+ * buffers (optionally after setting 8002cc10/8002cc74 parameters). Returns the
+ * nodes, or NULL when there are none or an allocation fails. */
+ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
+                         s16 param0, s16 param1, s16 param2, s16 param3) {
+    HierarchyLink *link;
+    ModelPart *parts;
+    ModelPart *part;
+    s32 count;
+    s32 index;
+    u16 model;
+    u16 parent;
+
+    func_80032498(4, 0);
+    link = links;
+    count = 0;
+    while (link->model < group->count || link->model == 0xFFFF) {
+        count++;
+        link++;
+    }
+    if (count == 0) {
+        return NULL;
+    }
+    count++;
+    parts = func_80031BDC(count * sizeof(ModelPart), 0);
+    link = links;
+    if (parts == NULL) {
+        return NULL;
+    }
+    part = parts + 1;
+    index = 1;
+    model = link->model;
+    parent = link->parent;
+    parts->dirty = 1;
+    parts->rotate = 1;
+    parts->yxz = 1;
+    parts->scale[0] = 0x1000;
+    parts->scale[1] = 0x1000;
+    parts->scale[2] = 0x1000;
+    parts->parent = NULL;
+    parts->visible = 0;
+    parts->model = 0xFFFF;
+    parts->count = count;
+    parts->packets[0] = NULL;
+    parts->packets[1] = NULL;
+    parts->rot.vx = 0;
+    parts->rot.vy = 0;
+    parts->rot.vz = 0;
+    parts->pos[0] = 0;
+    parts->pos[1] = 0;
+    parts->pos[2] = 0;
+    parts->w70 = 0;
+    parts->w74 = 0;
+    parts->w78 = 0;
+    while (model < group->count || model == 0xFFFF) {
+        if (parent == 0xFFFF) {
+            part->parent = NULL;
+        } else {
+            part->parent = parts + parent + 1;
+        }
+        part->count = index++;
+        part->dirty = 1;
+        part->rotate = 1;
+        part->visible = 1;
+        part->scale[0] = 0x1000;
+        part->scale[1] = 0x1000;
+        part->scale[2] = 0x1000;
+        part->yxz = 0;
+        part->pad52 = 0;
+        part->model = model;
+        if (model != 0xFFFF) {
+            func_8002CB54(group->models[model], &part->packets[0], &part->packets[1]);
+            if (part->packets[0] == NULL) {
+                func_801DCD8C(parts);
+                return NULL;
+            }
+            if (configure) {
+                func_8002CC10(param0, param1);
+                func_8002CC74(param2, param3);
+            }
+            func_8002C8CC(group->models[model], part->packets[0], mode);
+            func_8003F968(part->packets[1], part->packets[0], group->models[model]->packet_bytes);
+            part->rot.vx = 0;
+        } else {
+            part->packets[0] = NULL;
+            part->packets[1] = NULL;
+            part->rot.vx = 0;
+        }
+        part->rot.vy = 0;
+        part->rot.vz = 0;
+        part->pos[0] = 0;
+        part->pos[1] = 0;
+        part->pos[2] = 0;
+        part->w70 = 0;
+        part->w74 = 0;
+        part->w78 = 0;
+        part++;
+        link++;
+        model = link->model;
+        parent = link->parent;
+    }
+    return parts;
+}
 
 /* Recompose a hierarchy's matrices: the root's world matrix from its rotation
  * and position, its local one scaled by `scale`; each other node's local
@@ -98,11 +201,72 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DC848);
 void func_801DCC34(void) {
 }
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCC3C);
+/* Draw a hierarchy's model nodes: each node's world matrix is combined with the
+ * root's light and view transforms (MulMatrix0 into the light matrix,
+ * CompMatrix into the rotation/translation) before its buffer's packets are
+ * drawn (8002c700). */
+void func_801DCC3C(ModelList *group, ModelPart *parts, MATRIX *view, MATRIX *light, s32 arg4,
+                   s32 arg5, s32 buffer) {
+    MATRIX *light_root = (MATRIX *)0x1F800020;
+    MATRIX *view_root = (MATRIX *)0x1F800040;
+    MATRIX *m = (MATRIX *)0x1F800000;
+    u32 count;
+    u32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCD8C);
+    func_8004920C(light, &parts->world, light_root);
+    func_8004931C(view, &parts->local, view_root);
+    count = parts->count;
+    parts++;
+    for (i = 1; i < count; parts++) {
+        i++;
+        if (parts->model != 0xFFFF) {
+            func_8004920C(light_root, &parts->world, m);
+            func_80049F2C(m);
+            func_8004931C(view_root, &parts->world, m);
+            func_80049EFC(m);
+            func_80049F8C(m);
+            func_8002C700(group->models[parts->model], parts->packets[buffer], arg5, arg4);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCE18);
+/* Release a hierarchy: every node's packet buffers, then the nodes. */
+void func_801DCD8C(ModelPart *parts) {
+    ModelPart *part;
+    s32 i;
+
+    if (parts != NULL) {
+        part = parts;
+        for (i = 0; i < parts->count; part++) {
+            i++;
+            if (part->packets[0] != NULL) {
+                func_800320E8(part->packets[0]);
+                part->packets[0] = NULL;
+                part->packets[1] = NULL;
+            }
+        }
+        parts->count = 0;
+        func_800320E8(parts);
+    }
+}
+
+/* Release a model list; with `release_models` each model's own packets too
+ * (8002cbbc). */
+void func_801DCE18(ModelList *list, s32 release_models) {
+    u32 i;
+
+    if (list != NULL) {
+        for (i = 0; i < list->count; i++) {
+            if (list->models != NULL && list->models[i] != NULL && release_models) {
+                func_8002CBBC(list->models[i]);
+            }
+        }
+        if (list->models != NULL) {
+            func_800320E8(list->models);
+            list->models = NULL;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801DCEC8);
 
