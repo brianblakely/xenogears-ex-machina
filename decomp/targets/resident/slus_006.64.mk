@@ -22,7 +22,8 @@ GP_heap := 8
 CC_sound := 2.6.3
 # The sprite unit (8001C8DC-8002709C) assembles positive `li` as `addiu`
 # (ASPSX 2.50+; the rest of the game code uses `ori`, the default 2.34) and
-# addresses its small globals through $gp.
+# addresses the small globals it defines through $gp (as small commons, so
+# maspsx knows them); globals of other units it addresses absolutely.
 GP_sprite := 8
 MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
 # The texture-scroll and disc unit (8002709C-8002A260) is compiled by GCC
