@@ -6500,7 +6500,43 @@ void func_80094C78(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094D24);
+/* With one party member out of action (status7c 0xc000) and two carrying
+ * status7c bit 2, or two and one, clear bit 2 on the party and restore their
+ * status7a. */
+void func_80094D24(void) {
+    u8 member;
+    u8 down;
+    u8 marked;
+
+    down = 0;
+    for (member = 0; member < 3; member++) {
+        if (D_800C34B0->records[member].pilot.status7C & 0xC000) {
+            down++;
+        }
+    }
+    marked = 0;
+    for (member = 0; member < 3; member++) {
+        if (D_800C34B0->records[member].pilot.status7C & 2) {
+            marked++;
+        }
+    }
+    if (down == 1 && marked == 2) {
+        for (member = 0; member < 3; member++) {
+            if (D_800C34B0->records[member].pilot.status7C & 2) {
+                D_800C34B0->records[member].pilot.status7C &= ~2;
+                D_800C34B0->records[member].pilot.status7A = D_800C3AA4[member];
+            }
+        }
+    }
+    if (down == 2 && marked == 1) {
+        for (member = 0; member < 3; member++) {
+            if (D_800C34B0->records[member].pilot.status7C & 2) {
+                D_800C34B0->records[member].pilot.status7C &= ~2;
+                D_800C34B0->records[member].pilot.status7A = D_800C3AA4[member];
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094EE4);
 
