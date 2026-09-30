@@ -10,3 +10,6 @@ LINKER_EXTRA := .local/decomp/worldmap/undefined_syms_auto.txt .local/decomp/wor
 SOURCE_DIRS := decomp/src/worldmap
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:37 2:32
+# Assembled with ASPSX >= 2.50 behaviour: small constants load with addiu
+# (80071a50 `addiu $v0,$zero,1`); ori appears only for values >= 0x8000.
+MASPSX_FLAGS := --aspsx-version=2.79
