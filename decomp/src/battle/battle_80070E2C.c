@@ -360,14 +360,15 @@ void func_80071AE0(void) {
 /* Start the turn of the acting slot (turn state actor + 1; none when 0). An
  * enemy runs its AI script (unless mode is set) and shows its name; a party
  * member gets its panel highlight and its command menu. Then each slot's
- * default target is chosen and the turn's actions play out. */
+ * default target is chosen and the turn's actions play out.
+ * Nonmatching: the original adds the panel x before 0x28 for the right
+ * corners and allocates the y constant to $a1. */
 #ifdef NON_MATCHING
 void func_80071B94(u8 mode) {
     s32 i;
     s32 offset;
     u8 actor;
     u16 flags;
-    s32 layout;
     u8 *message;
     u8 *bytes;
 
@@ -416,15 +417,11 @@ void func_80071B94(u8 mode) {
         for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
             ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
         }
-        layout = D_800D3280 * 3;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y0 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y1 = 8;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y2 = 0x20;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
-        D_800C3EA4->unk63C8[D_800CCB04.buffer].y3 = 0x20;
+        setXY4(&D_800C3EA4->unk63C8[D_800CCB04.buffer],
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 8,
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 8,
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x10), 0x20,
+               D_800C3EAC->actor * 0x60 + (D_800C3254[D_800D3280 * 3 + D_800C3EAC->actor] + 0x28), 0x20);
         D_800C3EA4->unk6414 = D_800CCB04.buffer;
         D_800C3EA4->unk6415 = 1;
         actor = D_800C3EAC->actor;
