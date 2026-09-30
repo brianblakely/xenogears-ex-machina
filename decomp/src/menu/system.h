@@ -42,6 +42,19 @@ typedef struct {
     s16 x, y, w, h;
 } Rect;
 
+/* libgpu DRAWENV layout. */
+typedef struct {
+    Rect clip;
+    s16 ofs[2];
+    Rect tw;
+    u16 tpage;
+    u8 dtd;
+    u8 dfe;
+    u8 isbg;
+    u8 r0, g0, b0;
+    u32 dr_env[16];
+} DrawEnv;
+
 /* libgpu DISPENV layout. */
 typedef struct {
     Rect disp;
@@ -52,22 +65,50 @@ typedef struct {
     u8 pad1;
 } DispEnv;
 
+/* 16x16 sprite primitive (libgpu SPRT_16). */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+} Sprite16;
+
+/* Filled rectangle primitive (libgpu TILE); colour and code as one word. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 colour;
+    s16 x0, y0;
+    s16 w, h;
+} Tile;
+
 /* One of the two display buffers (table at 0x8009a0d8, 0xF8 bytes each). */
 typedef struct {
-    u8 unk0[0x5C];
+    DrawEnv draw;      /* 0x00 */
     DispEnv disp;      /* 0x5C */
-    u8 unk70[7];       /* 0x70: the buffer's drawing block starts here */
-    u8 unk77;
-    u8 unk78[3];
-    u8 unk7B;
-    u8 unk7C[4];
-    s16 unk80;
-    s16 unk82;
-    u8 unk84[0x64];
-    u8 unkE8[0x10];    /* 0xE8 */
+    u32 ot;            /* 0x70: one-entry ordering table */
+    Sprite16 sprite;   /* 0x74 */
+    u8 unk84[0x4C];
+    u32 modeD0[3];     /* 0xD0 */
+    u32 modeDC[3];     /* 0xDC */
+    Tile background;   /* 0xE8 */
 } Window;
 
 extern Window D_8009A0D8[];
+
+/* libgte MATRIX layout. */
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} Matrix;
+
+extern Matrix D_80091C0C; /* identity */
+extern Matrix D_8009A2D8;
+extern Matrix D_80096FE0; /* screen scale */
+extern s16 D_8009285C;    /* display width */
+extern s16 D_8009286C;    /* display height */
 extern u16 D_80059570;   /* pad buttons held this frame */
 extern s32 D_800927F4;
 
@@ -82,7 +123,7 @@ extern s32 D_800928E8;
 extern u8 D_800928A0;
 extern u8 D_80092920;
 extern u16 D_800928D0;   /* debug display switches */
-extern void *D_80092938; /* drawing block of the buffer being built */
+extern u32 *D_80092938; /* ordering table of the buffer being built */
 extern void (*D_80092930)(void *block);
 extern s32 D_800927F0;
 extern s32 D_80050618;
@@ -100,6 +141,21 @@ void func_80088CBC(s32 index);
 void func_8008A110(s32 a, s32 b);
 void func_8008A128(s32 a, s32 b);
 void func_8008E620(void);
+s32 func_80028738(s32 file);
+void *func_80031BDC(s32 size, s32 mode);
+void func_800295D8(s32 file, void *buffer, s32 a, s32 b);
+void func_800439E0(DispEnv *env, s32 x, s32 y, s32 w, s32 h);
+void func_80043928(DrawEnv *env, s32 x, s32 y, s32 w, s32 h);
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);
+void func_80045534(u32 *packet, DrawEnv *env);
+void func_800453E8(u32 *packet, DrawEnv *env);
+void func_8004546C(u32 *packet, s16 *offset);
+void func_8004A12C(s32 x, s32 y);
+void func_8004A14C(s32 h);
+void func_8002DFF0(s32 w, s32 h);
+void func_80089210(s32 width, s32 height);
+void func_80089330(s32 width, s32 height);
+void func_80089534(s32 width, s32 height);
 void *func_8008BA2C(void *file, s32 a, void *buffer, s32 size);
 void func_80019CA0(void);
 void func_80043BE4(void *block);

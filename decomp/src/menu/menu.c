@@ -865,10 +865,10 @@ void func_80088C28(void) {
 void func_80088CBC(s32 index) {
     Window *window = &D_8009A0D8[index];
 
-    window->unk77 = 3;
-    window->unk7B = 0x7D;
-    window->unk80 = 0x3000;
-    window->unk82 = func_80043A58(0x3F0, 0xC0);
+    window->sprite.len = 3;
+    window->sprite.code = 0x7D;
+    *(u16 *)&window->sprite.u0 = 0x3000;
+    window->sprite.clut = func_80043A58(0x3F0, 0xC0);
 }
 
 /* Menu mode start-up: frame callback, display and windows, the start
@@ -936,7 +936,7 @@ frame:
     D_80092870 = &D_8009A0D8[D_800928E8 & 1];
     D_800928E8++;
     D_80092868 = &D_8009A0D8[D_800928A0];
-    D_80092938 = D_80092868->unk70;
+    D_80092938 = &D_80092868->ot;
     disp = D_80092868->disp;
     func_80019CA0();
     func_80043BE4(D_80092938);
@@ -948,7 +948,7 @@ frame:
     func_8008EADC();
     func_80032CB8();
     if (D_80092920 & 1) {
-        func_80043B48(D_80092938, D_80092868->unkE8);
+        func_80043B48(D_80092938, &D_80092868->background);
     }
     load = func_8004B54C(1);
     fps = 60 / (u32)(D_80059488 - last);
@@ -978,19 +978,112 @@ frame:
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088E90);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800891C0);
+/* Load a whole file into a new allocation and return it. */
+void *func_800891C0(s32 file) {
+    void *data = func_80031BDC(func_80028738(file), 1);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089210);
+    func_800295D8(file, data, 0, 0);
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089330);
+/* Set the screen scale matrices for a width x height display (320x240 is
+ * unit scale). */
+void func_80089210(s32 width, s32 height) {
+    s32 sx = ((width << 12) / 320) * height / width;
+    s32 sy = ((height << 12) / 240) * height / width;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80089534);
+    D_8009A2D8 = D_80091C0C;
+    D_80096FE0 = D_80091C0C;
+    D_80096FE0.m[0][0] = sx;
+    D_80096FE0.m[1][1] = sy;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800896C4);
+/* Set both buffers' display environments and background tiles for the
+ * resolution; taller than 256 lines is interlaced. */
+void func_80089330(s32 width, s32 height) {
+    if (height > 256) {
+        func_800439E0(&D_8009A0D8[0].disp, 0, 0, width, height);
+        func_800439E0(&D_8009A0D8[1].disp, 0, 0, width, height);
+        D_8009A0D8[1].disp.isinter = 1;
+        D_8009A0D8[0].disp.isinter = 1;
+        D_8009A0D8[0].disp.screen.x = 0;
+        D_8009A0D8[0].disp.screen.y = 0x10;
+        D_8009A0D8[0].disp.screen.w = 0x100;
+        D_8009A0D8[0].disp.screen.h = 0xD4;
+        D_8009A0D8[1].disp.screen.x = 0;
+        D_8009A0D8[1].disp.screen.y = 0x10;
+        D_8009A0D8[1].disp.screen.w = 0x100;
+        D_8009A0D8[1].disp.screen.h = 0xD4;
+    } else {
+        func_800439E0(&D_8009A0D8[0].disp, 0, 0x100, width, height);
+        func_800439E0(&D_8009A0D8[1].disp, 0, 0, width, height);
+        D_8009A0D8[1].disp.isinter = 0;
+        D_8009A0D8[0].disp.isinter = 0;
+        D_8009A0D8[0].disp.screen.x = 0;
+        D_8009A0D8[0].disp.screen.y = 0xA;
+        D_8009A0D8[0].disp.screen.w = 0x100;
+        D_8009A0D8[0].disp.screen.h = height;
+        D_8009A0D8[1].disp.screen.x = 0;
+        D_8009A0D8[1].disp.screen.y = 0xA;
+        D_8009A0D8[1].disp.screen.w = 0x100;
+        D_8009A0D8[1].disp.screen.h = height;
+    }
+    D_8009285C = width;
+    D_8009286C = height;
+    func_80089210(D_8009285C, D_8009286C);
+    D_8009A0D8[0].background.len = 3;
+    D_8009A0D8[0].background.colour = 0x60000000;
+    D_8009A0D8[0].background.x0 = 0;
+    D_8009A0D8[0].background.y0 = 0;
+    D_8009A0D8[0].background.w = width;
+    D_8009A0D8[0].background.h = height;
+    D_8009A0D8[1].background = D_8009A0D8[0].background;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008973C);
+/* Set the geometry and both buffers' drawing environments for the
+ * resolution. */
+void func_80089534(s32 width, s32 height) {
+    func_8004A12C(width / 2, height / 2);
+    func_8004A14C(0x180);
+    func_8002DFF0(width, height);
+    if (height > 256) {
+        func_80043928(&D_8009A0D8[0].draw, 0, 0, width, height);
+        func_80043928(&D_8009A0D8[1].draw, 0, 0, width, height);
+        D_8009A0D8[1].draw.dfe = 0;
+        D_8009A0D8[0].draw.dfe = 0;
+    } else {
+        func_80043928(&D_8009A0D8[0].draw, 0, 0, width, height);
+        func_80043928(&D_8009A0D8[1].draw, 0, 0x100, width, height);
+    }
+    D_8009A0D8[0].draw.dtd = D_8009A0D8[1].draw.dtd = 1;
+    D_8009A0D8[0].draw.isbg = D_8009A0D8[1].draw.isbg = 0;
+    D_8009A0D8[0].draw.tpage = D_8009A0D8[1].draw.tpage = func_80043A1C(0, 2, 0x280, 0);
+    func_80045534(D_8009A0D8[0].draw.dr_env, &D_8009A0D8[0].draw);
+    func_80045534(D_8009A0D8[1].draw.dr_env, &D_8009A0D8[1].draw);
+    func_800453E8(D_8009A0D8[0].modeD0, &D_8009A0D8[0].draw);
+    func_800453E8(D_8009A0D8[1].modeD0, &D_8009A0D8[1].draw);
+    func_8004546C(D_8009A0D8[0].modeDC, D_8009A0D8[0].draw.ofs);
+    func_8004546C(D_8009A0D8[1].modeDC, D_8009A0D8[1].draw.ofs);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008976C);
+/* Set up geometry, screen and scale for a width x height display. */
+void func_800896C4(s32 width, s32 height) {
+    func_8004A12C(width / 2, height / 2);
+    func_8004A14C((width << 8) / width);
+    func_8002DFF0(width, height);
+    func_80089210(width, height);
+}
+
+/* Re-apply the drawing environments at the current resolution. */
+void func_8008973C(void) {
+    func_80089534(D_8009285C, D_8009286C);
+}
+
+/* Set the display and drawing environments for a resolution. */
+void func_8008976C(s32 width, s32 height) {
+    func_80089330(width, height);
+    func_80089534(width, height);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800897AC);
 
