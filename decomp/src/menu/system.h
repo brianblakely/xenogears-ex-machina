@@ -508,7 +508,7 @@ void func_800445D0(s32 a);
 void func_80044E9C(DispEnv *env);
 void func_80044D48(void *block, Window *buffer);
 s32 func_800888E4(s32 flag);
-void func_800888B0(void);
+void func_800888B0(s32 flag);
 s32 func_800889C8(void);
 void func_8003278C(s32 a, s32 value, s32 c, s32 d);
 void func_8008895C(void);

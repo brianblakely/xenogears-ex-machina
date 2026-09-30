@@ -582,7 +582,7 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     shot->unk38 = arg5;
     shot->unk3C = arg4;
     if (info->sound != 0) {
-        func_8008EBD0(actor, info->sound, shot, 2);
+        func_8008EBD0(actor, info->sound, &shot->pos, 2);
     }
     func_80073064(&shot->dir, &shot->velocity, shot->speed);
     shot->pos = *from;
@@ -2307,7 +2307,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EE68);
 void func_8007EEE8(s32 filter) {
     s32 level = D_8006EF64;
     ListEntry **list = func_80031BDC(0xC4, 1);
-    ListSource *source;
+    MoveList *source;
     s32 i;
 
     source = D_80092874;
@@ -5077,9 +5077,9 @@ void func_80088AF8(void) {
     }
 }
 
-/* Refresh the progress flags, then check for completion. */
-void func_80088BD4(void) {
-    func_800888B0();
+/* Set a progress flag, then check for completion. */
+void func_80088BD4(s32 flag) {
+    func_800888B0(flag);
     func_800889C8();
 }
 
@@ -6042,7 +6042,7 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
     for (i = 0; i < anim->keys; i++) {
         node = nodes[record->node];
         key->value = record->value;
-        switch (record->model_id & 0x7F) {
+        switch (record->kind & 0x7F) {
         case 3:
             key->target = &node->unk44.vx;
             key->angular = 1;
@@ -6075,7 +6075,7 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
         node = nodes[record->node];
         channel->current = data + record->value;
         channel->start = data + record->value;
-        switch (record->model_id & 0x7F) {
+        switch (record->kind & 0x7F) {
         case 3:
             channel->target = &node->unk44.vx;
             channel->angular = 1;
