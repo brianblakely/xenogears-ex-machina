@@ -1325,7 +1325,96 @@ void func_80075168(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075168);
 #endif
 
+/* Update the gauge shades, then each present member's time bar in the
+ * current draw buffer: filled by the turn counter over 56 pixels, coloured
+ * for haste or slow. With the member's panel open (state != 0) the bar is
+ * the upright party-wide one instead, showing the fuel of a member in a
+ * gear.
+ * Nonmatching: the original hoists more constants out of the loop. */
+#ifdef NON_MATCHING
+void func_80075938(void) {
+    s32 widths[3];
+    s32 i;
+    u16 clut;
+
+    func_80075168();
+    UI_BAR_SHOWN(3) = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4[i].field2 != 0x7F) {
+            if (widths[i] < 0) {
+                widths[i] = 0;
+            }
+            if (D_800D2D28->unk90[i] == 0) {
+                widths[i] = (100 - D_800D2DCC.timers[1][i] * 100 / D_800D2DCC.timers[0][i]) * 5600 / 10000;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x0 =
+                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y0 = 0x1A;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x1 =
+                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y1 = 0x1A;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x2 =
+                    D_800C3254[D_800D3280 * 3 + i] + i * 0x60 + 0x2D;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y2 = 0x1E;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].x3 =
+                    i * 0x60 + (D_800C3254[D_800D3280 * 3 + i] + 0x2C) + ((u16)widths[i] + 1);
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].y3 = 0x1E;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u0 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v0 = PANEL_GRAPHICS->sprites[0].pageY;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u1 =
+                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v1 = PANEL_GRAPHICS->sprites[0].pageY;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u2 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v2 = PANEL_GRAPHICS->sprites[0].pageY + 4;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].u3 =
+                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].v3 = PANEL_GRAPHICS->sprites[0].pageY + 4;
+                if ((D_800CCCE8.records[i].pilot.status84.half.active |
+                     D_800CCCE8.records[i].pilot.status84.half.permanent) & 0x8000) {
+                    clut = PANEL_GRAPHICS->barCluts[3];
+                } else if (D_800CCCE8.records[i].pilot.status7C & 0x1000) {
+                    clut = PANEL_GRAPHICS->barCluts[2];
+                } else {
+                    clut = PANEL_GRAPHICS->barCluts[0];
+                }
+                PANEL_GRAPHICS->gaugeBars[i * 2 + D_800CCB34].clut = clut;
+                UI_BAR_SHOWN(i) = 1;
+            } else {
+                widths[i] = (100 - D_800D2DCC.timers[1][i]) * 5600 / 10000;
+                if (D_800D32A0[i].unk1 != 0 && D_800D2D24[i] != 7) {
+                    widths[i] = D_800CCCE8.records[i].gear.fuel * 100 / D_800CCCE8.records[i].gear.maxFuel * 5600 /
+                                10000;
+                }
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x0 = 0xC;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y0 = 0xCE;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x1 = 0xC;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y1 = 0xCE - widths[i] * 2;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x2 = 0x14;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y2 = 0xCE;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].x3 = 0x14;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].y3 = 0xCE - widths[i] * 2;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u0 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v0 = PANEL_GRAPHICS->sprites[0].pageY;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u1 =
+                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v1 = PANEL_GRAPHICS->sprites[0].pageY;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u2 = (PANEL_GRAPHICS->sprites[0].pageX & 0x3F) * 2;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v2 = PANEL_GRAPHICS->sprites[0].pageY + 4;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].u3 =
+                    (widths[i] + (PANEL_GRAPHICS->sprites[0].pageX & 0x3F)) * 2;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].v3 = PANEL_GRAPHICS->sprites[0].pageY + 4;
+                PANEL_GRAPHICS->gaugeBars[6 + D_800CCB34].clut = PANEL_GRAPHICS->barCluts[1];
+                if (D_800D2D28->unkCB != 0) {
+                    UI_BAR_SHOWN(3) = 1;
+                }
+            }
+        } else {
+            UI_BAR_SHOWN(i) = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80075938);
+#endif
 
 /* Battle end, outcome state 1: unless 800c492a is set, release every battle
  * resource. */

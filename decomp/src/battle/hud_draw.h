@@ -39,6 +39,7 @@ typedef struct {
     DR_MODE unk8920[2];       /* +0x8920 per draw buffer */
     u8 pad8938[0xA234 - 0x8938]; /* +0x8950 the CLUT rows and their saved copies */
     SpriteInfo sprites[5];    /* +0xA234 */
+    u16 barCluts[4];          /* +0xA2AC time bar: normal, party-wide, slow, haste */
 } PanelGraphics;
 
 #define PANEL_GRAPHICS ((PanelGraphics *)D_800C3EA4)
@@ -127,6 +128,7 @@ void func_8009A2D4(u8 member);
 void func_80089AF8(u8 member);
 void func_800898F0(u8 member);
 
+extern s32 D_800CCB34; /* the draw buffer index (BattleDraw +0x30) */
 extern u32 *D_800C3E5C[];   /* text images of battle messages 0-9 */
 void *func_800338D8(s32 id); /* a battle message text */
 
