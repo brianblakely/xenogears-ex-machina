@@ -1900,7 +1900,28 @@ void func_80086F7C(void) {
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086FD0);
+/* Event: effect control by selector byte: stop (0), start with four
+ * operands (1), pause (2) or restart with four operands (3). */
+void func_80086FD0(void) {
+    switch (D_800ADC00[D_800B0078->pc + 1]) {
+    case 0:
+        func_800AAC08();
+        D_800B0078->pc += 2;
+        break;
+    case 2:
+        func_800AABD8();
+        D_800B0078->pc += 2;
+        break;
+    case 1:
+        func_800AAE4C(func_800ACDEC(2), func_800ACDEC(4), func_800ACDEC(6), func_800ACDEC(8));
+        D_800B0078->pc += 10;
+        break;
+    case 3:
+        func_800AADC8(func_800ACDEC(2), func_800ACDEC(4), func_800ACDEC(6), func_800ACDEC(8));
+        D_800B0078->pc += 10;
+        break;
+    }
+}
 
 /* Event: set bits op3 in the flags of game record op1. */
 void func_80087148(void) {
@@ -1957,7 +1978,26 @@ void func_80087580(void) {
     D_800B0078->pc += 5;
 }
 
+#ifdef NON_MATCHING
+/* Event: copy character slot and record op1 over op3; slots 9 and 10 set
+ * game flags 0x2000 / 0x1000. */
+void func_8008764C(void) {
+    s32 from = func_800ACDEC(1);
+    s32 to = func_800ACDEC(3);
+
+    D_8005A39C->slots[to] = D_8005A39C->slots[from];
+    D_8005A39C->records[to] = D_8005A39C->records[from];
+    if (to == 9) {
+        D_8005A39C->unk22B6 |= 0x2000;
+    }
+    if (to == 10) {
+        D_8005A39C->unk22B6 |= 0x1000;
+    }
+    D_800B0078->pc += 5;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008764C);
+#endif
 
 /* Event: store 80050622 in variable op1. */
 void func_80087800(void) {
@@ -2152,7 +2192,7 @@ void func_800882B8(void) {
     s32 character = func_8008CF3C(func_800ACDEC(1));
 
     if (character != 0xFF) {
-        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->slots[character].unk2C);
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->slots[character].unkA0);
     } else {
         func_800A3074(func_800ACDB8(3) & 0xFFFF, 0xFF);
     }
@@ -2163,7 +2203,7 @@ void func_800882B8(void) {
 void func_80088360(void) {
     s32 slot = func_800ACDEC(1);
 
-    D_8005A39C->slots[slot].unk2C = func_800ACDEC(3);
+    D_8005A39C->slots[slot].unkA0 = func_800ACDEC(3);
     D_800B0078->pc += 5;
 }
 
@@ -2203,7 +2243,36 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088508);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008861C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088674);
+/* Event: start effect op3 (0..3 map to 0, 0x10, 0x20, 0x30) with op5 and op7
+ * for actor op1, using four batch steps. */
+void func_80088674(void) {
+    s32 actor = func_800ACDEC(1);
+
+    if (actor == 0xFF) {
+        actor = 0;
+    }
+    D_800B2078.unk2374 = func_800ACDEC(1);
+    D_800B2078.unk2378 = func_800ACDEC(3);
+    D_800B2078.unk237C = func_800ACDEC(5);
+    D_800B2078.unk2380 = func_800ACDEC(7);
+    D_800B0078->pc += 9;
+    func_800A94A4(actor);
+    switch (D_800B2078.unk2378) {
+    case 0:
+        D_800B2078.unk2378 = 0;
+        break;
+    case 1:
+        D_800B2078.unk2378 = 0x10;
+        break;
+    case 2:
+        D_800B2078.unk2378 = 0x20;
+        break;
+    case 3:
+        D_800B2078.unk2378 = 0x30;
+        break;
+    }
+    D_800AFC7C += 4;
+}
 
 /* Event: start effect op2 (0..3 map to 0, 0x10, 0x20, 0x30) with op4 and op6
  * on the selected actor, using four batch steps. */
@@ -2473,11 +2542,11 @@ void func_8008A640(void) {
     s32 value;
 
     if (character != 0xFF) {
-        value = func_800ACDEC(1) - D_8005A39C->slots[character].unk03;
+        value = func_800ACDEC(1) - D_8005A39C->slots[character].unk77;
         if (value < 0) {
             value = 0;
         }
-        D_8005A39C->slots[character].unk04 = value;
+        D_8005A39C->slots[character].unk78 = value;
     }
     D_800B0078->pc += 5;
 }
@@ -2489,7 +2558,7 @@ void func_8008A6E0(void) {
     s32 sum;
 
     if (character != 0xFF) {
-        sum = D_8005A39C->slots[character].unk03 + D_8005A39C->slots[character].unk04;
+        sum = D_8005A39C->slots[character].unk77 + D_8005A39C->slots[character].unk78;
         func_800A3074(func_800ACDB8(1) & 0xFFFF, sum);
     } else {
         func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);

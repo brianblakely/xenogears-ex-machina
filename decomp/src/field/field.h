@@ -302,14 +302,15 @@ typedef struct {
     u8 unk1C[4];
 } GameRecord;
 
-/* A 0xa4-byte character slot of the game state (+2e0). */
+/* A 0xa4-byte character slot of the game state (+26c). */
 typedef struct {
-    u8 unk00[3];
-    u8 unk03;
-    u8 unk04;
-    u8 unk05[0x2C - 5];
-    u8 unk2C;
-    u8 unk2D[0xA4 - 0x2D];
+    u32 unk00[0x74 / 4];
+    u8 unk74[3];
+    u8 unk77;
+    u8 unk78;
+    u8 unk79[0xA0 - 0x79];
+    u8 unkA0;
+    u8 unkA1[0xA4 - 0xA1];
 } GameSlot;
 
 /* A 0xa4-byte character of the game state (+978). */
@@ -325,9 +326,9 @@ typedef struct {
 
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
-    u8 unk0000[0x2E0];
-    GameSlot slots[10];          /* 02E0 */
-    u8 unk0948[0x978 - 0x948];
+    u8 unk0000[0x26C];
+    GameSlot slots[10];          /* 026C */
+    u8 unk08D4[0x978 - 0x8D4];
     GameCharacter characters[20]; /* 0978 */
     u8 unk1648[0x16C0 - 0x1648];
     GameRecord records[11]; /* 16C0 */
@@ -566,6 +567,10 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_800AABD8(void);
+extern void func_800AAC08(void);
+extern void func_800AADC8(s32, s32, s32, s32);
+extern void func_800AAE4C(s32, s32, s32, s32);
 extern void func_80070594(MATRIX *m);
 extern void func_80086D8C(void);
 extern void func_80086078(s32 distance, u32 *out, s32 volume);
