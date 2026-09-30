@@ -21,6 +21,7 @@
 #include "popup.h"
 #include "frame.h"
 #include "stage.h"
+#include "effect_script.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -68,7 +69,212 @@ void func_800B16F0(void) {
     D_800C3BF0++;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B1720);
+/* Build the GPU primitives of script entry's commands into prims: code,
+ * colours (neutral 0x80 when unlit), texture coordinates, CLUT and texture
+ * page; with blend (1-4) set, semi-transparent with that blend mode, which
+ * is also written into the commands' texture pages. */
+void func_800B1720(entry, prims, blend, shade)
+    ScriptEntry *entry;
+    u8 *prims;
+    s32 blend;
+    s32 shade;
+{
+    u8 *cmd;
+    s32 count;
+    s32 i;
+    s32 abr;
+    s32 kind;
+
+    count = entry->count;
+    cmd = entry->commands + (u32)entry;
+    if (blend != 0) {
+        abr = (blend - 1) & 3;
+        abr <<= 5;
+    }
+    for (i = 0; i != count; i++) {
+        prims[3] = cmd[0];
+        prims[7] = cmd[3];
+        SetShadeTex(prims, (u8)shade);
+        if (blend != 0) {
+            SetSemiTrans(prims, blend != 0);
+        }
+        kind = cmd[3] & 0x1C;
+        kind |= ((cmd[2] ^ 1) & 1) << 8; /* unlit */
+        switch (kind) {
+        case 0x10:
+        case 0x110:
+            ((POLY_G3 *)prims)->r0 = cmd[4];
+            ((POLY_G3 *)prims)->g0 = cmd[5];
+            ((POLY_G3 *)prims)->b0 = cmd[6];
+            ((POLY_G3 *)prims)->r1 = cmd[8];
+            ((POLY_G3 *)prims)->g1 = cmd[9];
+            ((POLY_G3 *)prims)->b1 = cmd[0xA];
+            ((POLY_G3 *)prims)->r2 = cmd[0xC];
+            ((POLY_G3 *)prims)->g2 = cmd[0xD];
+            ((POLY_G3 *)prims)->b2 = cmd[0xE];
+            break;
+        case 0x18:
+        case 0x118:
+            ((POLY_G4 *)prims)->r0 = cmd[4];
+            ((POLY_G4 *)prims)->g0 = cmd[5];
+            ((POLY_G4 *)prims)->b0 = cmd[6];
+            ((POLY_G4 *)prims)->r1 = cmd[8];
+            ((POLY_G4 *)prims)->g1 = cmd[9];
+            ((POLY_G4 *)prims)->b1 = cmd[0xA];
+            ((POLY_G4 *)prims)->r2 = cmd[0xC];
+            ((POLY_G4 *)prims)->g2 = cmd[0xD];
+            ((POLY_G4 *)prims)->b2 = cmd[0xE];
+            ((POLY_G4 *)prims)->r3 = cmd[0x10];
+            ((POLY_G4 *)prims)->g3 = cmd[0x11];
+            ((POLY_G4 *)prims)->b3 = cmd[0x12];
+            break;
+        case 0x0:
+        case 0x8:
+        case 0x100:
+        case 0x108:
+            ((POLY_F3 *)prims)->r0 = cmd[4];
+            ((POLY_F3 *)prims)->g0 = cmd[5];
+            ((POLY_F3 *)prims)->b0 = cmd[6];
+            break;
+        case 0x104:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_FT3 *)prims)->r0 = 0x80;
+            ((POLY_FT3 *)prims)->g0 = 0x80;
+            ((POLY_FT3 *)prims)->b0 = 0x80;
+            goto ft3;
+        case 0x4:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_FT3 *)prims)->r0 = cmd[0x10];
+            ((POLY_FT3 *)prims)->g0 = cmd[0x11];
+            ((POLY_FT3 *)prims)->b0 = cmd[0x12];
+        ft3:
+            ((POLY_FT3 *)prims)->tpage = SCRIPT_CMD_U16(cmd, 0xA);
+            ((POLY_FT3 *)prims)->clut = SCRIPT_CMD_U16(cmd, 6);
+            ((POLY_FT3 *)prims)->u0 = cmd[4];
+            ((POLY_FT3 *)prims)->v0 = cmd[5];
+            ((POLY_FT3 *)prims)->u1 = cmd[8];
+            ((POLY_FT3 *)prims)->v1 = cmd[9];
+            ((POLY_FT3 *)prims)->u2 = cmd[0xC];
+            ((POLY_FT3 *)prims)->v2 = cmd[0xD];
+            break;
+        case 0x114:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_GT3 *)prims)->r0 = 0x80;
+            ((POLY_GT3 *)prims)->g0 = 0x80;
+            ((POLY_GT3 *)prims)->b0 = 0x80;
+            ((POLY_GT3 *)prims)->r1 = 0x80;
+            ((POLY_GT3 *)prims)->g1 = 0x80;
+            ((POLY_GT3 *)prims)->b1 = 0x80;
+            ((POLY_GT3 *)prims)->r2 = 0x80;
+            ((POLY_GT3 *)prims)->g2 = 0x80;
+            ((POLY_GT3 *)prims)->b2 = 0x80;
+            goto gt3;
+        case 0x14:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_GT3 *)prims)->r0 = cmd[0x10];
+            ((POLY_GT3 *)prims)->g0 = cmd[0x11];
+            ((POLY_GT3 *)prims)->b0 = cmd[0x12];
+            ((POLY_GT3 *)prims)->r1 = cmd[0x14];
+            ((POLY_GT3 *)prims)->g1 = cmd[0x15];
+            ((POLY_GT3 *)prims)->b1 = cmd[0x16];
+            ((POLY_GT3 *)prims)->r2 = cmd[0x18];
+            ((POLY_GT3 *)prims)->g2 = cmd[0x19];
+            ((POLY_GT3 *)prims)->b2 = cmd[0x1A];
+        gt3:
+            ((POLY_GT3 *)prims)->tpage = SCRIPT_CMD_U16(cmd, 0xA);
+            ((POLY_GT3 *)prims)->clut = SCRIPT_CMD_U16(cmd, 6);
+            ((POLY_GT3 *)prims)->u0 = cmd[4];
+            ((POLY_GT3 *)prims)->v0 = cmd[5];
+            ((POLY_GT3 *)prims)->u1 = cmd[8];
+            ((POLY_GT3 *)prims)->v1 = cmd[9];
+            ((POLY_GT3 *)prims)->u2 = cmd[0xC];
+            ((POLY_GT3 *)prims)->v2 = cmd[0xD];
+            break;
+        case 0x10C:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_FT4 *)prims)->r0 = 0x80;
+            ((POLY_FT4 *)prims)->g0 = 0x80;
+            ((POLY_FT4 *)prims)->b0 = 0x80;
+            goto ft4;
+        case 0xC:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_FT4 *)prims)->r0 = cmd[0x14];
+            ((POLY_FT4 *)prims)->g0 = cmd[0x15];
+            ((POLY_FT4 *)prims)->b0 = cmd[0x16];
+        ft4:
+            ((POLY_FT4 *)prims)->tpage = SCRIPT_CMD_U16(cmd, 0xA);
+            ((POLY_FT4 *)prims)->clut = SCRIPT_CMD_U16(cmd, 6);
+            ((POLY_FT4 *)prims)->u0 = cmd[4];
+            ((POLY_FT4 *)prims)->v0 = cmd[5];
+            ((POLY_FT4 *)prims)->u1 = cmd[8];
+            ((POLY_FT4 *)prims)->v1 = cmd[9];
+            ((POLY_FT4 *)prims)->u2 = cmd[0xC];
+            ((POLY_FT4 *)prims)->v2 = cmd[0xD];
+            ((POLY_FT4 *)prims)->u3 = cmd[0x10];
+            ((POLY_FT4 *)prims)->v3 = cmd[0x11];
+            break;
+        case 0x11C:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_GT4 *)prims)->r0 = 0x80;
+            ((POLY_GT4 *)prims)->g0 = 0x80;
+            ((POLY_GT4 *)prims)->b0 = 0x80;
+            ((POLY_GT4 *)prims)->r1 = 0x80;
+            ((POLY_GT4 *)prims)->g1 = 0x80;
+            ((POLY_GT4 *)prims)->b1 = 0x80;
+            ((POLY_GT4 *)prims)->r2 = 0x80;
+            ((POLY_GT4 *)prims)->g2 = 0x80;
+            ((POLY_GT4 *)prims)->b2 = 0x80;
+            ((POLY_GT4 *)prims)->r3 = 0x80;
+            ((POLY_GT4 *)prims)->g3 = 0x80;
+            ((POLY_GT4 *)prims)->b3 = 0x80;
+            goto gt4;
+        case 0x1C:
+            if (blend != 0) {
+                SCRIPT_CMD_U16(cmd, 0xA) = (SCRIPT_CMD_U16(cmd, 0xA) & ~0x60) | abr;
+            }
+            ((POLY_GT4 *)prims)->r0 = cmd[0x14];
+            ((POLY_GT4 *)prims)->g0 = cmd[0x15];
+            ((POLY_GT4 *)prims)->b0 = cmd[0x16];
+            ((POLY_GT4 *)prims)->r1 = cmd[0x18];
+            ((POLY_GT4 *)prims)->g1 = cmd[0x19];
+            ((POLY_GT4 *)prims)->b1 = cmd[0x1A];
+            ((POLY_GT4 *)prims)->r2 = cmd[0x1C];
+            ((POLY_GT4 *)prims)->g2 = cmd[0x1D];
+            ((POLY_GT4 *)prims)->b2 = cmd[0x1E];
+            ((POLY_GT4 *)prims)->r3 = cmd[0x20];
+            ((POLY_GT4 *)prims)->g3 = cmd[0x21];
+            ((POLY_GT4 *)prims)->b3 = cmd[0x22];
+        gt4:
+            ((POLY_GT4 *)prims)->tpage = SCRIPT_CMD_U16(cmd, 0xA);
+            ((POLY_GT4 *)prims)->clut = SCRIPT_CMD_U16(cmd, 6);
+            ((POLY_GT4 *)prims)->u0 = cmd[4];
+            ((POLY_GT4 *)prims)->v0 = cmd[5];
+            ((POLY_GT4 *)prims)->u1 = cmd[8];
+            ((POLY_GT4 *)prims)->v1 = cmd[9];
+            ((POLY_GT4 *)prims)->u2 = cmd[0xC];
+            ((POLY_GT4 *)prims)->v2 = cmd[0xD];
+            ((POLY_GT4 *)prims)->u3 = cmd[0x10];
+            ((POLY_GT4 *)prims)->v3 = cmd[0x11];
+            break;
+        }
+        prims += (cmd[0] + 1) * 4;
+        cmd += (cmd[1] + 1) * 4;
+    }
+}
 
 /* Scale a vertex list's points by 1 << shift, once. */
 void func_800B1EA0(VertexList *list, s32 shift) {
