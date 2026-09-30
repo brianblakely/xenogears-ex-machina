@@ -1458,15 +1458,89 @@ void func_8007D344(u8 **pc, u8 enemy) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D344);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D478);
+/* AI action 57: variable b1 = the bit of a random party slot flagged 0x8000
+ * at +0x7c without 0x4002. */
+void func_8007D478(u8 **pc, u8 enemy) {
+    u8 tried[3];
+    u8 slot;
+    u16 flags;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D5B0);
+    tried[2] = 0;
+    tried[1] = 0;
+    tried[0] = 0;
+    D_800D3400[enemy].vars[(*pc)[1]] = 0;
+    while (!(tried[2] & (tried[0] & tried[1]))) {
+        slot = func_8001BD40(0, 2);
+        if (tried[slot] == 0) {
+            flags = D_800CCCE8[slot].flags7C;
+            if ((flags & 0x8000) && !(flags & 0x4002)) {
+                D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
+                return;
+            }
+            tried[slot] = 1;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D610);
+/* AI action 58: byte variable b1 = the number of party slots not down
+ * (+0x7c without 0xc000). */
+void func_8007D5B0(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 count = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D6A8);
+    for (slot = 0; slot < 3; slot++) {
+        if (!(D_800CCCE8[slot].flags7C & 0xC000)) {
+            count++;
+        }
+    }
+    D_800D3400[enemy].bytes[(*pc)[1]] = count;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D7B4);
+/* AI action 59: byte variable b1 = the number of present, visible enemy
+ * slots not down. */
+void func_8007D610(u8 **pc, u8 enemy) {
+    s32 slot;
+    u8 count = 0;
+
+    for (slot = 3; slot < 11; slot++) {
+        if (D_800D2DCC[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC000) && D_800C3EB4[slot].hidden == 0) {
+            count++;
+        }
+    }
+    D_800D3400[enemy].bytes[(*pc)[1]] = count;
+}
+
+/* AI action 5a: variable b1 = the bit of the targetable party slot flagged
+ * at 800d32a1 with the lowest record +0x104. */
+void func_8007D6A8(u8 **pc, u8 enemy) {
+    s32 slot;
+    u32 lowest = 0xFFFFFFFF;
+    s32 target = 0;
+
+    for (slot = 0; slot < 3; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8[slot].unk104) {
+            lowest = D_800CCCE8[slot].unk104;
+            target = slot;
+        }
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
+}
+
+/* AI action 5b: variable b1 = the bit of the targetable enemy slot flagged
+ * at 800d32a1 with the lowest HP. */
+void func_8007D7B4(u8 **pc, u8 enemy) {
+    s32 slot;
+    u32 lowest = 0xFFFFFFFF;
+    s32 target = 0;
+
+    for (slot = 3; slot < 11; slot++) {
+        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8[slot].hp) {
+            lowest = D_800CCCE8[slot].hp;
+            target = slot;
+        }
+    }
+    D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(target);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007D8C0);
 

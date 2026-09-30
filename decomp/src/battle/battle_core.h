@@ -19,7 +19,7 @@ typedef struct {
     u16 status84; /* 0x8000 (with +0x86) haste */
     u16 status86;
     u8 unk88[0x104 - 0x88];
-    s32 unk104;
+    u32 unk104;
     s32 unk108;
     u8 unk10C[0x14C - 0x10C];
     s32 unk14C;
