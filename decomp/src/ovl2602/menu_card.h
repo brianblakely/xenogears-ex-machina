@@ -259,6 +259,27 @@ typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
+/* A character record of the game data (a4h bytes, 8006d8a0). */
+typedef struct {
+    u8 unk0[4];
+    u8 unk4;       /* 04 */
+    u8 unk5[0x1C - 5];
+    u8 unk1C;      /* 1c */
+    u8 unk1D[0x28 - 0x1D];
+    u8 base[8];    /* 28 */
+    u8 unk30[0x56 - 0x30];
+    u8 unk56;      /* 56 */
+    u8 unk57;
+    u8 bonus[8];   /* 58 */
+    u8 unk60[0xA4 - 0x60];
+} Character;
+
+/* A party member's detail view; its nine stat words at +b8. */
+typedef struct {
+    u8 unk0[0xB8];
+    u16 stats[9]; /* b8 */
+} MemberView;
+
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
     u8 unk0[0x6C];
@@ -331,6 +352,9 @@ extern MenuState *D_800625A0;
 /* Overlay data. */
 extern u16 D_801D6C68[]; /* party bit of each member id */
 extern u8 D_801D6A80[];  /* label text ids */
+extern s32 D_801D1F54[]; /* command picture pairs */
+extern u8 D_801D1FCC[];  /* command label text ids */
+extern s32 D_801D1FD8[]; /* command label x offsets */
 extern s32 D_801D69A0[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D6A60[]; /* marker x */
 extern s32 D_801D6A70[]; /* marker y */
@@ -341,6 +365,7 @@ extern s32 D_801D6BFC[]; /* cursor x per position */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Game state. */
+extern Character D_8006D8A0[];
 extern u16 D_8006F364;   /* party members joined */
 extern u16 D_8006F366;   /* party members available */
 extern u8 D_8006F368[3]; /* party member ids */
@@ -450,6 +475,12 @@ void func_801C9054(u8 index);
 void func_801C5EE8(Label *labels, u8 *text_ids, s32 row, s32 count);
 void func_801CC9A0(void);
 void func_801CC1C4(void);
+void func_801C5C98(void);
+void func_801C6114(void);
+void func_801C6708(void);
+void func_801C6170(void);
+void func_801CD310(s32 count, s32 *ids);
+void func_801CD838(u8 count, u8 selected, s32 *ids);
 void func_801C6278(s32 position, u8 frame);
 void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801CA28C(void);

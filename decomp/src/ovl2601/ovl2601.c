@@ -1884,13 +1884,156 @@ void func_801CC720(u8 menu) {
     D_800625A0->flags->unk4 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC97C);
+/* Run the chosen top command (0 leaves); afterwards restore the command screen. Returns 0 to leave. */
+u8 func_801CC97C(void) {
+    u8 running;
+    u8 redraw;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CCAD8);
+    running = 1;
+    switch (D_800625A0->top_cursor) {
+    case 0:
+        running = 0;
+        break;
+    case 1:
+        redraw = func_801D1CA4();
+        break;
+    case 2:
+        redraw = func_801CF780();
+        break;
+    }
+    if (redraw) {
+        func_801CB370();
+        func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FCC, D_800625A0->flags->list_label_shown);
+    }
+    func_801D1F10();
+    D_800625A0->images->dim = 0;
+    D_800625A0->images->dimmed = 1;
+    D_800625A0->flags->unk4 = 1;
+    D_800625A0->flags->cursor_shown = 1;
+    D_800625A0->unk337 = 0xFF;
+    D_800625A0->flags->lists_shown = 0;
+    return running;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CCD28);
+/* The command screen: move between the three commands and run the chosen one until leaving. */
+void func_801CCAD8(void) {
+    u8 running;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CCE1C);
+    running = 1;
+    D_800625A0->top_cursor = 2;
+    func_801CC024(4, D_801D1F54);
+    func_801CBC88(1, 4, D_800625A0->list_labels, D_801D1FCC, D_800625A0->flags->list_label_shown);
+    do {
+        func_801CB014();
+        switch (D_800625A0->input) {
+        case 4:
+            func_801CAC7C(2);
+            D_800625A0->images->dim = 1;
+            func_801C6430();
+            func_801CBC88(0, 4, D_800625A0->list_labels, D_801D1FCC, D_800625A0->flags->list_label_shown);
+            D_800625A0->cursor->width = 0x4C;
+            running = func_801CC97C();
+            D_800625A0->cursor->width = 0x40;
+            break;
+        case 5:
+            running = 0;
+            break;
+        case 1:
+            if (D_800625A0->top_cursor != 0) {
+                D_800625A0->top_cursor--;
+            } else {
+                D_800625A0->top_cursor = 2;
+            }
+            break;
+        case 3:
+            if (++D_800625A0->top_cursor >= 3) {
+                D_800625A0->top_cursor = 0;
+            }
+            break;
+        }
+        if (D_800625A0->top_cursor != D_800625A0->unk337) {
+            func_801CC54C(3, D_800625A0->top_cursor, D_801D1F54);
+            func_801CBCF0(4, D_800625A0->list_labels, D_801D1FCC, D_801D1FD8,
+                          D_800625A0->flags->list_label_shown, D_800625A0->top_cursor, 0, 0);
+            D_800625A0->unk337 = D_800625A0->top_cursor;
+        }
+    } while (running);
+}
+
+/* Overlay entry: build the card screen, run it, and tear it down. */
+void func_801CCD28(void) {
+    func_801C5194(1);
+    func_801C51F8(1);
+    func_801C525C(1);
+    func_801C52C0(1);
+    func_801C5324(1);
+    func_801C5388(1);
+    func_801C53EC(1);
+    func_801C5450(1);
+    D_800625A0->images->screen.x = 0x2C0;
+    D_800625A0->images->screen.y = 0x100;
+    D_800625A0->images->screen.w = 0x140;
+    D_800625A0->images->screen.h = 0xE0;
+    D_800625A0->cursor->width = 0x40;
+    func_801C58F4();
+    func_801C5A6C();
+    func_801C5EE8();
+    func_801C64DC();
+    func_801C5F44();
+    func_801C6A6C();
+    D_800625A0->drawing = 1;
+    D_800625A0->sounds = 1;
+    func_801CCAD8();
+    func_801CBB08();
+}
+
+/* Fill a view's nine stat words from character `id`'s base and bonus bytes, capped at 999 or 99. */
+void func_801CCE1C(MemberView *view, u8 id) {
+    Character *c;
+
+    c = &D_8006D8A0[id];
+    if (c->unk56 == 4) {
+        view->stats[0] = c->unk4 + c->unk1C;
+    } else {
+        view->stats[0] = c->unk4 + (c->bonus[0] + c->base[0]);
+    }
+    view->stats[0] = c->unk4 + (c->bonus[0] + c->base[0]);
+    view->stats[1] = c->bonus[6] + c->base[6];
+    view->stats[2] = c->base[5] + (c->bonus[1] + c->base[1]);
+    view->stats[3] = c->bonus[7] + c->base[7];
+    view->stats[4] = c->bonus[3] + c->base[3];
+    view->stats[5] = 99;
+    view->stats[6] = c->bonus[4] + c->base[4];
+    view->stats[7] = 10;
+    view->stats[8] = c->bonus[2] + c->base[2];
+    if (view->stats[0] >= 1000) {
+        view->stats[0] = 999;
+    }
+    if (view->stats[1] >= 100) {
+        view->stats[1] = 99;
+    }
+    if (view->stats[2] >= 1000) {
+        view->stats[2] = 999;
+    }
+    if (view->stats[3] >= 100) {
+        view->stats[3] = 99;
+    }
+    if (view->stats[4] >= 1000) {
+        view->stats[4] = 999;
+    }
+    if (view->stats[5] >= 100) {
+        view->stats[5] = 99;
+    }
+    if (view->stats[6] >= 1000) {
+        view->stats[6] = 999;
+    }
+    if (view->stats[7] >= 100) {
+        view->stats[7] = 99;
+    }
+    if (view->stats[8] >= 100) {
+        view->stats[8] = 99;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CCFF4);
 

@@ -259,6 +259,27 @@ typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
+/* A character record of the game data (a4h bytes, 8006d8a0). */
+typedef struct {
+    u8 unk0[4];
+    u8 unk4;       /* 04 */
+    u8 unk5[0x1C - 5];
+    u8 unk1C;      /* 1c */
+    u8 unk1D[0x28 - 0x1D];
+    u8 base[8];    /* 28 */
+    u8 unk30[0x56 - 0x30];
+    u8 unk56;      /* 56 */
+    u8 unk57;
+    u8 bonus[8];   /* 58 */
+    u8 unk60[0xA4 - 0x60];
+} Character;
+
+/* A party member's detail view; its nine stat words at +b8. */
+typedef struct {
+    u8 unk0[0xB8];
+    u16 stats[9]; /* b8 */
+} MemberView;
+
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
     u8 unk0[0x6C];
@@ -331,6 +352,9 @@ extern MenuState *D_800625A0;
 /* Overlay data. */
 extern u16 D_801D21F0[]; /* party bit of each member id */
 extern u8 D_801D2018[];  /* label text ids */
+extern s32 D_801D1F54[]; /* command picture pairs */
+extern u8 D_801D1FCC[];  /* command label text ids */
+extern s32 D_801D1FD8[]; /* command label x offsets */
 extern s32 D_801D1F6C[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D1FF8[]; /* marker x */
 extern s32 D_801D2008[]; /* marker y */
@@ -341,6 +365,7 @@ extern s32 D_801D2194[]; /* cursor x per position */
 extern s32 D_801D21B0[]; /* cursor y per position */
 
 /* Game state. */
+extern Character D_8006D8A0[];
 extern u16 D_8006F364;   /* party members joined */
 extern u16 D_8006F366;   /* party members available */
 extern u8 D_8006F368[3]; /* party member ids */
@@ -454,6 +479,21 @@ void func_801CB7F4(void);
 u8 func_801CB894(u8 wait);
 void func_801CBC88(u8 render, u8 count, Label *labels, u8 *text_ids, u8 *shown);
 void func_801CB014(void);
+void func_801CB370(void);
+u8 func_801D1CA4(void);
+u8 func_801CF780(void);
+void func_801D1F10(void);
+void func_801C6A6C(void);
+void func_801C58F4(void);
+void func_801C5A6C(void);
+void func_801C5EE8(void);
+void func_801C64DC(void);
+void func_801C5F44(void);
+void func_801CCAD8(void);
+void func_801CBB08(void);
+void func_801CC024(s32 count, s32 *ids);
+void func_801CC54C(u8 count, u8 selected, s32 *ids);
+void func_801CBCF0(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *shown, u8 index, u8 row, u8 mode);
 void func_801C604C(s32 position, u8 frame);
 void func_801CACC8(void);
 void func_801CAED4(void);
