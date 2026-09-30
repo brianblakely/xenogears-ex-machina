@@ -87,7 +87,8 @@ typedef struct Sprite {
     u8 red, green, blue;     /* +0x28: colour of one-sided parts */
     u8 colour_flags;         /* +0x2b: bit 0 set: no colour */
     s16 scale;               /* +0x2c */
-    u8 unknown2e[4];
+    u8 unknown2e[2];
+    s16 half30;              /* +0x30 */
     s16 direction;           /* +0x32 */
     u16 frame;               /* +0x34: pending frame, 0 none */
     u8 unknown36[4];
@@ -100,7 +101,11 @@ typedef struct Sprite {
         unsigned flip : 1;       /* mirrored frame */
         unsigned flip_y : 1;
         unsigned blend : 3;      /* blend rate + 1 */
-        unsigned unknown8 : 20;
+        unsigned unknown8 : 8;
+        unsigned field16 : 4;
+        unsigned mode : 4;       /* resource binding mode (80022224) */
+        unsigned bit24 : 1;
+        unsigned unknown25 : 3;
         unsigned dirty : 1;      /* orientation needs rebuilding */
         unsigned unknown29 : 3;
         } bits;
@@ -109,14 +114,14 @@ typedef struct Sprite {
     s32 *resource_block;     /* +0x44: the block the image's sections come from */
     s32 *animations;         /* +0x48: the animation block, NULL none */
     s32 resource;            /* +0x4c */
-    u8 unknown50[4];
+    s32 word50;              /* +0x50 */
     u16 *frame_table;        /* +0x54: the facing's frame table */
     u16 *animation;          /* +0x58: the animation header */
     u16 *facings;            /* +0x5c */
     u8 unknown60[4];
     u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void *callback;          /* +0x68: completion callback */
-    u8 unknown6c[4];
+    void *block;             /* +0x6c: the allocation holding the sprite */
     s32 word70;              /* +0x70 */
     u8 unknown74[8];
     void *sequencer;         /* +0x7c */
@@ -313,11 +318,7 @@ void func_800234AC(Sprite *sprite);
 s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */
 void func_800248D4(Sprite *sprite); /* run the next script command */
-/* Frame timing; only the first word is known here. */
-extern struct {
-    s32 skip; /* extra frames per update */
-    s32 unknown[2];
-} D_80059198;
+extern s32 D_80059198; /* extra frames per update */
 void func_80022B2C(Sprite *sprite);
 void func_80024524(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5);
 void func_8002435C(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6);

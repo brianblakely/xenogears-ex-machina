@@ -448,7 +448,7 @@ s32 func_800231F8(s32 *block) {
 void func_80023210(Sprite *sprite) {
     s32 i;
 
-    for (i = 0; i != D_80059198.skip + 1; i++) {
+    for (i = 0; i != D_80059198 + 1; i++) {
         if (sprite->countdown != 0) {
             if (--sprite->countdown == 0) {
                 func_800248D4(sprite);
@@ -560,7 +560,49 @@ void func_800234AC(Sprite *sprite) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023538);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023804);
+/* Reset a sprite's state to the defaults: no flags, frame or animation,
+ * blend 0x2d, gravity divisor 256, gravity from the frame skip and the
+ * sprite's weight (word 0x82), an empty byte stack. */
+void func_80023804(Sprite *sprite) {
+    s32 gravity;
+    u32 *words;
+
+    sprite->render.word = 0;
+    sprite->colour_flags = 0x2D;
+    sprite->flags = 0;
+    sprite->rate = 0;
+    sprite->half30 = 0;
+    sprite->direction = 0;
+    sprite->frame = 0;
+    *(u32 *)&sprite->frame_bits = 0;
+    sprite->render.bits.unknown2 = 0;
+    sprite->render.bits.flip = 0;
+    sprite->render.bits.flip_y = 0;
+    sprite->render.bits.mode = 0;
+    sprite->render.bits.bit24 = 0;
+    sprite->render.bits.field16 = 0;
+    sprite->flags &= ~0xFC;
+    sprite->flags &= ~0x1F00;
+    sprite->flags &= ~0x1E000;
+    words = (u32 *)&sprite->frame_bits; /* the motion and 0xb0 words follow */
+    words[1] = 0;
+    words[2] = 0;
+    sprite->b0.byteb0 = 0;
+    sprite->motion.bytes[3] = 0;
+    gravity = D_80059198 + 1;
+    sprite->frame_bits.step = 0;
+    sprite->motion.bits.divisor = 0x100;
+    sprite->word1c = gravity * (gravity << 14) * (s16)sprite->word82 / 4096;
+    sprite->script = NULL;
+    sprite->word70 = 0;
+    sprite->resource_block = NULL;
+    sprite->callback = NULL;
+    sprite->word80 = 0;
+    sprite->stack_top = 0x10;
+    sprite->ground = 0;
+    sprite->block = NULL;
+    sprite->word50 = 0;
+}
 
 /* Clear a renderer's angles and part list. */
 void func_8002393C(SpriteRenderer *renderer) {

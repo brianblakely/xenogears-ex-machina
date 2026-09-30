@@ -886,9 +886,9 @@ void func_80021D3C(VECTOR *position, s32 x, s32 z) {
 /* Nonmatching: the original addresses the frame-skip word absolutely for the load and the store (GCC keeps its address in a register) and reads the two saved bytes with lbu. */
 #ifdef NON_MATCHING
 void func_80021D50(Sprite *sprite, SpriteState *state) {
-    s32 skip = D_80059198.skip;
+    s32 skip = D_80059198;
 
-    D_80059198.skip = 0;
+    D_80059198 = 0;
     sprite->word80 = state->word80;
     sprite->motion.bytes[3] = state->byteaf;
     sprite->b0.byteb0 = state->byteb0;
@@ -910,7 +910,7 @@ void func_80021D50(Sprite *sprite, SpriteState *state) {
     sprite->z = state->z;
     ((SpriteSequencer *)sprite->sequencer)->word0 = state->sequencer0;
     ((SpriteSequencer *)sprite->sequencer)->word4 = state->sequencer4;
-    D_80059198.skip = skip;
+    D_80059198 = skip;
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021D50);
