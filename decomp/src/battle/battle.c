@@ -1673,7 +1673,6 @@ void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h) {
 /* Initialise a quad pair: semi-transparent, raw texture, texture page by
  * `page` (0/1 at x 0x380, 2/3 at 0x3c0; odd pages at y 0x100) and the CLUT
  * chosen by `alternate`. */
-#ifdef NON_MATCHING
 void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
     s32 i;
 
@@ -1698,16 +1697,9 @@ void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page) {
             prims[i].tpage = GetTPage(0, 0, 0x3C0, 0);
             break;
         }
-        if (alternate != 0) {
-            prims[i].clut = D_80059414;
-        } else {
-            prims[i].clut = D_800595D4;
-        }
+        prims[i].clut = alternate != 0 ? D_80059414 : D_800595D4;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076D58);
-#endif
 
 /* Render the eleven command names (messages 10-20, and 21-31 in the
  * alternate colours) into text images, record their icon cells and upload
@@ -2305,18 +2297,18 @@ void func_80079270(u8 actor, u8 index, u8 target) {
 /* Script error screen: clear the event types and, on a debug build (the
  * 8005917c flag), print "Language Error" with the actor and script number
  * forever, the text shifted one column every three frames. */
-#ifdef NON_MATCHING
 void func_800792F8(actor, number)
 u8 actor;
 u8 number;
 {
     s32 offset;
+    u8 end = 0xFF;
     s32 i;
     s32 column;
     s32 frames;
 
     for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
-        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
+        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = end;
     }
     frames = 0;
     column = 0;
@@ -2339,9 +2331,6 @@ u8 number;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
-#endif
 
 /* Execute the actor's action list: each entry's handler by type, with the
  * first slot it targets; type 0 ends the list (entries after it run only
