@@ -1068,36 +1068,48 @@ void func_80096C0C(s32 status, u8 *result) {
     }
 }
 
+/* Scratchpad work area of the orbit camera. */
+typedef struct {
+    VECTOR offset;    /* 0x00 */
+    VECTOR eye;       /* 0x10 */
+    u8 pad20[0x80];
+    SVECTOR angle;    /* 0xA0 */
+    u8 padA8[0x48];
+    MATRIX rotation;  /* 0xF0 */
+} OrbitScratch;
+
+#define ORBIT_SCRATCH ((OrbitScratch *)0x1F800000)
+
 /* Place a camera orbiting above a position: look at its height from
  * `distance` along the angle, with the up direction rolled by the angle. */
-#ifdef NON_MATCHING /* the scratch vector address is shared by all three x stores */
-void func_80096F18(LookAt *view, VECTOR *position, s32 distance, SVECTOR *angle) {
+void func_80096F18(u8 *buffer, Camera *camera, s32 distance, SVECTOR *angle) {
+    LookAt *view = (LookAt *)buffer;
+    SVECTOR *rotation;
+
     view->target.vx = 0;
+    view->target.vy = camera->target.vy >> 12;
     view->target.vz = 0;
-    view->target.vy = position->vy >> 12;
-    SCRATCH_SVECTOR->vx = angle->vx;
-    SCRATCH_SVECTOR->vz = 0;
-    SCRATCH_SVECTOR->vy = angle->vy;
-    func_8004A92C(SCRATCH_SVECTOR, SCRATCH_MATRIX_A);
-    SCRATCH_VECTOR[0].vx = 0;
-    SCRATCH_VECTOR[0].vy = 0;
-    SCRATCH_VECTOR[0].vz = -(distance >> 12);
-    ApplyMatrixLV(SCRATCH_MATRIX_A, &SCRATCH_VECTOR[0], &SCRATCH_VECTOR[1]);
-    view->eye.vx = SCRATCH_VECTOR[1].vx;
-    view->eye.vy = view->target.vy + SCRATCH_VECTOR[1].vy;
-    view->eye.vz = SCRATCH_VECTOR[1].vz;
-    SCRATCH_SVECTOR->vx = 0;
-    SCRATCH_SVECTOR->vy = angle->vy;
-    SCRATCH_SVECTOR->vz = angle->vz;
-    func_8004A92C(SCRATCH_SVECTOR, SCRATCH_MATRIX_A);
-    SCRATCH_SVECTOR->vx = 0;
-    SCRATCH_SVECTOR->vy = -0x1000;
-    SCRATCH_SVECTOR->vz = 0;
-    ApplyMatrix(SCRATCH_MATRIX_A, SCRATCH_SVECTOR, &view->up);
+    ORBIT_SCRATCH->angle.vx = angle->vx;
+    rotation = &ORBIT_SCRATCH->angle;
+    ORBIT_SCRATCH->angle.vy = angle->vy;
+    ORBIT_SCRATCH->angle.vz = 0;
+    func_8004A92C(&ORBIT_SCRATCH->angle, &ORBIT_SCRATCH->rotation);
+    ORBIT_SCRATCH->offset.vx = 0;
+    ORBIT_SCRATCH->offset.vy = 0;
+    ORBIT_SCRATCH->offset.vz = -(distance >> 12);
+    ApplyMatrixLV(&ORBIT_SCRATCH->rotation, &ORBIT_SCRATCH->offset, &ORBIT_SCRATCH->eye);
+    view->eye.vx = ORBIT_SCRATCH->eye.vx;
+    view->eye.vy = view->target.vy + ORBIT_SCRATCH->eye.vy;
+    view->eye.vz = ORBIT_SCRATCH->eye.vz;
+    rotation->vx = 0;
+    rotation->vy = angle->vy;
+    rotation->vz = angle->vz;
+    func_8004A92C(rotation, &ORBIT_SCRATCH->rotation);
+    rotation->vx = 0;
+    rotation->vy = -0x1000;
+    rotation->vz = 0;
+    ApplyMatrix(&ORBIT_SCRATCH->rotation, rotation, &view->up);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096F18);
-#endif
 
 /* Recover rotation angles (yaw, then pitch, then roll) from a matrix. */
 void func_80097070(MATRIX *m, SVECTOR *angle) {
