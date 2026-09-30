@@ -3128,7 +3128,16 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A979C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9A50);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9F94);
+/* Free the stage objects (800A9FF0), the effect pool and the sprite pool. */
+void func_800A9F94(void) {
+    s32 i;
+
+    for (i = 0; i < 31; i++) {
+        func_800A9FF0(i);
+    }
+    func_800A22A8(&D_800C3D0C);
+    func_800A2D1C(&D_800C3D04);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9FF0);
 
@@ -3173,7 +3182,18 @@ u8 func_800AA514(s16 a, s16 b, s32 c) {
     return value;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA564);
+/* Select stage object index with slot mask and start its effect on target
+ * (800AA934) unless it is the first selected slot's object. */
+void func_800AA564(BattleObject *target, u16 index, u16 mask, s32 arg3) {
+    BattleObject *object = D_800D3368[index];
+
+    D_800C3D40 = index;
+    D_800C3E30 = mask;
+    object->field35 = 0;
+    if (D_800D3368[index] != NULL && index != func_800AF400()) {
+        func_800AA934(D_800D3368[index], target, &D_800C3D0C, arg3);
+    }
+}
 
 /* The scaled size of stage object index (0 when absent). */
 s32 func_800AA600(s32 index) {

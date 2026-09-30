@@ -143,12 +143,16 @@ extern s32 D_800C3BF0;                  /* effect script step count */
 extern u16 D_800C3E30;                  /* slot mask */
 extern s16 D_800C3D40;
 extern EffectPool D_800C3D0C;
+extern SpritePool D_800C3D04;
 extern BattleSceneData *D_800658C8;
 
 s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
+void func_800A9FF0(s32 index);
+void func_800A22A8(EffectPool *pool);
+void func_800A2D1C(SpritePool *pool);
 s32 func_800AF400(void);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
 void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out);
