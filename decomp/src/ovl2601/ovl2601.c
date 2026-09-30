@@ -1739,13 +1739,150 @@ void func_801CBCF0(u8 count, Label *labels, u8 *text_ids, s32 *offsets, u8 *show
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CBCF0);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC024);
+/* Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
+void func_801CC024(s32 count, s32 *ids) {
+    s32 step;
+    s32 i;
 
+    D_800625A0->images->dim = 0;
+    D_800625A0->images->dimmed = 0;
+    D_800625A0->flags->images_shown = 1;
+    for (step = 1; step <= count; step++) {
+        if (step != count) {
+            D_800625A0->images->count = 0;
+            for (i = 0; i < step; i++) {
+                D_800625A0->images->count +=
+                    func_8002675C(D_800625A0->sprite_sheet, ids[i * 2],
+                                  D_800625A0->images->packets + D_800625A0->images->count * 2,
+                                  D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+            }
+            D_800625A0->images->buffer = D_800625A0->buffer;
+        }
+        D_800625A0->images->count2 = 0;
+        if (step != 1) {
+            for (i = 0; i < step - 1; i++) {
+                D_800625A0->images->count2 +=
+                    func_8002675C(D_800625A0->sprite_sheet, ids[i * 2 + 1],
+                                  D_800625A0->images->packets2 + D_800625A0->images->count2 * 2,
+                                  D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+            }
+            D_800625A0->images->buffer2 = D_800625A0->buffer;
+        }
+        for (i = 0; i < 2; i++) {
+            func_801CB014();
+        }
+    }
+}
+
+/* Reveal the list pictures of the current command (up to four pairs), two frames per step. */
+#ifdef NON_MATCHING
+void func_801CC278(u8 menu) {
+    s32 animate;
+    s32 step;
+    s32 i;
+
+    D_800625A0->images->dim = 0;
+    animate = 1;
+    D_800625A0->images->dimmed = 0;
+    D_800625A0->lists->count = 0;
+    D_800625A0->lists->count2 = 0;
+    D_800625A0->flags->lists_shown = 1;
+    for (step = 1; step < 5; step++) {
+        D_800625A0->lists->count = 0;
+        D_800625A0->list_count = 0;
+        for (i = 0; i < step; i++) {
+            if (D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+                D_800625A0->lists->count +=
+                    func_8002675C(D_800625A0->sprite_sheet, D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8],
+                                  D_800625A0->lists->packets + D_800625A0->lists->count * 2,
+                                  D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+                D_800625A0->list_count++;
+            } else {
+                animate = 0;
+            }
+        }
+        D_800625A0->lists->buffer = D_800625A0->buffer;
+        if (animate) {
+            for (i = 0; i < 2; i++) {
+                func_801CB014();
+            }
+        }
+        D_800625A0->lists->count2 = 0;
+        for (i = 0; i < step; i++) {
+            if (D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+                D_800625A0->lists->count2 += func_8002675C(
+                    D_800625A0->sprite_sheet, D_801D1F6C[i * 2 + (menu + D_800625A0->top_cursor) * 8 + 1],
+                    D_800625A0->lists->packets2 + D_800625A0->lists->count2 * 2, D_800625A0->buffer, 0xA0,
+                    0x96, 0x1000);
+            }
+        }
+        D_800625A0->lists->buffer2 = D_800625A0->buffer;
+        if (animate) {
+            for (i = 0; i < 2; i++) {
+                func_801CB014();
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC278);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC54C);
+/* Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
+void func_801CC54C(u8 count, u8 selected, s32 *ids) {
+    s32 id;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC720);
+    D_800625A0->images->count = 0;
+    D_800625A0->images->count2 = 0;
+    for (i = 0; i < count; i++) {
+        if (i == selected) {
+            id = ids[i * 2] + 0xD;
+        } else {
+            id = ids[i * 2];
+        }
+        D_800625A0->images->count +=
+            func_8002675C(D_800625A0->sprite_sheet, id,
+                          D_800625A0->images->packets + D_800625A0->images->count * 2, D_800625A0->buffer,
+                          0xA0, 0x96, 0x1000);
+        D_800625A0->images->count2 +=
+            func_8002675C(D_800625A0->sprite_sheet, ids[i * 2 + 1],
+                          D_800625A0->images->packets2 + D_800625A0->images->count2 * 2,
+                          D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+    }
+    D_800625A0->images->buffer = D_800625A0->buffer;
+    D_800625A0->images->buffer2 = D_800625A0->buffer;
+    func_801C604C(selected, 1);
+    D_800625A0->flags->unk4 = 1;
+}
+
+/* Draw the current command's list pictures with the chosen one highlighted (+0dh), and put the cursor on it. */
+void func_801CC720(u8 menu) {
+    s32 id;
+    s32 i;
+
+    D_800625A0->lists->count = 0;
+    D_800625A0->lists->count2 = 0;
+    for (i = 0; i < D_800625A0->list_count; i++) {
+        if (i == D_800625A0->list_cursor) {
+            id = D_801D1F6C[(menu + D_800625A0->top_cursor) * 8 + i * 2] + 0xD;
+        } else {
+            id = D_801D1F6C[(menu + D_800625A0->top_cursor) * 8 + i * 2];
+        }
+        D_800625A0->lists->count +=
+            func_8002675C(D_800625A0->sprite_sheet, id,
+                          D_800625A0->lists->packets + D_800625A0->lists->count * 2, D_800625A0->buffer,
+                          0xA0, 0x96, 0x1000);
+        D_800625A0->lists->count2 += func_8002675C(
+            D_800625A0->sprite_sheet, D_801D1F6C[(menu + D_800625A0->top_cursor) * 8 + i * 2 + 1],
+            D_800625A0->lists->packets2 + D_800625A0->lists->count2 * 2, D_800625A0->buffer, 0xA0, 0x96,
+            0x1000);
+    }
+    D_800625A0->lists->buffer = D_800625A0->buffer;
+    D_800625A0->lists->buffer2 = D_800625A0->buffer;
+    func_801C604C(D_800625A0->list_cursor + 3, 1);
+    D_800625A0->flags->unk4 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CC97C);
 

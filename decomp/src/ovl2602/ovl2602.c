@@ -1316,11 +1316,122 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCEBC);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CCEE8);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CD310);
+/* Reveal `count` image pairs one step at a time (two frames each), the second of each pair one step behind. */
+void func_801CD310(s32 count, s32 *ids) {
+    s32 step;
+    s32 i;
 
+    D_800625A0->images->dim = 0;
+    D_800625A0->images->dimmed = 0;
+    D_800625A0->flags->images_shown = 1;
+    for (step = 1; step <= count; step++) {
+        if (step != count) {
+            D_800625A0->images->count = 0;
+            for (i = 0; i < step; i++) {
+                D_800625A0->images->count +=
+                    func_8002675C(D_800625A0->sprite_sheet, ids[i * 2],
+                                  D_800625A0->images->packets + D_800625A0->images->count * 2,
+                                  D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+            }
+            D_800625A0->images->buffer = D_800625A0->buffer;
+        }
+        D_800625A0->images->count2 = 0;
+        if (step != 1) {
+            for (i = 0; i < step - 1; i++) {
+                D_800625A0->images->count2 +=
+                    func_8002675C(D_800625A0->sprite_sheet, ids[i * 2 + 1],
+                                  D_800625A0->images->packets2 + D_800625A0->images->count2 * 2,
+                                  D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+            }
+            D_800625A0->images->buffer2 = D_800625A0->buffer;
+        }
+        for (i = 0; i < 2; i++) {
+            func_801CC1C4();
+        }
+    }
+}
+
+/* Reveal the list pictures of the current command (up to four pairs), two frames per step. */
+#ifdef NON_MATCHING
+void func_801CD564(u8 menu) {
+    s32 animate;
+    s32 step;
+    s32 i;
+
+    D_800625A0->images->dim = 0;
+    animate = 1;
+    D_800625A0->images->dimmed = 0;
+    D_800625A0->lists->count = 0;
+    D_800625A0->lists->count2 = 0;
+    D_800625A0->flags->lists_shown = 1;
+    for (step = 1; step < 5; step++) {
+        D_800625A0->lists->count = 0;
+        D_800625A0->list_count = 0;
+        for (i = 0; i < step; i++) {
+            if (D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+                D_800625A0->lists->count +=
+                    func_8002675C(D_800625A0->sprite_sheet, D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8],
+                                  D_800625A0->lists->packets + D_800625A0->lists->count * 2,
+                                  D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+                D_800625A0->list_count++;
+            } else {
+                animate = 0;
+            }
+        }
+        D_800625A0->lists->buffer = D_800625A0->buffer;
+        if (animate) {
+            for (i = 0; i < 2; i++) {
+                func_801CC1C4();
+            }
+        }
+        D_800625A0->lists->count2 = 0;
+        for (i = 0; i < step; i++) {
+            if (D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8] != 0xFFFF) {
+                D_800625A0->lists->count2 += func_8002675C(
+                    D_800625A0->sprite_sheet, D_801D69A0[i * 2 + (menu + D_800625A0->top_cursor) * 8 + 1],
+                    D_800625A0->lists->packets2 + D_800625A0->lists->count2 * 2, D_800625A0->buffer, 0xA0,
+                    0x96, 0x1000);
+            }
+        }
+        D_800625A0->lists->buffer2 = D_800625A0->buffer;
+        if (animate) {
+            for (i = 0; i < 2; i++) {
+                func_801CC1C4();
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CD564);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CD838);
+/* Draw `count` image pairs with pair `selected` highlighted (+0dh), and put the cursor on it. */
+void func_801CD838(u8 count, u8 selected, s32 *ids) {
+    s32 id;
+    s32 i;
+
+    D_800625A0->images->count = 0;
+    D_800625A0->images->count2 = 0;
+    for (i = 0; i < count; i++) {
+        if (i == selected) {
+            id = ids[i * 2] + 0xD;
+        } else {
+            id = ids[i * 2];
+        }
+        D_800625A0->images->count +=
+            func_8002675C(D_800625A0->sprite_sheet, id,
+                          D_800625A0->images->packets + D_800625A0->images->count * 2, D_800625A0->buffer,
+                          0xA0, 0x96, 0x1000);
+        D_800625A0->images->count2 +=
+            func_8002675C(D_800625A0->sprite_sheet, ids[i * 2 + 1],
+                          D_800625A0->images->packets2 + D_800625A0->images->count2 * 2,
+                          D_800625A0->buffer, 0xA0, 0x96, 0x1000);
+    }
+    D_800625A0->images->buffer = D_800625A0->buffer;
+    D_800625A0->images->buffer2 = D_800625A0->buffer;
+    func_801C6278(selected, 1);
+    D_800625A0->flags->unk4 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CDA0C);
 

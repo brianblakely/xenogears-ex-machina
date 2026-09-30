@@ -288,7 +288,10 @@ typedef struct {
     u8 unk335;
     u8 top_cursor;       /* 336 */
     u8 unk337;
-    u8 unk338[0x33C - 0x338];
+    u8 list_cursor;      /* 338 */
+    u8 unk339;
+    u8 list_count;       /* 33a */
+    u8 unk33B;
     ScreenFlags *flags;  /* 33c */
     u8 unk340[0x348 - 0x340];
     CursorBlock *cursor; /* 348 */
@@ -328,6 +331,7 @@ extern MenuState *D_800625A0;
 /* Overlay data. */
 extern u16 D_801D21F0[]; /* party bit of each member id */
 extern u8 D_801D2018[];  /* label text ids */
+extern s32 D_801D1F6C[]; /* list picture pairs (sprite, second layer), eight words per command */
 extern s32 D_801D1FF8[]; /* marker x */
 extern s32 D_801D2008[]; /* marker y */
 extern s32 D_801D201C[]; /* file slot -> list position */
@@ -450,6 +454,7 @@ void func_801CB7F4(void);
 u8 func_801CB894(u8 wait);
 void func_801CBC88(u8 render, u8 count, Label *labels, u8 *text_ids, u8 *shown);
 void func_801CB014(void);
+void func_801C604C(s32 position, u8 frame);
 void func_801CACC8(void);
 void func_801CAED4(void);
 void func_801CABF4(void);
