@@ -1253,7 +1253,6 @@ void func_80077480(void) {
 }
 
 /* Start a scripted camera looking along the player's heading from above. */
-#ifdef NON_MATCHING /* the swap reuses &D_8009BD48; original rematerialises it */
 s32 func_8007756C(s32 index) {
     WorldmapActor *actor;
 
@@ -1271,16 +1270,57 @@ s32 func_8007756C(s32 index) {
     D_8009BE28.target.vy = D_8009C5AC.vy;
     D_8009BE28.target.vz = D_8009C5AC.vz;
     func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
-    *SCRIPT_VECTOR = *(SVECTOR *)D_8009BD40;
-    *(SVECTOR *)D_8009BD40 = D_8009BD48;
-    D_8009BD48 = *SCRIPT_VECTOR;
+    *SCRIPT_VECTOR = VIEW_VECTORS[0];
+    VIEW_VECTORS[0] = VIEW_VECTORS[1];
+    VIEW_VECTORS[1] = *SCRIPT_VECTOR;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007756C);
-#endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800776E0);
+/* Steer the scripted camera with the pad (clamped yaw range, pitch), ease its
+ * angles and swap the view vectors. */
+s32 func_800776E0(s32 index) {
+    CameraScratch *scratch;
+    WorldmapActor *actor;
+
+    scratch = (CameraScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
+    if (D_8009BD10 & 0x40) {
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+    }
+    if (D_8009CD4C & 0x1000) {
+        actor->position.vx += 0x8000;
+    }
+    if (D_8009CD4C & 0x4000) {
+        actor->position.vx -= 0x8000;
+    }
+    if (actor->position.vx < -0x180000) {
+        actor->position.vx = -0x180000;
+    } else if (actor->position.vx > 0x18000) {
+        actor->position.vx = 0x18000;
+    }
+    if (D_8009CD4C & 0x8004) {
+        actor->position.vy -= 0x10000;
+    }
+    if (D_8009CD4C & 0x2008) {
+        actor->position.vy += 0x10000;
+    }
+    if ((actor->motion.vx != actor->position.vx) | (actor->motion.vy != actor->position.vy)) {
+        scratch->delta.vx = actor->position.vx - actor->motion.vx;
+        scratch->delta.vy = actor->position.vy - actor->motion.vy;
+        actor->motion.vx += scratch->delta.vx >> 3;
+        actor->motion.vy += scratch->delta.vy >> 3;
+    }
+    D_8009BD38.vx = actor->motion.vx >> 12;
+    D_8009BD38.vy = actor->motion.vy >> 12;
+    func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    scratch->view = VIEW_VECTORS[0];
+    VIEW_VECTORS[0] = VIEW_VECTORS[1];
+    VIEW_VECTORS[1] = scratch->view;
+    D_8009BD38.vy = (D_8009BD38.vy + 0x800) & 0xFFF;
+    SetGeomScreen(D_8009BCDC);
+    return 1;
+}
 
 /* Mode step that has nothing to do; always reports done. */
 s32 func_80077954(void) {

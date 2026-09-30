@@ -709,7 +709,7 @@ void func_8009932C(u32 *ot, s32, Camera *);
 
 /* worldmap_80072238, 80077E68, worldmap */
 
-extern SVECTOR D_8009BD48; /* swapped with D_8009BD40 */
+#define VIEW_VECTORS ((SVECTOR *)D_8009BD40) /* two view vectors, swapped per frame */
 
 void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
 
@@ -859,5 +859,12 @@ typedef struct {
 } ScaleScratch;
 
 #define SCALE_SCRATCH ((ScaleScratch *)0x1F800000)
+
+/* Scratchpad work area of the camera steering. */
+typedef struct {
+    VECTOR delta;     /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR view;     /* 0xA0: swap space */
+} CameraScratch;
 
 #endif
