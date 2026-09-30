@@ -30,6 +30,8 @@ typedef struct {
     u8 unk5C[0x72];
     s16 unkCE;
     s32 flags;           /* 0xD0 */
+    u8 unkD4[0x1E];
+    s16 unkF2;
 } Actor;
 
 /* Menu camera: eye position (D_8009867C) and look-at point (D_8009871C). */
@@ -54,5 +56,24 @@ void func_8007E24C(void);
 extern s32 D_800925F8;
 extern s32 D_800925FC;
 extern s32 D_80092934;
+
+/* Idle scene camera. */
+extern s32 D_80092770;
+extern s32 D_80092774;
+extern u8 D_8009287C;
+extern s32 D_8009290C;
+extern s32 D_800927AC; /* orbit angle */
+extern s32 D_800927B0; /* orbit speed */
+extern s32 D_80092794; /* scene mode */
+extern s32 D_80092790;
+extern s32 D_8009294C;
+extern s32 D_80092944; /* elapsed frames */
+
+s32 func_8003FA38(void); /* rand */
+s32 func_8003FBF8(char *out, const char *format, ...); /* sprintf */
+void func_80083310(s32 arg);
+void func_8007A21C(s32 arg);
+void func_8007AC3C(void);
+void func_800725B0(Actor *actor);
 
 #endif

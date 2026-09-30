@@ -996,25 +996,114 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082C4C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80082E60);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800831C8);
+/* Put the look-at point somewhere random around the scene centre and set
+ * the idle camera motion parameters. */
+void func_800831C8(void) {
+    s32 radius;
+    s32 angle;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800832C0);
+    radius = (func_8003FA38() & 0x1FFF) + 0x800;
+    angle = func_8003FA38() % 0x600 + 0x500;
+    D_8009871C.vx = ((func_8003F8B0(angle) * radius) >> 12) + 0x4000;
+    D_8009871C.vz = ((func_8003F8CC(angle) * radius) >> 12) + 0x4000;
+    D_8009871C.vy = -((func_8003FA38() & 0x7FF) + 0x400);
+    D_80092770 = 0x100;
+    D_80092774 = 0x40;
+    D_8009287C = 0x40;
+    D_8009290C = 0x400;
+}
+
+/* Turn the idle camera with the left/right buttons. */
+void func_800832C0(s32 buttons) {
+    if (buttons & 0x8000) {
+        D_800927AC += 0x20;
+    }
+    if (buttons & 0x2000) {
+        D_800927AC -= 0x20;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083310);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008369C);
+/* Start an idle camera orbit at a random angle, speed and direction. */
+void func_8008369C(void) {
+    D_800927AC = func_8003FA38();
+    D_800927B0 = func_8003FA38() % 12 + 4;
+    if (func_8003FA38() & 1) {
+        D_800927B0 = -D_800927B0;
+    }
+    func_80083310(0);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083738);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083B54);
+/* Read the camera's look-at point and eye. */
+void func_80083B54(Vector *look, Vector *eye) {
+    *look = D_8009871C;
+    *eye = D_8009867C;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083BB4);
+/* Clear the display area (one or both 320-wide buffers) and wait. */
+void func_80083BB4(s32 both) {
+    Rect rect;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083C0C);
+    rect.x = 0;
+    rect.y = 0;
+    if (both) {
+        rect.w = 0x280;
+    } else {
+        rect.w = 0x140;
+    }
+    rect.h = 0x1E0;
+    func_80044764(&rect, 0, 0, 0);
+    func_800445D0(0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083CD8);
+/* Enter a camera/scene mode, running its setup. */
+void func_80083C0C(s32 mode) {
+    D_80092794 = mode;
+    switch (mode) {
+    case 3:
+        func_80081E6C();
+        break;
+    case 4:
+        func_8007A21C(D_8009294C);
+        break;
+    case 8:
+        func_8007AC3C();
+        break;
+    case 6:
+        if (D_8009872C.unkF2 < D_80097010.unkF2) {
+            func_800725B0(&D_80097010);
+        } else {
+            func_800725B0(&D_8009872C);
+        }
+        break;
+    }
+}
 
+/* The scene state word. */
+s32 func_80083CD8(void) {
+    return D_80092790;
+}
+
+/* Draw the elapsed time (frames at 30 per second) as minutes, seconds and
+ * hundredths. Does not match:
+ * the minutes are computed into another register and copied. */
+#ifdef NON_MATCHING
+void func_80083CE8(void) {
+    char text[32];
+    s32 minutes;
+    s32 seconds;
+
+    minutes = D_80092944 / 1800;
+    seconds = D_80092944 - minutes * 1800;
+    func_8003FBF8(text, "%02d'%02d''%02d", minutes, seconds / 30, D_80092944 % 30 * 99 / 30);
+    func_8007EBE0((s32)text);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083CE8);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80083DCC);
 
