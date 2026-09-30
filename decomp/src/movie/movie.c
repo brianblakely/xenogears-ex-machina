@@ -90,7 +90,71 @@ INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072A08);
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072D84);
 
+#ifdef NON_MATCHING
+/* Add the menu backdrop to `ot`: a gouraud quad at (x, y), w by h, whose
+ * corner colors each fade toward a new random color. Same instructions,
+ * different register allocation: the original keeps the corner index and its
+ * word offset apart, spilling the offset and the from-green pointer. */
+void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
+    s32 r;
+    s32 g;
+    s32 b;
+
+    poly->x0 = x;
+    poly->y0 = y;
+    poly->y1 = y;
+    poly->x2 = x;
+    poly->x1 = x + w;
+    poly->y2 = y + h;
+    poly->x3 = x + w;
+    poly->y3 = y + h;
+    for (i = 0; i < 4; i++) {
+        if (++D_80076FAC[i] > D_80076FBC[i]) {
+            D_80076FAC[i] = 0;
+            D_80076FBC[i] = (func_80074AF0() & 0xFF) + 32;
+            D_80076F8C[i].r = D_80076F9C[i].r;
+            D_80076F8C[i].g = D_80076F9C[i].g;
+            D_80076F8C[i].b = D_80076F9C[i].b;
+            D_80076F9C[i].r = (func_80074AF0() & 0xFF) / 32 + 8;
+            D_80076F9C[i].g = 8;
+            D_80076F9C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
+        }
+        r = D_80076F8C[i].r +
+            (D_80076F9C[i].r - D_80076F8C[i].r) * D_80076FAC[i] / D_80076FBC[i];
+        g = D_80076F8C[i].g +
+            (D_80076F9C[i].g - D_80076F8C[i].g) * D_80076FAC[i] / D_80076FBC[i];
+        b = D_80076F8C[i].b +
+            (D_80076F9C[i].b - D_80076F8C[i].b) * D_80076FAC[i] / D_80076FBC[i];
+        switch (i) {
+        case 0:
+            poly->r0 = r;
+            poly->g0 = g;
+            poly->b0 = b;
+            break;
+        case 1:
+            poly->r1 = r;
+            poly->g1 = g;
+            poly->b1 = b;
+            break;
+        case 2:
+            poly->r2 = r;
+            poly->g2 = g;
+            poly->b2 = b;
+            break;
+        case 3:
+            poly->r3 = r;
+            poly->g3 = g;
+            poly->b3 = b;
+            break;
+        }
+    }
+    poly->tag = (poly->tag & 0xFF000000) | (*ot & 0xFFFFFF);
+    *ot = (*ot & 0xFF000000) | ((u32)poly & 0xFFFFFF);
+}
+#else
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072F98);
+#endif
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80073328);
 

@@ -48,6 +48,22 @@ typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
+typedef struct {
+    u8 r, g, b, cd;
+} CVECTOR;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+    u8 r3, g3, b3, pad3;
+    s16 x3, y3;
+} POLY_G4;
+
 /* libgpu, libgte, libetc and libsn members linked into the resident. */
 void ClearImage(RECT *rect, s32 r, s32 g, s32 b);
 void MoveImage(RECT *rect, s32 x, s32 y);
@@ -116,6 +132,13 @@ extern s32 D_80076F3C[13];      /* reads per result class */
 extern u8 D_80076F84[8];        /* CD command result */
 extern s32 D_8007700C;
 extern u8 *D_8004FDF0;          /* disc directory records, 7 bytes each */
+
+/* Menu backdrop: each corner's color fades from one random color to the
+ * next over a random number of frames. */
+extern CVECTOR D_80076F8C[4];   /* from */
+extern CVECTOR D_80076F9C[4];   /* to */
+extern s32 D_80076FAC[4];       /* frames into the fade */
+extern s32 D_80076FBC[4];       /* frames of the fade */
 
 /* The playback camera (unused by the movie path). */
 extern VECTOR D_8007702C;                      /* eye */
