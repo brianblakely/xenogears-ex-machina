@@ -2627,7 +2627,98 @@ u8 func_80079E7C(u16 mask) {
     return slot;
 }
 
+/* Read (`read` set) or write one byte attribute 0-23 of the slot's
+ * combatant record; the result of a write is undefined. Nonmatching only
+ * by its jump table's alignment. */
+#ifdef NON_MATCHING
+u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read) {
+    u8 *field;
+    u8 result;
+
+    switch (attribute) {
+    case 0:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x04];
+        break;
+    case 1:
+        field = &D_800CCCE8.records[slot].pilot.characterId;
+        break;
+    case 2:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0xE0];
+        break;
+    case 3:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0xE3];
+        break;
+    case 4:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x58];
+        break;
+    case 5:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x59];
+        break;
+    case 6:
+        field = &D_800CCCE8.records[slot].pilot.speed;
+        break;
+    case 7:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x2D];
+        break;
+    case 8:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x5D];
+        break;
+    case 9:
+        field = &D_800CCCE8.records[slot].pilot.accuracy;
+        break;
+    case 10:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x5C];
+        break;
+    case 11:
+        field = &D_800CCCE8.records[slot].pilot.field5E;
+        break;
+    case 12:
+        field = &D_800CCCE8.records[slot].pilot.field5F;
+        break;
+    case 13:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x60];
+        break;
+    case 14:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x61];
+        break;
+    case 15:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x64];
+        break;
+    case 16:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x65];
+        break;
+    case 17:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x66];
+        break;
+    case 18:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x67];
+        break;
+    case 19:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x13C];
+        break;
+    case 20:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0xB6];
+        break;
+    case 21:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x140];
+        break;
+    case 22:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x141];
+        break;
+    case 23:
+        field = &((u8 *)&D_800CCCE8.records[slot])[0x142];
+        break;
+    }
+    if (!read) {
+        *field = value;
+    } else {
+        result = *field;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80079ED8);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A280);
 
