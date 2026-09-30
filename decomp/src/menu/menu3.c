@@ -443,7 +443,94 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
+#ifdef NON_MATCHING
+/* Run the frame events of an actor's current move for count frames from
+ * frame (once per frame): hits (flagged 0x4000000 on their first frame),
+ * one pair of sound effects, trails (each spec once), return home, and
+ * showing or hiding model parts. An unknown event kind stalls the loop, as
+ * in the original.
+ * Does not match: the anim byte, the trail search index and pointer, and the sound-flag store get other registers or slots. */
+void func_80074678(Actor *actor, s16 frame, s16 count) {
+    Vector unused; /* keeps the original's 16-byte frame slot */
+    HitSpec *trails[20];
+    u8 sounded;
+    FrameEvent *events;
+    FrameEvent *event;
+    HitSpec *spec;
+    s32 trail_count;
+    s32 offset;
+    s32 i;
+
+    if (count == 0) {
+        count = 1;
+    }
+    if (actor->event_frame == frame) {
+        return;
+    }
+    actor->event_frame = frame;
+    offset = ((s16 *)actor->unk900)[actor->anim];
+    if (offset != 0) {
+        sounded = 0;
+        D_80092650 = 0;
+        events = (FrameEvent *)((u8 *)actor->header + offset);
+        while (--count != -1) {
+            event = events;
+            while (event->first != 0xFF) {
+                if (frame < event->first || event->last < frame) {
+                    goto next;
+                }
+                spec = (HitSpec *)((u8 *)actor->header + event->spec);
+                switch (spec->unk0) {
+                case 0:
+                    if (frame == event->first) {
+                        actor->flags |= 0x4000000;
+                    }
+                    func_800740E4(actor, spec, (actor->flags >> 26) & 1);
+                    if (frame == event->last) {
+                        actor->flags &= ~0x4000000;
+                    }
+                    break;
+                case 1:
+                    if (!sounded) {
+                        sounded = 1;
+                        func_8008EB88(actor, spec->part_a, &actor->pos, 2);
+                        func_8008EB88(actor, spec->part_b, &actor->pos, 2);
+                    }
+                    break;
+                case 2:
+                    for (i = 0; i < trail_count; i++) {
+                        if (trails[i] == spec) {
+                            goto next;
+                        }
+                    }
+                    if (trail_count < 20) {
+                        trails[trail_count++] = spec;
+                        func_80073F34(actor, spec);
+                    }
+                    break;
+                case 3:
+                    func_80078154(actor);
+                    break;
+                case 4:
+                    ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags |= 1;
+                    break;
+                case 5:
+                    ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags &= ~1;
+                    break;
+                default:
+                    continue;
+                }
+            next:
+                event++;
+            }
+            frame++;
+        }
+    }
+    func_80073CA4(actor);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074678);
+#endif
 
 /* Show the model objects of the current move: unhide every kind-1 object,
  * then hide the listed ones (and object 13 in mode 0xD). */

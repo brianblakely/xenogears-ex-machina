@@ -220,7 +220,7 @@ typedef struct Actor {
     u8 unk4D;
     u8 unk4E;
     u8 unk4F;
-    u8 unk50[0x2];
+    s16 event_frame;     /* 0x50: last frame whose events ran */
     u8 unk52;
     u8 unk53;
     s32 angle;           /* 0x54: facing, 4096 = full turn */
@@ -324,6 +324,13 @@ typedef struct Actor {
     s16 unk1668;
 } Actor;
 
+
+/* A move's frame event: runs its spec (header offset) on frames first..last. */
+typedef struct {
+    u8 first;
+    u8 last;
+    s16 spec;
+} FrameEvent;
 
 /* Where a hit effect goes: model part and vertex of one or two points. */
 typedef struct {
@@ -517,7 +524,7 @@ void func_8007C100(Color *color);
 void func_80076424(Actor *actor);
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
-void func_80074678(Actor *actor, s32 arg1, s32 arg2);
+void func_80074678(Actor *actor, s16 frame, s16 count);
 void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
 u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
