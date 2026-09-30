@@ -782,4 +782,13 @@ typedef s32 (*ActorFunc)(s32 index);
 #define TERRAIN_ORIGIN (*(VECTOR *)D_8009BBB4)
 extern SVECTOR D_8009C838; /* block cell */
 
+/* Terrain palettes: 64 CLUT ids (two 256-colour palettes faded in 32 steps
+ * towards the background colour) and seven texture pages. */
+extern u16 D_8009CCB4[0x40];
+extern u16 D_8009CD54[7];
+
+void func_8002DD20(void *image); /* upload an image file */
+void StoreImage(RECT *rect, void *data);
+void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour);
+
 #endif

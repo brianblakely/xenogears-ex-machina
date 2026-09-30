@@ -646,7 +646,53 @@ void func_800978FC(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800978FC);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800979C8);
+/* Upload the terrain texture image (its buffer is then reused for the
+ * palettes), build the faded terrain palettes and their CLUT and texture
+ * page ids. */
+void func_800979C8(void) {
+    RECT rect;
+    u16 *cluts;
+    u16 *faded;
+    s32 i;
+    s32 x;
+    s32 y;
+
+    cluts = func_80032E88(D_8009C59C, 1);
+    func_8002DD20(cluts);
+    DrawSync(0);
+    func_800320E8(cluts);
+    func_800320E8(D_8009C59C);
+    cluts = func_80031BDC(0x400, 1);
+    faded = func_80031BDC(0x8000, 1);
+    rect.x = 0;
+    rect.y = 0x1E0;
+    rect.w = 0x100;
+    rect.h = 2;
+    StoreImage(&rect, cluts);
+    DrawSync(0);
+    func_800931D8(cluts, faded, 0x20, D_8009BB48);
+    func_800931D8(cluts + 0x100, faded + 0x2000, 0x20, D_8009BB48);
+    rect.x = 0;
+    rect.y = 0x1B0;
+    rect.w = 0x100;
+    rect.h = 0x40;
+    LoadImage(&rect, faded);
+    DrawSync(0);
+    for (i = 0; i < 0x40; i++) {
+        D_8009CCB4[i] = GetClut(rect.x, rect.y);
+        rect.y++;
+    }
+    for (x = 0x200, y = 0, i = 0; i < 4; i++) {
+        D_8009CD54[i] = GetTPage(1, 0, x, y);
+        x += 0x80;
+    }
+    for (x = 0x180, y = 0x100, i = 4; i < 7; i++) {
+        D_8009CD54[i] = GetTPage(1, 0, x, y);
+        x += 0x80;
+    }
+    func_800320E8(faded);
+    func_800320E8(cluts);
+}
 
 /* Reset the terrain loader around a position. */
 void func_80097BC0(VECTOR *position) {
