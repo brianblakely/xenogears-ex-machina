@@ -165,7 +165,36 @@ void func_80086124(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008615C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800863E0);
+/* Scatter the 80 drifting positions: five template points repeated over a
+ * 4x4 grid of 0x800-unit cells at random heights, with random velocities. */
+void func_800863E0(void) {
+    Drift *drift;
+    DriftVelocity *velocity;
+    s32 row;
+    s32 column;
+    s32 i;
+
+    D_8009D150 = func_80031BDC(0x50 * sizeof(Drift), 0);
+    D_8009CEB4 = func_80031BDC(0x50 * sizeof(DriftVelocity), 0);
+    drift = D_8009D150;
+    for (row = 0; row < 4; row++) {
+        for (column = 0; column < 4; column++) {
+            for (i = 0; i < 5; i++, drift++) {
+                drift->x = (D_8009AF30[i].x + (column << 11)) << 12;
+                drift->z = (D_8009AF30[i].z + (row << 11)) << 12;
+                drift->unk4 = (-(rand() >> 10) * 8 - 0x200) << 12;
+            }
+        }
+    }
+    velocity = D_8009CEB4;
+    for (i = 0; i < 0x50; i++) {
+        column = (rand() & 3) + 1; /* reused as the speed */
+        velocity->dx = column * 0xDDB;
+        velocity->dz = -(column << 11);
+        velocity->unk2 = rand() & 1;
+        velocity++;
+    }
+}
 
 /* Free two work buffers. */
 void func_80086568(void) {
@@ -694,7 +723,43 @@ s32 func_8008A52C(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A5B8);
+/* Create the party leader's model sprite at the saved world-map position
+ * and fill the position trail and saved camera target with it. */
+s32 func_8008A5B8(s32 index) {
+    WorldmapActor *actor;
+    TrailPoint *point;
+    s32 i;
+    s16 heading;
+
+    actor = &D_8009BE24[index];
+    actor->handle = func_80024524(D_8009CD34[0], 0x100, 0x1E0, 0x140, 0x100, 0x40);
+    func_800245D8(actor->handle, 0);
+    func_80022000(actor->handle, 0x1800);
+    ((s32 *)actor->handle)[15] &= ~4;
+    actor->position.vx = D_8006EE54.x << 12;
+    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    i = 0;
+    point = D_8009CEC4;
+    heading = D_8006EE54.heading;
+    actor->unk24 = 1;
+    actor->unk4A = 8;
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->state = 2;
+    D_8009D154 = 0;
+    actor->unk48 = heading;
+    do {
+        point->position = actor->position;
+        i++;
+        point->heading = actor->unk48;
+        point++;
+    } while (i < 0x20);
+    D_8009D55C.target = actor->position;
+    D_8009D52C = actor->unk48;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A72C);
 

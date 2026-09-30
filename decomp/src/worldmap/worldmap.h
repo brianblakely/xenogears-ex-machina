@@ -747,6 +747,19 @@ extern u16 D_8009BCE0[16]; /* faded CLUT ids */
 void func_8002DD20(void *image);                            /* unpack an image to VRAM */
 void StoreImage(RECT *rect, void *data);                     /* read back from VRAM */
 void func_800931D8(u16 *src, u16 *dst, s32 steps, CVECTOR *colour); /* fade CLUT rows */
+
+extern Drift D_8009AF30[5]; /* drift template points */
+s32 rand(void);
+
+/* Recent leader positions (ring of 32). */
+typedef struct {
+    VECTOR position;
+    s16 heading;
+    s16 pad;
+} TrailPoint;
+
+extern TrailPoint D_8009CEC4[32];
+extern s16 D_8009D154; /* trail index */
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
 #endif
