@@ -10,6 +10,11 @@
  * the overlay does with them; unknown bytes stay padding.
  */
 
+typedef struct RECT {
+    s16 x, y;
+    s16 w, h;
+} RECT;
+
 /* structs: begin */
 /* Party block (*(state + 33c)): per-part redraw flags, the label set and the party ids. */
 typedef struct MenuParty {
@@ -44,11 +49,30 @@ typedef struct MenuPrims {
     u8 shade; /* 15B */
 } MenuPrims;
 
+/* One file entry of a card listing. */
+typedef struct MenuCardFile {
+    u8 pad0[0x58];
+    u8 state; /* 58 */
+    u8 pad59[0x3];
+} MenuCardFile;
+
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
-    u8 pad0[0x4FE6];
+    MenuCardFile files[32]; /* 0 */
+    u8 padB80[0x4408];
+    u8 scanned[2]; /* 4F88: per port */
+    u8 unk4F8A[2]; /* 4F8A */
+    u8 unk4F8C[2]; /* 4F8C */
+    u8 pad4F8E[0x20];
+    u8 fileSlots[32]; /* 4FAE */
+    u8 pad4FCE[0x16];
+    u8 present[2]; /* 4FE4: per port: card present */
     u8 mode; /* 4FE6 */
-    u8 pad4FE7[0x4D];
+    u8 pad4FE7[0x15];
+    u8 title[30]; /* 4FFC: save title line of the text file */
+    u8 unk501A; /* 501A */
+    u8 unk501B; /* 501B */
+    u8 pad501C[0x18];
 } MenuCard;
 
 /* The menu mode's state (*D_800625A0). */
@@ -93,10 +117,18 @@ typedef struct MenuState {
     u8 *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 pad3A8[0x80];
     u8 *markers; /* 428: marker block (14c bytes) */
-    u8 pad42C[0xB0];
+    u8 pad42C[0x40];
+    s32 sheetEntries[4][6]; /* 46C: sprite sheet records (80026338) */
+    s32 unk4CC; /* 4CC */
+    s32 unk4D0; /* 4D0 */
+    s32 unk4D4; /* 4D4 */
+    u8 loadState; /* 4D8 */
+    u8 unk4D9; /* 4D9 */
+    u8 pad4DA[0x2];
     u8 firstMember; /* 4DC: first occupied party slot */
-    u8 pad4DD[0x7B];
-    u8 *labelPixels; /* 558 */
+    u8 pad4DD[0x3];
+    u8 labelImages[0x78]; /* 4E0: label image records (801e7e68) */
+    u8 *labelPixels; /* 558: 38e-byte label pixel block */
     u8 pad55C[0x184];
     u8 commandLabels[0x700]; /* 6E0 */
 } MenuState;
@@ -108,6 +140,7 @@ extern u8 D_80059171;         /* the triangle menu opened the menu */
 extern u8 D_80059178;         /* menu sound effects loaded */
 extern u8 D_800594CC;         /* field menu cursor kept between openings */
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
+extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
 /* Overlay statics. */
@@ -120,6 +153,7 @@ extern u8 D_801E9E84[];
 extern u8 D_801EA19C[];  /* field menu command cursor positions */
 extern u8 D_801EA1D4[];  /* title file screen cursor positions */
 extern u8 D_801EA528[];  /* field menu command labels */
+extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];  /* title file screen command labels */
 extern u8 D_801EA8FC;
 
@@ -128,6 +162,14 @@ void *func_80031BDC(s32 size, s32 flags); /* allocate */
 void func_800320E8(void *block);          /* free */
 void func_8003F8E8(void *dst, s32 size);  /* bzero */
 void func_8001B970(void);
+void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d, s32 *e, s32 *f);
+void func_80028470(s32 arg0, s32 arg1);
+s32 func_800288EC(s32 file);                                 /* file size */
+void func_800295D8(s32 file, void *dst, s32 arg2, s32 arg3); /* read file */
+void func_80028A60(s32 arg0);                                /* wait for the read */
+void func_80033698(s32 x, s32 y);
+void func_800445D0(s32 mode);                /* DrawSync */
+void func_80044894(RECT *rect, void *pixels); /* LoadImage */
 void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
@@ -138,6 +180,7 @@ u8 func_801C531C(u8 offset);
 void func_801C55A0(void);
 void func_801C57A4(void);
 void func_801C58EC(void);
+void func_801C6D90(void);
 void func_801C7B0C(void);
 void func_801C7BF4(void);
 void func_801C8574(u8 sound);
@@ -159,6 +202,7 @@ u8 func_801E0F78(u8 slot, u8 arg1);
 u8 func_801E23CC(void);
 u8 func_801E2BE4(void);
 void func_801E3088(u8 command);
+void func_801E7E68(u8 *records, u8 *layout, s32 arg2, s32 count);
 void func_801E8018(u8 count, u8 *labels, u8 *table, u8 *placement);
 void func_801E8044(u8 count, u8 *placement);
 void func_801E8070(u8 count, u8 *labels, u8 *table, u8 *arg3, u8 *placement, u8 selected, s32 arg6,

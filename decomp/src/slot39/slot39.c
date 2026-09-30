@@ -435,21 +435,123 @@ void func_801C62A8(void) {
     func_801C5FE4();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6400);
+/* Reset the card state and copy save title line D_8006EF64 of text file 1
+ * into it. */
+#ifdef NON_MATCHING
+void func_801C6400(void) {
+    s32 i;
+    s32 j;
+    u16 line;
+    u8 *text;
+    u8 *src;
+    u8 c;
 
+    for (i = 0; i < 2; i++) {
+        D_800625A0->card->scanned[i] = 0;
+        D_800625A0->card->unk4F8A[i] = 0;
+        D_800625A0->card->unk4F8C[i] = 0xff;
+    }
+    D_800625A0->card->mode = 0;
+    for (i = 0; i < 32; i++) {
+        D_800625A0->card->files[i].state = 0;
+        D_800625A0->card->fileSlots[i] = 0xff;
+    }
+    line = D_8006EF64;
+    i = 0;
+    func_80028470(0x10, 1);
+    text = func_80031BDC(func_800288EC(1), 1);
+    func_800295D8(1, text, 0, 0x80);
+    func_80028A60(0);
+    if (line != 0) {
+        do {
+        next:
+            c = text[i];
+            if (c >= 0x80) {
+                i += 2;
+                goto next;
+            }
+            if (c != '\n') {
+                i += 1;
+                goto next;
+            }
+            line--;
+            i += 1;
+        } while (line != 0);
+    }
+    src = text + i;
+    for (j = 0; j < 30; j++) {
+        D_800625A0->card->title[j] = *src++;
+    }
+    D_800625A0->card->unk501B = 0;
+    D_800625A0->card->unk501A = 0;
+    func_80028470(0x10, 0);
+    func_800320E8(text);
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6400);
+#endif
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6AA0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6D4C);
+/* Mark the buffer being built as sent (the draw callback). */
+void func_801C6D4C(void) {
+    D_800625A0->bufferIndex = 0;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6D5C);
+/* Clear the resource load state. */
+void func_801C6D5C(void) {
+    D_800625A0->unk4CC = 0;
+    D_800625A0->unk4D0 = 0;
+    D_800625A0->loadState = 0;
+    D_800625A0->unk4D9 = 0;
+    D_800625A0->unk4D4 = 0;
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6D90);
+/* Upload a 16-entry palette at (0, 1c0) whose entry 1 is white. */
+void func_801C6D90(void) {
+    RECT rect;
+    RECT unused; /* the original frame reserves a second rectangle */
+    u16 *clut;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6E0C);
+    clut = func_80031BDC(0x20, 0);
+    func_8003F8E8(clut, 0x20);
+    clut[1] = 0x7fff;
+    rect.x = 0;
+    rect.y = 0x1c0;
+    rect.w = 0x10;
+    rect.h = 1;
+    func_80044894(&rect, clut);
+    func_800445D0(0);
+    func_800320E8(clut);
+}
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6E68);
+/* Set up the label text: the font position, the label pixel block and the
+ * four label image records, and the label palette. */
+void func_801C6E0C(void) {
+    func_80033698(0, 0x1d1);
+    D_800625A0->labelPixels = func_80031BDC(0x38e, 0);
+    func_801E7E68(D_800625A0->labelImages, D_801EA524, 0, 4);
+    func_801C6D90();
+}
+
+/* Read the four sprite sheet records used by the menu. */
+void func_801C6E68(void) {
+    s32 unused[10]; /* the original frame reserves 40 unused bytes */
+
+    func_80026338(D_800625A0->sheet, 0xfe, &D_800625A0->sheetEntries[0][0], &D_800625A0->sheetEntries[0][1],
+                  &D_800625A0->sheetEntries[0][2], &D_800625A0->sheetEntries[0][3],
+                  &D_800625A0->sheetEntries[0][4], &D_800625A0->sheetEntries[0][5]);
+    func_80026338(D_800625A0->sheet, 0x103, &D_800625A0->sheetEntries[1][0], &D_800625A0->sheetEntries[1][1],
+                  &D_800625A0->sheetEntries[1][2], &D_800625A0->sheetEntries[1][3],
+                  &D_800625A0->sheetEntries[1][4], &D_800625A0->sheetEntries[1][5]);
+    func_80026338(D_800625A0->sheet, 0x100, &D_800625A0->sheetEntries[2][0], &D_800625A0->sheetEntries[2][1],
+                  &D_800625A0->sheetEntries[2][2], &D_800625A0->sheetEntries[2][3],
+                  &D_800625A0->sheetEntries[2][4], &D_800625A0->sheetEntries[2][5]);
+    func_80026338(D_800625A0->sheet, 0x101, &D_800625A0->sheetEntries[3][0], &D_800625A0->sheetEntries[3][1],
+                  &D_800625A0->sheetEntries[3][2], &D_800625A0->sheetEntries[3][3],
+                  &D_800625A0->sheetEntries[3][4], &D_800625A0->sheetEntries[3][5]);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6F70);
 
