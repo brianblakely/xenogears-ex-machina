@@ -7,11 +7,12 @@
  * entry addresses in the loaded module: this one provides 801fc4c4, called by
  * the opcode handler 800b6a7c, which breaks a model into flying pieces.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3384.mk). */
 #include "debris.h"
+
+/* The vertex named by the primitive's n-th halfword. */
+#define VERTEX(n) ((SVECTOR *)(((u16 *)desc)[n] * sizeof(SVECTOR) + (s32)vertices))
 
 /* Release the pieces, their primitives and the task. */
 void func_801FC074(TaskNode *node) {
@@ -47,7 +48,10 @@ void func_801FC0CC(TaskNode *node) {
 }
 
 /* Draw every piece: place it by its position and rotation under the model's
- * matrix and the camera, project its corners into its primitive and queue it. */
+ * matrix and the camera, project its corners into its primitive and queue it.
+ * NON_MATCHING: only the switch dispatch differs; the original loads the jump
+ * table address before scaling the index (lui in the range check's delay
+ * slot, table in v0, index in v1), this C scales the index first. */
 #ifdef NON_MATCHING
 void func_801FC1A8(TaskNode *node) {
     DebrisTask *debris;
@@ -55,8 +59,8 @@ void func_801FC1A8(TaskNode *node) {
     PacketDesc *desc;
     u8 *prim;
     MATRIX camera;
-    MATRIX m;
     s32 position[3];
+    MATRIX m;
     s32 sxy[4];
     s32 p, flag;
     s32 count;
@@ -67,7 +71,7 @@ void func_801FC1A8(TaskNode *node) {
     CompMatrix(&D_8004FBB8, &debris->matrix, &camera);
     piece = debris->pieces;
     prim = debris->prims[D_800C3EB0.buffer];
-    desc = (PacketDesc *)((u8 *)debris->model + debris->model->packets);
+    desc = (PacketDesc *)(debris->model->packets + (s32)debris->model);
     count = debris->count;
     for (i = 0; i != count; i++, piece++) {
         position[0] = piece->position[0] >> 16;
@@ -138,7 +142,10 @@ INCLUDE_ASM(".local/decomp/ovl3384/asm/nonmatchings/ovl3384", func_801FC1A8);
  * model's origin outward at `speed` plus a random part of `speed_range`,
  * spinning by a random part of `spin_range`, falling under `gravity`, for
  * `life` frames. `prims` holds the model's primitives, or 0 to build them
- * (twice: one copy per display buffer). */
+ * (twice: one copy per display buffer).
+ * NON_MATCHING: only the callee-saved registers of four values differ (the
+ * original has model s0, life/buffer s1, matrix/size s2, debris s4; this C
+ * gets s4, s0, s1, s2). */
 #ifdef NON_MATCHING
 void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 speed, s32 speed_range,
                    s32 spin_range, s32 life) {
@@ -152,7 +159,7 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     VECTOR velocity;
     MATRIX m;
     s32 count, size, kind, i, r;
-    u16 *index;
+    u8 *buffer;
 
     debris = func_8001D1D8(sizeof(DebrisTask), NULL, func_801FC0CC, func_801FC1A8, func_801FC074);
     debris->model = model;
@@ -164,102 +171,104 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
     debris->life = life;
     size = func_800B16A4(model);
     if (prims == NULL) {
-        prims = func_80031BDC(size * 2, 0);
-        func_800B1720(model, prims, 0, 1);
-        memcpy(prims + size, prims, size);
+        buffer = func_80031BDC(size * 2, 0);
+        func_800B1720(model, buffer, 0, 1);
+        memcpy(buffer + size, buffer, size);
+    } else {
+        buffer = prims;
     }
-    debris->prims[0] = prims;
-    debris->prims[1] = prims + size;
-    desc = (PacketDesc *)((u8 *)model + model->packets);
-    vertices = (SVECTOR *)((u8 *)model + model->vertices);
+    debris->prims[0] = buffer;
+    debris->prims[1] = buffer + size;
+    desc = (PacketDesc *)(model->packets + (s32)model);
+    vertices = (SVECTOR *)(model->vertices + (s32)model);
     for (i = 0; i != count; i++) {
-        index = (u16 *)desc;
         /* The primitive's kind with bit 8 for a one-sided primitive; its
          * vertex indices follow the kind's header and colours. */
-        kind = (desc->kind & 0x1C) | ((desc->unk2 ^ 1) & 1) << 8;
+        kind = desc->kind & 0x1C;
+        kind |= ((desc->unk2 ^ 1) & 1) << 8;
         switch (kind) {
         case 0x00:
-            v0 = &vertices[index[4]];
-            v1 = &vertices[index[5]];
-            v2 = &vertices[index[6]];
+            v0 = VERTEX(4);
+            v1 = VERTEX(5);
+            v2 = VERTEX(6);
             break;
         case 0x10:
-            v0 = &vertices[index[8]];
-            v1 = &vertices[index[9]];
-            v2 = &vertices[index[10]];
+            v0 = VERTEX(8);
+            v1 = VERTEX(9);
+            v2 = VERTEX(10);
             break;
         case 0x18:
-            v0 = &vertices[index[10]];
-            v1 = &vertices[index[11]];
-            v2 = &vertices[index[12]];
-            v3 = &vertices[index[13]];
+            v0 = VERTEX(10);
+            v1 = VERTEX(11);
+            v2 = VERTEX(12);
+            v3 = VERTEX(13);
             break;
         case 0x08:
-            v0 = &vertices[index[4]];
-            v1 = &vertices[index[5]];
-            v2 = &vertices[index[6]];
-            v3 = &vertices[index[7]];
+            v0 = VERTEX(4);
+            v1 = VERTEX(5);
+            v2 = VERTEX(6);
+            v3 = VERTEX(7);
             break;
         case 0x04:
-            v0 = &vertices[index[10]];
-            v1 = &vertices[index[11]];
-            v2 = &vertices[index[12]];
+            v0 = VERTEX(10);
+            v1 = VERTEX(11);
+            v2 = VERTEX(12);
             break;
         case 0x14:
-            v0 = &vertices[index[14]];
-            v1 = &vertices[index[15]];
-            v2 = &vertices[index[16]];
+            v0 = VERTEX(14);
+            v1 = VERTEX(15);
+            v2 = VERTEX(16);
             break;
         case 0x0C:
-            v0 = &vertices[index[12]];
-            v1 = &vertices[index[13]];
-            v2 = &vertices[index[14]];
-            v3 = &vertices[index[15]];
+            v0 = VERTEX(12);
+            v1 = VERTEX(13);
+            v2 = VERTEX(14);
+            v3 = VERTEX(15);
             break;
         case 0x1C:
-            v0 = &vertices[index[18]];
-            v1 = &vertices[index[19]];
-            v2 = &vertices[index[20]];
-            v3 = &vertices[index[21]];
+            v0 = VERTEX(18);
+            v1 = VERTEX(19);
+            v2 = VERTEX(20);
+            v3 = VERTEX(21);
             break;
         case 0x100:
-            v0 = &vertices[index[5]];
-            v1 = &vertices[index[6]];
-            v2 = &vertices[index[7]];
+            v0 = VERTEX(5);
+            v1 = VERTEX(6);
+            v2 = VERTEX(7);
             break;
         case 0x110:
-            v0 = &vertices[index[8]];
-            v1 = &vertices[index[11]];
-            v2 = &vertices[index[13]];
+            v0 = VERTEX(8);
+            v1 = VERTEX(11);
+            v2 = VERTEX(13);
             break;
         case 0x108:
-            v0 = &vertices[index[5]];
-            v1 = &vertices[index[6]];
-            v2 = &vertices[index[7]];
-            v3 = &vertices[index[8]];
+            v0 = VERTEX(5);
+            v1 = VERTEX(6);
+            v2 = VERTEX(7);
+            v3 = VERTEX(8);
             break;
         case 0x104:
-            v0 = &vertices[index[9]];
-            v1 = &vertices[index[10]];
-            v2 = &vertices[index[11]];
+            v0 = VERTEX(9);
+            v1 = VERTEX(10);
+            v2 = VERTEX(11);
             break;
         case 0x114:
-            v0 = &vertices[index[9]];
-            v1 = &vertices[index[11]];
-            v2 = &vertices[index[13]];
+            v0 = VERTEX(9);
+            v1 = VERTEX(11);
+            v2 = VERTEX(13);
             break;
         case 0x10C:
-            v0 = &vertices[index[11]];
-            v1 = &vertices[index[12]];
-            v2 = &vertices[index[13]];
-            v3 = &vertices[index[14]];
+            v0 = VERTEX(11);
+            v1 = VERTEX(12);
+            v2 = VERTEX(13);
+            v3 = VERTEX(14);
             break;
         case 0x118:
         case 0x11C:
-            v0 = &vertices[index[11]];
-            v1 = &vertices[index[13]];
-            v2 = &vertices[index[15]];
-            v3 = &vertices[index[17]];
+            v0 = VERTEX(11);
+            v1 = VERTEX(13);
+            v2 = VERTEX(15);
+            v3 = VERTEX(17);
             break;
         }
         if (kind & 8) {
@@ -318,11 +327,14 @@ void func_801FC4C4(Model *model, u8 *prims, MATRIX *matrix, s32 gravity, s32 spe
         piece->rotation.vy = 0;
         piece->rotation.vz = 0;
         r = (rand() & 0xFF) * spin_range / 256;
-        piece->spin.vx = r - r / 2;
+        r -= r / 2;
+        piece->spin.vx = r;
         r = (rand() & 0xFF) * spin_range / 256;
-        piece->spin.vy = r - r / 2;
+        r -= r / 2;
+        piece->spin.vy = r;
         r = (rand() & 0xFF) * spin_range / 256;
-        piece->spin.vz = r - r / 2;
+        r -= r / 2;
+        piece->spin.vz = r;
         piece->gravity = gravity;
         piece++;
         desc = (PacketDesc *)((u8 *)desc + (desc->words + 1) * 4);

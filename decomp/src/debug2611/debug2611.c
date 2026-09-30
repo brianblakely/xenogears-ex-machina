@@ -3,18 +3,13 @@
  * CPU/GPU load meter, a heap monitor, a camera tool and an actor tool driven
  * by the pad.
  *
- * This unit was built like the 0x801fc000 battle modules: its compiler
- * schedules %hi/%lo halves of addresses separately and materialises a global's
- * base for member accesses (lui a0; lhu %lo(sym)(a0); addiu a2, a0, %lo(sym)),
- * fills the jr delay slot in 802818C4, and positive li assemble as addiu. The
- * qualified GCC 2.6.3/2.7.2 do none of the first two, so functions addressing
- * globals stay NON_MATCHING. */
+ * This unit was built like the 0x801fc000 battle modules, by the Cygnus CDK
+ * GCC 2.7.2 with a later ASPSX (see debug2611.mk). */
 #include "battle_debug.h"
 
 /* Move the camera position with the pad: the directional buttons move it in
  * the camera's frame, R1/L1 (bits 0 and 2) raise and lower it; bit 1 slows
  * and bit 3 speeds the step. */
-#ifdef NON_MATCHING
 void func_80280844(s32 buttons) {
     VECTOR moved;
     SVECTOR step;
@@ -55,13 +50,9 @@ void func_80280844(s32 buttons) {
         D_800D3354.vy -= speed;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280844);
-#endif
 
 /* Move the look-at point like the camera position, in the frame of the
  * camera's heading only. */
-#ifdef NON_MATCHING
 void func_80280960(s32 buttons) {
     VECTOR moved;
     SVECTOR step;
@@ -91,9 +82,9 @@ void func_80280960(s32 buttons) {
     if (buttons & 0x2000) {
         step.vz = -speed;
     }
-    rot.vx = D_800D309C.rot.vx;
-    rot.vy = D_800D309C.rot.vy;
-    rot.vz = D_800D309C.rot.vz;
+    rot.vx = D_800D30B0.vx;
+    rot.vy = D_800D30B0.vy;
+    rot.vz = D_800D30B0.vz;
     rot.vx = 0;
     func_8003F738(&rot, &m);
     ApplyMatrix(&m, &step, &moved);
@@ -107,9 +98,6 @@ void func_80280960(s32 buttons) {
         D_800D335C.vy -= speed;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280960);
-#endif
 
 /* The tools' frame: the actor tool, then buttons toggle the heap monitor
  * (0x800), the performance counters (0x20) and the camera tool (0x100, which
@@ -122,6 +110,7 @@ void func_80280A9C(void) {
     SVECTOR watch;
     s32 sxy, z;
     POLY_FT4 *page;
+    POLY_FT4 *page2;
     TILE_1 *mark;
     s32 yaw, pitch;
 
@@ -144,7 +133,11 @@ void func_80280A9C(void) {
     }
     if (D_800C3EB0.pressed & 0x100) {
         D_80282040 = 1 - D_80282040;
-        func_800BC2F0(D_80282040 != 0 ? 4 : 1);
+        if (D_80282040 == 0) {
+            func_800BC2F0(1);
+        } else {
+            func_800BC2F0(4);
+        }
     }
     if (D_80282040 != 0) {
         page = (POLY_FT4 *)D_80059580;
@@ -170,29 +163,29 @@ void func_80280A9C(void) {
         page->tpage = GetTPage(1, 0, 0x3C0, 0);
         page->clut = GetClut(0, 0x1CC);
         AddPrim(D_8005956C, page);
-        page = (POLY_FT4 *)D_80059580;
+        page2 = (POLY_FT4 *)D_80059580;
         D_80059580 += sizeof(POLY_FT4);
-        SetPolyFT4(page);
-        SetShadeTex(page, 1);
-        page->x0 = 0x40;
-        page->y0 = -0x40;
-        page->x1 = 0x80;
-        page->y1 = -0x40;
-        page->x2 = 0x40;
-        page->y2 = 0xBF;
-        page->x3 = 0x80;
-        page->y3 = 0xBF;
-        page->u0 = 0;
-        page->v0 = 0;
-        page->u1 = 0x7F;
-        page->v1 = 0;
-        page->u2 = 0;
-        page->v2 = 0xFF;
-        page->u3 = 0x7F;
-        page->v3 = 0xFF;
-        page->tpage = GetTPage(1, 0, 0x340, 0x100);
-        page->clut = GetClut(0, 0x1CC);
-        AddPrim(D_8005956C, page);
+        SetPolyFT4(page2);
+        SetShadeTex(page2, 1);
+        page2->x0 = 0x40;
+        page2->y0 = -0x40;
+        page2->x1 = 0x80;
+        page2->y1 = -0x40;
+        page2->x2 = 0x40;
+        page2->y2 = 0xBF;
+        page2->x3 = 0x80;
+        page2->y3 = 0xBF;
+        page2->u0 = 0;
+        page2->v0 = 0;
+        page2->u1 = 0x7F;
+        page2->v1 = 0;
+        page2->u2 = 0;
+        page2->v2 = 0xFF;
+        page2->u3 = 0x7F;
+        page2->v3 = 0xFF;
+        page2->tpage = GetTPage(1, 0, 0x340, 0x100);
+        page2->clut = GetClut(0, 0x1CC);
+        AddPrim(D_8005956C, page2);
         func_8003700C("lenge:  %d\n", D_800D309C.range);
         func_8003700C("camera: %d,%d,%d\n", D_800D3354.vx, D_800D3354.vy, D_800D3354.vz);
         func_8003700C("watch:  %d,%d,%d\n", D_800D335C.vx, D_800D335C.vy, D_800D335C.vz);
@@ -202,13 +195,13 @@ void func_80280A9C(void) {
         D_802820EC++;
         SetRotMatrix(&D_800D309C.matrix);
         SetTransMatrix(&D_800D309C.matrix);
-        mark = (TILE_1 *)D_80059580;
-        D_80059580 += sizeof(TILE_1);
         watch.vx = D_800D335C.vx;
         watch.vy = D_800D335C.vy;
         watch.vz = D_800D335C.vz;
-        mark->code = 0x70;
+        mark = (TILE_1 *)D_80059580;
+        D_80059580 += sizeof(TILE_1);
         ((u8 *)mark)[3] = 2;
+        mark->code = 0x70;
         mark->r0 = 0xFF;
         mark->g0 = 0xFF;
         mark->b0 = 0;
@@ -220,7 +213,11 @@ void func_80280A9C(void) {
             func_80023FD8(2, D_8006BE10, &watch, 0);
         }
         if (D_800C3EB0.pressed & 0x80) {
-            SetGeomOffset(0xA0, ++D_80282044 & 1 ? 0x70 : 0xA5);
+            if (++D_80282044 & 1) {
+                SetGeomOffset(0xA0, 0x70);
+            } else {
+                SetGeomOffset(0xA0, 0xA5);
+            }
         }
         if (D_800C3EB0.held & 0x40) {
             func_80280960(D_800C3EB0.held);
@@ -238,21 +235,18 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280A9C)
 #endif
 
 /* Open the debug text window while any button is pressed. */
-#ifdef NON_MATCHING
 void func_8028103C(void) {
+    s32 unused[12]; /* an unreferenced 0x30-byte local: the frame is 0x68 */
+
     if (D_800C3EB0.pressed != 0) {
         func_8003748C();
         func_800374E8(0x10, 0x10, 0x140, 0x100, 0x3E8, 0, 0x340, 0, 0x340, 0x20, 0);
         func_80036E4C(0x7FFF, 0x8000);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_8028103C);
-#endif
 
 /* The heap monitor: buttons toggle its display flags and step, left/right
  * (repeating after 8 frames) scroll its first block. */
-#ifdef NON_MATCHING
 void func_802810C4(void) {
     s32 scroll;
 
@@ -293,7 +287,7 @@ void func_802810C4(void) {
         D_80282064 = 0;
     }
     if ((D_800C3EB0.held & 0x1000) && D_80282064 >= 8) {
-        scroll = -1;
+        scroll--;
     }
     if ((D_800C3EB0.held & 0x4000) && D_80282064 >= 8) {
         scroll++;
@@ -309,13 +303,9 @@ void func_802810C4(void) {
     }
     func_8003278C(3, D_80282060, D_80282068, D_8028205C);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802810C4);
-#endif
 
 /* Load meter update: ease the averages toward this frame's CPU and GPU times
  * and hold each peak for 80 frames. */
-#ifdef NON_MATCHING
 void func_80281330(TaskNode *node) {
     LoadMeter *meter = node->object;
 
@@ -326,24 +316,20 @@ void func_80281330(TaskNode *node) {
     if (--meter->cpu_hold == 0) {
         meter->cpu_peak = 0;
     }
-    if (meter->cpu_peak < meter->cpu) {
+    if (meter->cpu > meter->cpu_peak) {
         meter->cpu_peak = meter->cpu;
         meter->cpu_hold = 80;
     }
     if (--meter->gpu_hold == 0) {
         meter->gpu_peak = 0;
     }
-    if (meter->gpu_peak < meter->gpu) {
+    if (meter->gpu > meter->gpu_peak) {
         meter->gpu_peak = meter->gpu;
         meter->gpu_hold = 80;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281330);
-#endif
 
 /* Draw a flat triangle through the current matrices. */
-#ifdef NON_MATCHING
 void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     SVECTOR xy0, xy1, xy2;
     s32 flag;
@@ -365,19 +351,15 @@ void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     prim->y2 = xy2.vy;
     AddPrim(D_8005956C, prim);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802813F4);
-#endif
 
 /* Draw a dial tick (30 to 35 along the rotated x axis). */
-#ifdef NON_MATCHING
 void func_802814F8(u8 r, u8 g, u8 b) {
     SVECTOR from, to;
     SVECTOR xy0, xy1;
     s32 flag;
     LINE_F2 *prim = (LINE_F2 *)D_80059580;
 
-    D_80059580 += sizeof(LINE_F2);
+    D_80059580 += 0x18; /* reserves more than the 0x10-byte LINE_F2 */
     SetLineF2(prim);
     from.vx = 30;
     from.vy = 0;
@@ -396,20 +378,16 @@ void func_802814F8(u8 r, u8 g, u8 b) {
     prim->y1 = xy1.vy;
     AddPrim(D_8005956C, prim);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802814F8);
-#endif
 
 /* Draw a peak mark: a line from the dial centre `length` along the rotated
  * x axis. */
-#ifdef NON_MATCHING
 void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     SVECTOR tip;
     SVECTOR xy;
     s32 flag;
     LINE_F2 *prim = (LINE_F2 *)D_80059580;
 
-    D_80059580 += sizeof(LINE_F2);
+    D_80059580 += 0x18; /* reserves more than the 0x10-byte LINE_F2 */
     SetLineF2(prim);
     tip.vx = length;
     tip.vy = 0;
@@ -424,13 +402,9 @@ void func_802815E8(s16 length, u8 r, u8 g, u8 b) {
     prim->y1 = xy.vy;
     AddPrim(D_8005956C, prim);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802815E8);
-#endif
 
 /* Load meter drawing: the GPU (blue) and CPU (red) needles with their peak
  * marks, and a tick every 0x100 up to each needle. */
-#ifdef NON_MATCHING
 void func_802816AC(TaskNode *node) {
     MATRIX m;
     SVECTOR rot;
@@ -487,12 +461,8 @@ void func_802816AC(TaskNode *node) {
         func_802814F8(0, 0, 0xFF);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802816AC);
-#endif
 
 /* Start the load meter task. */
-#ifdef NON_MATCHING
 void func_802818C4(void) {
     LoadMeter *meter = func_8001D1D8(sizeof(LoadMeter), 0, func_80281330, func_802816AC, 0);
 
@@ -505,25 +475,23 @@ void func_802818C4(void) {
     meter->gpu_avg = 0;
     meter->cpu_avg = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802818C4);
-#endif
 
 /* List the playing sound sequences on the debug console. */
-#ifdef NON_MATCHING
 void func_8028191C(void) {
     DebugSequence *seq = D_80059558;
     s32 i = 0;
 
-    while (seq->next != NULL) {
-        func_800379C8("%d W=%x\n", i, seq->next);
+    for (;;) {
+        DebugSequence *next = seq->next;
+
+        if (next == NULL) {
+            break;
+        }
+        func_800379C8("%d W=%x\n", i, next);
         seq = seq->next;
         i++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_8028191C);
-#endif
 
 /* The actor tool: for the selected battle actor print its model state, and
  * with the pad move its position, rotation, scale or light (the control
@@ -547,9 +515,9 @@ void func_80281980(void) {
         D_802820BC = 0;
     }
     func_8003700C("control mode: %s\n", D_802820C0[D_802820BC]);
-    v.vx = actor->pos[0].part.whole;
-    v.vy = actor->pos[1].part.whole;
-    v.vz = actor->pos[2].part.whole;
+    v.vx = actor->pos[0].raw >> 16;
+    v.vy = actor->pos[1].raw >> 16;
+    v.vz = actor->pos[2].raw >> 16;
     SetRotMatrix(&D_800D309C.matrix);
     SetTransMatrix(&D_800D309C.matrix);
     otz = RotTransPers(&v, &sxy, &p, &flag);
@@ -608,8 +576,8 @@ void func_80281980(void) {
         break;
     case 2:
         step.vx *= 16;
-        step.vz *= 16;
         step.vy *= 16;
+        step.vz *= 16;
         actor->model->scale.vx += step.vx;
         actor->model->scale.vy += step.vy;
         actor->model->scale.vz += step.vz;
@@ -642,15 +610,11 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281980)
 #endif
 
 /* Dump main memory to the next numbered host file (mem_0, mem_1, ...). */
-#ifdef NON_MATCHING
 void func_80281F98(void) {
     D_802820D4++;
     D_802820D8[15] = D_802820D4 + '0';
     func_80032E04(D_802820D8);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281F98);
-#endif
 
 /* Run the memory dump on a private 16 KB stack. */
 void func_80281FD8(void) {

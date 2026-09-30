@@ -37,7 +37,23 @@ positive `li` to `ori` as the original does (resident, movie library). Qualifica
 8-byte frame and reschedules the stores. The small-data threshold is a
 property of each translation unit: most code is `-G0`, while units that address
 `.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
-`GP_<file> := 8` in the target fragment. SDK library code (PsyQ 3.x-4.x) is
+`GP_<file> := 8` in the target fragment.
+
+A third compiler builds the later battle code: the Cygnus CDK build of GCC
+2.7.2 (`psx-cc1-2.7.2-cdk`, old-gcc 0.17 `gcc-2.7.2-cdk`, cdk-gcc b18) at `-O2`
+with a later ASPSX (positive `li` as `addiu`; maspsx `--aspsx-version=2.56`).
+It keeps a symbol's `%hi` in a register and addresses members from it, leaves
+load-delay `nop`s and the epilogue `jr` slot of ovl3381 `801fc000`/`801fc278`
+unfilled, and fills other `jr` slots (debug2611 `802818c4`). Units: the six
+0x801fc000 battle modules (ovl3381, ovl3383-ovl3387), debug2611's tools unit
+(80280844-end) and ovl2615's battle_loader and load_modes. Qualification: of
+cc1 2.5.7, 2.6.0, 2.6.3, 2.7.2, 2.7.2-cdk, 2.8.0, 2.8.1, 2.91.66 and 2.95.2
+(`-O1`/`-O2`/`-O3`, `-fno-delayed-branch`, `-fno-schedule-insns[2]`) under
+ASPSX 2.34-2.86, only 2.7.2-cdk `-O2`/`-O3` with ASPSX >= 2.56 reproduces
+ovl3381 `801fc000` and `801fc278`; over the nine units' existing C, `-O2`
+reproduces 21 functions that 2.6.3/2.7.2 do not (`-O3` 18, `-O1` 1), and the
+units' previously matching C still matches. ASPSX 2.56-2.86 give identical
+bytes here. Set it with `CC_VERSION`/`CC_<file> := 2.7.2-cdk`. SDK library code (PsyQ 3.x-4.x) is
 located with `tools/psyq_signatures.py` and classified, not decompiled.
 
 Targets (`decomp/targets/`): both resident executables (SLUS_006.64/69 share all

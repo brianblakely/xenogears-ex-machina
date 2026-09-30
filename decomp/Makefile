@@ -32,7 +32,7 @@ else
 include $(CONFIG)
 $(foreach var,ORIGINAL ORIGINAL_SHA256 IMAGE LINKER_SCRIPT SPLAT_CONFIG BUILD CC_VERSION,$(if $($(var)),,$(error $(var) must be set by $(CONFIG))))
 
-# Qualified original-compatible compilation (docs/matching.md): GCC 2.6.3/2.7.2 cc1
+# Qualified original-compatible compilation (docs/matching.md): GCC 2.6.3/2.7.2/2.7.2-cdk cc1
 # for the R3000, ASPSX 2.34 behaviour through maspsx, GNU as for the object.
 CPPFLAGS := -undef -D__GNUC__=2 -Dmips -D__mips__ -D__mips -Dpsx -D__psx__ -D__psx \
 	-D_PSYQ -D__EXTENSIONS__ -D_MIPSEL -D__CHAR_UNSIGNED__ -D_LANGUAGE_C -DLANGUAGE_C \
@@ -41,7 +41,7 @@ CC1FLAGS := -quiet -mcpu=3000 -fgnu-linker -mgas -msoft-float -O2
 ASFLAGS := -EL -march=r3000 -mtune=r3000 -msoft-float -no-pad-sections -G0 \
 	-I$(ROOT)/decomp/include -I$(ROOT)
 
-# The small-data threshold and the GCC version (2.6.3 or 2.7.2) are properties
+# The small-data threshold and the GCC version (2.6.3, 2.7.2, 2.7.2-cdk) are properties
 # of each original translation unit: GP_<file> / CC_<file> override the target's
 # GP default of 0 and its CC_VERSION.
 gp_of = $(or $(GP_$(basename $(notdir $(1)))),0)

@@ -134,36 +134,42 @@
             ln -s "${tools}/bin/${prefix}$tool" "$out/bin/psx-$tool"
           done
         '';
-      # decompals/old-gcc 0.17 static i386 cpp/cc1 builds (unmodified GCC sources
-      # with the PSX target patch). Both versions occur in the original program,
-      # per translation unit: 2.7.2 fills the epilogue's jr delay slot with the
-      # stack adjustment, 2.6.3 never does (docs/matching.md).
+      # decompals/old-gcc 0.17 static i386 cpp/cc1 builds (GCC sources with the
+      # PSX target patch). Each occurs in the original program, per translation
+      # unit: 2.7.2 fills the epilogue's jr delay slot with the stack adjustment,
+      # 2.6.3 never does, and the later battle modules come from the Cygnus CDK
+      # build of 2.7.2 (cdk-gcc b18), which keeps a symbol's %hi in a register
+      # (docs/matching.md). Commands are psx-cpp-/psx-cc1-<version>[-cdk].
       oldGcc =
-        version: hash:
+        version: variant: hash:
+        let
+          name = if variant == "psx" then version else "${version}-${variant}";
+        in
         pkgs.stdenvNoCC.mkDerivation {
           pname = "psx-gcc";
-          version = "${version}-psx-old-gcc-0.17";
+          version = "${version}-${variant}-old-gcc-0.17";
           src = pkgs.fetchurl {
-            url = "https://github.com/decompals/old-gcc/releases/download/0.17/gcc-${version}-psx.tar.gz";
+            url = "https://github.com/decompals/old-gcc/releases/download/0.17/gcc-${version}-${variant}.tar.gz";
             inherit hash;
           };
           sourceRoot = ".";
           dontBuild = true;
           installPhase = ''
-            mkdir -p "$out/lib/psx-gcc-${version}" "$out/bin"
-            install -m755 cpp cc1 "$out/lib/psx-gcc-${version}/"
-            ln -s "$out/lib/psx-gcc-${version}/cpp" "$out/bin/psx-cpp-${version}"
-            ln -s "$out/lib/psx-gcc-${version}/cc1" "$out/bin/psx-cc1-${version}"
+            mkdir -p "$out/lib/psx-gcc-${name}" "$out/bin"
+            install -m755 cpp cc1 "$out/lib/psx-gcc-${name}/"
+            ln -s "$out/lib/psx-gcc-${name}/cpp" "$out/bin/psx-cpp-${name}"
+            ln -s "$out/lib/psx-gcc-${name}/cc1" "$out/bin/psx-cc1-${name}"
           '';
           meta = {
-            description = "GCC ${version} cpp/cc1 for the PlayStation R3000 target";
+            description = "GCC ${name} cpp/cc1 for the PlayStation R3000 target";
             homepage = "https://github.com/decompals/old-gcc";
             license = pkgs.lib.licenses.gpl2Plus;
             platforms = [ system ];
           };
         };
-      psxGcc272 = oldGcc "2.7.2" "sha256-UApFmzSF6IWo0wLKwjwqRjLzkA4DoJFT9hkGmf1yNXE=";
-      psxGcc263 = oldGcc "2.6.3" "sha256-AeboxJM0FOo/jY47x2ah9fr9T8ARDgt10faRvXkZibE=";
+      psxGcc272 = oldGcc "2.7.2" "psx" "sha256-UApFmzSF6IWo0wLKwjwqRjLzkA4DoJFT9hkGmf1yNXE=";
+      psxGcc263 = oldGcc "2.6.3" "psx" "sha256-AeboxJM0FOo/jY47x2ah9fr9T8ARDgt10faRvXkZibE=";
+      psxGcc272cdk = oldGcc "2.7.2" "cdk" "sha256-QrsN+W2xGptdLiPXi9yWJ5H0AEYoDT02Dak/5e728Ls=";
       maspsx = pkgs.stdenvNoCC.mkDerivation {
         pname = "maspsx";
         version = "2026-7686f845";
@@ -304,6 +310,7 @@
             psxBinutils
             psxGcc272
             psxGcc263
+            psxGcc272cdk
             maspsx
             splat
             pkgs.gnumake
