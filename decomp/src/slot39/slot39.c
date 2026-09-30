@@ -1932,7 +1932,34 @@ void func_801CB28C(s32 *save) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB8AC);
+/* The unformatted-card question for `port`: show message 29h + 3 * port and
+ * wait while no input comes and the cards stay as they were; a card change
+ * returns 0, otherwise the answer to message 2f. */
+u8 func_801CB8AC(u8 port) {
+    u8 present[2];
+    u8 changed;
+    u8 answer;
+
+    present[0] = D_800625A0->card->present[0];
+    present[1] = D_800625A0->card->present[1];
+    func_801D2F4C(port * 3 + 0x29);
+    D_800625A0->input = 8;
+    answer = 0;
+    D_800625A0->card->mode = 2;
+    changed = 0;
+    while (D_800625A0->input == 8) {
+        func_801C7BF4();
+        if (present[0] != D_800625A0->card->present[0] || present[1] != D_800625A0->card->present[1]) {
+            changed = 1;
+            break;
+        }
+    }
+    func_801D32B4();
+    if (!changed) {
+        answer = func_801CACF8(0x2f, 0xff, 1);
+    }
+    return answer;
+}
 
 /* The save slot to use on `port`: `slot`, or for ff the first free one. */
 #ifdef NON_MATCHING
