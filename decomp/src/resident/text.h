@@ -25,6 +25,7 @@ extern s32 D_80059364;
 extern u8 *D_80059368;  /* system data block */
 extern u16 *D_8005936C; /* font block: halfword 1 glyph offset, 2 first
                          * byte of a two-byte character */
+extern u16 D_8005A0C8[12]; /* number character codes: color, 10 digits, 0xFFFF */
 extern u8 D_8005A0E4[]; /* decoded text */
 extern u16 D_80059414;  /* text CLUTs */
 extern u16 D_800595D4;

@@ -290,7 +290,48 @@ u8 func_80033CD0(u8 *window) {
     return (*(u16 *)(window + 0x10) & 8) ? window[0x6B] : 0;
 }
 
+/* Decode `value` as ten decimal digit codes in palette `color` (with a
+ * sign code when `sign` is set) into text; leading zeros are dropped for
+ * plain palettes.
+ * Nonmatching: GCC reverses the digit loop counter, which the original
+ * counts up. */
+#ifdef NON_MATCHING
+void func_80033CF0(u32 value, s32 color, s32 sign) {
+    u32 divisor = 1000000000;
+    u16 *p;
+    s32 i;
+
+    color <<= 4;
+    if (sign != 0) {
+        sign = 11;
+        if ((s32)value < 0) {
+            value = -value;
+            sign = 10;
+        }
+    }
+    for (i = 0, p = &D_8005A0C8[1]; i < 10; i++) {
+        *p++ = value / divisor + color;
+        value %= divisor;
+        divisor /= 10;
+    }
+    D_8005A0C8[11] = 0xFFFF;
+    p = D_8005A0C8;
+    D_8005A0C8[0] = color;
+    if ((color & 0xFFF0) == color) {
+        while (p != &D_8005A0C8[10]) {
+            if (*++p != color) {
+                break;
+            }
+        }
+    }
+    if (sign != 0) {
+        *--p = sign + color;
+    }
+    func_80033ABC(p);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CF0);
+#endif
 
 void func_80033DD4(u8 *window, s32 value) {
     s32 previous = *(s32 *)(window + 0x1C);

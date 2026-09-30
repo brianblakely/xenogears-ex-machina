@@ -329,3 +329,5 @@ func_8001C76C = 0x8001C76C; // type:func
 // The game function after that data opens the sprite unit.
 func_8001C8DC = 0x8001C8DC; // type:func
 func_80048BBC = 0x80048BBC; // type:func
+// Game data the C addresses by its start although no assembly names it.
+D_8005A0C8 = 0x8005A0C8; // size:0x18
