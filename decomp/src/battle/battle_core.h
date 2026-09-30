@@ -280,7 +280,10 @@ extern u8 D_800D2C8B[8];
 extern s32 D_800D2C60[8];
 
 typedef struct {
-    u8 unk0[0x34];
+    u8 unk0[0x26];
+    s16 unk26;         /* +0x26 timer, counted down while unk28 */
+    u8 unk28;
+    u8 unk29[0x34 - 0x29];
     u8 active;         /* +0x34 */
     u8 unk35[3];
 } BattleUnk3278Entry;

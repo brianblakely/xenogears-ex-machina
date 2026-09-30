@@ -9,6 +9,7 @@
 #include "gear_menu.h"
 #include "glyph_lists.h"
 #include "item_command.h"
+#include "result_input.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -5083,7 +5084,84 @@ void func_8008A274(u8 member) {
     func_8008A144();
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A3EC);
+/* Wait for a controller (pausing the sound and the vsync count while there
+ * is none), run a result-screen tick, count down the active 800d3278 entry
+ * timers, then read the input: an overflowed queue is reset; otherwise
+ * entries are dequeued until one matters. Confirm (0x20) sets input code 4;
+ * start (0x800, while 800ccc58) pauses or resumes the battle, and while
+ * paused holding both 4 and 8 with a disc ends it (outcome 1). Loops while
+ * paused. */
+void func_8008A3EC(u8 member) {
+    u8 waiting = 1;
+    u8 paused = 0;
+    s32 vsyncs;
+    s32 i;
+
+    do {
+        if (func_80035734(0) == 0) {
+            if (paused == 0) {
+                func_8001FAB4(0x88, 0x64);
+                func_8001FAB4(0x88, 0x144);
+                paused++;
+                func_80037EE4();
+                vsyncs = D_80059488;
+            }
+        } else {
+            waiting = 0;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = vsyncs;
+            }
+        }
+    } while (waiting);
+    func_8008A144();
+    if (D_800D2D28->unkCA != 0) {
+        for (i = 0; i < 16; i++) {
+            if (D_800D3278->entries[i].unk28 != 0) {
+                if (--D_800D3278->entries[i].unk26 < 0) {
+                    D_800D3278->entries[i].unk26 = 0;
+                }
+            }
+        }
+    }
+    do {
+        if (D_800D2D28->unkCC[3] == 0) {
+            D_800D3014 = 0xFF;
+        }
+        if (func_80036410()) {
+            func_80035DB0();
+        } else {
+            while (func_80035CDC()) {
+                if (D_800C3444 != 0) {
+                    if (*D_8005917C != -1 && (D_800594A4 & 4) && (D_800594A4 & 8)) {
+                        D_800C48EA = 1;
+                        goto resume;
+                    }
+                } else if (D_8005948C & 0x20) {
+                    D_800D3014 = 4;
+                    break;
+                }
+                if (D_8005948C & 0x800) {
+                    if (D_800CCC58 != 0) {
+                        if (D_800C3444 == 0) {
+                            func_80037EE4();
+                            func_8001FAB4(0x88, 0x64);
+                            func_8001FAB4(0x88, 0x144);
+                            vsyncs = D_80059488;
+                            D_800C3444 = 1;
+                        } else {
+                        resume:
+                            func_80037E8C();
+                            D_80059488 = vsyncs;
+                            D_800C3444 = 0;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    } while (D_800C3444 != 0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A684);
 
