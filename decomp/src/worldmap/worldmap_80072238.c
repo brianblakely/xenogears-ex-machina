@@ -301,7 +301,6 @@ void func_80072BB0(void) {
 /* Fade the saved screen (VRAM x 0x2C0) for `frames` frames: redraw it as three
  * textured quads under a translucent black quad whose level starts at `level`
  * and changes by `step`, blended with mode `abr`. */
-#ifdef NON_MATCHING /* register allocation: original spills the step and three link words */
 void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     PolyFT4 *quads;
     PolyG4v *shades;
@@ -319,77 +318,22 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
         setRGB0(&quads[i], 0x80, 0x80, 0x80);
         setShadeTex(&quads[i], 1);
     }
-    quads[1].x1 = 0x100;
-    quads[1].x3 = 0x100;
-    quads[2].x0 = 0x100;
-    quads[2].x2 = 0x100;
-    quads[0].x1 = 0x80;
-    quads[0].x3 = 0x80;
-    quads[1].x0 = 0x80;
-    quads[1].x2 = 0x80;
-    quads[0].x0 = 0;
-    quads[0].y0 = 0;
-    quads[0].y1 = 0;
-    quads[0].x2 = 0;
-    quads[0].y2 = 0xEF;
-    quads[0].y3 = 0xEF;
-    quads[1].y0 = 0;
-    quads[1].y1 = 0;
-    quads[1].y2 = 0xEF;
-    quads[1].y3 = 0xEF;
-    quads[2].y0 = 0;
-    quads[2].x1 = 0x140;
-    quads[2].y1 = 0;
-    quads[2].y2 = 0xEF;
-    quads[2].x3 = 0x140;
-    quads[2].y3 = 0xEF;
-    quads[0].u0 = 0;
-    quads[0].v0 = 0;
-    quads[0].u1 = 0x80;
-    quads[0].v1 = 0;
-    quads[0].u2 = 0;
-    quads[0].v2 = 0xEF;
-    quads[0].u3 = 0x80;
-    quads[0].v3 = 0xEF;
-    quads[1].u0 = 0;
-    quads[1].v0 = 0;
-    quads[1].u1 = 0x80;
-    quads[1].u3 = 0x80;
-    quads[1].v1 = 0;
-    quads[1].u2 = 0;
-    quads[1].v2 = 0xEF;
-    quads[1].v3 = 0xEF;
-    quads[2].u0 = 0;
-    quads[2].v0 = 0;
-    quads[2].u1 = 0x40;
-    quads[2].v1 = 0;
-    quads[2].u2 = 0;
-    quads[2].v2 = 0xEF;
-    quads[2].u3 = 0x40;
-    quads[2].v3 = 0xEF;
+    setXY4(&quads[0], 0, 0, 0x80, 0, 0, 0xEF, 0x80, 0xEF);
+    setXY4(&quads[1], 0x80, 0, 0x100, 0, 0x80, 0xEF, 0x100, 0xEF);
+    setXY4(&quads[2], 0x100, 0, 0x140, 0, 0x100, 0xEF, 0x140, 0xEF);
+    setUV4(&quads[0], 0, 0, 0x80, 0, 0, 0xEF, 0x80, 0xEF);
+    setUV4(&quads[1], 0, 0, 0x80, 0, 0, 0xEF, 0x80, 0xEF);
+    setUV4(&quads[2], 0, 0, 0x40, 0, 0, 0xEF, 0x40, 0xEF);
     quads[0].tpage = GetTPage(2, 0, 0x2C0, 0x100);
     quads[1].tpage = GetTPage(2, 0, 0x340, 0x100);
     quads[2].tpage = GetTPage(2, 0, 0x3C0, 0x100);
     SetDrawTPage(mode, 0, 1, GetTPage(0, abr, 0, 0));
     setPolyG4(&shades[0]);
-    shades[0].x0 = 0;
-    shades[0].y0 = 0;
-    shades[0].x1 = 0x140;
-    shades[0].y1 = 0;
-    shades[0].x2 = 0;
-    shades[0].y2 = 0xF0;
-    shades[0].x3 = 0x140;
-    shades[0].y3 = 0xF0;
+    setXY4(&shades[0], 0, 0, 0x140, 0, 0, 0xF0, 0x140, 0xF0);
     setRGB0(&shades[0], 0, 0, 0);
-    shades[0].r1 = 0;
-    shades[0].g1 = 0;
-    shades[0].b1 = 0;
-    shades[0].r2 = 0;
-    shades[0].g2 = 0;
-    shades[0].b2 = 0;
-    shades[0].r3 = 0;
-    shades[0].g3 = 0;
-    shades[0].b3 = 0;
+    setRGB1(&shades[0], 0, 0, 0);
+    setRGB2(&shades[0], 0, 0, 0);
+    setRGB3(&shades[0], 0, 0, 0);
     SetSemiTrans(&shades[0], 1);
     setShadeTex(&shades[0], 1);
     shades[1] = shades[0];
@@ -399,31 +343,26 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     PutDrawEnv(&D_8009BBC8[1].draw);
     buffer = &D_8009BBC8[0];
     side = 0;
-    while (frames--) {
+    i = level;
+    for (frames--; frames != -1; frames--) {
         buffer = (buffer == D_8009BBC8) ? buffer + 1 : D_8009BBC8;
         ClearOTagR((u32 *)buffer->unk70, 0x400);
         addPrim((u32 *)buffer->unk70 + 1, &quads[0]);
         addPrim((u32 *)buffer->unk70 + 1, &quads[1]);
         addPrim((u32 *)buffer->unk70 + 1, &quads[2]);
         side ^= 1;
-        shade = &shades[side];
-        setRGB0(shade, level, level, level);
-        shade->r1 = level;
-        shade->g1 = level;
-        shade->b1 = level;
-        shade->r2 = level;
-        shade->g2 = level;
-        shade->b2 = level;
-        shade->r3 = level;
-        shade->g3 = level;
-        shade->b3 = level;
+        shade = (PolyG4v *)(side * sizeof(PolyG4v) + (u32)shades);
+        setRGB0(shade, i, i, i);
+        setRGB1(shade, i, i, i);
+        setRGB2(shade, i, i, i);
+        setRGB3(shade, i, i, i);
         addPrim((u32 *)buffer->unk70, shade);
         addPrim((u32 *)buffer->unk70, mode);
         DrawSync(0);
         VSync(0);
         PutDispEnv(&buffer->disp);
         PutDrawEnv(&buffer->draw);
-        level += step;
+        i += step;
         DrawOTag((u32 *)buffer->unk70 + 0x3FF);
     }
     DrawSync(0);
@@ -433,9 +372,6 @@ void func_80072DB4(s32 frames, s32 level, s32 step, s32 abr) {
     func_800320E8(shades);
     func_800320E8(mode);
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072DB4);
-#endif
 
 /* Choose the movement mode from the saved state: a vehicle kind, or on foot
  * (1 when no party flag is set, else 2). */
