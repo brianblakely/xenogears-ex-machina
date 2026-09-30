@@ -130,13 +130,13 @@ void func_801C53EC(u8 allocate) {
     }
 }
 
-/* Allocate (nonzero) or release the block at menu state +450. */
+/* Allocate (nonzero) or release the import screen's packet block. */
 void func_801C5450(u8 allocate) {
     if (allocate) {
-        D_800625A0->unk450 = func_80031BDC(0x4788, 0);
-        func_8003F8E8(D_800625A0->unk450, 0x4788);
+        D_800625A0->details = func_80031BDC(sizeof(DetailBlock), 0);
+        func_8003F8E8(D_800625A0->details, sizeof(DetailBlock));
     } else {
-        func_800320E8(D_800625A0->unk450);
+        func_800320E8(D_800625A0->details);
     }
 }
 
@@ -423,17 +423,17 @@ void func_801C6828(u8 mode) {
         D_800625A0->resources[0] = func_80032E88(list[2], 0);
         D_800625A0->resources[1] = func_80032E88(list[3], 0);
         D_800625A0->resources[7] = func_80032E88(list[1], 0);
-        *(void **)(D_800625A0->unk450 + 0x4634) = func_80032E88(list[0x28], 0);
-        *(void **)(D_800625A0->unk450 + 0x4638) = func_80032E88(list[0x29], 0);
-        *(void **)(D_800625A0->unk450 + 0x4630) = func_80032E88(list[0x2A], 0);
+        D_800625A0->details->resources[1] = func_80032E88(list[0x28], 0);
+        D_800625A0->details->resources[2] = func_80032E88(list[0x29], 0);
+        D_800625A0->details->resources[0] = func_80032E88(list[0x2A], 0);
         break;
     case 0x10:
         func_800320E8(D_800625A0->resources[0]);
         func_800320E8(D_800625A0->resources[1]);
         func_800320E8(D_800625A0->resources[7]);
-        func_800320E8(*(void **)(D_800625A0->unk450 + 0x4634));
-        func_800320E8(*(void **)(D_800625A0->unk450 + 0x4638));
-        func_800320E8(*(void **)(D_800625A0->unk450 + 0x4630));
+        func_800320E8(D_800625A0->details->resources[1]);
+        func_800320E8(D_800625A0->details->resources[2]);
+        func_800320E8(D_800625A0->details->resources[0]);
         break;
     }
     if (mode < 0x10) {
@@ -2037,17 +2037,165 @@ void func_801CCE1C(MemberView *view, u8 id) {
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CCFF4);
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CD404);
+/* Tint `count` packet pairs of this buffer red (0) or blue (1). */
+void func_801CD404(s32 count, POLY_FT4 *packets, u8 color) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CD5D0);
+    for (i = 0; i < count; i++) {
+        func_80043C24(&packets[i * 2 + D_800625A0->buffer], 0);
+        switch (color) {
+        case 0:
+            (packets + (i * 2 + D_800625A0->buffer))->r0 = 0x80;
+            (packets + (i * 2 + D_800625A0->buffer))->g0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer))->b0 = 0x40;
+            break;
+        case 1:
+            (packets + (i * 2 + D_800625A0->buffer))->r0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer))->g0 = 0x40;
+            (packets + (i * 2 + D_800625A0->buffer))->b0 = 0x80;
+            break;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CD6F8);
+/* Reveal the available party members' portraits one member per frame. */
+void func_801CD5D0(void) {
+    s32 step;
+    s32 shown;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CD7E4);
+    D_800625A0->flags->unk5A = 1;
+    for (step = 1; step < 12; step++) {
+        shown = 0;
+        D_800625A0->details->members_count = 0;
+        for (i = 0; i < step; i++) {
+            if (D_800625A0->member_present[i] != 0) {
+                D_800625A0->details->members_count +=
+                    func_8002675C(D_800625A0->sprite_sheet, i + 0x14E, &D_800625A0->details->members[shown * 2],
+                                  D_800625A0->buffer, D_801D21CC[shown], 0xA6, 0x1000);
+                shown++;
+            }
+        }
+        D_800625A0->details->members_buffer = D_800625A0->buffer;
+        func_801CB014();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CD8D0);
+/* Draw the four heading sprites. */
+void func_801CD6F8(void) {
+    s32 i;
 
+    D_800625A0->details->heading_count = 0;
+    for (i = 0; i < 4; i++) {
+        D_800625A0->details->heading_count +=
+            func_8002675C(D_800625A0->sprite_sheet, D_801D2210[i],
+                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
+                          D_800625A0->buffer, D_801D2218[i], D_801D2230[i], 0x1000);
+    }
+    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+}
+
+/* Draw the two alternative heading sprites. */
+void func_801CD7E4(void) {
+    s32 i;
+
+    D_800625A0->details->heading_count = 0;
+    for (i = 0; i < 2; i++) {
+        D_800625A0->details->heading_count +=
+            func_8002675C(D_800625A0->sprite_sheet, D_801D2210[i + 4],
+                          D_800625A0->details->heading + D_800625A0->details->heading_count * 2,
+                          D_800625A0->buffer, D_801D2218[i + 4], D_801D2230[i + 4], 0x1000);
+    }
+    D_800625A0->details->heading_buffer = D_800625A0->buffer;
+}
+
+/* Draw three nine-digit numbers (leading zeros blank) at their three positions. */
+void func_801CD8D0(u32 first, u32 second, u32 third) {
+    s32 i;
+
+    func_801C50E8(first);
+    D_800625A0->details->digits1_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->digits1_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              D_800625A0->details->digits1 + D_800625A0->details->digits1_count * 2,
+                              D_800625A0->buffer, i * 8 + D_801D2248, D_801D224C, 0x1000);
+        }
+    }
+    D_800625A0->details->digits1_buffer = D_800625A0->buffer;
+    func_801C50E8(second);
+    D_800625A0->details->digits2_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->digits2_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              D_800625A0->details->digits2 + D_800625A0->details->digits2_count * 2,
+                              D_800625A0->buffer, i * 8 + D_801D2250, D_801D2254, 0x1000);
+        }
+    }
+    D_800625A0->details->digits2_buffer = D_800625A0->buffer;
+    func_801C50E8(third);
+    D_800625A0->details->digits3_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_800625A0->digits[i] != 0xFF) {
+            D_800625A0->details->digits3_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_800625A0->digits[i],
+                              D_800625A0->details->digits3 + D_800625A0->details->digits3_count * 2,
+                              D_800625A0->buffer, i * 8 + D_801D2258, D_801D225C, 0x1000);
+        }
+    }
+    D_800625A0->details->digits3_buffer = D_800625A0->buffer;
+    D_800625A0->details->digits_shown = 1;
+}
+
+/* Party bits of the available members holding item `item` in their gear (kind 0) or accessories (kind 1). */
+#ifdef NON_MATCHING
+u16 func_801CDBA0(u8 item, u8 kind) {
+    u16 members;
+    u8 found;
+    s32 i;
+    s32 k;
+
+    members = 0;
+    if (item != 0 && kind != 2) {
+        for (i = 0; i < 16; i++) {
+            found = 0;
+            if (D_800625A0->member_present[i] != 0) {
+                switch (kind) {
+                case 0:
+                    for (k = 0; k < 5; k++) {
+                        if (item < 0x32) {
+                            if (D_8006D8A0[i].gear[k] == item) {
+                                found = 1;
+                                break;
+                            }
+                        } else if (D_8006D8A0[i].gear[k + 5] == item) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    break;
+                case 1:
+                    for (k = 0; k < 3; k++) {
+                        if (D_8006D8A0[i].gear[k + 10] == item) {
+                            found = 1;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            if (found) {
+                members |= func_801C50CC(i);
+            }
+        }
+    }
+    return members;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CDBA0);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CDD14);
 

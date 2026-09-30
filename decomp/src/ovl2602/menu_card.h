@@ -108,6 +108,73 @@ typedef struct {
     u8 unk140A[2];
 } ListBlock;
 
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+} LINE_F2;
+
+/*
+ * The import screen's packets (menu state + 450, 4788h bytes): sprite groups
+ * with their part counts and buffers, the bars and frames of nine rows, the
+ * name labels and the resources unpacked from file 2.
+ */
+typedef struct {
+    POLY_FT4 members[18];     /* 0000: count 46a5, buffer 46a6 */
+    POLY_FT4 group2D0[18];    /* 02d0: count 46a9, buffer 46a8 */
+    POLY_FT4 heading[44];     /* 05a0: count 46ab, buffer 46aa */
+    POLY_FT4 digits1[18];     /* 0c80: count 46ad, buffer 46ac */
+    POLY_FT4 digits2[18];     /* 0f50: count 46af, buffer 46ae */
+    POLY_FT4 group1220[56];   /* 1220: count 46b4, buffer 46b3 */
+    POLY_FT4 digits3[18];     /* 1ae0: count 46b1, buffer 46b0 */
+    POLY_FT4 rows[8][8];      /* 1db0: counts 468c, buffers 4694 */
+    POLY_FT4 cells_a[9][6];   /* 27b0: counts 46bc, buffers 46ce */
+    POLY_FT4 cells_b[9][6];   /* 3020: counts 46c5, buffers 46d7 */
+    LINE_F3 bar_upper[18];    /* 3890: two per row */
+    LINE_F3 bar_lower[18];    /* 3a40 */
+    LINE_F2 frame[2];         /* 3bf0 */
+    u8 unk3C10[0x20];
+    Label names_a[8];         /* 3c30 */
+    Label names_b[8];         /* 4030 */
+    Label label4430;          /* 4430 */
+    Label label44B0;          /* 44b0 */
+    Label label4530;          /* 4530 */
+    Label label45B0;          /* 45b0 */
+    void *resources[3];       /* 4630 */
+    u8 unk463C[0x4654 - 0x463C];
+    u8 amounts[0x30];         /* 4654 */
+    u8 name_shown[8];         /* 4684 */
+    u8 row_count[8];          /* 468c */
+    u8 row_buffer[8];         /* 4694 */
+    u8 bar_shown[9];          /* 469c */
+    u8 members_count;         /* 46a5 */
+    u8 members_buffer;        /* 46a6 */
+    u8 label4430_shown;       /* 46a7 */
+    u8 group2D0_buffer;       /* 46a8 */
+    u8 group2D0_count;        /* 46a9 */
+    u8 heading_buffer;        /* 46aa */
+    u8 heading_count;         /* 46ab */
+    u8 digits1_buffer;        /* 46ac */
+    u8 digits1_count;         /* 46ad */
+    u8 digits2_buffer;        /* 46ae */
+    u8 digits2_count;         /* 46af */
+    u8 digits3_buffer;        /* 46b0 */
+    u8 digits3_count;         /* 46b1 */
+    u8 digits_shown;          /* 46b2 */
+    u8 group1220_buffer;      /* 46b3 */
+    u8 group1220_count;       /* 46b4 */
+    u8 label44B0_shown;       /* 46b5 */
+    u8 unk46B6[6];
+    u8 cells_a_count[9];      /* 46bc */
+    u8 cells_b_count[9];      /* 46c5 */
+    u8 cells_a_buffer[9];     /* 46ce */
+    u8 cells_b_buffer[9];     /* 46d7 */
+    u8 unk46E0[0x4785 - 0x46E0];
+    u8 label45B0_shown;       /* 4785 */
+    u8 unk4786[2];
+} DetailBlock;
+
 /* Cursor and yes/no markers (menu state + 428). */
 typedef struct {
     POLY_FT4 packets[8]; /* 000: two per marker */
@@ -230,7 +297,8 @@ typedef struct {
     u8 scroll_shown; /* 49 */
     u8 unk4A[0x50 - 0x4A];
     u8 marker_shown[2]; /* 50 */
-    u8 unk52[0x5B - 0x52];
+    u8 unk52[0x5A - 0x52];
+    u8 unk5A;
     u8 unk5B;
     u8 unk5C[0x6C - 0x5C];
 } ScreenFlags;
@@ -271,7 +339,9 @@ typedef struct {
     u8 unk56;      /* 56 */
     u8 unk57;
     u8 bonus[8];   /* 58 */
-    u8 unk60[0xA4 - 0x60];
+    u8 unk60[0x6A - 0x60];
+    u8 gear[13];   /* 6a: equipped items */
+    u8 unk77[0xA4 - 0x77];
 } Character;
 
 /* A party member's detail view; its nine stat words at +b8. */
@@ -329,7 +399,7 @@ typedef struct {
     u8 unk440[4];
     Marker *markers[2];  /* 444 */
     u8 unk44C[4];
-    u8 *unk450;          /* 450: 4788h bytes */
+    DetailBlock *details; /* 450 */
     u8 unk454[0x46C - 0x454];
     SheetEntry sheet_entries[4]; /* 46c */
     u8 unk4CC[0x4E0 - 0x4CC];
@@ -362,6 +432,16 @@ extern s32 D_801D6A84[]; /* file slot -> list position */
 extern s32 D_801D6AFC[]; /* marker x per list position */
 extern s32 D_801D6B7C[]; /* marker y per list position */
 extern s32 D_801D6BFC[]; /* cursor x per position */
+extern s32 D_801D6C44[]; /* member portrait x */
+extern u8 D_801D2210[];  /* heading sprite ids */
+extern s32 D_801D2218[]; /* heading x */
+extern s32 D_801D2230[]; /* heading y */
+extern s32 D_801D2248;   /* first number x */
+extern s32 D_801D224C;   /* first number y */
+extern s32 D_801D2250;   /* second number x */
+extern s32 D_801D2254;   /* second number y */
+extern s32 D_801D2258;   /* third number x */
+extern s32 D_801D225C;   /* third number y */
 extern s32 D_801D6C20[]; /* cursor y per position */
 
 /* Game state. */
@@ -475,6 +555,8 @@ void func_801C9054(u8 index);
 void func_801C5EE8(Label *labels, u8 *text_ids, s32 row, s32 count);
 void func_801CC9A0(void);
 void func_801CC1C4(void);
+void func_801C5298(u32 value);
+u16 func_801C5244(u8 id);
 void func_801C5C98(void);
 void func_801C6114(void);
 void func_801C6708(void);
