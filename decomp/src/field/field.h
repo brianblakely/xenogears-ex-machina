@@ -172,7 +172,8 @@ typedef struct {
     s16 unk412;      /* 412 */
     s16 cleared;     /* 414: cleared when its owner hides */
     s16 owner;       /* 416: owning event actor */
-    u8 unk418[0x494 - 0x418];
+    u8 unk418[0x444 - 0x418];
+    POLY_FT4 icon[2];  /* 444: per buffer */
     u8 unk494;       /* 494 */
     u8 unk495;       /* 495 */
     u8 unk496[0x498 - 0x496];

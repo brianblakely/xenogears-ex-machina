@@ -1156,7 +1156,33 @@ void func_8007AF74(s32 port) {
     }
 }
 
+#ifdef NON_MATCHING
+/* The height of `p` on the plane through triangle a, b, c (0 for a vertical
+ * plane); the plane normal is left in `normal`. Differs only in the register
+ * of the second product (t1 in the original). */
+void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal) {
+    VECTOR edge_b;
+    VECTOR edge_c;
+    VECTOR d;
+
+    d.vx = b->vx - a->vx;
+    d.vy = b->vy - a->vy;
+    d.vz = b->vz - a->vz;
+    func_80048D7C(&d, &edge_b);
+    d.vx = c->vx - a->vx;
+    d.vy = c->vy - a->vy;
+    d.vz = c->vz - a->vz;
+    func_80048D7C(&d, &edge_c);
+    func_8004A480(&edge_b, &edge_c, normal);
+    if (normal->vy == 0) {
+        p->vy = 0;
+        return;
+    }
+    p->vy = a->vy + (-(normal->vx * (p->vx - a->vx)) - normal->vz * (p->vz - a->vz)) / normal->vy;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B07C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
 
@@ -1315,7 +1341,33 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E1C0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007EE0C);
 
+extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
+
+#ifdef NON_MATCHING
+/* Point both buffers' icon of `window` at frame `frame`: a 64x64 texture
+ * square and the frame's CLUT row. Differs only in the order of the first
+ * two independent instructions (sll before lui). */
+void func_8007F5AC(s32 window, s32 frame) {
+    DialogueWindow *w;
+    s16 *u;
+    s16 *v;
+
+    w = &D_800C2698[window];
+    u = &D_800ADF34[frame].vx;
+    v = &D_800ADF34[frame].vy;
+    D_800C2698[window].icon[1].u0 = w->icon[0].u0 = *u;
+    D_800C2698[window].icon[1].v0 = w->icon[0].v0 = *v;
+    D_800C2698[window].icon[1].u1 = w->icon[0].u1 = *u + 0x40;
+    D_800C2698[window].icon[1].v1 = w->icon[0].v1 = *v;
+    D_800C2698[window].icon[1].u2 = w->icon[0].u2 = *u;
+    D_800C2698[window].icon[1].v2 = w->icon[0].v2 = *v + 0x40;
+    D_800C2698[window].icon[1].u3 = w->icon[0].u3 = *u + 0x40;
+    D_800C2698[window].icon[1].v3 = w->icon[0].v3 = *v + 0x40;
+    D_800C2698[window].icon[1].clut = w->icon[0].clut = GetClut(0, frame + 0xE0);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F5AC);
+#endif
 
 /* Close dialogue window `window` unless it is busy; -1 when busy. */
 s32 func_8007F6F8(s16 window) {
