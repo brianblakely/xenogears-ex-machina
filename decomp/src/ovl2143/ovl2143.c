@@ -2444,7 +2444,191 @@ void func_801E738C(s32 slot_count) {
     }
 }
 
+/* Create actor `index` (when its slot is free) from its files: relocate them
+ * (unless `flags` bit 0), load its sound bank (unless bit 2), copy its model
+ * group into a free model list and build the hierarchy at `pos`, set up its
+ * shadow quads, image animations and records24, reset its script (unless bit
+ * 6) and keep a compacted copy of its model group (unless bit 1).
+ * Differs in register allocation (the file pointer and loop index share s4). */
+#ifdef NON_MATCHING
+void func_801E742C(s32 index, u16 flags, ActorScript *script, ActorFile *file, s16 x, s16 y, s16 z,
+                   s16 w, s16 *pos) {
+    Actor *actor;
+    ActorInfo *info;
+    ActorDesc *desc;
+    SoundBlock *bank;
+    ScriptBlock *block;
+    void *images;
+    u8 *group;
+    HierarchyLink *links;
+    s32 size;
+    s32 i, k;
+    s32 count;
+    Record24 *record;
+    Record24Entry **entries;
+    s32 **tables;
+    u16 *p;
+    POLY_FT4 *prim;
+
+    func_80032498(4, 0);
+    if (index >= 10 || D_801E8670[index] != NULL) {
+        return;
+    }
+    actor = func_80031BDC(sizeof(Actor), 0);
+    if (!(flags & 1)) {
+        func_8003342C(file);
+        func_8003342C(file->info);
+    }
+    actor->b62 = 0;
+    actor->b63 = 0;
+    if (!(flags & 4)) {
+        func_8003342C(script);
+        func_8003342C(script->owner);
+        block = script->script;
+        func_8003342C(block);
+        func_8003342C(block->locals);
+        bank = (SoundBlock *)script->owner;
+        if (bank->end != bank->bank && func_8003864C(bank->bank, 0) == 0) {
+            func_80038428(bank->bank);
+            actor->b62 = 1;
+        }
+    }
+    info = file->info;
+    desc = info->desc;
+    images = file->images;
+    group = file->group;
+    links = file->links;
+    D_801E8670[index] = actor;
+    actor->size[0] = desc->size[0];
+    actor->size[1] = desc->size[1];
+    actor->size[2] = desc->size[2];
+    actor->reference = desc->reference;
+    actor->flags = desc->flags;
+    size = (u8 *)links - group;
+    if (actor->flags & 0x200) {
+        func_80030988(2, 2, 0x40, 0x40);
+    }
+    if (!(flags & 1)) {
+        /* i: the images are shown */
+        i = 0;
+        if (!(flags & 0x40) && !(actor->flags & 4)) {
+            i = 1;
+        }
+        func_8002DDE4(images, (s16)i, x, y, (s16)i, z, w);
+        D_801E8638 = func_80031BDC(size, 1);
+        memcpy(D_801E8638, group, size);
+        for (D_801E8634 = 0; D_801E8634 < 8; D_801E8634++) {
+            if (D_801E85F4[D_801E8634].w0 == 0) {
+                break;
+            }
+        }
+        func_801DC22C(D_801E8638, (ModelList *)&D_801E85F4[D_801E8634]);
+        actor->models = (ModelList *)&D_801E85F4[D_801E8634];
+    }
+    if (flags & 0x40) {
+        actor->parts = func_801DC2D0(actor->models, links, 0, 0, 0, 0, 0, 0);
+    } else if (actor->flags & 4) {
+        actor->parts = func_801DC2D0(actor->models, links, 2, 0, 0, 0, 0, 0);
+    } else {
+        actor->parts = func_801DC2D0(actor->models, links, 2, 1, x, y, z, w);
+    }
+    if (pos != NULL) {
+        actor->parts->pos[0] = pos[0];
+        actor->parts->pos[1] = pos[1];
+        actor->parts->pos[2] = pos[2];
+    }
+    if (!(flags & 1)) {
+        actor->h90 = x;
+        actor->h92 = y;
+        actor->shift_x = z;
+        actor->shift_y = w;
+    } else {
+        actor->h90 = -1;
+    }
+    if (!(flags & 4) && !(flags & 0x80)) {
+        actor->blockAC = script;
+    } else {
+        actor->blockAC = NULL;
+    }
+    for (i = 0; i < 2; i++) {
+        prim = &actor->prims[i];
+        SetPolyFT4(prim);
+        SetSemiTrans(prim, 1);
+        actor->prims[i].r0 = 0x40;
+        actor->prims[i].g0 = 0x40;
+        actor->prims[i].b0 = 0x40;
+        actor->prims[i].clut = GetClut(0x100, 0xF3);
+        actor->prims[i].tpage = GetTPage(0, 2, 0x280, 0x100);
+        actor->prims[i].u0 = 0;
+        actor->prims[i].v0 = 0xE0;
+        actor->prims[i].u1 = 0xF;
+        actor->prims[i].v1 = 0xE0;
+        actor->prims[i].u2 = 0;
+        actor->prims[i].v2 = 0xEF;
+        actor->prims[i].u3 = 0xF;
+        actor->prims[i].v3 = 0xEF;
+    }
+    actor->scale = desc->scale;
+    actor->channel_count = desc->channel_count;
+    func_801E8510(actor);
+    actor->count10E = desc->count30;
+    if (actor->count10E != 0) {
+        actor->records30 = func_80031BDC(actor->count10E * sizeof(ImageAnim), 0);
+        for (i = 0; i < actor->count10E; i++) {
+            actor->records30[i].active = 0;
+            actor->records30[i].pixels = NULL;
+            actor->records30[i].pixels2 = NULL;
+            actor->records30[i].work = NULL;
+        }
+    }
+    actor->count10D = desc->count24;
+    if (actor->count10D != 0) {
+        p = desc->records;
+        record = func_80031BDC(actor->count10D * sizeof(Record24), 0);
+        actor->records24 = record;
+        entries = &record->block18;
+        tables = info->tables;
+        for (i = 0; i < actor->count10D; i++, tables++, entries = (Record24Entry **)((u8 *)entries + sizeof(Record24)), record++) {
+            count = (s16)p[17];
+            record->h0 = *p++;
+            func_801E1A14(record, *tables, p[0], p[1], p[2], p[3], p[4], count, x + p[5], y + p[6],
+                          p[7], p[8], z + p[9], w, p[10], p[11], p[12], p[13], p[14], p[15]);
+            p += 17;
+            for (k = 0; k < count; k++) {
+                (*entries)[k].h6 = *p++;
+                (*entries)[k].hE = *p++;
+                (*entries)[k].h0 = *p++;
+                (*entries)[k].h2 = *p++;
+                (*entries)[k].h4 = *p++;
+            }
+        }
+    }
+    actor->b22 = 0;
+    actor->active = 1;
+    actor->index = index;
+    if (!(flags & 0x40)) {
+        block = script->script;
+        actor->ownerB0 = script->owner;
+        func_801E3534(actor, &D_801E86A8, block->entries, block->locals);
+        func_801E35D0(actor, actor, &D_801E86A8, 0);
+    }
+    if (!(flags & 2)) {
+        func_8002C644(D_801E8638);
+        func_8002C4BC(D_801E8638);
+        size = func_80031894(D_801E8638);
+        group = func_80031BDC(size, 0);
+        memcpy(group, D_801E8638, size);
+        func_800320E8(D_801E8638);
+        func_801DCE18(actor->models, 0);
+        func_801DC22C(group, actor->models);
+        actor->group = group;
+    } else {
+        actor->group = NULL;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E742C);
+#endif
 
 /* Advance the scene by the elapsed half-frames: step every actor, carry the
  * carried ones, place the anchors, then draw the actors and particles. */

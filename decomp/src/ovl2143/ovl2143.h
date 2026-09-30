@@ -191,11 +191,19 @@ typedef struct {
     View *view;
 } ViewOwner;
 
+/* An entry of a records24 table (0x10 bytes). */
+typedef struct {
+    s16 h0, h2, h4, h6;
+    u8 pad8[6];
+    s16 hE;
+} Record24Entry;
+
 /* An actor's 0x24-byte record (records24): four heap blocks. */
 typedef struct {
-    u8 pad0[0x14];
+    u16 h0;
+    u8 pad2[0x12];
     void *block14;          /* +14 */
-    void *block18;          /* +18 */
+    Record24Entry *block18; /* +18 */
     void **block1C;         /* +1c */
     void *block20;          /* +20 */
 } Record24;
@@ -362,7 +370,8 @@ typedef struct Actor {
     void *blockAC;          /* +ac */
     ViewOwner *ownerB0;     /* +b0 */
     ViewOwner *ownerB4;     /* +b4 */
-    u8 padB8[0x52];
+    POLY_FT4 prims[2];      /* +b8: a shadow quad per buffer */
+    u8 pad108[2];
     u16 mask;               /* +10a */
     u8 channel_count;       /* +10c */
     u8 count10D;            /* +10d: 0x24-byte records at +114 */
@@ -488,6 +497,77 @@ extern s16 D_801E8698;
 extern ParticlePool D_801E86A0;
 extern SlotPool D_801E86A8;
 extern u16 D_801E86B0;
+
+/* An actor's scene description (the file's +10 record's +4). */
+typedef struct {
+    u8 pad0[2];
+    s16 size[3];            /* +2 */
+    s16 scale;              /* +8 */
+    u8 reference;           /* +a */
+    u8 padB;
+    u16 flags;              /* +c */
+    u8 channel_count;       /* +e */
+    u8 padF;
+    u8 count30;             /* +10 */
+    u8 pad11;
+    u8 count24;             /* +12 */
+    u8 pad13;
+    u16 records[1];         /* +14: the records24 descriptions */
+} ActorDesc;
+
+typedef struct {
+    u8 pad0[4];
+    ActorDesc *desc;        /* +4 */
+    s32 *tables[1];         /* +8: per records24 entry */
+} ActorInfo;
+
+/* An actor's files: images, the model group (up to the hierarchy links) and
+ * its description; and its script block with its sound bank. */
+typedef struct {
+    u8 pad0[4];
+    void *images;           /* +4 */
+    u8 *group;              /* +8 */
+    HierarchyLink *links;   /* +c: follows the model group */
+    ActorInfo *info;        /* +10 */
+} ActorFile;
+
+typedef struct {
+    u8 pad0[8];
+    void *bank;             /* +8 */
+    void *end;              /* +c */
+} SoundBlock;
+
+typedef struct {
+    u8 pad0[4];
+    s32 *locals;            /* +4 */
+    s32 entries[1];         /* +8 */
+} ScriptBlock;
+
+typedef struct {
+    u8 pad0[4];
+    ScriptBlock *script;    /* +4 */
+    ViewOwner *owner;       /* +8: also the sound block */
+} ActorScript;
+
+extern s32 D_801E8634;      /* model list in use */
+extern u8 *D_801E8638;      /* copy of the model group */
+
+void func_8003342C(void *table);   /* relocate an offset table in place */
+s32 func_8003864C(void *bank, s32 arg1);
+void func_80038428(void *bank);     /* load a sound effect bank */
+void func_80030988(s32 a0, s32 a1, s32 a2, s32 a3);
+void func_8002DDE4(void *images, s32 on, s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_8002C644(u8 *group);
+void func_8002C4BC(u8 *group);
+s32 func_80031894(u8 *group);       /* the group's size */
+ModelList *func_801DC22C(u8 *group, ModelList *list);
+ModelPart *func_801DC2D0(ModelList *group, HierarchyLink *links, s32 mode, s32 configure,
+                         s16 param0, s16 param1, s16 param2, s16 param3);
+void func_801E1A14(Record24 *record, s32 *table, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6, s16 count,
+                   s16 x, s16 y, s16 a10, s16 a11, s16 z, s16 w, u8 b0, u8 b1, u8 b2, u8 b3,
+                   u8 b4, u8 b5);
+void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals);
+void func_801E8510(Actor *actor);
 
 /* This overlay. */
 SlotPool *func_801DF5F4(SlotPool *pool, s32 capacity);
