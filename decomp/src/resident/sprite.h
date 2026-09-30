@@ -142,7 +142,8 @@ typedef struct Sprite {
         unsigned step : 3;       /* facing group of the current angle */
         unsigned phase : 2;      /* facing groups: 0 one, 1 four, 2 eight */
         unsigned field22 : 6;    /* commands run in the current step */
-        unsigned unknown28 : 4;
+        unsigned field28 : 2;
+        unsigned unknown30 : 2;
     } frame_bits;            /* +0xa8 */
     union {
         u32 word;
@@ -293,7 +294,7 @@ void func_8001CE74(Task *owner);
 void func_8001D034(Task *owner);
 void func_8001D3F4(Sprite *sprite);
 s32 func_8001EE74(u16 *header); /* the part count of a frame header */
-void func_80022000(Sprite *sprite, s16 scale);
+void func_80022000(Sprite *sprite, s32 scale);
 void func_800239A0(Sprite *sprite);
 void func_80023804(Sprite *sprite);
 void func_8002393C(SpriteRenderer *renderer);

@@ -558,7 +558,77 @@ void func_800234AC(Sprite *sprite) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023538);
+/* Apply an animation header: its command script and frame table, facing
+ * groups (bits 0-1), gravity from its signed weight (bits 2-7), the frame
+ * skip, the sprite's weight and gravity divisor; unless kept (bits 11, 12,
+ * 13) clear the speeds, reset the angles and rebuild the orientation, and
+ * rescale; then restart the command state. */
+void func_80023538(Sprite *sprite, u16 *animation) {
+    s32 weight;
+    s32 skip;
+    s32 step;
+    s32 offset;
+    SpriteRenderer *renderer;
+
+    sprite->animation = animation;
+    offset = animation[1] + 2;
+    sprite->script = (u8 *)(offset + (s32)animation);
+    sprite->frame_bits.phase = animation[0] & 3;
+    offset = animation[2] + 4;
+    sprite->frame_table = (u16 *)(offset + (s32)animation);
+    weight = (animation[0] >> 2) & 0x3F;
+    if (weight & 0x20) {
+        weight |= ~0x3F;
+    }
+    skip = D_80059198 + 1;
+    sprite->word1c = weight << 10;
+    sprite->word1c *= skip * skip * (s16)sprite->word82 / 4096;
+    step = 0x10000 / sprite->motion.bits.divisor;
+    sprite->word1c *= step * step / 256;
+    sprite->word1c /= 256;
+    if (!((animation[0] >> 11) & 1)) {
+        sprite->speed_z = 0;
+        sprite->speed_y = 0;
+        sprite->speed_x = 0;
+        sprite->speed = 0;
+    }
+    renderer = sprite->renderer;
+    if (renderer != NULL) {
+        if (!((animation[0] >> 12) & 1)) {
+            renderer->angle_z = 0;
+            renderer->angle_x = 0;
+            renderer->angle_y = 0;
+            func_80022090(sprite);
+        }
+        if (!((animation[0] >> 13) & 1)) {
+            if (D_800591AD == 0) {
+                goto one_sided;
+            }
+            func_80022000(sprite, D_800591A8);
+        }
+        if (D_800591AD != 0) {
+            func_80022090(sprite);
+        }
+    one_sided:
+        if ((sprite->render.word & 3) == 1) {
+            sprite->renderer->offset_x = sprite->renderer->offset_y = 0;
+            if (!((sprite->flags >> 20) & 1) && sprite->renderer->pointer34 != NULL) {
+                func_800234AC(sprite);
+            }
+        }
+    }
+    sprite->stack_top = 0x10;
+    sprite->frame_bits.bounce = 0;
+    sprite->countdown = 1;
+    sprite->frame_bits.field22 = 0;
+    sprite->frame_bits.field28 = 2;
+    sprite->frame_bits.frame = 0x3F;
+    sprite->half30 = 0;
+    if (sprite->sequencer != NULL && sprite->frame_bits.sequencer_owned == 1) {
+        ((SpriteSequencer *)sprite->sequencer)->word0 = ((SpriteSequencer *)sprite->sequencer)->word4 = 0;
+        ((SpriteSequencer *)sprite->sequencer)->halfc = 0;
+    }
+}
 
 /* Reset a sprite's state to the defaults: no flags, frame or animation,
  * blend 0x2d, gravity divisor 256, gravity from the frame skip and the

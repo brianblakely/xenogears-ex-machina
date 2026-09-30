@@ -952,7 +952,7 @@ void func_80021FE0(Sprite *sprite, s16 direction) {
 }
 
 /* Set a sprite's uniform scale (and its renderer's), marking the orientation dirty. */
-void func_80022000(Sprite *sprite, s16 scale) {
+void func_80022000(Sprite *sprite, s32 scale) {
     SpriteRenderer *renderer = sprite->renderer;
 
     if (renderer != NULL) {
