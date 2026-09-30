@@ -1039,9 +1039,174 @@ void func_8001C074(void) {
     func_80044BD0(&D_800625A0->current->ot[15]);
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C1A8);
+/* Menu mode body: with the debug start, pick the menu screen and its parameter on screen and load the menu overlay (plus the extra blocks screen 5 needs); then run the chosen screen and, after a debug start, release everything and dispatch. */
+/* Matches when its two jump tables are aligned to 8 relative to a rodata
+ * section starting at 0x8001833c (4 mod 8): the original unit's rodata starts
+ * there. Built inside main.c, GCC's .align 3 places them 4 bytes off. */
+#ifdef NON_MATCHING
+void func_8001C1A8(void) {
+    s32 screen;
+    s32 number;
+    u8 running;
+    void *low;
+    void *overlay;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C634);
+    screen = 0;
+    number = 0;
+    running = 1;
+    if (D_80059178 != 0) {
+        do {
+            func_8003700C("\n\n     Menu=(%d)%s\n", screen, D_8004FA9C[screen]);
+            if (screen < 4) {
+                if (number < 11) {
+                    func_8003700C("\n\n     Chr =(%d)\n", number);
+                } else {
+                    func_8003700C("\n\n     Robo =(%d)\n", number - 11);
+                }
+            } else if (screen != 6) {
+                func_8003700C("\n\n     ShopNo =(%d)\n", number);
+            } else {
+                func_8003700C("\n\n     CdNo =(%d)\n", number);
+            }
+            switch (D_800625A0->input) {
+            case 4:
+                running = 0;
+                break;
+            case 0:
+                screen++;
+                number = 0;
+                if (screen >= 7) {
+                    screen = 0;
+                }
+                break;
+            case 2:
+                screen--;
+                number = 0;
+                if (screen < 0) {
+                    screen = 6;
+                }
+                break;
+            case 3:
+                if (screen < 4) {
+                    if (++number >= 31) {
+                        number = 0;
+                    }
+                } else if (screen != 6) {
+                    number++;
+                } else {
+                    number = number == 0;
+                }
+                break;
+            case 1:
+                if (--number < 0) {
+                    if (screen < 4) {
+                        number = 30;
+                    } else if (screen != 6) {
+                        number = 0xFF;
+                    } else {
+                        number = number == 0;
+                    }
+                }
+                break;
+            }
+            func_8001C074();
+        } while (running);
+        D_80059460 = screen;
+        D_80059171 = number;
+        D_800625A0->buffers[0].draw.isbg = 0;
+        D_800625A0->buffers[1].draw.isbg = 0;
+        func_80044534(0);
+        D_800625A0->current = &D_800625A0->buffers[1];
+        func_80044534(1);
+    }
+    func_80028470(0x10, 0);
+    if (D_80059178 != 0) {
+        D_8006EF58 = 999999999;
+        func_80032498(2, 0);
+        D_8005945C = func_80031BDC(func_800288EC(1), 0);
+        func_800295D8(1, D_8005945C, 0, 0x80);
+        func_80028A60(0);
+        if (D_80059460 == 5) {
+            func_80028470(4, 0);
+            D_800658CC = func_80031BDC(4, 1);
+            D_8006BE24 = func_80031BDC((u8 *)D_800658CC - (u8 *)0x801DC000, 1);
+            func_800295D8(0x6B9, (void *)0x801DC000, 0, 0x80);
+            func_80028A60(0);
+            func_80028470(0x10, 0);
+            D_8005A4AC = func_80031BDC(0x4000, 0);
+            D_8005A4B0 = func_80031BDC(0x4000, 0);
+        }
+        low = func_80031BDC(4, 1);
+        overlay = func_80031BDC((u8 *)low - (u8 *)0x801C5000, 1);
+        func_800295D8(D_80059460 + 5, (void *)0x801C5000, 0, 0x80);
+        func_80028A60(0);
+    }
+    func_80028470(0x10, 0);
+    switch (D_80059460) {
+    case 0:
+        func_801C62A8();
+        break;
+    case 1:
+        func_801CB0A8();
+        break;
+    case 3:
+        func_801CBDBC();
+        break;
+    case 4:
+        func_801CCD28();
+        break;
+    case 2:
+    case 6:
+        func_801C62A8();
+        func_8001996C(1);
+        break;
+    case 5:
+        func_801CE024();
+        break;
+    }
+    if (D_80059178 != 0) {
+        func_800320E8(low);
+        func_800320E8(overlay);
+        if (D_80059460 == 5) {
+            func_800320E8(D_800658CC);
+            func_800320E8(D_8006BE24);
+            func_800320E8(D_8005A4AC);
+            func_800320E8(D_8005A4B0);
+        }
+        D_80059178 = 1;
+        func_80019ACC(0);
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C1A8);
+#endif
+
+/* Mode 5, the menu: allocate and clear its work block, set up the display, then run the menu body. */
+void func_8001C634(void) {
+    D_800625A0 = func_80031BDC(0x1E98, 0);
+    func_8003F8E8(D_800625A0, 0x1E98);
+    D_800625A0->input = 8;
+    func_80032498(2, 0);
+    D_800625A0->current = &D_800625A0->buffers[1];
+    D_800625A0->debug_show = 0;
+    D_800625A0->debug_value = 1;
+    D_800625A0->frame_counter = 0;
+    D_800625A0->drawing = 0;
+    func_8001BE14();
+    if (D_80059178 != 0) {
+        D_800625A0->buffers[0].draw.isbg = 1;
+        D_800625A0->buffers[1].draw.isbg = 1;
+    }
+    func_8001BEEC();
+    func_8004B54C(0);
+    func_80044C44(&D_800625A0->buffers[0].draw);
+    func_80044C44(&D_800625A0->buffers[1].draw);
+    func_80044E9C(&D_800625A0->buffers[0].disp);
+    func_80044E9C(&D_800625A0->buffers[1].disp);
+    func_80044534(1);
+    func_8001C1A8();
+    D_80059178 = 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8001C76C);
 
