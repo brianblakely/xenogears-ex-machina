@@ -19,6 +19,7 @@
 #include "popup.h"
 #include "frame.h"
 #include "stage.h"
+#include "highlight.h"
 
 /* Start the battle in mode (1-4 the battle module's intros, 801E8588..;
  * others 800B7870): the display, the frame state and the formation's
@@ -1301,26 +1302,183 @@ void func_800BCAFC(BattleSprite *sprite, s32 angle) {
     func_8001F6B0(sprite);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BCB54);
+/* End the acting slot's pulse: restore its sprite's colour. */
+void func_800BCB54(BattleTask *task) {
+    SlotPulse *pulse = D_800C3748;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BCBB4);
+    if (pulse != NULL) {
+        pulse->sprite->colourFlags |= 1;
+        func_8001CD94(pulse);
+        func_800320E8(pulse);
+        D_800C3748 = NULL;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BCC60);
+/* Pulse update: the sprite's red and green-blue follow two phases of the
+ * tick (0x80 plus half, at most 0xFF). */
+void func_800BCBB4(BattleTask *task) {
+    SlotPulse *pulse = (SlotPulse *)task;
+    s32 angle = pulse->tick << 6;
+    BattleSprite *sprite = pulse->sprite;
+    s32 level;
+
+    level = func_8003F8B0(angle) + 0x1000;
+    level >>= 6;
+    level += 0x80;
+    if (level >= 0x100) {
+        level = 0xFF;
+    }
+    sprite->colour[0] = level;
+    level = func_8003F8CC(angle) + 0x1000;
+    level >>= 6;
+    level += 0x80;
+    if (level >= 0x100) {
+        level = 0xFF;
+    }
+    sprite->colour[1] = level;
+    sprite->colour[2] = level;
+    func_8001F6B0(sprite);
+    pulse->tick++;
+}
+
+/* Start the acting slot's pulse (unless it already runs for that slot). */
+void func_800BCC60(void) {
+    SlotPulse *pulse;
+    BattleSprite *sprite;
+
+    if (D_800C3748 != NULL) {
+        if (D_800C3748->slot == D_800C4922) {
+            return;
+        }
+        func_800BCB54(NULL);
+    }
+    if (BATTLE_AREA.tasks[AREA_ACTING_SLOT] == NULL) {
+        return;
+    }
+    pulse = func_8001CD08(BATTLE_AREA.tasks[AREA_ACTING_SLOT], sizeof(SlotPulse) - sizeof(BattleTask));
+    D_800C3748 = pulse;
+    func_8001CD6C(pulse, func_800BCBB4);
+    func_8001CD74(pulse, func_800BCB54);
+    if (D_800591AC) {
+        D_80059464--;
+    }
+    pulse->task.link &= 0x7FFFFFFF;
+    pulse->sprite = sprite = BATTLE_AREA.sprites[AREA_ACTING_SLOT];
+    pulse->slot = AREA_ACTING_SLOT;
+    sprite->colourFlags &= ~1;
+}
 
 /* Clear the highlighted slots. */
 void func_800BCD8C(void) {
     D_800C3D14 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BCD98);
+/* Highlight the slots of mask (bit per slot): pulse the acting slot while
+ * any is set, and give each highlighted slot's sprite a ring (ending the
+ * others'). */
+void func_800BCD98(u16 mask) {
+    s32 slot;
+    ActorTask *task;
+    ActorTask *ring;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BCEAC);
+    D_800C3D14 = mask;
+    if (mask) {
+        func_800BCC60();
+    } else {
+        func_800BCB54(NULL);
+    }
+    for (slot = 0; slot != 11; slot++, mask >>= 1) {
+        if (mask & 1) {
+            task = BATTLE_AREA.tasks[slot];
+            if (task != NULL && func_8001D0A4(task, func_800BCFAC) == NULL) {
+                func_800BD098(task);
+            }
+        } else {
+            task = BATTLE_AREA.tasks[slot];
+            if (task != NULL) {
+                ring = func_8001D0A4(task, func_800BCFAC);
+                if (ring != NULL) {
+                    ring->destroy(ring);
+                }
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BCFAC);
+/* Ring draw: place, spin and scale it (to a constant screen size) and draw
+ * its script into this buffer's vertices. */
+void func_800BCEAC(BattleTask *draw) {
+    SlotRing *ring = draw->data;
+    MATRIX m;
+    VECTOR scale;
+    s32 size;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD024);
+    TransMatrix(&m, &ring->pos);
+    func_8003F738(&ring->angle, &m);
+    CompMatrix(&D_8004FBB8, &m, &m);
+    size = ReadGeomScreen() << 12;
+    if (m.t[2] != 0) {
+        size /= m.t[2];
+    }
+    size = 0x1000000 / size / 2;
+    func_80021B14(&scale, size, size, size);
+    ScaleMatrixL(&m, &scale);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    func_800B1F6C(ring->script, ring->vertices[BATTLE_AREA.buffer], D_8005956C, 0, 0, 0);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD098);
+/* Ring update: follow the sprite (0x20 above its top), shade it and spin. */
+void func_800BCFAC(ActorTask *task) {
+    SlotRing *ring = task->data;
+    BattleSprite *sprite = ring->sprite;
+
+    ring->pos.vx = sprite->x.part.whole;
+    ring->pos.vy = sprite->y.part.whole;
+    ring->pos.vz = sprite->z.part.whole;
+    ring->pos.vy = ring->pos.vy - ring->height - 0x20;
+    func_800BCAFC(sprite, ++ring->tick);
+    ring->angle.vy += 0x10;
+}
+
+/* Ring destroy: restore the sprite's colour and free the ring. */
+void func_800BD024(ActorTask *task) {
+    SlotRing *ring = task->data;
+    BattleSprite *sprite = ring->sprite;
+
+    sprite->colourFlags |= 1;
+    func_8001F6B0(sprite);
+    func_80025180(ring->vertices[0]);
+    func_8001CE74(task);
+    func_8001CD94(task);
+    func_800320E8(ring);
+}
+
+/* Give an actor task's sprite a ring. */
+void func_800BD098(ActorTask *owner) {
+    BattleSprite *sprite = owner->data;
+    SlotRing *ring = func_8001D1D8(sizeof(SlotRing), owner, func_800BCFAC, func_800BCEAC, func_800BD024);
+    s32 size;
+    u8 *vertices;
+
+    ring->sprite = sprite;
+    ring->height = sprite->size;
+    if (D_800591AC) {
+        D_80059464--;
+    }
+    ring->actor.link &= 0x7FFFFFFF;
+    func_80021B04(&ring->angle, 0, 0, 0);
+    size = func_800B16A4((ScriptEntry *)func_800B168C(func_8001C76C, 0));
+    vertices = func_80031BDC(size * 2, 0);
+    func_800B1720(func_800B168C(func_8001C76C, 0), vertices, 0, 1);
+    memcpy(vertices + size, vertices, size);
+    ring->vertices[0] = vertices;
+    ring->vertices[1] = vertices + size;
+    ring->script = func_800B168C(func_8001C76C, 0);
+    sprite->colourFlags &= ~1;
+    func_8001F6B0(sprite);
+    func_800BCFAC(&ring->actor);
+}
 
 #ifdef NON_MATCHING
 /* Show the current event's result on slot's sprite (800BD3AC), with the

@@ -148,6 +148,7 @@ decomp/src/battle/frame.h
 decomp/src/battle/gear_menu.h
 decomp/src/battle/glyph_lists.h
 decomp/src/battle/gte.h
+decomp/src/battle/highlight.h
 decomp/src/battle/hud_draw.h
 decomp/src/battle/item_command.h
 decomp/src/battle/menu_pages.h
