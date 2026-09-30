@@ -21,8 +21,8 @@ void func_801E4048(void) {
     D_8005941C = 0;
     D_8005942C = 0;
     for (i = 0; i < 3; i++) {
-        D_80059468[i] = D_800D2D24[i];
-        D_800C3EB4.slot[i].id = D_800D2D24[i];
+        D_80059468[i] = D_800CCCE8.party_ids[i];
+        D_800C3EB4.slot[i].id = D_800CCCE8.party_ids[i];
     }
     for (i = 0; i < SLOT_COUNT; i++) {
         D_800C3EB4.slot[i].flag3 = 0;
@@ -73,8 +73,8 @@ void func_801E4160(void) {
             D_800D2DCC.present[i] = 1;
             D_800C3EB4.slot[i].group = FORMATION_GROUP(i) & 0x7F;
         } else {
-            D_800CCCE8[i].pos4E = 0;
-            D_800CCCE8[i].pos4C = 0;
+            D_800CCCE8.record[i].pos4E = 0;
+            D_800CCCE8.record[i].pos4C = 0;
             D_800C3EB4.slot[i].id = NO_COMBATANT;
             D_800C3EB4.slot[i].flag3 = 0;
             D_800C3EB4.slot[i].alone = 0;
@@ -163,7 +163,7 @@ void func_801E4870(void) {
     for (i = 3; i < SLOT_COUNT; i++) {
         D_800C3D0C[i].b3 = 0;
         if (D_800C3EB4.slot[i].id != NO_COMBATANT) {
-            func_8003F99C(&D_800CCCE8[i], records + D_800C3EB4.slot[i].id * sizeof(CombatantRecord),
+            func_8003F99C(&D_800CCCE8.record[i], records + D_800C3EB4.slot[i].id * sizeof(CombatantRecord),
                           sizeof(CombatantRecord));
             scripts = (u16 *)(D_800C3DD0 + ((u16 *)D_800C3DD0)[D_800C3EB4.slot[i].id]);
             D_800D3400[i - 3].main = (u8 *)scripts + scripts[0];
@@ -190,7 +190,7 @@ void func_801E4870(void) {
                 D_800D3400[i - 3].bvars[j] = 0;
             }
         } else {
-            func_8003F8E8(&D_800CCCE8[i], sizeof(CombatantRecord));
+            func_8003F8E8(&D_800CCCE8.record[i], sizeof(CombatantRecord));
             D_800C3D0C[i].script_armed = 0;
             D_800C3D0C[i].reaction_armed = 0;
         }
@@ -215,17 +215,17 @@ void func_801E4AC0(void) {
             D_800C3EA4->member_panel[i].state = 1;
             if (D_800C3EB4.slot[i].alone != 0) {
                 D_800D32A1[i].alone = 1;
-                D_800CCCE8[i].state |= 0x80;
+                D_800CCCE8.record[i].state |= 0x80;
                 if (D_800C3EB4.slot[i].id != 7) {
                     D_800C3EA4->member_panel[i].state = 2;
                 }
             } else {
                 D_800D32A1[i].alone = 0;
-                D_800CCCE8[i].state &= 0x7F;
+                D_800CCCE8.record[i].state &= 0x7F;
             }
         } else {
             D_800D32A1[i].alone = 0;
-            D_800CCCE8[i].state &= 0x7F;
+            D_800CCCE8.record[i].state &= 0x7F;
             D_800C3EA4->member_panel[i].state = 0;
         }
     }
@@ -237,8 +237,8 @@ void func_801E4AC0(void) {
         }
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1[i].stat62 = D_800CCCE8[i].stat62;
-        D_800D32A1[i].stat63 = D_800CCCE8[i].stat63;
+        D_800D32A1[i].stat62 = D_800CCCE8.record[i].stat62;
+        D_800D32A1[i].stat63 = D_800CCCE8.record[i].stat63;
     }
 }
 #else
@@ -318,7 +318,7 @@ void func_801E4E7C(void) {
     } while (i < SLOT_COUNT);
     D_800D2DCC.order_pos = 0;
     for (i = 3; i < SLOT_COUNT; i++) {
-        if (D_800D2DCC.present[i] != 0 && (D_800CCCE8[i].flags & 0x200)) {
+        if (D_800D2DCC.present[i] != 0 && (D_800CCCE8.record[i].flags & 0x200)) {
             D_800D2DCC.timer_reset[i] = D_800D2DCC.timer[i] = 1;
         }
     }
@@ -351,12 +351,12 @@ void func_801E5014(void) {
         D_800C3D48 = 1;
     }
     for (i = 0; i < 3; i++) {
-        D_800D32A1[i].character_b = D_8006ED0B[D_800D2D24[i]][0];
+        D_800D32A1[i].character_b = D_8006ED0B[D_800CCCE8.party_ids[i]][0];
         for (j = 0; j < 8; j++) {
-            D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8[i].menu_layout][j];
+            D_800C3EAC->slot[i].layout[j] = D_800C20F0[D_800CCCE8.record[i].menu_layout][j];
         }
         for (j = 0; j < 4; j++) {
-            if (D_800D2D24[i] != 7) {
+            if (D_800CCCE8.party_ids[i] != 7) {
                 D_800C3EAC->slot[i].menu8[j] = D_800C2130[j];
             } else {
                 D_800C3EAC->slot[i].menu8[j] = D_800C2138[j];
@@ -366,15 +366,15 @@ void func_801E5014(void) {
         D_800C3EAC->slot[i].target = func_800841E0(i);
         D_800C3EB4.slot[i].flag6 = func_80085310(i, D_800C3EAC->slot[i].target);
         for (k = 0; k < 16; k++) {
-            D_800C3EAC->slot[i].commands[k] = D_800CCCE8[i].commands & D_800C3234[k];
+            D_800C3EAC->slot[i].commands[k] = D_800CCCE8.record[i].commands & D_800C3234[k];
         }
-        if (D_800CCCE8[i].bA0 == 0xFF || (FORMATION_FLAGS & 0x40)) {
+        if (D_800CCCE8.record[i].bA0 == 0xFF || (FORMATION_FLAGS & 0x40)) {
             D_800C3EAC->slot[i].commands[7] = D_800C3234[7];
-            D_800CCCE8[i].commands |= D_800C3234[7];
+            D_800CCCE8.record[i].commands |= D_800C3234[7];
         }
         if (FORMATION_FLAGS & 0x80) {
             D_800C3EAC->slot[i].commands[8] = D_800C3234[8];
-            D_800CCCE8[i].commands |= D_800C3234[8];
+            D_800CCCE8.record[i].commands |= D_800C3234[8];
         }
     }
     for (i = 3; i < SLOT_COUNT; i++) {
@@ -383,7 +383,93 @@ void func_801E5014(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5384);
+/* Setup phase 0: choose the party (or the demo party), copy each member's
+ * character and gear records and battle data from the setup archive, load
+ * its images and tables, then start reading the formation's enemy files. */
+void func_801E5384(void) {
+    s32 count;
+    s32 i;
+    u32 *archive;
+    void *block;
+    u16 mask;
+    u8 gear;
+    u16 *list;
+
+    if (FORMATION_FLAGS & 0x10) {
+        D_800D3294 = 1;
+    } else {
+        D_800D3294 = 0;
+    }
+    mask = (D_8006F364.available & D_8006F364.available2) & 0x7FF;
+    if (D_800D3294 == 0) {
+        count = 0;
+        for (i = 0; i < 3; i++) {
+            if (func_80089C9C(mask, D_8006F364.party[i])) {
+                D_800CCCE8.party_ids[count] = D_8006F364.party[i] & 0x7F;
+                count++;
+            }
+        }
+        for (; count < 3; count++) {
+            D_800CCCE8.party_ids[count] = NO_COMBATANT;
+        }
+    } else {
+        D_800CCCE8.party_ids[1] = 10;
+        D_800CCCE8.party_ids[2] = 10;
+        D_800CCCE8.party_ids[0] = D_8006F364.party[0] & 0x7F;
+    }
+    func_8003342C(D_800595A8);
+    archive = D_800595A8;
+    for (i = 0; i < 3; i++) {
+        if (D_800CCCE8.party_ids[i] != NO_COMBATANT) {
+            func_8003F99C(&D_800CCCE8.record[i], D_8006D8A0[D_800CCCE8.party_ids[i]], 0xA4);
+            if (D_800D3294 != 0 && (u32)(i - 1) < 2) {
+                D_800CCCE8.record[i].bA0 = 0x11;
+            }
+            gear = D_800CCCE8.record[i].bA0;
+            if (gear == 0xFF) {
+                gear = 0;
+            }
+            func_8003F99C(D_800CCCE8.record[i].gear, D_8006DFAC[gear], 0xA4);
+            block = func_80032E88(archive[5 + D_800CCCE8.party_ids[i]], 1);
+            func_8003F99C(D_800CCCE8.member_data[i], block, 0x5F0);
+            func_800320E8(block);
+            block = func_80032E88(archive[0x11 + gear], 1);
+            func_8003F99C(D_800CCCE8.member_gear[i], block, 0x690);
+            func_800320E8(block);
+        }
+    }
+    block = func_80032E88(archive[4], 1);
+    func_8003F99C(D_800CCCE8.data35D8, block, 0x1F40);
+    func_800320E8(block);
+    block = func_80032E88(archive[3], 1);
+    func_8003F99C(D_800CCCE8.data5518, block, 0x300);
+    func_800320E8(block);
+    block = func_80032E88(archive[2], 1);
+    func_8002DDE4(block, 0, 0, 0, 0, 0, 0);
+    func_800320E8(block);
+    D_800D2F5C = func_80032E88(archive[1], 0);
+    func_80033698(0, 0x1F0);
+    D_800D329C = func_80032E88(archive[0x10], 0);
+    block = func_80032E88(archive[0x24], 1);
+    func_80078310(block, 0x61);
+    func_800320E8(block);
+    block = func_80032E88(archive[0x25], 1);
+    func_8003F99C(D_800CCCE8.data5818, (u8 *)block + 0x320, 0x300);
+    func_800320E8(block);
+    D_800D39F0 = func_80032E88(archive[0x26], 0);
+    func_800320E8(D_800595A8);
+    func_80028470(0xC, 1);
+    D_800C3DD0 = func_8008ABB8(func_800288EC(D_8006F9DC[0] * 2 + 2), 0);
+    D_800D33EC = D_800C3DD0;
+    list = &D_800D33E8;
+    *list = D_8006F9DC[0] * 2 + 2;
+    D_800C3DEC = func_8008ABB8(func_800288EC(D_8006F9DC[0] * 2 + 3), 1);
+    D_800D33F4 = D_800C3DEC;
+    D_800D33F8 = 0;
+    D_800D33FC = NULL;
+    D_800D33F0 = D_8006F9DC[0] * 2 + 3;
+    func_80029AFC(list, 0, 0x80);
+}
 
 /* Run one battle setup phase: 0 the party, 1 the formation and combatant
  * records, 2 the items, turn timers and turn tables, 3 the gauges and texts. */

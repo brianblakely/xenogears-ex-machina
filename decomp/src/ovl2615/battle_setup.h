@@ -31,7 +31,6 @@ typedef struct {
 
 extern BattleSlots D_800C3EB4;
 
-extern u8 D_800D2D24[3];  /* party character ids (0x7F none) */
 extern u8 D_80059468[3];  /* battle party ids published to resident code */
 extern u8 D_8006F8E5[SLOT_COUNT];
 extern u8 D_800D3294;     /* demo party: formation flag 0x10 */
@@ -136,13 +135,29 @@ typedef struct {
     u8 pad64[0x7A - 0x64];
     u16 commands; /* 0x7A: available command mask */
     u8 pad7C[0xA0 - 0x7C];
-    u8 bA0;     /* 0xA0: 0xFF forces command 7 */
-    u8 padA1[0x15A - 0xA1];
+    u8 bA0;     /* 0xA0: gear record index; 0xFF none, forces command 7 */
+    u8 padA1[3];
+    u8 gear[0xA4]; /* 0xA4: the gear record */
+    u8 pad148[0x15A - 0x148];
     u8 state;   /* 0x15A: 0x80 placed alone */
     u8 pad15B[0x170 - 0x15B];
 } CombatantRecord;
 
-extern CombatantRecord D_800CCCE8[SLOT_COUNT];
+/* Battle data (0x800CCCE8): combatant records, the members' battle data
+ * blocks from the setup archive and the party. */
+typedef struct {
+    CombatantRecord record[SLOT_COUNT]; /* 0x0000 */
+    u8 padFD0[0x1058 - 0xFD0];
+    u8 member_data[3][0x5F0];           /* 0x1058 */
+    u8 member_gear[3][0x690];           /* 0x2228 */
+    u8 data35D8[0x1F40];                /* 0x35D8 */
+    u8 data5518[0x300];                 /* 0x5518 */
+    u8 data5818[0x300];                 /* 0x5818 */
+    u8 pad5B18[0x603C - 0x5B18];
+    u8 party_ids[3];                    /* 0x603C: party character ids (0x7F none) */
+} BattleData;
+
+extern BattleData D_800CCCE8;
 
 /* Slot presence and the turn order and timers (0x800D2DCC). */
 typedef struct {
@@ -324,5 +339,41 @@ extern u8 D_800D3280;        /* present party members - 1 */
 extern u8 D_800C3E3D[SLOT_COUNT];
 
 u16 func_80089C08(s32 index); /* bit of a group member index */
+
+/* Game data party (0x8006F364): availability masks and the party order. */
+typedef struct {
+    u16 available;
+    u16 available2;
+    u8 party[3];
+} GameParty;
+
+extern GameParty D_8006F364;
+extern u8 D_8006D8A0[][0xA4]; /* game data character records */
+extern u8 D_8006DFAC[][0xA4]; /* game data gear records */
+
+extern u32 *D_800595A8;   /* the setup archive (file 3) */
+extern void *D_800D2F5C;  /* glyph sprite table */
+extern void *D_800D329C;
+extern void *D_800D39F0;
+extern void *D_800C3DEC;  /* enemy model file */
+
+/* The enemy files' disc read list (0x800D33E8): entries of a file number
+ * and a destination, ended by file 0. Its fields are separate variables. */
+extern u16 D_800D33E8;   /* entry 0 file */
+extern void *D_800D33EC; /* entry 0 destination */
+extern u16 D_800D33F0;
+extern void *D_800D33F4;
+extern u16 D_800D33F8;
+extern void *D_800D33FC;
+
+u16 func_80089C9C(u16 mask, u8 id);             /* the character's bit within a mask */
+void *func_80032E88(u32 item, s32 unpack);      /* unpack an archive item */
+void func_800320E8(void *block);                /* heap release */
+void func_8002DDE4(void *images, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6);
+void func_80033698(s32 x, s32 y);               /* upload the text palettes */
+void func_80078310(void *portraits, s32 glyph);
+void func_80028470(s32 directory, s32 mode);    /* select a disc directory */
+s32 func_800288EC(s32 file);                    /* a file's size */
+void func_80029AFC(u16 *list, s32 a1, s32 a2); /* read a file list */
 
 #endif
