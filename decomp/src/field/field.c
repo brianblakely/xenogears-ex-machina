@@ -9651,7 +9651,110 @@ void func_800A1B70(void) {
 
 INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FD44);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A1BD0);
+/* Event 02: compare two halfword operands (bits 7/6 of operand byte 5
+ * select an event variable or a signed immediate; variables compare
+ * unsigned when flagged so) by condition bits 0-3 of byte 5, and jump to
+ * operand 6 unless it holds. */
+void func_800A1BD0(void) {
+    s32 left;
+    s32 right;
+    s32 result;
+
+    right = 0;
+    left = 0;
+    switch (EVENT_OPERAND_BYTE(5) & 0xF0) {
+    case 0x00:
+        left = func_800A3018(func_800ACDB8(1) & 0xFFFF);
+        right = func_800A3018(func_800ACDB8(3) & 0xFFFF);
+        if (func_800A2FE0(func_800ACDB8(1) & 0xFFFF) != 0) {
+            right &= 0xFFFF;
+        } else {
+            right = (s16)right;
+        }
+        break;
+    case 0x40:
+        left = func_800A3018(func_800ACDB8(1) & 0xFFFF);
+        right = (s16)func_800ACD7C(3);
+        if (func_800A2FE0(func_800ACDB8(1) & 0xFFFF) != 0) {
+            right &= 0xFFFF;
+        }
+        break;
+    case 0x80:
+        left = (s16)func_800ACD7C(1);
+        right = func_800A3018(func_800ACDB8(3) & 0xFFFF);
+        if (func_800A2FE0(func_800ACDB8(3) & 0xFFFF) != 0) {
+            left &= 0xFFFF;
+        }
+        break;
+    case 0xC0:
+        left = (s16)func_800ACD7C(1);
+        right = (s16)func_800ACD7C(3);
+        break;
+    }
+    result = 0;
+    switch (EVENT_OPERAND_BYTE(5) & 0xF) {
+    case 0:
+        if (left == right) {
+            result++;
+        }
+        break;
+    case 1:
+        if (left != right) {
+            result++;
+        }
+        break;
+    case 2:
+        if (left > right) {
+            result++;
+        }
+        break;
+    case 3:
+        if (left < right) {
+            result++;
+        }
+        break;
+    case 4:
+        if (left >= right) {
+            result++;
+        }
+        break;
+    case 5:
+        if (left <= right) {
+            result++;
+        }
+        break;
+    case 6:
+        if (left & right) {
+            result++;
+        }
+        break;
+    case 7:
+        if (left != right) {
+            result++;
+        }
+        break;
+    case 8:
+        if (left | right) {
+            result++;
+        }
+        break;
+    case 9:
+        if (left & right) {
+            result++;
+        }
+        break;
+    case 10:
+        if (~left & right) {
+            result++;
+        }
+        break;
+    }
+    if (result == 1) {
+        D_800B0078->pc += 8;
+    } else {
+        D_800B0078->pc = func_800ACDB8(6);
+    }
+}
 
 /* Jump to operand 1. */
 void func_800A1E74(void) {

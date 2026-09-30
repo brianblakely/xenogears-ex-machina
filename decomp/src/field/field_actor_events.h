@@ -35,6 +35,7 @@ void func_800A0D3C(void);
 
 extern u8 D_800AE294[];        /* sprite of each character */
 
+s32 func_800A2FE0(s32 reference);  /* -1 when a variable is unsigned */
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
