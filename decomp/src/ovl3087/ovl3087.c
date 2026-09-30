@@ -500,25 +500,103 @@ s32 func_801E74B8(s32 thread, u8 *insn) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E74E0);
+/* Opcode 23: move a party member (f3-f5) to a position and wait until the
+ * move is done. */
+s32 func_801E74E0(s32 thread, u8 *insn) {
+    s32 length = 0;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E75F0);
+    func_801E57F8(insn, 3, 0, 1);
+    switch (D_800D3278->threads[D_800D3278->operands[0] - 0xF3].memberState) {
+    case 0:
+        D_800D3278->threads[D_800D3278->operands[0] - 0xF3].memberState = 2;
+        func_800AA384(D_800D3278->operands[0] - 0xF3, func_80089C08(D_800D3278->operands[1] + 0xD),
+                      D_800D3278->operands[2]);
+        break;
+    case 1:
+        length = 7;
+        func_800B8D04();
+        func_800BFBA0();
+        D_800D3278->threads[D_800D3278->operands[0] - 0xF3].memberState = 0;
+        break;
+    }
+    return length;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7660);
+/* Opcode 38: start a party member (f3-f5) moving without waiting. */
+s32 func_801E75F0(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 3, 0, 1);
+    func_800AA320(D_800D3278->operands[0] - 0xF3, func_80089C08(D_800D3278->operands[1] + 0xD),
+                  D_800D3278->operands[2]);
+    return 7;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7684);
+/* Opcode 4a. */
+s32 func_801E7660(s32 thread, u8 *insn) {
+    func_8009C0E0(0);
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7700);
+/* Opcode 4b: set bit 0 of the actor's battle record flags (0x36). */
+s32 func_801E7684(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    D_800CCD1E[func_801E5A98((u8)D_800D3278->operands[0])].flags |= 1;
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E775C);
+/* Opcode 24. */
+s32 func_801E7700(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, 0, 1);
+    D_8005947C = D_800D3278->operands[0] + 1;
+    D_8005954C = D_800D3278->operands[1];
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7770);
+/* Opcode 25. */
+s32 func_801E775C(s32 thread, u8 *insn) {
+    D_800C3D5C = 1;
+    return 1;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E77E4);
+/* Opcode 26: store four values at 8006f94e and apply them (8001ac94). */
+s32 func_801E7770(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 4, 0, 1);
+    D_8006F94E[0] = D_800D3278->operands[0];
+    D_8006F94E[1] = D_800D3278->operands[1];
+    D_8006F94E[2] = D_800D3278->operands[2];
+    D_8006F94E[3] = D_800D3278->operands[3];
+    func_8001AC94();
+    return 9;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E786C);
+/* Opcode 27. */
+s32 func_801E77E4(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 4, 0, 1);
+    D_8004FE44[0] = D_800D3278->operands[0] | 0x80;
+    D_8004FE44[1] = D_800D3278->operands[1];
+    D_8004FE44[2] = 1;
+    D_8004FE44[3] = D_800D3278->operands[2];
+    D_800D3338 = 1;
+    D_80062514 = D_800D3278->operands[3];
+    return 9;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E78A8);
+/* Opcode 28: tint an actor with an explicit mode and colour. */
+s32 func_801E786C(s32 thread, u8 *insn) {
+    func_800B39C0(insn[5], insn[1], insn[2], insn[3], insn[4]);
+    return 6;
+}
+
+/* Opcode 29. */
+s32 func_801E78A8(s32 thread, u8 *insn) {
+    u16 position[3];
+
+    func_801E57F8(insn, 4, 0, 1);
+    position[0] = D_800D3278->operands[0];
+    position[1] = D_800D3278->operands[1];
+    position[2] = D_800D3278->operands[2];
+    func_800B3658(position, D_800D3278->operands[3]);
+    return 9;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7914);
 

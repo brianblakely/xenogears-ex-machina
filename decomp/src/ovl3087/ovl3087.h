@@ -20,7 +20,9 @@ typedef struct {
     u8 unk22;
     u8 request; /* 0x23 entry this thread requested of another (0xff none) */
     u8 speaker; /* 0x24 actor whose messages this thread shows */
-    u8 pad25[0x38 - 0x25];
+    u8 pad25[0x34 - 0x25];
+    u8 memberState; /* 0x34 move state of party member n (opcode 23) */
+    u8 pad35[3];
 } ScriptThread;
 
 /* libgpu textured flat quad (POLY_FT4). */
@@ -119,9 +121,31 @@ extern u8 D_800C3E4C;
 extern u8 D_800C48EA;
 extern u8 D_800D2D50;
 extern u8 D_800D2FC4;
+extern u8 D_800C3D5C;
+extern u8 D_8005947C;
+extern u8 D_8005954C;
+extern u16 D_8006F94E[4];
+extern u8 D_8004FE44[4];
+extern u16 D_80062514;
+extern u8 D_800D3338;
+/* The battle actor records are 0x170 bytes each from 800ccce8; this views
+ * them from their flags halfword at 0x36. */
+typedef struct {
+    u16 flags;
+    u8 pad2[0x170 - 2];
+} ActorFlags;
+extern ActorFlags D_800CCD1E[];
 
 /* Resident / battle services. */
+void func_8001AC94(void);
 s32 func_80076A10(s32 id, PolyFT4 *quads, s16 x, s16 y);
+u16 func_80089C08(u8 id);
+void func_8009C0E0(s32 arg);
+void func_800AA320(u16 member, u16 target, u16 arg);
+void func_800AA384(u16 member, u16 target, u16 arg);
+void func_800B3658(u16 *position, u16 arg);
+void func_800B8D04(void);
+void func_800BFBA0(void);
 void func_800B39C0(u16 actor, s32 mode, s32 r, s32 g, s32 b);
 u16 func_80089B50(u16 low, u16 high);
 u16 func_80089C9C(u16 flag, u8 bit);
