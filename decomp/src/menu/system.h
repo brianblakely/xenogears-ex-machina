@@ -249,7 +249,7 @@ typedef struct {
     u8 *start;
     u8 *current;       /* 0x04: position in the stream */
     s16 *target;       /* 0x08 */
-    s16 hold;          /* 0x0C: frames left at the current delta */
+    u16 hold;          /* 0x0C: frames left at the current delta */
     s16 value;         /* 0x0E */
     s16 delta;         /* 0x10 */
     s16 angular;       /* 0x12 */

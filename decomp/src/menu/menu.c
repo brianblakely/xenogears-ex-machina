@@ -1978,7 +1978,92 @@ s16 func_8008B650(s32 from, s32 to, s32 step) {
     return angle;
 }
 
+#ifdef NON_MATCHING
+/* Advance a player by some frames (clamped to the animation's end) and
+ * move every target 1/steps of the way to its key or channel value.
+ * Channel streams hold a byte per frame: 0xxxxxxx a 7-bit delta, 10xxxxxx
+ * hold the delta for x frames, 11xxxxxx plus a byte a 14-bit delta.
+ * Returns whether the end was reached in a final step (1 without an
+ * animation). Does not match: the stream byte is tested in its load
+ * register rather than the copy, which shifts registers in the decoder. */
+s32 func_8008B730(Player *player, s32 frames, s32 steps) {
+    Key *key;
+    Channel *channel;
+    u8 *code;
+    s8 value;
+    s16 current;
+    s32 i;
+    s32 j;
+
+    if (player->header == NULL) {
+        return 1;
+    }
+    if (frames == 0) {
+        return;
+    }
+    if (player->frame + frames > player->header->frames) {
+        frames = player->header->frames - player->frame;
+    }
+    player->frame += frames;
+    steps -= frames;
+    if (steps <= 0) {
+        steps = 1;
+    }
+    key = player->keys;
+    if (steps == 1) {
+        for (i = 0; i < player->header->keys; i++, key++) {
+            *key->target = key->value;
+        }
+    } else {
+        for (i = 0; i < player->header->keys; i++, key++) {
+            current = *key->target;
+            if (key->angular) {
+                *key->target = func_8008B5FC(current, key->value, steps);
+            } else {
+                *key->target = current + (key->value - current) / steps;
+            }
+        }
+    }
+    channel = player->channels;
+    for (i = 0; i < player->header->channels; i++, channel++) {
+        for (j = 0; j < frames; j++) {
+            if (channel->hold) {
+                channel->hold--;
+            } else {
+                code = channel->current++;
+                value = *(s8 *)code;
+                if (value & 0x80) {
+                    if (value & 0x40) {
+                        channel->current = code + 2;
+                        channel->delta = (value & 0x3F) | ((s8)code[1] << 6);
+                    } else {
+                        channel->hold = value & 0x3F;
+                    }
+                } else {
+                    channel->delta = (value << 25) >> 25;
+                }
+            }
+            channel->value += channel->delta;
+        }
+        if (steps == 1) {
+            *channel->target = channel->value;
+        } else {
+            current = *channel->target;
+            if (channel->angular) {
+                *channel->target = func_8008B5FC(current, channel->value, steps);
+            } else {
+                *channel->target = current + (channel->value - current) / steps;
+            }
+        }
+    }
+    if (player->frame == player->header->frames) {
+        return steps == 1;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B730);
+#endif
 
 /* Create a task running entry(arg) on its own stack of `words` words and
  * run it until it first yields. */
