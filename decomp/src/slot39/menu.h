@@ -792,8 +792,8 @@ extern s32 D_801EA71C;
 extern s32 D_801EA720;
 extern s32 D_801EA004[];
 extern s32 D_801EA010[];
-extern s32 D_801EA900[2];
-extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
+extern s32 D_801EA900[2];     /* per port */
+extern u8 D_801EA6D0[2][16]; /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
 extern u8 D_801E9779;    /* frames between card checks */
 
@@ -920,6 +920,21 @@ u8 func_801C881C(void);
 s32 func_801C891C(s32 channel);
 u8 func_801C8A10(u8 port);
 u8 func_801C8D78(u8 port);
+
+/* libapi directory entry (firstfile/nextfile). */
+struct DIRENTRY {
+    char name[20];
+    s32 attr;
+    s32 size;
+    struct DIRENTRY *next;
+    s32 head;
+    char system[4];
+};
+struct DIRENTRY *func_80040584(char *name, struct DIRENTRY *dir); /* firstfile */
+struct DIRENTRY *func_80040594(struct DIRENTRY *dir);             /* nextfile */
+/* The card device names ("bu00:", "bu10:"), shared with assembly still. */
+extern char D_801C50A8[] __attribute__((aligned(4)));
+extern char D_801C50B0[] __attribute__((aligned(4)));
 void func_801C8BEC(void);
 void func_801C8EE8(void);
 void func_801C8574(s32 sound);

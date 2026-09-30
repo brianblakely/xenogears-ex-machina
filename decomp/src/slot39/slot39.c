@@ -1210,7 +1210,41 @@ void func_801C8D1C(u8 port) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8D78);
+/* List the directory of card port `port`: clear the port's slot entries and
+ * save marks, then copy each file name into the port's file entries.
+ * Stores and returns the file count. */
+u8 func_801C8D78(u8 port) {
+    struct DIRENTRY dir;
+    char device[8];
+    s32 i;
+    u8 *saves;
+    s32 retry;
+    u8 count;
+
+    D_801EA900[port] = 0;
+    retry = 5;
+    for (i = 0; i < 16; i++) {
+        D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+        D_801EA6D0[port][i] = 0;
+    }
+    if (port == 0) {
+        __builtin_memcpy(device, D_801C50A8, 6);
+    } else {
+        __builtin_memcpy(device, D_801C50B0, 6);
+    }
+    while (--retry != 0) {
+        count = 0;
+        if (func_80040584(device, &dir) == &dir) {
+            do {
+                strcpy(D_800625A0->card->files[port * 16 + count].name, dir.name);
+                count++;
+            } while (func_80040594(&dir) == &dir);
+        }
+        D_800625A0->card->unk4F8A[port] = count;
+        break;
+    }
+    return count;
+}
 
 /* List the files of each port not yet scanned; in mode 1 a port with files
  * marks the cards present. */
@@ -1288,7 +1322,7 @@ void func_801C9270(s32 port) {
             D_800625A0->card->ours[port * 16 + i] = 1;
             header = D_800625A0->card->headers[D_800625A0->card->fileSlots[port * 16 + i]];
             D_801EA6F4 = header + 0x100;
-            saves = &D_801EA6D0[port * 16];
+            saves = D_801EA6D0[port];
             saves[header[0x123]] = 1;
         }
     }
@@ -1383,7 +1417,7 @@ u8 func_801CB9E8(u8 port, u8 slot) {
     found = 0;
     if (slot == 0xff) {
         i = 0;
-        used = &D_801EA6D0[port * 16];
+        used = D_801EA6D0[port];
         for (; i < 15; i++) {
             if (*used == 0) {
                 found = i;
