@@ -135,6 +135,8 @@ decomp/src/ovl2615/battle_setup.h
 decomp/src/ovl2615/ovl2615.c
 decomp/src/ovl3087/ovl3087.c
 decomp/src/ovl3087/ovl3087.h
+decomp/src/ovl3087/script_actor.c
+decomp/src/ovl3087/script_actor.h
 decomp/src/ovl3381/ovl3381.c
 decomp/src/ovl3383/ovl3383.c
 decomp/src/ovl3384/ovl3384.c

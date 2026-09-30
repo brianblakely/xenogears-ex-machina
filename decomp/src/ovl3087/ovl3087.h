@@ -338,18 +338,5 @@ u8 func_801E6CE8(u16 message, u8 actor, u16 flags);
 void func_801E7A5C(s32 thread, u8 *insn);
 s32 func_801E84A4(s32 thread, u8 *insn);
 void func_800BCD98(s32 arg);
-void func_801E9958(s32 model, u16 animation);
-s32 func_801E9978(void *file, s32 *info);
-void func_801E9430(u8 actor, s16 animation);
-void func_801E950C(u8 actor);
-void func_801E9550(u8 actor);
-void func_801E958C(u8 actor);
-void func_801E95E4(u8 actor, s16 arg1, s16 arg2, s16 arg3);
-void func_801E9694(u8 actor, s16 arg1, s16 arg2, s16 arg3);
-void func_801E9700(u8 actor, u16 arg1);
-void func_801E9760(u8 actor, u8 target);
-void func_801E9894(u8 actor, u8 target);
-void func_801E9AD4(s32 model);
-void func_801E9B2C(void);
 
 #endif

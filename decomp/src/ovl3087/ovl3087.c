@@ -8,6 +8,21 @@
  * (8007xxxx-800cxxxx) and resident file/heap/sound helpers. */
 #include "ovl3087.h"
 
+/* The actor and model helpers (script_actor.c) as this unit declares them. */
+void func_801E9958(s32 model, u16 animation);
+s32 func_801E9978(void *file, s32 *info);
+void func_801E9430(u8 actor, s16 animation);
+void func_801E950C(u8 actor);
+void func_801E9550(u8 actor);
+void func_801E958C(u8 actor);
+void func_801E95E4(u8 actor, s16 arg1, s16 arg2, s16 arg3);
+void func_801E9694(u8 actor, s16 arg1, s16 arg2, s16 arg3);
+void func_801E9700(u8 actor, u16 arg1);
+void func_801E9760(u8 actor, u8 target);
+void func_801E9894(u8 actor, u8 target);
+void func_801E9AD4(s32 model);
+void func_801E9B2C(void);
+
 /* Load the script set of 8006f9df (script archive file 2) and the model
  * archive (file 3), set up the interpreter state and its threads, the
  * portrait quads and the script's sound bank (file 4). */
@@ -1471,33 +1486,3 @@ void func_801E879C(void) {
         } while (again);
     }
 }
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E93E8);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9430);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E950C);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9550);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E958C);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E95B0);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E95E4);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9694);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9700);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9760);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9894);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9958);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9978);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9AD4);
-
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E9B2C);
