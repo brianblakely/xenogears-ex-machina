@@ -506,10 +506,9 @@ u8 member;
  * AP costs, then move the cursor over the eight cells (cell 7 confirms),
  * add the step under it while AP last (up to seven steps) or take the last
  * one back, and on confirm pick the target. Returns 0 when confirmed with a
- * target (the remaining AP stored), 1 when cancelled. Nonmatching: the
- * original clears the unused 8-byte list ascending (GCC reverses this loop)
- * and schedules the step count's increment earlier. */
-#ifdef NON_MATCHING
+ * target (the remaining AP stored), 1 when cancelled. The cell marks are
+ * cleared with the cell count held in `n` (a variable bound, so the loop
+ * runs ascending). */
 u8 func_8008C81C(u8 member) {
     u8 steps[7];
     u8 marks[8];
@@ -540,7 +539,8 @@ u8 func_8008C81C(u8 member) {
         D_800C3EAC->combo[i] = 0xFF;
         D_800C3DE0[i] = 0xFF;
     }
-    for (i = 0; i < 8; i++) {
+    n = 8;
+    for (i = 0; i < n; i++) {
         marks[i] = 0;
     }
     n = 0;
@@ -595,10 +595,10 @@ u8 func_8008C81C(u8 member) {
             } else if (count != 7 && steps[cursor] != 0xFF && ap >= costs[cursor]) {
                 D_800C3EAC->combo[count] = steps[cursor];
                 D_800C3DE0[count] = cursor;
-                redraw = 1;
                 ap -= costs[cursor];
                 paid[count] = costs[cursor];
                 count++;
+                redraw = 1;
             }
             break;
         case 0:
@@ -633,6 +633,3 @@ u8 func_8008C81C(u8 member) {
     }
     return done - 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008B478", func_8008C81C);
-#endif
