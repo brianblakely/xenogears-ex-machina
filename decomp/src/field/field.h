@@ -533,7 +533,7 @@ typedef struct {
     s32 unk2318[3];            /* 2318 */
     s16 emitter_position[3][4]; /* 2324 */
     u16 effects_kept;          /* 233C: bit per effect pair still playing */
-    s16 unk233E;               /* 233E */
+    u16 unk233E;               /* 233E */
     s16 repeat_delay;          /* 2340 */
     s16 repeat_remaining;      /* 2342 */
     s16 jump_mode;             /* 2344 */
@@ -765,6 +765,9 @@ extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
+extern s32 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
+extern s32 D_800ADBAC; /* camera frames settling */
+extern s32 D_800ADBB0; /* camera frames releasing */
 extern s32 func_8007CD80(VECTOR *point, SVECTOR *edge, DVECTOR *segment);
 extern void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out);
 extern void func_80073684(VECTOR *point, VECTOR *center);

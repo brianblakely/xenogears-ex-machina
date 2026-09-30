@@ -956,7 +956,92 @@ void func_80072D74(void) {
     }
 }
 
+/* Per-frame camera update: in mode 1 follow the scripted target and eye
+ * interpolations; in modes 0 and 2 follow the controlled actor (mode 2
+ * returns to 0 once both goals are reached or after 64 frames), keeping
+ * the eye above the floor; then move the camera toward its goals. */
+#ifdef NON_MATCHING
+void func_80073230(void) {
+    VECTOR position;
+    VECTOR normal;
+    SVECTOR floor;
+    s32 target_distance;
+    s32 eye_distance;
+
+    switch (D_800AF880.mode) {
+    case 2:
+        D_800ADBAC = 0;
+        if (++D_800ADBB0 >= 0x41) {
+            D_800AF880.mode = 0;
+        }
+        goto follow;
+    case 0:
+        D_800ADBB0 = 0;
+        if (!(D_800ADBAC & 3)) {
+            D_800AF880.target_a = D_800AF880.target_a < 9 ? 8 : D_800AF880.target_a - 2;
+            D_800AF880.target_b = D_800AF880.target_b < 9 ? 8 : D_800AF880.target_b - 2;
+        }
+        D_800ADBAC++;
+    follow:
+        func_800726E8();
+        position.vx = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->position[0];
+        position.vy = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->position[1];
+        position.vz = D_800AF880.components.descriptors[D_800B2078.unk233E].actor->position[2];
+        func_80072A38(&position, D_800AF880.components.descriptors[D_800B2078.unk233E].actor->unk72);
+        if (!(D_800AF880.flags & 0x4000)) {
+            func_8007B1C4(WHOLE(D_800AF880.eye_goal.vx), WHOLE(D_800AF880.eye_goal.vz),
+                          D_800AF880.components.layer_count - 1, &floor, &normal);
+            if (floor.vy < WHOLE(D_800AF880.eye_goal.vy)) {
+                D_800AF880.eye_goal.vy = floor.vy << 16;
+            }
+        }
+        if (D_800AF880.mode == 2) {
+            target_distance = func_80099A4C(WHOLE(D_800AF880.target_goal.vx) - WHOLE(D_800AF880.target.vx),
+                                            WHOLE(D_800AF880.target_goal.vz) - WHOLE(D_800AF880.target.vz));
+            eye_distance = func_80099A4C(WHOLE(D_800AF880.eye_goal.vx) - WHOLE(D_800AF880.eye.vx),
+                                         WHOLE(D_800AF880.eye_goal.vz) - WHOLE(D_800AF880.eye.vz));
+            if (target_distance < 0x80 && eye_distance < 0x80) {
+                D_800AF880.mode = 0;
+            }
+        }
+        break;
+    case 1:
+        D_800ADBAC = 0;
+        D_800ADBB0 = 0;
+        if (D_800AF880.scripted & 1) {
+            if (D_800AF880.target_steps != 0) {
+                D_800AF880.scripted_target.vx += D_800AF880.target_step.vx;
+                D_800AF880.scripted_target.vy += D_800AF880.target_step.vy;
+                D_800AF880.scripted_target.vz += D_800AF880.target_step.vz;
+            }
+            if (--D_800AF880.target_steps == 0) {
+                D_800AF880.scripted &= 0xFFFE;
+            }
+            D_800AF880.target_goal.vx = D_800AF880.scripted_target.vx;
+            D_800AF880.target_goal.vy = D_800AF880.scripted_target.vy;
+            D_800AF880.target_goal.vz = D_800AF880.scripted_target.vz;
+        }
+        if (D_800AF880.scripted & 2) {
+            if (D_800AF880.eye_steps != 0) {
+                D_800AF880.scripted_eye[0] += D_800AF880.eye_step[0];
+                D_800AF880.scripted_eye[1] += D_800AF880.eye_step[1];
+                D_800AF880.scripted_eye[2] += D_800AF880.eye_step[2];
+            }
+            if (--D_800AF880.eye_steps == 0) {
+                D_800AF880.scripted &= 0xFFFD;
+            }
+            D_800AF880.eye_goal.vx = D_800AF880.scripted_eye[0];
+            D_800AF880.eye_goal.vy = D_800AF880.scripted_eye[1];
+            D_800AF880.eye_goal.vz = D_800AF880.scripted_eye[2];
+        }
+        break;
+    }
+    func_80072D74();
+    D_800AF880.heading_angles.vy &= 0xFFF;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073230);
+#endif
 
 /* Rotate `point` in X/Z about `center` by the camera heading angles. */
 void func_80073684(VECTOR *point, VECTOR *center) {
