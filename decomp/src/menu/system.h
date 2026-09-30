@@ -24,16 +24,23 @@ typedef struct {
 extern SystemSave D_8006F978;
 extern u8 D_8005061C;    /* nonzero keeps the options in D_8006F980 */
 extern u8 D_800927EC;
-/* Current option settings (0x80099d98). */
+/* Current option settings (0x80099d98). The bytes at 0x02-0x06, 0x09,
+ * 0x0A and 0x0C are also addressed through their own symbols
+ * (D_80099D9A..D_80099DA4) by some functions. */
 typedef struct {
-    u8 option13;  /* 0x00 */
+    u8 level;     /* 0x00: saved as option13 */
     u8 unk1;
-    u8 unk2;
-    u8 option4;   /* 0x03 */
-    u8 option5;   /* 0x04 */
-    u8 unk5;
-    u8 unk6;
+    u8 rate;      /* 0x02: frame rate choice */
+    u8 option4;   /* 0x03: port 1 vibration */
+    u8 option5;   /* 0x04: port 2 vibration */
+    u8 com1;      /* 0x05: side 1 played by the computer */
+    u8 driven;    /* 0x06: side 2 played by the computer */
     u8 option6;   /* 0x07 */
+    u8 unk8;
+    u8 speed;     /* 0x09 */
+    u8 command;   /* 0x0A: the opponent's current command */
+    u8 unkB;
+    s16 unkC;
 } Settings;
 
 extern Settings D_80099D98;

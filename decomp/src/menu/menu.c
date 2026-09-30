@@ -1,4 +1,6 @@
 #include "menu.h"
+#include "sparkle.h"
+#include "scene.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -589,7 +591,7 @@ s32 func_80073644(Actor *actor) {
     SVector half;
     Vector toward;
     SVector dir;
-    u8 colour[3];
+    Color colour;
     Actor *opponent;
     Shot *shot;
     s32 dist;
@@ -597,7 +599,7 @@ s32 func_80073644(Actor *actor) {
 
     opponent = actor->opponent;
     actor->nearest_dist = 0x10000;
-    func_8007C100(actor->unk15D4);
+    func_8007C100(&actor->colour);
     for (i = 0; i < 8; i++) {
         shot = &actor->shots[i];
         if (shot->active == 0) {
@@ -649,13 +651,13 @@ s32 func_80073644(Actor *actor) {
             func_8007D190(&shot->pos, 2);
             break;
         case 2:
-            colour[0] = 0xFF;
-            colour[2] = 0x40;
-            colour[1] = ((D_800928E8 + i) << 6) - 1;
+            colour.r = 0xFF;
+            colour.b = 0x40;
+            colour.g = ((D_800928E8 + i) << 6) - 1;
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007E31C(&shot->prev, &shot->pos, colour);
+            func_8007E31C(&shot->prev, &shot->pos, &colour);
             break;
         case 3:
             shot->pos.vx += shot->velocity.vx;
@@ -664,20 +666,20 @@ s32 func_80073644(Actor *actor) {
             func_8007C880((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
             break;
         case 4:
-            colour[0] = colour[1] = func_8003FA38() % 191 + 0x40;
-            colour[2] = 0xFF;
+            colour.r = colour.g = func_8003FA38() % 191 + 0x40;
+            colour.b = 0xFF;
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007E31C(&shot->prev, &shot->pos, colour);
+            func_8007E31C(&shot->prev, &shot->pos, &colour);
             break;
         case 5:
-            colour[0] = colour[1] = func_8003FA38() % 191 + 0x40;
-            colour[2] = 0xFF;
+            colour.r = colour.g = func_8003FA38() % 191 + 0x40;
+            colour.b = 0xFF;
             shot->pos.vx += shot->velocity.vx;
             shot->pos.vy += shot->velocity.vy;
             shot->pos.vz += shot->velocity.vz;
-            func_8007E31C(&shot->prev, &shot->pos, colour);
+            func_8007E31C(&shot->prev, &shot->pos, &colour);
             func_8007C880((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
             break;
         }
@@ -809,7 +811,7 @@ void func_80073F34(Actor *actor, HitSpec *hit) {
         a.vy = (a.vy + b.vy) / 2;
         a.vz = (a.vz + b.vz) / 2;
     }
-    func_8007C100(actor->unk15D4);
+    func_8007C100(&actor->colour);
     if (hit->type >= 0x20) {
         func_8007C880((actor->flags >> 27) & 1, &a, style, hit->type - 0x20);
     } else {
@@ -1478,189 +1480,1472 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007AC3C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007AE10);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B210);
+/* Set up a scene model with the given mode and place it. */
+void func_8007B210(Actor *model, s32 mode) {
+    model->pose = (Pose *)model->unk9CC;
+    model->unk4F = 0x10;
+    model->anim = mode;
+    model->unk52 = 0;
+    D_8009292C = 0x100;
+    func_80074BA4(model);
+    func_80074678(model, model->unk998, model->unk99A);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B270);
+/* Build a four-entry palette from two colours (components biased by 0x80,
+ * clamped at zero) and load it, keeping the returned CLUT id. */
+void func_8007B270(u8 *first, u8 *second) {
+    s32 r, g, b;
+
+    r = first[0] - 0x80;
+    g = first[1] - 0x80;
+    b = first[2] - 0x80;
+    if (r < 0) {
+        r = 0;
+    }
+    if (g < 0) {
+        g = 0;
+    }
+    if (b < 0) {
+        b = 0;
+    }
+    D_800926A8[0] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
+    r = second[0] - 0x80;
+    g = second[1] - 0x80;
+    b = second[2] - 0x80;
+    if (r < 0) {
+        r = 0;
+    }
+    if (g < 0) {
+        g = 0;
+    }
+    if (b < 0) {
+        b = 0;
+    }
+    D_800926A8[1] = (((r >> 2) & 0x1F) + ((g << 3) & 0x3E0) + ((b << 8) & 0x7C00)) | -0x8000;
+    D_800926A8[2] = 0;
+    D_800926A8[3] = 0x1111;
+    D_800926A0 = func_800438C0(D_800926A8, D_80092698, D_8009269C);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007B388);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007BACC);
+/* Advance every live sparkle one frame (expiring it after its last frame,
+ * letting it fall otherwise) and latch the per-frame counters. */
+void func_8007BACC(void) {
+    Sparkle *sparkle;
+    s32 i;
+    s32 count;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007BB7C);
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active) {
+            if (sparkle->frame == sparkle->frame_count) {
+                sparkle->active = 0;
+            } else {
+                sparkle->frame++;
+                if (sparkle->type == 0) {
+                    sparkle->u.fall.fall_speed += sparkle->u.fall.gravity;
+                    sparkle->y += sparkle->u.fall.fall_speed;
+                }
+            }
+        }
+    }
+    D_800926A4++;
+    count = D_800926B0;
+    D_800926B0 = 0;
+    D_800926B4 = count;
+}
+
+/* Free every sparkle. */
+void func_8007BB7C(void) {
+    Sparkle *sparkle = D_80092AD8;
+    s32 i;
+
+    for (i = SPARKLE_COUNT - 1; i >= 0; i--, sparkle++) {
+        sparkle->active = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007BBA0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C100);
+/* Set the colour of kind-2 sparkles. */
+void func_8007C100(Color *color) {
+    D_800926B8 = *color;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C124);
+/* Start a sparkle of the given kind at a position, in the first free slot. */
+void func_8007C124(SVector *pos, s32 kind) {
+    Sparkle *sparkle = D_80092AD8;
+    SparkleKind *info;
+    PolyFT4 *prim;
+    s32 i;
+
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active) {
+            break;
+        }
+    }
+    if (i == SPARKLE_COUNT) {
+        return;
+    }
+    sparkle->active = 1;
+    info = &D_80092A74[kind];
+    sparkle->type = 0;
+    sparkle->frame = 0;
+    sparkle->u.fall.kind = info;
+    sparkle->frame_count = info->frame_count;
+    sparkle->u.fall.gravity = info->gravity;
+    sparkle->u.fall.fall_speed = 0;
+    sparkle->x = pos->vx;
+    sparkle->y = pos->vy;
+    sparkle->z = pos->vz;
+    prim = sparkle->prim;
+    prim->tpage = info->tpage;
+    if (kind == 2) {
+        prim->code &= ~1;
+        prim->r0 = D_800926B8.r;
+        prim->g0 = D_800926B8.g;
+        prim->b0 = D_800926B8.b;
+    } else {
+        prim->code |= 1;
+    }
+    prim->clut = info->clut;
+    sparkle->prim[1] = *prim;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C280);
 
+#ifdef NON_MATCHING
+/* Start a trail segment of a key at a position for the current owner
+ * (once per key and owner), with the given texture column and size, linked
+ * to the segment started on the previous frame.
+ * Does not match: the texture and header stores are scheduled in a different order. */
+void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
+    Sparkle *sparkle;
+    Sparkle *other;
+    PolyFT4 *prim;
+    s32 i;
+
+    for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active && sparkle->u.trail.key == key && sparkle->u.trail.owner == D_800928E8) {
+            return;
+        }
+    }
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active) {
+            break;
+        }
+    }
+    if (i == SPARKLE_COUNT) {
+        return;
+    }
+    prim = sparkle->prim;
+    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
+    prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
+    prim->code &= ~1;
+    prim->tpage = D_80092694;
+    prim->clut = D_800926A0;
+    sparkle->prim[1] = *prim;
+    sparkle->frame_count = 7;
+    sparkle->type = 1;
+    sparkle->active = 1;
+    sparkle->frame = 0;
+    sparkle->x = pos->vx;
+    sparkle->y = pos->vy;
+    sparkle->u.trail.owner = D_800928E8;
+    sparkle->u.trail.key = key;
+    sparkle->u.trail.prev = NULL;
+    sparkle->u.trail.stamp = D_800926A4;
+    sparkle->z = pos->vz;
+    sparkle->u.trail.size = D_80091228[size];
+    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+        if (other->active && other->u.trail.key == key && other != sparkle && other->type == 1 &&
+            other->u.trail.stamp == (u16)(D_800926A4 - 1)) {
+            sparkle->u.trail.prev = other;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007C880);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CAA4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CD14);
+/* Pack four fields into one word: top byte, 16-bit middle, flag bit 7 and
+ * a 7-bit low field. */
+u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low) {
+    return (low & 0x7F) | ((flag << 7) & 0x80) | (top << 24) | ((middle << 8) & 0xFFFF00);
+}
 
+#ifdef NON_MATCHING
+/* Start a line segment of a key between two positions for the current
+ * owner (once per key and owner), with the given texture column, linked to
+ * the segment started on the previous frame.
+ * Does not match: loads are scheduled ahead of the original statement order. */
+void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
+    Sparkle *sparkle;
+    Sparkle *other;
+    PolyFT4 *prim;
+    s32 i;
+
+    for (i = 0, sparkle = D_80092AD8; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (sparkle->active && sparkle->u.line.key == key && sparkle->u.line.owner == D_800928E8) {
+            return;
+        }
+    }
+    sparkle = D_80092AD8;
+    for (i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active) {
+            break;
+        }
+    }
+    if (i == SPARKLE_COUNT) {
+        return;
+    }
+    sparkle->frame_count = 7;
+    sparkle->type = 2;
+    sparkle->active = 1;
+    sparkle->frame = 0;
+    sparkle->x = from->vx;
+    sparkle->y = from->vy;
+    sparkle->u.line.owner = D_800928E8;
+    sparkle->z = from->vz;
+    sparkle->u.line.x = to->vx;
+    sparkle->u.line.y = to->vy;
+    prim = sparkle->prim;
+    prim->u0 = prim->u1 = prim->u2 = prim->u3 = (u8)D_80092698 * 4 + 8 + column * 4;
+    prim->v0 = prim->v1 = prim->v2 = prim->v3 = D_8009269C;
+    sparkle->u.line.key = key;
+    sparkle->u.line.prev = NULL;
+    sparkle->u.line.stamp = D_800926A4;
+    sparkle->u.line.z = to->vz;
+    prim->tpage = D_80092694;
+    prim->clut = D_800926A0;
+    prim->code &= ~1;
+    sparkle->prim[1] = *prim;
+    for (i = 0, other = D_80092AD8; i < SPARKLE_COUNT; i++, other++) {
+        if (other->active && other->u.line.key == key && other != sparkle && other->type == 2 &&
+            other->u.line.stamp == (u16)(D_800926A4 - 1)) {
+            sparkle->u.line.prev = other;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CD44);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007CF78);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D068);
+/* Copy the camera position to the scratchpad and run the scene pass. */
+void func_8007D068(void *arg) {
+    SCENE_SCRATCH->camera = D_80096FA8;
+    func_8007E3CC(arg);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D0B4);
+/* Jitter a short position by -24..23 on each axis. */
+void func_8007D0B4(SVector *pos) {
+    pos->vx += func_8003FA38() % 48 - 24;
+    pos->vy += func_8003FA38() % 48 - 24;
+    pos->vz += func_8003FA38() % 48 - 24;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D190);
+/* Start a sparkle of kind 0..4 at a position; kinds 8..12 are the same
+ * sparkles with the position jittered first. Declared int without a return
+ * value, as the original's unfilled branch delay slot shows. */
+s32 func_8007D190(Vector *pos, u32 kind) {
+    SVector at;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D25C);
+    at.vx = pos->vx;
+    at.vy = pos->vy;
+    at.vz = pos->vz;
+    switch (kind) {
+    case 8:
+        func_8007D0B4(&at);
+    case 0:
+        func_8007C124(&at, 0);
+        break;
+    case 9:
+        func_8007D0B4(&at);
+    case 1:
+        func_8007C124(&at, 1);
+        break;
+    case 10:
+        func_8007D0B4(&at);
+    case 2:
+        func_8007C124(&at, 2);
+        break;
+    case 11:
+        func_8007D0B4(&at);
+    case 3:
+        func_8007C124(&at, 3);
+        break;
+    case 12:
+        func_8007D0B4(&at);
+    case 4:
+        func_8007C124(&at, 4);
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D274);
+/* Whether a code lies in 0x10..0x1f. */
+s32 func_8007D25C(s32 code) {
+    if (code < 0x10) {
+        return 0;
+    }
+    return code < 0x20;
+}
 
+/* Jitter a position by -32..31 on each axis. */
+void func_8007D274(Vector *from, Vector *to) {
+    to->vx = from->vx + func_8003FA38() % 64 - 32;
+    to->vy = from->vy + func_8003FA38() % 64 - 32;
+    to->vz = from->vz + func_8003FA38() % 64 - 32;
+}
+
+#ifdef NON_MATCHING
+/* Queue a three-strand bolt of jittered 7-segment lines between two points,
+ * coloured by kind: 0 green-blue flicker, 1 random grey-yellow, 2
+ * alternating white and red segments.
+ * Does not match: the address of prev is kept in a saved register. */
+void func_8007D334(Vector *from, Vector *to, s32 kind) {
+    Vector point;
+    Vector step;
+    Vector prev;
+    Vector next;
+    Color color;
+    s32 strand;
+    s32 i;
+    s32 value;
+
+    step = *to;
+    step.vx -= from->vx;
+    step.vy -= from->vy;
+    step.vz -= from->vz;
+    func_800886FC(&step);
+    step.vx /= 7;
+    step.vy /= 7;
+    step.vz /= 7;
+    for (strand = 0; strand < 3; strand++) {
+        point = *from;
+        prev = *from;
+        for (i = 0; i < 7; i++) {
+            point.vx += step.vx;
+            point.vy += step.vy;
+            point.vz += step.vz;
+            func_8007D274(&point, &next);
+            switch (kind) {
+            case 0:
+                color.r = func_8003FA38() & 0x3F;
+                color.g = func_8003FA38() % 191 + 0x40;
+                color.b = 0xFF;
+                break;
+            case 1:
+                value = func_8003FA38() % 256 + 0x40;
+                if (value < 0x100) {
+                    color.g = value;
+                } else {
+                    color.g = 0xFF;
+                }
+                color.r = color.g = color.g;
+                color.b = value / 3;
+                break;
+            case 2:
+                if (i & 1) {
+                    color.b = 0xFF;
+                    color.g = 0xFF;
+                    color.r = 0xFF;
+                } else {
+                    color.r = 0xFF;
+                    color.b = 0;
+                    color.g = 0;
+                }
+                break;
+            }
+            func_8007E31C(&prev, i == 6 ? to : &next, &color);
+            prev = next;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D334);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D65C);
+/* Map codes 0x11..0x13 to kinds 0..2 and forward them. */
+void func_8007D65C(Vector *from, Vector *to, s32 code) {
+    switch (code) {
+    case 0x11:
+        func_8007D334(from, to, 0);
+        break;
+    case 0x12:
+        func_8007D334(from, to, 1);
+        break;
+    case 0x13:
+        func_8007D334(from, to, 2);
+        break;
+    }
+}
 
+#ifdef NON_MATCHING
+/* Allocate the scene cell table and both buffers' point primitives.
+ * Does not match: the primitive pointer loads are hoisted over the
+ * stores (the original keeps every access in order). */
+void func_8007D6B8(void) {
+    SceneCell10 *cell;
+    s32 i;
+
+    D_800926BC = func_80031BDC(0x9F6, 0);
+    D_800926C0 = func_80031BDC(0xBF4, 0);
+    D_800926C4 = func_80031BDC(0xBF4, 0);
+    cell = D_800926BC;
+    for (i = 0; i < 0xFF; i++) {
+        D_800926C0[i].len = 2;
+        D_800926C0[i].rgbc = 0x6880B0F0;
+        D_800926C4[i].len = 2;
+        D_800926C4[i].rgbc = 0x6880B0F0;
+        cell->unk0 = cell->unk2 = cell->unk4 = 0;
+        cell->unk0 = cell->unk4 = cell->unk6 = 0;
+        cell++;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D6B8);
+#endif
 
+#ifdef NON_MATCHING
+/* Spawn up to count ground particles in free cells around a position: on
+ * the ground below a random point within 32 units, rising for 20 frames.
+ * Does not match: the x coordinate is kept pre-shifted for the map index. */
+void func_8007D7A8(Vector *pos, s32 count) {
+    SceneCell10 *cell = D_800926BC;
+    s32 i;
+    s32 x;
+    s32 z;
+
+    for (i = 0; i < 251; i++, cell++) {
+        if (count == 0) {
+            break;
+        }
+        if (cell->unk6 == 0) {
+            x = pos->vx + (func_8003FA38() % 64 - 32);
+            cell->unk0 = x;
+            z = pos->vz + (func_8003FA38() % 64 - 32);
+            cell->unk4 = z;
+            cell->unk2 = cell->unk8 = D_800928DC[((s16)z >> 8) * 128 + ((s16)x >> 8)].height;
+            cell->unk7 = -(func_8003FA38() % 10 + 10);
+            count--;
+            cell->unk6 = 20;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D7A8);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007D918);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007DB28);
+/* Allocate the 540 scene cells and their small tiles (2..4 pixels square,
+ * pale blue), with a copy of the tiles for the other draw buffer. */
+void func_8007DB28(void) {
+    SceneCell12 *cell;
+    TileWords *tile;
+    s32 i;
+
+    D_800926C8 = func_80031BDC(0x1950, 0);
+    tile = func_80031BDC(0x21C0, 0);
+    D_800926CC = tile;
+    D_800926D0 = func_80031BDC(0x21C0, 0);
+    cell = D_800926C8;
+    for (i = 0; i < 540; i++, cell++, tile++) {
+        tile->len = 3;
+        tile->rgbc = 0x60FFD0A0;
+        tile->w = func_8003FA38() % 3 + 2;
+        tile->h = func_8003FA38() % 3 + 2;
+        cell->unk0 = cell->unk2 = cell->unk4 = 0;
+        cell->unk8 = cell->unkA = cell->unk9 = cell->unk6 = 0;
+    }
+    func_800732AC(D_800926D0, D_800926CC, 0x21C0);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007DC74);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E020);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E24C);
+/* Clear both scene cell tables and the actors' 0x90b bytes. */
+void func_8007E24C(void) {
+    SceneCell12 *cell;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E2D8);
+    cell = D_800926C8;
+    for (i = 0; i < 0x21C; i++) {
+        cell[i].unk6 = 0;
+        cell[i].unk4 = 0;
+        cell[i].unk2 = 0;
+        cell[i].unk0 = 0;
+    }
+    D_80097010.unk90B = 0;
+    D_8009872C.unk90B = 0;
+    for (i = 0; i < 0xFF; i++) {
+        D_800926BC[i].unk6 = 0;
+        D_800926BC[i].unk0 = D_800926BC[i].unk2 = D_800926BC[i].unk4 = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E31C);
+/* Initialise the scene's line primitives and clear the per-frame counters. */
+void func_8007E2D8(void) {
+    SceneLine *line;
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        line = &D_80094818[i];
+        line->line.len = 3;
+        line->line.code = 0x40;
+    }
+    D_800926B0 = 0;
+    D_800926B4 = 0;
+}
+
+/* Queue a coloured 3D line segment for this frame (at most 100). */
+void func_8007E31C(Vector *from, Vector *to, Color *color) {
+    SceneLine *line;
+
+    if (D_800926B0 < 100) {
+        line = &D_80094818[D_800926B0];
+        line->from.vx = from->vx;
+        line->from.vy = from->vy;
+        line->from.vz = from->vz;
+        line->to.vx = to->vx;
+        line->to.vy = to->vy;
+        line->to.vz = to->vz;
+        line->line.r0 = color->r;
+        line->line.g0 = color->g;
+        line->line.b0 = color->b;
+        D_800926B0++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E3CC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E528);
+/* Set the scene state, playing sound 0x24 when state 10 starts from 0. */
+void func_8007E528(s32 state) {
+    if (D_80092708 == 0 && state == 10) {
+        func_8008EB4C(0x24);
+    }
+    D_80092708 = state;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E574);
+/* While the scene state counts down, draw its sprite (when flag 2 is set). */
+void func_8007E574(void *ot) {
+    if (D_80092708 != 0) {
+        if (D_800928E8 & 2) {
+            func_80043B48(ot, &D_800954D8[D_800928A0].sprite);
+            func_80043B48(ot, &D_800954D8[D_800928A0].tpage);
+        }
+        D_80092708--;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E624);
+s32 func_8007E624(void) {
+    return D_800926DC;
+}
 
+#ifdef NON_MATCHING
+/* Allocate the text quads, load the font (with its palette's colours 0, 2
+ * and 3 replaced) and the banner image, and build the banner sprite.
+ * Does not match: the banner sprite address is taken from its length byte. */
+void func_8007E634(MenuFiles *files) {
+    TimImage image;
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s16 *palette;
+    s32 i;
+
+    D_800926D4[0] = func_80031BDC(0xFA0, 0);
+    D_800926D4[1] = func_80031BDC(0xFA0, 0);
+    for (i = 0; i < 100; i++) {
+        ((u8 *)&D_800926D4[0][i].tag)[3] = 0;
+        ((u8 *)&D_800926D4[1][i].tag)[3] = 0;
+    }
+    func_800471B4(files->font);
+    func_800471C4(&image);
+    palette = image.caddr;
+    palette[2] = -0x6F9D;
+    palette[0] = 0;
+    palette[3] = -1;
+    func_80044894(&image.crect->x, image.caddr);
+    func_80044894(&image.prect->x, image.paddr);
+    D_800926E4 = func_80043A58(image.crect->x, image.crect->y);
+    D_800926E0 = func_80043A1C(0, 1, image.prect->x, image.prect->y);
+    D_800926DC = 0;
+    func_800471B4(files->banner);
+    func_800471C4(&image);
+    palette = image.caddr;
+    palette[0] = 0;
+    func_80044894(&image.crect->x, image.caddr);
+    func_80044894(&image.prect->x, image.paddr);
+    D_800954D8[0].sprite.len = 4;
+    D_800954D8[0].sprite.code = 0x65;
+    func_80043E20(&D_800954D8[0].tpage, 0, 0, func_80043A1C(0, 1, image.prect->x, image.prect->y));
+    D_800954D8[0].sprite.clut = func_80043A58(image.crect->x, image.crect->y);
+    D_800954D8[0].sprite.x0 = 0x40;
+    D_800954D8[0].sprite.y0 = 0xBE;
+    D_800954D8[0].sprite.w = 0xC4;
+    D_800954D8[0].sprite.h = 0xD;
+    D_800954D8[0].sprite.u0 = image.prect->x * 4;
+    D_800954D8[0].sprite.v0 = image.prect->y;
+    D_800954D8[1] = D_800954D8[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E634);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E894);
+void func_8007E894(s32 x, s32 y) {
+    D_800926E8 = x;
+    D_800926EC = y;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E8AC);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E954);
+void func_8007E954(s32 value) {
+    D_800912DC = value;
+}
 
+#ifdef NON_MATCHING
+/* Draw one character at the text cursor (at most 101 quads a frame; '('
+ * only advances) and move the cursor right by its scaled width. Declared
+ * int without a return value, as the original's unfilled delay slot shows.
+ * Does not match: the original loads the glyph width before storing the
+ * first vertex, and the texture page/CLUT before the packet length. */
+s32 func_8007E964(s32 ch) {
+    PolyFT4Words *quad;
+    Glyph *glyph;
+    s32 right;
+
+    if (D_800926DC < 101) {
+        quad = D_800926D4[D_800928A0];
+        quad += D_800926DC;
+        glyph = func_8007E8AC(ch);
+        if (glyph != NULL) {
+            if (ch != '(') {
+                quad->xy0 = D_800926E8 | (D_800926EC << 16);
+                ch = glyph->width | 3; /* the quad width, in the same variable */
+                right = D_800926E8 + ((ch * D_800912DC) >> 8);
+                quad->xy1 = right | (D_800926EC << 16);
+                quad->xy2 = D_800926E8 | ((D_800926EC + glyph->height) << 16);
+                quad->xy3 = right | ((D_800926EC + glyph->height) << 16);
+                quad->uv0 = glyph->u | (glyph->v << 8);
+                quad->uv1 = (glyph->u + ch) | (glyph->v << 8);
+                quad->uv2 = glyph->u | ((glyph->v + (glyph->height + 1)) << 8);
+                quad->uv3 = (glyph->u + ch) | ((glyph->v + (glyph->height + 1)) << 8);
+                quad->len = 9;
+                quad->rgbc = D_800926F0 | (D_800926F4 << 8) | (D_800926F8 << 16) | 0x2C000000;
+                quad->tpage = D_800926E0;
+                quad->clut = D_800926E4;
+                D_800926DC++;
+            }
+            D_800926E8 += ((glyph->width * D_800912DC) >> 8) + 2;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007E964);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EB6C);
+/* Width of a text string in pixels at the current text scale. */
+s32 func_8007EB6C(u8 *text) {
+    s32 width = 0;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EBE0);
+    while (*text != 0) {
+        width += ((func_8007E8AC(*text++)->width * D_800912DC) >> 8) + 2;
+    }
+    return width;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EC54);
+/* Draw a line of text at the cursor and move the cursor to the next line. */
+void func_8007EBE0(u8 *text) {
+    s32 x = D_800926E8;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007ECF0);
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007ED84);
+/* Draw a line of text centred on the cursor, then move to the next line. */
+void func_8007EC54(u8 *text) {
+    s32 x = D_800926E8;
 
+    D_800926E8 -= func_8007EB6C(text) / 2;
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
+
+/* Draw a line of text ending at the cursor, then move to the next line. */
+void func_8007ECF0(u8 *text) {
+    s32 x = D_800926E8;
+
+    D_800926E8 -= func_8007EB6C(text);
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
+
+/* Draw a line of text shifted left by an offset, then move to the next line. */
+void func_8007ED84(u8 *text, s32 offset) {
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+    s32 x = D_800926E8;
+
+    D_800926E8 = x - offset;
+    while (*text != 0) {
+        func_8007E964(*text++);
+    }
+    D_800926E8 = x;
+    D_800926EC += 0x14;
+}
+
+#ifdef NON_MATCHING
+/* Set the text colour: highlighted (fading red) or plain white.
+ * Does not match: the original reloads 0xff in the highlight branch. */
+void func_8007EE08(s32 highlight) {
+    if (highlight) {
+        D_800926F0 = D_80059488 * 20;
+        D_800926F4 = 0xFF;
+        D_800926F8 = 0;
+    } else {
+        D_800926F0 = 0xFF;
+        D_800926F4 = 0xFF;
+        D_800926F8 = 0xFF;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EE08);
+#endif
 
+#ifdef NON_MATCHING
+/* Set the text colour: highlighted (fading toward blue) or plain white.
+ * Does not match: the original reloads 0xff in the highlight branch. */
+void func_8007EE68(s32 highlight) {
+    if (highlight) {
+        D_800926F8 = 0xFF;
+        D_800926F0 = 0xFF - D_80059488 * 20;
+        D_800926F4 = 0xFF - D_80059488 * 20;
+        return;
+    }
+    D_800926F0 = 0xFF;
+    D_800926F4 = 0xFF;
+    D_800926F8 = 0xFF;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EE68);
+#endif
 
+#ifdef NON_MATCHING
+/* Build the list of the 49 entries (or, when filtering, of those whose
+ * required level the current level reaches) and order it when filtering.
+ * Does not match: the source and entry pointers get swapped registers. */
+void func_8007EEE8(s32 filter) {
+    s32 level = D_8006EF64;
+    ListEntry **list = func_80031BDC(0xC4, 1);
+    ListSource *source;
+    s32 i;
+
+    source = D_80092874;
+    D_800928EC = list;
+    D_80092888 = 0;
+    for (i = 0; i < 49; i++, source++) {
+        if (!filter || source->level <= level) {
+            list[D_80092888++] = &D_80091964[i];
+        }
+    }
+    if (filter) {
+        func_8008895C();
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EEE8);
+#endif
 
+#ifdef NON_MATCHING
+/* Allocate and lay out the 49 portrait slots: palette rows 511 down and
+ * a 7x7 grid of image areas.
+ * Does not match: the x shift is scheduled after the first stores. */
+void func_8007EFB4(void) {
+    u8 unused[0x30]; /* never used; the original frame keeps its slot */
+    GridCell *cell;
+    s32 id;
+    s32 row;
+    s32 col;
+    s16 top;
+
+    cell = D_8009270C = func_80031BDC(0x3D4, 0);
+    id = 0x1FF;
+    for (row = 0; row < 7; row++) {
+        top = row * 0x20 + 0x1A0;
+        for (col = 0; col < 7; col++) {
+            cell->clut_x = 0x200;
+            cell->clut_y = id--;
+            cell->clut_w = 0x80;
+            cell->clut_h = 1;
+            cell->image_x = top;
+            cell->image_y = col << 6;
+            cell->image_w = 0x1E;
+            cell->image_h = 0x40;
+            cell++;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EFB4);
+#endif
 
+#ifdef NON_MATCHING
+/* Draw the portrait of a list entry (the index wraps around the list) on
+ * the left or right side. At fade 64 it is shown full size and unshaded;
+ * below, it is shaded and shrunk by fade / 16.
+ * Does not match: the vertex arithmetic is scheduled differently. */
+void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade) {
+    GridCell *cell;
+    s32 shrink;
+    s32 top;
+    s32 bottom;
+    s32 left;
+    s32 right;
+    s32 u;
+
+    if (right_side) {
+        x += 0xD3;
+    } else {
+        x += 0x33;
+    }
+    if (index > D_80092888 - 1) {
+        index -= D_80092888;
+    }
+    if (index < 0) {
+        index += D_80092888;
+    }
+    cell = &D_8009270C[D_800928EC[index]->id];
+    if (fade == 0x40) {
+        quad->len = 9;
+        ((u8 *)&quad->rgbc)[3] = 0x2D;
+        quad->xy0 = x | 0x300000;
+        right = x + 0x3C;
+        quad->xy1 = right | 0x300000;
+        quad->xy2 = x | 0x700000;
+        quad->xy3 = right | 0x700000;
+    } else {
+        fade += 0x40;
+        shrink = (fade - 0x40) >> 4;
+        quad->len = 9;
+        quad->rgbc = fade | (fade << 8) | (fade << 16) | 0x2C000000;
+        left = x - (shrink - 4);
+        top = 0x34 - shrink;
+        quad->xy0 = left | (top << 16);
+        right = left + 0x34 + shrink * 2;
+        bottom = top + 0x38 + shrink * 2;
+        quad->xy1 = right | (top << 16);
+        quad->xy2 = left | (bottom << 16);
+        quad->xy3 = right | (bottom << 16);
+    }
+    u = cell->image_x * 2;
+    quad->uv0 = u | (cell->image_y << 8);
+    quad->uv1 = (u + 0x3B) | (cell->image_y << 8);
+    quad->uv2 = u | ((cell->image_y + 0x3F) << 8);
+    quad->uv3 = (u + 0x3B) | ((cell->image_y + 0x3F) << 8);
+    quad->clut = func_80043A58(cell->clut_x, cell->clut_y);
+    quad->tpage = func_80043A1C(1, 0, cell->image_x & 0xFF80, cell->image_y);
+    func_80043B48(D_80092938, quad);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F05C);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F258);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F834);
+void func_8007F834(void) {
+    D_80092740 = 0;
+    D_8009273C = 0;
+    D_80092744 = 0;
+}
 
+#ifdef NON_MATCHING
+/* Leave the settings screen: camera mode 1 and flags 0xc on both actors.
+ * Does not match: the original addresses both flag words through two
+ * address registers in the opposite register order. */
+void func_8007F854(void) {
+    s32 unused[2]; /* never used; the original frame keeps its slot */
+
+    D_800912F0 = 1;
+    func_80083C0C(1);
+    D_80092734 = NULL;
+    func_8007F834();
+    D_8009872C.unkD4 |= 0xC;
+    D_80097010.unkD4 |= 0xC;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F854);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F8B4);
+void func_8007F8B4(void) {
+    s32 unused[2]; /* never used; the original frame keeps its slot */
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F8E4);
+    func_80083C0C(1);
+    D_80092734 = NULL;
+    func_8007F834();
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F948);
+void func_8007F8E4(void) {
+    func_80080C48(0);
+    if (D_80099D98.option6 != 0 || D_80092950 == 1) {
+        func_80083C0C(3);
+    } else {
+        D_80092950--;
+        func_80083C0C(6);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F97C);
+/* Highlight the text of a page's entry when it is under the cursor. */
+void func_8007F948(MenuPage *page, s32 entry) {
+    if (page->cursor == entry) {
+        func_8007EE08(1);
+    } else {
+        func_8007EE08(0);
+    }
+}
+
+/* Name of the chosen first setting. */
+char *func_8007F97C(void) {
+    return D_800912F4[D_80099D98.level];
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF5C);
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF60);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F9A0);
+/* Draw the values column of the settings page, right-aligned, applying the
+ * chosen speed as it is shown. */
+void func_8007F9A0(MenuPage *page) {
+    char text[8];
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FB0C);
+    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007EE08(0);
+    func_8007F948(page, 0);
+    func_8007ECF0(func_8007F97C());
+    func_8007F948(page, 1);
+    func_8003FBF8(text, D_8006FF5C, D_80099D98.speed + 1);
+    D_80099DA4 = D_8009292C = D_8009130C[D_80099D98.speed];
+    func_8007ECF0(text);
+    func_8007F948(page, 2);
+    func_8003FBF8(text, D_8006FF60, D_80091300[D_80099D98.rate]);
+    func_8007ECF0(text);
+    func_8007F948(page, 3);
+    func_8007ECF0(D_80099D98.com1 ? "COM" : "USER1");
+    func_8007F948(page, 4);
+    func_8007ECF0(D_80099D98.driven ? "COM" : "USER2");
+    func_8007EE08(0);
+}
+
+/* Draw the values column of the second settings page; the chosen entry of
+ * setting 10 is also passed to 80081100 as 0x15 + entry. */
+void func_8007FB0C(MenuPage *page) {
+    char text[8];
+
+    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007EE08(0);
+    func_8007ECF0(D_8006FF7C);
+    func_8007F948(page, 1);
+    func_8007ECF0(D_8009132C[D_80099D98.command]);
+    func_80081100(D_80099D98.command + 0x15, 1);
+    func_8007F948(page, 2);
+    func_8003FBF8(text, D_8006FF60, D_80091300[D_80099D98.rate]);
+    func_8007ECF0(text);
+    func_8007EE08(0);
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_8006FF7C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FBEC);
+/* Draw the vibration page: per controller port, the vibration setting when
+ * a type-4 controller without the "COM" setting is connected (the entry is
+ * hidden otherwise). */
+void func_8007FBEC(void) {
+    MenuPage *page;
+    s32 active;
+    s32 unused[2]; /* never used; the original frame keeps its slot */
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FE48);
+    func_8007E894(0xA0, 0x8C);
+    active = D_80092710 ^ 1;
+    active &= 1;
+    page = &D_800915AC[5];
+    if (active && D_800915AC[5].cursor == 0) {
+        D_8009272C = 1;
+    } else {
+        D_8009272C = 0;
+    }
+    func_8007E894(0x50, 0x8C);
+    if (func_80035734(0) == 4 && D_80099D98.com1 == 0) {
+        if (active) {
+            func_8007F948(page, 1);
+        }
+        func_8007EC54((D_80099D98.option4 & 1) ? "VIBRATION ON" : "VIBRATION OFF");
+        D_800915AC[5].item->flags &= ~4;
+    } else {
+        D_800915AC[5].item->flags |= 4;
+    }
+    func_8007EE08(0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007FF70);
+    active = D_80092710 >> 1;
+    active ^= 1;
+    active &= 1;
+    if (active && D_80092754 == 0) {
+        active = 0;
+    }
+    page = &D_800915AC[6];
+    if (active && D_800915AC[6].cursor == 0) {
+        D_80092730 = 1;
+    } else {
+        D_80092730 = 0;
+    }
+    func_8007E894(0xF0, 0x8C);
+    if (func_80035734(1) == 4 && D_80099D98.driven == 0) {
+        if (active) {
+            func_8007F948(page, 1);
+        }
+        func_8007EC54((D_80099D98.option5 & 1) ? "VIBRATION ON" : "VIBRATION OFF");
+        D_800915AC[6].item->flags &= ~4;
+    } else {
+        D_800915AC[6].item->flags |= 4;
+    }
+    func_8007EE08(0);
+    func_8007F258(D_80092938, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080054);
+/* Draw the values column of the options page. */
+void func_8007FE48(MenuPage *page) {
+    char text[16];
+    char *value;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080090);
+    func_8007EE08(0);
+    func_8007E894(page->frame[0].x0 + page->frame[0].w - 10, page->y);
+    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0(D_8006FF7C);
+    func_8007ECF0(D_8006FF7C);
+    func_8007F948(page, 4);
+    if (D_80099D98.option6 != 0) {
+        func_8003FBF8(text, D_8006FF5C, D_80099D98.option6);
+        value = text;
+    } else {
+        value = "#";
+    }
+    func_8007ECF0(value);
+    func_8007F948(page, 5);
+    func_8007ECF0(D_800912F4[D_80099D98.level]);
+    func_8007F948(page, 6);
+    func_8007ECF0(D_80092884 ? "ON" : "OFF");
+    func_8007EE08(0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800800CC);
+/* Step a settings value with left/right: flag 4 reverses the direction,
+ * flag 2 uses the repeating buttons, flag 1 wraps around (else clamps
+ * silently). Plays the cursor sound when moved. */
+s32 func_8007FF70(s32 value, s32 max, s32 flags) {
+    s32 step = 1;
+    u32 buttons;
+    s32 moved;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080108);
+    if (flags & 4) {
+        step = -1;
+    }
+    moved = 0;
+    if (flags & 2) {
+        buttons = D_8009274C;
+    } else {
+        buttons = D_80092750;
+    }
+    if (buttons & 0x2000) {
+        value += step;
+    }
+    if (buttons & 0x8000) {
+        value -= step;
+    }
+    if (buttons & 0xA000) {
+        moved = 1;
+    }
+    if (flags & 1) {
+        if (value == -1) {
+            value = max;
+        }
+        if (value > max) {
+            value = 0;
+        }
+    } else {
+        if (value == -1) {
+            moved = 0;
+            value = 0;
+        }
+        if (value > max) {
+            moved = 0;
+            value = max;
+        }
+    }
+    if (moved) {
+        func_8008EB4C(0x20);
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080144);
+void func_80080054(void) {
+    D_80099D98.level = func_8007FF70(D_80099D98.level, 2, 0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080180);
+void func_80080090(void) {
+    D_80099D98.speed = func_8007FF70(D_80099D98.speed, 7, 2);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800801BC);
+void func_800800CC(void) {
+    D_80099D98.rate = func_8007FF70(D_80099D98.rate, 4, 2);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800801F8);
+void func_80080108(void) {
+    D_80099D98.option4 = func_8007FF70(D_80099D98.option4, 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080234);
+void func_80080144(void) {
+    D_80099D98.option5 = func_8007FF70(D_80099D98.option5, 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080268);
+void func_80080180(void) {
+    D_80099D98.com1 = func_8007FF70(D_80099D98.com1, 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800802A4);
+void func_800801BC(void) {
+    D_80099D98.driven = func_8007FF70(D_80099D98.driven, 1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008040C);
+void func_800801F8(void) {
+    D_80099D98.option6 = func_8007FF70(D_80099D98.option6, 3, 2);
+}
+
+void func_80080234(void) {
+    D_80092884 = func_8007FF70(D_80092884, 1, 1);
+}
+
+void func_80080268(void) {
+    D_80099D98.command = func_8007FF70(D_80099D98.command, 13, 3);
+}
+
+/* First side's selection: cancel, move (skipping the other side's pick
+ * unless shared picks are allowed or both already coincide) and confirm. */
+void func_800802A4(void) {
+    s32 same;
+
+    if (D_80091364 == 0 && (D_8005948C & 0x40)) {
+        D_80092710 &= ~1;
+        func_80085134(0);
+        func_8008EB4C(0x22);
+    }
+    if (!(D_80092710 & 1)) {
+        same = D_80092700 == D_80092704;
+        do {
+            D_80092700 = func_8007FF70(D_80092700, D_80092888 - 1, 3);
+        } while (D_80092700 == D_80092704 && !(D_80092748 & 1) && !same);
+        if (D_80091364 == 0 && (D_8005948C & 0x20)) {
+            D_80092710 |= 1;
+            func_8008EB4C(0x21);
+            func_8008509C(0, D_800928EC[D_80092700]->id);
+        }
+    }
+}
+
+/* Second side's selection; cancelling outside mode 2 leaves the screen. */
+void func_8008040C(void) {
+    s32 same;
+
+    if (D_80092750 & 0x40) {
+        if (D_800928C8 != 2) {
+            D_80092710 = 0;
+            func_80085134(1);
+            func_8008EB4C(0x22);
+            return;
+        }
+        D_80092710 &= ~2;
+    }
+    if (!(D_80092710 & 2)) {
+        same = D_80092700 == D_80092704;
+        do {
+            D_80092704 = func_8007FF70(D_80092704, D_80092888 - 1, 3);
+        } while (D_80092700 == D_80092704 && !(D_80092748 & 1) && !same);
+        if (D_80092750 & 0x20) {
+            D_80092710 |= 2;
+            func_8008EB4C(0x21);
+            func_8008509C(1, D_800928EC[D_80092704]->id);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080570);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080644);
+/* Load both picks' portraits (palette and image) into their VRAM slots and
+ * mark both sides confirmed. */
+void func_80080644(s32 first, s32 second) {
+    u8 *data = func_80031BDC(0x2000, 0);
+    u8 *other;
+    GridCell *cell;
 
+    func_8002954C((u16 *)func_800289D0(6) + first, data, 0x1000, 0, 0);
+    other = data + 0x1000;
+    func_8002954C((u16 *)func_800289D0(6) + second, other, 0x1000, 0, 0);
+    D_80092700 = first;
+    D_80092704 = second;
+    D_80092714 = first;
+    D_80092720 = second;
+    D_80092710 = 3;
+    func_80028A60(0);
+    cell = &D_8009270C[first];
+    func_80044894(&cell->clut_x, data);
+    func_80044894(&cell->image_x, data + 0x100);
+    cell = &D_8009270C[second];
+    func_80044894(&cell->clut_x, other);
+    func_80044894(&cell->image_x, data + 0x1100);
+    func_80032C18(data, 2);
+}
+
+#ifdef NON_MATCHING
+/* Enter the selection screen in a mode: upload every portrait once, set
+ * the pages' entry counts and labels, and reset both sides.
+ * Does not match: the original reloads 4 into the branch delay slot. */
+void func_80080780(s32 mode) {
+    GridCell *cell;
+    s32 i;
+    s32 count;
+
+    if (D_80092940 == 0) {
+        func_80028A60(0);
+        cell = D_8009270C;
+        for (i = 0; i < 49; i++, cell++) {
+            func_80044894(&cell->clut_x, D_800928D8 + (i << 12));
+            func_80044894(&cell->image_x, D_800928D8 + (i << 12) + 0x100);
+        }
+        func_800320E8(D_800928D8);
+        D_80092940 = 1;
+    }
+    D_800928C8 = mode;
+    count = 4;
+    if (mode == 4) {
+        count = 3;
+    }
+    D_800915AC[5].count = count;
+    D_800915AC[6].count = 5;
+    if (mode == 3) {
+        D_80091369 = 0x27;
+        D_80091391 = 0x28;
+    } else {
+        D_80091369 = 0x25;
+        D_80091391 = 0x26;
+    }
+    func_80083C0C(1);
+    D_80092710 = 0;
+    D_80092728 = 0;
+    D_80092724 = 0;
+    D_8009271C = 0;
+    D_80092718 = 0;
+    D_80092714 = D_80092700;
+    D_80092720 = D_80092704;
+    func_80080964(5);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080780);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800808F4);
+void func_800808F4(void) {
+    D_80092924 = 1;
+    func_8007F834();
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080920);
+void func_80080920(void) {
+    D_80092924 = 1;
+    func_800719F0();
+    func_8008509C(0, 0);
+    func_8008509C(1, 1);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080964);
+/* Show a page, remembering the current one; 0xff returns to it. */
+void func_80080964(s32 page) {
+    MenuPage *previous;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800809BC);
+    if (page == 0xFF) {
+        D_80092734 = D_80092738;
+        return;
+    }
+    previous = D_80092734;
+    D_80092734 = &D_800915AC[page];
+    D_80092738 = previous;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800809D8);
+/* Whether page 3 is shown. */
+s32 func_800809BC(void) {
+    return D_80092734 == &D_800915AC[3];
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080A58);
+/* Enter the settings/system menu at page 3 with every state reset. */
+void func_800809D8(void) {
+    func_80039FF8();
+    D_80092734 = NULL;
+    func_80080964(3);
+    D_800915AC[3].cursor = 0;
+    D_800915AC[4].cursor = 0;
+    D_800928C8 = 0;
+    D_80092758 = 0;
+    func_8007F834();
+    D_80092924 = 0;
+    func_80080AA0(0);
+    D_80092940 = 0;
+    D_800928D8 = func_800891C0(6);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080AA0);
+void func_80080A58(void) {
+    if (D_80092940 == 0) {
+        func_80028A60(0);
+        func_800320E8(D_800928D8);
+        D_80092940 = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080AE8);
+/* Free the loaded image data (or just forget it). */
+void func_80080AA0(s32 forget) {
+    if (forget) {
+        D_80092760 = NULL;
+    }
+    if (D_80092760 != NULL) {
+        func_800320E8(D_80092760);
+        D_80092760 = NULL;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080B58);
+/* Unpack the loaded image data and upload it to VRAM (320,256)-(640,474). */
+void func_80080AE8(void) {
+    s16 rect[4];
 
+    if (D_80092760 != NULL) {
+        func_800445D0(0);
+        rect[0] = 0x140;
+        rect[1] = 0x100;
+        rect[2] = 0x140;
+        rect[3] = 0xDA;
+        func_8007313C(D_80092760, (u8 *)D_80092760 + 0x21E80);
+        func_80044894(rect, D_80092760);
+    }
+}
+
+/* Keep a copy of the shown screen: allocate the image buffer once, copy
+ * the displayed buffer's area to (320,256) and read it back. */
+void func_80080B58(void) {
+    Rect area;
+
+    if (D_80092760 == NULL) {
+        func_80031BB4(1);
+        D_80092760 = func_80031BDC(0x22100, 0);
+        func_80031BB4(0);
+    }
+    func_800445D0(0);
+    area = D_8009A0D8[(D_800928A0 + 1) & 1].draw.clip;
+    func_8004495C(&area, 0x140, 0x100);
+    if (D_80092760 != NULL) {
+        func_800448F8(&area, D_80092760);
+    }
+    func_800445D0(0);
+}
+
+#ifdef NON_MATCHING
+/* Open the system menu: mode 1 at page 0, mode 2 at page 7, else close.
+ * Does not match: the shared tail is cross-jumped one instruction early. */
+void func_80080C48(s32 mode) {
+    func_80039FF8();
+    func_8008EB4C(0x1F);
+    if (mode == 1) {
+        D_80092734 = NULL;
+        func_80080964(0);
+        D_800915AC[0].cursor = 0;
+        D_800915AC[2].cursor = 1;
+    } else if (mode == 2) {
+        D_80092734 = NULL;
+        func_80080964(7);
+        D_800915AC[7].cursor = 1;
+    } else {
+        func_8007F8B4();
+        return;
+    }
+    func_80083C0C(0);
+    D_80092758 = 1;
+    D_800926FC = 0;
+    D_8009275C = 1;
+    func_80080B58();
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080C48);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080D10);
+void func_80080D10(void) {
+    D_800926DC = 0;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080D20);
+/* Link this frame's text quads and the menu overlay: the shown page's box
+ * with its texture page and, while a page or the copy request is active, a
+ * move of the kept screen copy into the draw buffer. */
+void func_80080D20(void *ot) {
+    PolyFT4 *quad = D_800926D4[D_800928A0];
+    Rect area;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080F04);
+    for (i = 0; i < D_800926DC; i++, quad++) {
+        func_80043B48(ot, quad);
+    }
+    D_800926DC = 0;
+    func_800811AC(ot);
+    if ((D_80092734 != NULL && D_80092758 != 0) || D_800912F0 != 0) {
+        if (D_80092734 != NULL) {
+            func_80043B48(ot, &D_80092734->frame[D_800928A0]);
+            func_80043E20(&D_800954C8[D_800928A0], 0, 0, func_80043A1C(0, 2, 0, 0));
+            func_80043B48(ot, &D_800954C8[D_800928A0]);
+        }
+        area.x = 0x140;
+        area.y = 0x100;
+        area.w = 0x140;
+        area.h = 0xDA;
+        func_80043E4C(&D_80095498[D_800928A0], &area, D_8009A0D8[D_800928A0].draw.clip.x,
+                      D_8009A0D8[D_800928A0].draw.clip.y);
+        func_80043B48(ot, &D_80095498[D_800928A0]);
+    }
+    D_800912F0 = 0;
+}
+
+/* Set up the two semi-transparent sprite strips (at y 180 and 195) sharing
+ * one pixel buffer, and their texture page. */
+void func_80080F04(void) {
+    u8 *pixels = func_80031BDC(0x6B4, 0);
+
+    D_80095510[0].pixels = D_80095510[1].pixels = pixels;
+    D_80095510[0].sprite[0].xy0 = 0xB40000;
+    D_80095510[0].sprite[0].uv0 = 0x3000;
+    func_80043D14(&D_80095510[0].sprite[0]);
+    func_80043C24(&D_80095510[0].sprite[0], 1);
+    D_80095510[0].sprite[0].h = 0xD;
+    D_80095510[0].sprite[0].clut = D_800595D4;
+    D_80095510[0].sprite[1] = D_80095510[0].sprite[0];
+    D_80095510[1].sprite[0].xy0 = 0xC30000;
+    D_80095510[1].sprite[0].uv0 = 0x3000;
+    func_80043D14(&D_80095510[1].sprite[0]);
+    func_80043C24(&D_80095510[1].sprite[0], 1);
+    D_80095510[1].sprite[0].h = 0xD;
+    D_80095510[1].sprite[0].clut = D_80059414;
+    D_80095510[1].sprite[1] = D_80095510[1].sprite[0];
+    func_80043E20(&D_80095570[0], 0, 0, func_80043A1C(0, 0, 0x140, 0x30));
+    D_80095570[1] = D_80095570[0];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081094);
 
@@ -1864,7 +3149,7 @@ void func_80088A40(void) {
         D_8006F978.options.option4 = D_80099D98.option4;
         D_8006F978.options.option5 = D_80099D98.option5;
         D_8006F978.options.option6 = D_80099D98.option6;
-        D_8006F978.options.option13 = D_80099D98.option13;
+        D_8006F978.options.option13 = D_80099D98.level;
     }
 }
 
@@ -1879,7 +3164,7 @@ void func_80088AF8(void) {
             D_80099D98.option4 = D_8006F978.options.option4;
             D_80099D98.option5 = D_8006F978.options.option5;
             D_80099D98.option6 = D_8006F978.options.option6;
-            D_80099D98.option13 = D_8006F978.options.option13;
+            D_80099D98.level = D_8006F978.options.option13;
             if (D_8006F978.options.complete) {
                 for (i = 0; i < 8; i++) {
                     D_8006F978.flags[i] = 0;
@@ -1889,7 +3174,7 @@ void func_80088AF8(void) {
             D_80099D98.option4 = 0;
             D_80099D98.option5 = 0;
             D_80099D98.option6 = 2;
-            D_80099D98.option13 = 0;
+            D_80099D98.level = 0;
             func_80088A40();
         }
     }

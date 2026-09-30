@@ -20,7 +20,7 @@ typedef struct {
 typedef struct {
     u32 mode;
     Rect *crect;
-    u32 *caddr;
+    s16 *caddr;
     Rect *prect;
     u32 *paddr;
 } TimImage;
@@ -41,6 +41,11 @@ typedef struct {
 typedef struct {
     s16 vx, vy, vz, pad;
 } SVector;
+
+/* libgpu CVECTOR layout. */
+typedef struct {
+    u8 r, g, b, cd;
+} Color;
 
 /* libgte matrix. */
 typedef struct {
@@ -204,22 +209,28 @@ typedef struct Actor {
     u8 visible_count;
     u8 unk909;
     u8 unk90A;
-    u8 unk90B[0xB];
+    u8 unk90B;
+    u8 unk90C[0xA];
     s16 unk916;
     u8 unk918[0x24];
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
-    u8 unk95C[0x42];
+    u8 unk95C[0x3C];
+    s16 unk998;
+    s16 unk99A;
+    u8 unk99C[0x2];
     s16 unk99E;
     u8 inputs[32];       /* 0x9A0: queued pad inputs (ring) */
     u8 input_head;
     u8 input_tail;
     u8 input_count;
     u8 unk9C3;
-    u8 unk9C4[0xC08];
+    u8 unk9C4[0x8];
+    u8 unk9CC[0xC00];    /* 0x9CC: own pose block */
     Pose *pose;          /* 0x15CC */
     Move *move;          /* 0x15D0 */
-    u8 unk15D4[0x14];
+    Color colour;        /* 0x15D4: effect colour */
+    u8 unk15D8[0x10];
     s16 unk15E8;
     s16 unk15EA;
     s16 unk15EC;
@@ -382,7 +393,7 @@ void func_80043B48(u32 *ot, void *prim);                    /* AddPrim */
 u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);           /* GetTPage */
 s16 func_80043A58(s32 x, s32 y);                            /* GetClut */
 void func_80043E20(DrTpage *p, s32 dfe, s32 dtd, s32 tpage); /* SetDrawTPage */
-void func_80044894(Rect *rect, u32 *data);                  /* LoadImage */
+void func_80044894(Rect *rect, void *data);                 /* LoadImage */
 void func_800471B4(u32 *tim);                               /* OpenTIM */
 TimImage *func_800471C4(TimImage *image);                   /* ReadTIM */
 s32 func_8004B32C(s32 x, s32 z);                            /* ratan2 */
@@ -421,21 +432,21 @@ void func_800732AC(void *dst, void *src, s32 size);
 void func_80073064(SVector *dir, SVector *out, s32 scale);
 void func_8008859C(Vector *v, SVector *unit);
 s32 func_800886FC(Vector *v);
-void func_8007E31C(Vector *from, Vector *to, u8 *colour);
+void func_8007E31C(Vector *from, Vector *to, Color *color);
 void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
-void func_8007C100(u8 *arg);
+void func_8007C100(Color *color);
 void func_80076424(Actor *actor);
 void func_8007639C(Actor *actor, u8 input);
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
 void func_80074678(Actor *actor, s32 arg1, s32 arg2);
-void func_8007C880(s32 side, Vector *at, s32 style, s32 type);
-s32 func_8007CD14(s32 side, s32 part, s32 vertex, s32 arg);
-void func_8007CD44(s32 side, Vector *a, Vector *b, s32 style);
-void func_8007D190(Vector *at, s32 type);
+void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
+u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
+void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
+s32 func_8007D190(Vector *pos, u32 kind);
 s32 func_8007D25C(s32 type);
-void func_8007D65C(Vector *a, Vector *b, s32 type);
+void func_8007D65C(Vector *from, Vector *to, s32 code);
 void func_80079DF0(Actor *actor, Actor *other);
 u32 func_800828C4(Actor *actor);
 void func_8007191C(s32 scene);
