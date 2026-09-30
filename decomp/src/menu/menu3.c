@@ -1695,7 +1695,59 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C880);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CAA4);
+/* Link a projected primitive of the given length tag into the ordering
+ * table at the depth left in the scratchpad. */
+#define LINK_PRIM(ot, scratch, prim, len)                                      \
+    prev = (ot)[(scratch)->depth >> 4];                                        \
+    addr = (u32)(prim) & 0xFFFFFF;                                             \
+    (ot)[(scratch)->depth >> 4] = addr;                                        \
+    prev |= (len);                                                             \
+    *(u32 *)addr = prev
+
+/* Draw the line sparkles that continue last frame's segment as quads
+ * joining both segments, fading with their age. */
+void func_8007CAA4(Matrix *view, Matrix *unused, u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    Sparkle *sparkle;
+    PolyFT4 *prim;
+    s32 i;
+    u32 prev;
+    u32 addr;
+
+    gte_SetRotMatrix(view);
+    gte_SetTransMatrix(view);
+    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active || sparkle->type != 2 || sparkle->u.line.prev == NULL) {
+            continue;
+        }
+        prim = &sparkle->prim[D_800928A0];
+        scratch->point.vx = sparkle->x - scratch->camera.vx;
+        scratch->point.vy = sparkle->y - scratch->camera.vy;
+        scratch->point.vz = sparkle->z - scratch->camera.vz;
+        scratch->from.vx = sparkle->u.line.x - scratch->camera.vx;
+        scratch->from.vy = sparkle->u.line.y - scratch->camera.vy;
+        scratch->from.vz = sparkle->u.line.z - scratch->camera.vz;
+        scratch->to.vx = sparkle->u.line.prev->x - scratch->camera.vx;
+        scratch->to.vy = sparkle->u.line.prev->y - scratch->camera.vy;
+        scratch->to.vz = sparkle->u.line.prev->z - scratch->camera.vz;
+        scratch->extra.vx = sparkle->u.line.prev->u.line.x - scratch->camera.vx;
+        scratch->extra.vy = sparkle->u.line.prev->u.line.y - scratch->camera.vy;
+        scratch->extra.vz = sparkle->u.line.prev->u.line.z - scratch->camera.vz;
+        gte_ldv3(&scratch->point, &scratch->from, &scratch->to);
+        gte_rtpt();
+        gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
+        gte_stsz3(&scratch->depth);
+        gte_ldv0(&scratch->extra);
+        gte_rtps();
+        gte_stsxy(&prim->x3);
+        /* the shade shares its register with the link address */
+        addr = 0x40 - sparkle->frame * 8;
+        prim->r0 = addr;
+        prim->g0 = addr;
+        prim->b0 = addr;
+        LINK_PRIM(ot, scratch, prim, 0x09000000);
+    }
+}
 
 /* Pack four fields into one word: top byte, 16-bit middle, flag bit 7 and
  * a 7-bit low field. */
@@ -1975,15 +2027,6 @@ void func_8007D7A8(Vector *pos, s32 count) {
 #else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
 #endif
-
-/* Link a projected primitive of the given length tag into the ordering
- * table at the depth left in the scratchpad. */
-#define LINK_PRIM(ot, scratch, prim, len)                                      \
-    prev = (ot)[(scratch)->depth >> 4];                                        \
-    addr = (u32)(prim) & 0xFFFFFF;                                             \
-    (ot)[(scratch)->depth >> 4] = addr;                                        \
-    prev |= (len);                                                             \
-    *(u32 *)addr = prev
 
 /* Draw and advance this buffer's half of the ground particles: project
  * them three at a time into point tiles, then let each fall (accelerating)

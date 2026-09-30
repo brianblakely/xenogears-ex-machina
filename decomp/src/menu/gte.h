@@ -42,6 +42,17 @@
 #define gte_stsz2(r0) __asm__ volatile("swc2 $18, 0(%0)" : : "r"(r0) : "memory")
 #define gte_stsz3(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 
+/* Load three short vectors into V0-V2. */
+#define gte_ldv3(r0, r1, r2)                                                   \
+    __asm__ volatile("lwc2 $0, 0(%0);"                                         \
+                     "lwc2 $1, 4(%0);"                                         \
+                     "lwc2 $2, 0(%1);"                                         \
+                     "lwc2 $3, 4(%1);"                                         \
+                     "lwc2 $4, 0(%2);"                                         \
+                     "lwc2 $5, 4(%2)"                                          \
+                     :                                                         \
+                     : "r"(r0), "r"(r1), "r"(r2))
+
 /* Load a short vector into V1 or V2. */
 #define gte_ldv1(r0)                                                           \
     __asm__ volatile("lwc2 $2, 0(%0);"                                         \
