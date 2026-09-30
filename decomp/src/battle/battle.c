@@ -7,6 +7,7 @@
 #include "window_draw.h"
 #include "formation_route.h"
 #include "gear_menu.h"
+#include "glyph_lists.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -4630,7 +4631,35 @@ u8 func_800885D0(u8 slot) {
     return D_800D301C[D_800C3EB4[slot].group + 0x18].count;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008860C);
+/* Build the glyph lists at +0x1720 (glyphs 800c33b0[0..1]), +0 (glyph 0xa8)
+ * and +0x2530 (800c33b0[2..3]) at (0xa0, 0x64) and initialise the current
+ * buffer's quads. The first two keep their count and buffer at +0x5d74 /
+ * +0x5d83 and +0x5d70 / +0x5d92. */
+void func_8008860C(void) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        D_800D2DB4->unk5D70[4] +=
+            func_80076A10(D_800C33B0[i], &D_800D2DB4->unk1720[D_800D2DB4->unk5D70[4] * 2], 0xA0, 0x64);
+    }
+    D_800D2DB4->counts[14] = D_800CCB04.buffer;
+    D_800D2DB4->unk5D70[0] = func_80076A10(0xA8, &D_800D2DB4->unk0[D_800D2DB4->unk5D70[0] * 2], 0xA0, 0x64);
+    D_800D2DB4->buffers[14] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->unk5D70[4]; i++) {
+        func_80076B68(&D_800D2DB4->unk1720[i * 2 + D_800D2DB4->counts[14]]);
+    }
+    for (i = 0; i < D_800D2DB4->unk5D70[0]; i++) {
+        func_80076B68(&D_800D2DB4->unk0[i * 2 + D_800D2DB4->buffers[14]]);
+    }
+    for (i = 2; i < 4; i++) {
+        D_800D2DB4->counts[9] +=
+            func_80076A10(D_800C33B0[i], &D_800D2DB4->unk2530[D_800D2DB4->counts[9] * 2], 0xA0, 0x64);
+    }
+    D_800D2DB4->buffers[9] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[9]; i++) {
+        func_80076BF0(&D_800D2DB4->unk2530[i * 2 + D_800D2DB4->buffers[9]]);
+    }
+}
 
 /* Set up a stepped line from (x0, y0) to (x1, y1): directions, the 8.8 steps
  * of the minor axis and a random speed 1..8. */
@@ -4671,7 +4700,39 @@ void func_8008887C(s32 x0, s32 y0, s32 x1, s32 y1) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088990);
+/* Advance the stepped line by its speed and flag its end (800c207c) once
+ * the major axis passes the end point. */
+void func_80088990(void) {
+    s32 i;
+
+    for (i = 0; i < D_800C3A9C; i++) {
+        if (D_800C3A94) {
+            D_800C2080 -= D_800C3A8C;
+        } else {
+            D_800C2080 += D_800C3A8C;
+        }
+        if (D_800C3A98) {
+            D_800C2084 -= D_800C3A90;
+        } else {
+            D_800C2084 += D_800C3A90;
+        }
+    }
+    if (D_800C3A8C == 0x100) {
+        if (D_800C3A94) {
+            if (D_800C2080 / 256 + D_800C3A7C < D_800C3A84) {
+                D_800C207C = 1;
+            }
+        } else if (D_800C2080 / 256 + D_800C3A7C > D_800C3A84) {
+            D_800C207C = 1;
+        }
+    } else if (D_800C3A98) {
+        if (D_800C2084 / 256 + D_800C3A80 < D_800C3A88) {
+            D_800C207C = 1;
+        }
+    } else if (D_800C2084 / 256 + D_800C3A80 > D_800C3A88) {
+        D_800C207C = 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088B80);
 

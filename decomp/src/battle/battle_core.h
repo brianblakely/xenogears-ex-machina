@@ -298,7 +298,9 @@ typedef struct {
 extern BattleUnk3278 *D_800D3278;
 
 typedef struct {
-    u8 unk0[0x3AC0];
+    POLY_FT4 unk0[148];
+    POLY_FT4 unk1720[90];
+    POLY_FT4 unk2530[138];
     POLY_FT4 unk3AC0[24];   /* list 0 */
     POLY_FT4 unk3E80[34];   /* list 2 */
     POLY_FT4 unk43D0[58];   /* list 10 */
@@ -424,8 +426,8 @@ extern s32 D_800C3A84;
 extern s32 D_800C3A88;
 extern s32 D_800C3A8C;
 extern s32 D_800C3A90;
-extern s8 D_800C3A94;
-extern s8 D_800C3A98;
+extern u8 D_800C3A94;
+extern u8 D_800C3A98;
 extern s32 D_800C3A9C;
 extern s8 D_800C207C;
 extern s32 D_800C2080;
