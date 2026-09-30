@@ -117,6 +117,7 @@ decomp/src/battle/battle.c
 decomp/src/debug2611/debug2611.c
 decomp/src/debug595/debug595.c
 decomp/src/field/field.c
+decomp/src/field/field.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
