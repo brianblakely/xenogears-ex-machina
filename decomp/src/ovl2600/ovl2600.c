@@ -9,6 +9,9 @@
 
 extern u16 D_801CC114[];
 extern u8 D_801CBF98[];
+extern s32 D_801CBF9C[]; /* file cursor -> slot */
+extern s32 D_801CC014[]; /* slot x */
+extern s32 D_801CC094[]; /* slot y */
 
 /* Test character `index`'s bit (table D_801CC114) in `flags`. */
 s32 func_801C5040(s32 flags, u8 index) {
@@ -648,19 +651,103 @@ INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C874C);
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8970);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8AE8);
+/* Draw the four cursor markers when markers are on; a marker that follows
+ * the file cursor is first moved to the selected slot's position. */
+void func_801C8AE8(void) {
+    s32 i;
+    MenuState *state;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8E38);
+    if (D_800625A0->flags->markers_on) {
+        for (i = 0; i < 4; i++) {
+            state = D_800625A0;
+            if (state->markers->shown[i]) {
+                if (state->markers->follow[i]) {
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x0 =
+                        D_801CC014[D_801CBF9C[state->work->cursor]] + 8;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y0 =
+                        D_801CC094[D_801CBF9C[state->work->cursor]] - 6;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x1 =
+                        D_801CC014[D_801CBF9C[state->work->cursor]] + 24;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y1 =
+                        D_801CC094[D_801CBF9C[state->work->cursor]] - 6;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x2 =
+                        D_801CC014[D_801CBF9C[state->work->cursor]] + 8;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y2 =
+                        D_801CC094[D_801CBF9C[state->work->cursor]] + 10;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->x3 =
+                        D_801CC014[D_801CBF9C[state->work->cursor]] + 24;
+                    (state->markers->poly + (i * 2 + state->markers->buffer[i]))->y3 =
+                        D_801CC094[D_801CBF9C[state->work->cursor]] + 10;
+                }
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &D_800625A0->markers->poly[i * 2 + D_800625A0->markers->buffer[i]]);
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8EC8);
+/* Draw the shown command labels. */
+void func_801C8E38(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C8F58);
+    for (i = 0; i < 4; i++) {
+        if (D_800625A0->flags->label_shown[i]) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->labels[i].poly[D_800625A0->labels[i].buffer]);
+        }
+    }
+}
+
+/* Draw the shown list labels. */
+void func_801C8EC8(void) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (D_800625A0->flags->list_label_shown[i]) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->list_labels[i].poly[D_800625A0->list_labels[i].buffer]);
+        }
+    }
+}
+
+/* Draw the shown row labels, projecting the 3D ones through the GTE first. */
+void func_801C8F58(void) {
+    s32 depth;
+    s32 flag;
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->flags->row_label_shown[i]) {
+            if (D_800625A0->row_labels[i].projected) {
+                MenuLabel *label = &D_800625A0->row_labels[i];
+
+                func_8004A73C(&label->corners[0], &label->corners[1], &label->corners[2],
+                              &label->corners[3],
+                              &label->poly[D_800625A0->row_labels[i].buffer].x0,
+                              &label->poly[D_800625A0->row_labels[i].buffer].x1,
+                              &label->poly[D_800625A0->row_labels[i].buffer].x2,
+                              &label->poly[D_800625A0->row_labels[i].buffer].x3, &depth, &flag);
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &D_800625A0->row_labels[i].poly[D_800625A0->row_labels[i].buffer]);
+            } else {
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &D_800625A0->row_labels[i].poly[D_800625A0->row_labels[i].buffer]);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C90D0);
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9160);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C92BC);
+/* Draw this buffer's fade quad and the second draw mode. */
+void func_801C92BC(void) {
+    func_80043B48(&D_800625A0->draw_env->ot[8],
+                  &D_800625A0->backdrop->fade[D_800625A0->buffer_index]);
+    func_80043B48(&D_800625A0->draw_env->ot[8],
+                  &D_800625A0->backdrop->mode_b[D_800625A0->buffer_index]);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9338);
 
