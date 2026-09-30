@@ -193,7 +193,8 @@ typedef struct {
     s16 cleared;     /* 414: cleared when its owner hides */
     s16 owner;       /* 416: owning event actor */
     s16 unk418;      /* 418: descriptor index */
-    u8 unk41A[0x494 - 0x41A];
+    u8 unk41A[0x444 - 0x41A];
+    POLY_FT4 icon[2];  /* 444: per buffer */
     u8 unk494;       /* 494 */
     u8 unk495;       /* 495 */
     u8 unk496[0x498 - 0x496];
@@ -690,7 +691,7 @@ extern void func_8003852C(void *bank);
 extern void func_80039F9C(s32 id, s32 voice, s16 volume, s16 pan);
 extern void func_80039FF8(void);
 extern void func_8003A20C(s32 voice);
-extern void func_80048D7C(VECTOR *v, SVECTOR *out); /* VectorNormalS */
+extern void func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
 extern void FlushCache(void);

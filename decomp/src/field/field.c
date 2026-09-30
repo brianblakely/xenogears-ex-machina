@@ -334,7 +334,37 @@ s32 func_80072398(s32 mask, s32 start) {
     return 0;
 }
 
+#ifdef NON_MATCHING
+/* The intersection of the lines through segments `a` and `b` (X/Z points);
+ * `b`'s start when they are parallel. Differs only in the register of the
+ * second product of each cross product (t0/v1 in the original). */
+void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
+    VECTOR ua;
+    VECTOR ub;
+    VECTOR d;
+    s32 cross;
+    s32 t;
+
+    d.vx = a[1].vx - a[0].vx;
+    d.vy = 0;
+    d.vz = a[1].vy - a[0].vy;
+    func_80048D7C(&d, &ua);
+    d.vx = b[1].vx - b[0].vx;
+    d.vy = 0;
+    d.vz = b[1].vy - b[0].vy;
+    func_80048D7C(&d, &ub);
+    cross = (ub.vx * ua.vz - ub.vz * ua.vx) >> 12;
+    if (cross == 0) {
+        t = 0;
+    } else {
+        t = ((b[0].vy - a[0].vy) * ua.vx - (b[0].vx - a[0].vx) * ua.vz) / cross;
+    }
+    out->vx = b[0].vx + ((t * ub.vx) >> 12);
+    out->vy = b[0].vy + ((t * ub.vz) >> 12);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800723E4);
+#endif
 
 #ifdef NON_MATCHING
 /* The camera's initial state. */
@@ -585,7 +615,51 @@ void func_8007520C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800752C8);
+extern u8 D_800ADB05; /* 1 while character drawing is off */
+extern u8 D_800AFA64[];
+void func_800250E0(s32 buffer);
+void func_80024FE4(u32 *ot);
+void func_80024FF4(void *p);
+void func_8001D468(void);
+void func_8001C9F8(void);
+void func_8001C964(void);
+void func_80023210(FieldModel *model);
+void func_80075B44(u32 *ot, s32 buffer);
+void func_800764B4(u32 *ot, s32 buffer);
+
+/* Draw the field characters: set up the model renderer for this buffer, then
+ * draw each actor's model (shown ones unless their layer is hidden or they
+ * are flagged off, others only with layer flag 0x1000000), then the debug
+ * "CHAR" timer. The descriptor flags are read as a whole word here. */
+void func_800752C8(void) {
+    s32 i;
+
+    if (D_800ADB05 == 1) {
+        return;
+    }
+    func_800250E0(D_800ADB08);
+    func_80024FE4(D_800C426C->ot);
+    func_80024FF4(D_800AFA64);
+    func_8001D468();
+    func_8001C9F8();
+    func_8001C964();
+    func_80075B44(D_800C426C->ot, D_800ADB08);
+    for (i = 0; i < D_800ADBFC; i++) {
+        if ((*(u32 *)&D_800AF880.components.descriptors[i].flags & 0x60) == 0x40) {
+            if ((D_800AF880.components.descriptors[i].actor->layer_flags & 0x600) != 0x200
+                && !(D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000)
+                && !(D_800AF880.components.descriptors[i].actor->flags & 1)) {
+                func_80023210(D_800AF880.components.descriptors[i].model);
+            }
+        } else if (D_800AF880.components.descriptors[i].actor->layer_flags & 0x1000000) {
+            func_80023210(D_800AF880.components.descriptors[i].model);
+        }
+    }
+    func_800764B4(D_800C426C->ot, D_800ADB08);
+    if (D_800C268C == 0) {
+        func_80281B00("CHAR      ");
+    }
+}
 
 /* Link a table's primitives into `ot` (AddPrims). */
 void func_80075458(void *ot, u32 *table, s32 depth) {
@@ -633,7 +707,29 @@ void func_80075910(void) {
     DrawOTag(&D_800C426C->overlay_ot[7]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800759E4);
+void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
+
+/* The rotation matrix whose second row is `axis`: the first row is the unit
+ * vector perpendicular to world up and `axis`, the third completes the basis. */
+void func_800759E4(MATRIX *m, VECTOR *axis) {
+    VECTOR up = { 0, 0, 0x1000, 0 };
+    VECTOR side;
+    VECTOR cross;
+
+    func_8004A480(&up, axis, &cross);
+    func_80048D7C(&cross, &side);
+    func_8004A480(&side, axis, &cross);
+    func_80048D7C(&cross, &up);
+    m->m[0][0] = side.vx;
+    m->m[0][1] = side.vy;
+    m->m[0][2] = side.vz;
+    m->m[1][0] = axis->vx;
+    m->m[1][1] = axis->vy;
+    m->m[1][2] = axis->vz;
+    m->m[2][0] = up.vx;
+    m->m[2][1] = up.vy;
+    m->m[2][2] = up.vz;
+}
 
 /* Pass a colour on to resident 80021b98 unless 800b218e is set. */
 void func_80075B08(void *target, u8 *color) {
@@ -861,7 +957,36 @@ void func_800796FC(void) {
     PutDrawEnv(&D_800C426C->draw);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
+#ifndef addPrim
+/* A primitive's tag: the next primitive's address and this one's length. */
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+} P_TAG;
+
+#define setaddr(p, _addr) (((P_TAG *)(p))->addr = (u32)(_addr))
+#define getaddr(p) (u32)(((P_TAG *)(p))->addr)
+#define addPrim(ot, p) setaddr(p, getaddr(ot)), setaddr(ot, p)
+#endif
+
+extern DR_MODE D_800AFE24[2]; /* fade draw mode per buffer */
+extern RECT D_800AFE4C;       /* fade copy source */
+extern TILE D_800AFE54[2];    /* fade tile per buffer */
+
+/* Present the current buffer under a full-screen tile of brightness
+ * `level * 4`: link the tile and its draw mode, copy the display area, then
+ * put the environments and draw. */
+void func_80079784(s32 level) {
+    func_80073FE0();
+    D_800AFE54[D_800ADB08].r0 = D_800AFE54[D_800ADB08].g0 = D_800AFE54[D_800ADB08].b0 = level * 4;
+    addPrim(D_800C426C->ot, &D_800AFE54[D_800ADB08]);
+    addPrim(D_800C426C->ot, &D_800AFE24[D_800ADB08]);
+    func_800775F8();
+    MoveImage(&D_800AFE4C, 0, D_800ADB08 << 8);
+    PutDispEnv(&D_800C426C->disp);
+    PutDrawEnv(&D_800C426C->draw);
+    DrawOTag(&D_800C426C->ot[1]);
+}
 
 /* Set the battle-entry flag (80059179): clear only while the controlled
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
@@ -999,9 +1124,50 @@ void func_8007AA44(FieldMarker *m) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AA44);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AB6C);
+/* Project a marker quad's four corners with the given matrix into its buffer's
+ * textured polygon and link that polygon into the ordering table entry. */
+void func_8007AB6C(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
+    POLY_FT4 *poly = &marker->poly[buffer];
+    s32 p;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AC58);
+    PushMatrix();
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3],
+                &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
+    addPrim(ot + 1, poly);
+    PopMatrix();
+}
+
+#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
+    (p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x1), (p)->y1 = (_y1), \
+    (p)->x2 = (_x2), (p)->y2 = (_y2), (p)->x3 = (_x3), (p)->y3 = (_y3)
+
+/* Project a quad, then replace it with a 16x10 screen-aligned sprite standing
+ * on the midpoint of its projected bottom edge, and link it into the ordering
+ * table entry. */
+void func_8007AC58(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
+    POLY_FT4 *poly = &marker->poly[buffer];
+    s32 p;
+    s32 flag;
+    s32 x;
+    s32 y;
+    s32 right;
+
+    PushMatrix();
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    RotAverage4(&marker->v[0], &marker->v[1], &marker->v[2], &marker->v[3],
+                &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
+    x = (poly->x3 + poly->x2) / 2;
+    right = x + 8;
+    x -= 8;
+    y = poly->y3;
+    setXY4(poly, x, y - 10, right, y - 10, x, y, right, y);
+    addPrim(ot + 1, poly);
+    PopMatrix();
+}
 
 /* Set the pointer's two pad buffers. */
 void func_8007AD8C(void *pad0, void *pad1) {
@@ -1061,27 +1227,49 @@ void func_8007AF74(s32 port) {
     }
 }
 
+#ifdef NON_MATCHING
+/* The height of `p` on the plane through triangle a, b, c (0 for a vertical
+ * plane); the plane normal is left in `normal`. Differs only in the register
+ * of the second product (t1 in the original). */
+void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal) {
+    VECTOR edge_b;
+    VECTOR edge_c;
+    VECTOR d;
+
+    d.vx = b->vx - a->vx;
+    d.vy = b->vy - a->vy;
+    d.vz = b->vz - a->vz;
+    func_80048D7C(&d, &edge_b);
+    d.vx = c->vx - a->vx;
+    d.vy = c->vy - a->vy;
+    d.vz = c->vz - a->vz;
+    func_80048D7C(&d, &edge_c);
+    func_8004A480(&edge_b, &edge_c, normal);
+    if (normal->vy == 0) {
+        p->vy = 0;
+        return;
+    }
+    p->vy = a->vy + (-(normal->vx * (p->vx - a->vx)) - normal->vz * (p->vz - a->vz)) / normal->vy;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B07C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B478);
 
-#ifdef NON_MATCHING
 /* The X/Z offset `distance` away at `angle`, scaled by 800b218c. */
 void func_8007B614(VECTOR *out, s32 distance, s32 angle) {
-    s32 length;
+    s32 heading;
 
     distance *= 16;
-    angle &= 0xFFF;
-    length = (distance * D_800B2078.scale) >> 12;
-    out->vx = func_8003F8CC(angle) * length;
+    distance = (distance * D_800B2078.scale) >> 12;
+    heading = angle & 0xFFF;
+    out->vx = func_8003F8CC(heading) * distance;
+    out->vz = -(func_8003F8B0(heading) * distance);
     out->vy = 0;
-    out->vz = -(func_8003F8B0(angle) * length);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B614);
-#endif
 
 /* The heading of an X/Z offset. */
 s32 func_8007B694(VECTOR *v) {
@@ -1129,7 +1317,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007CD80);
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007D3D4);
 
 /* Normalise a 20.12 vector, pointing it along its largest component. */
-void func_8007D818(VECTOR *v, SVECTOR *out) {
+void func_8007D818(VECTOR *v, VECTOR *out) {
     s32 largest = func_8007D8B4(v->vx, v->vy, v->vz);
 
     v->vx >>= 12;
@@ -1224,7 +1412,33 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007E1C0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007EE0C);
 
+extern DVECTOR D_800ADF34[]; /* icon texture origin per frame */
+
+#ifdef NON_MATCHING
+/* Point both buffers' icon of `window` at frame `frame`: a 64x64 texture
+ * square and the frame's CLUT row. Differs only in the order of the first
+ * two independent instructions (sll before lui). */
+void func_8007F5AC(s32 window, s32 frame) {
+    DialogueWindow *w;
+    s16 *u;
+    s16 *v;
+
+    w = &D_800C2698[window];
+    u = &D_800ADF34[frame].vx;
+    v = &D_800ADF34[frame].vy;
+    D_800C2698[window].icon[1].u0 = w->icon[0].u0 = *u;
+    D_800C2698[window].icon[1].v0 = w->icon[0].v0 = *v;
+    D_800C2698[window].icon[1].u1 = w->icon[0].u1 = *u + 0x40;
+    D_800C2698[window].icon[1].v1 = w->icon[0].v1 = *v;
+    D_800C2698[window].icon[1].u2 = w->icon[0].u2 = *u;
+    D_800C2698[window].icon[1].v2 = w->icon[0].v2 = *v + 0x40;
+    D_800C2698[window].icon[1].u3 = w->icon[0].u3 = *u + 0x40;
+    D_800C2698[window].icon[1].v3 = w->icon[0].v3 = *v + 0x40;
+    D_800C2698[window].icon[1].clut = w->icon[0].clut = GetClut(0, frame + 0xE0);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007F5AC);
+#endif
 
 /* Close dialogue window `window` unless it is busy; -1 when busy. */
 s32 func_8007F6F8(s16 window) {
@@ -2416,7 +2630,6 @@ void func_80087FD4(void) {
 }
 
 extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
-extern void RotTransSV(SVECTOR *in, SVECTOR *out, s32 *flag);
 /* Event: rotate the vector operands 5/7/9 by the rotation built (801e72cc)
  * from operands 1 and 3 and store the result in variables 0xc, 0xe, 0x10. */
 void func_8008800C(void) {
@@ -9502,9 +9715,6 @@ void func_800A5884(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5924);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A5C40);
-
-extern s32 RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1, s32 *sxy2,
-                       s32 *sxy3, s32 *p, s32 *flag);
 
 /* Rotate and scale the screen pieces (when scaled) into their quads and
  * link the quads and draw modes of the current buffer. */
