@@ -1489,13 +1489,85 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800273C4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800278F8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80027D40);
+/* Release a block if there is one. */
+void func_80027D40(void *block) {
+    if (block != NULL) {
+        func_800320E8(block);
+    }
+}
 
+/* Set up a texture scroll of `count` bands over an area; the band phases are allocated (heap tag 4) and cleared. Returns the scroll, or NULL. */
+/* GCC 2.6.3 code with the assembler's div checks (maspsx --expand-div): the image matches exactly with this C under that configuration, not under this build's. */
+#ifdef NON_MATCHING
+TextureScroll *func_80027D64(TextureScroll *scroll, s16 x, s16 y, s16 w, s16 h, s16 count, u16 source_x,
+                             u16 source_y, s8 *speeds) {
+    s32 i;
+
+    func_80032498(4, 0);
+    scroll->x = x;
+    scroll->y = y;
+    scroll->w = w;
+    scroll->h = h;
+    scroll->step = h / count;
+    scroll->count = count;
+    scroll->source_x = source_x;
+    scroll->source_y = source_y;
+    scroll->speeds = speeds;
+    scroll->phases = func_80031BDC(count * 2, 0);
+    if (scroll->phases == NULL) {
+        scroll = NULL;
+    } else {
+        for (i = 0; i < count; i++) {
+            scroll->phases[i] = 0;
+        }
+    }
+    return scroll;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80027D64);
+#endif
 
+/* Advance each band's phase by its speed and redraw the area rotated by it (two MoveImage copies per band). */
+/* GCC 2.6.3 code with the assembler's div checks (maspsx --expand-div): the image matches exactly with this C under that configuration, not under this build's. */
+#ifdef NON_MATCHING
+void func_80027EAC(TextureScroll *scroll) {
+    RECT rect;
+    s32 i;
+    u16 line;
+    u16 offset;
+    u16 rest;
+
+    if (scroll->phases == NULL) {
+        return;
+    }
+    rect.y = scroll->y;
+    rect.h = scroll->step;
+    line = scroll->source_y;
+    for (i = 0; i < scroll->count; i++) {
+        scroll->phases[i] += scroll->speeds[i];
+        offset = (u16)((s16)scroll->phases[i] >> 4) % scroll->w;
+        rest = scroll->w - offset;
+        rect.x = scroll->x;
+        rect.w = offset;
+        func_8004495C(&rect, scroll->source_x + rest, line);
+        rect.x = offset + scroll->x;
+        rect.w = rest;
+        func_8004495C(&rect, scroll->source_x, line);
+        line += scroll->step;
+        rect.y += scroll->step;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80027EAC);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002800C);
+/* Release a texture scroll's phases. */
+void func_8002800C(TextureScroll *scroll) {
+    if (scroll->phases != NULL) {
+        func_800320E8(scroll->phases);
+        scroll->phases = NULL;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002804C);
 
