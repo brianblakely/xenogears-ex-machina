@@ -2,6 +2,7 @@
 #define RESIDENT_SOUND_H
 
 #include "common.h"
+#include "psyq/libspu.h"
 
 /* Resident sound driver: SPU voices, channels and loaded sound banks. Field
  * names follow their observed use; unknown bytes keep their offsets. */
@@ -156,27 +157,6 @@ typedef struct SoundSequence {
     struct SoundSequence *next;
 } SoundSequence;
 
-/* PsyQ libspu common attributes. */
-typedef struct {
-    s16 left;
-    s16 right;
-} SpuVolume;
-
-typedef struct {
-    SpuVolume volume;
-    s32 reverb;
-    s32 mix;
-} SpuExtAttr;
-
-typedef struct {
-    u32 mask;
-    SpuVolume mvol;
-    SpuVolume mvolmode;
-    SpuVolume mvolx;
-    SpuExtAttr cd;
-    SpuExtAttr ext;
-} SpuCommonAttr;
-
 /* A block of the driver's SPU memory pool. */
 typedef struct {
     u16 flags;
@@ -188,8 +168,34 @@ typedef struct {
 
 extern SpuVoice *D_800508E4;          /* SPU voice registers */
 extern u16 D_8005957C;                /* driver state flags */
+extern s32 D_80059404;
+extern s32 D_80059478;                /* voice count of the effect channels */
+extern s32 D_80059544;                /* voices kept for music */
+extern s32 D_800595BC;                /* driver event */
 extern SoundChannel *D_8006252C[24];  /* channel of each voice */
 extern SoundBank *D_80059440;         /* loaded banks */
 extern SoundSequence *D_80059558;     /* playing sequences */
+
+/* Driver interface (0x80037e8c-0x8003f738). */
+s32 func_80037FD8(void *data, s32 a1);
+void func_80038310(s32 bank);      /* release a wave bank */
+void func_80038B4C(void);
+void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
+s32 func_80038F18(s32 size);
+void func_800393B8(s32 voice, u16 volume);
+void func_800395B8(s32 voice, s32 fade, u16 volume);
+void func_800399D4(s32 sequence);  /* release a sequence */
+void func_80039C4C(SoundTrack *track); /* resume a track */
+void func_80039CC4(void);
+void func_80039FF8(void);
+u32 func_8003A65C(s32 id, s32 width);
+void func_8003A89C(s32 a, s32 b, s32 c);
+void func_8003B060(SoundTrack *track);
+void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
+void func_8003BCA0(s32 a, s32 b, s32 c, s32 d, s32 mode);
+void func_8003BDFC(s32 a0);
+void func_8003E680(s32 bits, SoundSeq *seq);
+void func_8003E83C(SoundChannel *state, u32 voice);
+void func_8003F6B0(s32 error);
 
 #endif

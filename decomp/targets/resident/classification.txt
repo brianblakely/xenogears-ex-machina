@@ -3,8 +3,9 @@
 # The SDK range is the library link region after the game objects; objects were
 # identified with tools/psyq_signatures.py (PsyQ 3.x-4.x library signatures),
 # and the few unmatched members inside it were inspected by hand.
-8003f8e8 8004ea88 sdk PsyQ libc/libc2/libapi/libcd/libds/libgpu/libgte/libetc/libspu/libcard/libsn
+80019524 80019578 handwritten Entry point: clears BSS 800592b8-8006faec, sets $sp 0x80200000/$fp/$gp (80019548, also used by the mode dispatcher to reset the stack), and a word-clear loop (80019560) with the same pre-increment form
 800315a0 80031894 handwritten ordering-table link helpers: $t0 and $at macro expansions of 32-bit and/or immediates
-800379b4 800379d0 handwritten store to D_80050618 through $t0 and the default report output, a tail jump to 8003700c
 80032e88 8003342c handwritten packed-data (LZSS) decoder and its allocate-and-decode entry, which branches into it; leaf code in $t registers
+800379b4 800379d0 handwritten store to D_80050618 through $t0 and the default report output, a tail jump to 8003700c
 8003f738 8003f8e8 handwritten rotation matrix from the sin/cos table D_800523F0 and the table sin/cos lookups; $t registers, neg/add/sub pseudo-ops
+8003f8e8 8004ea88 sdk PsyQ libc/libc2/libapi/libcd/libds/libgpu/libgte/libetc/libspu/libcard/libsn

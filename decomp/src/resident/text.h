@@ -2,14 +2,12 @@
 #define RESIDENT_TEXT_H
 
 #include "common.h"
+#include "psyq/libgpu.h"
+#include "heap.h"
 
 /* Resident message text: the font ("MES FONT") and system data ("MES
  * SYSDATA") resources, and the conversion between text bytes and the
  * two-byte character codes the message system draws. */
-
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
 
 /* The text bytes of a character code (first is 0 for one-byte text). */
 typedef struct {
@@ -32,13 +30,14 @@ extern u16 D_80059414;  /* text CLUTs */
 extern u16 D_800595D4;
 extern u16 D_80050190[]; /* text palette */
 
-/* PsyQ libgpu (SDK region): LoadImage, GetClut. */
-extern s32 LoadImage(RECT *rect, void *pixels);
-extern u16 GetClut(s32 x, s32 y);
+/* Packed data (0x80032e7c-0x8003342c). */
+s32 func_80032E7C(s32 *packed);
+void *func_80032E88(void *data, s32 a1);
+void func_80032EB4(void *source, void *destination);
 
-extern void func_800320A4(void *data);
-extern void func_800320B8(void *data);
-extern s32 func_800320E8(void *data);
-extern void func_800324B8(s16 kind);
+void func_80033558(u16 *font);
+void func_800335F4(u8 *data);
+u8 *func_80033728(u8 *resource, s32 index);
+s32 func_80033BAC(u8 first, u8 second);
 
 #endif

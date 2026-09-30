@@ -19,9 +19,6 @@ typedef struct {
 /* Store the return address register at `p` (the heap records its callers). */
 #define GET_RA(p) __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(p) : "$15")
 
-/* Resident fatal error handler; does not return. */
-extern void func_80019ACC() __attribute__((noreturn));
-
 /* A release deferred by `frames` frames ("DelayFree" blocks). */
 typedef struct DelayedFree {
     struct DelayedFree *next;
@@ -44,22 +41,45 @@ extern DelayedFree *D_80059FCC[]; /* one list head; not small data */
 extern s32 D_80059348;     /* host file of the heap report */
 extern void (*D_800592B8)(char *line); /* heap report output */
 
-/* PsyQ libsn host file access (SDK region): PCinit, PCopen, PClseek, PCread,
- * PCclose. */
-extern s32 func_8004C38C(void);
-extern s32 PCopen(char *name, s32 flags, s32 perms);
-extern s32 PClseek(s32 fd, s32 offset, s32 mode);
-extern s32 func_8004C398(s32 fd, void *buffer, s32 size);
-extern s32 PCclose(s32 fd);
-extern s32 PCcreat(char *name, s32 perms);
-extern s32 func_8004C470(s32 fd, void *buffer, s32 size);
-
-/* PsyQ libc (SDK region): strlen, vsprintf. */
-extern s32 strlen(char *s);
-extern s32 sprintf(char *out, char *format, void *args);
-
-/* Allocate `size` bytes with an allocation mode, free a block. */
-extern void *func_80031BDC(s32 size, s32 mode);
-extern s32 func_800320E8(void *block);
+/* Heap blocks (0x80031894-0x80032e7c). */
+s32 func_80031894(u8 *data);
+s32 func_800318A8(u8 *data);
+u32 func_800318BC(u8 *data);
+s32 func_800318DC(u8 *data);
+void func_800318F0(void);
+s32 func_800318F8(char *name);
+void func_80031A30(void);
+void func_80031A68(HeapHeader *first, u8 *end);
+void func_80031B10(HeapHeader *first);
+s32 func_80031B9C(void);
+void func_80031BA8(s32 tag);
+s32 func_80031BB4(s32 quiet);
+void func_80031BC4(s32 *caller, s32 *size);
+void *func_80031BDC(s32 size, s32 mode); /* allocate `size` bytes */
+HeapHeader *func_80031F70(u8 *data, s32 size);
+void func_80031FF8(void);
+void func_800320A4(void *data); /* keep the block across heap restarts */
+void func_800320B8(void *data); /* stop keeping the block */
+void func_800320D0(void *data);
+s32 func_800320E8(void *data);  /* release a block */
+void func_8003218C(u8 tag);
+void func_8003223C(void);
+void func_800322B4(void);
+s32 func_80032340(void);
+s32 func_800323B4(void);
+u32 func_80032404(void);
+void func_80032498(s32 tag, s32 value);
+void func_800324B8(s16 kind);
+void func_800324C4(u32 address, char *out);
+void func_8003278C(s32 a, s32 b, s32 c, s32 d);
+void *func_80032B0C(s32 size);
+void *func_80032B64(s32 count, s32 size);
+void func_80032BAC(void *data);
+void func_80032BDC(char *format, void *args);
+void func_80032C18(void *data, s32 frames);
+void func_80032CB8(void);
+void func_80032D60(void);
+void func_80032DCC(char *line);
+void func_80032E04(char *name);
 
 #endif

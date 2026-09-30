@@ -1,4 +1,12 @@
 #include "common.h"
+#include "psyq/libapi.h"
+#include "psyq/libcd.h"
+#include "psyq/libspu.h"
+#include "text.h"
+#include "window.h"
+#include "pad.h"
+#include "console.h"
+#include "sound.h"
 
 /* Unpacked size of packed data (its first word). */
 s32 func_80032E7C(s32 *packed) {
@@ -8,11 +16,6 @@ s32 func_80032E7C(s32 *packed) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032E88);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80032EB4);
-
-#include "text.h"
-
-extern u8 *func_80033728(u8 *resource, s32 index);
-extern s32 func_80033BAC(u8 first, u8 second);
 
 /* Turn a resource's offset table (count, then offsets) into pointers.
  * Returns the count. */
@@ -105,7 +108,7 @@ void func_80033698(s16 x, s16 y) {
     rect.x = x;
     rect.y = y;
     rect.h = 1;
-    LoadImage(&rect, D_80050190);
+    LoadImage(&rect, (u_long *)D_80050190);
     D_800595D4 = GetClut(x, y);
     D_80059414 = GetClut(x + 16, y);
 }
@@ -299,8 +302,6 @@ void func_80033DD4(u8 *window, s32 value) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033DF0);
 
-#include "window.h"
-
 /* Clear flag 8; a window with flag 0x200 also drops its pending state. */
 void func_800345E0(Window *window) {
     u16 flags = window->flags;
@@ -429,7 +430,6 @@ extern u8 D_8005A042;
 extern u8 D_8005A044;
 extern s16 D_8005A05C;
 extern WindowLine D_8005A068;
-extern void func_80033DF0(Window *window);
 
 /* Lay out one line of `text` into `image` in the layout window, `width`
  * made odd. Returns the laid-out width in pixels.
@@ -462,8 +462,6 @@ s32 func_80034EAC(u8 *text, void *image, s16 width, s32 flags) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034EAC);
 #endif
 
-#include "text.h"
-
 /* Draw class of a character: 2 for a narrow glyph, else 3.
  * Nonmatching: register allocation of the loaded limits. */
 #ifdef NON_MATCHING
@@ -486,8 +484,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034F98);
 #endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80034FFC);
-
-#include "pad.h"
 
 /* Buttons held on controller `port` (active high), or 0 without a digital
  * or analog pad. */
@@ -579,11 +575,8 @@ extern u32 D_8005937C; /* queued count */
 extern u32 D_80059380; /* write index */
 extern u32 D_80059384; /* read index */
 extern s32 D_80050208; /* queue overflowed */
-extern u16 D_80059570;
 extern u16 D_80059574;
-extern u16 D_8005948C;
 extern u16 D_80059490;
-extern u16 D_800594A4;
 extern u16 D_800594A8;
 extern u16 D_8005A0FC[16];
 extern u16 D_8005A11C[16];
@@ -668,9 +661,6 @@ void func_80035DB0(void) {
 
 extern u8 D_800501F8; /* play time stopped at 100 hours */
 extern u8 D_80059370; /* frames */
-extern u8 D_80059418; /* seconds */
-extern u8 D_80059420; /* minutes */
-extern u8 D_80059484; /* hours */
 
 /* Advance the play time by one frame. */
 void func_80035E44(void) {
@@ -698,7 +688,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035F1C);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035FF8);
 
 extern Actuator D_8005A1BC[2];
-extern void func_80040C3C(u8 *data0, s32 size0, u8 *data1, s32 size1);
 
 /* Stop both controllers' actuators and register their data with libpad. */
 void func_8003611C(void) {
@@ -749,16 +738,13 @@ void func_80036270(s32 port, u8 disabled) {
 
 extern s32 D_80050204;
 extern s32 D_80059390;
-extern void InitPAD(u8 *buffer0, s32 size0, u8 *buffer1, s32 size1);
-extern void StartPAD(void);
-extern void ChangeClearPAD(s32 clear);
 
 /* Start the controllers and reset the queue, actuators and assignment. */
 void func_80036288(void) {
     u8 *entry;
     s32 i;
 
-    InitPAD((u8 *)&D_800625FC[0], 0x22, (u8 *)&D_800625FC[1], 0x22);
+    InitPAD((char *)&D_800625FC[0], 0x22, (char *)&D_800625FC[1], 0x22);
     StartPAD();
     ChangeClearPAD(0);
     func_80035DB0();
@@ -781,8 +767,6 @@ void func_8003633C(u8 value) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003634C);
 
-extern s32 D_80059390;
-
 void func_800363E0(s32 value) {
     D_80059390 = value;
 }
@@ -793,13 +777,9 @@ void func_800363F0(s32 value) {
     D_800501FC = value;
 }
 
-extern s32 D_80050200;
-
 void func_80036400(s32 value) {
     D_80050200 = value;
 }
-
-extern s32 D_80050208;
 
 s32 func_80036410(void) {
     return D_80050208;
@@ -848,8 +828,6 @@ void func_800366F0(void) {
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036718);
-
-#include "console.h"
 
 void func_80036CD8(s32 bits) {
     D_80059394->flags |= bits;
@@ -940,8 +918,6 @@ void func_80036FE4(void) {
     D_80059394->unk36 = D_80059394->saved_36;
 }
 
-extern void func_80036718(s32 target, char *format, void *args);
-
 /* printf to the console, when there is one. */
 void func_8003700C(char *format, ...) {
     if (D_80059394 != NULL) {
@@ -999,8 +975,6 @@ void func_8003747C(s32 value) {
     D_800593A0 = value;
 }
 
-extern void (*D_800592B8)(char *line);
-
 /* Close the console: restore the default report output and release the
  * console block unless it is not owned. */
 void func_8003748C(void) {
@@ -1030,8 +1004,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379D8);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037B88);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037DC0);
-
-#include "sound.h"
 
 /* Mark every voice's channel for a full register update and clear the
  * voices-silenced state. */
@@ -1072,9 +1044,6 @@ void func_80037EE4(void) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037EE4);
 #endif
 
-extern s32 D_800595BC;
-extern void EnableEvent(s32 event);
-extern void DisableEvent(s32 event);
 
 /* Enable the driver's tick event once. */
 void func_80037F44(void) {
@@ -1094,9 +1063,6 @@ void func_80037F88(void) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037FD8);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800380D0);
-
-extern void func_800393B8(s32 voice, u16 volume);
-extern void func_800395B8(s32 voice, s32 fade, u16 volume);
 
 /* Stop a sequence's voice at once or with a fade (0: its own fade, -1:
  * none). */
@@ -1141,8 +1107,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003852C);
 
-extern void func_80039FF8(void);
-
 void func_80038624(void) {
     func_80039FF8();
     D_80059440 = NULL;
@@ -1162,8 +1126,6 @@ SoundBank *func_8003864C(SoundBank *bank, s16 id) {
     }
     return entry;
 }
-
-extern void func_80039CC4(void);
 
 void func_8003869C(void) {
     func_80039CC4();
@@ -1188,8 +1150,7 @@ s32 func_80038824(void) {
 }
 
 extern s16 D_8005A3EE;
-extern u8 D_80059530[4];
-extern void CdMix(u8 *attributes);
+extern CdlATV D_80059530;
 
 /* Set the CD audio volume (halved into the right channels without
  * reverb).
@@ -1205,11 +1166,11 @@ void func_8003885C(s32 volume) {
         cross = volume >> 1;
         volume = cross;
     }
-    D_80059530[2] = volume;
-    D_80059530[0] = volume;
-    D_80059530[3] = cross;
-    D_80059530[1] = cross;
-    CdMix(D_80059530);
+    D_80059530.val2 = volume;
+    D_80059530.val0 = volume;
+    D_80059530.val3 = cross;
+    D_80059530.val1 = cross;
+    CdMix(&D_80059530);
 }
 #else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003885C);
@@ -1236,9 +1197,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
 extern s32 D_800595A4;
 extern s32 D_800595DC;
 extern s32 D_800595E0;
-extern s32 func_80038F18(s32 size);
-extern void func_8003F6B0(s32 error);
-extern void func_80038B4C(void);
 
 /* Start the reverb work area with parameters a/b, reserving its SPU memory
  * on first use. */
@@ -1271,7 +1229,6 @@ typedef struct {
 } SoundVolumes;
 
 extern SoundVolumes D_8005A3C0;
-extern void SpuSetCommonAttr(SpuCommonAttr *attr);
 
 /* Set the CD audio reverb and mix switches. */
 void func_80038DB4(s32 reverb, s32 mix) {
@@ -1282,7 +1239,6 @@ void func_80038DB4(s32 reverb, s32 mix) {
 }
 
 extern SpuVolume D_8005940C;
-extern void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
 
 /* Apply the master and CD volumes. */
 void func_80038DF4(void) {
@@ -1407,9 +1363,6 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039A80);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039B68);
 
-extern void func_8003B060(SoundTrack *track);
-extern void func_8003F6B0(s32 error);
-
 /* Resume a track (error 5 without one). */
 void func_80039C4C(SoundTrack *track) {
     if (track == NULL) {
@@ -1419,8 +1372,6 @@ void func_80039C4C(SoundTrack *track) {
     track->flags &= 0x7FFF;
     func_8003B060(track);
 }
-
-extern void func_8003A89C(s32 a, s32 b, s32 c);
 
 void func_80039C8C(s32 a, s32 c) {
     if (a == 0) {
@@ -1457,7 +1408,6 @@ void func_80039D2C(s32 enable) {
     }
 }
 
-extern s32 D_80059544;
 
 /* Set the voice count (even, 4 to 16) unless 0; returns the setting. */
 s32 func_80039D78(s32 count) {
@@ -1473,9 +1423,6 @@ s32 func_80039D78(s32 count) {
     return D_80059544;
 }
 
-extern s32 D_80059404;
-extern s32 D_80059478;
-extern void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 
 void func_80039DB8(s32 channel) {
     if (D_8005957C & 0x800) {
