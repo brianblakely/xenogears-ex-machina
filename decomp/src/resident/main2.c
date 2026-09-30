@@ -12,6 +12,7 @@
 #include "sound.h"
 #include "cd.h"
 #include "heap.h"
+#include "mode.h"
 
 /* Unpacked size of packed data (its first word). */
 s32 func_80032E7C(s32 *packed) {
@@ -858,15 +859,34 @@ void func_8003633C(u8 value) {
     D_8005938C = value;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003634C);
+extern s32 D_80059488;
+extern void (*D_800501FC)(void);
+
+/* Vertical-blank callback: counts frames, polls the controllers, input queue
+ * and play clock, runs the installed hook, and on a development (host)
+ * configuration with the debugger request set traps into the debugger.
+ * The frame holds 40 bytes of locals that the code never touches. */
+void func_8003634C(void) {
+    u8 unused[40];
+
+    D_80059488++;
+    func_800358BC();
+    func_80035C0C();
+    func_80035E44();
+    func_80036220();
+    if (D_800501FC != NULL) {
+        D_800501FC();
+    }
+    if (D_80010000 != -1 && D_80059390 != 0) {
+        pollhost();
+    }
+}
 
 void func_800363E0(s32 value) {
     D_80059390 = value;
 }
 
-extern s32 D_800501FC;
-
-void func_800363F0(s32 value) {
+void func_800363F0(void (*value)(void)) {
     D_800501FC = value;
 }
 

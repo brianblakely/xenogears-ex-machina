@@ -38,7 +38,7 @@ u32 func_80035CDC(void); /* next queued pad entry (8005 94a4), 0 when none */
 void func_80035DB0(void);
 void func_80036288(void);
 void func_8003634C(void);
-void func_800363F0(s32 value);
+void func_800363F0(void (*hook)(void));
 s32 func_80036410(void);
 
 #endif

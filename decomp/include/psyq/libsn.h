@@ -7,6 +7,9 @@ int PCcreat(char *name, int perms);
 int PClseek(int fd, int offset, int mode);
 int PCclose(int fd);
 
+/* Trap into the host debugger (the SDK macro assembles `break 1024`). */
+#define pollhost() __asm__ volatile("break 1024")
+
 /* Members of the same library that the symbol file does not name yet
  * (PCinit, PCread and PCwrite by their signatures and callers). */
 int func_8004C38C(void);
