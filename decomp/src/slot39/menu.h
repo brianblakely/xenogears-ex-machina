@@ -242,7 +242,9 @@ typedef struct CharRecord {
     u8 pad5C[0x6];
     u8 unk62; /* 62 */
     u8 unk63; /* 63 */
-    u8 pad64[0x3C];
+    u8 pad64[0xB];
+    u8 accessory; /* 6F: inventory list 1 entry (801e0434) */
+    u8 pad70[0x30];
     u8 gear; /* A0: gear record (+11), ff none */
     u8 padA1[0x3];
 } CharRecord;
@@ -275,7 +277,8 @@ typedef struct GearRecord {
     u8 pad0[0x2];
     u8 engine; /* 2: record of table +8 */
     u8 unk3; /* 3: record of table +c */
-    u8 pad4[0x4];
+    u8 part; /* 4: inventory list 4 entry (801e0434) */
+    u8 pad5[0x3];
     u8 frame; /* 8 */
     u8 pad9[0x2F];
     u16 unk38; /* 38 */

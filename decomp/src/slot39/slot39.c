@@ -2818,7 +2818,49 @@ void func_801DFE2C(u8 slot) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFF5C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E0434);
+/* Return party slot `slot`'s accessory (or with `gear` its gear's part) to
+ * its inventory list: add one to the entry holding it (at most 99), or put
+ * it into the first free entry. */
+void func_801E0434(u8 slot, u8 gear) {
+    u8 *ids;
+    u8 *counts;
+    u8 item;
+    u8 size;
+    u8 fresh;
+    s32 i;
+
+    fresh = 1;
+    if (!gear) {
+        ids = D_8006F3D0;
+        counts = ids - 100;
+        item = D_8006D8A0[D_800625A0->party->ids[slot]].accessory;
+        D_8006D8A0[D_800625A0->party->ids[slot]].accessory = 0;
+        size = 100;
+    } else {
+        ids = D_8006F754;
+        counts = ids - 100;
+        item = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].part;
+        size = 100;
+        D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].part = 0;
+    }
+    for (i = 0; i < size; i++) {
+        if (ids[i] == item) {
+            if (++counts[i] >= 100) {
+                counts[i] = 99;
+            }
+            fresh = 0;
+        }
+    }
+    if (fresh) {
+        for (i = 0; i < size; i++) {
+            if (ids[i] == 0) {
+                ids[i] = item;
+                counts[i] = 1;
+                return;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E05D0);
 
