@@ -459,7 +459,8 @@ typedef struct GearRecord {
     u16 unk86; /* 86 */
     u8 pad88[0x10];
     u8 unk98; /* 98 */
-    u8 pad99[0x3];
+    u8 unk99; /* 99 */
+    u8 pad9A[0x2];
     u8 unk9C; /* 9C */
     u8 unk9D; /* 9D */
     u8 unk9E; /* 9E */
@@ -820,6 +821,45 @@ typedef struct GameRecordECF4 {
     u8 pad1C[0x4];
 } GameRecordECF4;
 
+/* Word views of the game data blocks a save file copies whole. */
+typedef struct SaveWords10 { s32 w[0x10 / 4]; } SaveWords10;
+typedef struct SaveWords18 { s32 w[0x18 / 4]; } SaveWords18;
+typedef struct SaveWords78 { s32 w[0x78 / 4]; } SaveWords78;
+typedef struct SaveWordsA4 { s32 w[0xA4 / 4]; } SaveWordsA4;
+typedef struct SaveWordsDC { s32 w[0xDC / 4]; } SaveWordsDC;
+typedef struct SaveWords100 { s32 w[0x100 / 4]; } SaveWords100;
+typedef struct SaveWords160 { s32 w[0x160 / 4]; } SaveWords160;
+typedef struct SaveWords190 { s32 w[0x190 / 4]; } SaveWords190;
+
+/* A gear as a save file keeps it (3c bytes). */
+typedef struct SaveGear {
+    SaveWords10 head; /* 0: the gear record's first 10 bytes */
+    SaveWords18 slots; /* 10: its slots */
+    s32 attrs; /* 28: attrs (5c) */
+    u32 unk60; /* 2C */
+    u8 pad30[0x4];
+    u16 unk38; /* 34 */
+    u8 pad36[0x2];
+    u8 unk99; /* 38 */
+    u8 unk74; /* 39 */
+    u8 unk75; /* 3A */
+    u8 pad3B[0x1];
+} SaveGear;
+
+/* The game data of a save file (after its header). */
+typedef struct SaveData {
+    s32 time; /* 0: play time in frames */
+    u8 pad4[0x20];
+    SaveWordsDC names; /* 24: game data 0 */
+    SaveWords190 unk100; /* 100: game data dc */
+    SaveWordsA4 chars[11]; /* 290: character records */
+    SaveGear gears[20]; /* 99C */
+    SaveWords78 unkE4C; /* E4C: game data 1648 */
+    SaveWords160 records; /* EC4: game data 16c0 */
+    SaveWords100 unk1024; /* 1024: game data 1820 */
+    u8 unk1124[0xA38]; /* 1124: game data 1920 */
+} SaveData;
+
 /* The game data from 8006d634 to the flags at 8006f8ea: the code addresses
  * its tables relative to one another, so they are one object. */
 typedef struct GameData {
@@ -1055,6 +1095,7 @@ extern u8 D_801EA8C4[0x20];    /* icon palette buffer */
 extern RECT D_801EA8E4;        /* icon image area */
 extern RECT D_801EA8EC;        /* icon palette area */
 void *memmove(void *dst, void *src, s32 size); /* memmove */
+void *memcpy(u8 *dst, u8 *src, s32 size); /* memcpy (PsyQ memory.h prototype, not the builtin) */
 extern u8 D_801EA6D0[32];  /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
 extern u8 D_801E9779;    /* frames between card checks */

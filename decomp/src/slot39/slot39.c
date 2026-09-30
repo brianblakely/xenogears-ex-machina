@@ -4115,7 +4115,37 @@ void func_801E4998(MenuGearViews *views, u8 gear) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4998);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4A28);
+/* Copy the game data into save buffer `save`: characters, gears (their
+ * kept fields), names and the other blocks. */
+void func_801E4A28(SaveData *save) {
+    SaveWordsA4 *chara;
+    SaveGear *dst;
+    GearRecord *src;
+    u8 i;
+
+    for (i = 0; i < 11; i++) {
+        chara = &save->chars[i];
+        *chara = *(SaveWordsA4 *)&D_8006D8A0[i];
+    }
+    for (i = 0; i < 20; i++) {
+        dst = &save->gears[i];
+        src = &D_8006DFAC[i];
+        dst->head = *(SaveWords10 *)src;
+        dst->slots = *(SaveWords18 *)src->slots;
+        dst->attrs = *(s32 *)src->attrs;
+        dst->unk38 = src->unk38;
+        dst->unk60 = src->unk60;
+        dst->unk99 = src->unk99;
+        dst->unk74 = src->unk74;
+        dst->unk75 = src->unk75;
+    }
+    save->names = *(SaveWordsDC *)&D_8006D634.names;
+    save->unk100 = *(SaveWords190 *)D_8006D634.unkDC;
+    save->unkE4C = *(SaveWords78 *)D_8006D634.unk1648;
+    save->records = *(SaveWords160 *)D_8006D634.records;
+    save->unk1024 = *(SaveWords100 *)D_8006D634.unk1820;
+    memcpy(save->unk1124, D_8006D634.unk1920, 0xa38);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E4D10);
 
