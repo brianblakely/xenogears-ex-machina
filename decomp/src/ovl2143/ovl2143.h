@@ -232,6 +232,46 @@ typedef struct {
     s16 step[3];            /* +6a */
 } ColorFade;
 
+/* An animation event (at `frame` of its animation). */
+typedef struct {
+    s16 frame;
+    u8 type;                /* 1-9 */
+    u8 index;
+    union {
+        struct {            /* type 2: set up an anchor and its light column */
+            u8 active;
+            u8 fixed;       /* not attached to this actor */
+            u8 node;
+            u8 color[3];
+            s16 offset[3];
+            s16 enable;
+        } anchor;
+        struct {            /* type 7: show or hide a node */
+            u8 node;
+            u8 visible;
+        } show;
+        struct {            /* type 8: call an entry of the masked actors */
+            u8 pad4;
+            u8 entry;
+        } call;
+        struct {            /* type 9: start an image animation */
+            u8 active;
+            u8 target;      /* 0xff none */
+            u8 mode;        /* bit 7: shifted by the actor */
+            u8 curve;
+            u16 x, y;
+            u16 x2, y2;
+            u16 h10;
+            u8 b12;         /* high nibble 1: shift the second point too */
+            u8 b13;
+            u8 b14;
+            u8 pad15;
+            s16 h16, h18, h1A;
+        } image;
+        u8 more;            /* types 3/4: nonzero for the long form */
+    } u;
+} AnimEvent;
+
 /* An animation record: frame count and the offset of its frame data. */
 typedef struct {
     u8 pad0[2];
@@ -298,13 +338,16 @@ typedef struct Actor {
     s16 h70[12];            /* +70 */
     s16 target[3];          /* +88 */
     s16 h8E;                /* +8e */
-    s16 h90[4];             /* +90 */
+    s16 h90;                /* +90: -1 none */
+    s16 h92;                /* +92 */
+    u16 shift_x;            /* +94: added to image animation positions */
+    u16 shift_y;            /* +96 */
     s16 anim_state;         /* +98: -1 none */
     s16 anim_loop;          /* +9a: -1 no loop */
     s16 anim_frame;         /* +9c */
     s16 anim_frames;        /* +9e */
-    u8 *anim_start;         /* +a0 */
-    u8 *anim_pos;           /* +a4 */
+    u8 *anim_pos;           /* +a0: next event */
+    u8 *anim_start;         /* +a4 */
     void *group;            /* +a8: the model group block */
     void *blockAC;          /* +ac */
     ViewOwner *ownerB0;     /* +b0 */
@@ -446,6 +489,13 @@ void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
 void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
 s32 func_801E67F8(void);
 s32 func_801E08D4(s16 value, s16 divisor, s32 base);
+void func_801E0844(s16 *id, s32 unused);
+void func_801E0A00(ImageAnim *anim, ImageAnim *target, s32 mode, u16 flags, MATRIX *m, s16 x, s16 y,
+                   s32 zero, s16 x2, s16 y2, s16 h10, s16 x3, s16 y3, s32 b13, s32 b14, s32 h16,
+                   s32 h18, s32 h1A, FrameCurve curve);
+FrameCurve func_801E34BC(s32 type);
+void func_801E8330(u16 index, u16 mask, s32 arg2);
+void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3);
 void func_801DCEC8(Actor *actor, s32 arg1, s32 arg2, s32 arg3, s32 arg4, s32 arg5, s32 arg6);
 void func_801E0398(ParticlePool *pool, s32 arg1, s32 steps, s32 arg3, s32 arg4);
 void func_801E1880(Actor **actors);
