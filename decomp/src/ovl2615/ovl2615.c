@@ -498,7 +498,53 @@ void func_801E5840(u8 phase) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/ovl2615", func_801E5924);
+/* Prepare the ATB gauge primitives: textured bars lit at the top, grey
+ * shades and white lines, on the gauge glyph's texture page and palettes. */
+void func_801E5924(void) {
+    s32 i;
+
+    D_800D2D28->gauge_shown[0] = 1;
+    D_800D2D28->gauge_shown[1] = 1;
+    D_800D2D28->gauge_shown[2] = 1;
+    func_80026338(D_800D2F5C, 0x5C, &D_800C3EA4->glyph_a234, &D_800C3EA4->tpage_tp,
+                  &D_800C3EA4->clut_x, &D_800C3EA4->clut_y, &D_800C3EA4->tpage_x,
+                  &D_800C3EA4->tpage_y);
+    D_800C3EA4->gauge_clut[1] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y);
+    D_800C3EA4->gauge_clut[0] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 1);
+    D_800C3EA4->gauge_clut[3] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 2);
+    D_800C3EA4->gauge_clut[2] = func_80043A58(D_800C3EA4->clut_x, D_800C3EA4->clut_y - 3);
+    for (i = 0; i < 8; i++) {
+        func_80043CD8(&D_800C3EA4->gauge[i]);
+        func_80043C24(&D_800C3EA4->gauge[i], 0);
+        (D_800C3EA4->gauge + i)->r0 = 0x80;
+        (D_800C3EA4->gauge + i)->g0 = 0x80;
+        (D_800C3EA4->gauge + i)->b0 = 0x80;
+        (D_800C3EA4->gauge + i)->r1 = 0x80;
+        (D_800C3EA4->gauge + i)->g1 = 0x80;
+        (D_800C3EA4->gauge + i)->b1 = 0x80;
+        (D_800C3EA4->gauge + i)->r2 = 0;
+        (D_800C3EA4->gauge + i)->g2 = 0;
+        (D_800C3EA4->gauge + i)->b2 = 0;
+        (D_800C3EA4->gauge + i)->r3 = 0;
+        (D_800C3EA4->gauge + i)->g3 = 0;
+        (D_800C3EA4->gauge + i)->b3 = 0;
+        D_800C3EA4->gauge[i].tpage =
+            func_80043A1C(D_800C3EA4->tpage_tp, 0, D_800C3EA4->tpage_x, D_800C3EA4->tpage_y);
+        func_80043CC4(&D_800C3EA4->gauge_shade[i]);
+        (D_800C3EA4->gauge_shade + i)->r2 = 0x4F;
+        (D_800C3EA4->gauge_shade + i)->g2 = 0x4F;
+        (D_800C3EA4->gauge_shade + i)->b2 = 0x4F;
+        (D_800C3EA4->gauge_shade + i)->r3 = 0x4F;
+        (D_800C3EA4->gauge_shade + i)->g3 = 0x4F;
+        (D_800C3EA4->gauge_shade + i)->b3 = 0x4F;
+    }
+    for (i = 0; i < 12; i++) {
+        func_80043D78(&D_800C3EA4->gauge_line[i]);
+        (D_800C3EA4->gauge_line + i)->r0 = 0xFF;
+        (D_800C3EA4->gauge_line + i)->g0 = 0xFF;
+        (D_800C3EA4->gauge_line + i)->b0 = 0xFF;
+    }
+}
 
 /* Prepare the two white semi-transparent panel quads and their draw modes
  * (blend mode 2 on the effect texture page). */

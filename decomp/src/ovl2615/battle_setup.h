@@ -194,8 +194,53 @@ typedef struct {
 
 typedef struct {
     u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+} LINE_F2;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+    u8 r3, g3, b3, pad3;
+    s16 x3, y3;
+} POLY_G4;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    u8 r1, g1, b1, p1;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    u8 r2, g2, b2, p2;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad2;
+    u8 r3, g3, b3, p3;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad3;
+} POLY_GT4;
+
+typedef struct {
+    u32 tag;
     u32 code[2];
 } DR_MODE;
+
+void func_80043CD8(POLY_GT4 *poly);                 /* SetPolyGT4 */
+void func_80043CC4(POLY_G4 *poly);                  /* SetPolyG4 */
+void func_80043D78(LINE_F2 *line);                  /* SetLineF2 */
+void func_80043C24(void *prim, s32 tge);            /* SetShadeTex */
+u16 func_80043A58(s32 x, s32 y);                    /* GetClut */
 
 void func_80043C9C(POLY_F4 *poly);                  /* SetPolyF4 */
 void func_80043BFC(void *prim, s32 semi);           /* SetSemiTrans */
@@ -210,7 +255,12 @@ typedef struct {
 
 /* Battle graphics state (pointer 0x800C3EA4). */
 typedef struct {
-    u8 pad0[0x63C8];
+    u8 pad0[0x5A0];
+    POLY_GT4 gauge[8];      /* 0x5A0: gauge bars */
+    POLY_G4 gauge_shade[8]; /* 0x740 */
+    u8 pad860[0x908 - 0x860];
+    LINE_F2 gauge_line[12]; /* 0x908 */
+    u8 pad9C8[0x63C8 - 0x9C8];
     POLY_F4 panel[2];       /* 0x63C8: semi-transparent panel backdrops */
     DR_MODE panel_mode[2];  /* 0x63F8 */
     s32 panel_alpha;        /* 0x6410 */
@@ -219,9 +269,15 @@ typedef struct {
     u8 panel6416;
     u8 pad6417[0x853D - 0x6417];
     MemberPanel member_panel[3]; /* 0x853D */
-    u8 pad8AE9[0xA244 - 0x853D - 3 * 0x1E4];
+    u8 pad8AE9[0xA234 - 0x853D - 3 * 0x1E4];
+    s32 glyph_a234;         /* 0xA234: the gauge glyph's fields */
+    s32 tpage_tp;           /* 0xA238 */
+    s32 clut_x;             /* 0xA23C */
+    s32 clut_y;             /* 0xA240 */
     s32 tpage_x;            /* 0xA244 */
     s32 tpage_y;            /* 0xA248 */
+    u8 padA24C[0xA2AC - 0xA24C];
+    u16 gauge_clut[4];      /* 0xA2AC */
 } GraphicsState;
 
 extern GraphicsState *D_800C3EA4;
@@ -375,5 +431,16 @@ void func_80078310(void *portraits, s32 glyph);
 void func_80028470(s32 directory, s32 mode);    /* select a disc directory */
 s32 func_800288EC(s32 file);                    /* a file's size */
 void func_80029AFC(u16 *list, s32 a1, s32 a2); /* read a file list */
+
+/* Battle UI state (pointer 0x800D2D28). */
+typedef struct {
+    u8 pad0[0x7C];
+    u8 gauge_shown[3]; /* 0x7C */
+} UiState;
+
+extern UiState *D_800D2D28;
+
+void func_80026338(void *glyphs, s32 glyph, s32 *a, s32 *tp, s32 *clut_x, s32 *clut_y,
+                   s32 *tpage_x, s32 *tpage_y); /* a glyph's texture fields */
 
 #endif
