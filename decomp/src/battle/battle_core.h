@@ -181,6 +181,8 @@ s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);
 s32 func_800716D8(void);
+void func_80079ED8(u8 slot, u8 arg1, u8 arg2, s32 arg3);
+void func_8007A280(u8 slot, u8 arg1, u16 arg2, s32 arg3);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(s32 mode);

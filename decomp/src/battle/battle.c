@@ -544,34 +544,28 @@ void func_8007A9A8(u8 **pc) {
 }
 
 /* AI action 08: byte variable b1 += b2, saturating at 0xff. */
-#ifdef NON_MATCHING
 void func_8007A9D0(u8 **pc, u8 enemy) {
     u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
     s32 sum = *value + (*pc)[2];
+    u8 result = sum;
 
     if (sum >= 0x100) {
-        sum = 0xFF;
+        result = 0xFF;
     }
-    *value = sum;
+    *value = result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007A9D0);
-#endif
 
 /* AI action 09: byte variable b1 -= b2, saturating at 0. */
-#ifdef NON_MATCHING
 void func_8007AA1C(u8 **pc, u8 enemy) {
     u8 *value = &D_800D3400[enemy].bytes[(*pc)[1]];
     s32 difference = *value - (*pc)[2];
+    u8 result = difference;
 
     if (difference < 0) {
-        difference = 0;
+        result = 0;
     }
-    *value = difference;
+    *value = result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AA1C);
-#endif
 
 /* AI action 0a: byte variable b1 *= b2, saturating at 0xff. */
 void func_8007AA60(u8 **pc, u8 enemy) {
@@ -696,66 +690,179 @@ void func_8007ADF4(u8 **pc, u8 enemy) {
 }
 
 /* AI action 18: byte variable b3 = byte b1 + byte b2, saturating at 0xff. */
-#ifdef NON_MATCHING
 void func_8007AE38(u8 **pc, u8 enemy) {
     u8 *bytes = D_800D3400[enemy].bytes;
     s32 sum = bytes[(*pc)[1]] + bytes[(*pc)[2]];
+    u8 result = sum;
 
     if (sum >= 0x100) {
-        sum = 0xFF;
+        result = 0xFF;
     }
-    bytes[(*pc)[3]] = sum;
+    bytes[(*pc)[3]] = result;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AE38);
-#endif
 
 /* AI action 19: byte variable b3 = byte b1 - byte b2, saturating at 0. */
-#ifdef NON_MATCHING
 void func_8007AE98(u8 **pc, u8 enemy) {
     u8 *bytes = D_800D3400[enemy].bytes;
     s32 difference = bytes[(*pc)[1]] - bytes[(*pc)[2]];
+    u8 result = difference;
+
+    if (difference < 0) {
+        result = 0;
+    }
+    bytes[(*pc)[3]] = result;
+}
+
+/* AI action 1a: byte variable b3 = byte b1 * byte b2, saturating at 0xff. */
+void func_8007AEF0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
+    s16 product = bytes[op[1]] * bytes[op[2]];
+
+    if (product >= 0x100) {
+        product = 0xFF;
+    }
+    bytes[op[3]] = product;
+}
+
+/* AI action 1b: byte variable b3 = byte b1 / byte b2. */
+void func_8007AF5C(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
+
+    bytes[op[3]] = bytes[op[1]] / bytes[op[2]];
+}
+
+/* AI action 1c: byte variable b3 = byte b1 % byte b2. */
+void func_8007AFAC(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
+
+    bytes[op[3]] = bytes[op[1]] % bytes[op[2]];
+}
+
+/* AI action 1d: byte variable b3 = byte b1 & byte b2. */
+void func_8007AFFC(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
+
+    bytes[op[3]] = bytes[op[1]] & bytes[op[2]];
+}
+
+/* AI action 1e: byte variable b3 = byte b1 | byte b2. */
+void func_8007B040(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
+
+    bytes[op[3]] = bytes[op[1]] | bytes[op[2]];
+}
+
+/* AI action 1f: byte variable b3 = byte b1 ^ byte b2. */
+void func_8007B084(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u8 *bytes = D_800D3400[enemy].bytes;
+
+    bytes[op[3]] = bytes[op[1]] ^ bytes[op[2]];
+}
+
+/* AI action 20: variable b3 = var b1 + var b2, saturating at 0xffff. */
+void func_8007B0C8(u8 **pc, u8 enemy) {
+    u16 *vars = D_800D3400[enemy].vars;
+    s32 sum = vars[(*pc)[1]] + vars[(*pc)[2]];
+
+    if (sum > 0xFFFF) {
+        sum = 0xFFFF;
+    }
+    vars[(*pc)[3]] = sum;
+}
+
+/* AI action 21: variable b3 = var b1 - var b2, saturating at 0. */
+void func_8007B134(u8 **pc, u8 enemy) {
+    u16 *vars = D_800D3400[enemy].vars;
+    s32 difference = vars[(*pc)[1]] - vars[(*pc)[2]];
 
     if (difference < 0) {
         difference = 0;
     }
-    bytes[(*pc)[3]] = difference;
+    vars[(*pc)[3]] = difference;
+}
+
+/* AI action 22: variable b3 = var b1 * var b2, saturating at 0xffff. */
+void func_8007B198(u8 **pc, u8 enemy) {
+    u16 *vars = D_800D3400[enemy].vars;
+    s32 product = vars[(*pc)[1]] * vars[(*pc)[2]];
+
+    if (product > 0xFFFF) {
+        product = 0xFFFF;
+    }
+    vars[(*pc)[3]] = product;
+}
+
+/* AI action 23: variable b3 = var b1 / var b2. */
+void func_8007B208(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
+
+    vars[op[3]] = vars[op[1]] / vars[op[2]];
+}
+
+/* AI action 24: variable b3 = var b1 % var b2. */
+void func_8007B264(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
+
+    vars[op[3]] = vars[op[1]] % vars[op[2]];
+}
+
+/* AI action 25: variable b3 = var b1 & var b2. */
+#ifdef NON_MATCHING
+void func_8007B2C0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
+
+    vars[op[3]] = vars[op[1]] & vars[op[2]];
 }
 #else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AE98);
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B2C0);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AEF0);
+/* AI action 26: variable b3 = var b1 | var b2. */
+#ifdef NON_MATCHING
+void func_8007B310(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AF5C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AFAC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007AFFC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B040);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B084);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B0C8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B134);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B198);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B208);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B264);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B2C0);
-
+    vars[op[3]] = vars[op[1]] | vars[op[2]];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B310);
+#endif
 
+/* AI action 27: variable b3 = var b1 ^ var b2. */
+#ifdef NON_MATCHING
+void func_8007B360(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+    u16 *vars = D_800D3400[enemy].vars;
+
+    vars[op[3]] = vars[op[1]] ^ vars[op[2]];
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B360);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B3B0);
+/* AI action 28: 80079ed8 for the enemy's slot with b1, b2. */
+void func_8007B3B0(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B3E4);
+    func_80079ED8(enemy + 3, op[1], op[2], 0);
+}
+
+/* AI action 29: 8007a280 for the enemy's slot with b1 and b2 | b3 << 8. */
+void func_8007B3E4(u8 **pc, u8 enemy) {
+    u8 *op = *pc;
+
+    func_8007A280(enemy + 3, op[1], op[2] | (op[3] << 8), 0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007B424);
 
