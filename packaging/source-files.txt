@@ -223,6 +223,8 @@ decomp/src/resident/text.h
 decomp/src/resident/window.h
 decomp/src/slot39/menu.h
 decomp/src/slot39/slot39.c
+decomp/src/slot39/slot39_801DBE54.c
+decomp/src/slot39/slot39_801E8070.c
 decomp/src/worldmap/worldmap.c
 decomp/src/worldmap/worldmap.h
 decomp/src/worldmap/worldmap_80072238.c
