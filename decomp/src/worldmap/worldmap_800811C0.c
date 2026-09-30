@@ -182,7 +182,6 @@ s32 func_800817A0(s32 index) {
 }
 
 /* Fade scene object 2 in (command 1) or reset it to opaque grey (command 2). */
-#ifdef NON_MATCHING /* loop pointer biased to b0 instead of the code byte */
 s32 func_80081868(s32 index) {
     WorldmapActor *actor;
     SceneObject *object;
@@ -201,8 +200,8 @@ s32 func_80081868(s32 index) {
         actor->state = 0;
         quad = (&object->prims)[D_8009D7F0];
         for (i = 0; i < object->def->count; i++) {
-            setRGB0(quad, 0x80, 0x80, 0x80);
             setSemiTrans(quad, 0);
+            setRGB0(quad, 0x80, 0x80, 0x80);
             quad++;
         }
         break;
@@ -225,9 +224,6 @@ s32 func_80081868(s32 index) {
     func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->u.step, actor->unk54, actor->unk58);
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081868);
-#endif
 
 /* Place the actor at the player and rebuild scene objects 0-1 stretched 7x in height. */
 s32 func_800819C8(s32 index) {
