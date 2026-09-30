@@ -442,11 +442,61 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80072170);
 void func_800725A8(void) {
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800725B0);
+/* Set up a loaded scene: graphics state, its resources, the scene origin
+ * and the values from its header. */
+void func_800725B0(SceneData *scene) {
+    SceneHeader *header;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800726B4);
+    func_80030988(5, 4, 0x40, 0x40);
+    D_800910F0 = func_8008A3E0(func_8008A2B8(0x10));
+    D_80092610 = func_8008C2C0(scene->unk5C);
+    func_8008976C(0x280, 0xDA);
+    func_8004A14C(0x400);
+    D_800928D0 = 0;
+    D_80092614 = scene;
+    func_80078F00(scene);
+    D_80096FA8.vz = 0;
+    D_80096FA8.vy = 0;
+    D_80096FA8.vx = 0;
+    header = scene->header;
+    D_80092618 = 1;
+    D_8009261C = header->unk14;
+    D_80092620 = header->unk16;
+    D_80092624 = header->unk18;
+    D_80092628 = header->unk1A;
+    D_8009262C = header->unk1C;
+    D_80092632 = header->unk1E;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007273C);
+/* Tear down the scene set up by func_800725B0. */
+void func_800726B4(void) {
+    func_8008BC04();
+    func_8007F834();
+    func_80030988(1, 1, 0x40, 0x40);
+    func_8008A5BC(D_800910F0);
+    func_80089D5C(D_80092610);
+    func_8008976C(0x140, 0xDA);
+    func_8004A14C(0xC0);
+    func_80083C0C(3);
+    func_8007E954(0x100);
+    func_80080D10();
+}
+
+/* Copy a model's matrix to out, rotated by the base matrix, with its
+ * translation set to the model position relative to the scene origin. */
+void func_8007273C(SceneModel *model, Matrix *matrix, Matrix *out) {
+    Matrix local;
+
+    *out = *matrix;
+    local = D_80091C0C;
+    local.t[0] = model->x - D_80096FA8.vx;
+    local.t[1] = -D_80096FA8.vy;
+    local.t[2] = model->z - D_80096FA8.vz;
+    func_8004931C(matrix, &local, &local);
+    out->t[0] = local.t[0];
+    out->t[1] = local.t[1];
+    out->t[2] = local.t[2];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80072858);
 

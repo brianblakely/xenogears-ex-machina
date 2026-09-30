@@ -65,6 +65,39 @@ typedef struct {
     s32 unkE8;
 } Actor;
 
+/* libgte matrix. */
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} Matrix;
+
+/* Header of the loaded scene data. */
+typedef struct {
+    u8 unk0[0x14];
+    s16 unk14;
+    s16 unk16;
+    s16 unk18;
+    s16 unk1A;
+    s16 unk1C;
+    u16 unk1E;
+} SceneHeader;
+
+/* Loaded scene data block. */
+typedef struct {
+    u8 unk0[0x5C];
+    s32 unk5C;
+    u8 unk60[0x89C];
+    SceneHeader *header; /* 0x8FC */
+} SceneData;
+
+/* A placed scene model: its position is at 0x34. */
+typedef struct {
+    u8 unk0[0x34];
+    s32 x;
+    s32 y;
+    s32 z;
+} SceneModel;
+
 /* Menu window (resident window code at 80032f54). */
 typedef struct {
     s16 unk0[3];
@@ -136,6 +169,19 @@ extern u8 D_80099D9D;
 extern u8 D_80099D9E;
 extern Sprt16 D_8009A14C;
 extern Sprt16 D_8009A244;
+extern s32 D_800910F0;
+extern s32 D_80092610;
+extern SceneData *D_80092614;
+extern s8 D_80092618;
+extern s32 D_8009261C;
+extern s32 D_80092620;
+extern s32 D_80092624;
+extern s32 D_80092628;
+extern s32 D_8009262C;
+extern u16 D_80092632;
+extern s16 D_800928D0;
+extern Vector D_80096FA8; /* scene origin */
+extern Matrix D_80091C0C;
 
 /* PsyQ SDK (resident). */
 void func_80043B48(void *ot, void *prim);                   /* AddPrim */
@@ -146,8 +192,11 @@ void func_80044894(Rect *rect, u32 *data);                  /* LoadImage */
 void func_800471B4(u32 *tim);                               /* OpenTIM */
 TimImage *func_800471C4(TimImage *image);                   /* ReadTIM */
 s32 func_8004B32C(s32 x, s32 z);                            /* ratan2 */
+Matrix *func_8004931C(Matrix *m0, Matrix *m1, Matrix *m2);  /* CompMatrix */
+void func_8004A14C(s32 h);                                  /* SetGeomScreen */
 
 /* Resident game code. */
+void func_80030988(s32 a0, s32 a1, s32 a2, s32 a3);
 void func_80032F54(MenuWindow *window, s32 x, s32 y, s32 w, s32 h, s32 a5, s32 a6);
 s32 func_80033728(s32 table, s32 index);
 void func_800346D4(MenuWindow *window);
@@ -178,5 +227,16 @@ void func_800828F8(Vector *position, Vector *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);
 void func_8008EB4C(s32 id);
+void func_8007E954(s32 arg);
+void func_8007F834(void);
+void func_80078F00(SceneData *scene);
+void func_80080D10(void);
+void func_8008976C(s32 a0, s32 a1);
+void func_80089D5C(s32 arg);
+s32 func_8008A2B8(s32 arg);
+s32 func_8008A3E0(s32 arg);
+void func_8008A5BC(s32 arg);
+void func_8008BC04(void);
+s32 func_8008C2C0(s32 arg);
 
 #endif
