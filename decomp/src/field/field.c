@@ -816,13 +816,13 @@ void func_8008F1C8(void) {
     D_800B0078->pc += 8;
 }
 
-void func_80023290(s32 handle, s32 value);
+void func_80023290(FieldModel *model, s32 value);
 
 /* Pass an operand to resident 80023290 with the current descriptor's word 04. */
 void func_8008F2D8(void) {
     s32 value = func_800ACDEC(1);
 
-    func_80023290(D_800AFB10[D_800AFD1C].unk04, value);
+    func_80023290(D_800AFB10[D_800AFD1C].model, value);
     D_800B0078->pc += 3;
 }
 
@@ -1829,8 +1829,8 @@ extern FieldDescriptor *D_800B06B8;
 /* Give the current actor a step along the published descriptor's facing
  * and set its layer flag 0x800. */
 void func_80092808(void) {
-    D_800B0078->unk60 = (func_8003F8CC(D_800B06B8->unk52) * 36) >> 12;
-    D_800B0078->unk64 = (func_8003F8B0(D_800B06B8->unk52) * -36) >> 12;
+    D_800B0078->unk60 = (func_8003F8CC(D_800B06B8->rotation.vy) * 36) >> 12;
+    D_800B0078->unk64 = (func_8003F8B0(D_800B06B8->rotation.vy) * -36) >> 12;
     D_800B0078->layer_flags |= 0x800;
     D_800B0078->pc += 1;
 }
@@ -2224,67 +2224,343 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094158);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800943AC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800945D4);
+extern s32 D_8004F318;
+extern s32 D_8004F328;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094650);
+/* Reset D_8004F318/D_8004F328 and store (op1 << 8 | op3) in variable 10. */
+void func_800945D4(void) {
+    s32 high;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009468C);
+    D_8004F318 = 0;
+    D_8004F328 = 0xFF;
+    high = func_800ACDEC(1);
+    func_800A3074(10, ((high << 8) & 0xFF00) | (func_800ACDEC(3) & 0xFF));
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800946BC);
+/* Set D_8004F328 from an operand byte. */
+void func_80094650(void) {
+    D_8004F328 = EVENT_OPERAND_BYTE(1);
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094710);
+/* Reset D_8004F318 and D_8004F328. */
+void func_8009468C(void) {
+    D_8004F318 = 0;
+    D_8004F328 = 0xFF;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094764);
+/* Set the current actor's two-bit mode (unk12C) to 1 with value unk70. */
+void func_800946BC(void) {
+    D_800B0078->unk12C = (D_800B0078->unk12C & ~3) | 1;
+    D_800B0078->unk70 = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
+
+/* Set the current actor's two-bit mode (unk12C) to 2 with value unk70. */
+void func_80094710(void) {
+    D_800B0078->unk12C = (D_800B0078->unk12C & ~3) | 2;
+    D_800B0078->unk70 = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
+
+/* Set the current actor's two-bit mode (unk12C) to 3 with value unk70. */
+void func_80094764(void) {
+    D_800B0078->unk12C |= 3;
+    D_800B0078->unk70 = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800947B0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094918);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094A5C);
+void func_80072254(s32 index);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094ACC);
+/* Turn the current descriptor about x by an operand and reapply it. */
+void func_80094A5C(void) {
+    s32 delta;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094B3C);
+    delta = func_800ACDEC(1);
+    D_800AFB10[D_800AFD1C].rotation.vx += delta;
+    D_800B0078->pc += 3;
+    func_80072254(D_800AFD1C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094BAC);
+/* Turn the current descriptor about x by minus an operand. */
+void func_80094ACC(void) {
+    s32 delta;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094C1C);
+    delta = func_800ACDEC(1);
+    D_800AFB10[D_800AFD1C].rotation.vx -= delta;
+    D_800B0078->pc += 3;
+    func_80072254(D_800AFD1C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094C8C);
+/* Turn the current descriptor about y by an operand. */
+void func_80094B3C(void) {
+    s32 delta;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094CFC);
+    delta = func_800ACDEC(1);
+    D_800AFB10[D_800AFD1C].rotation.vy += delta;
+    D_800B0078->pc += 3;
+    func_80072254(D_800AFD1C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094D4C);
+/* Turn the current descriptor about y by minus an operand. */
+void func_80094BAC(void) {
+    s32 delta;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094D9C);
+    delta = func_800ACDEC(1);
+    D_800AFB10[D_800AFD1C].rotation.vy -= delta;
+    D_800B0078->pc += 3;
+    func_80072254(D_800AFD1C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094DEC);
+/* Turn the current descriptor about z by an operand. */
+void func_80094C1C(void) {
+    s32 delta;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094E3C);
+    delta = func_800ACDEC(1);
+    D_800AFB10[D_800AFD1C].rotation.vz += delta;
+    D_800B0078->pc += 3;
+    func_80072254(D_800AFD1C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094E8C);
+/* Turn the current descriptor about z by minus an operand. */
+void func_80094C8C(void) {
+    s32 delta;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094EDC);
+    delta = func_800ACDEC(1);
+    D_800AFB10[D_800AFD1C].rotation.vz -= delta;
+    D_800B0078->pc += 3;
+    func_80072254(D_800AFD1C);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094F2C);
+/* First free slot of inventory list 0, or -1. */
+s32 func_80094CFC(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094F7C);
+    for (i = 0; i < 150; i++) {
+        if (D_8005A39C->count0[i] == 0 || D_8005A39C->id0[i] == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094FCC);
+/* First free slot of inventory list 1, or -1. */
+s32 func_80094D4C(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009501C);
+    for (i = 0; i < 100; i++) {
+        if (D_8005A39C->count1[i] == 0 || D_8005A39C->id1[i] == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800950A0);
+/* First free slot of inventory list 2, or -1. */
+s32 func_80094D9C(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095124);
+    for (i = 0; i < 200; i++) {
+        if (D_8005A39C->count2[i] == 0 || D_8005A39C->id2[i] == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800951B8);
+/* First free slot of inventory list 3, or -1. */
+s32 func_80094DEC(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009524C);
+    for (i = 0; i < 100; i++) {
+        if (D_8005A39C->count3[i] == 0 || D_8005A39C->id3[i] == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095284);
+/* First free slot of inventory list 4, or -1. */
+s32 func_80094E3C(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095300);
+    for (i = 0; i < 150; i++) {
+        if (D_8005A39C->count4[i] == 0 || D_8005A39C->id4[i] == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Slot of item `id` in inventory list 0, or -1. */
+s32 func_80094E8C(s32 id) {
+    s32 i;
+
+    for (i = 0; i < 150; i++) {
+        if (D_8005A39C->id0[i] == id && D_8005A39C->count0[i] != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Slot of item `id` in inventory list 2, or -1. */
+s32 func_80094EDC(s32 id) {
+    s32 i;
+
+    for (i = 0; i < 200; i++) {
+        if (D_8005A39C->id2[i] == id && D_8005A39C->count2[i] != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Slot of item `id` in inventory list 1, or -1. */
+s32 func_80094F2C(s32 id) {
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        if (D_8005A39C->id1[i] == id && D_8005A39C->count1[i] != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Slot of item `id` in inventory list 3, or -1. */
+s32 func_80094F7C(s32 id) {
+    s32 i;
+
+    for (i = 0; i < 100; i++) {
+        if (D_8005A39C->id3[i] == id && D_8005A39C->count3[i] != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Slot of item `id` in inventory list 4, or -1. */
+s32 func_80094FCC(s32 id) {
+    s32 i;
+
+    for (i = 0; i < 150; i++) {
+        if (D_8005A39C->id4[i] == id && D_8005A39C->count4[i] != 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* Id array of the inventory list selected by item >> 8. */
+u8 *func_8009501C(s32 item) {
+    switch (item >> 8) {
+    case 0:
+        return D_8005A39C->id0;
+    case 1:
+        return D_8005A39C->id1;
+    case 2:
+        return D_8005A39C->id2;
+    case 3:
+        return D_8005A39C->id3;
+    case 4:
+        return D_8005A39C->id4;
+    }
+    return NULL;
+}
+
+/* Count array of the inventory list selected by item >> 8. */
+u8 *func_800950A0(s32 item) {
+    switch (item >> 8) {
+    case 0:
+        return D_8005A39C->count0;
+    case 1:
+        return D_8005A39C->count1;
+    case 2:
+        return D_8005A39C->count2;
+    case 3:
+        return D_8005A39C->count3;
+    case 4:
+        return D_8005A39C->count4;
+    }
+    return NULL;
+}
+
+/* Slot holding `item` (list in the high byte), or -1; 0 for no list. */
+s32 func_80095124(s32 item) {
+    switch (item >> 8) {
+    case 0:
+        return func_80094E8C(item);
+    case 1:
+        return func_80094F2C(item - 0x100);
+    case 2:
+        return func_80094EDC(item - 0x200);
+    case 3:
+        return func_80094F7C(item - 0x300);
+    case 4:
+        return func_80094FCC(item - 0x400);
+    }
+    return 0;
+}
+
+/* First free slot of the list selected by item >> 8, or -1; 0 for no list. */
+s32 func_800951B8(s32 item) {
+    switch (item >> 8) {
+    case 0:
+        return func_80094CFC();
+    case 1:
+        return func_80094D4C();
+    case 2:
+        return func_80094D9C();
+    case 3:
+        return func_80094DEC();
+    case 4:
+        return func_80094E3C();
+    }
+    return 0;
+}
+
+void func_80095284(void);
+
+/* Stop the current actor (func_80095284) and advance. */
+void func_8009524C(void) {
+    func_80095284();
+    D_800B0078->pc += 1;
+}
+
+/* Stop the current actor: clear its motion words and its model's, mark
+ * 0x8000 in unk104/unk106, and yield. */
+void func_80095284(void) {
+    FieldModel *model;
+    u16 state;
+
+    model = D_800AFB10[D_800AFD1C].model;
+    D_800B00C0 = 1;
+    D_800B0078->unk30[0] = 0;
+    D_800B0078->unk30[1] = 0;
+    D_800B0078->unk30[2] = 0;
+    D_800B0078->unk40[0] = 0;
+    D_800B0078->unk40[1] = 0;
+    D_800B0078->unk40[2] = 0;
+    state = D_800B0078->unk104 | 0x8000;
+    D_800B0078->unk106 = state;
+    D_800B0078->unk104 = state;
+    model->unk0C = 0;
+    model->unk14 = 0;
+    model->unk18 = 0;
+}
+
+/* Set the terrain angle from an operand. */
+void func_80095300(void) {
+    D_800B2174.terrain_angle = func_800ACDEC(1);
+    D_800B0078->pc += 3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009533C);
 

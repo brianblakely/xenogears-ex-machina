@@ -13,11 +13,17 @@ typedef struct FieldActor {
     u32 layer_flags;    /* 004 */
     u8 unk008[0x20 - 0x008];
     Fixed position[3];  /* 020: x, y, z */
-    u8 unk02C[0x060 - 0x02C];
+    u8 unk02C[0x030 - 0x02C];
+    s32 unk30[3];        /* 030 */
+    u8 unk03C[0x040 - 0x03C];
+    s32 unk40[3];        /* 040 */
+    u8 unk04C[0x060 - 0x04C];
     s16 unk60;           /* 060 */
     u8 unk062[0x064 - 0x062];
     s16 unk64;           /* 064 */
-    u8 unk066[0x0CC - 0x066];
+    u8 unk066[0x070 - 0x066];
+    s16 unk70;           /* 070 */
+    u8 unk072[0x0CC - 0x072];
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
     u8 unk0CF[0xEE - 0x0CF];
@@ -25,21 +31,33 @@ typedef struct FieldActor {
     u8 unk0F0[0xFC - 0x0F0];
     u8 color0[3];       /* 0FC */
     u8 color1[3];       /* 0FF */
-    u8 unk102[0x118 - 0x102];
+    u8 unk102[0x104 - 0x102];
+    u16 unk104;          /* 104 */
+    u16 unk106;          /* 106 */
+    u8 unk108[0x118 - 0x108];
     s32 *words;         /* 118 */
-    u8 unk11C[0x134 - 0x11C];
+    u8 unk11C[0x12C - 0x11C];
+    u32 unk12C;          /* 12C */
+    u8 unk130[0x134 - 0x130];
     u32 unk134;         /* 134 */
 } FieldActor;
+
+/* The object at descriptor offset 04. */
+typedef struct FieldModel {
+    u8 unk00[0x0C];
+    s32 unk0C;          /* 0C */
+    u8 unk10[0x14 - 0x10];
+    s32 unk14;          /* 14 */
+    s32 unk18;          /* 18 */
+} FieldModel;
 
 /* One 0x5C-byte event descriptor; one per event actor. */
 typedef struct FieldDescriptor {
     u8 unk00[0x04];
-    s32 unk04;          /* 04 */
+    FieldModel *model;  /* 04 */
     u8 unk08[0x4C - 0x08];
     FieldActor *actor;  /* 4C */
-    u8 unk50[0x52 - 0x50];
-    s16 unk52;           /* 52 */
-    u8 unk54[0x58 - 0x54];
+    SVECTOR rotation;   /* 50 */
     u16 flags;          /* 58 */
     u8 unk5A[0x5C - 0x5A];
 } FieldDescriptor;
@@ -48,7 +66,18 @@ typedef struct FieldDescriptor {
 typedef struct GameState {
     u8 unk0000[0x1932];
     s16 unk1932;         /* 1932 */
-    u8 unk1934[0x2320 - 0x1934];
+    u8 unk1934[0x1D38 - 0x1934];
+    u8 count1[100];      /* 1D38: inventory list 1 */
+    u8 id1[100];         /* 1D9C */
+    u8 count2[200];      /* 1E00: inventory list 2 */
+    u8 id2[200];         /* 1EC8 */
+    u8 count0[150];      /* 1F90: inventory list 0 */
+    u8 id0[150];         /* 2026 */
+    u8 count3[100];      /* 20BC: inventory list 3 */
+    u8 id3[100];         /* 2120 */
+    u8 count4[150];      /* 2184: inventory list 4 */
+    u8 id4[150];         /* 221A */
+    u8 unk22B0[0x2320 - 0x22B0];
     s16 unk2320;         /* 2320 */
     u8 unk2322[0x2324 - 0x2322];
 } GameState;
