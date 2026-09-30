@@ -1253,30 +1253,116 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039A80);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039B68);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039C4C);
+extern void func_8003B060(SoundTrack *track);
+extern void func_8003F6B0(s32 error);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039C8C);
+/* Resume a track (error 5 without one). */
+void func_80039C4C(SoundTrack *track) {
+    if (track == NULL) {
+        func_8003F6B0(5);
+        return;
+    }
+    track->flags &= 0x7FFF;
+    func_8003B060(track);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039CC4);
+extern void func_8003A89C(s32 a, s32 b, s32 c);
+
+void func_80039C8C(s32 a, s32 c) {
+    if (a == 0) {
+        func_8003F6B0(5);
+        return;
+    }
+    func_8003A89C(a, 0, c);
+}
+
+extern SoundTrack *D_80059564;
+
+/* Resume every paused track (flag 1). */
+void func_80039CC4(void) {
+    SoundTrack *track;
+
+    for (track = D_80059564; track != NULL; track = track->next) {
+        if (track->flags & 1) {
+            track->flags &= 0x7FFF;
+            func_8003B060(track);
+        }
+    }
+}
 
 void func_80039D24(void) {
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039D2C);
+/* Enable or disable (and flush) the sound effect channel. */
+void func_80039D2C(s32 enable) {
+    if (enable != 0) {
+        D_8005957C |= 0x800;
+    } else {
+        func_80039FF8();
+        D_8005957C &= ~0x800;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039D78);
+extern s32 D_80059544;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039DB8);
+/* Set the voice count (even, 4 to 16) unless 0; returns the setting. */
+s32 func_80039D78(s32 count) {
+    if (count != 0) {
+        if (count > 16) {
+            count = 16;
+        }
+        if (count < 4) {
+            count = 4;
+        }
+        D_80059544 = count & 0xFE;
+    }
+    return D_80059544;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039E18);
+extern s32 D_80059404;
+extern s32 D_80059478;
+extern void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039E60);
+void func_80039DB8(s32 channel) {
+    if (D_8005957C & 0x800) {
+        D_80059404 = 2;
+        func_8003B644((D_80059478 - 2) | 0x8000, channel, 0x6000, 0x4000);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039EC4);
+void func_80039E18(s32 channel) {
+    if (D_8005957C & 0x800) {
+        D_80059404 = 2;
+        func_8003B644(0x600C, channel, 0x6000, 0x4000);
+    }
+}
+
+extern s32 func_8003A65C(s32 channel, s32 b);
+
+void func_80039E60(s32 channel) {
+    if (D_8005957C & 0x800) {
+        s32 id = func_8003A65C(channel, 2);
+
+        D_80059404 = 2;
+        func_8003B644(id | 0x2000, channel, 0x6000, 0x4000);
+    }
+}
+
+void func_80039EC4(s32 channel, s32 sound) {
+    if (D_8005957C & 0x800) {
+        D_80059404 = 2;
+        func_8003B644(((sound & 0xFE) ^ 8) | 0x2000, channel, 0x6000, 0x4000);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039F18);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039F9C);
+void func_80039F9C(s32 channel, s32 sound, s32 volume, s32 pan) {
+    if (D_8005957C & 0x800) {
+        D_80059404 = 2;
+        func_8003B644(((sound & 0xFE) ^ 8) | 0x2000, channel, volume << 8, pan << 8);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039FF8);
 

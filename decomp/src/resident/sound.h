@@ -33,6 +33,13 @@ typedef struct SoundBank {
     struct SoundBank *next;
 } SoundBank;
 
+/* A sound track (list through `next`); flag 1 marks it paused. */
+typedef struct SoundTrack {
+    struct SoundTrack *next;
+    u8 unk4[0xC];
+    u16 flags;
+} SoundTrack;
+
 /* A playing sequence (list through `next`). */
 typedef struct SoundSequence {
     u8 unk0[0x14];
