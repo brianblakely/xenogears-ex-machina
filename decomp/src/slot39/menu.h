@@ -575,13 +575,26 @@ typedef struct MenuBlock358 {
 
 /* The equipment panel block (*(state + 35c)). */
 typedef struct MenuBlock35C {
-    POLY_FT4 polys[231]; /* 0 */
-    u8 pad2418[0x8];
-    SVECTOR verts[474]; /* 2420 */
-    u8 pad32F0[0x1];
-    u8 buffer; /* 32F1 */
-    u8 pad32F2[0x1];
-    u8 kind; /* 32F3: parts built */
+    POLY_FT4 polys[94];            /* 0: stat name parts (801d7f50) */
+    POLY_FT4 rowA[7][8];           /* EB0: per row: parts, two per buffer */
+    POLY_FT4 rowB[7][8];           /* 1770 */
+    POLY_G4 bars[7][2];            /* 2030: per row, per buffer */
+    POLY_G4 highlights[7][2];      /* 2228 */
+    SVECTOR verts[188];            /* 2420: stat name quads */
+    SVECTOR rowAAt[7][16];         /* 2A00 */
+    SVECTOR rowBAt[7][16];         /* 2D80 */
+    SVECTOR barAt[7][4];           /* 3100 */
+    SVECTOR highlightAt[7][4];     /* 31E0 */
+    u8 rowACount[7];               /* 32C0 */
+    u8 rowABuffer[7];              /* 32C7 */
+    u8 rowBCount[7];               /* 32CE */
+    u8 rowBBuffer[7];              /* 32D5 */
+    u8 barBuffer[7];               /* 32DC */
+    u8 highlightBuffer[7];         /* 32E3 */
+    u8 rowShown[7];                /* 32EA */
+    u8 buffer;                     /* 32F1 */
+    u8 highlighted;                /* 32F2 */
+    u8 kind;                       /* 32F3: stat name parts built */
 } MenuBlock35C;
 
 /* A position record passed to the panel builders (+28 base). */

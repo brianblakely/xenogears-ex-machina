@@ -2140,7 +2140,34 @@ void func_801CE660(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE860);
+/* Draw the shown rows of the block at +35c: while highlighted, each row's
+ * highlight quad and second part list; then its bar and first part list. */
+void func_801CE860(void) {
+    s32 i;
+    s32 p;
+    s32 flag;
+
+    for (i = 0; i < 7; i++) {
+        if (D_800625A0->block35C->rowShown[i] != 0) {
+            if (D_800625A0->block35C->highlighted != 0) {
+                RotTransPers4(&D_800625A0->block35C->highlightAt[i][0], &D_800625A0->block35C->highlightAt[i][1], &D_800625A0->block35C->highlightAt[i][2],
+                              &D_800625A0->block35C->highlightAt[i][3],
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x0,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x1,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x2,
+                              (s32 *)&D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]].x3, &p, &flag);
+                AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block35C->highlights[i][D_800625A0->block35C->highlightBuffer[i]]);
+                func_801CE198(D_800625A0->block35C->rowBCount[i], D_800625A0->block35C->rowBAt[i], D_800625A0->block35C->rowB[i], D_800625A0->block35C->rowBBuffer[i]);
+            }
+            RotTransPers4(&D_800625A0->block35C->barAt[i][0], &D_800625A0->block35C->barAt[i][1], &D_800625A0->block35C->barAt[i][2], &D_800625A0->block35C->barAt[i][3],
+                          (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x0, (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x1,
+                          (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x2, (s32 *)&D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]].x3, &p,
+                          &flag);
+            AddPrim(&D_800625A0->current->ot[4], &D_800625A0->block35C->bars[i][D_800625A0->block35C->barBuffer[i]]);
+            func_801CE198(D_800625A0->block35C->rowACount[i], D_800625A0->block35C->rowAAt[i], D_800625A0->block35C->rowA[i], D_800625A0->block35C->rowABuffer[i]);
+        }
+    }
+}
 
 /* While party flag +8 is set, draw the sprites of the block at +35c. */
 void func_801CEB5C(void) {
