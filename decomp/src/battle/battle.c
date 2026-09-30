@@ -6360,7 +6360,50 @@ void func_80097D08(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097D5C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009892C);
+/* Party adjustments at battle start: keep each present member's status
+ * word 7A, replace the listed part speeds of its gear by the parts' own
+ * (at most 16), set character 8's speed and battle flag, and before game
+ * data word D_8006EF64 reaches 0xbb set the early gears' values. */
+void func_8009892C(void) {
+    u8 member;
+    u8 i;
+    Combatant *record;
+
+    for (member = 0; member < 3; member++) {
+        if (D_800D2D24[member] == 0x7F) {
+            continue;
+        }
+        record = &D_800C34B0->records[member];
+        D_800C3E00 = record;
+        D_800D2D6C = &record->gear;
+        D_800C3AA4[member] = record->pilot.status7A;
+        for (i = 0; i < 4; i++) {
+            if (D_800D2D10[i] != 0) {
+                D_800D2D6C->speed -= D_800D2D10[i];
+                D_800D2D6C->speed += D_800D2D6C->speedBonus[i];
+            }
+        }
+        if (D_800D2D6C->speed > 16) {
+            D_800D2D6C->speed = 16;
+        }
+    }
+    D_8006D8A0.characters[8].speed = 7;
+    if (D_8006ECF4[8].flags1A & 0x2000) {
+        D_8006ECF4[8].mask2 |= 0x800;
+    }
+    if (D_8006EF64 < 0xBB) {
+        D_8006D8A0.gears[0].field74 = 10;
+        D_8006D8A0.gears[1].field74 = 10;
+        D_8006D8A0.gears[11].field74 = 9;
+        D_8006D8A0.gears[12].field74 = 9;
+        D_8006D8A0.gears[13].field74 = 8;
+        D_8006D8A0.gears[14].field74 = 12;
+        D_8006D8A0.gears[15].field74 = 12;
+        D_8006D8A0.gears[13].field2 = 0x58;
+        D_8006D8A0.gears[7].field3 = 0;
+        D_8006D8A0.gears[15].field8 = 0x28;
+    }
+}
 
 /* A slot's turn timer from its speed (party: less the current command's
  * weight, gear speed for a slot in gear), capped, with a random -3..4

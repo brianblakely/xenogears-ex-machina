@@ -89,9 +89,12 @@ typedef struct {
 /* Gear record (0xA4 bytes): the game data's (after the characters) and the
  * battle copy at combatant +0xA4. */
 typedef struct {
-    u8 pad0[4];
+    u8 pad0[2];
+    u8 field2;
+    u8 field3;
     u8 partItems[4]; /* 0x04: item slot of each part */
-    u8 pad8[0x10 - 0x8];
+    u8 field8;
+    u8 pad9[0x10 - 0x9];
     GearEntry entries[4]; /* 0x10 */
     u8 pad30[0x38 - 0x30];
     u16 fuel;    /* 0x38 */
@@ -101,7 +104,8 @@ typedef struct {
     u8 attackScale; /* 0x3F */
     u8 pad40[0x4F - 0x40];
     u8 field4F; /* 0x4F */
-    u8 pad50[0x57 - 0x50];
+    u8 speedBonus[4]; /* 0x50: speed of each part */
+    u8 pad54[0x57 - 0x54];
     u8 chargeRate; /* 0x57 */
     u8 pad58[0x60 - 0x58];
     u32 hp;    /* 0x60 */
@@ -109,7 +113,8 @@ typedef struct {
     u8 pad68[0x70 - 0x68];
     u16 bodyDefense; /* 0x70 */
     u16 armor;       /* 0x72 */
-    u8 pad74[0x7C - 0x74];
+    u8 field74;
+    u8 pad75[0x7C - 0x75];
     u16 status7C;
     u16 field7E; /* 0x7E: bit 0x80 blocks fuel drain */
     u16 status80;
