@@ -9,15 +9,16 @@
  * counter. Opcode handlers take the thread index and the instruction bytes
  * and return the instruction length (0 when the thread yields). */
 
-/* 0x38 bytes per script thread. */
+/* 0x38 bytes per script thread. Each level runs one of the thread's
+ * script entries (the 16-byte entry table of the script file). */
 typedef struct {
     u16 pc[8];      /* 0x00 program counter per level (0xffff free) */
     u8 priority[8]; /* 0x10 level priority (0xff free) */
-    u8 caller[8];   /* 0x18 thread that requested each level (0xff none) */
+    u8 entry[8];    /* 0x18 entry index running at each level (0xff none) */
     u8 level;       /* 0x20 running level */
-    u8 levelCaller; /* 0x21 caller of the running level */
+    u8 runningEntry; /* 0x21 entry index of the running level */
     u8 unk22;
-    u8 waitThread; /* 0x23 thread this one waits on (0xff none) */
+    u8 request; /* 0x23 entry this thread requested of another (0xff none) */
     u8 unk24;
     u8 pad25[0x38 - 0x25];
 } ScriptThread;
@@ -120,5 +121,6 @@ u16 func_801E5768(ScriptThread *thread);
 u16 func_801E57C4(ScriptThread *thread);
 void func_801E57F8(u8 *insn, u8 count, u8 immediateMask, u8 signedForm);
 u8 func_801E58EC(s16 a, s16 b, u8 op);
+s32 func_801E5DCC(s32 thread, u8 *insn);
 
 #endif

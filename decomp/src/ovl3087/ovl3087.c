@@ -26,7 +26,7 @@ u16 func_801E5768(ScriptThread *thread) {
         }
     }
     thread->level = level;
-    thread->levelCaller = thread->caller[level];
+    thread->runningEntry = thread->entry[level];
     return thread->pc[level];
 }
 
@@ -181,14 +181,14 @@ INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5B00);
 /* Opcode 00 (end): drop the running level and restart the thread's base
  * level at its idle entry. Yields. */
 s32 func_801E5C1C(s32 thread) {
-    D_800D3278->threads[thread].caller[D_800D3278->threads[thread].level] = 0xFF;
+    D_800D3278->threads[thread].entry[D_800D3278->threads[thread].level] = 0xFF;
     D_800D3278->threads[thread].priority[D_800D3278->threads[thread].level] = 0xFF;
     D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = 0xFFFF;
-    D_800D3278->threads[thread].caller[0] = 1;
+    D_800D3278->threads[thread].entry[0] = 1;
     D_800D3278->threads[thread].level = 0;
     D_800D3278->threads[thread].priority[0] = 7;
     D_800D3278->threads[thread].pc[0] = D_800D39D0->entries[thread].entry[1];
-    D_800D3278->threads[thread].waitThread = 0xFF;
+    D_800D3278->threads[thread].request = 0xFF;
     return 0;
 }
 
@@ -198,13 +198,80 @@ s32 func_801E5CE4(s32 thread, u8 *insn) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5D24);
+/* Opcode 02 (branch unless): jump to the target when the comparison of the
+ * two operands fails. */
+s32 func_801E5D24(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, insn[5], 0);
+    if (func_801E58EC(D_800D3278->operands[0], D_800D3278->operands[1], insn[5])) {
+        return 8;
+    }
+    D_800D3278->threads[thread].pc[D_800D3278->threads[thread].level] = insn[6] + (insn[7] << 8);
+    return 0;
+}
 
+#ifdef NON_MATCHING
+/* Opcode 03 (request): start entry (low five bits) of another thread on a
+ * free level with the priority in the top three bits. Retries (length 0)
+ * while that thread has no free level. (Register allocation of the entry
+ * table lookup differs.) */
+s32 func_801E5DCC(s32 thread, u8 *insn) {
+    s32 length = 0;
+    u8 level = func_801E57C4(&D_800D3278->threads[insn[1]]);
+
+    if (level != 8) {
+        D_800D3278->threads[thread].request = insn[2] & 0x1F;
+        D_800D3278->threads[insn[1]].priority[level] = insn[2] >> 5;
+        D_800D3278->threads[insn[1]].pc[level] =
+            D_800D39D0->entries[insn[1]].entry[D_800D3278->threads[thread].request];
+        length = 3;
+        D_800D3278->threads[insn[1]].entry[level] = D_800D3278->threads[thread].request;
+    }
+    return length;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5DCC);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5EF8);
+/* Opcode 04 (request and wait for start): issue the request, then wait
+ * until the other thread is running the requested entry. */
+s32 func_801E5EF8(s32 thread, u8 *insn) {
+    s32 length = 0;
+    u8 request = D_800D3278->threads[thread].request;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5F8C);
+    if (request != (insn[2] & 0x1F)) {
+        func_801E5DCC(thread, insn);
+    } else if (request == D_800D3278->threads[insn[1]].runningEntry) {
+        D_800D3278->threads[thread].request = 0xFF;
+        length = 3;
+    }
+    return length;
+}
+
+/* Opcode 05 (request and wait for end): issue the request, then wait until
+ * the requested entry is neither queued nor running on the other thread. */
+s32 func_801E5F8C(s32 thread, u8 *insn) {
+    s32 length = 0;
+    u8 request = D_800D3278->threads[thread].request;
+    u8 finished = 1;
+    s32 i;
+
+    if (request != (insn[2] & 0x1F)) {
+        func_801E5DCC(thread, insn);
+    } else {
+        for (i = 0; i < 8; i++) {
+            if (D_800D3278->threads[insn[1]].entry[i] == request) {
+                finished = 0;
+                break;
+            }
+        }
+        if (finished &&
+            D_800D3278->threads[thread].request != D_800D3278->threads[insn[1]].runningEntry) {
+            length = 3;
+            D_800D3278->threads[thread].request = 0xFF;
+        }
+    }
+    return length;
+}
 
 /* Opcode 06: var = value. */
 s32 func_801E6084(s32 thread, u8 *insn) {
