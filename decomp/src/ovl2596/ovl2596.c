@@ -664,7 +664,74 @@ void func_801E0A4C(void) {
     D_800D2D28->waitingCross = 0;
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0ACC);
+/* Show the skills the member learnt in the battle, one at a time: the
+ * summary title, then each new counter skill and each new level skill's
+ * name with its mark, waiting for Cross after each. */
+void func_801E0ACC(u8 member) {
+    u16 newCounter;
+    u16 newLevel;
+    s32 i;
+    void *image;
+    u8 width;
+    RECT rect;
+
+    newCounter = D_8006D634.skills[D_800D2D24[member]].counterSkills & ~D_800C3E0C[member].counterSkills;
+    newLevel = D_8006D634.skills[D_800D2D24[member]].levelSkills & ~D_800C3E0C[member].levelSkills;
+    if (newCounter == 0 && newLevel == 0) {
+        return;
+    }
+    if (D_800D2D28->unkB1 == 0) {
+        func_8008F8F4(1, 0x28, 0x78, 0xE8, 0x58, 0, 1);
+    }
+    D_800D334C->runs[0].count = func_80076A10(member + 0xFC, D_800D334C->title[0], 0x40, 0xA4);
+    D_800D334C->runs[0].buffer = D_800CCB34;
+    D_800D2D28->waitingCross = 0;
+    image = func_8008AC00(0x1B);
+    func_80076D58(D_800D334C->glyphs34B0[0], 1, 2);
+    func_80076D58(D_800D334C->glyphs34B0[1], 0, 3);
+    for (i = 0; i < 16; i++) {
+        if (func_80089C6C(newCounter, i) != 0) {
+            s32 *buffer = &D_800CCB34;
+
+            width = func_80034EAC(func_80033784(D_800D2D24[member], i), image, 0x1B, 0);
+            rect.x = 0x3C0;
+            rect.y = 0x1A;
+            rect.w = 0x1E;
+            rect.h = 0xD;
+            func_800769E8(&rect, image);
+            func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
+            SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34], 0, 0x80, 0);
+            D_800D334C->buffer34B0[1] = *buffer;
+            func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
+            D_800D334C->buffer34B0[0] = *buffer;
+            D_800D2D28->show8F = 1;
+            func_801E0A4C();
+        }
+    }
+    for (i = 0; i < 16; i++) {
+        if (func_80089C6C(newLevel, i) != 0) {
+            s32 *buffer = &D_800CCB34;
+
+            width = func_80034EAC(func_80033908(D_800D2D24[member] * 16 + i), image, 0x1B, 0);
+            rect.x = 0x3C0;
+            rect.y = 0x1A;
+            rect.w = 0x1E;
+            rect.h = 0xD;
+            func_800769E8(&rect, image);
+            func_80076C78(&D_800D334C->glyphs34B0[1][*buffer], 0x52, 0x9C, 0, 0x1A, width);
+            SetShadeTex(&D_800D334C->glyphs34B0[1][*buffer], 0);
+            setRGB0(&D_800D334C->glyphs34B0[1][D_800CCB34], 0x80, 0x80, 0);
+            D_800D334C->buffer34B0[1] = *buffer;
+            func_80076C78(&D_800D334C->glyphs34B0[0][*buffer], width + 0x5A, 0x9C, D_800D2FA0[2], D_800D2FA0[3], D_800D2FA0[0]);
+            D_800D334C->buffer34B0[0] = *buffer;
+            D_800D2D28->show8F = 1;
+            func_801E0A4C();
+        }
+    }
+    D_800D2D28->show8F = 0;
+}
+
 
 /* Lay out the summary's seven-glyph label (2d30). */
 void func_801E1044(void) {
@@ -1069,7 +1136,47 @@ void func_801E211C(void) {
     func_80076EA4();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2280);
+/* Total the experience and gold of the defeated enemies, add the gold (up
+ * to 9999999), clear empty party slots, grant the rewards and run the
+ * result screens. */
+void func_801E2280(void) {
+    s32 i;
+    u32 gold;
+    u32 *partyGold;
+
+    gold = 0;
+    D_800D2C84.experience = 0;
+    D_800D2C84.defeated = 0;
+    if (D_800D2FC4 == 0) {
+        for (i = 0; i < 8; i++) {
+            if (D_800D2DCC[i + 3] != 0 && D_800C3EB6[i + 3].flag01 == 0
+                && (D_800CCCE8[i + 3].flags7C & 0x8000) && D_800C3D1B[i][0] == 0) {
+                D_800D2C84.experience += D_800CCCE8[i + 3].experience;
+                gold += D_800CCCE8[i + 3].gold;
+                D_800D2C84.defeated |= func_80089C08(i);
+            }
+        }
+        partyGold = &D_8006EF58;
+        *partyGold += gold;
+        if (*partyGold > 9999999) {
+            *partyGold = 9999999;
+        }
+        func_800BCD98(0);
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] == 0x7F) {
+            D_800D2D24[i] = 0xFF;
+        }
+    }
+    if (D_800D3294 != 0) {
+        D_800D2D24[1] = D_800D2D24[2] = 0xFF;
+        D_800C3EB6[1].id = D_800C3EB6[2].id = 0x7F;
+    }
+    func_801E2794();
+    if (D_800D2D50 == 0 && !(D_8006F9DD & 8)) {
+        func_801E1FB8(gold);
+    }
+}
 
 /* Write the battle item counts back to inventory list 2. */
 void func_801E24B0(void) {
@@ -1089,7 +1196,61 @@ void func_801E24B0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E252C);
+/* Leave the battle: reload the resources, pick the next mode, write the
+ * items back, grant the rewards (unless the battle was escaped or they are
+ * skipped), release the battle's blocks and windows and reset the sound. */
+void func_801E252C(void) {
+    s32 i;
+    u8 *outcome;
+
+    func_801E211C();
+    if (D_800C3D48 != 0) {
+        func_800320E8(D_800D3284);
+        func_800320E8(D_800D328C);
+    }
+    if (D_800594F8 == 0) {
+        if (D_800D3338 != 0) {
+            func_800199CC(6);
+        } else if (D_8005947C != 0) {
+            func_800199CC(2);
+        } else if ((D_8006F94E & 0x7FF) >= 0x400) {
+            func_800199CC(3);
+        } else {
+            func_8001ACA4();
+            func_8008AC50();
+            func_800199CC(1);
+        }
+    }
+    func_8008AC50();
+    func_801E24B0();
+    outcome = &D_800C48EA;
+    if (!(*outcome & 0xC0) && *outcome != 0x21 && D_800D2FC4 == 0 && D_800594D0 != 3) {
+        func_800BFBA0();
+        func_801E2280();
+    }
+    for (i = 0; i < 8; i += 2) {
+        func_800320E8(D_800D3720[i].data);
+    }
+    for (i = 0; i < 10; i++) {
+        func_800320E8(D_800C3E5C[i].data);
+    }
+    func_800320E8(D_800D329C);
+    func_800320E8(D_800C3E24);
+    func_8008FA60(5);
+    func_8008FA60(4);
+    func_800320E8(D_800D39F0);
+    func_800320E8(D_800C3EA4);
+    func_800320E8(D_800D2D28);
+    func_800320E8(D_800C3EAC);
+    func_800320E8(D_800D2C08[0]);
+    func_800320E8(D_800D2F5C);
+    func_8003218C(2);
+    if (D_800594F8 != 0) {
+        func_80039C4C(D_800C3E54);
+        func_800399D4(D_800C3E54);
+    }
+    func_800B8774();
+}
 
 /* Grant the battle rewards unless the whole party is knocked out. */
 void func_801E2794(void) {
@@ -1121,27 +1282,448 @@ void func_801E2794(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2888);
+/* Write each party member's HP, EP, counters and gear HP and fuel back to
+ * the game data, clamped to their maximums (HP 1 when knocked out, gear HP a
+ * tenth of the maximum when destroyed). */
+void func_801E2888(void) {
+    u8 unused[8]; /* the original frame reserves 8 unused bytes */
+    u8 slot;
+    u8 k;
+    Combatant *record;
+    Character *character;
+    Gear *gear;
+    Gear *block;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2ACC);
+    for (slot = 0; slot < 3; slot++) {
+        if (D_800D2D24[slot] == 0xFF) {
+            continue;
+        }
+        record = &D_801E44C8->records[slot];
+        character = &D_801E44C4->characters[record->id];
+        gear = &D_801E44C4->u978.gears[record->gearId];
+        block = &record->gear;
+        if (record->id == 7 && (D_800CCCE8[slot].flags15A & 0x80)) {
+            record->hp = (block->hp + 1) / 50;
+            if (record->hp == 0) {
+                record->hp = 1;
+            }
+        }
+        character->hp = record->hp;
+        character->ep = record->ep;
+        if (character->hp > character->maxHp) {
+            character->hp = character->maxHp;
+        }
+        if (character->ep > character->maxEp) {
+            character->ep = character->maxEp;
+        }
+        for (k = 0; k < 7; k++) {
+            character->counters[k] = record->counters[k];
+        }
+        character->value_3A = record->value_3A;
+        if (record->flags7C & 0xC000) {
+            character->hp = 1;
+        }
+        switch (record->gearId) {
+        case 0 ... 6:
+        case 8 ... 16:
+            gear->hp = block->hp;
+            gear->fuel = block->fuel;
+            if (gear->hp > gear->maxHp) {
+                gear->hp = gear->maxHp;
+            }
+            if (gear->fuel > gear->maxFuel) {
+                gear->fuel = gear->maxFuel;
+            }
+            if (block->flags & 0x8000) {
+                gear->hp = gear->maxHp / 10;
+            }
+            break;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2EB0);
+/* Distribute the experience won: party members that stand share it (less
+ * the penalty), every other character gets a reserve share of a third;
+ * then record each slot's level gains and result stats. */
+void func_801E2ACC(void) {
+    s16 slots[11];
+    u16 i;
+    u16 absent;
+    u32 experience;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E308C);
+    for (i = 0; i < 11; i++) {
+        slots[i] = 100;
+    }
+    absent = 0;
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] == 0xFF) {
+            absent++;
+            continue;
+        }
+        D_801E44EC = &D_801E44C8->records[i];
+        if (D_801E44EC->flags7C & 0xC000) {
+            absent++;
+            slots[D_801E44EC->id] = 0xFF;
+        } else {
+            slots[D_801E44EC->id] = i;
+        }
+        D_801E44F8[i][0] = D_801E44EC->level;
+        D_801E44F8[i][1] = D_801E44EC->level2;
+    }
+    experience = D_801E44C8->experience;
+    if (D_801E44C8->penalty != 0) {
+        experience -= (experience / 4) * D_801E44C8->penalty;
+    }
+    for (i = 0; i < 11; i++) {
+        if (slots[i] == 0xFF) {
+            continue;
+        }
+        D_801E44EC = (Combatant *)&D_801E44C4->characters[i];
+        if (slots[i] < 3) {
+            func_801E2EB0(experience / (3 - absent), slots[i], 0);
+        } else {
+            func_801E2EB0(experience / 3, 0xFF, 1);
+        }
+        func_801E308C();
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] == 0xFF) {
+            continue;
+        }
+        D_801E44EC = (Combatant *)&D_801E44C4->characters[D_800D2D24[i]];
+        D_801E44C8->levelGains[i][0] = D_801E44EC->level - D_801E44F8[i][0];
+        D_801E44C8->levelGains[i][1] = D_801E44EC->level2 - D_801E44F8[i][1];
+        if (D_801E44EC->id == 4) {
+            D_801E44C8->stats[i][0] = D_801E44EC->value04 + D_801E44EC->value1C;
+        } else {
+            D_801E44C8->stats[i][0] = D_801E44EC->attack + D_801E44EC->value04;
+        }
+        D_801E44C8->stats[i][1] = D_801E44EC->stat5E;
+        D_801E44C8->stats[i][2] = D_801E44EC->stat59 + D_801E44EC->value2D;
+        D_801E44C8->stats[i][3] = D_801E44EC->stat5F;
+        D_801E44C8->stats[i][4] = D_801E44EC->stat5B;
+        D_801E44C8->stats[i][5] = D_801E44EC->stat5C;
+        D_801E44C8->stats[i][6] = D_801E44EC->stat5A;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E335C);
+/* Split a slot's experience into the level A and B pools by the record's
+ * weights (three quarters each for a reserve member, all of it with option
+ * 0x8000), at least 1, raised by half by flags 0x2000/0x1000; kept per slot. */
+void func_801E2EB0(u32 experience, s16 slot, s16 reserve) {
+    s16 weightA;
+    s16 weightB;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3500);
+    if (reserve == 1) {
+        experience = experience * 3 / 4;
+        D_801E44F0 = experience;
+        D_801E44F4 = experience;
+        return;
+    }
+    weightA = D_801E44C8->records[slot].weightA;
+    weightB = D_801E44C8->records[slot].weightB;
+    if (weightA < 2) {
+        weightA = 1;
+    }
+    if (weightB < 2) {
+        weightB = 1;
+    }
+    D_801E44F0 = experience * weightA / (weightA + weightB);
+    D_801E44F4 = experience * weightB / (weightA + weightB);
+    if (D_801E44C4->options & 0x8000) {
+        D_801E44F0 = experience;
+        D_801E44F4 = experience;
+    }
+    if (D_801E44F0 == 0) {
+        D_801E44F0 = 1;
+    }
+    if (D_801E44F4 == 0) {
+        D_801E44F4 = 1;
+    }
+    if (D_801E44EC->flags32 & 0x2000) {
+        D_801E44F0 += D_801E44F0 >> 1;
+        D_801E44F4 += D_801E44F4 >> 1;
+    }
+    if (D_801E44EC->flags32 & 0x1000) {
+        D_801E44F4 += D_801E44F4 >> 1;
+    }
+    D_801E44C8->gained[slot].value = D_801E44F0;
+    D_801E44C8->gained[slot].value2 = D_801E44F4;
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3610);
+/* Add the experience pools to the current record's totals and gain levels
+ * A and B while the pools reach the next level (none past 99 with option
+ * 0x8000, and nothing more at 99). */
+void func_801E308C(void) {
+    s32 rest;
 
+    D_801E44EC->totalA += D_801E44F0;
+    D_801E44EC->totalB += D_801E44F4;
+    if (D_801E44EC->level == 99 && (D_801E44C4->options & 0x8000)) {
+        D_801E44F0 = 0;
+    }
+    if (D_801E44EC->level2 == 99 && (D_801E44C4->options & 0x8000)) {
+        D_801E44F4 = 0;
+    }
+    if (D_801E44EC->level == 99) {
+        D_801E44F0 = 0;
+    }
+    if (D_801E44EC->level2 == 99) {
+        D_801E44F4 = 0;
+    }
+    rest = D_801E44EC->nextA - D_801E44F0;
+    if (rest > 0) {
+        D_801E44EC->nextA = rest;
+    } else {
+        do {
+            if (++D_801E44EC->level >= 100 && (D_801E44C4->options & 0x8000)) {
+                D_801E44EC->level--;
+            }
+            D_801E44EC->nextA = D_801E44E8->experience[D_801E44EC->level - 1];
+            func_801E335C();
+            rest += D_801E44EC->nextA;
+        } while (rest <= 0);
+    }
+    D_801E44EC->nextA = rest;
+    rest = D_801E44EC->nextB - D_801E44F4;
+    if (rest > 0) {
+        D_801E44EC->nextB = rest;
+    } else {
+        do {
+            if (++D_801E44EC->level2 >= 100 && (D_801E44C4->options & 0x8000)) {
+                D_801E44EC->level2--;
+            }
+            D_801E44EC->nextB = D_801E44E8->experience[D_801E44EC->level2 - 1];
+            func_801E3500();
+            rest += D_801E44EC->nextB;
+        } while (rest <= 0);
+    }
+    D_801E44EC->nextB = rest;
+}
+
+/* Level A growth of the current record: max HP, then stats 58, 59, 5e
+ * and 5f toward the growth data's targets for its level range. */
+void func_801E335C(void) {
+    u8 high;
+    u8 cap;
+    u8 level;
+
+    high = 0;
+    cap = 100;
+    if (D_801E44EC->level >= 100) {
+        high = 1;
+        cap = 200;
+    }
+    level = D_801E44EC->level;
+    D_801E44EC->maxHp = func_801E3700(D_801E44EC->maxHp, D_801E44EC->level);
+    D_801E44EC->attack = func_801E3610(D_801E44EC->attack,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[0][high], cap, level);
+    D_801E44EC->stat59 = func_801E3610(D_801E44EC->stat59,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[1][high], cap, level);
+    D_801E44EC->stat5E = func_801E3610(D_801E44EC->stat5E,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[2][high], cap, level);
+    D_801E44EC->stat5F = func_801E3610(D_801E44EC->stat5F,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[3][high], cap, level);
+}
+
+/* Level B growth of the current record: max EP, then stats 5b and 5c
+ * toward the growth data's targets for its level range. */
+void func_801E3500(void) {
+    u8 high;
+    u8 cap;
+    u8 level;
+
+    high = 0;
+    cap = 100;
+    if (D_801E44EC->level2 >= 100) {
+        high = 1;
+        cap = 200;
+    }
+    level = D_801E44EC->level2;
+    D_801E44EC->maxEp = func_801E38CC(D_801E44EC->maxEp, D_801E44EC->level2);
+    D_801E44EC->stat5B = func_801E3610(D_801E44EC->stat5B,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[4][high], cap, level);
+    D_801E44EC->stat5C = func_801E3610(D_801E44EC->stat5C,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[5][high], cap, level);
+}
+
+/* Grow a stat by 0 or 1: the chance is the share of the distance to the
+ * target left over the levels to the cap. Capped at 200. */
+/* Grow a stat by 0 or 1: the chance is the share of the distance to the
+ * target left over the levels to the cap. Capped at 200. */
+u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
+    s32 random;
+    s32 share;
+    u8 grow;
+
+    random = rand();
+    share = (target - stat) * 100 / (cap - level) - 50;
+    grow = (s16)(share + random % 100) > 49;
+    stat += grow;
+    if (stat > 200) {
+        stat = 200;
+    }
+    return stat;
+}
+
+/* Grow max HP by a random share of the distance to the growth data's
+ * target for the level range, at least 2. Capped at 999. */
+#ifdef NON_MATCHING
+/* The original subtracts (level - 99) as its own addiu and schedules the
+ * remainder registers differently; the result tail is also duplicated. */
+u16 func_801E3700(u16 maxHp, u8 level) {
+    s16 gain;
+    s32 random;
+    u16 hp;
+
+    hp = maxHp;
+    if (level < 100) {
+        random = rand() % 100;
+        gain = random * (D_801E44E8->characters[D_801E44EC->id].maxHpTargets[0] - (level - 99) - hp)
+            / ((100 - level) * 100) + 2;
+    } else {
+        random = rand() % 100;
+        gain = random * ((D_801E44E8->characters[D_801E44EC->id].maxHpTargets[1] - hp)
+            / ((201 - level) * 100)) * 2 + 2;
+    }
+    if (gain >= 0) {
+        hp = maxHp + gain;
+    }
+    if ((s16)hp >= 1000) {
+        hp = 999;
+    }
+    return hp;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3700);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E38CC);
+/* Grow max EP by 0 or 1 toward the growth data's target for the level
+ * range (as func_801E3610). Capped at 99. */
+u8 func_801E38CC(u8 maxEp, u8 level) {
+    u8 target;
+    u8 cap;
+    s32 random;
+    s32 share;
+    u8 grow;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3A18);
+    if (level < 100) {
+        target = D_801E44E8->characters[D_801E44EC->id].maxEpTargets[0];
+        cap = 99;
+    } else {
+        target = D_801E44E8->characters[D_801E44EC->id].maxEpTargets[1];
+        cap = 200;
+    }
+    random = rand();
+    share = (target - maxEp) * 100 / (cap - level) - 50;
+    grow = (s16)(share + random % 100) > 49;
+    maxEp += grow;
+    if (maxEp >= 100) {
+        maxEp = 99;
+    }
+    return maxEp;
+}
 
+/* Learn skills for each party slot that is not knocked out: a counter skill
+ * (not characters 7 and 8), a level skill (not 10), the unlocks, and the
+ * special cases of characters 8 and 7. */
+void func_801E3A18(void) {
+    u8 slot;
+    u8 learnt;
+
+    for (slot = 0; slot < 3; slot++) {
+        D_801E44EC = &D_801E44C8->records[slot];
+        if (D_801E44EC->flags7C & 0x8000) {
+            continue;
+        }
+        switch (D_801E44EC->id) {
+        case 7:
+        case 8:
+            break;
+        default:
+            learnt = func_801E3BE0(D_801E44EC->id);
+            if (learnt != 0) {
+                D_801E44C8->learntCounter[slot] = learnt;
+            }
+            break;
+        }
+        if (D_801E44EC->id != 10) {
+            learnt = func_801E3D54(D_801E44EC->id);
+            if (learnt != 0) {
+                D_801E44C8->learntLevel[slot] = learnt;
+            }
+        }
+        switch (D_801E44EC->id) {
+        case 7:
+        case 8:
+        case 10:
+            break;
+        default:
+            func_801E3E14(D_801E44EC->id);
+            break;
+        }
+        switch (D_801E44EC->id) {
+        case 8:
+        case 9:
+        case 10:
+            break;
+        default:
+            func_801E3F28(D_801E44EC->id);
+            break;
+        }
+        if (D_801E44EC->id == 8) {
+            func_801E3EA4();
+        }
+        if (D_801E44EC->id == 7) {
+            func_801E3FB0();
+        }
+    }
+}
+
+/* Learn the first unknown counter skill (of 7, or 13 with option 0x4000)
+ * whose level is reached and whose seven counter requirements the current
+ * record meets; stop at the first whose level is not reached. Returns its
+ * index, or 0. */
+#ifdef NON_MATCHING
+/* The original keeps id in a copy and reloads the current record inside
+ * the requirement loop; this C lets GCC hoist it. */
+u8 func_801E3BE0(u8 id) {
+    u8 count;
+    u8 learnt;
+    u8 j;
+    u8 k;
+
+    count = 7;
+    if (D_8006F8EA & 0x4000) {
+        count = 13;
+    }
+    learnt = 0xFF;
+    for (j = 0; j < count; j++) {
+        if (D_8006D634.skills[id].counterSkills & (0x8000 >> j)) {
+            continue;
+        }
+        if (D_8006D8A0[id].level < D_801E44E8->characters[id].counterLevels[j]) {
+            break;
+        }
+        for (k = 0; k < 7; k++) {
+            if (D_801E44EC->counters[k] < D_801E44E8->characters[id].requirements[j][k]) {
+                break;
+            }
+        }
+        if (k == 7) {
+            learnt = j;
+            break;
+        }
+    }
+    if (learnt == 0xFF) {
+        return 0;
+    }
+    D_8006D634.skills[id].counterSkills |= 0x8000 >> learnt;
+    return learnt;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3BE0);
+#endif
 
 /* Learn the first of the character's twelve level skills whose level is
  * reached and which is not yet known. Returns its number (1-12), or 0. */
@@ -1229,10 +1811,10 @@ void func_801E3F28(u8 id) {
 void func_801E3FB0(void) {
     GameData *game = D_801E44C4;
 
-    game->value_E58 = D_801E44EC->maxHp * 200;
-    game->value_E30 = D_801E44EC->attack / 5 + 1;
-    game->value_E64 = D_801E44EC->maxHp * 10;
-    game->value_E66 = D_801E44EC->maxHp * 10;
+    game->u978.id7.value_E58 = D_801E44EC->maxHp * 200;
+    game->u978.id7.value_E30 = D_801E44EC->attack / 5 + 1;
+    game->u978.id7.value_E64 = D_801E44EC->maxHp * 10;
+    game->u978.id7.value_E66 = D_801E44EC->maxHp * 10;
 }
 
 /* Advance each character's tier: 3, 4 and 5 at the growth data's tier
@@ -1292,4 +1874,40 @@ void func_801E41B4(void) {
     }
 }
 
+/* Roll one drop per defeated enemy: the first at its chance (always when a
+ * party member has flag 0x800), else the second at its chance. */
+#ifdef NON_MATCHING
+/* The original compares forced with its own constant 1 (masked); here GCC
+ * reuses the hoisted 1 of the bit shift. */
+void func_801E42C4(void) {
+    u8 i;
+    u8 forced;
+    s32 bit;
+    Combatant *enemy;
+
+    forced = 0;
+    for (i = 0; i < 3; i++) {
+        D_801E44EC = &D_801E44C8->records[i];
+        if (D_801E44EC->flags32 & 0x800) {
+            forced = 1;
+        }
+    }
+    for (i = 0; i < 8; i++) {
+        D_801E44C8->drops.ids[i] = 0;
+        bit = 1 << i;
+        if (!(D_801E44C8->defeated & bit)) {
+            continue;
+        }
+        D_801E44EC = enemy = &D_801E44C8->records[i + 3];
+        if (rand() % 100 < enemy->dropChances[0] || forced == 1) {
+            D_801E44C8->drops.categories[i] = enemy->dropCategories[0];
+            D_801E44C8->drops.ids[i] = enemy->dropIds[0];
+        } else if (rand() % 100 < enemy->dropChances[1]) {
+            D_801E44C8->drops.categories[i] = enemy->dropCategories[1];
+            D_801E44C8->drops.ids[i] = enemy->dropIds[1];
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E42C4);
+#endif

@@ -387,9 +387,49 @@ typedef struct {
     ScenePos enemy;
 } SceneAlone;
 
+/* A stage object (0x28 bytes): lights (types 1, 2), the backdrop (3), fog
+ * (5) and animated stage parts (7). */
+typedef struct {
+    s32 position[4];      /* 0x00: a VECTOR */
+    s16 v10;              /* 0x10 */
+    s16 v12;              /* 0x12 */
+    s16 v14;              /* 0x14 */
+    s16 v16;              /* 0x16 */
+    u16 type;             /* 0x18 */
+    s16 v1A;              /* 0x1A */
+    s16 v1C;              /* 0x1C */
+    s16 v1E;              /* 0x1E */
+    s16 v20;              /* 0x20 */
+    s16 v22;              /* 0x22 */
+    s16 v24;              /* 0x24 */
+    s16 v26;              /* 0x26 */
+} StageObject;
+
+/* The scene's stage description (scene data + 0x340). */
+typedef struct {
+    u8 flags[4];          /* 0x000: published to 800d2d10 */
+    u8 pad4[0x1A];
+    u8 fog;               /* 0x01E: set by a fog object */
+    u8 pad1F;
+    StageObject objects[6]; /* 0x020 */
+    s16 backdrop[4];      /* 0x110: backdrop tiling and texture position */
+    u8 fogColour[4];      /* 0x118: a CVECTOR */
+} StageInfo;
+
 typedef struct {
     SceneGroup group[8];  /* 0x000 */
     SceneAlone alone[8];  /* 0x100 */
+    u8 pad140[0x340 - 0x140];
+    StageInfo info;       /* 0x340 */
+    u8 pad45C[0x464 - 0x45C];
+    s16 origin[3];        /* 0x464 */
+    u8 pad46A[2];
+    s16 colours[3];       /* 0x46C: the colour matrix's first column */
+    u8 back[3];           /* 0x474: the GTE back colour */
+    u8 pad477[0x50C - 0x477];
+    s32 actors;           /* 0x50C: offsets in the scene data (0: none) */
+    s32 lights;           /* 0x510 */
+    s32 motion;           /* 0x514 */
 } BattleScene;
 
 extern BattleScene *D_8005949C;
@@ -469,5 +509,152 @@ extern s32 D_800CCB34;      /* the draw buffer index */
 s32 func_80076A6C(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* half-scale glyph */
 s32 func_80076A10(s32 glyph, GlyphPrim *prims, s16 x, s16 y); /* glyph; returns its parts */
 void func_80076C34(GlyphPrim *prim);                          /* dim a glyph part */
+
+/* Stage setup (stage.c). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+typedef struct {
+    u8 r, g, b, cd;
+} CVECTOR;
+
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+typedef struct {
+    u32 tag;
+    u32 code[15];
+} DR_ENV;
+
+typedef struct {
+    RECT clip;
+    s16 ofs[2];
+    RECT tw;
+    u16 tpage;
+    u8 dtd;
+    u8 dfe;
+    u8 isbg;
+    u8 r0, g0, b0;
+    DR_ENV dr_env;
+} DRAWENV;
+
+void SetPolyFT4(POLY_FT4 *poly);                /* SetPolyFT4 */
+DRAWENV *GetDrawEnv(DRAWENV *env);              /* GetDrawEnv */
+void func_80032498(s32 tag, s32 arg1);          /* select the heap tag */
+void *func_80031BDC(s32 size, s32 top);         /* heap allocation */
+void func_800320B8(void *block);                /* drop a block's keep flag */
+void *memcpy(void *dest, const void *src, u32 size);
+void DrawSync(s32 mode);
+void SetColorMatrix(s16 *m);
+void SetBackColor(s32 r, s32 g, s32 b);
+
+/* A model part (0x7c bytes); the first part heads the model and holds the
+ * part count. */
+typedef struct {
+    u8 pad0[0xA];
+    u16 count;            /* 0x0A */
+    u8 padC[0x52 - 0xC];
+    u16 rotation;         /* 0x52 */
+    u8 pad54[0x5C - 0x54];
+    s32 x;                /* 0x5C */
+    s32 y;                /* 0x60 */
+    s32 z;                /* 0x64 */
+    u8 pad68[0x7C - 0x68];
+} ModelPart;
+
+/* The stage model record (pointer 800d33e4). */
+typedef struct {
+    void *model;          /* 0x00 */
+    ModelPart *parts;     /* 0x04 */
+    u8 pad8[0x1C - 8];
+    s16 pose;             /* 0x1C */
+} StageModel;
+extern StageModel *D_800D33E4;
+
+/* The stage file: its texture image list and part positions. */
+typedef struct {
+    s16 x, y, z;
+    u16 rotation;
+} PartPosition;
+
+typedef struct {
+    u8 pad0[4];
+    s32 *images;          /* 0x04 */
+    u8 pad8[0x14 - 8];
+    PartPosition *positions; /* 0x14 */
+} StageFile;
+
+/* Stage part animations (0x18 bytes). */
+typedef struct {
+    u8 pad0[0x14];
+    void *motion;         /* 0x14: nonzero when in use */
+} StageAnimation;
+
+extern ModelPart *D_800C3E38;   /* the stage model's parts */
+extern void *D_800C3E48;
+extern void *D_800C3EA0;        /* the stage backdrop */
+extern void *D_800C3D50[2];     /* stage lights */
+extern StageAnimation D_800C3DA0[2];
+extern s16 D_800D361A;
+extern u8 *D_800D2FD0;
+extern u16 D_800D2FC8;
+extern s16 *D_800D2FC0;         /* the stage colour matrix */
+extern u8 D_800D2D10[4];
+extern BattleScene *D_800658C8; /* the scene data */
+void func_800A8BF0(s32 a0, s32 a1, void *a2, void *a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8);
+void func_800AA898(StageModel *model, void *state, void *motion, s32 a3);
+void func_800AA934(StageModel *model, StageModel *model2, void *state, s32 a3);
+void func_8009EF3C(ModelPart *parts, s32 pose);
+void *func_8002709C(u16 a0, u16 a1, u16 a2, u16 a3, u16 a4, u16 a5, u16 a6, u16 a7,
+                    StageObject *object, void *colour, s32 a10, s32 a11, s32 a12);
+void func_80027D64(StageAnimation *animation, s32 a1, s32 a2, s32 a3, s32 a4, s32 a5,
+                   s32 a6, s32 a7, void *motion);
+
+/* The stage backdrop (func_801E7914, 0x17cc bytes): a floor grid of 9 x 9
+ * vertices and 128 tiles, and the fills and fades around it. */
+typedef struct {
+    s16 x;                    /* 0x00 */
+    s16 y;                    /* 0x02 */
+    s16 width;                /* 0x04 */
+    s16 height;               /* 0x06 */
+    s16 v08;                  /* 0x08 */
+    s16 v0A;                  /* 0x0A */
+    s16 v0C;                  /* 0x0C */
+    s16 v0E;                  /* 0x0E */
+    s16 v10;                  /* 0x10 */
+    s16 v12;                  /* 0x12 */
+    s16 position[3];          /* 0x14: the object's position */
+    s16 pad1A;
+    CVECTOR colours[2];       /* 0x1C */
+    DR_MODE modes[4];         /* 0x24 */
+    SVECTOR grid[81];         /* 0x54 */
+    POLY_FT4 tiles[128];      /* 0x2DC */
+    POLY_F4 fills[4];         /* 0x16DC */
+    POLY_G4 fades[4];         /* 0x173C */
+} StageBackdrop;
+
+StageBackdrop *func_801E7914(s16 texX, s16 texY, s16 width, s16 height, s16 size, s16 step,
+                             s16 v0A, s16 clutX, s16 clutY, s16 v10, s16 v12, VECTOR *position,
+                             CVECTOR *colour, s16 v0C, s16 v0E);
+void func_801E7EC4(void *actors, StageLight *lights, s32 count);
 
 #endif
