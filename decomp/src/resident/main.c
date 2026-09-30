@@ -2419,7 +2419,113 @@ s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029690);
 
+/* Read a zero-terminated file list: sort it by file, then start the CD reads (the callbacks continue them), or with the PC file server read every file now. Returns 0, or -3 for an empty list. */
+/* GCC 2.6.3 code with div checks (the disc unit): this C matches under 2.6.3 + maspsx --expand-div (object compare with relocations masked), not in this build. */
+#ifdef NON_MATCHING
+s32 func_80029AFC(FileRequest *list, s32 mode, s32 unused) {
+    s32 count;
+    s32 i;
+    s32 j;
+    s32 best;
+    u16 file;
+    void *destination;
+    char *name;
+    s32 fd;
+
+    if (list == NULL) {
+        return -3;
+    }
+    for (count = 0; list[count].file != 0; count++) {
+    }
+    if (count == 0) {
+        return -3;
+    }
+    for (i = 0; i < count - 1; i++) {
+        file = list[i].file;
+        best = i;
+        for (j = i + 1; j < count; j++) {
+            if (list[j].file < file) {
+                best = j;
+                file = list[j].file;
+            }
+        }
+        file = list[i].file;
+        destination = list[i].destination;
+        list[i].file = list[best].file;
+        list[i].destination = list[best].destination;
+        list[best].file = file;
+        list[best].destination = destination;
+    }
+    func_80028A60(0);
+    D_8004FE18 = D_8004FE14;
+    for (i = 2; i >= 0; i--) {
+        D_80059EF8[i] = 0;
+    }
+    D_8004FE10 = 0;
+    D_8004FE0C = list;
+    D_8004FDFC = count;
+    D_8004FE00 = count;
+    D_8004FE08 = list->destination;
+    file = list->file;
+    if (file == 0 || D_8004FE08 == NULL) {
+        func_8002A394(mode);
+        D_8004FDF8 = 0;
+        D_8004FDFC = 0;
+        return 0;
+    }
+    D_80059F0C = file;
+    D_8004FE04 = func_800289D0(file);
+    D_8004FDF8 = func_80028808(file);
+    D_8004FE38 = mode & 0xFFFF;
+    D_8004FE3C = 0;
+    D_8004FE34 = 0;
+    D_8005A4DC = 0;
+    func_80041430(D_8004FE04, D_80059F10);
+    if (D_8004FE48 != NULL) {
+        for (i = 0; i < count; i++) {
+            file = list[i].file;
+            D_80059F0C = file;
+            name = func_80028998(file);
+            for (j = 0; j < 4; j++) {
+                fd = func_8004C318(name, 0, 0);
+                if (fd != -1) {
+                    goto opened;
+                }
+                func_8002804C(j, 0xFF, 0, 0);
+            }
+            goto close;
+        opened:
+            if (list[i].destination != NULL) {
+                for (j = 0; j < 4; j++) {
+                    if (func_8004C398(fd, list[i].destination, func_80028808(file)) != 0) {
+                        break;
+                    }
+                    func_8002804C(j, 0, 0xFF, 0);
+                }
+            }
+        close:
+            for (j = 0; j < 4; j++) {
+                if (func_8004C338(fd) == 0) {
+                    break;
+                }
+                func_8002804C(j, 0, 0, 0xFF);
+            }
+        }
+        D_8004FDF8 = 0;
+        D_8004FDFC = 0;
+        return 0;
+    }
+    D_8004FE1C = 1;
+    func_800413EC(func_8002BA40);
+    func_80040FB4(func_8002A68C);
+    func_80040FCC(func_8002AC24);
+    D_8005A488++;
+    func_8004111C(2, D_80059F10);
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029AFC);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029EB0);
 

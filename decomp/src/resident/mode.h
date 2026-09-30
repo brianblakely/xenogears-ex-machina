@@ -82,13 +82,14 @@ typedef struct {
 
 /* A file-list entry for 80029afc: file index and destination. */
 typedef struct {
-    s16 file;
+    u16 file;
     void *destination;
 } FileRequest;
 
 extern GameData D_8006D634;
 extern GameData *D_8005A39C;
 extern FileRequest D_800625A4[4]; /* party file list, zero-terminated */
+extern FileRequest *D_8004FE0C;   /* the file list being read */
 extern void *D_80065AFC[3];       /* party character file blocks */
 extern void *D_8005A4A0;          /* file 0xa7 block */
 extern void *D_8005A4BC;          /* file 0xa8 block */
@@ -157,6 +158,15 @@ extern s32 D_8004FE4C;
 extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
 extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
 extern u8 D_80059F1C[];     /* CD command result */
+extern s32 D_80059EF8[3];   /* read status words */
+extern u8 D_80059F10[4];    /* CD position of the current read */
+extern s32 D_8004FE00;      /* files in the current list */
+extern void *D_8004FE08;    /* destination of the current read */
+extern s32 D_8004FE10;
+extern s32 D_8004FE34;
+extern s32 D_8004FE38;      /* read mode */
+extern s32 D_8004FE3C;
+extern s32 D_8005A4DC;
 extern s32 D_80059F0C;      /* the file being read */
 
 void func_80028230(u8 *files, u16 *directories, u32 mode);
@@ -177,7 +187,7 @@ s32 func_80028738(s32 file);
 s32 func_80028A60(s32 mode);
 s32 func_800295D8(s32 file, void *destination, s32 a2, s32 a3);
 s32 func_800288EC(s32 file); /* file size rounded up to words */
-s32 func_80029AFC(FileRequest *list, s32 a1, s32 a2);
+s32 func_80029AFC(FileRequest *list, s32 mode, s32 a2);
 
 /* Resident heap. */
 void func_80031A30(void);
@@ -225,9 +235,11 @@ void func_800399D4(s32 sequence); /* release a sequence */
 void func_80039C4C(s32 sequence); /* stop a sequence */
 
 /* PsyQ library. */
+void func_80041430(s32 sector, u8 *position);      /* CdIntToPos */
+s32 func_8004111C(s32 command, u8 *parameter);     /* CdControl */
 s32 func_80040D08(void);                           /* CdInit */
 void func_80040EF4(s32 a0);
-void func_800413EC(s32 a0);
+void func_800413EC(void *callback);
 void func_80040FB4(void *callback);                /* CdReadyCallback */
 void func_80040FCC(void *callback);                /* CdSyncCallback */
 s32 func_80040FE4(s32 command, u8 *parameter, u8 *result); /* CdControlF */

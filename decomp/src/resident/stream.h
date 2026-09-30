@@ -21,4 +21,9 @@ extern StreamRing *D_8004FE30; /* the ring */
 extern StreamSlot *D_8004FE2C; /* its slots */
 extern s32 D_8004FE40;         /* its slot count */
 
+void func_8002A394(s32 mode);
+void func_8002A68C(void);
+void func_8002AC24(void);
+void func_8002BA40(void);
+
 #endif
