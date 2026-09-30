@@ -766,6 +766,8 @@ extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
 extern u16 D_800595D4;   /* portrait palette of even images */
+extern s32 D_801E9B58;   /* field block portrait offset: x */
+extern s32 D_801E9B5C;   /* y */
 extern s32 D_801E9AC8[20];
 extern s32 D_801E9A58[4]; /* marker positions */
 extern s32 D_801E9A68[4];

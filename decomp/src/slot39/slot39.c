@@ -2689,7 +2689,18 @@ void func_801D4EA0(u8 slot) {
     func_800320E8(D_800625A0->portraitMarks[slot]);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4F2C);
+/* Build field block `index`'s frame (sheet 14b + index) at (x, y) and its
+ * character portrait quad. */
+void func_801D4F2C(u8 index, u8 mode, s32 x, s32 y) {
+    MenuFieldBlock *block = D_800625A0->fieldBlocks[index];
+
+    func_8002675C(D_800625A0->sheet, index + 0x14b, block->frameA, D_800625A0->bufferIndex, x, y, 0x1000);
+    func_801E927C(&block->frameB[D_800625A0->bufferIndex]);
+    block->frameB[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    block->frameB[D_800625A0->bufferIndex].clut = (D_800625A0->party->ids[index] & 1) ? D_80059414 : D_800595D4;
+    func_801E920C(&block->frameB[D_800625A0->bufferIndex], (u16)(D_801E9B58 + x), (u16)(D_801E9B5C + y),
+                  (u8)(D_801EA578[index] * 4), (u8)D_801EA5C4[index], 0x48, 13);
+}
 
 /* Lay out the parts of field block `index` at (x, y) from the D_801EA34C
  * sheet images (ffff none). */
