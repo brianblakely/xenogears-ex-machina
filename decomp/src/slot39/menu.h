@@ -942,6 +942,7 @@ extern s32 D_801EA16C[]; /* party window sprite y per row */
 extern s32 D_801EA17C[]; /* portrait panel x per mode */
 extern s32 D_801EA18C[]; /* portrait panel y per mode */
 extern s32 D_801EA578[]; /* character portrait u / 4 per slot */
+extern s32 D_801E9D88[];  /* part panel row y positions */
 extern s32 D_801EA584[]; /* gear portrait u / 4 per slot */
 extern s32 D_801EA5C4[]; /* character portrait v per slot */
 extern u16 D_80059414;   /* portrait palette of odd images */
@@ -1120,6 +1121,10 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+u8 *func_800337E8(u8 id);  /* accessory name */
+u8 *func_80033848(u8 id);  /* weapon name */
+u8 *func_80033A2C(u8 id);  /* gear accessory name */
+u8 *func_80033A5C(u8 id);  /* gear part name */
 u8 *func_80033728(u8 *table, s32 index); /* message of a table */
 u8 *func_80033818(u8 item);  /* item name text */
 u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
@@ -1344,7 +1349,7 @@ void func_801D7CFC(u8 slot, u8 mode, u8 arg2);
 void func_801D7F50(s32 x, s32 y, u8 mode);
 void func_801D8644(u8 slot, s32 x, s32 y, u8 arg3, u8 mode);
 void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode);
-void func_801D8EA4(u8 slot, u8 lower, u8 arg2, u8 mode);
+void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear);
 void func_801D5BA4(s32 x, s32 y);
 void func_801D5CF8(s32 x, s32 y);
 void func_801D32B4(void);

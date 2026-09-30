@@ -5030,7 +5030,135 @@ void func_801D8DE4(u8 slot, u8 lower, u8 arg2, u8 mode) {
     D_800625A0->block35C->buffer = D_800625A0->bufferIndex;
 }
 
+/* Draw the part panel of party slot `slot` on the equipment screen: rows of
+ * part names (weapon and accessories for `mode` 0, the special parts in rows
+ * of four for 1 and 2), from the kept parts with `kept` and from the gear
+ * with `gear`; a character's row 4 shows its portrait instead. */
+#ifdef NON_MATCHING
+/* Nearly matches: the original adds the portrait row's 0x200 offset to the
+ * buffer index before the block address (tpage and clut stores). */
+void func_801D8EA4(u8 slot, u8 mode, u8 kept, u8 gear) {
+    RECT rect;
+    s32 rows;
+    s32 column;
+    s32 base;
+    s32 i;
+    u8 *weapons;
+    u8 *specials;
+    u8 *accessories;
+    u8 *name;
+    u8 *image;
+    u8 load;
+
+    rows = 5;
+    column = 0xd0;
+    base = 0;
+    weapons = D_8006D8A0[D_800625A0->party->ids[slot]].weapons;
+    specials = D_8006D8A0[D_800625A0->party->ids[slot]].specials;
+    accessories = D_8006D8A0[D_800625A0->party->ids[slot]].accessories;
+    if (mode) {
+        rows = 4;
+        column = 0x28;
+        base = 9;
+        if (mode == 1) {
+            base = 5;
+        }
+        D_800625A0->labels360->visible[4] = 0;
+    }
+    if (gear) {
+        weapons = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unkC;
+        specials = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk4;
+        accessories = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk9;
+    }
+    if (kept) {
+        weapons = D_800625A0->labels360->parts[0];
+        specials = D_800625A0->labels360->parts[1];
+        accessories = D_800625A0->labels360->parts[2];
+    }
+    image = func_80031BDC(0x3f6, 0);
+    for (i = 0; i < rows; i++) {
+        switch (i) {
+        case 0:
+            if (mode != 2) {
+                if (!gear) {
+                    D_800625A0->labels360->labels[0].width = func_80034EAC(func_80033848(*weapons), image, 0x24, 0);
+                } else {
+                    D_800625A0->labels360->labels[0].width = func_80034EAC(func_80033A5C(*weapons), image, 0x24, 0);
+                }
+            } else if (!gear) {
+                D_800625A0->labels360->labels[0].width = func_80034EAC(func_80033848(*specials), image, 0x24, 0);
+            } else {
+                D_800625A0->labels360->labels[0].width = func_80034EAC(func_80033A5C(*specials), image, 0x24, 0);
+            }
+            break;
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+            if (i != 4 || gear) {
+                if (mode < 2) {
+                    if (!gear) {
+                        name = func_800337E8(accessories[i - 1]);
+                    } else if (mode == 0) {
+                        if (i == 1) {
+                            D_800625A0->labels360->labels[1].width = func_80034EAC(func_80033A5C(weapons[3]), image, 0x24, 1);
+                            goto shown;
+                        }
+                        name = func_80033A2C(accessories[i - 2]);
+                    } else {
+                        name = func_80033A2C(accessories[i - 1]);
+                    }
+                } else if (!gear) {
+                    name = func_80033848(specials[i]);
+                } else {
+                    name = func_80033A5C(specials[i]);
+                }
+                D_800625A0->labels360->labels[i].width = func_80034EAC(name, image, 0x24, i % 2);
+            }
+            break;
+        }
+    shown:
+        if (i & 1) {
+            load = 1;
+        } else if (!gear) {
+            load = 0;
+        } else if (mode == 0 && i == 4) {
+            load = 1;
+        }
+        if (load) {
+            rect.x = (i / 2 & 1) * 0x20 + 0x140;
+            rect.y = i / 4 * 0xd + 0x27;
+            rect.w = 0x28;
+            rect.h = 0xd;
+            LoadImage(&rect, image);
+            DrawSync(0);
+        }
+        func_801E7C50(&D_800625A0->labels360->labels[i], i, 0xc, 0);
+        if (i == 4 && !gear) {
+            D_800625A0->labels360->labels[4].polys[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+            D_800625A0->labels360->labels[4].polys[D_800625A0->bufferIndex].clut =
+                ((D_8006D8A0[D_800625A0->party->ids[slot]].gear + 11) & 1) ? D_80059414 : D_800595D4;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u0 = D_801EA584[slot] * 4;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v0 = ((s32 *)D_801EA5D0)[slot];
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u1 = D_801EA584[slot] * 4 + 0x60;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v1 = ((s32 *)D_801EA5D0)[slot];
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u2 = D_801EA584[slot] * 4;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v2 = ((s32 *)D_801EA5D0)[slot] + 0xd;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->u3 = D_801EA584[slot] * 4 + 0x60;
+            (D_800625A0->labels360->labels[i].polys + D_800625A0->bufferIndex)->v3 = ((s32 *)D_801EA5D0)[slot] + 0xd;
+            D_800625A0->labels360->labels[i].width = 0x60;
+        }
+        func_801C851C(D_800625A0->labels360->labels[i].verts, column, D_801E9D88[i + base],
+                      D_800625A0->labels360->labels[i].width, 0xd);
+        D_800625A0->labels360->visible[i] = 1;
+    }
+    D_800625A0->labels360->count = D_800625A0->bufferIndex;
+    D_800625A0->party->unk4B = 1;
+    func_800320E8(image);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D8EA4);
+#endif
 
 /* Step party slot `slot` forward (`dir` 0) or back (1) to the next occupied
  * slot, or with `readyOnly` to the next ready one; wraps around the three. */
@@ -6254,7 +6382,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
         }
         D_800625A0->party->unk2F = 1;
         if (kind != 2) {
-            i = D_8006D8A0[D_800625A0->party->ids[slot]].ether - effect->cost;
+            i = D_8006D8A0[D_800625A0->party->ids[slot]].ep - effect->cost;
         } else {
             i = D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 - effect->gearCost;
         }
@@ -6286,7 +6414,7 @@ void func_801DD790(u8 slot, s32 row, u8 kind) {
             }
             if (used) {
                 if (kind != 2) {
-                    D_8006D8A0[D_800625A0->party->ids[slot]].ether -= effect->cost;
+                    D_8006D8A0[D_800625A0->party->ids[slot]].ep -= effect->cost;
                 } else {
                     D_8006DFAC[D_8006D8A0[D_800625A0->party->ids[slot]].gear].unk38 -= effect->gearCost;
                 }
