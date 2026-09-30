@@ -17,7 +17,7 @@ typedef struct {
  * shared BattleGraphics layout still keeps as padding. */
 typedef struct {
     POLY_FT4 gauge[3][6][2];  /* +0x0000 per member gauge glyphs */
-    u8 pad5A0[0x740 - 0x5A0]; /* +0x05A0 eight gauge bars */
+    POLY_GT4 gaugeBars[8];    /* +0x05A0 two per panel slot, one per draw buffer */
     POLY_G4 shade[6];         /* +0x0740 two per member, one per draw buffer */
     POLY_FT4 portrait[3][2];  /* +0x0818 */
     u8 pad908[0x2E08 - 0x908];
@@ -25,11 +25,26 @@ typedef struct {
                                 * fourth is the party-wide label */
     u8 pad3A88[0x835C - 0x3A88];
     MemberPanel panels[3];    /* +0x835C */
+    DR_MODE unk8908[2];       /* +0x8908 per draw buffer */
+    DR_MODE unk8920[2];       /* +0x8920 per draw buffer */
 } PanelGraphics;
 
 #define PANEL_GRAPHICS ((PanelGraphics *)D_800C3EA4)
 
+/* A window's primitives (*800d2e38[window], 0x5a8 bytes). */
+typedef struct {
+    POLY_FT4 fill[8];         /* +0x000 */
+    POLY_FT4 frame[8][2];     /* +0x140 edge pieces, one per draw buffer */
+    POLY_G4 shade[2];         /* +0x3C0 background */
+    DR_MODE mode[2];          /* +0x408 */
+    u8 unk420[0x5A0 - 0x420];
+    s32 fillCount;            /* +0x5A0 */
+    u8 buffer;                /* +0x5A4 */
+    u8 unk5A5[3];
+} WindowPrims;
+
 /* Party panel bytes of the UI state (*800d2d28) kept as padding there. */
+#define UI_BAR_SHOWN(i)     (D_800D2D28->unk7F[i])       /* +0x7F */
 #define UI_STATUS_PARTS(i)  (D_800D2D28->unk70[4 + (i)]) /* +0x74, [3] party-wide */
 #define UI_GAUGE_PARTS(m)   (D_800D2D28->unk70[8 + (m)]) /* +0x78 */
 #define UI_PORTRAIT_BUFFER  (D_800D2D28->unk7F[4])       /* +0x83 */

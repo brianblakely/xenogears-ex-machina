@@ -992,7 +992,36 @@ void func_80073F08(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073FB8);
+/* Add the panel draw modes, the shown gauge bars (while the battle runs)
+ * and every shown window's fill, frame, background and draw mode. */
+void func_80073FB8(void) {
+    s32 i;
+    WindowPrims *window;
+
+    AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->unk8920[D_800CCB04.buffer]);
+    for (i = 0; i < 4; i++) {
+        if (UI_BAR_SHOWN(i) != 0 && D_800C3E4C == 1) {
+            AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->gaugeBars[i * 2 + UI_STATUS_BUFFER(i)]);
+        }
+    }
+    AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->unk8908[D_800CCB04.buffer]);
+    for (i = 0; i < 7; i++) {
+        if (D_800D2D28->windows[i] != 0) {
+            window = (WindowPrims *)D_800D2E38[i];
+            func_800728B8(window->fill, window->fillCount, window->buffer);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[4][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[5][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[6][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[7][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[0][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[1][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[2][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->frame[3][window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->shade[window->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &window->mode[window->buffer]);
+        }
+    }
+}
 
 /* Redraw the party markers flagged in UI +0x7c. */
 void func_800742A0(void) {
