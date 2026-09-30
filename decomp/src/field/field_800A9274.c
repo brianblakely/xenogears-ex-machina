@@ -370,8 +370,8 @@ void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, 
 /* Step a particle: while delayed count down and at launch place it and
  * its velocity in the emitter's frame (0 owner-facing, 1 801e module, 2
  * owner's transform, 3 owner-facing and scaled); afterwards move it,
- * fade its colour, draw it and count its life down. Differs in keeping
- * &m in a saved register for the module and transform frames. */
+ * fade its colour, draw it and count its life down. Differs only in the
+ * scheduling of the unk38 update (the original loads unk38.vx first). */
 void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
     VECTOR v;
     SVECTOR sv;
@@ -412,10 +412,16 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 break;
             case 1:
                 func_801E72CC(&m, &camera, emitter->unk72, emitter->unk74);
-                goto place;
+                SetRotMatrix(&m);
+                SetTransMatrix(&m);
+                sv.vx = emitter->unk0C.vx;
+                sv.vy = emitter->unk0C.vy;
+                sv.vz = emitter->unk0C.vz;
+                func_8004A6DC(&sv, &origin.vx, &flag);
+                emitter->unk50 = 0x1000;
+                break;
             case 2:
                 m = D_800AF880.components.descriptors[emitter->unk52].transform;
-            place:
                 SetRotMatrix(&m);
                 SetTransMatrix(&m);
                 sv.vx = emitter->unk0C.vx;
@@ -459,8 +465,8 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
                 up.vy = v.vy;
                 func_8004998C(&up, &rotated);
                 v.vx += rotated.vx;
-                v.vy = rotated.vy;
                 v.vz += rotated.vz;
+                v.vy = rotated.vy;
                 particle->position.vx = (origin.vx + v.vx) * (0x1000000 / emitter->unk50);
                 particle->position.vy = (origin.vy + v.vy) * (0x1000000 / emitter->unk50);
                 particle->position.vz = (origin.vz + v.vz) * (0x1000000 / emitter->unk50);
