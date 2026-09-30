@@ -2765,27 +2765,182 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095734);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800958C0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095A7C);
+/* Project a selected actor's origin to the screen. */
+void func_80095A7C(s32 *x, s32 *y) {
+    SVECTOR origin;
+    MATRIX m;
+    union {
+        s32 word;
+        DVECTOR xy;
+    } screen;
+    s32 depth;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095B3C);
+    func_8004931C(&D_800AFA64.scaled_world, &D_800AFA64.descriptors[func_8009CD7C(1)].transform, &m);
+    origin.vx = 0;
+    origin.vy = 0;
+    origin.vz = 0;
+    func_80049EFC(&m);
+    func_80049F8C(&m);
+    func_8004A64C(&origin, &screen.xy, &depth, &flag);
+    *y = screen.xy.vy;
+    *x = screen.xy.vx;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095C00);
+extern s32 D_800ADC18;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095CC4);
+/* Yield; continue while a selected actor is well inside the screen,
+ * otherwise jump to operand 2. */
+void func_80095B3C(void) {
+    s32 x;
+    s32 y;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095D6C);
+    func_80095A7C(&x, &y);
+    if (D_800ADC18 != 0) {
+        D_800B0078->pc += 4;
+        return;
+    }
+    if (y > 32 && y < 192 && x > 32 && x < 288) {
+        D_800B0078->pc += 4;
+    } else {
+        D_800B0078->pc = func_800ACDB8(2);
+    }
+    D_800B00C0 = 1;
+}
 
+/* Yield; continue while a selected actor is on screen, otherwise jump to
+ * operand 2. */
+void func_80095C00(void) {
+    s32 x;
+    s32 y;
+
+    func_80095A7C(&x, &y);
+    if (D_800ADC18 != 0) {
+        D_800B0078->pc += 4;
+        return;
+    }
+    if (y > 0 && y < 224 && x > 0 && x < 320) {
+        D_800B0078->pc += 4;
+    } else {
+        D_800B0078->pc = func_800ACDB8(2);
+    }
+    D_800B00C0 = 1;
+}
+
+/* Continue when a selected actor is on collision layer operand 2,
+ * otherwise jump to operand 4. */
+void func_80095CC4(void) {
+    FieldActor *actor;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        if (func_800ACDEC(2) == actor->layer) {
+            D_800B0078->pc += 6;
+            return;
+        }
+    }
+    D_800B0078->pc = func_800ACDB8(4);
+}
+
+/* Continue when the triangle a selected actor stands on has attribute
+ * operand 2, otherwise jump to operand 4. */
+void func_80095D6C(void) {
+    FieldActor *actor;
+    u8 attribute;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        actor = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        attribute = D_800AFA64.triangles[actor->layer][actor->triangle[actor->layer]].attribute;
+        if (func_800ACDEC(2) == attribute) {
+            D_800B0078->pc += 6;
+            return;
+        }
+    }
+    D_800B0078->pc = func_800ACDB8(4);
+}
+
+#ifdef NON_MATCHING
+/* Continue when a selected actor is nearer than operand 2 to the published
+ * actor, otherwise jump to operand 4. */
+void func_80095E48(void) {
+    FieldActor *other;
+    s32 distance;
+
+    if (func_8009CDB4(1) != 0xFF) {
+        other = D_800AFA64.descriptors[func_8009CDB4(1)].actor;
+        distance = func_80099A04(D_800B06B8->actor->position[0].s.whole - other->position[0].s.whole,
+                                 D_800B06B8->actor->position[1].s.whole - other->position[1].s.whole,
+                                 D_800B06B8->actor->position[2].s.whole - other->position[2].s.whole);
+        if (distance < func_800ACDEC(2)) {
+            D_800B0078->pc += 6;
+            return;
+        }
+    }
+    D_800B0078->pc = func_800ACDB8(4);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095E48);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095F24);
+/* Continue when the party's gold is at least the 32-bit operand 1,
+ * otherwise jump to operand 5. */
+void func_80095F24(void) {
+    u8 *operand;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095FB8);
+    operand = &D_800ADC00[D_800B0078->pc];
+    if ((u32)D_8005A39C->gold >=
+        operand[1] + (operand[2] << 8) + (operand[3] << 16) + (operand[4] << 24)) {
+        D_800B0078->pc += 7;
+        return;
+    }
+    D_800B0078->pc = func_800ACDB8(5);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009601C);
+/* Add gold, capped at 9999999. */
+void func_80095FB8(void) {
+    s32 gold;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096078);
+    gold = D_8005A39C->gold + func_800ACDEC(1);
+    if (gold > 9999999) {
+        gold = 9999999;
+    }
+    D_8005A39C->gold = gold;
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800960E4);
+/* Remove gold, not below zero. */
+void func_8009601C(void) {
+    s32 amount;
+    s32 gold;
+
+    amount = func_800ACDEC(1);
+    gold = D_8005A39C->gold;
+    gold -= amount;
+    if (gold < 0) {
+        gold = 0;
+    }
+    D_8005A39C->gold = gold;
+    D_800B0078->pc += 3;
+}
+
+/* Continue when raw operand 1 shares a bit with `bits`, otherwise jump to
+ * operand 3. */
+void func_80096078(s32 bits) {
+    if (func_800ACDB8(1) & bits & 0xFFFF) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
+
+/* Continue when raw operand 1 equals `value`, otherwise jump to operand 3. */
+void func_800960E4(s32 value) {
+    if ((func_800ACDB8(1) & 0xFFFF) == (value & 0xFFFF)) {
+        D_800B0078->pc += 5;
+    } else {
+        D_800B0078->pc = func_800ACDB8(3);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096150);
 

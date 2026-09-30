@@ -11,7 +11,9 @@
 typedef struct FieldActor {
     u32 flags;          /* 000 */
     u32 layer_flags;    /* 004 */
-    u8 unk008[0x01A - 0x008];
+    s16 triangle[4];     /* 008: located triangle per layer */
+    s16 layer;           /* 010 */
+    u8 unk012[0x01A - 0x012];
     s16 height;          /* 01A */
     u8 unk01C[0x020 - 0x01C];
     Fixed position[3];  /* 020: x, y, z */
@@ -61,7 +63,8 @@ typedef struct FieldModel {
 typedef struct FieldDescriptor {
     u8 unk00[0x04];
     FieldModel *model;  /* 04 */
-    u8 unk08[0x4C - 0x08];
+    u8 unk08[0x2C - 0x08];
+    MATRIX transform;    /* 2C */
     FieldActor *actor;  /* 4C */
     SVECTOR rotation;   /* 50 */
     u16 flags;          /* 58 */
@@ -70,7 +73,9 @@ typedef struct FieldDescriptor {
 
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
-    u8 unk0000[0x1932];
+    u8 unk0000[0x1924 - 0x0000];
+    s32 gold;            /* 1924 */
+    u8 unk1928[0x1932 - 0x1928];
     s16 unk1932;         /* 1932 */
     u8 unk1934[0x1D38 - 0x1934];
     u8 count1[100];      /* 1D38: inventory list 1 */
@@ -119,6 +124,13 @@ typedef union {
     u8 bytes[4];
 } Attribute;
 
+/* A 14-byte collision triangle. */
+typedef struct {
+    u8 unk00[0x0C];
+    u8 attribute;       /* 0C */
+    u8 unk0D;
+} Triangle;
+
 /* Field scene block at 800afa64 (meanings from src/reconstruction/
  * original_layout.cpp and src/analysis/field_memory.cpp). Addressed as one
  * aggregate: the original derives member addresses from each other. */
@@ -135,7 +147,7 @@ typedef struct FieldScene {
     void *collision;                /* b18 */
     s32 unkB1C;                     /* b1c */
     Attribute *attributes;          /* b20 */
-    void *triangles[4];             /* b24 */
+    Triangle *triangles[4];         /* b24 */
     void *vertices[4];              /* b34 */
     s32 triangle_counts[4];         /* b44 */
     s16 layer_count;                /* b54 */
