@@ -1369,7 +1369,7 @@ void func_800A9A50(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
     }
     for (i = 0, objects = D_800D3368; i < 32; i++, objects++) {
         if (*objects != NULL) {
-            func_800AAA20(*objects, (ModelList *)&D_800C3D0C, steps, arg3, D_800CCC5C);
+            func_800AAA20(*objects, &D_800C3D0C, steps, arg3, D_800CCC5C);
         }
     }
     if (D_800C3DF8 != 0) {
@@ -1650,16 +1650,16 @@ void *func_800AA820(s32 mode) {
 
 #ifdef NON_MATCHING
 /* Reset a battle object's state. */
-void func_800AA898(BattleObject *object, s32 arg1, s32 field8, u8 **animations) {
+void func_800AA898(BattleObject *object, EffectPool *pool, u8 **scripts, u8 **animations) {
     object->field3C = 0xFFFF;
     object->field5C = 0xFF;
     object->field39 = 0x6B;
-    object->field8 = field8;
-    object->packets = NULL;
-    object->field10 = 0;
+    object->scripts = scripts;
+    object->extra = NULL;
+    object->script = NULL;
     object->animations = animations;
     object->moreAnimations = NULL;
-    object->field2B = 0;
+    object->queueCount = 0;
     object->animation = -1;
     object->field58 = 0;
     object->field35 = 0;
@@ -1689,13 +1689,39 @@ void func_800AA898(BattleObject *object, s32 arg1, s32 field8, u8 **animations) 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AA898);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AA934);
+/* Start target's effect script id on object (ids from 0x50 come from the
+ * target's extra file), or queue it (up to five) while one is running. */
+void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 id) {
+    if (object != NULL && target != NULL) {
+        if (object->queueCount != 0) {
+            if (object->queueCount < 5) {
+                object->queueCount++;
+            }
+            object->queueTargets[object->queueCount - 2] = target->slot;
+            object->queueScripts[object->queueCount - 2] = id;
+            return;
+        }
+        if (id < 0x50) {
+            object->script = target->scripts[id];
+        } else {
+            object->script = target->extra->scripts[id - 0x4E];
+        }
+        object->field42 = 0;
+        object->scriptWait = 0;
+        object->field50 = 0;
+        object->field54 = 0;
+        object->field4C = 0;
+        object->slotMask = D_800C3E30;
+        object->field23 = 0;
+        func_800AAD54(object, pool, -1, 1, 0);
+    }
+}
 
 /* Update a battle object for steps frames: put it on the ground, pose its
  * hierarchy (per-part scales when field37 is set) and animate it (800A0838,
  * 800AE2A4) each step, then run its effects (800AAD54). Returns the combined
  * animation flags. */
-s32 func_800AAA20(BattleObject *object, ModelList *models, s32 steps, s32 arg3, s32 arg4) {
+s32 func_800AAA20(BattleObject *object, EffectPool *pool, s32 steps, s32 arg3, s32 arg4) {
     s32 flags;
     s32 i;
 
@@ -1709,11 +1735,11 @@ s32 func_800AAA20(BattleObject *object, ModelList *models, s32 steps, s32 arg3, 
                 func_8009EF3C(object->hierarchy, object->scale1C);
             }
             for (i = 0; i < steps; i++) {
-                flags |= func_800A0838(models, object->hierarchy, object->field3C, object->scale1C);
-                func_800AE2A4(object, models, arg3);
+                flags |= func_800A0838((ModelList *)pool, object->hierarchy, object->field3C, object->scale1C);
+                func_800AE2A4(object, pool, arg3);
             }
         }
-        func_800AAD54(object, models, flags, steps, arg4);
+        func_800AAD54(object, pool, flags, steps, arg4);
     }
     return flags;
 }
@@ -2164,15 +2190,15 @@ void func_800AFF9C(BattleObject *object) {
     }
 }
 
-/* Free a battle object's packets (and its texture when it has one). */
+/* Free a battle object's extra file (and its texture when it has one). */
 void func_800B0060(BattleObject *object) {
-    if (object->packets != NULL) {
+    if (object->extra != NULL) {
         if (object->hasTexture) {
             func_8003852C(*(u8 **)(object->textureInfo + 8));
             object->hasTexture = 0;
         }
-        func_800320E8(object->packets);
-        object->packets = NULL;
+        func_800320E8(object->extra);
+        object->extra = NULL;
         object->moreAnimations = NULL;
     }
 }

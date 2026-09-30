@@ -25,14 +25,20 @@ typedef struct {
     u8 padC[0x70 - 0xC];
 } ObjectChannel;
 
+/* A battle object's extra file: more effect scripts and animations. */
+typedef struct {
+    u8 pad0[4];
+    u8 **scripts; /* 0x04: from script 0x4E */
+} ExtraFile;
+
 /* A battle object: a stage object or an effect (fields as far as
  * recovered). */
 typedef struct {
     ModelList *field0;    /* 0x00: the object's models (D_800C3ACC), NULL unused */
     ModelPart *hierarchy; /* 0x04 */
-    s32 field8;           /* 0x08 */
-    void *packets;        /* 0x0C */
-    s32 field10;          /* 0x10 */
+    u8 **scripts;         /* 0x08: effect scripts 0-0x4F */
+    ExtraFile *extra;     /* 0x0C: scripts from 0x50, NULL none */
+    u8 *script;           /* 0x10: the running script */
     u8 **animations;      /* 0x14: count, then animations 0-63 */
     u8 **moreAnimations;  /* 0x18: animations from 64 */
     s16 scale1C;          /* 0x1C */
@@ -45,8 +51,9 @@ typedef struct {
     s16 scale26; /* 0x26 */
     s16 scale28; /* 0x28 */
     u8 field2A;  /* 0x2A */
-    u8 field2B;  /* 0x2B */
-    u8 pad2C[0x34 - 0x2C];
+    u8 queueCount; /* 0x2B: the running script and the queued ones (5 at most) */
+    u8 queueTargets[4]; /* 0x2C: queued script k's target slot at [k - 2] */
+    u8 queueScripts[4]; /* 0x30 */
     u8 active;   /* 0x34 */
     u8 field35;  /* 0x35 */
     u8 field36;  /* 0x36 */
@@ -55,9 +62,14 @@ typedef struct {
     u8 field39;  /* 0x39 */
     s16 field3A; /* 0x3A */
     u16 field3C; /* 0x3C */
-    u8 pad3E[0x4A - 0x3E];
+    u8 pad3E[2];
+    u16 scriptWait; /* 0x40 */
+    u16 field42;    /* 0x42 */
+    u8 pad44[0x4A - 0x44];
     u16 flags4A; /* 0x4A */
-    u8 pad4C[0x58 - 0x4C];
+    s32 field4C; /* 0x4C */
+    s32 field50; /* 0x50 */
+    s32 field54; /* 0x54 */
     s16 field58;    /* 0x58: target code (0xFA-0xFF special, 1-127 a slot + 1) */
     s16 targetPart; /* 0x5A: part of the target's hierarchy, 0 its root */
     u8 field5C;     /* 0x5C: parent object, 0xFF none */
@@ -263,8 +275,8 @@ void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool,
 void func_800B00D0(void);
 void func_800AFF9C(BattleObject *object);
 s32 func_800A0838(ModelList *models, ModelPart *root, u16 animation, s16 scale);
-void func_800AE2A4(BattleObject *object, ModelList *models, s32 arg2);
-void func_800AAD54(BattleObject *object, ModelList *models, s32 flags, s32 steps, s32 arg4);
+void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2);
+void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 arg4);
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
 EffectPool *func_800A2234(EffectPool *pool, s32 count);
 SpritePool *func_800A2CA4(SpritePool *pool, s32 count);
