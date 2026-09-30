@@ -17,6 +17,24 @@ typedef struct {
     s16 pad;
 } SVector;
 
+/* PsyQ POLY_FT4 (textured quadrilateral primitive, 0x28 bytes). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} PolyFT4;
+
 /* A model's header (fields as far as the battle uses them). */
 typedef struct {
     u8 pad0[0x34];
@@ -78,6 +96,12 @@ void func_8002CBBC(Model *model);                          /* release a model */
 void func_8009F708(ModelPart *root);
 void func_800A22E8(EffectPool *pool);
 s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
+
+/* Graphics library. */
+void func_80043CB0(PolyFT4 *p);                              /* SetPolyFT4 */
+void func_80043BFC(void *p, s32 abe);                        /* SetSemiTrans */
+u16 func_80043A58(s32 x, s32 y);                             /* GetClut */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);            /* GetTPage */
 
 /* GTE library. */
 void func_8003F738(SVector *angles, Matrix *m);              /* RotMatrix */

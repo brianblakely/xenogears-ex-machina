@@ -72,7 +72,10 @@ typedef struct {
 typedef struct {
     u8 pad0[0x16];
     s16 id;                 /* 0x16: -1 free */
-    u8 pad18[0x7C - 0x18];
+    u8 pad18[0x1E - 0x18];
+    s16 field1E;            /* 0x1E */
+    u8 pad20[0x2C - 0x20];
+    PolyFT4 packets[2];     /* 0x2C: one per frame buffer */
 } SpriteRecord;
 
 /* A pool of sprite records; next is the first record that may be free. */
@@ -103,5 +106,6 @@ s32 func_80048C4C(s32 value);           /* square root */
 void func_8003852C(u8 *texture);
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
+void func_800A2D5C(SpritePool *pool);
 
 #endif

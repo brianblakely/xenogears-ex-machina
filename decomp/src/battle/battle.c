@@ -2902,13 +2902,78 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2ACC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2BB8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2CA4);
+/* Create a pool of count sprite records (and a spare). */
+SpritePool *func_800A2CA4(SpritePool *pool, s32 count) {
+    func_80032498(4, 0);
+    pool->count = count;
+    pool->next = 0;
+    pool->records = func_80031BDC((count + 1) * sizeof(SpriteRecord), 0);
+    if (pool->records != NULL) {
+        func_800A2D5C(pool);
+        return pool;
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2D1C);
+/* Free a sprite pool's records. */
+void func_800A2D1C(SpritePool *pool) {
+    pool->count = 0;
+    pool->next = 0;
+    if (pool->records != NULL) {
+        func_800320E8(pool->records);
+    }
+    pool->records = NULL;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2D5C);
+/* Mark every record of a sprite pool free and set up both of its
+ * semi-transparent quadrilaterals. */
+void func_800A2D5C(SpritePool *pool) {
+    SpriteRecord *record = pool->records;
+    s32 i;
+    s32 j;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2E88);
+    for (i = 0; i < pool->count + 1; i++) {
+        record->id = -1;
+        record->field1E = 0;
+        for (j = 0; j < 2; j++) {
+            func_80043CB0(&record->packets[j]);
+            func_80043BFC(&record->packets[j], 1);
+            record->packets[j].clut = func_80043A58(0, 0x1CD);
+            record->packets[j].tpage = func_80043A1C(0, 1, 0x380, 0);
+            record->packets[j].u0 = 0;
+            record->packets[j].v0 = 0xC1;
+            record->packets[j].u1 = 0;
+            record->packets[j].v1 = 0xC1;
+            record->packets[j].u2 = 0xF;
+            record->packets[j].v2 = 0xC1;
+            record->packets[j].u3 = 0xF;
+            record->packets[j].v3 = 0xC1;
+        }
+        record++;
+    }
+}
+
+/* Take the first free record of a sprite pool with its quadrilaterals'
+ * semi-transparency set to abe, advancing the free index past the records in
+ * use; the spare record when none is free. */
+SpriteRecord *func_800A2E88(SpritePool *pool, s16 abe) {
+    SpriteRecord *record;
+    s16 next = pool->next;
+
+    if (next < pool->count) {
+        record = &pool->records[next];
+        if (record->id == -1) {
+            pool->next = next + 1;
+            while (pool->next < pool->count && pool->records[pool->next].id != -1) {
+                pool->next++;
+            }
+            func_80043BFC(&record->packets[0], abe);
+            func_80043BFC(&record->packets[1], abe);
+            return record;
+        }
+    }
+    return &pool->records[pool->count];
+}
 
 /* Return a record to its sprite pool; its index. */
 s32 func_800A2F94(SpritePool *pool, SpriteRecord *record) {
