@@ -11,5 +11,8 @@ extern u8 D_800D3670;  /* item list column of the chosen item */
 void func_80079840(u8 actor, u8 target);
 void func_80080B64(u8 actor);
 void func_8008AC88(u16 mask, u8 actor);
+u8 func_8008C81C(u8 member);          /* run the combo menu */
+void func_800BAF40(u8 slot, s32 mode);
+extern s8 D_800C4928;
 
 #endif

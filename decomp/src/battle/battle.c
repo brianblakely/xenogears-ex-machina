@@ -5777,7 +5777,57 @@ void func_8008C3F0(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C4A8);
+/* Run the member's combo: choose the steps (8008c81c); when cancelled
+ * reopen the command windows and return 1. Otherwise enter the attack page
+ * against the chosen target (an event 0xf3 first when it reacts while
+ * down), commit each chosen step (action step + 8) as an event, move into
+ * the target's group and wait for the presentation. Returns 0. */
+u8 func_8008C4A8(member)
+u8 member;
+{
+    u8 cancelled = 1;
+    s32 i;
+
+    if (func_8008C81C(member)) {
+        func_800BAF40(member, 0x100);
+        func_8008C360(1);
+        D_800D2D28->unkCB = 1;
+        cancelled = 0;
+    } else {
+        func_800BAF40(member, 0x80);
+        D_800D2D28->unkAF = 0;
+        func_8008C360(1);
+        D_800D366C = 0;
+        func_800BCD98(0);
+        D_800C3EAC->slots[member].defaultTarget = D_800C3E2C;
+        func_800877E0(member, D_800C3EAC->slots[member].defaultTarget);
+        D_800C4928 = 1;
+        func_80087A38(member);
+        if (D_800CCCE8.records[D_800C3EAC->slots[member].defaultTarget].pilot.flags34 & 0x800) {
+            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+            D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
+            D_800C3FE8[D_800C3EAC->eventCount].parameter = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+            D_800C3EAC->eventCount++;
+        }
+        for (i = 0; i < 7; i++) {
+            if (D_800C3EAC->comboSteps[i] != 0xFF) {
+                D_800C3EAC->unk2DC = D_800C3EAC->comboSteps[i] + 8;
+                func_80085CCC(member, func_80089C08(D_800C3EAC->slots[member].defaultTarget), D_800C3EAC->unk2DC - 1);
+                func_80085C88(D_800C3EAC->eventCount);
+                D_800C3FE8[D_800C3EAC->eventCount].type = D_800C3EAC->unk2DC - 1;
+                D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+                D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+                D_800C3EAC->eventCount++;
+            }
+        }
+        func_80080B64(member);
+        func_80087EDC(member, D_800C3EAC->slots[member].defaultTarget);
+        while (D_800C3EAC->eventsDone == 0) {
+            func_800716D8();
+        }
+    }
+    return cancelled;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C81C);
 
