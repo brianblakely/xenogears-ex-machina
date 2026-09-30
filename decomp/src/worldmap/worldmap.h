@@ -1429,4 +1429,38 @@ typedef struct {
     MATRIX frame;      /* 0x150 */
 } TrackScratch;
 
+/* POLY_FT4 with its texture coordinates as (v << 8 | u) words. */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u16 uv0;
+    u16 clut;
+    s16 x1, y1;
+    u16 uv1;
+    u16 tpage;
+    s16 x2, y2;
+    u16 uv2;
+    u16 pad1;
+    s16 x3, y3;
+    u16 uv3;
+    u16 pad2;
+} PolyFT4uv;
+
+#define HORIZON_QUADS ((PolyFT4uv *)D_8009C744)
+
+extern SVECTOR D_8009A300[2][4]; /* horizon quad corners */
+
+/* Scratchpad work area of the horizon renderer. */
+typedef struct {
+    SVECTOR angle;    /* 0x00 */
+    u8 pad8[0x10];
+    MATRIX view;      /* 0x18 */
+    MATRIX rotation;  /* 0x38 */
+    s32 p;            /* 0x58 */
+    s32 flag;         /* 0x5C */
+} HorizonScratch;
+
+#define HORIZON_SCRATCH ((HorizonScratch *)0x1F800000)
+
 #endif

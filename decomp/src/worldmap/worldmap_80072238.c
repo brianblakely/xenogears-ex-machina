@@ -653,7 +653,62 @@ void func_800739B8(void) {
     SetTexWindow(&D_8009D3D8[1], &window);
 }
 
+/* Scroll the horizon texture with the camera yaw, transform the two horizon
+ * quads of this buffer and link them, inside their texture windows, into the
+ * ordering table. */
+#ifdef NON_MATCHING /* original reloads D_8009D7F0 after each texture-coordinate pair */
+void func_80073B04(void) {
+    SVECTOR *corners;
+    u16 u;
+    u16 right;
+    s32 i;
+    s32 offset;
+    s32 otz;
+    u32 *ot;
+
+    corners = D_8009A300[0];
+    i = 0;
+    u = (D_8009BD38.vy >> 2) & 0x7F;
+    right = u | 0x80;
+    HORIZON_QUADS[D_8009D7F0].uv0 = HORIZON_QUADS[D_8009D7F0 + 2].uv0 = u;
+    HORIZON_QUADS[D_8009D7F0].uv1 = HORIZON_QUADS[D_8009D7F0 + 2].uv1 = right;
+    u |= 0x3F00;
+    HORIZON_QUADS[D_8009D7F0].uv2 = HORIZON_QUADS[D_8009D7F0 + 2].uv2 = u;
+    right |= 0x3F00;
+    HORIZON_QUADS[D_8009D7F0].uv3 = HORIZON_QUADS[D_8009D7F0 + 2].uv3 = right;
+    HORIZON_SCRATCH->angle.vz = 0;
+    HORIZON_SCRATCH->angle.vx = 0;
+    HORIZON_SCRATCH->angle.vy = D_8009BD38.vy;
+    offset = 0;
+    func_8004A92C(&HORIZON_SCRATCH->angle, &HORIZON_SCRATCH->rotation);
+    HORIZON_SCRATCH->rotation.t[2] = 0;
+    HORIZON_SCRATCH->rotation.t[1] = 0;
+    HORIZON_SCRATCH->rotation.t[0] = 0;
+    CompMatrix(&D_8009C808, &HORIZON_SCRATCH->rotation, &HORIZON_SCRATCH->view);
+    SetRotMatrix(&HORIZON_SCRATCH->view);
+    SetTransMatrix(&HORIZON_SCRATCH->view);
+    do {
+        PolyFT4uv *quad;
+
+        i++;
+        quad = (PolyFT4uv *)((u8 *)&HORIZON_QUADS[D_8009D7F0] + offset);
+        otz = RotTransPers4(&corners[0], &corners[1], &corners[2], &corners[3], (s32 *)&quad->x0,
+                            (s32 *)&quad->x1, (s32 *)&quad->x2, (s32 *)&quad->x3, &HORIZON_SCRATCH->p,
+                            &HORIZON_SCRATCH->flag);
+        corners += 4;
+        offset += 2 * sizeof(PolyFT4uv);
+    } while (i < 2);
+    if (HORIZON_SCRATCH->flag >= 0) {
+        ot = &D_8009BE3C->ot[otz >> D_80050100];
+        addPrim(ot, &D_8009D3D8[1]);
+        addPrim(ot, &HORIZON_QUADS[D_8009D7F0]);
+        addPrim(ot, &HORIZON_QUADS[D_8009D7F0 + 2]);
+        addPrim(ot, &D_8009D3D8[0]);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073B04);
+#endif
 
 /* Initialise the overlay picture quad (both buffers), its texture page, eight
  * red Gouraud triangles and 64 small tiles. */
