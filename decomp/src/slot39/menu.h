@@ -942,7 +942,7 @@ void func_801D9B08(void);
 void func_801E78C8(s32 file);
 void func_801C9270(s32 port);
 extern u8 D_801EA6F8;
-extern s32 D_801E981C[];          /* card slot cursor: marker position */
+extern s32 D_801E981C[];          /* card slot (port * 16 + n) of each cursor position */
 extern s32 D_801E9894[];          /* marker positions: x */
 extern s32 D_801E9914[];          /* y */
 void func_801C8BEC(void);

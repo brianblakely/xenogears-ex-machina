@@ -1485,9 +1485,105 @@ u8 func_801C93A8(void) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C93A8);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9BCC);
+/* Whether the cursor slot suits `mode`: 0 a file is there, 1 this game's file
+ * is there (both need files listed), 2 its card is present; other modes always
+ * suit. A suitable slot sets the load state to 2. */
+#ifdef NON_MATCHING
+s32 func_801C9BCC(s32 mode) {
+    MenuCard *card;
+    s32 cursor;
+    s32 ok;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9D34);
+    card = D_800625A0->card;
+    ok = 1;
+    cursor = card->cursor;
+    switch (mode) {
+    case 0:
+        if ((*(u32 *)card->scanned & 0xffff0000) && card->present[D_801E981C[cursor] / 16]) {
+            if (card->fileSlots[D_801E981C[cursor]] == 0xff) {
+                ok = 0;
+            }
+        } else {
+            ok = 0;
+        }
+        break;
+    case 1:
+        if ((*(u32 *)card->scanned & 0xffff0000) && card->present[D_801E981C[cursor] / 16] &&
+            card->fileSlots[D_801E981C[cursor]] != 0xff) {
+            if (!card->ours[D_801E981C[cursor]]) {
+                ok = 0;
+            }
+        } else {
+            ok = 0;
+        }
+        break;
+    case 2:
+        if (!card->present[D_801E981C[cursor] / 16]) {
+            ok = 0;
+        }
+        break;
+    }
+    if (ok) {
+        D_800625A0->loadState = 2;
+    }
+    return ok;
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9BCC);
+#endif
+
+/* The first cursor position of the present cards whose slot suits `mode`
+ * (as 801c9bcc), or ff; modes 0 and 1 stop at once when no files are listed.
+ * Sets the load state to 2. */
+s32 func_801C9D34(s32 mode) {
+    s32 found;
+    s32 searching;
+    s32 end;
+    s32 first;
+    s32 i;
+
+    found = 0xff;
+    searching = 1;
+    end = 30;
+    first = D_800625A0->card->present[0] == 0 ? 15 : 0;
+    if (D_800625A0->card->present[1] == 0) {
+        end = 15;
+    }
+    for (i = first; i < end && searching; i++) {
+        switch (mode) {
+        case 0:
+            if (*(u32 *)D_800625A0->card->scanned & 0xffff0000) {
+                if (D_800625A0->card->present[D_801E981C[i] / 16] &&
+                    D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff) {
+                    found = i;
+                    searching = 0;
+                }
+            } else {
+                searching = 0;
+            }
+            break;
+        case 1:
+            if (*(u32 *)D_800625A0->card->scanned & 0xffff0000) {
+                if (D_800625A0->card->present[D_801E981C[i] / 16] &&
+                    D_800625A0->card->fileSlots[D_801E981C[i]] != 0xff && D_800625A0->card->ours[D_801E981C[i]]) {
+                    found = i;
+                    searching = 0;
+                }
+            } else {
+                searching = 0;
+            }
+            break;
+        case 2:
+            if (D_800625A0->card->present[D_801E981C[i] / 16]) {
+                found = i;
+                searching = 0;
+            }
+            break;
+        }
+    }
+    D_800625A0->loadState = 2;
+    return found;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C9EF4);
 
