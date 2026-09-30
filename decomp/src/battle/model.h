@@ -35,6 +35,14 @@ typedef struct {
     u16 pad2;
 } PolyFT4;
 
+/* PsyQ VECTOR. */
+typedef struct {
+    s32 vx;
+    s32 vy;
+    s32 vz;
+    s32 pad;
+} Vector;
+
 /* A model's header (fields as far as the battle uses them). */
 typedef struct {
     u8 pad0[0x34];
@@ -117,6 +125,7 @@ void func_8004A92C(SVector *angles, Matrix *m);              /* RotMatrixYXZ */
 void func_8004920C(Matrix *m0, Matrix *m1, Matrix *out);     /* MulMatrix0 */
 void func_8004931C(Matrix *m0, Matrix *m1, Matrix *out);     /* CompMatrix */
 void func_80049EFC(Matrix *m);                               /* SetRotMatrix */
+void func_8004A4D8(Vector *v0, Vector *v1, Vector *out);     /* OuterProduct0 */
 void func_80049F2C(Matrix *m);                               /* SetLightMatrix */
 void func_80049F8C(Matrix *m);                               /* SetTransMatrix */
 void func_8002C700(Model *model, void *packets, s32 arg2, s32 arg3); /* draw a model */

@@ -3289,7 +3289,43 @@ s32 func_800A5914(SVector *point, s32 triangle, s32 depth) {
     return found;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5A48);
+/* Whether point lies within triangle (a, b, c) in the ground plane: -1 when
+ * it is on the inner side of all three edges (cross products, 8004A4D8),
+ * otherwise 0. */
+s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point) {
+    Vector edge;
+    Vector toPoint;
+    Vector cross;
+
+    edge.vx = b->vx - a->vx;
+    edge.vy = 0;
+    edge.vz = b->vz - a->vz;
+    toPoint.vx = point->vx - a->vx;
+    toPoint.vy = 0;
+    toPoint.vz = point->vz - a->vz;
+    func_8004A4D8(&edge, &toPoint, &cross);
+    if (cross.vy < 0) {
+        return 0;
+    }
+    edge.vx = c->vx - b->vx;
+    edge.vy = 0;
+    edge.vz = c->vz - b->vz;
+    toPoint.vx = point->vx - b->vx;
+    toPoint.vy = 0;
+    toPoint.vz = point->vz - b->vz;
+    func_8004A4D8(&edge, &toPoint, &cross);
+    if (cross.vy < 0) {
+        return 0;
+    }
+    edge.vx = a->vx - c->vx;
+    edge.vy = 0;
+    edge.vz = a->vz - c->vz;
+    toPoint.vx = point->vx - c->vx;
+    toPoint.vy = 0;
+    toPoint.vz = point->vz - c->vz;
+    func_8004A4D8(&edge, &toPoint, &cross);
+    return -(cross.vy >= 0);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5BE8);
 
