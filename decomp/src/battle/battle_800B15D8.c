@@ -13,6 +13,7 @@
 #include "gte.h"
 #include "effect.h"
 #include "objects.h"
+#include "popup.h"
 
 /* Select script index of an effect script file: copy its entry into
  * D_800C3BD0 (relocating its offsets to addresses unless the file is already
@@ -407,13 +408,123 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BDF
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE0DC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE108);
+/* Clear D_800D2D68 and D_800C374C. */
+void func_800BE108(void) {
+    D_800D2D68 = 0;
+    D_800C374C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE11C);
+/* Popup update: spin and shrink it, fade its colour, end it with its life. */
+void func_800BE11C(NumberPopup *popup) {
+    popup->angle.vz += popup->spin;
+    popup->scale.vx += 0x330;
+    popup->scale.vy += 0x330;
+    popup->scale.vz += 0x330;
+    popup->colour.rgbc[0] = func_80021AD8(popup->colour.rgbc[0], -4);
+    popup->colour.rgbc[1] = func_80021AD8(popup->colour.rgbc[1], -4);
+    popup->colour.rgbc[2] = func_80021AD8(popup->colour.rgbc[2], -4);
+    if (--popup->life == 0) {
+        popup->destroy(popup);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE1C4);
+/* Popup drawing: its glyphs six times, each copy turned back 5 more and
+ * shrunk by 0x330, centred on the screen from the geometry offset. */
+void func_800BE1C4(PopupTask *task) {
+    Matrix m;
+    SVector unused; /* allocated in the original frame */
+    SVector angle;
+    Vector offset;
+    Vector scale;
+    s32 x;
+    s32 y;
+    NumberPopup *popup = task->popup;
+    s32 i;
+    s32 j;
+    PopupGlyph *glyph;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE330);
+    ReadGeomOffset(&x, &y);
+    offset.vx = (0xA0 - x) * 2;
+    offset.vy = (0x46 - y) * 2;
+    offset.vz = ReadGeomScreen();
+    D_800C377C = ReadGeomScreen();
+    func_80021B24(&angle, &popup->angle);
+    scale.vx = popup->scale.vx;
+    scale.vy = popup->scale.vy;
+    scale.vz = popup->scale.vz;
+    for (i = 0; i != 6; i++) {
+        func_8003F738(&angle, &m);
+        TransMatrix(&m, &offset);
+        CompMatrix(&D_800C3760, &m, &m);
+        ScaleMatrix(&m, &scale);
+        SetRotMatrix(&m);
+        SetTransMatrix(&m);
+        for (j = 0, glyph = popup->glyphs; j != popup->glyphCount; j++, glyph++) {
+            func_800BD810(glyph, popup->colour.word);
+        }
+        angle.vz -= 5;
+        scale.vx -= 0x330;
+        scale.vy -= 0x330;
+        scale.vz -= 0x330;
+    }
+}
+
+/* Show value as a number popup, coloured by the popup kind D_800D3630 (2
+ * green, 3 magenta, 11 blue, else white), spinning one way at random. */
+void func_800BE330(s32 value) {
+    NumberPopup *popup;
+    u8 text[8];
+    s32 i;
+    s32 x;
+
+    popup = func_8001D1D8(sizeof(NumberPopup), 0, func_800BE11C, func_800BE1C4, 0);
+    popup->spin = -(((rand() & 3) - 2) * 8);
+    if (popup->spin == 0) {
+        popup->spin = 6;
+    }
+    popup->life = 32;
+    popup->colour.rgbc[3] = 0x2E;
+    popup->scale.vx = 0x2000;
+    popup->scale.vy = 0x2000;
+    popup->scale.vz = 0x2000;
+    popup->glyphCount = 0;
+    popup->angle.vx = 0;
+    popup->angle.vy = 0;
+    popup->angle.vz = 0;
+    switch (D_800D3630) {
+    case 11:
+        popup->colour.rgbc[0] = 0;
+        popup->colour.rgbc[1] = 0;
+        popup->colour.rgbc[2] = 0x80;
+        break;
+    case 3:
+        popup->colour.rgbc[0] = 0x80;
+        popup->colour.rgbc[1] = 0;
+        popup->colour.rgbc[2] = 0x80;
+        break;
+    case 2:
+        popup->colour.rgbc[0] = 0;
+        popup->colour.rgbc[1] = 0x80;
+        popup->colour.rgbc[2] = 0;
+        break;
+    default:
+        popup->colour.rgbc[0] = 0x80;
+        popup->colour.rgbc[1] = 0x80;
+        popup->colour.rgbc[2] = 0x80;
+        break;
+    }
+    func_800BE6E8(value, text, 5, 0, 0);
+    x = D_800C3752[text[0]];
+    popup->glyphCount = 0;
+    for (i = 0; i != text[0]; x += 10) {
+        popup->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -8);
+        i++;
+    }
+    for (i = 0; i != popup->glyphCount; i++) {
+        popup->glyphs[i].w--;
+        popup->glyphs[i].h--;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800BE538);
 

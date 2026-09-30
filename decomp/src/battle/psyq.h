@@ -163,5 +163,10 @@ void SetGeomScreen(s32 h);
 s32 ratan2(s32 y, s32 x);
 s32 func_80048D7C(Vector *v, Vector *out);                /* VectorNormal */
 void func_8004A480(Vector *a, Vector *b, Vector *out);   /* OuterProduct12 */
+/* Used by the late battle unit (800BE108-end). */
+void ReadGeomOffset(s32 *ofx, s32 *ofy);
+s32 ReadGeomScreen(void);
+Matrix *TransMatrix(Matrix *m, Vector *v);
+Matrix *ScaleMatrix(Matrix *m, Vector *v);
 
 #endif
