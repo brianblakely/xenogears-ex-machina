@@ -237,6 +237,7 @@ void *func_800289D0(s32 index);
 void func_8002954C(void *entry, void *dst, s32 size, s32 a3, s32 a4);
 
 void func_8007E3CC(u32 *ot);
+extern Glyph D_80091230[]; /* menu font glyphs: digits, capitals, punctuation */
 Glyph *func_8007E8AC(s32 ch);
 s32 func_8007E964(s32 ch);
 s32 func_8007EB6C(u8 *text);

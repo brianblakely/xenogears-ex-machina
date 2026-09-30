@@ -61,7 +61,42 @@ void func_8007E894(s32 x, s32 y) {
     D_800926EC = y;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007E8AC);
+/* The font glyph of a character: digits, capitals and a few punctuation
+ * marks; NULL for anything else. */
+Glyph *func_8007E8AC(s32 ch) {
+    if (ch >= '0' && ch <= '9') {
+        ch -= '0';
+    } else if (ch >= 'A' && ch <= 'Z') {
+        ch -= 'A' - 10;
+    } else {
+        switch (ch) {
+        case '!':
+            ch = 0x24;
+            break;
+        case ':':
+            ch = 0x25;
+            break;
+        case '-':
+            ch = 0x26;
+            break;
+        case '/':
+            ch = 0x27;
+            break;
+        case '#':
+            ch = 0x28;
+            break;
+        case ' ':
+            ch = 0x29;
+            break;
+        case '\'':
+            ch = 0x2A;
+            break;
+        default:
+            return NULL;
+        }
+    }
+    return &D_80091230[ch];
+}
 
 void func_8007E954(s32 value) {
     D_800912DC = value;
