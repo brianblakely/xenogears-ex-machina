@@ -1432,7 +1432,38 @@ s32 func_80081F5C(FieldActor *actor) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081F80);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800821F4);
+extern void func_800245D8(void *model, s32 animation);
+extern u8 D_800ADFB8[];
+/* Start animation `animation` on a descriptor's model (flag 0x40 set):
+ * clears the actor's flag 0x800 outside jumps or on a change; 801e layer
+ * actors (layer bit 13) set their layer frame instead (below 0x10 through
+ * the 800adfb8 table). */
+void func_800821F4(void *model, s32 animation, FieldDescriptor *descriptor) {
+    if (!(descriptor->flags & 0x40)) {
+        return;
+    }
+    if (animation != 3 && D_800B2078.jump_mode == 0) {
+        descriptor->actor->flags &= ~0x800;
+    }
+    if (animation == 0xFF) {
+        animation = 0;
+    }
+    if (animation != D_800B2078.animation_mode) {
+        descriptor->actor->flags &= ~0x800;
+    }
+    if (!(descriptor->actor->layer_flags & 0x2000)) {
+        if (!(descriptor->actor->layer_flags & 0x1000000)) {
+            func_800245D8(model, animation);
+        }
+    } else if (animation < 0x10) {
+        func_801E8330(descriptor->actor->state.bits.layer, 0, D_800ADFB8[animation]);
+        D_800B2078.unk21E4[descriptor->actor->state.bits.layer] = D_800ADFB8[animation];
+    } else {
+        animation -= 0x10;
+        func_801E8330(descriptor->actor->state.bits.layer, 0, animation);
+        D_800B2078.unk21E4[descriptor->actor->state.bits.layer] = animation;
+    }
+}
 
 typedef struct {
     u8 unk00[0x18];
@@ -2008,7 +2039,24 @@ void func_800869B8(void) {
     D_800AE6A0[D_800ADC00[++D_800B0078->pc]]();
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80086A1C);
+/* Scale emitter `emitter`'s per-step delta ((22e8 - 2300) / 2318) by the
+ * steps left once its distance from `position` is covered, into 223c. */
+void func_80086A1C(s32 emitter, s32 *position) {
+    s32 dx;
+    s32 dy;
+    s32 dz;
+    s32 left;
+
+    dx = ((D_800B2078.unk22E8[emitter][0] - D_800B2078.unk2300[emitter][0]) << 16) / D_800B2078.unk2318[emitter];
+    dy = ((D_800B2078.unk22E8[emitter][1] - D_800B2078.unk2300[emitter][1]) << 16) / D_800B2078.unk2318[emitter];
+    dz = ((D_800B2078.unk22E8[emitter][2] - D_800B2078.unk2300[emitter][2]) << 16) / D_800B2078.unk2318[emitter];
+    left = D_800B2078.unk2318[emitter] - func_80099A04(D_800B2078.emitter_position[emitter][0] - WHOLE(position[0]),
+                                                        D_800B2078.emitter_position[emitter][1] - WHOLE(position[1]),
+                                                        D_800B2078.emitter_position[emitter][2] - WHOLE(position[2]));
+    D_800B2078.unk223C[0][emitter] = (dx * left) >> 16;
+    D_800B2078.unk223C[1][emitter] = (dy * left) >> 16;
+    D_800B2078.unk223C[2][emitter] = (dz * left) >> 16;
+}
 
 /* Update the three positional emitters from their actors' positions. */
 void func_80086BA8(void) {
@@ -2367,7 +2415,32 @@ void func_80087FD4(void) {
     D_800B0078->pc++;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008800C);
+extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
+extern void RotTransSV(SVECTOR *in, SVECTOR *out, s32 *flag);
+/* Event: rotate the vector operands 5/7/9 by the rotation built (801e72cc)
+ * from operands 1 and 3 and store the result in variables 0xc, 0xe, 0x10. */
+void func_8008800C(void) {
+    MATRIX m;
+    MATRIX work;
+    SVECTOR in;
+    SVECTOR out;
+    s32 flag;
+    s32 a;
+
+    m.t[0] = m.t[1] = m.t[2] = 0;
+    a = func_8009CF78(1, EVENT_OPERAND_BYTE(0xB));
+    func_801E72CC(&m, &work, a, func_8009CFBC(3, EVENT_OPERAND_BYTE(0xB)));
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    in.vx = func_8009D000(5, EVENT_OPERAND_BYTE(0xB));
+    in.vy = func_8009D044(7, EVENT_OPERAND_BYTE(0xB));
+    in.vz = func_8009D088(9, EVENT_OPERAND_BYTE(0xB));
+    RotTransSV(&in, &out, &flag);
+    func_800A3074(func_800ACDB8(0xC) & 0xFFFF, out.vx);
+    func_800A3074(func_800ACDB8(0xE) & 0xFFFF, out.vy);
+    func_800A3074(func_800ACDB8(0x10) & 0xFFFF, out.vz);
+    D_800B0078->pc += 0x12;
+}
 
 /* Event: restore every character's two gauges to their maxima. */
 void func_80088198(void) {
@@ -2609,7 +2682,26 @@ void func_80088D18(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088D38);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089004);
+extern s32 D_800ADB40;
+/* Event: select emitter record operand 1 and start it with the effect
+ * actor, count operand 3, +02 operand 5 and +04 operand 7; four batch
+ * steps. */
+void func_80089004(void) {
+    s32 index;
+
+    D_800B2078.unk2384 = index = func_800ACDEC(1);
+    D_800B02CC[index].unk24 = 1;
+    D_800B02CC[D_800B2078.unk2384].unk52 = D_800B2078.unk2374;
+    D_800ADB40 = D_800B02CC[D_800B2078.unk2384].unk52;
+    D_800B02CC[D_800B2078.unk2384].unk00 = 0;
+    D_800B02CC[D_800B2078.unk2384].unk76 = 0;
+    D_800B02CC[D_800B2078.unk2384].count = func_800ACDEC(3);
+    D_800B02CC[D_800B2078.unk2384].unk02 = func_800ACDEC(5);
+    D_800B02CC[D_800B2078.unk2384].unk04 = func_800ACDEC(7);
+    func_8008861C();
+    D_800AFC7C += 4;
+    D_800B0078->pc += 9;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089174);
 
@@ -3764,9 +3856,69 @@ void func_8008E570(void) {
     func_8008E498(ACTOR_FLAG_HALF(D_800B0078, 3));
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E59C);
+/* Event: by selector byte 1, set (0-3) or clear (4-7) raw operand 2 in the
+ * low or high half of the actor's flag word or layer flag word. */
+void func_8008E59C(void) {
+    u32 bits = func_800ACDB8(2) & 0xFFFF;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008E718);
+    switch (EVENT_OPERAND_BYTE(1)) {
+    case 0:
+        D_800B0078->flags |= bits;
+        break;
+    case 1:
+        D_800B0078->flags |= bits << 16;
+        break;
+    case 2:
+        D_800B0078->layer_flags |= bits;
+        break;
+    case 3:
+        D_800B0078->layer_flags |= bits << 16;
+        break;
+    case 4:
+        D_800B0078->flags &= ~bits;
+        break;
+    case 5:
+        D_800B0078->flags &= ~(bits << 16);
+        break;
+    case 6:
+        D_800B0078->layer_flags &= ~bits;
+        break;
+    case 7:
+        D_800B0078->layer_flags &= ~(bits << 16);
+        break;
+    }
+    D_800B0078->pc += 4;
+}
+
+/* Draw 800b229c distinct random numbers 1..(800b2298 + 1) into 800b22a0
+ * (none when the count is zero, which also clears the range). */
+void func_8008E718(void) {
+    s32 i;
+    s32 j;
+    s32 pick;
+
+    D_800B2078.unk2294 = D_800B2078.unk2298;
+    if (D_800B2078.unk229C == 0) {
+        D_800B2078.unk2298 = 0;
+        return;
+    }
+    for (i = 0; i < 32; i++) {
+        D_800B2078.unk22A0[i] = 0xFFFF;
+    }
+    for (i = 0; i < D_800B2078.unk229C; i++) {
+    retry:
+        pick = (rand() * (D_800B2078.unk2298 + 1)) >> 15 & 0xFFFF;
+        for (j = 0; j < 32; j++) {
+            if (D_800B2078.unk22A0[j] == pick) {
+                goto retry;
+            }
+        }
+        D_800B2078.unk22A0[i] = pick;
+    }
+    for (i = 0; i < D_800B2078.unk229C; i++) {
+        D_800B2078.unk22A0[i]++;
+    }
+}
 
 /* Event: set 800b2298 and the 800b229c count (at most 32) from operands 1
  * and 3, then apply them (8008e718). */

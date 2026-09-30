@@ -491,10 +491,11 @@ typedef struct {
     s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled actor/descriptor index */
-    u8 unk2270[0x2298 - 0x2270];
+    u8 unk2270[0x2294 - 0x2270];
+    s32 unk2294;               /* 2294 */
     s32 unk2298;               /* 2298 */
     s32 unk229C;               /* 229C: at most 32 */
-    u8 unk22A0[0x22E0 - 0x22A0];
+    u16 unk22A0[32];           /* 22A0: distinct random picks */
     s16 unk22E0;               /* 22E0 */
     s16 emitter_descriptor[3]; /* 22E2: descriptor each emitter follows, or -1 */
     s16 unk22E8[3][4];         /* 22E8 */
