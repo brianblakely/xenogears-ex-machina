@@ -64,7 +64,8 @@ void func_8007008C(s32 unused, void *source, void *destination) {
 
 /* Tear the field down: reset the GPU, flush both draw buffers, then release
  * every model instance, the loaded components, the text windows and the
- * 801e module's buffers. */
+ * 801e module's buffers.
+ * NON_MATCHING: the original computes the buffer index increment into a temporary. */
 #ifdef NON_MATCHING
 void func_800700B0(void) {
     s32 i;
@@ -405,7 +406,8 @@ INCLUDE_RODATA(".local/decomp/field/asm/nonmatchings/field", D_8006FAF0);
  * (palettes, images, models, events, messages, zones, collision, sprites)
  * into heap blocks, place the view, create every descriptor's model
  * instance and actor, then initialise the event layer, the camera goals and
- * the actors' facings. */
+ * the actors' facings.
+ * NON_MATCHING: the original assigns its variables to callee-saved registers differently (one more is used). */
 #ifdef NON_MATCHING
 void func_80070CC8(void) {
     VECTOR unused = {0, -100, 2000, 0};
@@ -1202,7 +1204,8 @@ void func_80072D74(void) {
 /* Per-frame camera update: in mode 1 follow the scripted target and eye
  * interpolations; in modes 0 and 2 follow the controlled actor (mode 2
  * returns to 0 once both goals are reached or after 64 frames), keeping
- * the eye above the floor; then move the camera toward its goals. */
+ * the eye above the floor; then move the camera toward its goals.
+ * NON_MATCHING: the original addresses the camera members without a shared base register. */
 #ifdef NON_MATCHING
 void func_80073230(void) {
     VECTOR position;
@@ -1553,7 +1556,8 @@ void func_8007409C(MATRIX *to, MATRIX *from) {
  * black), look at it from the camera's height and distance, turn the
  * needle toward the controlled actor's heading, and draw the needle,
  * letters, ring and pointer quads; also leave the upright view in the
- * model pass matrix. */
+ * model pass matrix.
+ * NON_MATCHING: the original keeps the matrix addresses in two more callee-saved registers in the letter loop. */
 #ifdef NON_MATCHING
 void func_80074108(void) {
     MATRIX base;
@@ -2340,7 +2344,8 @@ void func_80076A74(FieldSprite *sprite) {
  * actor, release any sprite the descriptor had, build the new one (a
  * character sheet in the slot's VRAM area, a banked sheet, or one of the two
  * small effect kinds), place it at the actor and register the completion
- * callback. */
+ * callback.
+ * NON_MATCHING: the original keeps the descriptor offset in a callee-saved register across the calls. */
 #ifdef NON_MATCHING
 void func_80076AC0(s32 index, s32 slot, void *data, s32 kind, s32 bank, s32 unk, s32 flag) {
     s32 width;
@@ -5399,7 +5404,8 @@ void func_8008110C(void) {
 
 /* Move the party followers: while they idle, return each to its idle
  * animation; otherwise replay the leader's movement history, each follower
- * lagging its own number of records behind, settling when it catches up. */
+ * lagging its own number of records behind, settling when it catches up.
+ * NON_MATCHING: the original hoists the history field base, not the constant 1, out of the loop. */
 #ifdef NON_MATCHING
 void func_800815F0(void) {
     FieldDescriptor *descriptor;
@@ -5804,7 +5810,206 @@ void func_80083994(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008399C);
 
+/* The controlled actor's contacts: against every other actor (its floor
+ * polygon, its box, or its radius) either ride it, stand below it or push
+ * it, recording the lowest ceiling; then remember the ridden actor, and
+ * integrate the actor's own position against the floor.
+ * NON_MATCHING: the original schedules the `linked` reset after the second position load. */
+#ifdef NON_MATCHING
+void func_80084158(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
+    VECTOR next;
+    SVECTOR cell;
+    VECTOR normal;
+    s32 top;
+    s32 x;
+    s32 z;
+    s32 head;
+    u32 entry_flags;
+    s32 linked;
+    s32 status;
+    s32 link;
+    s32 *scratch;
+    FieldActor *other;
+    u32 flags;
+    u32 layer_flags;
+    u32 cleared;
+    s32 bottom;
+    s32 y;
+    s32 lowest;
+    s32 u;
+
+    scratch = (s32 *)func_8007CD3C(0x20);
+    next.vx = actor->position[0];
+    next.vy = actor->position[1];
+    next.vz = actor->position[2];
+    next.vx += actor->unk030[0];
+    linked = 0;
+    next.vy += actor->unk030[1];
+    next.vz += actor->unk030[2];
+    func_800831D0(&cell, &next);
+    x = cell.vx;
+    y = actor->position[1] >> 16;
+    head = y - (u16)actor->height;
+    status = 0;
+    z = cell.vz;
+    lowest = 0x7FFFFFFF;
+    entry_flags = actor->flags;
+    link = actor->unk074;
+    for (u = 0; u < D_800ADBFC; u++) {
+        if (u == index) {
+            continue;
+        }
+        if (D_800AF880.components.descriptors[u].actor->flags & 1) {
+            continue;
+        }
+        other = D_800AF880.components.descriptors[u].actor;
+        flags = other->flags;
+        layer_flags = other->layer_flags;
+        other->layer_flags = layer_flags & 0xFFFF3EFF;
+        if (layer_flags & 0x80) {
+            if (func_80083288(u, D_800AF880.components.descriptors[u].instance->mesh, x, z, &top, &normal) != 0) {
+                other->layer_flags &= 0xFF3FFFFF;
+                continue;
+            }
+            if (D_800C268C == 0) {
+                func_800379C8("POLYCHECK %d\n", u);
+            }
+            other->layer_flags |= 0x100;
+            bottom = top + (u16)other->height;
+            if (actor->unk074 == u) {
+                actor->unk50[0] = normal.vx;
+                actor->unk50[1] = normal.vy;
+                actor->unk50[2] = normal.vz;
+                other->layer_flags |= 0x4000;
+                goto owned;
+            }
+        } else {
+            if (flags & 0x2000) {
+                if (func_8008237C(x, z, (FieldBox *)other, 0) != 0) {
+                    other->layer_flags &= 0xFF3FFFFF;
+                    continue;
+                }
+            } else {
+                scratch[0] = ((other->position[0] + other->unk030[0]) >> 16) - x;
+                scratch[2] = ((other->position[2] + other->unk030[2]) >> 16) - z;
+                scratch[1] = (u16)actor->gravity.s.whole + (u16)other->gravity.s.whole;
+                func_8004A414((VECTOR *)scratch, (VECTOR *)(scratch + 4));
+                if (scratch[4] + scratch[6] >= scratch[5]) {
+                    other->layer_flags &= 0xFF3FFFFF;
+                    continue;
+                }
+            }
+            if (actor->unk014 & 0x400000) {
+                if (D_800C268C == 0) {
+                    func_800379C8("HITOFF\n");
+                }
+                continue;
+            }
+            if ((flags | entry_flags) & 0x80) {
+                continue;
+            }
+            if (D_800B2078.party_processing_mode != 0) {
+                continue;
+            }
+            bottom = other->position[1] >> 16;
+            top = bottom - (u16)other->height;
+            if (actor->unk074 == u) {
+            owned:
+                if ((entry_flags & 0x40800) == 0) {
+                    goto ride;
+                }
+            }
+        }
+        if (bottom >= head && y >= top) {
+            if (y < top + 0x10 || (other->layer_flags & 0x800000)) {
+            ride:
+                lowest = top;
+                other->layer_flags |= 0x800000;
+                actor->unk40[0] = other->unk030[0];
+                actor->unk40[1] = other->unk030[1];
+                status = 2;
+                actor->unk40[2] = other->unk030[2];
+                if ((entry_flags & 0x40800) == 0) {
+                    actor->unk074 = u;
+                    linked = 1;
+                }
+            } else {
+                if (!(flags & 0x10)) {
+                    if (other->unk0E3 < 0x30) {
+                        other->unk0E3 += 2;
+                    }
+                    if (other->unk0E3 > 0x20) {
+                        other->unk40[0] += actor->unk030[0] / 4;
+                        other->unk40[2] += actor->unk030[2] / 4;
+                        actor->unk030[0] = 0;
+                        actor->unk030[1] = 0;
+                        actor->unk030[2] = 0;
+                        actor->unk40[0] = actor->unk030[0] / 4;
+                        actor->unk40[1] = 0;
+                        actor->unk40[2] = actor->unk030[2] / 4;
+                        goto mark;
+                    }
+                }
+                other->unk40[0] = 0;
+                other->unk40[1] = 0;
+                other->unk40[2] = 0;
+                other->unk030[0] = 0;
+                other->unk030[1] = 0;
+                other->unk030[2] = 0;
+                actor->unk030[0] = 0;
+                actor->unk030[1] = 0;
+                actor->unk030[2] = 0;
+                actor->unk40[0] = 0;
+                actor->unk40[1] = 0;
+                actor->unk40[2] = 0;
+            }
+        } else {
+            cleared = other->layer_flags & ~0x100;
+            other->layer_flags = cleared;
+            if (y < top) {
+                other->layer_flags = cleared | 0x800000;
+                if (top < lowest) {
+                    lowest = top;
+                }
+            } else {
+                other->layer_flags = cleared & 0xFF7FFFFF;
+            }
+        }
+    mark:
+        other->layer_flags |= 0x400000;
+    }
+    if (D_800ADB98 != 0) {
+        lowest = D_800ADB94;
+        linked = 0;
+        status++;
+    }
+    if (!linked) {
+        actor->unk074 = 0xFF;
+    } else {
+        D_800AF880.components.descriptors[actor->unk074].actor->layer_flags |= 0x8000;
+        if (link == 0xFF) {
+            if (!(actor->unk134 & 0x80)) {
+                actor->unk110 = func_80031BDC(0xC, 0);
+                actor->unk134 |= 0x80;
+            }
+            ((u16 *)actor->unk110)[0] = D_800AF880.components.descriptors[actor->unk074].rotation.vx;
+            ((u16 *)actor->unk110)[1] = D_800AF880.components.descriptors[actor->unk074].rotation.vy;
+            ((u16 *)actor->unk110)[2] = D_800AF880.components.descriptors[actor->unk074].rotation.vz;
+            ((s16 *)actor->unk110)[4] = func_800825AC(index, actor->unk074);
+        }
+    }
+    if (!(actor->flags & 0x10000) && !(actor->layer_flags & 0x200000)) {
+        func_80084A40(index, lowest, descriptor, actor, status);
+    }
+    if (D_800AF880.components.descriptors[index].model->animation->unk0C == 1) {
+        func_80035DB0();
+        actor->flags &= ~0x800;
+    }
+    func_8007CD60(0x20);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80084158);
+#endif
 
 #ifdef NON_MATCHING
 /* -1 when the actor's motion, collision state or layer prevents idling. */

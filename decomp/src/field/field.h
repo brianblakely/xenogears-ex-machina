@@ -954,6 +954,8 @@ extern void func_80086A1C(s32 emitter, s32 *position);
 extern void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor);
 extern void func_800821F4(void *model, s32 animation, FieldDescriptor *descriptor);
 extern s32 func_8009FA00(s32 character);
+extern void func_800379C8(char *format, ...); /* debug print */
+extern s32 func_80083288(s32 index, FieldMesh *mesh, s32 x, s32 z, s32 *top, VECTOR *normal);
 extern s32 D_800B2360[3]; /* movement history index per party slot (FieldWork +2360) */
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
