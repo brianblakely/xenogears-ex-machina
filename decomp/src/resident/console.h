@@ -3,6 +3,15 @@
 
 #include "common.h"
 #include "psyq/types.h"
+#include "psyq/libgpu.h"
+
+/* Header of a 16-bit TIM file written by the screenshot helper 80035F1C. */
+typedef struct {
+    u32 id;    /* 0x10 */
+    u32 flag;  /* pixel mode: 2, 16-bit */
+    u32 bytes; /* image block size: 12 + pixels */
+    RECT rect;
+} TimHeader;
 
 /* Resident debug text console (the default heap/printf report output).
  * Unknown bytes keep their offsets. */

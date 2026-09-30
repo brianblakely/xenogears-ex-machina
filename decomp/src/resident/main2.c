@@ -1,6 +1,9 @@
 #include "common.h"
 #include "psyq/libapi.h"
+#include "psyq/libc.h"
 #include "psyq/libcd.h"
+#include "psyq/libgpu.h"
+#include "psyq/libsn.h"
 #include "psyq/libspu.h"
 #include "text.h"
 #include "window.h"
@@ -724,9 +727,56 @@ void func_80035E44(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035F1C);
+/* Save a VRAM rectangle as a 16-bit TIM file on the PC file server. */
+void func_80035F1C(RECT *rect, char *name) {
+    TimHeader header;
+    s32 fd;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035FF8);
+    StoreImage(rect, (u_long *)0x80700000);
+    header.id = 0x10;
+    header.flag = 2;
+    header.bytes = rect->w * rect->h * 2 + 12;
+    header.rect.x = rect->x;
+    header.rect.y = rect->y;
+    header.rect.w = rect->w;
+    header.rect.h = rect->h;
+    fd = PCcreat(name, 0);
+    func_8004C470(fd, (char *)&header, sizeof(header));
+    func_8004C470(fd, (char *)0x80700000, rect->w * rect->h * 2);
+    PCclose(fd);
+}
+
+/* Save a VRAM rectangle as a PPM (P6) image on the PC file server.
+ * Returns 0, or -1 when the file cannot be created. */
+s32 func_80035FF8(RECT *rect, char *name) {
+    char header[256];
+    u16 *src;
+    u8 *dst;
+    s32 count;
+    s32 i;
+    s32 fd;
+
+    StoreImage(rect, (u_long *)0x80600000);
+    DrawSync(0);
+    sprintf(header, "P6\r%d %d\r255\r", rect->w, rect->h);
+    count = rect->w * rect->h;
+    src = (u16 *)0x80600000;
+    dst = (u8 *)0x80700000;
+    i = count;
+    while (i--) {
+        *dst++ = (*src & 0x1F) << 3;
+        *dst++ = (*src >> 2) & 0xF8;
+        *dst++ = (*src++ >> 7) & 0xF8;
+    }
+    fd = PCcreat(name, 0);
+    if (fd == -1) {
+        return -1;
+    }
+    func_8004C470(fd, header, strlen(header));
+    func_8004C470(fd, (char *)0x80700000, count * 3);
+    PCclose(fd);
+    return 0;
+}
 
 extern Actuator D_8005A1BC[2];
 
