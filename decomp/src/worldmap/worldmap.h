@@ -952,4 +952,31 @@ typedef struct {
 
 #define RIG_SCRATCH ((RigScratch *)0x1F800000)
 
+/* View setup at D_8009BD40: eye and look-at points and the up vector. */
+typedef struct {
+    SVECTOR eye;
+    SVECTOR at;
+    VECTOR up;
+} ViewSetup;
+
+#define VIEW (*(ViewSetup *)D_8009BD40)
+
+extern SVECTOR D_8009A3F0[]; /* camera path control points; pad -1 ends */
+
+/* Scratchpad work area of the camera path. */
+typedef struct {
+    VECTOR at;        /* 0x00: path point, then look-at */
+    VECTOR eye;       /* 0x10 */
+    s32 distance;     /* 0x20 */
+    u8 pad24[0x7C];
+    SVECTOR points[3]; /* 0xA0 */
+} PathScratch;
+
+#define PATH_SCRATCH ((PathScratch *)0x1F800000)
+
+void func_80076858(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, VECTOR *out);
+s32 func_80094154(VECTOR *a, VECTOR *b);
+void func_80097070(MATRIX *m, SVECTOR *angle);
+void func_8003A2E4(s32 sound, s32 volume);
+
 #endif

@@ -30,7 +30,115 @@ s32 func_8007BA10();
 s32 func_8007BB60();
 s32 func_8007BBEC();
 
+/* Scene camera flight along the path: follow the path points, speed up and
+ * slow down by state, fade out at the end, and set the engine volume from the
+ * eye's distance. */
+#ifdef NON_MATCHING /* scratch base kept in $s1 in the original; allocation differs */
+s32 func_80077E68(s32 index) {
+    WorldmapActor *actor;
+    SVECTOR *points;
+    s32 segment;
+    s32 distance;
+
+    actor = &D_8009BE24[index];
+    segment = actor->u.step >> 12;
+    points = &D_8009A3F0[segment];
+    actor->unk54 = segment;
+    if (points[2].pad != -1) {
+        PATH_SCRATCH->points[0].vx = points[0].vx;
+        PATH_SCRATCH->points[0].vz = points[0].vz;
+        PATH_SCRATCH->points[1].vx = points[1].vx;
+        PATH_SCRATCH->points[1].vz = points[1].vz;
+        PATH_SCRATCH->points[2].vx = points[2].vx;
+        PATH_SCRATCH->points[2].vz = points[2].vz;
+        PATH_SCRATCH->points[0].vy = points[0].vy;
+        PATH_SCRATCH->points[1].vy = points[1].vy;
+        PATH_SCRATCH->points[2].vy = points[2].vy;
+        func_80076858(actor->u.step & 0xFFF, &PATH_SCRATCH->points[0], &PATH_SCRATCH->points[1],
+                      &PATH_SCRATCH->points[2], &PATH_SCRATCH->at);
+        VIEW.at.vz = 0;
+        VIEW.at.vx = 0;
+        VIEW.up.vz = 0;
+        VIEW.up.vx = 0;
+        VIEW.up.vy = -0x1000;
+        VIEW.eye.vx = PATH_SCRATCH->at.vx >> 16;
+        VIEW.eye.vz = -(PATH_SCRATCH->at.vz >> 16);
+        VIEW.eye.vy = PATH_SCRATCH->at.vy >> 16;
+        VIEW.at.vy = D_8009BE28.target.vy >> 12;
+    }
+    func_80097244(D_8009BD40);
+    func_80097070(&D_8009C808, &D_8009BD38);
+    switch (actor->state) {
+    case 0:
+        actor->unk58 += 5;
+        if (--actor->wait < 0) {
+            actor->unk58 = 0x80;
+            actor->state++;
+            PATH_SCRATCH->points[0].vy = -0x20D;
+            PATH_SCRATCH->points[0].vx = (D_8009BE28.target.vx >> 12) + 0x32;
+            PATH_SCRATCH->points[0].vz = (D_8009BE28.target.vz >> 12) - 0x70;
+            func_80089160(8, &PATH_SCRATCH->points[0], NULL);
+        }
+        break;
+    case 1:
+        if (actor->u.step >= 0x6000) {
+            actor->state++;
+        }
+        break;
+    case 2:
+        actor->unk58 -= 2;
+        if (actor->unk58 < 0x19) {
+            actor->unk58 = 0x18;
+            actor->state++;
+        }
+        break;
+    case 3:
+        if (actor->u.step > 0x7FFF) {
+            actor->state++;
+        }
+        break;
+    case 4:
+        actor->unk58 -= 1;
+        if (actor->unk58 < 5) {
+            actor->unk58 = 4;
+            actor->state++;
+        }
+        break;
+    case 5:
+        if (actor->u.step > 0x83FF) {
+            func_8003A3B8((D_8006259C->id << 16) | 0xA4, 0, 0x100);
+            func_80097770(0, 0xD);
+            D_8009CCA4 = 2;
+            D_8009D3CC = 4;
+            actor->wait = 0x50;
+            actor->unk58 = 0;
+            actor->state++;
+        }
+        break;
+    case 6:
+        if (--actor->wait <= 0) {
+            D_8009D554 = 0;
+            D_8009D7CC = 0;
+        }
+        break;
+    }
+    actor->u.step += actor->unk58;
+    if (actor->state < 6) {
+        PATH_SCRATCH->at.vx = VIEW.at.vx << 12;
+        PATH_SCRATCH->at.vy = VIEW.at.vy << 12;
+        PATH_SCRATCH->at.vz = VIEW.at.vz << 12;
+        PATH_SCRATCH->eye.vx = VIEW.eye.vx << 12;
+        PATH_SCRATCH->eye.vy = VIEW.eye.vy << 12;
+        PATH_SCRATCH->eye.vz = VIEW.eye.vz << 12;
+        distance = func_80094154(&PATH_SCRATCH->at, &PATH_SCRATCH->eye) >> 3;
+        PATH_SCRATCH->distance = distance;
+        func_8003A2E4((D_8006259C->id << 16) | 0xA4, 0x87 - distance);
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80077E68);
+#endif
 
 /* Link scene objects 1-13 to object 0 and put the scene camera on the player. */
 s32 func_8007828C(s32 index) {
