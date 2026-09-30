@@ -231,7 +231,6 @@ s32 func_80085C3C(void) {
     return -1;
 }
 
-#ifdef NON_MATCHING
 /* Advance the load of music `music`: its wave chunks, the shared wave bank,
  * the deferred sequence read and the sequence start; 0 once complete, else
  * -1. */
@@ -272,7 +271,7 @@ s32 func_80085C90(s32 music) {
     }
     if (D_8004F358 == 1) {
         if (D_8004F348 == 0) {
-            sequence = func_80039850(D_80062648, 0x7F);
+            sequence = func_80039850(D_80062648);
             D_80062528 = sequence;
             if (D_8004F340 == -1) {
                 func_80039A80(sequence, 0x7F, 0);
@@ -294,9 +293,6 @@ s32 func_80085C90(s32 music) {
     D_8004F36C = 1;
     return 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80085C90);
-#endif
 
 /* Stop and release the cached sequence. */
 void func_80085EEC(void) {

@@ -1036,7 +1036,7 @@ extern s32 D_8004F358; /* sequence read pending */
 extern s32 D_8004F35C; /* sequence active */
 extern s32 D_8004F360; /* wave loaded this request */
 extern u8 D_80062648[]; /* sequence buffer */
-extern s32 func_80039850(void *data, s32 volume);
+extern s32 func_80039850(void *data); /* load a music sequence */
 extern void func_80039A80(s32 sequence, s32 volume, s32);
 extern void func_80039B68(s32 sequence, s32 volume, s32 fade);
 extern s32 D_8004F364;
