@@ -670,11 +670,66 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E0A00);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1258);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E165C);
+/* Stop an image animation: restore its original pixels to VRAM (resident
+ * decoder modes) and release its blocks. */
+void func_801E165C(ImageAnim *anim) {
+    if (anim->active) {
+        if (anim->pixels != NULL) {
+            if (anim->mode < 4) {
+                LoadImage(&anim->rect, anim->pixels);
+            }
+            func_800320E8(anim->pixels);
+            anim->pixels = NULL;
+        }
+        if (anim->pixels2 != NULL) {
+            func_800320E8(anim->pixels2);
+            anim->pixels2 = NULL;
+        }
+        if (anim->work != NULL) {
+            func_800320E8(anim->work);
+            anim->work = NULL;
+        }
+        anim->active = 0;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1708);
+/* Fade an image animation's colours to `level` / 32 of its pixels. */
+void func_801E1708(ImageAnim *anim, s16 level) {
+    u16 *pixel;
+    s32 x;
+    s32 y;
+    s32 value;
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E17B8);
+    pixel = anim->pixels;
+    for (y = 0; y < anim->rect.h; y++) {
+        for (x = 0; x < anim->rect.w; x++) {
+            value = *pixel * level;
+            anim->colors[anim->rect.y + y].c[anim->rect.x + x] = value / 32;
+            pixel++;
+        }
+    }
+}
+
+/* Blend an image animation's colours from its second pixels towards its
+ * first by `level` / 32. */
+void func_801E17B8(ImageAnim *anim, s16 level) {
+    u16 *pixel;
+    u16 *from;
+    s32 x;
+    s32 y;
+    s32 value;
+
+    pixel = anim->pixels;
+    from = anim->pixels2;
+    for (y = 0; y < anim->rect.h; y++) {
+        for (x = 0; x < anim->rect.w; x++) {
+            value = (*pixel - *from) * level;
+            anim->colors[anim->rect.y + y].c[anim->rect.x + x] = *from + value / 32;
+            pixel++;
+            from++;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1880);
 
@@ -682,13 +737,110 @@ INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E1A14);
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E22F8);
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E3438);
+/* Release a record's heap blocks. */
+void func_801E3438(Record24 *record) {
+    if (record->block14 != NULL) {
+        func_800320E8(record->block14);
+        func_800320E8(*record->block1C);
+        func_800320E8(record->block1C);
+        func_800320E8(record->block20);
+        if (record->block18 != NULL) {
+            func_800320E8(record->block18);
+        }
+        record->block14 = NULL;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E34BC);
+/* The frame curve of type `type` (0: cosine). */
+FrameCurve func_801E34BC(s32 type) {
+    switch (type) {
+    case 1:
+        return (FrameCurve)func_801E08D4;
+    case 2:
+        return (FrameCurve)func_801E0938;
+    case 3:
+        return (FrameCurve)func_801E0988;
+    }
+    return (FrameCurve)func_801E0850;
+}
 
+/* Reset an actor's script state to run `entries` with the tables `locals`.
+ * Differs only in where the -1 constant is loaded. */
+#ifdef NON_MATCHING
+void func_801E3534(Actor *actor, SlotPool *pool, s32 *entries, s32 *locals) {
+    s16 none;
+
+    none = -1;
+    actor->h3C = 0xFFFF;
+    actor->b5C = 0xFF;
+    actor->b39 = 0x6B;
+    actor->entries = entries;
+    actor->shared = NULL;
+    actor->pc = 0;
+    actor->locals = locals;
+    actor->globals = NULL;
+    actor->depth = 0;
+    actor->anim_state = none;
+    actor->h58 = 0;
+    actor->b35 = 0;
+    actor->scaled = 0;
+    actor->b38 = 0;
+    actor->h3A = none;
+    actor->h70[0] = 0;
+    actor->h70[1] = 0;
+    actor->h70[2] = 0;
+    actor->h70[3] = 0;
+    actor->h70[4] = 0;
+    actor->h70[5] = 0;
+    actor->h70[6] = 0;
+    actor->h70[7] = 0;
+    actor->h70[8] = 0;
+    actor->h70[9] = 0;
+    actor->h70[10] = 0;
+    actor->h70[11] = 0;
+    actor->h70[12] = 0;
+    actor->h70[13] = 0;
+    actor->h70[14] = 0;
+    actor->h8E = 1;
+    actor->b36 = 0;
+    actor->h1E = none;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E3534);
+#endif
 
+/* Call script entry `entry` of `source` in `actor`: queued while the actor is
+ * already in a call, else run at once from the entry. Differs only in the
+ * scheduling of the +23 byte store. */
+#ifdef NON_MATCHING
+void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry) {
+    if (actor != NULL && source != NULL) {
+        if (actor->depth != 0) {
+            if (actor->depth < 5) {
+                actor->depth++;
+            }
+            actor->queue_source[actor->depth - 2] = source->index;
+            actor->queue_entry[actor->depth - 2] = entry;
+            return;
+        }
+        if (entry < 0x50) {
+            actor->pc = source->entries[entry];
+        } else {
+            actor->pc = source->shared->entries[entry - 0x4E];
+        }
+        actor->h42 = 0;
+        actor->h40 = 0;
+        actor->w50 = 0;
+        actor->w54 = 0;
+        actor->w4C = 0;
+        actor->b23 = 0;
+        actor->mask = D_801E863C;
+        func_801E39F0(actor, pool, -1, 1, 0);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E35D0);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E36BC);
 
@@ -928,13 +1080,13 @@ void func_801E8330(u16 index, u16 mask, s32 arg2) {
     D_801E863C = mask;
     actor->b35 = 0;
     if (D_801E8670[index] != NULL) {
-        func_801E35D0(D_801E8670[index], (s32)D_801E8670[index], &D_801E86A8, arg2);
+        func_801E35D0(D_801E8670[index], D_801E8670[index], &D_801E86A8, arg2);
     }
 }
 
 /* Select actor `index` and bit mask `mask`, then run its script step with
  * `source` unless it is the actor of the mask's lowest bit. */
-void func_801E8394(s32 source, u16 index, u16 mask, s32 arg3) {
+void func_801E8394(Actor *source, u16 index, u16 mask, s32 arg3) {
     Actor *actor;
 
     actor = D_801E8670[index];

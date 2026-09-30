@@ -31,6 +31,16 @@ typedef struct {
     u16 pad2;
 } POLY_FT4;
 
+/* libgpu rectangle. */
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+/* A 32-bit vector. */
+typedef struct {
+    s32 vx, vy, vz;
+} VECTOR;
+
 /* Scratchpad matrix used as a temporary. */
 #define SCRATCH_MATRIX ((MATRIX *)0x1F800000)
 
@@ -121,19 +131,131 @@ typedef struct {
     u8 rest[0x64];
 } Channel;
 
+/* A curve mapping time to a frame: func_801E0850/08d4/0938/0988. */
+typedef s16 (*FrameCurve)(s16 time, s16 divisor, s32 base);
+
+/* A row of three colours. */
+typedef struct {
+    u16 c[3];
+} ColorRow;
+
+/* An image animation (0x30 bytes, an actor's records30): a VRAM rectangle
+ * whose pixels are rebuilt each time the curve selects another frame. */
+typedef struct ImageAnim {
+    struct ImageAnim *target; /* +0: image the frames are copied into */
+    u16 *pixels;            /* +4 */
+    u16 *pixels2;           /* +8 */
+    u16 *work;              /* +c */
+    u8 mode;                /* +10: 0/1 resident decoders, 4/5 fades */
+    u8 dirty;               /* +11 */
+    s16 h12;                /* +12 */
+    u16 time;               /* +14 */
+    s16 speed;              /* +16 */
+    u16 frame;              /* +18 */
+    u16 active;             /* +1a */
+    ColorRow *colors;       /* +1c */
+    s16 divisor;            /* +20 */
+    s16 base;               /* +22 */
+    FrameCurve curve;       /* +24 */
+    RECT rect;              /* +28 */
+} ImageAnim;
+
+/* An owner of a view record whose halfword +14 scripts read. */
+typedef struct {
+    u8 pad0[0x14];
+    u16 h14;
+} View;
+
+typedef struct {
+    u8 pad0[8];
+    View *view;
+} ViewOwner;
+
+/* An actor's 0x24-byte record (records24): four heap blocks. */
+typedef struct {
+    u8 pad0[0x14];
+    void *block14;          /* +14 */
+    void *block18;          /* +18 */
+    void **block1C;         /* +1c */
+    void *block20;          /* +20 */
+} Record24;
+
+/* An animation record: frame count and the offset of its frame data. */
+typedef struct {
+    u8 pad0[2];
+    u16 loop;               /* +2 */
+    u8 pad4[0xE];
+    u16 frames;             /* +12 */
+    s32 data;               /* +14: offset of the frame data */
+} Animation;
+
+/* A table of script entry points. */
+typedef struct {
+    s32 count;
+    s32 *entries;
+} EntryTable;
+
 /* A scene actor: a model hierarchy with its script state. */
 typedef struct Actor {
     ModelList *models;      /* +0 */
     ModelPart *parts;       /* +4 */
-    u8 pad08[0x14];
+    s32 *entries;           /* +8: script entry points */
+    EntryTable *shared;     /* +c: entries 0x50- */
+    s32 pc;                 /* +10: script position */
+    s32 *locals;            /* +14: [0] count, then entries 0-0x3f */
+    s32 *globals;           /* +18: [0] count, then entries 0x40- */
     s16 scale;              /* +1c */
-    u8 pad1E[6];
+    s16 h1E;                /* +1e */
+    u8 index;               /* +20: slot in D_801E8670 */
+    u8 b21;                 /* +21 */
+    u8 b22;                 /* +22 */
+    u8 b23;                 /* +23 */
     s16 size[3];            /* +24: height, x and z extents */
-    u8 pad2A[0xB];
+    u8 reference;           /* +2a: default entry reference (bit 7 flag) */
+    u8 depth;               /* +2b: queued calls + 1 */
+    u8 queue_source[4];     /* +2c */
+    u8 queue_entry[4];      /* +30 */
+    u8 active;              /* +34 */
     u8 b35;                 /* +35 */
-    u8 pad36[0x14];
+    u8 b36;                 /* +36 */
+    u8 scaled;              /* +37: build with the scaled hierarchy update */
+    u8 b38;                 /* +38 */
+    u8 b39;                 /* +39 */
+    s16 h3A;                /* +3a */
+    u16 h3C;                /* +3c */
+    s16 h3E;                /* +3e */
+    u16 h40;                /* +40 */
+    u16 h42;                /* +42 */
+    u16 h44;                /* +44 */
+    u16 h46;                /* +46 */
+    s16 h48;                /* +48 */
     u16 flags;              /* +4a */
-    u8 pad4C[0xC0];
+    s32 w4C;                /* +4c */
+    s32 w50;                /* +50 */
+    s32 w54;                /* +54 */
+    s16 h58;                /* +58 */
+    u8 pad5A[2];
+    u8 b5C;                 /* +5c */
+    u8 pad5D[3];
+    s16 h60;                /* +60 */
+    u8 b62;                 /* +62 */
+    u8 b63;                 /* +63 */
+    u8 pad64[0xC];
+    s16 h70[15];            /* +70 */
+    s16 h8E;                /* +8e */
+    s16 h90[4];             /* +90 */
+    s16 anim_state;         /* +98: -1 none */
+    s16 anim_loop;          /* +9a: -1 no loop */
+    s16 anim_frame;         /* +9c */
+    s16 anim_frames;        /* +9e */
+    u8 *anim_start;         /* +a0 */
+    u8 *anim_pos;           /* +a4 */
+    s32 wA8;                /* +a8 */
+    s32 wAC;                /* +ac */
+    ViewOwner *ownerB0;     /* +b0 */
+    ViewOwner *ownerB4;     /* +b4 */
+    u8 padB8[0x52];
+    u16 mask;               /* +10a */
     u8 channel_count;       /* +10c */
     u8 count10D;            /* +10d: 0x24-byte records at +114 */
     u8 count10E;            /* +10e: 0x30-byte records at +118 */
@@ -161,6 +283,7 @@ void func_8002C700(ModelRecord *model, void *packets, s32 arg2, s32 arg3); /* dr
 void func_8002CBBC(ModelRecord *model);       /* release a model's own packets */
 
 /* libgpu. */
+void LoadImage(RECT *rect, u16 *pixels);     /* LoadImage */
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 u16 GetClut(s32 x, s32 y);                  /* GetClut */
 void SetSemiTrans(void *p, s32 abe);            /* SetSemiTrans */
@@ -178,6 +301,8 @@ MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2); /* CompMatrix */
 void SetRotMatrix(MATRIX *m);                /* SetRotMatrix */
 void SetLightMatrix(MATRIX *m);                /* SetLightMatrix */
 void SetTransMatrix(MATRIX *m);                /* SetTransMatrix */
+
+extern View *D_8005919C;
 
 /* This overlay's data. */
 typedef struct {
@@ -208,7 +333,10 @@ PoolSlot *func_801DF6F0(SlotPool *pool);
 ParticlePool *func_801E0064(ParticlePool *pool, s32 capacity);
 void func_801DF668(SlotPool *pool);
 void func_801E00DC(ParticlePool *pool);
-void func_801E35D0(Actor *actor, s32 source, SlotPool *pool, s32 arg3);
+void func_801E35D0(Actor *actor, Actor *source, SlotPool *pool, s32 entry);
+void func_801E39F0(Actor *actor, SlotPool *pool, s32 arg2, s32 arg3, s32 arg4);
+s32 func_801E67F8(void);
+s32 func_801E08D4(s16 value, s16 divisor, s32 base);
 void func_801E8030(s32 index);
 void func_801E011C(ParticlePool *pool);
 void func_801DF6A8(SlotPool *pool);
