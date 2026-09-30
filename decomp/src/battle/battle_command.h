@@ -12,6 +12,7 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst);
 u8 func_80084750(u8 member);
 u16 func_80084DE4(u16 selection, u16 fallback, u8 member, u8 mode, u8 own);
 
+extern u8 D_800C2050;       /* healing ignores the gear */
 extern u8 *D_800C3160[13]; /* combo input patterns (seven inputs each) */
 extern u8 *D_800C31AC[];   /* per character: the deathblow of each combo */
 

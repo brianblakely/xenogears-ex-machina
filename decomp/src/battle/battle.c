@@ -5172,7 +5172,106 @@ void func_80085454(u8 queue) {
     }
 }
 
+/* Apply the results of event `queue` to every present slot: damage (codes
+ * 0, 5, 7, 8) to HP or, in a gear, gear HP (knocking the slot out at 0),
+ * healing (2) up to the maximum, EP loss (1, 9) and gain (3), fuel loss
+ * (10) and gain (11). A knocked-out slot only joins the 800c48e8 mask.
+ * Slots whose values changed get their refresh flag (+0x2eb). */
+#ifdef NON_MATCHING
+void func_80085618(u8 queue) {
+    s32 slot;
+    s32 left;
+
+    for (slot = 0; slot < 11; slot++) {
+        if (D_800D2DCC.present[slot] == 0) {
+            continue;
+        }
+        if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
+            D_800C48E8 |= func_80089C08(slot);
+            continue;
+        }
+        switch (D_800C3FE8[queue].codes[slot]) {
+        case 0:
+        case 5:
+        case 7:
+        case 8:
+            if (D_800C3EB4[slot].gear == 0) {
+                left = D_800CCCE8.records[slot].pilot.hp - (s16)D_800C3FE8[queue].amounts[slot];
+                if (left > 0) {
+                    D_800CCCE8.records[slot].pilot.hp = left;
+                    break;
+                }
+                D_800CCCE8.records[slot].pilot.hp = 0;
+                D_800C48E8 |= func_80089C08(slot);
+                D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+            } else {
+                left = D_800CCCE8.records[slot].gear.hp - D_800C3FE8[queue].amounts[slot];
+                if (left > 0) {
+                    D_800CCCE8.records[slot].gear.hp = left;
+                    break;
+                }
+                D_800CCCE8.records[slot].gear.hp = 0;
+                D_800C48E8 |= func_80089C08(slot);
+                D_800CCCE8.records[slot].gear.status7C |= 0x8000;
+                D_800CCCE8.records[slot].pilot.status7C |= 0x8000;
+            }
+            if (slot >= 3) {
+                func_800883AC(slot);
+            }
+            break;
+        case 2:
+            if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
+                D_800CCCE8.records[slot].gear.hp += D_800C3FE8[queue].amounts[slot];
+                if (D_800CCCE8.records[slot].gear.maxHp < D_800CCCE8.records[slot].gear.hp) {
+                    D_800CCCE8.records[slot].gear.hp = D_800CCCE8.records[slot].gear.maxHp;
+                }
+            } else {
+                D_800CCCE8.records[slot].pilot.hp += D_800C3FE8[queue].amounts[slot];
+                if (D_800CCCE8.records[slot].pilot.maxHp < D_800CCCE8.records[slot].pilot.hp) {
+                    D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
+                }
+            }
+            break;
+        case 1:
+        case 9:
+            left = (s16)D_800CCCE8.records[slot].pilot.ep - (s16)D_800C3FE8[queue].amounts[slot];
+            if (left > 0) {
+                D_800CCCE8.records[slot].pilot.ep = left;
+            } else {
+                D_800CCCE8.records[slot].pilot.ep = 0;
+            }
+            continue;
+        case 3:
+            if (D_800C3EB4[slot].gear != 0 && D_800C2050 == 0) {
+                continue;
+            }
+            D_800CCCE8.records[slot].pilot.ep += D_800C3FE8[queue].amounts[slot];
+            if (D_800CCCE8.records[slot].pilot.maxEp < D_800CCCE8.records[slot].pilot.ep) {
+                D_800CCCE8.records[slot].pilot.ep = D_800CCCE8.records[slot].pilot.maxEp;
+            }
+            continue;
+        case 10:
+            if (D_800CCCE8.records[slot].gear.fuel - D_800C3FE8[queue].amounts[slot] > 0) {
+                D_800CCCE8.records[slot].gear.fuel -= D_800C3FE8[queue].amounts[slot];
+            } else {
+                D_800CCCE8.records[slot].gear.fuel = 0;
+            }
+            break;
+        case 11:
+            D_800CCCE8.records[slot].gear.fuel += D_800C3FE8[queue].amounts[slot];
+            if (D_800CCCE8.records[slot].gear.maxFuel < D_800CCCE8.records[slot].gear.fuel) {
+                D_800CCCE8.records[slot].gear.fuel = D_800CCCE8.records[slot].gear.maxFuel;
+            }
+            break;
+        default:
+            continue;
+        }
+        D_800C3EAC->reaction[slot] = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
+#endif
 
 /* Revive slot at full HP and clear its timed statuses (the active halves of
  * the status words 0x7c-0x80 and 0x84-0x8c). */
