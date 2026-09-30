@@ -24,8 +24,9 @@ extern s32 D_801CB1E8[]; /* member panel layout x */
 extern s32 D_801CB22C[]; /* party panel layout x */
 extern s32 D_801CB274[]; /* member panel layout y */
 extern s32 D_801CB2B8[]; /* party panel layout y */
-extern u16 D_801CB344[]; /* name slot x */
-extern u16 D_801CB390[]; /* name slot y */
+extern s32 D_801CB344[]; /* name texture x (in 4-pixel units) by character pair */
+extern s32 D_801CB390[]; /* name texture y by character pair */
+extern s32 D_801CB3DC[]; /* status panel layout sprites (0xFFFF none) */
 extern s32 D_801CB404[]; /* file cursor -> slot */
 extern s32 D_801CB47C[]; /* slot x */
 extern s32 D_801CB4FC[]; /* slot y */
@@ -1241,8 +1242,8 @@ void func_801C95A0(s32 index, s32 slot) {
     func_8003F8E8(image, 0x3F6);
     func_80034EAC(D_8006D634[(u8)index / 2 * 2], image, 0x24, 0);
     func_80034EAC(D_8006D634[(u8)index / 2 * 2 + 1], image, 0x24, 1);
-    rect.x = D_801CB344[(u8)slot / 2 * 2] + 0x180;
-    rect.y = D_801CB390[(u8)slot / 2 * 2];
+    rect.x = D_801CB344[(u8)slot / 2] + 0x180;
+    rect.y = D_801CB390[(u8)slot / 2];
     rect.w = 0x28;
     rect.h = 13;
     func_80044894(&rect, image);
@@ -1341,7 +1342,50 @@ void func_801C9908(void) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Build a status panel's layout sprites and face for character `id` in row
+ * `slot` (x/y tables, row height) and its name label quad. */
+void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height) {
+    s32 i;
+
+    panel->layout_count = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_801CB3DC[i] != 0xFFFF) {
+            panel->layout_count +=
+                func_8002675C(D_800625A0->sprite_sheet, D_801CB3DC[i],
+                              &panel->layout[panel->layout_count * 2], D_800625A0->buffer_index,
+                              x[i], row_height * slot + y[i], 0x1000);
+        }
+    }
+    func_8002675C(D_800625A0->sprite_sheet, id + 0x14E, panel->face, D_800625A0->buffer_index,
+                  x[9], row_height * slot + y[9], 0x1000);
+    func_80043CB0(&panel->label[D_800625A0->buffer_index]);
+    (panel->label + D_800625A0->buffer_index)->r0 = 0x80;
+    (panel->label + D_800625A0->buffer_index)->g0 = 0x80;
+    (panel->label + D_800625A0->buffer_index)->b0 = 0x80;
+    func_80043BFC(&panel->label[D_800625A0->buffer_index], 0);
+    panel->label[D_800625A0->buffer_index].tpage = func_80043A1C(0, 0, 0x180, 0);
+    panel->label[D_800625A0->buffer_index].clut = (id & 1) ? D_80059414 : D_800595D4;
+    (panel->label + D_800625A0->buffer_index)->x0 = x[16];
+    (panel->label + D_800625A0->buffer_index)->y0 = y[16] + row_height * slot;
+    (panel->label + D_800625A0->buffer_index)->x1 = x[16] + 0x48;
+    (panel->label + D_800625A0->buffer_index)->y1 = y[16] + row_height * slot;
+    (panel->label + D_800625A0->buffer_index)->x2 = x[16];
+    (panel->label + D_800625A0->buffer_index)->y2 = y[16] + row_height * slot + 13;
+    (panel->label + D_800625A0->buffer_index)->x3 = x[16] + 0x48;
+    (panel->label + D_800625A0->buffer_index)->y3 = y[16] + row_height * slot + 13;
+    (panel->label + D_800625A0->buffer_index)->u0 = D_801CB344[id / 2] * 4;
+    (panel->label + D_800625A0->buffer_index)->v0 = D_801CB390[id / 2];
+    (panel->label + D_800625A0->buffer_index)->u1 = D_801CB344[id / 2] * 4 + 0x48;
+    (panel->label + D_800625A0->buffer_index)->v1 = D_801CB390[id / 2];
+    (panel->label + D_800625A0->buffer_index)->u2 = D_801CB344[id / 2] * 4;
+    (panel->label + D_800625A0->buffer_index)->v2 = D_801CB390[id / 2] + 13;
+    (panel->label + D_800625A0->buffer_index)->u3 = D_801CB344[id / 2] * 4 + 0x48;
+    (panel->label + D_800625A0->buffer_index)->v3 = D_801CB390[id / 2] + 13;
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9A08);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9F80);
 
