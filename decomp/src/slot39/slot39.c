@@ -1986,7 +1986,38 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D36E0);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D397C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3B00);
+/* Grow each shown portrait mark by 32 per frame towards its full size
+ * (centred), marking it done when both sides are full, and draw it. */
+void func_801D3B00(void) {
+    s32 i;
+    MenuMark *mark;
+    u8 full;
+
+    for (i = 0; i < 7; i++) {
+        mark = D_800625A0->portraitMarks[i];
+        if (D_800625A0->party->unk27[i] != 0 && mark->done == 0) {
+            full = 0;
+            if (mark->curW + 0x20 >= mark->w) {
+                mark->curW = mark->w;
+                full = 1;
+            } else {
+                mark->curW = mark->curW + 0x20;
+            }
+            if (mark->curH + 0x20 >= mark->h) {
+                mark->curH = mark->h;
+                full++;
+            } else {
+                mark->curH = mark->curH + 0x20;
+            }
+            if (full == 2) {
+                mark->done = 1;
+            }
+            func_801D4D1C(mark->image, mark->x + (mark->w >> 1) - (mark->curW >> 1),
+                          mark->y + (mark->h >> 1) - (mark->curH >> 1), mark->curW, mark->curH, mark->unk12,
+                          mark->unkC, mark->unk13);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D3C4C);
 

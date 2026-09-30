@@ -74,10 +74,8 @@ typedef struct MenuParty {
     u8 labels[8]; /* C: shown flags of the command labels */
     u8 unk14[6]; /* 14 */
     u8 unk1A[6]; /* 1A */
-    u8 unk20[6]; /* 20 */
-    u8 unk26; /* 26 */
-    u8 unk27[6]; /* 27 */
-    u8 unk2D; /* 2D */
+    u8 unk20[7]; /* 20: per portrait: shown */
+    u8 unk27[7]; /* 27: per portrait mark: shown */
     u8 unk2E; /* 2E */
     u8 unk2F; /* 2F */
     u8 ids[3]; /* 30 */
@@ -488,6 +486,21 @@ typedef struct MenuBlock440 {
     u8 pad1C1[0x3];
 } MenuBlock440;
 
+/* A portrait mark growing to its size (*(state + 380)). */
+typedef struct MenuMark {
+    u16 x; /* 0 */
+    u16 y; /* 2 */
+    u16 w; /* 4 */
+    u16 h; /* 6 */
+    u16 curW; /* 8 */
+    u16 curH; /* A */
+    s32 unkC; /* C */
+    u8 image; /* 10 */
+    u8 done; /* 11 */
+    u8 unk12; /* 12 */
+    u8 unk13; /* 13 */
+} MenuMark;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -533,10 +546,8 @@ typedef struct MenuState {
     MenuBlock358 *block358; /* 358 */
     MenuBlock35C *block35C; /* 35C */
     MenuLabels360 *labels360; /* 360 */
-    u8 *portraits[6]; /* 364 */
-    u8 pad37C[0x4];
-    u8 *portraitMarks[6]; /* 380 */
-    u8 pad398[0x4];
+    u8 *portraits[7]; /* 364 */
+    MenuMark *portraitMarks[7]; /* 380 */
     MenuFieldBlock *fieldBlocks[3]; /* 39C: three 127c-byte field blocks */
     u8 *images[32]; /* 3A8 */
     MenuMarkers *markers; /* 428: marker block (14c bytes) */
@@ -813,6 +824,7 @@ void func_801D2D38(void);
 void func_801D2F4C(u8 message);
 void func_801D3B00(void);
 void func_801D397C(s32 arg0, s32 x, s32 y, s32 w, s32 h, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
+void func_801D4D1C(u8 image, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 arg7);
 void func_801D4EA0(u8 slot);
 void func_801D5ED4(u8 slot, u8 mode);
 void func_801D6194(u8 mode);
