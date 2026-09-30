@@ -1959,7 +1959,31 @@ void func_801D22C4(void) {
     D_800625A0->party->redraw3 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D22F4);
+/* Lay out the screen markers for `mode`: 0 all four and the two extra flags,
+ * 2 all four, 3 the first at the origin, 1 none. */
+void func_801D22F4(u8 mode) {
+    s32 i;
+
+    D_800625A0->party->unk2F = 0;
+    switch (mode) {
+    case 0:
+        D_800625A0->party->unk2F = 1;
+        D_800625A0->markers->unk144[0] = 1;
+        D_800625A0->markers->unk144[1] = 1;
+    case 2:
+        for (i = 0; i < 4; i++) {
+            func_8002675C(D_800625A0->sheet, 0x108, &D_800625A0->markers->polys[i * 2], D_800625A0->bufferIndex,
+                          D_801E9A58[i], D_801E9A68[i], 0x800);
+            D_800625A0->markers->current[i] = D_800625A0->bufferIndex;
+        }
+        break;
+    case 3:
+        func_8002675C(D_800625A0->sheet, 0x108, D_800625A0->markers->polys, D_800625A0->bufferIndex, 0, 0, 0x800);
+        D_800625A0->markers->current[0] = D_800625A0->bufferIndex;
+    case 1:
+        break;
+    }
+}
 
 /* Clear the party block flag at +2f. */
 void func_801D2484(void) {
@@ -2024,7 +2048,42 @@ void func_801D2968(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
 
+/* Open the field menu: the two top portraits, then each party member's and
+ * gear's name image, the command cursor, panels and money window. */
+#ifdef NON_MATCHING
+void func_801D2D38(void) {
+    s32 i;
+    s32 row;
+    void *block;
+
+    if (D_80059460 == 0) {
+        for (row = 0; row < 2; row++) {
+            block = func_80031BDC(0x720, 0);
+            D_800625A0->portraits[row] = block;
+            func_8003F8E8(block, 0x720);
+            block = func_80031BDC(0x18, 0);
+            D_800625A0->portraitMarks[row] = block;
+            func_8003F8E8(block, 0x18);
+            func_801E53CC(row);
+        }
+        func_801C8574(0x5e);
+    }
+    for (i = 0, row = 6; i < 3; i++, row += 2) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            func_801E8DA8(D_800625A0->party->ids[i], i * 2);
+            func_801E8DA8(D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff
+                              ? D_8006D8A0[D_800625A0->party->ids[i]].gear + 11
+                              : 0xff,
+                          row);
+        }
+    }
+    func_801E8474(8, D_801EA19C);
+    func_801D29A8(1, 0);
+    func_801D28FC();
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D2D38);
+#endif
 
 /* Refresh the item/status panels of `slot` for `mode` over two frames. */
 void func_801D2EC0(u8 slot, u8 mode) {
@@ -2090,7 +2149,38 @@ void func_801D3674(void) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D36E0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D397C);
+/* Open portrait window `index` at (x, y) of w x h: grow it in (`grow`) or
+ * lay it out at once. Windows from 2 get their own blocks. */
+void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 arg7, u8 arg8) {
+    MenuMark *mark;
+    void *block;
+
+    if (index >= 2) {
+        block = func_80031BDC(0x720, 0);
+        D_800625A0->portraits[index] = block;
+        func_8003F8E8(block, 0x720);
+        block = func_80031BDC(0x18, 0);
+        D_800625A0->portraitMarks[index] = block;
+        func_8003F8E8(block, 0x18);
+        func_801E53CC(index);
+    }
+    mark = D_800625A0->portraitMarks[index];
+    if (grow) {
+        mark->image = index;
+        mark->done = 0;
+        mark->x = x;
+        mark->y = y;
+        mark->w = w;
+        mark->h = h;
+        mark->curW = 0;
+        mark->curH = 0;
+        D_800625A0->party->unk27[index] = 1;
+        mark->unk12 = arg6;
+        mark->unkC = arg7;
+        return;
+    }
+    func_801D4D1C(index, x, y, w, h, arg6, arg7, arg8);
+}
 
 /* Grow each shown portrait mark by 32 per frame towards its full size
  * (centred), marking it done when both sides are full, and draw it. */
@@ -2149,7 +2239,27 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4688);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D49D0);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4D1C);
+/* Lay out portrait window `index` at (x, y) of w x h and show it. */
+void func_801D4D1C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 frame) {
+    MenuPortrait *portrait;
+
+    portrait = D_800625A0->portraits[index];
+    D_800625A0->party->unk20[index] = 0;
+    func_801C851C(portrait->frameVerts, x, y, w, h);
+    func_801D3DB0(index, x, y, w, h);
+    func_801D3FF8(index, x, y, w);
+    func_801D433C(index, x, y, w, h);
+    func_801D4688(index, x, y, h);
+    func_801D49D0(index, x, y, w, h);
+    if (frame) {
+        func_801D3C4C(index, x, y, w, h);
+    }
+    portrait->unk71D = frame;
+    portrait->unk714 = arg5;
+    portrait->unk718 = arg6;
+    portrait->buffer = D_800625A0->bufferIndex;
+    D_800625A0->party->unk20[index] = 1;
+}
 
 /* Hide and free portrait `slot`. */
 void func_801D4EA0(u8 slot) {

@@ -390,7 +390,8 @@ typedef struct MenuLabels360 {
 typedef struct MenuMarkers {
     POLY_FT4 polys[8]; /* 0 */
     u8 visible[4]; /* 140 */
-    u8 pad144[0x4];
+    u8 unk144[2]; /* 144 */
+    u8 pad146[0x2];
     u8 current[4]; /* 148 */
 } MenuMarkers;
 
@@ -547,6 +548,7 @@ typedef struct MenuMark {
     u8 done; /* 11 */
     u8 unk12; /* 12 */
     u8 unk13; /* 13 */
+    u8 pad14[0x4];
 } MenuMark;
 
 /* A list screen block (*(state + 434)). */
@@ -567,13 +569,15 @@ typedef struct MenuPortrait {
     POLY_FT4 side[2]; /* 3C0 */
     POLY_FT4 top[2]; /* 410 */
     POLY_FT4 bottom[2]; /* 460 */
-    u8 pad4B0[0x200];
+    u8 pad4B0[0x1E0];
+    SVECTOR frameVerts[4]; /* 690 */
     SVECTOR sideVerts[4]; /* 6B0 */
     SVECTOR topVerts[4]; /* 6D0 */
     SVECTOR bottomVerts[4]; /* 6F0 */
     u8 pad710[0x4];
-    u8 unk714; /* 714 */
-    u8 pad715[0x8];
+    s32 unk714; /* 714 */
+    s32 unk718; /* 718 */
+    u8 buffer; /* 71C */
     u8 unk71D; /* 71D */
 } MenuPortrait;
 
@@ -729,6 +733,8 @@ extern u8 D_801EA714;
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
 extern s32 D_801E9AC8[20];
+extern s32 D_801E9A58[4]; /* marker positions */
+extern s32 D_801E9A68[4];
 extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
@@ -903,7 +909,13 @@ void func_801D25E4(void);
 void func_801D2D38(void);
 void func_801D2F4C(u8 message);
 void func_801D3B00(void);
-void func_801D397C(s32 arg0, s32 x, s32 y, s32 w, s32 h, s32 arg5, s32 arg6, s32 arg7, s32 arg8);
+void func_801D397C(u8 index, u16 x, u16 y, u16 w, u16 h, u8 grow, u8 arg6, s32 arg7, u8 arg8);
+void func_801D3C4C(u8 slot, u16 x, u16 y, s32 unused, u16 h);
+void func_801D3DB0(u8 index, u16 x, u16 y, u16 w, u16 h);
+void func_801D3FF8(u8 index, u16 x, u16 y, u16 w);
+void func_801D433C(u8 index, u16 x, u16 y, u16 w, u16 h);
+void func_801D4688(u8 index, u16 x, u16 y, u16 h);
+void func_801D49D0(u8 index, u16 x, u16 y, u16 w, u16 h);
 void func_801D4D1C(u8 image, u16 x, u16 y, u16 w, u16 h, u8 arg5, s32 arg6, u8 arg7);
 void func_801D4EA0(u8 slot);
 void func_801D4F2C(u8 index, u8 mode, s32 x, s32 y);
@@ -957,7 +969,9 @@ void func_801E41C0(MenuTables *tables, u8 gear);
 void func_801E42AC(MenuTables *tables, u8 gear);
 void func_801E4258(MenuTables *tables, u8 gear);
 void func_801E4D10(s32 *save, MenuTables *tables);
+void func_801E53CC(u8 index);
 void func_801E56E8(s32 index);
+void func_801E8DA8(u8 image, u8 row);
 void func_801E5B3C(void);
 void func_801E61B0(void);
 void func_801E6AE8(u8 index, MenuViewSet *set);
