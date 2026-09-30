@@ -1567,19 +1567,76 @@ s32 func_80088754(Vector *vector) {
     return func_80048C4C(square.vx + square.vz);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800887A4);
+/* Distance between two points. */
+s32 func_800887A4(Vector *from, Vector *to) {
+    Vector delta;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088838);
+    delta.vx = to->vx - from->vx;
+    delta.vy = to->vy - from->vy;
+    delta.vz = to->vz - from->vz;
+    gte_ldlvl(&delta);
+    gte_sqr0();
+    gte_stlvnl(&delta);
+    return func_80048C4C(delta.vx + delta.vy + delta.vz);
+}
 
+/* Horizontal (x/z) distance between two points. */
+s32 func_80088838(Vector *from, Vector *to) {
+    Vector delta;
+
+    delta.vx = to->vx - from->vx;
+    delta.vz = to->vz - from->vz;
+    gte_ldlvl(&delta);
+    gte_sqr0();
+    gte_stlvnl(&delta);
+    return func_80048C4C(delta.vx + delta.vz);
+}
+
+/* Set a bit of the resident flag array. Does not match:
+ * the constant 1 is loaded first and registers differ. */
+#ifdef NON_MATCHING
+void func_800888B0(s32 flag) {
+    D_8006F978[flag >> 3] |= 1 << (flag & 7);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800888B0);
+#endif
 
+/* Test a bit of the resident flag array. Does not match:
+ * the constant 1 is loaded first. */
+#ifdef NON_MATCHING
+s32 func_800888E4(s32 flag) {
+    return D_8006F978[flag >> 3] & (1 << (flag & 7));
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800888E4);
+#endif
 
+/* Clear a bit of the resident flag array. Does not match:
+ * the constant 1 is loaded first and registers differ. */
+#ifdef NON_MATCHING
+void func_80088908(s32 flag) {
+    D_8006F978[flag >> 3] &= ~(1 << (flag & 7));
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088908);
+#endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088940);
+/* Set bit 16 of the resident state word. */
+void func_80088940(void) {
+    s32 *state = &D_8006F980;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008895C);
+    *state |= 0x10000;
+}
+
+/* Once bit 16 of the resident state word is set, queue the D_80091A6C
+ * entry (only once). */
+void func_8008895C(void) {
+    if ((D_8006F980 & 0x10000) && D_800927EC == 0) {
+        D_800927EC = 1;
+        D_800928EC[D_80092888++] = &D_80091A6C;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800889C8);
 

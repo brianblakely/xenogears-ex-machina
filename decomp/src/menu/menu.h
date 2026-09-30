@@ -117,4 +117,12 @@ void func_8001996C(s32 arg);
 void func_8004B54C(s32 arg);
 void func_80019ACC(s32 arg); /* resident mode dispatcher */
 
+/* Resident flags. */
+extern u8 D_8006F978[];
+extern s32 D_8006F980;
+extern u8 D_800927EC;
+extern s32 D_80092888;
+extern void **D_800928EC;
+extern u8 D_80091A6C[];
+
 #endif
