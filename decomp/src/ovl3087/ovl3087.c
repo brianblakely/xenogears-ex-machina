@@ -693,29 +693,133 @@ s32 func_801E7C0C(s32 thread, u8 *insn) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7CD0);
+/* Stop the current music and start sequence music (file music + 4) at a
+ * volume. */
+void func_801E7CD0(s16 music, u8 volume) {
+    s32 size;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7DE4);
+    func_8001B66C();
+    if (D_800D3278->musicPlaying != 0) {
+        func_800399D4(D_800C3E54);
+        func_800716D8();
+    }
+    func_8008AB70();
+    size = func_800288EC(music + 4);
+    D_800D3278->music = D_80062648;
+    func_800295D8(music + 4, D_80062648, 0, 0x80);
+    func_8008AC50();
+    func_8003F99C(D_80062648, D_800D3278->music, size);
+    D_800D3278->musicPlaying = 1;
+    D_800D3278->musicId = music;
+    D_800D3278->musicVolume = volume;
+    D_800C3E54 = func_800397FC(D_80062648, volume, 0);
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7E14);
+/* Fade the music to a volume. */
+void func_801E7DE4(s32 volume, s32 time) {
+    func_8003A89C(D_800C3E54, volume, time);
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7E5C);
+/* Opcode 2d: start music at full volume. */
+s32 func_801E7E14(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_801E7CD0(D_800D3278->operands[0], 0x7F);
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7EA4);
+/* Opcode 2e: start music silent. */
+s32 func_801E7E5C(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 1, 0, 1);
+    func_801E7CD0(D_800D3278->operands[0], 0);
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7F08);
+/* Opcode 2f: fade the music to a volume over a time. */
+s32 func_801E7EA4(s32 thread, u8 *insn) {
+    func_801E57F8(insn, 2, 0, 1);
+    D_800D3278->musicVolume = D_800D3278->operands[0];
+    func_801E7DE4(D_800D3278->operands[0], D_800D3278->operands[1]);
+    return 5;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7F70);
+/* Opcode 30: set the music volume to its stored level (operand 0) or
+ * silence it. */
+s32 func_801E7F08(s32 thread, u8 *insn) {
+    u8 volume = 0;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E7FF4);
+    func_801E57F8(insn, 1, 0, 1);
+    if (D_800D3278->operands[0] == 0) {
+        volume = D_800D3278->musicVolume;
+    }
+    func_801E7DE4(volume, 0);
+    return 3;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E8074);
+/* Opcode 31: play a sound effect from the script bank (or the resident
+ * bank when the fourth operand is set). */
+s32 func_801E7F70(s32 thread, u8 *insn) {
+    SoundBank *bank;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E807C);
+    func_801E57F8(insn, 4, 0, 1);
+    if (D_800D3278->operands[3] == 0) {
+        bank = D_800D3278->soundBank;
+    } else {
+        bank = D_8005919C;
+    }
+    func_80039F18((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1],
+                  D_800D3278->operands[2]);
+    return 9;
+}
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E80E8);
+/* Opcode 41: stop a sound effect of the script or resident bank. */
+s32 func_801E7FF4(s32 thread, u8 *insn) {
+    SoundBank *bank;
 
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E80F0);
+    func_801E57F8(insn, 3, 0, 1);
+    if (D_800D3278->operands[2] == 0) {
+        bank = D_800D3278->soundBank;
+    } else {
+        bank = D_8005919C;
+    }
+    func_8003A2E4((bank->id << 16) | D_800D3278->operands[0], D_800D3278->operands[1]);
+    return 7;
+}
+
+/* Opcode 32: no operation. */
+s32 func_801E8074(s32 thread, u8 *insn) {
+    return 1;
+}
+
+/* Opcode 33: stop the music. */
+s32 func_801E807C(s32 thread, u8 *insn) {
+    if (D_800D3278->musicPlaying != 0) {
+        func_80039C4C(D_800C3E54);
+        func_800716D8();
+        func_800399D4(D_800C3E54);
+        D_800D3278->musicPlaying = 0;
+    }
+    return 1;
+}
+
+/* Opcode 34: no operation. */
+s32 func_801E80E8(s32 thread, u8 *insn) {
+    return 1;
+}
+
+/* Opcode 39. */
+s32 func_801E80F0(s32 thread, u8 *insn) {
+    D_800CCD88 = 0;
+    D_8006D940 = 0;
+    func_80088490(0);
+    func_800BAF48(0);
+    D_800C3EAC->unk2EB = 1;
+    D_800CCE42 |= 0x80;
+    func_800883AC(0);
+    D_800D32A1 = 2;
+    D_800C3EA4->unk853D = 2;
+    D_800C3EB8 = 1;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E818C);
 

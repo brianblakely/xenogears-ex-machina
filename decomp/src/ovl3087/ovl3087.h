@@ -65,13 +65,19 @@ typedef struct {
     u8 unk802;
     u8 pad803;
     u8 unk804[16];
-    u8 pad814[4];
-    void *soundBank; /* 0x818 */
-    u8 pad81C[3];
-    u8 unk81F;
-    u8 soundBankLoaded; /* 0x820 */
+    u8 *music;            /* 0x814 music sequence buffer */
+    struct SoundBank *soundBank; /* 0x818 the script's sound effect bank */
+    s16 musicId;          /* 0x81c */
+    u8 musicVolume;       /* 0x81e */
+    u8 musicPlaying;      /* 0x81f */
+    u8 soundBankLoaded;   /* 0x820 */
     u8 pad821[7];
 } ScriptState;
+
+typedef struct SoundBank {
+    u8 pad0[0x14];
+    u16 id; /* 0x14 bank number, the high half of a sound id */
+} SoundBank;
 
 /* The script file: thread count at 0x40, then 16 bytes per thread with its
  * level entry points, then the bytecode. */
@@ -99,7 +105,16 @@ extern ScriptFile *D_800D39D0;
 typedef struct {
     u8 pad0[0x27C8];
     PolyFT4 portrait[2];
+    u8 pad2818[0x853D - 0x2818];
+    u8 unk853D;
 } BattleGraphics;
+
+/* Battle state at pointer 800c3eac, only the field this module uses. */
+typedef struct {
+    u8 pad0[0x2EB];
+    u8 unk2EB;
+} BattleState;
+extern BattleState *D_800C3EAC;
 
 /* Battle UI state (pointer 800d2d28), only the fields this module uses. */
 typedef struct {
@@ -149,8 +164,33 @@ typedef struct {
 } ModelArchive;
 extern ModelArchive *D_801E9C38;
 
+extern u8 D_80062648[];       /* resident music sequence buffer */
+extern s32 D_800C3E54;        /* music sequence handle */
+extern SoundBank *D_8005919C; /* resident sound effect bank */
+extern u8 D_8006D940;
+extern u8 D_800C3EB8;
+extern u8 D_800CCD88;
+extern u8 D_800CCE42;
+extern u8 D_800D32A1;
+
 /* Resident / battle services. */
 void func_8001AC94(void);
+void func_8001B66C(void);
+s32 func_800288EC(s32 file);
+void func_800295D8(s32 file, void *dest, s32 arg2, s32 arg3);
+s32 func_800397FC(u8 *sequence, u8 volume, s32 arg2);
+void func_800399D4(s32 handle);
+void func_80039C4C(s32 handle);
+void func_80039F18(s32 sound, s16 arg1, s16 arg2);
+void func_8003A2E4(s32 sound, u16 arg1);
+void func_8003A89C(s32 handle, s32 volume, s32 time);
+void func_8003F99C(void *src, void *dest, s32 size);
+void func_800716D8(void);
+void func_800883AC(s32 arg);
+void func_80088490(s32 arg);
+void func_8008AB70(void);
+void func_8008AC50(void);
+void func_800BAF48(s32 arg);
 void func_800320E8(void *block);
 void *func_80032E88(void *data, s32 mode);
 s32 func_80076A10(s32 id, PolyFT4 *quads, s16 x, s16 y);
