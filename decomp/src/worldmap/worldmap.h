@@ -568,19 +568,24 @@ void func_80034614(void *window);
 typedef struct {
     s32 unk0;         /* emit timer reload */
     s32 unk4;         /* packed emit timer: low delay, high repeats */
-    s16 unk8;
+    s16 unk8;         /* most live particles */
     s16 unkA;         /* live particles */
-    s16 unkC;
-    s16 unkE;
-    s16 unk10;
-    s16 unk12;
+    s32 life;         /* 0x0C: particle life word (see EFFECT_COUNT) */
+    s16 unk10;        /* emit interval */
+    s16 unk12;        /* frames to the next emission */
     SVECTOR position; /* 0x14 */
     SVECTOR angle;    /* 0x1C */
-    SVECTOR unk24;
-    SVECTOR direction; /* 0x2C */
-    u8 pad34[0x1B];
-    u8 flags;         /* 0x4F: 0x80 active */
-    u8 pad50[4];
+    SVECTOR unk24;    /* 0x24: emission offset */
+    SVECTOR direction; /* 0x2C: target offset */
+    s32 speed;        /* 0x34 */
+    s16 accel[3];     /* 0x38 */
+    s16 pad3E;
+    u16 spread[2];    /* 0x40: offset and target distance range */
+    s32 rot;          /* 0x44: packed particle rotation */
+    s32 spin;         /* 0x48: packed rotation step */
+    u8 rgb[3];        /* 0x4C: particle colour ... */
+    u8 flags;         /* 0x4F: ... whose code byte holds the flags, 0x80 active */
+    s32 fade;         /* 0x50: packed colour step */
 } AreaObject;
 
 /* Short vectors handled as a word (vx, vy) plus vz. */
@@ -607,7 +612,8 @@ typedef struct {
     s16 spin[2];       /* 0x3C */
     s32 colour;        /* 0x40: packed r, g, b and the primitive code */
     s32 fade;          /* 0x44: packed signed r, g, b steps */
-    u8 pad48[4];
+    s16 code;          /* 0x48: primitive code and semi-transparency */
+    s16 pad4A;
 } EffectSlot;
 
 /* Drifting position (0x10 bytes) and its velocity (8 bytes). */
@@ -1607,5 +1613,28 @@ typedef struct {
     u8 pad10[0x90];
     SVECTOR spot;     /* 0xA0 */
 } ShotScratch;
+
+/* Scratchpad work area of the emitters. */
+typedef struct {
+    VECTOR normal;  /* 0x00 */
+    VECTOR random;  /* 0x10 */
+    VECTOR offset;  /* 0x20 */
+    u8 pad30[0xC0];
+    MATRIX m;       /* 0xF0 */
+} EmitScratch;
+
+#define EMIT_SCRATCH ((EmitScratch *)0x1F800000)
+
+/* Scratchpad work area of the party leader. */
+typedef struct {
+    VECTOR target;  /* 0x00 */
+    u8 pad10[0x20];
+    VECTOR start;   /* 0x30 */
+    u8 pad40[0x50];
+    VECTOR probe;   /* 0x90: move probe result */
+    u16 heading;    /* 0xA0 */
+} LeaderScratch;
+
+s32 func_80090A84(WorldmapActor *actor);
 
 #endif

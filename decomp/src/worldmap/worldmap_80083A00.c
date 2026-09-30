@@ -1445,7 +1445,127 @@ void func_80089580(void) {
     }
 }
 
+/* Run the emitters: count down their timers and every interval spawn one
+ * particle into a free effect slot, starting at a random point around the
+ * emitter and flying towards a random point around its target. */
+#ifdef NON_MATCHING /* slot pointer and counter registers swapped in the free-slot search */
+void func_80089748(void) {
+    s32 j;
+    AreaObject *object;
+    EffectSlot *slot;
+    EmitScratch *scratch;
+    s32 i;
+    s32 flags;
+    s32 delay;
+    s32 repeats;
+    s32 distance;
+
+    object = D_8009BCC0;
+    scratch = EMIT_SCRATCH;
+    for (i = 0; i < 0x200; i++, object++) {
+        flags = object->flags;
+        if (!(flags & 0x80)) {
+            continue;
+        }
+        if (flags & 0x10) {
+            delay = object->unk4;
+            repeats = delay >> 16;
+            delay = (s16)delay;
+            if (delay != 0) {
+                delay--;
+                goto store;
+            }
+            if (repeats == 0) {
+                goto expire;
+            }
+            repeats--;
+        }
+        if (object->unk12 != 0) {
+            object->unk12--;
+            goto store;
+        }
+        object->unk12 = object->unk10;
+        if ((((s16 *)&object->life)[1] != 0) & (object->unk8 > 0) & (object->unkA < object->unk8)) {
+            slot = D_8009BDF4;
+            for (j = 0xFF; j != -1; j--) {
+                if (EFFECT_ENABLED(slot) == 0) {
+                    slot->id = i;
+                    slot->timer = object->life;
+                    func_8004A92C(&object->angle, &scratch->m);
+                    ApplyMatrix(&scratch->m, &object->unk24, &scratch->offset);
+                    if (!(flags & 0x20)) {
+                        scratch->random.vy = (rand() & 0xFFF) - 0x800;
+                    } else {
+                        scratch->random.vy = 0;
+                    }
+                    scratch->random.vx = (rand() & 0xFFF) - 0x800;
+                    scratch->random.vz = (rand() & 0xFFF) - 0x800;
+                    func_80048D7C(&scratch->random, &scratch->normal);
+                    if (flags & 4) {
+                        distance = object->spread[0];
+                    } else {
+                        distance = rand() % object->spread[0];
+                    }
+                    slot->position.vx = (scratch->offset.vx << 12) + scratch->normal.vx * distance +
+                                        (object->position.vx << 12);
+                    slot->position.vy = (scratch->offset.vy << 12) + scratch->normal.vy * distance +
+                                        (object->position.vy << 12);
+                    slot->position.vz = (scratch->offset.vz << 12) + scratch->normal.vz * distance +
+                                        (object->position.vz << 12);
+                    ApplyMatrix(&scratch->m, &object->direction, &scratch->offset);
+                    if (!(flags & 0x40)) {
+                        scratch->random.vy = (rand() & 0xFFF) - 0x800;
+                    } else {
+                        scratch->random.vy = 0;
+                    }
+                    scratch->random.vx = (rand() & 0xFFF) - 0x800;
+                    scratch->random.vz = (rand() & 0xFFF) - 0x800;
+                    func_80048D7C(&scratch->random, &scratch->normal);
+                    if (flags & 8) {
+                        distance = object->spread[1];
+                    } else {
+                        distance = rand() % object->spread[1];
+                    }
+                    scratch->normal.vx = (scratch->offset.vx << 12) + scratch->normal.vx * distance +
+                                         (object->position.vx << 12);
+                    scratch->normal.vy = (scratch->offset.vy << 12) + scratch->normal.vy * distance +
+                                         (object->position.vy << 12);
+                    scratch->normal.vz = (scratch->offset.vz << 12) + scratch->normal.vz * distance +
+                                         (object->position.vz << 12);
+                    scratch->normal.vx = (scratch->normal.vx - slot->position.vx) >> 12;
+                    scratch->normal.vy = (scratch->normal.vy - slot->position.vy) >> 12;
+                    scratch->normal.vz = (scratch->normal.vz - slot->position.vz) >> 12;
+                    func_80048D7C(&scratch->normal, &scratch->random);
+                    slot->velocity.vx = (scratch->random.vx * object->speed) >> 12;
+                    slot->velocity.vy = (scratch->random.vy * object->speed) >> 12;
+                    slot->velocity.vz = (scratch->random.vz * object->speed) >> 12;
+                    flags &= 3; /* only the blend mode is used from here */
+                    slot->unk2 = ratan2(scratch->random.vy, scratch->random.vx);
+                    slot->accel.vx = object->accel[0];
+                    slot->accel.vy = object->accel[1];
+                    slot->accel.vz = object->accel[2];
+                    slot->colour = *(s32 *)object->rgb;
+                    slot->fade = object->fade;
+                    *(s32 *)slot->rot = object->rot;
+                    *(s32 *)slot->spin = object->spin;
+                    slot->code = (flags << 5) | 0x9D;
+                    object->unkA++;
+                    goto store;
+                }
+                slot++;
+            }
+        }
+        goto store;
+    expire:
+        object->flags ^= 0x80;
+    store:
+        object->unk4 = (repeats << 16) | delay;
+    }
+    func_80089580();
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089748);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
 
@@ -1577,7 +1697,313 @@ s32 func_8008A5B8(s32 index) {
     return 1;
 }
 
+/* Update the party leader on foot: walk by the pad and record the trail,
+ * gather the others into a vehicle or let them out on command, walk out of
+ * the parked vehicle, and save the return spot and heading. */
+#ifdef NON_MATCHING /* two register choices (probe result, target) differ */
+s32 func_8008A72C(s32 index) {
+    WorldmapActor *actor;
+    WorldmapActor *target;
+    LeaderScratch *scratch;
+    TrailPoint *point;
+    s32 result;
+    s16 hit;
+    s16 k;
+    u16 heading;
+
+    result = 1;
+    scratch = (LeaderScratch *)0x1F800000;
+    actor = &D_8009BE24[index];
+    switch (actor->unk4) {
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 0x28;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 1;
+        break;
+    case 6:
+        actor->unk4 = 0;
+        if (D_8009C170 == ++actor->unk58) {
+            actor->state = 0;
+            D_8009BE10 = 1;
+            D_8009BD04 = 0;
+        }
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+    case 1:
+        if (D_8006F8E5 == 0) {
+            switch (func_80090A84(actor)) {
+            case 2:
+            case 4:
+            case 5:
+                break;
+            case 1:
+                actor->state = 0x40;
+                D_8009D554 = 0;
+                D_8009D7CC = 0;
+                break;
+            case 3:
+                if (D_8009BD60 == 7) {
+                    actor->state = 8;
+                } else {
+                    D_8009BD60 = 4;
+                    actor->state = 0x10;
+                }
+                break;
+            default:
+                if ((actor->motion.vx == 0) & (actor->motion.vy == 0) & (actor->motion.vz == 0)) {
+                    if (((ModelInstance *)actor->handle)->animation != 0) {
+                        func_800245D8(actor->handle, 0);
+                        func_800894C8(0x2F);
+                    }
+                } else {
+                    if (((ModelInstance *)actor->handle)->animation != 1) {
+                        func_800245D8(actor->handle, 1);
+                    }
+                    func_8008C1DC(0x2F, actor, (ActorScratch *)scratch);
+                }
+                hit = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                    D_8009BE10);
+                if (hit == 0) {
+                    actor->motion = scratch->probe;
+                    hit = func_80095414(&actor->position, &actor->motion, &scratch->probe, actor->turn << 12,
+                                        D_8009BE10);
+                    if (hit == 0) {
+                        actor->motion.vz = 0;
+                        actor->motion.vx = 0;
+                    }
+                }
+                if (hit == 1) {
+                    func_8008C040(&scratch->probe, 0x10, 0x20, &D_8009D738, &D_8009BD60);
+                    if (D_8009BD60 == 7) {
+                        hit = D_8009D738 + 3;
+                    } else {
+                        hit = D_8009D738;
+                    }
+                    if ((u16)D_8009B180[hit] != 0) {
+                        actor->position = scratch->probe;
+                        if (actor->motion.vx | actor->motion.vz) {
+                            k = (D_8009D154 + 1) & 0x1F;
+                            point = &D_8009CEC4[k];
+                            D_8009D154 = k;
+                            point->position = actor->position;
+                            point->heading = actor->heading;
+                            func_8007528C();
+                        }
+                    }
+                } else {
+                    func_8008C040(&actor->position, 0x10, 0x20, &D_8009D738, &D_8009BD60);
+                }
+                func_80094238(&actor->position, 0);
+                actor->motion.vz = 0;
+                actor->motion.vy = 0;
+                actor->motion.vx = 0;
+                D_8009D55C.target = actor->position;
+                D_8009D52C = actor->heading;
+                break;
+            }
+            D_8009BD04 = 0;
+            actor->unk24 = 0;
+        } else {
+            actor->unk24 = 1;
+            actor->position.vx = D_8009BE24[4].position.vx;
+            actor->position.vy = D_8009BE24[4].position.vy;
+            actor->position.vz = D_8009BE24[4].position.vz;
+            actor->heading = D_8009BE24[4].heading;
+            func_800894C8(0x2F);
+        }
+        break;
+    case 2:
+    case 3:
+        actor->position.vx = D_8009BE24[7].position.vx;
+        actor->position.vy = D_8009BE24[7].position.vy;
+        actor->position.vz = D_8009BE24[7].position.vz;
+        actor->heading = D_8009BE24[7].heading;
+        break;
+    case 8:
+        if (D_8006F368[1] != 0xFF) {
+            if (D_8006F8E6 == 0) {
+                func_80097770(2, 1);
+                actor[1].unk6 = D_8009BD60;
+                func_80097770(5, 8);
+            } else {
+                func_80097770(5, 1);
+                D_8009BE24[5].unk6 = D_8009BD60;
+            }
+        }
+        actor->state++;
+        break;
+    case 9:
+        if (D_8006F368[2] != 0xFF) {
+            if (D_8006F8E7 == 0) {
+                func_80097770(3, 1);
+                actor[2].unk6 = D_8009BD60;
+                func_80097770(6, 8);
+            } else {
+                func_80097770(6, 1);
+                D_8009BE24[6].unk6 = D_8009BD60;
+            }
+        }
+        actor->state++;
+        break;
+    case 10:
+        if (D_8006F368[0] != 0xFF) {
+            if (func_80097770(4, 8) != 0) {
+                actor->state = 0xD;
+            }
+        } else {
+            actor->state = 0xD;
+        }
+        break;
+    case 0xD:
+        func_800941C4(&actor->position, &D_8009BE24[D_8009BD60].position, &actor->motion, &actor->heading);
+        target = D_8009BD60 + D_8009BE24;
+        actor->u.step = target->position.vx >> 12;
+        actor->unk54 = target->position.vz >> 12;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+        /* fallthrough */
+    case 0xE:
+        if (func_8008BEC8(actor) == 3) {
+            actor->state++;
+        }
+        D_8009D55C.target = actor->position;
+        D_8009D52C = actor->heading;
+        func_8008C1DC(index + 0x2E, actor, (ActorScratch *)scratch);
+        break;
+    case 0xF:
+        if (func_80097770(D_8009BD60, 4) != 0) {
+            actor->unk24 = 1;
+            actor->state = 2;
+            func_800894C8(0x2F);
+        }
+        break;
+    case 0x10:
+        if (D_8006F368[1] != 0xFF) {
+            if (func_80097770(2, 1) != 0) {
+                actor[1].unk6 = 5;
+                actor->state++;
+            }
+        } else {
+            actor->state++;
+        }
+        break;
+    case 0x11:
+        if (D_8006F368[2] != 0xFF) {
+            if (func_80097770(3, 1) != 0) {
+                actor[2].unk6 = 6;
+                actor->state++;
+            }
+        } else {
+            actor->state++;
+        }
+        break;
+    case 0x12:
+        point = D_8009CEC4;
+        D_8009D154 = 0;
+        scratch->start.vx = D_8006EF8E[0].x << 12;
+        scratch->start.vz = D_8006EF8E[0].z << 12;
+        scratch->start.vy = func_80093978(scratch->start.vx, scratch->start.vz);
+        scratch->heading = D_8006EE54.unk5A;
+        k = 0x1F;
+        do {
+            point->position = scratch->start;
+            point->heading = scratch->heading;
+            point++;
+        } while (--k != -1);
+        actor->state = 0xD;
+        break;
+    case 0x28:
+        actor->position.vx = D_8006EF8E[0].x << 12;
+        actor->position.vz = D_8006EF8E[0].z << 12;
+        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        heading = D_8006EE54.unk5A;
+        actor->unk5C = heading;
+        actor->heading = heading;
+        scratch->target.vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
+        scratch->target.vz = actor->position.vz + -func_8003F8CC(actor->heading) * 0x30;
+        func_800941C4(&actor->position, &scratch->target, &actor->motion, &actor->heading);
+        actor->u.step = scratch->target.vx >> 12;
+        actor->unk54 = scratch->target.vz >> 12;
+        actor->unk24 = 0;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+        break;
+    case 0x29:
+        if (func_8008BEC8(actor) == 3) {
+            func_800245D8(actor->handle, 0);
+            actor->motion.vz = 0;
+            actor->motion.vy = 0;
+            actor->motion.vx = 0;
+            actor->state++;
+        }
+        D_8009D55C.target = actor->position;
+        D_8009D52C = actor->heading;
+        break;
+    case 0x2A:
+        point = D_8009CEC4;
+        D_8006F8E5 = 0;
+        actor->unk58 = 1;
+        D_8009D154 = 0;
+        scratch->target = actor->position;
+        scratch->heading = actor->heading;
+        k = 0x1F;
+        do {
+            point->position = scratch->target;
+            point->heading = scratch->heading;
+            point++;
+        } while (--k != -1);
+        actor->state++;
+        /* fallthrough */
+    case 0x2B:
+        switch (D_8009C170) {
+        case 1:
+            actor->state = 1;
+            break;
+        case 2:
+            if (D_8006F8E6 == 0) {
+                actor->state++;
+            }
+            break;
+        case 3:
+            if ((D_8006F8E6 | D_8006F8E7) == 0) {
+                actor->state++;
+            }
+            break;
+        }
+        break;
+    case 0x2C:
+        if (D_8006F368[1] != 0xFF) {
+            if (func_80097770(2, 5) != 0) {
+                actor->state++;
+            }
+        } else {
+            actor->state++;
+        }
+        break;
+    case 0x2D:
+        if (D_8006F368[2] == 0xFF || func_80097770(3, 5) != 0) {
+            actor->state = 0x40;
+        }
+        break;
+    case 0x40:
+        break;
+    }
+    D_8006EE54.x = actor->position.vx >> 12;
+    D_8006EE54.z = actor->position.vz >> 12;
+    D_8006EE54.heading = actor->heading;
+    if (actor->unk24 == 0) {
+        func_80074794(0, &actor->position);
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A72C);
+#endif
 
 /* Create party member 2's model sprite (if present) at the saved world-map
  * position; in movement modes 1-7 follow the player or start hidden. */
