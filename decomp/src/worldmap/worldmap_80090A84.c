@@ -331,7 +331,191 @@ s32 func_80091430(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091430);
 #endif
 
+/* Camera yaw and target follower: turn by the shoulder buttons in 0x200
+ * steps, ease towards requested yaws (commands 9, 10, 15-17), and move the
+ * target towards the saved camera, scrolling the terrain origin with it. */
+#ifdef NON_MATCHING /* eased yaw: the new angle is shifted before the yaw store (v0/v1 swapped); the target step loads differ */
+s32 func_800914D0(s32 index) {
+    WorldmapActor *actor;
+    s32 angle;
+    VECTOR delta;
+    VECTOR step;
+    s32 yaw;
+    s32 amount;
+
+    actor = &D_8009BE24[index];
+    switch (actor->unk4) {
+    case 9:
+        actor->unk4 = 0;
+        actor->state = 2;
+        actor->u.step = (s16)D_8009D52C;
+        actor->unk58 = D_8009BD38.vy << 12;
+        break;
+    case 10:
+        actor->unk4 = 0;
+        actor->state = 0;
+        actor->u.step = D_8009BD38.vy;
+        break;
+    case 15:
+        actor->state = 0x10;
+        actor->unk4 = 0;
+        actor->u.step = 0x800;
+        break;
+    case 16:
+        actor->state = 0x10;
+        actor->unk4 = 0;
+        actor->u.step = 0xA00;
+        break;
+    case 17:
+        actor->state = 0x10;
+        actor->unk4 = 0;
+        actor->u.step = 0xC00;
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        switch ((D_8009CD4C >> 2) & 3) {
+        case 1:
+        case 3:
+            actor->state = 1;
+            actor->unk54 = -0x40;
+            actor->unk5C = (actor->u.step - 0x200) & 0xFFF;
+            break;
+        case 2:
+            actor->state = 1;
+            actor->unk54 = 0x40;
+            actor->unk5C = (actor->u.step + 0x200) & 0xFFF;
+            break;
+        }
+    follow:
+        if (D_8009BD38.vy != actor->u.step) {
+            yaw = actor->u.step - D_8009BD38.vy;
+            amount = yaw >= 0 ? yaw : -yaw;
+            if (amount > 0xC00) {
+                if (yaw < 0) {
+                    yaw += 0x1000;
+                } else {
+                    yaw -= 0x1000;
+                }
+            }
+            actor->unk58 = (actor->unk58 + ((yaw << 12) >> 3)) & 0xFFFFFF;
+            D_8009BD38.vy = actor->unk58 >> 12;
+        } else {
+            actor->unk58 = D_8009BD38.vy << 12;
+        }
+        break;
+    case 1:
+        actor->u.step = (actor->u.step + actor->unk54) & 0xFFF;
+        if (actor->u.step == actor->unk5C) {
+            actor->state = 0;
+        }
+        goto follow;
+    case 2:
+        yaw = D_8009BD38.vy;
+        yaw = actor->u.step - yaw;
+        amount = yaw >= 0 ? yaw : -yaw;
+        if (amount > 0x800) {
+            if (yaw < 0) {
+                yaw += 0x1000;
+            } else {
+                yaw -= 0x1000;
+            }
+        }
+        amount = yaw >= 0 ? yaw : -yaw;
+        if (amount > 0x180) {
+            if (yaw < 0) {
+                yaw = -0x180;
+            } else {
+                yaw = 0x180;
+            }
+        }
+        actor->unk58 = (actor->unk58 + ((yaw << 12) >> 3)) & 0xFFFFFF;
+        D_8009BD38.vy = angle = actor->unk58 >> 12;
+        if ((angle == actor->u.step) & (actor->unk60 == 0)) {
+            actor->state = 3;
+            func_80097770(7, 0xB);
+        }
+        break;
+    case 0x10:
+        yaw = D_8009BD38.vy;
+        yaw = actor->u.step - yaw;
+        amount = yaw >= 0 ? yaw : -yaw;
+        if (amount > 0x800) {
+            if (yaw < 0) {
+                yaw += 0x1000;
+            } else {
+                yaw -= 0x1000;
+            }
+        }
+        amount = yaw >= 0 ? yaw : -yaw;
+        if (amount > 0x180) {
+            if (yaw < 0) {
+                yaw = -0x180;
+            } else {
+                yaw = 0x180;
+            }
+        }
+        actor->unk58 = (actor->unk58 + ((yaw << 12) >> 5)) & 0xFFFFFF;
+        D_8009BD38.vy = angle = actor->unk58 >> 12;
+        if ((angle == actor->u.step) & (actor->unk60 == 0)) {
+            actor->state = 3;
+        }
+        break;
+    case 3 ... 15:
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+    case 1:
+    case 2:
+    case 0x10:
+        if ((actor->position.vx != D_8009D55C.target.vx) | (actor->position.vy != D_8009D55C.target.vy) |
+            (actor->position.vz != D_8009D55C.target.vz)) {
+            delta.vx = D_8009D55C.target.vx - actor->position.vx;
+            delta.vy = D_8009D55C.target.vy - actor->position.vy;
+            delta.vz = D_8009D55C.target.vz - actor->position.vz;
+            func_80093484(&delta);
+            step.vx = delta.vx >> 3;
+            step.vy = delta.vy >> 3;
+            step.vz = delta.vz >> 3;
+            if ((ABS(step.vx) < 0x40) & (ABS(step.vz) < 0x40)) {
+                actor->unk60 = 0;
+                TERRAIN_ORIGIN.vx += delta.vx;
+                TERRAIN_ORIGIN.vz += delta.vz;
+                actor->position.vx = D_8009D55C.target.vx;
+                actor->position.vz = D_8009D55C.target.vz;
+            } else {
+                actor->unk60 = 1;
+                actor->position.vx += step.vx;
+                actor->position.vz += step.vz;
+                TERRAIN_ORIGIN.vx += step.vx;
+                TERRAIN_ORIGIN.vz += step.vz;
+            }
+            actor->position.vy += step.vy;
+        }
+        break;
+    case 3:
+        if ((actor->position.vx != D_8009D55C.target.vx) | (actor->position.vy != D_8009D55C.target.vy) |
+            (actor->position.vz != D_8009D55C.target.vz)) {
+            delta.vx = D_8009D55C.target.vx - actor->position.vx;
+            delta.vy = D_8009D55C.target.vy - actor->position.vy;
+            delta.vz = D_8009D55C.target.vz - actor->position.vz;
+            func_80093484(&delta);
+            actor->position.vy += delta.vy >> 4;
+            TERRAIN_ORIGIN.vx += delta.vx;
+            TERRAIN_ORIGIN.vz += delta.vz;
+            actor->position.vx = D_8009D55C.target.vx;
+            actor->position.vz = D_8009D55C.target.vz;
+        }
+        break;
+    }
+    func_80093354(&actor->position);
+    D_8009BE28.target = actor->position;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800914D0);
+#endif
 
 /* Choose the camera distance for the movement mode (unchanged in mode 6). */
 s32 func_80091B54(s32 index) {
