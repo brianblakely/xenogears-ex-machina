@@ -716,4 +716,9 @@ void func_80096F18(u8 *view, Camera *camera, s32 distance, SVECTOR *angle);
 s32 rand(void);
 void func_80093484(VECTOR *offset);
 
+/* Sixteen footprint quads, copied between display buffers as a whole. */
+typedef struct {
+    PolyFT4 quad[16];
+} QuadSet;
+
 #endif

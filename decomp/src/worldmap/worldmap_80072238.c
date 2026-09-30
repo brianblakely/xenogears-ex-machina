@@ -319,7 +319,43 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800740B8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80074594);
+/* Allocate the recent-position ring and the two buffers of 16 footprint quads,
+ * and initialise them. */
+void func_80074594(void) {
+    WorldmapSpot *spot;
+    PolyFT4 *quad;
+    s32 i;
+
+    D_8009D30C = func_80031BDC(0x80, 0);
+    D_8009BE14 = func_80031BDC(0x280, 0);
+    D_8009BE18 = func_80031BDC(0x280, 0);
+    spot = D_8009D30C;
+    for (i = 15; i != -1; i--) {
+        spot->z = 0;
+        spot->id = 0;
+        spot->x = 0;
+        spot++;
+    }
+    quad = D_8009BE14;
+    for (i = 15; i != -1; i--) {
+        setPolyFT4(quad);
+        setRGB0(quad, 0x40, 0x40, 0x48);
+        quad->u0 = 0x80;
+        quad->v0 = 0xF0;
+        quad->u1 = 0x8F;
+        quad->v1 = 0xF0;
+        quad->u2 = 0x80;
+        quad->v2 = 0xFF;
+        quad->u3 = 0x8F;
+        quad->v3 = 0xFF;
+        quad->clut = GetClut(0x120, 0x1FE);
+        quad->tpage = GetTPage(0, 0, 0x380, 0x100);
+        SetSemiTrans(quad, 1);
+        quad++;
+    }
+    *(QuadSet *)D_8009BE18 = *(QuadSet *)D_8009BE14;
+    D_8009BE38 = 0;
+}
 
 /* Free the position ring and two work buffers. */
 void func_8007474C(void) {
