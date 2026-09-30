@@ -1196,15 +1196,114 @@ void func_80099CF0(UnitStatus *gear, Combatant *record, volatile u8 *timers) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099FB0);
+/* Make the current command descriptor the battle's current command: copy its
+ * attribute bytes and index, and give a command without an element the
+ * attacker's element statuses. */
+void func_80099FB0(void) {
+    u16 elements = (D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) >> 12;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A074);
+    D_800C34B0->commandAttributes[0] = D_800C3DFC->attributes[0];
+    D_800C34B0->commandAttributes[1] = D_800C3DFC->attributes[1];
+    D_800C34B0->commandAttributes[2] = D_800C3DFC->attributes[2];
+    D_800C34B0->commandAttributes[3] = D_800C3DFC->attributes[3];
+    D_800C34B0->commandIndexCopy = D_800C34B0->commandIndex;
+    if ((D_800C34B0->commandAttributes[2] & 0x3F) == 0) {
+        D_800C34B0->commandAttributes[2] |= elements;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A0DC);
+/* Restrict the target mask to the allowed targets of its side: the low three
+ * bits (party) and bits 3-10 (enemies). */
+void func_8009A074(void) {
+    if (D_800C34B0->targetMask & 7) {
+        D_800C34B0->targetMask = D_800C34B0->targetMask2 & 7;
+    }
+    if (D_800C34B0->targetMask & 0x7F8) {
+        D_800C34B0->targetMask = D_800C34B0->targetMask2 & 0x7F8;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A1AC);
+/* The condition shown for slot, by priority: 8, 1, 2 for status bits 0x4000,
+ * 0x8000, 0x2000; 3 and 4 for the second word's 0x1000 and 0x2000; 5, 6, 3 for
+ * 0x800, 0x1000, 2; 7 for status pair 0x84 bit 0x8000; 5 below an eighth of
+ * the maximum HP; otherwise 0. */
+s32 func_8009A0DC(u8 slot) {
+    Combatant *record = &D_800C34B0->records[slot];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A258);
+    if (record->pilot.status7C & 0x4000) {
+        return 8;
+    }
+    if (record->pilot.status7C & 0x8000) {
+        return 1;
+    }
+    if (record->pilot.status7C & 0x2000) {
+        return 2;
+    }
+    if (record->pilot.status80 & 0x1000) {
+        return 3;
+    }
+    if (record->pilot.status80 & 0x2000) {
+        return 4;
+    }
+    if (record->pilot.status7C & 0x800) {
+        return 5;
+    }
+    if (record->pilot.status7C & 0x1000) {
+        return 6;
+    }
+    if (record->pilot.status7C & 2) {
+        return 3;
+    }
+    if ((record->pilot.status84.half.active | record->pilot.status84.half.permanent) & 0x8000) {
+        return 7;
+    }
+    if (record->pilot.hp < record->pilot.maxHp >> 3) {
+        return 5;
+    }
+    return 0;
+}
+
+/* Mask of slot's timed conditions for display (0 once status bit 0x8000 is
+ * set): 0x8000, 0x4000 and 0x2000 for three statuses, plus the element
+ * statuses (pair 0x8C bits 8-15) shifted down by three. */
+u16 func_8009A1AC(u8 slot) {
+    Combatant *record = &D_800C34B0->records[slot];
+    u16 mask = 0;
+    u16 elements;
+
+    if (record->pilot.status7C & 0x8000) {
+        return 0;
+    }
+    if (record->pilot.status80 & 0x1000) {
+        mask = 0x8000;
+    }
+    if (record->pilot.status80 & 0x2000) {
+        mask |= 0x4000;
+    }
+    if (record->pilot.status7C & 0x800) {
+        mask |= 0x2000;
+    }
+    elements = record->pilot.status8C.half.active | record->pilot.status8C.half.permanent;
+    if (elements & 0xF00) {
+        mask |= (elements & 0xF00) >> 3;
+    }
+    if (elements & 0xF000) {
+        mask |= (elements & 0xF000) >> 3;
+    }
+    return mask;
+}
+
+/* Accuracy of member's command: the descriptor's accuracy plus the member's
+ * bonus, capped at 100. */
+u8 func_8009A258(u8 member, u8 command) {
+    CommandDescriptor *descriptor = &D_800C34B0->partyCommands[member][command];
+    u8 accuracy = descriptor->accuracy + (D_800C34B0->records + member)->pilot.accuracy;
+
+    if (accuracy > 100) {
+        accuracy = 100;
+    }
+    return accuracy;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A2D4);
 

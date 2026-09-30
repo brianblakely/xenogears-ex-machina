@@ -19,7 +19,12 @@ typedef union {
 typedef struct {
     u8 pad0[0x32];
     u16 flags32;            /* 0x32: bit 0x40 doubles status durations */
-    u8 pad34[0x7A - 0x34];
+    u8 pad34[0x4C - 0x34];
+    u16 hp;                 /* 0x4C */
+    u16 maxHp;              /* 0x4E */
+    u8 pad50[0x5B - 0x50];
+    u8 accuracy;            /* 0x5B: added to a command's accuracy */
+    u8 pad5C[0x7A - 0x5C];
     u16 status7A;
     u16 status7C;           /* bits 0xC002 mark a member out of action */
     u8 pad7E[0x80 - 0x7E];
