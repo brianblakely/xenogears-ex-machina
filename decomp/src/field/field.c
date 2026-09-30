@@ -2473,7 +2473,7 @@ void func_800771F8(u32 *tim) {
 
 /* Declared without a prototype: 80084a40 also reads a fifth, stack
  * argument that this caller never passes. */
-void func_80084A40();
+s32 func_80084A40();
 
 /* Place the party at the controlled actor: run its position pass (80084a40),
  * then give each other party member (slots 1 and 2) the leader's model
@@ -6276,7 +6276,254 @@ s32 func_8008492C(FieldActor *actor) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008492C);
 #endif
 
+/* Move an actor to its next position: query every collision layer's floor
+ * and ceiling there, sort the layers by floor, choose the actor's layer,
+ * commit the planar move (or roll it back on a blocking attribute or a
+ * ceiling), then fall, land or rise onto the floor, and record the
+ * controlled actor's history. Returns -1 when the actor did not move.
+ * NON_MATCHING: the original keeps the two rollback tails apart and schedules the
+ * flag and attribute test differently. */
+#ifdef NON_MATCHING
+s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor *actor, s32 status) {
+    s32 floors[4];
+    s32 uppers[4];
+    s32 ids[4];
+    s16 triangles[4];
+    VECTOR normals[4];
+    VECTOR old;
+    s16 old_triangles[4];
+    FieldModel *sprite;
+    s16 old_layer;
+    s32 old_floor;
+    s32 layer;
+    s32 i;
+    s32 k;
+    s32 swap;
+    s32 y;
+    s32 bump;
+    u32 attributes;
+
+    sprite = D_800AF880.components.descriptors[index].model;
+    if (index == D_800B2078.controlled) {
+        D_800ADB00 = 0xFFFF;
+    }
+    if (actor->flags & 0x01000000) {
+        return -1;
+    }
+    if (actor->layer_flags & 0x200000) {
+        return -1;
+    }
+    if (actor->flags & 0x10000) {
+        return -1;
+    }
+    if (!(index == D_800B2078.controlled && D_800B2078.forced_position == 1) && sprite->velocity[1] == 0 &&
+        func_8008492C(actor) == 0 && (s16)sprite->unk84 == actor->position[1] >> 16) {
+        return -1;
+    }
+    old.vx = actor->position[0];
+    old.vy = actor->position[1];
+    old.vz = actor->position[2];
+    old_layer = actor->layer;
+    for (i = 0; i < 4; i++) {
+        old_triangles[i] = actor->triangle[i];
+    }
+    for (i = 0; i < 4; i++) {
+        ids[i] = i;
+        floors[i] = 0x7FFFFFFF;
+        uppers[i] = 0x7FFFFFFF;
+    }
+    for (layer = 0; layer < D_800AF880.components.layer_count - 1; layer++) {
+        if (func_8007D3D4(actor, layer, &floors[layer], &normals[layer], &triangles[layer], &uppers[layer]) != 0) {
+            break;
+        }
+    }
+    if (actor->layer_flags & 1) {
+        floors[0] = 0x7FFFFFFF;
+        uppers[0] = 0x7FFFFFFF;
+    }
+    if (actor->layer_flags & 2) {
+        floors[1] = 0x7FFFFFFF;
+        uppers[1] = 0x7FFFFFFF;
+    }
+    if (actor->layer_flags & 4) {
+        floors[2] = 0x7FFFFFFF;
+        uppers[2] = 0x7FFFFFFF;
+    }
+    old_floor = floors[actor->layer];
+    for (i = 0; i < 2; i++) {
+        for (k = 0; k < 2; k++) {
+            if (floors[k] > floors[k + 1]) {
+                swap = floors[k + 1];
+                floors[k + 1] = floors[k];
+                floors[k] = swap;
+                swap = uppers[k + 1];
+                uppers[k + 1] = uppers[k];
+                uppers[k] = swap;
+                swap = ids[k + 1];
+                ids[k + 1] = ids[k];
+                ids[k] = swap;
+            }
+        }
+    }
+    if (layer == D_800AF880.components.layer_count - 1) {
+        for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
+            actor->triangle[i] = triangles[i];
+        }
+        y = actor->position[1] >> 16;
+        if (y < old_floor || (actor->flags & 0x1800)) {
+            for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
+                if (!(floors[i] < y)) {
+                    actor->layer = ids[i];
+                    break;
+                }
+            }
+        } else {
+            for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
+                if (actor->layer == ids[i]) {
+                    break;
+                }
+            }
+        }
+        if ((func_80080968(actor) & 4) && i != 0 && actor->layer <= D_800AF880.components.layer_count - 1) {
+            i--;
+            actor->layer = ids[i];
+        }
+        attributes = func_80080968(actor);
+        if ((attributes >> 5) & ((actor->flags >> 8) & 7)) {
+            if (D_800C268C == 0) {
+                func_800379C8("ERROR ID1 ACT=%d\n", index);
+            }
+            goto blocked;
+        } else if (attributes & 0x800000) {
+            if (D_800C268C == 0) {
+                func_800379C8("ERROR ID0 ACT=%d\n", index);
+            }
+        blocked:
+            if (index == D_800B2078.controlled) {
+                D_800ADB00 = 0xFFF;
+            }
+            actor->position[1] += sprite->velocity[1];
+            goto rollback;
+        }
+        actor->position[0] += actor->unk030[0];
+        actor->position[2] += actor->unk030[2];
+        for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
+            if (actor->layer == ids[i]) {
+                sprite->unk84 = floors[i];
+                break;
+            }
+        }
+        func_80048D7C(&normals[actor->layer], (VECTOR *)actor->unk50);
+    } else {
+        actor->unkF0 = 0;
+    }
+    if (D_800ADB98 != 0) {
+        if ((u32)status < 2) {
+            sprite->unk84 = lowest;
+        }
+    } else if (status != 0) {
+        if ((s16)sprite->unk84 < lowest + 10) {
+            actor->unk074 = 0xFF;
+        }
+        sprite->unk84 = lowest;
+        actor->position[1] = lowest << 16;
+    }
+    if (actor->flags & 0x40000) {
+        actor->position[1] = actor->unkEC << 16;
+        sprite->velocity[1] = 0;
+    }
+    actor->position[1] += sprite->velocity[1];
+    attributes = func_80080968(actor);
+    if (actor->layer != old_layer) {
+        actor->flags &= 0xFBFFFFFF;
+    }
+    if (!(actor->flags & 0x04000000) && (s16)sprite->unk84 > actor->position[1] >> 16) {
+        if ((s16)sprite->unk84 != actor->position[1] >> 16) {
+            sprite->velocity[1] += sprite->unk1C;
+        }
+        actor->flags |= 0x1000;
+        actor->unkF0 = sprite->velocity[1];
+    } else {
+        if (!(attributes & 0x420000)) {
+            actor->unkF0 = 0;
+        }
+        if (sprite->velocity[1] > 0) {
+            sprite->velocity[1] = 0;
+        }
+        actor->flags &= 0xFFBFEFFF;
+        actor->position[1] = (s16)sprite->unk84 << 16;
+    }
+    actor->flags &= 0xFBFFFFFF;
+    for (i = 0; i < D_800AF880.components.layer_count - 1; i++) {
+        if (floors[i] < actor->position[1] >> 16 && (actor->position[1] >> 16) - (u16)actor->height < uppers[i] &&
+            floors[i] != uppers[i]) {
+            break;
+        }
+    }
+    if (i == D_800AF880.components.layer_count - 1) {
+        bump = (s8)D_800AF880.components.collision_triangles[actor->layer][actor->triangle[actor->layer]].unk0D * 4;
+        if (bump >= 0 ||
+            !((actor->position[1] >> 16) - (u16)actor->height < bump + (s16)sprite->unk84)) {
+            sprite->position[0] = actor->position[0];
+            sprite->position[1] = actor->position[1];
+            sprite->position[2] = actor->position[2];
+            D_800AF880.components.descriptors[index].matrix.t[0] = actor->position[0] >> 16;
+            D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
+            D_800AF880.components.descriptors[index].matrix.t[2] = actor->position[2] >> 16;
+            actor->unk014 = func_80080968(actor);
+            goto done;
+        }
+    }
+    actor->position[0] = old.vx;
+    actor->layer = old_layer;
+    actor->unkF0 = 0;
+    actor->position[2] = old.vz;
+    for (i = 0; i < 4; i++) {
+        actor->triangle[i] = old_triangles[i];
+    }
+    if ((s16)sprite->unk84 != actor->position[1] >> 16) {
+        sprite->velocity[1] += sprite->unk1C;
+    }
+    if (sprite->velocity[1] < 0) {
+        sprite->velocity[1] = 0;
+        actor->position[1] = old.vy;
+    }
+    sprite->position[0] = actor->position[0];
+    sprite->position[1] = actor->position[1];
+    sprite->position[2] = actor->position[2];
+    D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
+    goto done;
+
+rollback:
+    actor->position[0] = old.vx;
+    actor->layer = old_layer;
+    actor->unkF0 = 0;
+    actor->position[2] = old.vz;
+    for (i = 0; i < 4; i++) {
+        actor->triangle[i] = old_triangles[i];
+    }
+    if ((s16)sprite->unk84 > actor->position[1] >> 16) {
+        if ((s16)sprite->unk84 != actor->position[1] >> 16) {
+            sprite->velocity[1] += sprite->unk1C;
+        }
+    } else {
+        if (sprite->velocity[1] > 0) {
+            sprite->velocity[1] = 0;
+        }
+        actor->flags &= 0xFFBFEFFF;
+        actor->position[1] = (s16)sprite->unk84 << 16;
+    }
+    sprite->position[0] = actor->position[0];
+    sprite->position[1] = actor->position[1];
+    sprite->position[2] = actor->position[2];
+    D_800AF880.components.descriptors[index].matrix.t[1] = actor->position[1] >> 16;
+done:
+    func_80081C54(index);
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80084A40);
+#endif
 
 /* One music-wave stream step: pass arrivals to the chunk callback; -1 once
  * the stream finished and its ring is released. */

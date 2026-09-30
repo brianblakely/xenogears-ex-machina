@@ -122,7 +122,7 @@ typedef struct FieldActor {
     s16 unk0EA;          /* 0EA */
     s16 unkEC;           /* 0EC */
     s16 unkEE;           /* 0EE */
-    u8 unk0F0[4];
+    s32 unkF0;           /* 0F0: fall speed */
     s16 scale[3];        /* 0F4 */
     u8 unk0FA[2];
     u8 color0[3];        /* 0FC */
@@ -965,6 +965,9 @@ extern void func_80086A1C(s32 emitter, s32 *position);
 extern void func_80081F80(FieldModel *sprite, s16 heading, FieldDescriptor *descriptor);
 extern void func_800821F4(void *model, s32 animation, FieldDescriptor *descriptor);
 extern s32 func_8009FA00(s32 character);
+extern s32 func_8008492C(FieldActor *actor);
+extern s32 func_8007D3D4(FieldActor *actor, s32 layer, s32 *floor, VECTOR *normal, s16 *triangle, s32 *upper);
+extern void func_80081C54(s32 index);
 extern void func_800379C8(char *format, ...); /* debug print */
 extern s32 func_80083288(s32 index, FieldMesh *mesh, s32 x, s32 z, s32 *top, VECTOR *normal);
 extern s32 D_800B2360[3]; /* movement history index per party slot (FieldWork +2360) */
