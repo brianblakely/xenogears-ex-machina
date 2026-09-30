@@ -233,7 +233,30 @@ s32 func_80081868(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081868);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800819C8);
+/* Place the actor at the player and rebuild scene objects 0-1 stretched 7x in height. */
+s32 func_800819C8(s32 index) {
+    SceneObject *objects;
+    WorldmapActor *actor;
+
+    objects = D_8009C620;
+    actor = &D_8009BE24[index];
+    actor->state = 0;
+    actor->position.vx = D_8009C5AC.vx;
+    actor->position.vy = D_8009C5AC.vy;
+    actor->position.vz = D_8009C5AC.vz;
+    actor->u.step = 0;
+    actor->unk54 = 0;
+    actor->unk58 = 0;
+    objects[0].matrix = D_8009A180;
+    SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = 0x1000;
+    SCALE_SCRATCH->scale[0].vy = 0x7000;
+    ScaleMatrix(&objects[0].matrix, &SCALE_SCRATCH->scale[0]);
+    objects[1].matrix = objects[0].matrix;
+    func_800816DC(objects, objects->prims, objects->def->count, 3);
+    objects++;
+    func_800816DC(objects, objects->prims, objects->def->count, 3);
+    return 1;
+}
 
 /* Fade scene objects 0 and 1 in (command 1 starts it). */
 s32 func_80081B24(s32 index) {
