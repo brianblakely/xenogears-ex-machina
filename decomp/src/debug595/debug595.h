@@ -58,7 +58,12 @@ typedef struct {
     s32 unk8;
 } CpuMark;
 
+typedef struct {
+    s16 x, y, w, h;
+} DebugRect;
+
 /* libgte / libgpu (resident). */
+void LoadImage(DebugRect *rect, u32 *data);
 s32 VSync(s32 mode);
 void func_800379C8(const char *format, ...); /* debug text print */
 void func_80036DC8(s32 r, s32 g, s32 b);     /* debug text colour */
@@ -81,6 +86,18 @@ extern s32 D_800ADB08;   /* current draw buffer */
 extern MATRIX D_800AFA64;
 extern u16 D_800AFEA0;   /* buttons held (shoulder bits) */
 extern u16 D_800C3908;   /* buttons pressed or repeating */
+extern u16 D_800AFE9C;   /* buttons held */
+extern s32 D_80065850;   /* camera control mode */
+extern s32 D_80065854;   /* analog steps */
+extern s32 D_80065858;
+extern s32 D_800ADB94;   /* camera distance */
+extern s32 D_800ADB98;
+extern s32 D_800AF984;
+extern s32 D_800AF988;
+extern s32 D_800AF9F0;
+extern s16 D_800AF9E6;
+extern s16 D_800AF9FC;
+extern u16 D_800AF9FE;
 
 /* Tool statics. */
 extern s32 D_8028597C;

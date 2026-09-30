@@ -376,8 +376,94 @@ s32 func_80284670(s8 *v, s32 axis) {
 
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802846CC);
 
+#ifdef NON_MATCHING
+/* With L2 and the debug button held, move the camera by the pad's analog
+ * steps: dolly (mode 4), zoom (mode 8) or rotate and raise (other modes).
+ * Differs: the original loads D_800AF9FC with lh before the step and the
+ * step with a full lw where this narrows both loads. */
+void func_80284EA4(void) {
+    if ((D_800AFE9C & 1) && (D_800AFE9C & 0x40)) {
+        if (D_80065850 == 4) {
+            D_800ADB98 = 1;
+            D_800ADB94 += D_80065858;
+        } else if (D_80065850 == 8) {
+            D_800AF9FC += (u32)(D_80065858 << 4) >> 5;
+            D_800AF984 = 1;
+            D_800AF988 = 1;
+        } else {
+            D_800AF984 = 1;
+            D_800AF988 = 1;
+            D_800AF9FE += D_80065858 << 4;
+            D_800AF9F0 += D_80065854 << 18;
+            D_800AF9E6 = D_800AF9F0 >> 16;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284EA4);
+#endif
 
+#ifdef NON_MATCHING
+/* Load an image archive's sections into VRAM; sections of kind 0x1100 and
+ * 0x1101 are placed by `mode0`/`mode1`: 1 at the given origin plus the
+ * section offset, 2 also plus the section position, else at the position.
+ * Differs: the original fills the unknown-kind exit's delay slot with the
+ * next comparison (v0 dead there) and takes the product into $t0. */
+s32 func_80284FB4(u32 *archive, s16 mode0, s16 x0, s16 y0, s16 mode1, u16 x1, u16 y1) {
+    s32 count;
+    s32 i;
+    u16 *p;
+    u32 kind;
+    DebugRect rect;
+
+    count = archive[0];
+    p = (u16 *)(archive + (count + 1));
+    for (i = 0; i < count; i++) {
+        kind = *(u32 *)p;
+        p += 2;
+        if (kind == 0x1100) {
+            switch (mode0) {
+            case 1:
+                rect.x = x0 + p[2];
+                rect.y = y0 + p[3];
+                break;
+            case 2:
+                rect.x = p[2] + (x0 + p[0]);
+                rect.y = p[3] + (y0 + p[1]);
+                break;
+            default:
+                rect.x = p[0] + p[2];
+                rect.y = p[1] + p[3];
+                break;
+            }
+        } else if (kind == 0x1101) {
+            switch (mode1) {
+            case 1:
+                rect.x = x1 + p[2];
+                rect.y = y1 + p[3];
+                break;
+            case 2:
+                rect.x = p[2] + (x1 + p[0]);
+                rect.y = p[3] + (y1 + p[1]);
+                break;
+            default:
+                rect.x = p[0] + p[2];
+                rect.y = p[1] + p[3];
+                break;
+            }
+        } else {
+            return; /* the original returns no value here */
+        }
+        p += 4;
+        rect.w = *p++;
+        rect.h = *p++;
+        LoadImage(&rect, (u32 *)p);
+        p += rect.w * rect.h;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_80284FB4);
+#endif
 
 INCLUDE_ASM(".local/decomp/debug595/asm/nonmatchings/debug595", func_802851B0);
