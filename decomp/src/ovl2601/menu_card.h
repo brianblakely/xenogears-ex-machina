@@ -392,8 +392,8 @@ typedef struct {
     u8 unk57;
     u8 bonus[8];   /* 58 */
     u8 unk60[0x6A - 0x60];
-    u8 weapons[5];     /* 6a: equipped weapon slots (item ids below 32h) */
-    u8 armour[5];      /* 6f */
+    u8 weapons[5];     /* 6a: equipment slots for weapons (ids below 32h) */
+    u8 armour[5];      /* 6f: equipment slots for armour (ids from 32h) */
     u8 accessories[3]; /* 74 */
     u8 unk77[0xA0 - 0x77];
     u8 unkA0;      /* a0: ff for a member who cannot be chosen */
@@ -416,19 +416,25 @@ typedef struct {
     u16 stats[9]; /* b8 */
 } MemberView;
 
-/* Entries of the weapon, armour and item tables (10h bytes each). */
+/* Entries of the equipment (weapons below 32h, armour from 32h), accessory and item tables (10h bytes each). */
 typedef struct {
     u16 users; /* 00: party bits of the members who can equip it */
     u16 unk2;
     u16 price; /* 04 */
-    u8 unk6[10];
-} WeaponInfo;
+    u8 type;   /* 06 */
+    u8 unk7[5];
+    u8 power;  /* 0c: attack or defence */
+    u8 unkD[3];
+} EquipInfo;
 
 typedef struct {
     u16 users; /* 00 */
     u16 price; /* 02 */
-    u8 unk4[12];
-} ArmourInfo;
+    u8 unk4[4];
+    u8 power;  /* 08 */
+    u8 unk9[5];
+    u16 group; /* 0e: accessories of one group do not add up */
+} AccessoryInfo;
 
 typedef struct {
     u16 unk0;
@@ -440,8 +446,8 @@ typedef struct {
 
 /* The unpacked resources (menu state + 330, cch bytes). */
 typedef struct {
-    WeaponInfo *weapons; /* 00 */
-    ArmourInfo *armour;  /* 04 */
+    EquipInfo *equipment;       /* 00 */
+    AccessoryInfo *accessories; /* 04 */
     void *unk8[5];
     ItemInfo *items;     /* 1c */
     u8 unk20[0xCC - 0x20];
@@ -613,8 +619,8 @@ void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
-u8 *func_80033848(s32 id);               /* weapon name */
-u8 *func_800337E8(s32 id);               /* armour name */
+u8 *func_80033848(s32 id);               /* equipment name */
+u8 *func_800337E8(s32 id);               /* accessory name */
 u8 *func_80033818(s32 id);               /* item name */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */

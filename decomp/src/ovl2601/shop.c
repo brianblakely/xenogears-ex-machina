@@ -312,13 +312,13 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
             case 0:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_80033848(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->weapons[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->resources->equipment[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             case 1:
                 D_800625A0->details->names_a[row].width =
                     func_80034EAC(func_800337E8(D_800625A0->shop_items[top + row]), pixels, 0x24, 0);
-                value = D_800625A0->resources->armour[D_800625A0->shop_items[top + row]].price;
+                value = D_800625A0->resources->accessories[D_800625A0->shop_items[top + row]].price;
                 price = value;
                 break;
             case 2:
@@ -577,7 +577,7 @@ void func_801CF678(u32 value) {
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CF780);
 
 /*
- * Show item `id` of kind `kind` (0 weapon, 1 armour, 2 item): its name and
+ * Show item `id` of kind `kind` (0 equipment, 1 accessory, 2 item): its name and
  * sell price (half the table price) labels, the bars of the members who can
  * equip it and the marks of those holding it. Returns the sell price.
  */
@@ -609,14 +609,14 @@ u32 func_801CFF58(u8 id, u8 kind) {
     switch (kind) {
     case 0:
         D_800625A0->details->label4430.width = func_80034EAC(func_80033848(id), pixels, 0x39, 0);
-        users = D_800625A0->resources->weapons[id].users;
-        price = D_800625A0->resources->weapons[id].price >> 1;
+        users = D_800625A0->resources->equipment[id].users;
+        price = D_800625A0->resources->equipment[id].price >> 1;
         value = price;
         break;
     case 1:
         D_800625A0->details->label4430.width = func_80034EAC(func_800337E8(id), pixels, 0x39, 0);
-        users = D_800625A0->resources->armour[id].users;
-        price = D_800625A0->resources->armour[id].price >> 1;
+        users = D_800625A0->resources->accessories[id].users;
+        price = D_800625A0->resources->accessories[id].price >> 1;
         value = price;
         break;
     case 2:

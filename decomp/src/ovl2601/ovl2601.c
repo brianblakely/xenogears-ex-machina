@@ -490,16 +490,16 @@ void func_801C6828(u8 mode) {
     }
     switch (mode) {
     case 0:
-        D_800625A0->resources->weapons = func_80032E88(list[2], 0);
-        D_800625A0->resources->armour = func_80032E88(list[3], 0);
+        D_800625A0->resources->equipment = func_80032E88(list[2], 0);
+        D_800625A0->resources->accessories = func_80032E88(list[3], 0);
         D_800625A0->resources->items = func_80032E88(list[1], 0);
         D_800625A0->details->resources[1] = func_80032E88(list[0x28], 0);
         D_800625A0->details->resources[2] = func_80032E88(list[0x29], 0);
         D_800625A0->details->resources[0] = func_80032E88(list[0x2A], 0);
         break;
     case 0x10:
-        func_800320E8(D_800625A0->resources->weapons);
-        func_800320E8(D_800625A0->resources->armour);
+        func_800320E8(D_800625A0->resources->equipment);
+        func_800320E8(D_800625A0->resources->accessories);
         func_800320E8(D_800625A0->resources->items);
         func_800320E8(D_800625A0->details->resources[1]);
         func_800320E8(D_800625A0->details->resources[2]);
