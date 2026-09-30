@@ -1,0 +1,59 @@
+name: Finalize matching-first refactor
+on:
+  push:
+    branches: [refactor/matching-first-decomp]
+    paths: [.github/finalize.py]
+permissions:
+  contents: write
+concurrency:
+  group: matching-first-refactor
+  cancel-in-progress: false
+jobs:
+  finalize:
+    if: github.ref == 'refs/heads/refactor/matching-first-decomp'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Repair integration and add read-only CI
+        run: python3 .github/finalize.py
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Format only changed authored sources
+        id: formatting
+        continue-on-error: true
+        run: |
+          mkdir -p .local/refactor-checks
+          nix develop path:./nix -c python3 .github/finalize.py --format > .local/refactor-checks/format.log 2>&1 || { tail -100 .local/refactor-checks/format.log; exit 1; }
+          tail -15 .local/refactor-checks/format.log
+      - name: Check all public build presets
+        id: public
+        continue-on-error: true
+        run: |
+          nix develop path:./nix -c python3 tools/repository/check.py --preset all > .local/refactor-checks/public.log 2>&1 || { tail -180 .local/refactor-checks/public.log; exit 1; }
+          tail -35 .local/refactor-checks/public.log
+      - name: Check actual matching shell and MIPS fixture
+        id: matching
+        continue-on-error: true
+        run: |
+          nix develop path:./nix/ghidra#matching -c bash -c 'set -e; m2c --help >/dev/null; spimdisasm --help >/dev/null; make -C decomp smoke' > .local/refactor-checks/matching.log 2>&1 || { tail -120 .local/refactor-checks/matching.log; exit 1; }
+          tail -30 .local/refactor-checks/matching.log
+      - name: Publish checked source to this branch
+        env:
+          FORMATTING: ${{ steps.formatting.outcome }}
+          PUBLIC: ${{ steps.public.outcome }}
+          MATCHING: ${{ steps.matching.outcome }}
+        run: |
+          rm .github/finalize.py .github/workflows/finalize-once.yml
+          git config user.name 'XEM refactor automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Finish matching-first integration and add executable CI' -m "Formatting: $FORMATTING. Public presets: $PUBLIC. Matching shell: $MATCHING. Exact results are in this workflow run."
+          git push origin HEAD:refs/heads/refactor/matching-first-decomp
+          printf 'Formatting: %s\nPublic presets: %s\nMatching shell: %s\n' "$FORMATTING" "$PUBLIC" "$MATCHING"
+          test "$FORMATTING" = success && test "$PUBLIC" = success && test "$MATCHING" = success
