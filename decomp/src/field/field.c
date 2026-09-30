@@ -999,9 +999,66 @@ void func_8007AA44(FieldMarker *m) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AA44);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AB6C);
+typedef struct {
+    u32 addr : 24;
+    u32 len : 8;
+} P_TAG;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AC58);
+#define addPrim(ot, p) \
+    (((P_TAG *)(p))->addr = ((P_TAG *)(ot))->addr, ((P_TAG *)(ot))->addr = (u32)(p))
+
+typedef struct {
+    SVECTOR corners[4];
+    POLY_FT4 polys[2];
+} FieldQuad;
+
+s32 RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s16 *sxy0, s16 *sxy1,
+                s16 *sxy2, s16 *sxy3, s32 *p, s32 *flag);
+
+/* Project a quad's four corners with the given matrix into its buffer's
+ * textured polygon and link that polygon into the ordering table entry. */
+void func_8007AB6C(u32 *ot, FieldQuad *quad, MATRIX *m, s32 buffer) {
+    POLY_FT4 *poly = &quad->polys[buffer];
+    s32 p;
+    s32 flag;
+
+    PushMatrix();
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    RotAverage4(&quad->corners[0], &quad->corners[1], &quad->corners[2], &quad->corners[3],
+                &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
+    addPrim(ot + 1, poly);
+    PopMatrix();
+}
+
+#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
+    (p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x1), (p)->y1 = (_y1), \
+    (p)->x2 = (_x2), (p)->y2 = (_y2), (p)->x3 = (_x3), (p)->y3 = (_y3)
+
+/* Project a quad, then replace it with a 16x10 screen-aligned sprite standing
+ * on the midpoint of its projected bottom edge, and link it into the ordering
+ * table entry. */
+void func_8007AC58(u32 *ot, FieldQuad *quad, MATRIX *m, s32 buffer) {
+    POLY_FT4 *poly = &quad->polys[buffer];
+    s32 p;
+    s32 flag;
+    s32 x;
+    s32 y;
+    s32 right;
+
+    PushMatrix();
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    RotAverage4(&quad->corners[0], &quad->corners[1], &quad->corners[2], &quad->corners[3],
+                &poly->x0, &poly->x1, &poly->x2, &poly->x3, &p, &flag);
+    x = (poly->x3 + poly->x2) / 2;
+    right = x + 8;
+    x -= 8;
+    y = poly->y3;
+    setXY4(poly, x, y - 10, right, y - 10, x, y, right, y);
+    addPrim(ot + 1, poly);
+    PopMatrix();
+}
 
 /* Set the pointer's two pad buffers. */
 void func_8007AD8C(void *pad0, void *pad1) {
