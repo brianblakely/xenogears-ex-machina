@@ -2,7 +2,23 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007A9F8);
 
+/* Start a scripted camera looking at the player from yaw 0x480. */
+#ifdef NON_MATCHING /* return value loaded before the stores */
+s32 func_8007AD34(s32 index) {
+    D_8009BE0C = 0x78;
+    D_8009D3F0 = 0x1C0000;
+    D_8009BD38.vx = 0x40;
+    D_8009BD38.vy = 0x480;
+    D_8009BD38.vz = 0;
+    D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    D_8009BE24[index].u.step = 0x1000;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007AD34);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007ADD4);
 

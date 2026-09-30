@@ -114,4 +114,19 @@ void func_8008E078(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8008C364", func_8008E0F0);
+/* First of sixteen headings in which a probe from the position hits; -1 if
+ * none does. */
+s32 func_8008E0F0(Vec3 *position, s32 unused, s32 range) {
+    VECTOR hit;
+    Vec3 direction;
+    s32 heading;
+
+    for (heading = 0; heading < 0x1000; heading += 0x100) {
+        direction.vx = func_8003F8B0(heading);
+        direction.vz = -func_8003F8CC(heading);
+        if (func_80095414(position, &direction, &hit, range, 2) == 1) {
+            return heading;
+        }
+    }
+    return -1;
+}

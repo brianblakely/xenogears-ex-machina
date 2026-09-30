@@ -10,9 +10,9 @@ s32 func_80080578(s32 index) {
     actor = &D_8009BE24[index];
     actor->unk7C = 0x1000;
     D_8009BE0C = 0x78;
-    D_8009D55C.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
-    D_8009D55C.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
-    D_8009D55C.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
     actor->unk4 = 1;
     actor->state = 0;
     return 1;
@@ -42,7 +42,24 @@ void func_800809EC(PolyFT4 *quads, s32 count, s32 r, s32 g, s32 b) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080A28);
+/* Start a descent at the player and rebuild scene objects 0 and 1. */
+s32 func_80080A28(s32 index) {
+    WorldmapActor *actor;
+    SceneObject *object;
+
+    object = D_8009C620;
+    actor = &D_8009BE24[index];
+    actor->position.vx = D_8009C5AC.vx;
+    actor->position.vy = -0x80000;
+    actor->position.vz = D_8009C5AC.vz;
+    actor->u.step = 0;
+    actor->unk54 = -0x800;
+    actor->unk58 = 0x80;
+    func_8007A06C(object, object->prims, object->def->count);
+    object++;
+    func_8007A06C(object, object->prims, object->def->count);
+    return 3;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80080370", func_80080AC4);
 

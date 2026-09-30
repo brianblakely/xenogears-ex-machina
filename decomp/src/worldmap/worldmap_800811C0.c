@@ -10,9 +10,9 @@ s32 func_800813E8(s32 index) {
     actor = &D_8009BE24[index];
     actor->unk7C = 0x1000;
     D_8009BE0C = 0x78;
-    D_8009D55C.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
-    D_8009D55C.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
-    D_8009D55C.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
+    D_8009D55C.target.vx = D_8009BE28.target.vx = D_8009C5AC.vx;
+    D_8009D55C.target.vy = D_8009BE28.target.vy = D_8009C5AC.vy;
+    D_8009D55C.target.vz = D_8009BE28.target.vz = D_8009C5AC.vz;
     actor->unk4 = 1;
     actor->state = 0;
     return 1;

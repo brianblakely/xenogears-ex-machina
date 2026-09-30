@@ -105,6 +105,14 @@ typedef struct {
     s32 vx, vy, vz;
 } Vec3;
 
+/* Camera: its target and orientation. */
+typedef struct {
+    Vec3 target;
+    s32 unkC;
+} Camera;
+
+extern Camera D_8009BE28;
+
 /* Named arrival point: position in world units and its id; -1 ends a list. */
 typedef struct {
     s16 x;
@@ -521,7 +529,7 @@ typedef struct {
 
 extern Sequence D_8009A65C[];
 extern s32 D_8009D3D4;
-extern Vec3 D_8009D55C;
+extern Camera D_8009D55C; /* saved camera */
 
 void func_80097BC0(Vec3 *position);
 
@@ -616,6 +624,13 @@ extern u16 D_8009B688[];
 
 void func_8004A4D8(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct0 */
 
+extern s16 D_8009D7E0; /* scene object count */
+extern u16 D_8009D52C;
+
+void func_8007A06C(SceneObject *object, PolyFT4 *quads, s32 count);
+void func_8002CBBC(void *def);
+s32 func_80095414(Vec3 *position, Vec3 *direction, VECTOR *hit, s32 range, s32 mode);
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];
@@ -629,13 +644,6 @@ extern s32 D_8009C5BC;
 extern WorldmapView *D_8009BE3C;
 extern u8 D_8009BBB4[], D_8009BD40[];
 
-/* Camera: its target and orientation. */
-typedef struct {
-    Vec3 target;
-    s32 unkC;
-} Camera;
-
-extern Camera D_8009BE28;
 
 void func_80073B04(void);
 void func_800737EC(void);

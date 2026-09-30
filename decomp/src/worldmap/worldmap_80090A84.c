@@ -8,7 +8,31 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090FB4);
 
+/* Restore the actor from the saved camera state; vehicles get state 3. */
+#ifdef NON_MATCHING /* saved-camera and yaw addresses not kept in registers */
+s32 func_80091430(s32 index) {
+    WorldmapActor *actor;
+    Camera *saved;
+
+    actor = &D_8009BE24[index];
+    saved = &D_8009D55C;
+    actor->position = saved->target;
+    actor->unk34 = saved->unkC;
+    D_8009BD38.vz = 0;
+    D_8009BD38.vy = D_8009D52C;
+    actor->u.step = (s16)D_8009D52C;
+    actor->unk58 = D_8009BD38.vy << 12;
+    switch (D_8009BE10) {
+    case 6:
+    case 7:
+        actor->state = 3;
+        break;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80091430);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800914D0);
 
@@ -75,9 +99,37 @@ void func_800931B0(void) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800931D8);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093354);
+/* Wrap a position (20.12) onto the area's extent. */
+void func_80093354(Vec3 *position) {
+    if (position->vx >= D_8009D160 << 23) {
+        position->vx -= D_8009D160 << 23;
+    }
+    if (position->vx < 0) {
+        position->vx += D_8009D160 << 23;
+    }
+    if (position->vz >= D_8009D2B4 << 23) {
+        position->vz -= D_8009D2B4 << 23;
+    }
+    if (position->vz < 0) {
+        position->vz += D_8009D2B4 << 23;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800933EC);
+/* Wrap a position (world units) onto the area's extent. */
+void func_800933EC(Vec3 *position) {
+    if (position->vx >= D_8009D160 << 11) {
+        position->vx -= D_8009D160 << 11;
+    }
+    if (position->vx < 0) {
+        position->vx += D_8009D160 << 11;
+    }
+    if (position->vz >= D_8009D2B4 << 11) {
+        position->vz -= D_8009D2B4 << 11;
+    }
+    if (position->vz < 0) {
+        position->vz += D_8009D2B4 << 11;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80093484);
 

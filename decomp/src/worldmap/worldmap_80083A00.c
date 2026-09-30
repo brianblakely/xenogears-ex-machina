@@ -25,7 +25,16 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084580);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80084818);
+/* Free the scene objects' primitives and definitions, then the objects. */
+void func_80084818(void) {
+    s32 i;
+
+    for (i = 0; i < D_8009D7E0; i++) {
+        func_800320E8(D_8009C620[i].prims);
+        func_8002CBBC(D_8009C620[i].def);
+    }
+    func_800320E8(D_8009C620);
+}
 
 /* Link scene object `child` to `parent`. */
 void func_800848B4(s32 parent, s32 child) {
