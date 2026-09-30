@@ -426,8 +426,11 @@ extern u8 D_800C34CC[];    /* combo step flags */
 
 /* Direction arrow block (*800c3e24, 0xec bytes). */
 typedef struct {
-    u8 unk0[0xE6];
-    u8 arrows[4];      /* +0xE6 a target lies that way */
+    POLY_G3 prims[8]; /* per direction, one per draw buffer */
+    s32 shade;           /* +0xE0 pulsing red level */
+    u8 buffer;           /* +0xE4 */
+    u8 fading;           /* +0xE5 the shade is going down */
+    u8 arrows[4];        /* +0xE6 a target lies that way */
     u8 unkEA[2];
 } DirectionArrows;
 

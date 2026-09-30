@@ -941,7 +941,36 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800745EC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074AB8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074D4C);
+/* While a target is being chosen, pulse the direction arrows (red between
+ * 0x40 and 0xfc) and draw the ones pointing at targets. The block is
+ * addressed as its leading primitive array. */
+void func_80074D4C(void) {
+    s32 i;
+
+    if (D_800D2D28->unkC6 != 0) {
+        if (D_800C3E24->fading) {
+            D_800C3E24->shade -= 4;
+            if (D_800C3E24->shade < 0x40) {
+                D_800C3E24->fading = 0;
+                D_800C3E24->shade = 0x40;
+            }
+        } else {
+            D_800C3E24->shade += 4;
+            if (D_800C3E24->shade >= 0x100) {
+                D_800C3E24->fading = 1;
+                D_800C3E24->shade = 0xFC;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (D_800C3E24->arrows[i]) {
+                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].r0 = D_800C3E24->shade;
+                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].g0 = 0;
+                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].b0 = 0;
+                AddPrim(D_800CCB04.ot + 1, &((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer]);
+            }
+        }
+    }
+}
 
 /* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
 void func_80074EEC(void) {
