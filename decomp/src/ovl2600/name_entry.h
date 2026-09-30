@@ -223,19 +223,34 @@ typedef struct {
     u8 party[3]; /* 0x30: party members, 0xFF empty */
     u8 pad_33;
     u8 label_shown[4]; /* 0x34 */
-    u8 pad_38[0x6C - 0x38];
+    u8 pad_38[0x47 - 0x38];
+    u8 entry_on;       /* 0x47: name entry drawn */
+    u8 pad_48[0x6C - 0x48];
 } MenuFlags;
 
 /* The name entry block (0xDEC bytes). */
 typedef struct {
-    u8 pad_0[0xDE4];
+    POLY_FT4 confirm[2];     /* 0x0: sprite 0xF9 */
+    POLY_FT4 back[2];        /* 0x50: sprite 0xFC */
+    POLY_FT4 frame[4];       /* 0xA0: sprite 0xF0 */
+    POLY_FT4 cursor[2];      /* 0x140: sprite 0x14B */
+    u8 pad_190[0xD20 - 0x190];
+    LINE_F3 line_a[2];       /* 0xD20 */
+    LINE_F3 line_b[2];       /* 0xD50 */
+    u8 pad_D80[0xDA0 - 0xD80];
+    SVECTOR cursor_at[4];    /* 0xDA0 */
+    u8 pad_DC0[0xDE0 - 0xDC0];
+    u8 parts_buffer;         /* 0xDE0 */
+    u8 cursor_buffer;        /* 0xDE1 */
+    u8 pad_DE2[2];
     u8 b_DE4;      /* 0xDE4 */
-    u8 pad_DE5;
+    u8 shown;      /* 0xDE5 */
     u8 b_DE6;      /* 0xDE6 */
     u8 pad_DE7;
     u8 length;     /* 0xDE8: codes entered */
     u8 max_length; /* 0xDE9 */
-    u8 pad_DEA[2];
+    u8 frame_count; /* 0xDEA */
+    u8 pad_DEB;
 } NameEntry;
 
 /* The shared menu state (*D_800625A0), as far as this overlay uses it. */

@@ -1369,7 +1369,51 @@ void func_801CA400(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA558);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CADC8);
+/* Open the name entry: its panel and message, the cursor sprite and its
+ * quad, the confirm/back/grid sprites, the two command labels, the
+ * character grid, and show the entry. */
+void func_801CADC8(void) {
+    func_801C7AA4(3, 0x10, 0x9A, 0xC0, 0x3C, 1, 1, 4, 0);
+    func_801C9FC0(0x1D);
+    func_8002675C(D_800625A0->sprite_sheet, 0x14B, D_800625A0->entry->cursor,
+                  D_800625A0->buffer_index, 0, 0, 0x1000);
+    func_801C6408(D_800625A0->entry->cursor_at,
+                  D_800625A0->entry->cursor[D_800625A0->buffer_index].x0 + 0x18,
+                  D_800625A0->entry->cursor[D_800625A0->buffer_index].y0 + 0x9E,
+                  D_800625A0->entry->cursor[D_800625A0->buffer_index].x1 -
+                      D_800625A0->entry->cursor[D_800625A0->buffer_index].x0,
+                  D_800625A0->entry->cursor[D_800625A0->buffer_index].y3 -
+                      D_800625A0->entry->cursor[D_800625A0->buffer_index].y0);
+    D_800625A0->entry->cursor_buffer = D_800625A0->buffer_index;
+    func_8002675C(D_800625A0->sprite_sheet, 0xF9, D_800625A0->entry->confirm,
+                  D_800625A0->buffer_index, 0xE8, 0xB6, 0x1000);
+    func_8002675C(D_800625A0->sprite_sheet, 0xFC, D_800625A0->entry->back,
+                  D_800625A0->buffer_index, 0xE0, 0xC6, 0x1000);
+    D_800625A0->entry->frame_count =
+        func_8002675C(D_800625A0->sprite_sheet, 0xF0, D_800625A0->entry->frame,
+                      D_800625A0->buffer_index, 0xF4, 0x6E, 0x1000);
+    D_800625A0->entry->parts_buffer = D_800625A0->buffer_index;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->x0 = 0xF8;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->y0 = 0xB6;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->x1 = D_800625A0->labels[0].width + 0xF8;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->y1 = 0xB6;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->x2 = 0xF8;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->y2 = 0xC3;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->x3 = D_800625A0->labels[0].width + 0xF8;
+    (D_800625A0->labels[0].poly + D_800625A0->buffer_index)->y3 = 0xC3;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->x0 = 0xF0;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->y0 = 0xC6;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->x1 = D_800625A0->labels[3].width + 0xF0;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->y1 = 0xC6;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->x2 = 0xF0;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->y2 = 0xD3;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->x3 = D_800625A0->labels[3].width + 0xF0;
+    (D_800625A0->labels[3].poly + D_800625A0->buffer_index)->y3 = 0xD3;
+    D_800625A0->labels[3].buffer = D_800625A0->buffer_index;
+    func_801CA558();
+    D_800625A0->entry->shown = 1;
+    D_800625A0->flags->entry_on = 1;
+}
 
 /* Render the name being entered (text codes `codes`) into VRAM at (0x180, 0xEA). */
 void func_801CB1C4(u8 *codes) {
