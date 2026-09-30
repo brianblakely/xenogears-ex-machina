@@ -102,7 +102,148 @@ s32 func_8007C724(s32 index) {
     return 1;
 }
 
+/* Camera shot director: move the camera along a shot path (u.step, speed
+ * unk58), keep the saved camera target, and shake the view by unk7C. */
+#ifdef NON_MATCHING /* view-vector stores scheduled differently (same pattern as 80077E68) */
+s32 func_8007C7D8(s32 index) {
+    WorldmapActor *actor;
+    ShotScratch *scratch;
+    SVECTOR *points;
+    s32 shake;
+
+    actor = &D_8009BE24[index];
+    scratch = (ShotScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        actor->state = 1;
+        actor->unk5C = 0x8200;
+        actor->unk4 = 0;
+        actor->unk60 = 1;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 3;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 4;
+        break;
+    case 4:
+        actor->state = 5;
+        actor->unk5C = 0xA800;
+        actor->unk4 = 0;
+        actor->unk60 = 8;
+        break;
+    case 6:
+        actor->state = 6;
+        actor->unk4 = 0;
+        actor->u.step = 0;
+        actor->unk58 = 0x40;
+        break;
+    }
+    if (D_8009D144 == 0) {
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    switch (actor->state) {
+    case 2:
+        actor->unk58 -= actor->unk60;
+        if (actor->unk58 < 0) {
+            actor->unk58 = 0;
+            actor->state = 0;
+        }
+    case 1:
+        actor->u.step += actor->unk58;
+        if (actor->u.step > actor->unk5C) {
+            actor->state = 2;
+        }
+    case 0:
+    follow:
+        scratch->point.vy = 0;
+        scratch->point.vx = 0;
+        scratch->point.vz = D_8009D55C.target.vz - D_8009BE28.target.vz;
+        func_80093484(&scratch->point);
+        GROUND_SCROLL[2] += scratch->point.vz;
+        D_8009BE28.target.vz = D_8009D55C.target.vz;
+        points = &D_8009A4F8[actor->u.step >> 12];
+        if (points[2].pad != -1) {
+            func_80076858(actor->u.step & 0xFFF, &points[0], &points[1], &points[2], &scratch->point);
+            VIEW.at.vz = 0;
+            VIEW.at.vx = 0;
+            VIEW.up.vz = 0;
+            VIEW.up.vx = 0;
+            VIEW.eye.vx = scratch->point.vx >> 16;
+            VIEW.up.vy = -0x1000;
+            VIEW.eye.vz = -(scratch->point.vz >> 16);
+            VIEW.at.vy = D_8009BE28.target.vy >> 12;
+            VIEW.eye.vy = scratch->point.vy >> 16;
+        }
+        func_80097244(D_8009BD40);
+        func_80097070(&D_8009C808, &D_8009BD38);
+        break;
+    case 3:
+        actor->unk7C = 0xF000;
+        actor->state = 0;
+        goto follow;
+    case 4:
+        scratch->spot.vy = 0;
+        scratch->spot.vx = D_8009BE28.target.vx >> 12;
+        scratch->spot.vz = D_8009BE28.target.vz >> 12;
+        func_80089160(0x1A, &scratch->spot, NULL);
+        func_80089160(0x1B, &scratch->spot, NULL);
+        actor->unk7C -= 0x120;
+        if (actor->unk7C < 0x1000) {
+            actor->unk7C = 0x1000;
+            actor->state = 0;
+            func_800894C8(0x1A);
+            func_800894C8(0x1B);
+        }
+        goto follow;
+    case 5:
+        actor->unk58 = 0x100;
+        actor->state = 1;
+        goto follow;
+    case 6:
+        scratch->point.vy = 0;
+        scratch->point.vx = 0;
+        scratch->point.vz = D_8009D55C.target.vz - D_8009BE28.target.vz;
+        func_80093484(&scratch->point);
+        GROUND_SCROLL[2] += scratch->point.vz;
+        D_8009BE28.target.vx = D_8009D55C.target.vx;
+        D_8009BE28.target.vy = D_8009D55C.target.vy;
+        D_8009BE28.target.vz = D_8009D55C.target.vz;
+        actor->u.step += actor->unk58;
+        if (actor->u.step > 0x4800) {
+            actor->unk58--;
+            if (actor->unk58 < 0) {
+                actor->unk58 = 0;
+            }
+        }
+        points = &D_8009A568[actor->u.step >> 12];
+        if (points[2].pad != -1) {
+            func_80076858(actor->u.step & 0xFFF, &points[0], &points[1], &points[2], &scratch->point);
+            VIEW.at.vz = 0;
+            VIEW.at.vx = 0;
+            VIEW.up.vz = 0;
+            VIEW.up.vx = 0;
+            VIEW.eye.vx = scratch->point.vx >> 16;
+            VIEW.up.vy = -0x1000;
+            VIEW.eye.vz = -(scratch->point.vz >> 16);
+            VIEW.at.vy = D_8009BE28.target.vy >> 12;
+            VIEW.eye.vy = scratch->point.vy >> 16;
+        }
+        func_80097244(D_8009BD40);
+        func_80097070(&D_8009C808, &D_8009BD38);
+        break;
+    }
+    shake = rand() % (actor->unk7C >> 12) - (actor->unk7C >> 13);
+    scratch->spot.vy = shake;
+    ((s16 *)D_8009BD40)[1] += shake; /* VIEW.eye.vy */
+    VIEW.at.vy += scratch->spot.vy;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007C3B8", func_8007C7D8);
+#endif
 
 /* Link scene objects 0-3 to 4, hide 4 and reset its rotation; place the actor. */
 #ifdef NON_MATCHING /* actor and constants swap registers */

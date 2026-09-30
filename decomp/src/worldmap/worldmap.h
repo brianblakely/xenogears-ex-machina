@@ -1549,4 +1549,13 @@ typedef struct {
     MATRIX frame;     /* 0xF0 */
 } FollowScratch;
 
+extern SVECTOR D_8009A4F8[], D_8009A568[]; /* camera shot paths; pad -1 ends */
+
+/* Scratchpad work area of the camera shot director. */
+typedef struct {
+    VECTOR point;     /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR spot;     /* 0xA0 */
+} ShotScratch;
+
 #endif
