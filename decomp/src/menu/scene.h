@@ -208,10 +208,10 @@ extern u32 D_80092710;  /* bit 0/1: controller port 1/2 unavailable */
 extern s32 D_80092754;
 extern s32 D_8009272C;  /* port 1 vibration entry selected */
 extern s32 D_80092730;  /* port 2 vibration entry selected */
-extern s32 D_80092938;
+extern void *D_80092938; /* ordering table entry of the menu overlay */
 s32 func_80035734(s32 port); /* controller type */
 void func_8007EC54(u8 *text);
-void func_8007F258(s32 arg, s32 flag);
+void func_8007F258(void *ot, s32 flag);
 extern char *D_8009132C[]; /* names of the entries of setting 10 */
 void func_80081100(s32 sound, s32 arg);
 extern s32 D_8009130C[]; /* value of each speed setting */
@@ -375,5 +375,7 @@ typedef struct {
 
 extern u16 D_800926E0; /* text texture page */
 extern u16 D_800926E4; /* text CLUT */
+
+u16 func_80043A58(s32 x, s32 y); /* CLUT id */
 
 #endif

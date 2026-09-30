@@ -1075,7 +1075,66 @@ void func_8007EFB4(void) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007EFB4);
 #endif
 
+#ifdef NON_MATCHING
+/* Draw the portrait of a list entry (the index wraps around the list) on
+ * the left or right side. At fade 64 it is shown full size and unshaded;
+ * below, it is shaded and shrunk by fade / 16.
+ * Does not match: the vertex arithmetic is scheduled differently (right edge computed early). */
+void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade) {
+    GridCell *cell;
+    s32 shrink;
+    s32 top;
+    s32 bottom;
+    s32 left;
+    s32 right;
+    s32 u;
+
+    if (right_side) {
+        x += 0xD3;
+    } else {
+        x += 0x33;
+    }
+    if (index > D_80092888 - 1) {
+        index -= D_80092888;
+    }
+    if (index < 0) {
+        index += D_80092888;
+    }
+    cell = &D_8009270C[D_800928EC[index]->id];
+    if (fade == 0x40) {
+        quad->len = 9;
+        ((u8 *)&quad->rgbc)[3] = 0x2D;
+        quad->xy0 = x | 0x300000;
+        right = x + 0x3C;
+        quad->xy1 = right | 0x300000;
+        quad->xy2 = x | 0x700000;
+        quad->xy3 = right | 0x700000;
+    } else {
+        fade += 0x40;
+        shrink = (fade - 0x40) >> 4;
+        quad->len = 9;
+        quad->rgbc = fade | (fade << 8) | (fade << 16) | 0x2C000000;
+        left = x - (shrink - 4);
+        top = 0x34 - shrink;
+        quad->xy0 = left | (top << 16);
+        right = left + 0x34 + shrink * 2;
+        bottom = top + 0x38 + shrink * 2;
+        quad->xy1 = right | (top << 16);
+        quad->xy2 = left | (bottom << 16);
+        quad->xy3 = right | (bottom << 16);
+    }
+    u = cell->image_x * 2;
+    quad->uv0 = u | (cell->image_y << 8);
+    quad->uv1 = (u + 0x3B) | (cell->image_y << 8);
+    quad->uv2 = u | ((cell->image_y + 0x3F) << 8);
+    quad->uv3 = (u + 0x3B) | ((cell->image_y + 0x3F) << 8);
+    quad->clut = func_80043A58(cell->clut_x, cell->clut_y);
+    quad->tpage = func_80043A1C(1, 0, cell->image_x & 0xFF80, cell->image_y);
+    func_80043B48(D_80092938, quad);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F05C);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8007F258);
 
