@@ -1257,17 +1257,51 @@ void func_8007762C(Actor *actor, s32 angle, s32 shift, s32 lift) {
     func_80077584(actor, angle, shift, lift);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800776A8);
+/* Start pad vibration for an actor's side when enabled for it (the right
+ * side only in modes 2 and 4) and it is not suppressed. */
+s32 func_800776A8(Actor *actor, s32 arg) {
+    if (func_80083CD8() == 4) {
+        return;
+    }
+    if (actor->flags & 0x8000000) {
+        if ((D_800928C8 == 2 || D_800928C8 == 4) && (D_80099D9C & 1) && !(actor->flags & 0x40)) {
+            func_80036258(1, arg);
+        }
+    } else if ((D_80099D9B & 1) && !(actor->flags & 0x40)) {
+        func_80036258(0, arg);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80077770);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80077A38);
+/* Advance an actor's combo with a button and return the new combo's
+ * entry. */
+u32 *func_80077A38(Actor *actor, s32 button) {
+    s32 i = actor->unk9C3 * 2;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80077A88);
+    if (button != 0) {
+        actor->unk9C3 = D_80091178[i];
+    } else {
+        actor->unk9C3 = D_80091178[i + 1];
+    }
+    return &actor->combos[actor->unk9C3];
+}
+
+/* Set an actor's 0x80000 flag. */
+void func_80077A88(Actor *actor) {
+    actor->flags |= 0x80000;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80077A9C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078154);
+/* Put an actor back at its home position, idle. */
+void func_80078154(Actor *actor) {
+    actor->pos = actor->home;
+    actor->anim = 0;
+    actor->unkC4 = 0;
+    actor->unkC5 = 0;
+    actor->flags |= 0x2000000;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80078194);
 

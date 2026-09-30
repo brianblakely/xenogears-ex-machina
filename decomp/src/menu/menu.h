@@ -170,7 +170,8 @@ typedef struct Actor {
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     Model *model;        /* 0x5C */
-    u8 unk60[0x24];
+    u8 unk60[0x20];
+    u32 *combos;         /* 0x80: one entry per combo number */
     u8 *unk84;
     u8 unk88[0x28];
     s32 floor_y;         /* 0xB0 */
@@ -208,7 +209,8 @@ typedef struct Actor {
     u8 unk90A;
     u8 unk90B[0xB];
     s16 unk916;
-    u8 unk918[0x34];
+    u8 unk918[0x24];
+    Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0x42];
     s16 unk99E;
@@ -383,6 +385,9 @@ extern ShotKind D_800910F4[];
 extern SideHits D_80096FB8[2];
 extern s32 D_8009112C;
 extern s32 D_80091198[];
+extern u8 D_80091178[]; /* pairs: next combo number after each button */
+extern u8 D_80099D9B;
+extern u8 D_80099D9C;
 extern s32 D_8009292C;
 extern s32 D_80092654; /* last crossing point x, z */
 extern s32 D_80092658;
@@ -417,6 +422,7 @@ void func_800346D4(MenuWindow *window);
 void func_80034714(MenuWindow *window, s32 text);
 void func_80039C4C(s32 arg);
 void func_80039FF8(void);
+void func_80036258(s32 port, s32 arg);
 void func_800346A4(MenuWindow *window);
 void func_80034800(MenuWindow *window, s32 colour, s32 a2, s32 a3);
 void func_80034874(MenuWindow *window, s32 cursor);
