@@ -4808,7 +4808,45 @@ void func_8008EC30(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EC30);
 #endif
 
+#ifdef NON_MATCHING
+/* Event 0x67: request movie op1 with parameters op3/op5/op7, mode op9 (0xfe
+ * marks 800c3a3a, 0x40 the fade), window position op11/op13 and size
+ * op15/op17, without a sound bank. */
+void func_8008EE14(void) {
+    s32 mode;
+    u16 x;
+    u16 y;
+
+    D_800C3A20 = func_800ACDEC(1);
+    D_800C3A2A = func_800ACDEC(3);
+    D_800C3A2C = func_800ACDEC(5);
+    D_800C3A2E = func_800ACDEC(7);
+    D_800C3A30 = func_800ACDEC(9);
+    mode = D_800C3A30;
+    if (mode == 0xFE) {
+        D_800C3A3A = 1;
+    } else {
+        D_800C3A3A = 0;
+    }
+    x = func_800ACDEC(0xB);
+    D_800C3A22 = x;
+    D_800C3A26 = x;
+    y = func_800ACDEC(0xD);
+    D_800C3A24 = y;
+    D_800C3A28 = y;
+    D_800C3A32 = func_800ACDEC(0xF);
+    D_800C3A34 = func_800ACDEC(0x11);
+    D_800ADB80 = mode & 0x40;
+    D_800C3A38 = 0xFF;
+    D_800ADB74 = 2;
+    D_800C3A36 = 0;
+    D_800C3A30 &= 0xF;
+    D_800ADB70 = 1;
+    D_800B0078->pc += 0x13;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008EE14);
+#endif
 
 /* Event: request transition 1 with operand 1 (800adb38/800adb3c). */
 void func_8008EF5C(void) {
