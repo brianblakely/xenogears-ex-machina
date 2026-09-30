@@ -3909,7 +3909,46 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097D5C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009892C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098AF8);
+/* A slot's turn timer from its speed (party: less the current command's
+ * weight, gear speed for a slot in gear), capped, with a random -3..4
+ * spread. Sets the attacker globals and, for the party, the command
+ * descriptor. Defined old-style: callers pass the slot unnarrowed. */
+s32 func_80098AF8(slot, mode)
+u8 slot;
+s32 mode;
+{
+    BattleRecord *record = &D_800C34B0->records[slot];
+    u16 speed;
+
+    D_800D2D6C = record->unkA4;
+    D_800C3E00 = record;
+    if (slot < 3) {
+        if (!(record->unk15A & 0x80)) {
+            D_800C3DFC = &D_800C34B0->partyCommands[slot][D_800C34B0->command];
+            if (record->speed > D_800C3DFC->weight) {
+                speed = (record->speed - D_800C3DFC->weight) * 9;
+            } else {
+                speed = 9;
+            }
+        } else {
+            D_800C3DFC = &D_800C34B0->gearCommands[slot][D_800C34B0->command];
+            if (record->gearSpeed > D_800C3DFC->weight) {
+                speed = (record->gearSpeed - D_800C3DFC->weight) * 9;
+            } else {
+                speed = 9;
+            }
+        }
+    } else {
+        speed = record->speed * 9;
+    }
+    if (speed >= 0xA6) {
+        speed = 0xA0;
+    }
+    speed = 0xA5 - speed;
+    speed -= func_8003FA38() % 8 - 4;
+    func_80094D24();
+    return (u8)speed;
+}
 
 /* Resolve an item/effect `param` on every slot in the +0x5fac mask, then
  * set its animation from the effect table. */

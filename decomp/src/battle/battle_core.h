@@ -59,7 +59,8 @@ typedef struct {
     u16 unk4E;
     u8 unk50[0x56 - 0x50];
     u8 unk56;
-    u8 unk57[0x5B - 0x57];
+    u8 unk57[0x5A - 0x57];
+    u8 speed;          /* +0x5A */
     u8 unk5B;
     u8 unk5C[0x7A - 0x5C];
     u16 unk7A;
@@ -74,12 +75,15 @@ typedef struct {
     u16 unk8A;
     u16 unk8C;
     u16 unk8E;
-    u8 unk90[0x104 - 0x90];
+    u8 unk90[0xA4 - 0x90];
+    u8 unkA4[0x104 - 0xA4]; /* the slot's attacker block */
     u32 unk104;
     s32 unk108;
     u8 unk10C[0x120 - 0x10C];
     u16 unk120;
-    u8 unk122[0x14C - 0x122];
+    u8 unk122[0x13C - 0x122];
+    u8 gearSpeed;      /* +0x13C */
+    u8 unk13D[0x14C - 0x13D];
     s32 unk14C;
     u8 unk150[6];
     u16 unk156;
@@ -408,10 +412,29 @@ typedef struct {
 extern void *D_800D2E38[7]; /* window blocks */
 extern WindowRect *D_800D2D90[7];
 
+/* Command descriptor (0x28 bytes). */
+typedef struct {
+    u8 unk0[0xA];
+    u16 unkA;
+    u8 unkC[0x11 - 0xC];
+    u8 unk11;
+    u8 unk12[2];
+    u8 unk14;
+    u8 unk15[0x1C - 0x15];
+    u8 unk1C;
+    u8 unk1D;
+    u16 unk1E;
+    u8 unk20[7];
+    s8 weight;         /* +0x27 turn timer penalty */
+} CommandDescriptor;
+
 /* Battle state (800ccce8): the records and per-action arrays. */
 typedef struct {
     BattleRecord records[11];
-    u8 unkFD0[0x5F54 - 0xFD0];
+    u8 unkFD0[0x1058 - 0xFD0];
+    CommandDescriptor partyCommands[3][38]; /* +0x1058 */
+    CommandDescriptor gearCommands[3][42];  /* +0x2228 */
+    u8 unk35D8[0x5F54 - 0x35D8];
     s32 unk5F54[3];
     s32 unk5F60[3];
     s32 damage[12];    /* +0x5F6C */
@@ -420,7 +443,9 @@ typedef struct {
     u16 unk5FAC;       /* effect target mask */
     u8 unk5FAE[2];
     u16 unk5FB0;
-    u8 unk5FB2[0x5FC7 - 0x5FB2];
+    u8 unk5FB2[0x5FC2 - 0x5FB2];
+    u8 command;        /* +0x5FC2 current command index */
+    u8 unk5FC3[0x5FC7 - 0x5FC3];
     u8 unk5FC7;
 } BattleState;
 
@@ -432,6 +457,7 @@ typedef struct {
 
 extern EffectEntry D_800D2200[];
 extern u8 D_800D2DC4;
+extern u8 *D_800D2D6C;     /* attacker block */
 extern BattleRecord *D_800C3E34; /* target record */
 extern s32 D_800D2C54[12]; /* per-slot damage */
 extern u8 D_800D2C88[12];  /* per-slot result code */
@@ -454,18 +480,6 @@ extern s32 D_800C2084;
 extern BattleState *D_800C34B0;
 
 /* Resolver globals. */
-typedef struct {
-    u8 unk0[0xA];
-    u16 unkA;
-    u8 unkC[0x11 - 0xC];
-    u8 unk11;
-    u8 unk12[2];
-    u8 unk14;
-    u8 unk15[0x1C - 0x15];
-    u8 unk1C;
-    u8 unk1D;
-    u16 unk1E;
-} CommandDescriptor;
 
 extern BattleRecord *D_800C3E00; /* attacker record */
 extern CommandDescriptor *D_800C3DFC;
@@ -684,6 +698,7 @@ void func_80093B08(u8 member);
 s32 func_8008AC00(s32 count);
 void func_800769E8(RECT *rect, u32 *pixels);
 void func_80097D08(void);
+void func_80094D24(void);
 u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
 void func_80076B68(POLY_FT4 *prim);
