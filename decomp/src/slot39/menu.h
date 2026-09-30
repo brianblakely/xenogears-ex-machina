@@ -29,6 +29,15 @@ typedef struct MATRIX {
     s32 t[3];
 } MATRIX;
 
+/* libgs TIM image descriptor (ReadTIM). */
+typedef struct TIM_IMAGE {
+    u32 mode;
+    RECT *crect;
+    u32 *caddr;
+    RECT *prect;
+    u32 *paddr;
+} TIM_IMAGE;
+
 typedef struct POLY_G4 {
     u32 tag;
     u8 r0, g0, b0, code;
@@ -40,6 +49,35 @@ typedef struct POLY_G4 {
     u8 r3, g3, b3, pad3;
     s16 x3, y3;
 } POLY_G4;
+
+/* libgpu primitive macros. */
+#define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = (_r0), (p)->g0 = (_g0), (p)->b0 = (_b0))
+#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
+    ((p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x1), (p)->y1 = (_y1), \
+     (p)->x2 = (_x2), (p)->y2 = (_y2), (p)->x3 = (_x3), (p)->y3 = (_y3))
+
+typedef struct POLY_F4 {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    s16 x3, y3;
+} POLY_F4;
+
+typedef struct LINE_F3 {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+    s16 x2, y2;
+    u32 pad;
+} LINE_F3;
+
+typedef struct DR_MODE {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
 
 typedef struct POLY_FT4 {
     u32 tag;
@@ -116,11 +154,12 @@ typedef struct MenuImages {
 /* Shared primitive block (*(state + 348)). */
 typedef struct MenuPrims {
     POLY_FT4 polys[2]; /* 0 */
-    u8 pad50[0x48];
-    u8 fills[2][0x18]; /* 98: per buffer */
-    u8 padC8[0x60];
-    u8 modes0[2][0xc]; /* 128 */
-    u8 modes[2][0xc]; /* 140: per buffer */
+    POLY_G4 backdrop[2]; /* 50: per buffer: shaded backdrop */
+    POLY_F4 fills[2]; /* 98: per buffer: full-screen fade */
+    LINE_F3 linesA[2]; /* C8: per buffer: separator line */
+    LINE_F3 linesB[2]; /* F8 */
+    DR_MODE modes0[2]; /* 128 */
+    DR_MODE modes[2]; /* 140: per buffer */
     u8 frame; /* 158 */
     u8 mode; /* 159 */
     u8 pad15A[0x1];
@@ -139,9 +178,15 @@ typedef struct MenuCardFile {
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
     MenuCardFile files[32]; /* 0 */
-    u8 padB80[0x14];
+    TIM_IMAGE icon; /* B80: the file icon TIM */
     u8 headers[32][0x200]; /* B94: first block of each listed file */
-    u8 pad4B94[0x3E0];
+    u8 saveMagic[2]; /* 4B94: header of a written file: "SC" */
+    u8 saveIconFlag; /* 4B96 */
+    u8 saveBlocks; /* 4B97 */
+    u8 saveTitle[0x5C]; /* 4B98 */
+    u8 savePalette[0x20]; /* 4BF4 */
+    u8 saveIcon[0x80]; /* 4C14 */
+    u8 pad4C94[0x2E0];
     s32 result[2]; /* 4F74: per port: last card check result */
     s32 cursor; /* 4F7C: file cursor over both ports (port 2 from 15) */
     s32 unk4F80; /* 4F80 */
@@ -162,7 +207,8 @@ typedef struct MenuCard {
     u8 title[30]; /* 4FFC: save title line of the text file */
     u8 unk501A; /* 501A */
     u8 unk501B; /* 501B */
-    u8 pad501C[0x18];
+    u32 otherPrefix[4]; /* 501C: the other file name prefix (13 bytes) */
+    u8 pad502C[0x8];
 } MenuCard;
 
 /* One of the two display buffers. */
@@ -597,7 +643,7 @@ typedef struct MenuState {
     u8 pad2E8[0x4];
     s32 time[7]; /* 2EC: play time digits: hours (three), minutes and seconds (two each) */
     s32 bufferIndex; /* 308: 0/1: the buffer being built; the drawing callback clears it */
-    u8 pad30C[0x10];
+    u8 present[16]; /* 30C: per character: in the party bits */
     u8 digits[9]; /* 31C: decimal digits of a number, leading zeros ff */
     u8 input; /* 325: decoded input of this frame */
     u8 cardPollTimer; /* 326 */
@@ -684,6 +730,9 @@ extern u8 D_8006F6F0[];
 extern u8 D_8006F754[];
 extern u8 D_8006F7B8[];
 extern u8 D_8006F84E[];
+extern u8 D_8006F368[3];      /* game data: character of each party slot, ff empty */
+extern u16 D_8006F364;        /* game data: party member bits */
+extern u16 D_8006F366;
 extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;
 extern s32 D_8006EF58;        /* game data: money */        /* game data: save title line of text file 1 */
@@ -754,6 +803,31 @@ void func_800320E8(void *block);          /* free */
 void bzero(void *dst, s32 size);  /* bzero */
 void func_8001B970(void);
 void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d, s32 *e, s32 *f);
+
+/* Menu resource loading (801c65f4). */
+typedef struct MenuResources {
+    s32 count;
+    void *files[8]; /* packed files, relocated by 8003342c */
+} MenuResources;
+
+/* Texture of a sprite sheet entry (80026338's six outputs). */
+typedef struct SheetEntry {
+    s32 unk0;
+    s32 mode;
+    s32 clutX, clutY;
+    s32 pageX, pageY;
+} SheetEntry;
+
+extern MenuResources *D_8005945C; /* the menu resources */
+extern void *D_8006259C;          /* the menu effect bank */
+void func_8003342C(void *archive);                /* relocate an offset table */
+void *func_80032E88(void *packed, s32 mode);     /* unpack into a new block */
+void func_8002DD20(void *list);                   /* load a TIM list */
+void func_80038428(void *bank);
+void OpenTIM(void *tim);                          /* OpenTIM */
+TIM_IMAGE *ReadTIM(TIM_IMAGE *image);             /* ReadTIM */
+void *memmove(void *dst, void *src, s32 size);    /* memmove */
+char *strcpy(char *dst, const char *src);         /* inlined for constant strings */
 void func_80028470(s32 arg0, s32 arg1);
 s32 func_800288EC(s32 file);                                 /* file size */
 void func_800295D8(s32 file, void *dst, s32 arg2, s32 arg3); /* read file */
@@ -821,7 +895,9 @@ void func_801C55A0(void);
 void func_801C57A4(void);
 void func_801C58EC(void);
 void func_801C6400(void);
+void func_801C65F4(void);
 void func_801C6AA0(MenuState *state);
+u16 func_801C865C(u16 flags, u8 bit);
 void func_801C6D4C(void);
 void func_801C6D5C(void);
 void func_801C6D90(void);
@@ -901,6 +977,11 @@ void func_801D1CA0(void);
 void func_801D1D40(void);
 void func_801D1E80(void);
 void func_801D22C4(void);
+void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b);
+void SetLineF3(LINE_F3 *line);         /* SetLineF3 */
+void SetPolyF4(POLY_F4 *poly);         /* SetPolyF4 */
+u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);
 void func_801D2968(void);

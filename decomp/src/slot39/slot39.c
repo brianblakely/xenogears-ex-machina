@@ -490,9 +490,129 @@ void func_801C6400(void) {
 #else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6400);
 #endif
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6AA0);
+/* Load the menu resources: the card file header template (name prefixes,
+ * "SC" header, icon palette and pixels), the TIM list, sprite sheet and
+ * label text, the party's portraits and, with sound, the effect bank. */
+#ifdef NON_MATCHING
+void func_801C65F4(void) {
+    TIM_IMAGE tim;
+    SheetEntry entries[3];
+    MenuResources *res;
+    void *icon;
+    void *list;
+    void *portraits;
+    s32 i;
+    u8 id;
+
+    res = D_8005945C;
+    func_8003342C(res);
+    icon = func_80032E88(res->files[0], 1);
+    OpenTIM(icon);
+    ReadTIM(&D_800625A0->card->icon);
+    strcpy(D_800625A0->card->prefix, "BASLUS-00664");
+    strcpy((char *)D_800625A0->card->otherPrefix, "BASLUS-01160");
+    D_800625A0->card->saveMagic[0] = 'S';
+    D_800625A0->card->saveMagic[1] = 'C';
+    D_800625A0->card->saveIconFlag = 0x11;
+    D_800625A0->card->saveBlocks = 1;
+    bzero(D_800625A0->card->saveTitle, sizeof(D_800625A0->card->saveTitle));
+    memmove(D_800625A0->card->savePalette, D_800625A0->card->icon.caddr, sizeof(D_800625A0->card->savePalette));
+    memmove(D_800625A0->card->saveIcon, D_800625A0->card->icon.paddr, sizeof(D_800625A0->card->saveIcon));
+    func_800320E8(icon);
+    list = func_80032E88(res->files[1], 1);
+    func_8002DD20(list);
+    func_800320E8(list);
+    D_800625A0->sheet = func_80032E88(res->files[2], 0);
+    D_800625A0->labels = func_80032E88(res->files[3], 0);
+    func_80026338(D_800625A0->sheet, 0xe0, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
+                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
+    func_80026338(D_800625A0->sheet, 0x14b, &entries[0].unk0, &entries[0].mode, &entries[0].clutX,
+                  &entries[0].clutY, &entries[0].pageX, &entries[0].pageY);
+    func_80026338(D_800625A0->sheet, 0x14c, &entries[1].unk0, &entries[1].mode, &entries[1].clutX,
+                  &entries[1].clutY, &entries[1].pageX, &entries[1].pageY);
+    func_80026338(D_800625A0->sheet, 0x14d, &entries[2].unk0, &entries[2].mode, &entries[2].clutX,
+                  &entries[2].clutY, &entries[2].pageX, &entries[2].pageY);
+    entries[1].pageX += 0xc;
+    portraits = func_80032E88(res->files[4], 1);
+    for (i = 0; i < 3; i++) {
+        id = D_800625A0->party->ids[i];
+        if (id != 0xff) {
+            OpenTIM((u8 *)portraits + id * 0xb20);
+            ReadTIM(&tim);
+            tim.crect->x = entries[i].clutX;
+            tim.crect->y = entries[i].clutY;
+            tim.prect->x = entries[i].pageX;
+            tim.prect->y = entries[i].pageY;
+            LoadImage(tim.crect, tim.caddr);
+            LoadImage(tim.prect, tim.paddr);
+        }
+    }
+    DrawSync(0);
+    func_800320E8(portraits);
+    if (D_80059178 != 0) {
+        func_80028470(0x10, 2);
+        D_8006259C = func_80031BDC(func_800288EC(5), 0);
+        func_800295D8(5, D_8006259C, 0, 0x80);
+        func_80028A60(0);
+        func_80028470(0x10, 0);
+        func_80038428(D_8006259C);
+    }
+    D_800625A0->effectBank = D_8006259C;
+    func_800320E8(res);
+}
+#else
+INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C65F4);
+#endif
+
+/* Set up the party: the starting top cursor, which characters are present,
+ * the party slots (and which have a gear), the first occupied slot; then
+ * load the resources. */
+void func_801C6AA0(MenuState *state) {
+    s32 i;
+    u16 members;
+    s32 id;
+
+    if (D_80059460 == 0 && D_80059171 == 0) {
+        D_800625A0->cursor = D_800594CC;
+    } else {
+        D_800625A0->cursor = 1;
+    }
+    D_800625A0->cursorShown = 0xff;
+    D_800625A0->cardPollTimer = 0x3c;
+    D_800625A0->cardsPresent = 0;
+    D_800625A0->unk335 = 0;
+    D_800625A0->partyCount = 0;
+    members = D_8006F364 & D_8006F366 & 0x7ff;
+    for (i = 0; i < 16; i++) {
+        if (func_801C865C(members, i)) {
+            D_800625A0->present[i] = 1;
+        } else {
+            D_800625A0->present[i] = 0;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        D_800625A0->party->ready[i] = 0;
+        id = D_8006F368[i];
+        if (id != 0xff && D_800625A0->present[id]) {
+            D_800625A0->party->ids[i] = id;
+            D_800625A0->partyCount++;
+            if (D_8006D8A0[D_800625A0->party->ids[i]].gear != 0xff) {
+                D_800625A0->party->ready[i] = 1;
+                D_800625A0->fighters++;
+            }
+        } else {
+            D_800625A0->party->ids[i] = 0xff;
+        }
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800625A0->party->ids[i] != 0xff) {
+            D_800625A0->firstMember = i;
+            break;
+        }
+    }
+    func_801C65F4();
+}
 
 /* Mark the buffer being built as sent (the draw callback). */
 void func_801C6D4C(void) {
@@ -553,7 +673,32 @@ void func_801C6E68(void) {
                   &D_800625A0->sheetEntries[3][4], &D_800625A0->sheetEntries[3][5]);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C6F70);
+/* Set up the frame primitives of both buffers: the shaded backdrop, two dark
+ * green separator lines, the grey full-screen fade and two draw modes. */
+void func_801C6F70(void) {
+    RECT window;
+    s32 i;
+
+    window.y = 0;
+    window.x = 0;
+    window.h = 0x100;
+    window.w = 0x100;
+    func_801D22C4();
+    for (i = 0; i < 2; i++) {
+        func_801C8164(&D_800625A0->primitives->backdrop[i], 0x80, 0x80, 0);
+        SetSemiTrans(&D_800625A0->primitives->backdrop[i], 1);
+        SetLineF3(&D_800625A0->primitives->linesA[i]);
+        setRGB0(&D_800625A0->primitives->linesA[i], 0, 0x40, 0);
+        SetLineF3(&D_800625A0->primitives->linesB[i]);
+        setRGB0(&D_800625A0->primitives->linesB[i], 0, 0x40, 0);
+        SetPolyF4(&D_800625A0->primitives->fills[i]);
+        setXY4(&D_800625A0->primitives->fills[i], 0, 0, 0x140, 0, 0, 0xe0, 0x140, 0xe0);
+        setRGB0(&D_800625A0->primitives->fills[i], 0x80, 0x80, 0x80);
+        SetSemiTrans(&D_800625A0->primitives->fills[i], 1);
+        SetDrawMode(&D_800625A0->primitives->modes0[i], 0, 0, GetTPage(0, 0, 0x140, 0x80), &window);
+        SetDrawMode(&D_800625A0->primitives->modes[i], 0, 0, GetTPage(0, 2, 0x180, 0), &window);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C72BC);
 
@@ -1360,7 +1505,7 @@ void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first) {
 
 /* Add the shared mode primitive and, while panel 4 shows, its quad. */
 void func_801CE338(void) {
-    AddPrim(&D_800625A0->current->ot[4], D_800625A0->primitives->modes0[D_800625A0->primitives->mode]);
+    AddPrim(&D_800625A0->current->ot[4], &D_800625A0->primitives->modes0[D_800625A0->primitives->mode]);
     if (D_800625A0->party->redraw4 != 0) {
         AddPrim(&D_800625A0->current->ot[4], &D_800625A0->primitives->polys[D_800625A0->primitives->frame]);
     }
@@ -1644,8 +1789,8 @@ void func_801D11F0(void) {
 
 /* Add this buffer's fill and mode primitives to the frame. */
 void func_801D1258(void) {
-    AddPrim(&D_800625A0->current->ot[8], D_800625A0->primitives->fills[D_800625A0->bufferIndex]);
-    AddPrim(&D_800625A0->current->ot[8], D_800625A0->primitives->modes[D_800625A0->bufferIndex]);
+    AddPrim(&D_800625A0->current->ot[8], &D_800625A0->primitives->fills[D_800625A0->bufferIndex]);
+    AddPrim(&D_800625A0->current->ot[8], &D_800625A0->primitives->modes[D_800625A0->bufferIndex]);
 }
 
 /* Draw `panel` when shown: its frame quads and part lists (and the extra list
