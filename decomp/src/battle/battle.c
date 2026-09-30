@@ -3461,7 +3461,26 @@ void func_800AA320(u16 index, s16 mask, s32 arg2) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA384);
+/* Make stage object index the acting object with slot mask: mark it, reset
+ * the camera state (800BF85C) for the first selected slot, and start its
+ * effect (800AA934). */
+void func_800AA384(u16 index, u16 mask, s32 arg2) {
+    BattleObject *object;
+
+    D_800C3D40 = index;
+    object = D_800D3368[index];
+    D_800C3E30 = mask;
+    D_800C3D68 = 1;
+    object->field35 = 1;
+    D_80059464 = 0;
+    D_800591AC = 1;
+    func_800BF85C(index, func_800AF400());
+    D_800C360C = 1;
+    D_800C4000[func_800AF400()] = 0;
+    if (D_800D3368[index] != NULL) {
+        func_800AA934(D_800D3368[index], D_800D3368[index], &D_800C3D0C, arg2);
+    }
+}
 
 /* Select stage object index with slot mask and start its effect (800AA934)
  * unless it is the first selected slot's object; the selection is restored. */

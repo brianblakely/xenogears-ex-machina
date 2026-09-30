@@ -189,6 +189,12 @@ extern void *D_800C3D50[2];
 extern void *D_800C3EA0;
 extern ResidentRecord18 D_800C3DA0[2];
 extern SoundBanks *D_800C3B78;
+extern s32 D_80059464;
+extern u8 D_800591AC;
+extern s32 D_800C360C;
+extern u8 D_800C4000[];                 /* per slot */
+
+void func_800BF85C(s32 index, s32 slot);
 
 /* Resident services. */
 void func_80027D40(void *handle);
