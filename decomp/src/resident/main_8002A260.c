@@ -998,7 +998,37 @@ s32 func_8002C4BC(ModelGroup *group) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C4BC);
 #endif
 
+/* Relocate a sprite model's offsets to addresses (once).
+ * Nonmatching: the original adds the model second (see 8002C3E8). */
+#ifdef NON_MATCHING
+void func_8002C59C(SpriteModel *model) {
+    MorphTarget *target;
+    s32 n;
+
+    if (!(model->flags & 0x20)) {
+        model->flags |= 0x20;
+        model->vertices = (SVECTOR *)((u8 *)model->vertices + (s32)model);
+        model->unk10 += (s32)model;
+        model->normals = (SVECTOR *)((u8 *)model->normals + (s32)model);
+        model->unk14 += (s32)model;
+        if (model->morphs != NULL) {
+            model->morphs = (MorphTable *)((u8 *)model->morphs + (s32)model);
+            n = model->morphs->count;
+            if (n != -1) {
+                target = &model->morphs->targets[n];
+                do {
+                    n--;
+                    target->deltas = (u8 *)target->deltas + (s32)model;
+                    target->normals = (MorphDelta *)((u8 *)target->normals + (s32)model);
+                    target--;
+                } while (n != -1);
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002A260", func_8002C59C);
+#endif
 
 /* Trim a model group's heap block to its data (once). Returns 1 when it
  * was already trimmed. */

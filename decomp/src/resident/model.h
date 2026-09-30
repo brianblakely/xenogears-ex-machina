@@ -79,7 +79,9 @@ typedef struct {
     u8 unk4[4];
     SVECTOR *vertices;
     SVECTOR *normals;
-    u8 unk10[0xC];
+    u8 *unk10;
+    u8 *unk14;
+    u8 unk18[4];
     MorphTable *morphs; /* optional */
 } SpriteModel;
 
