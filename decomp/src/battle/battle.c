@@ -4,6 +4,7 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
+#include "party_panel.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -840,7 +841,72 @@ void func_80073380(s32 member) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073380);
 #endif
 
+/* Build each present member's status glyphs by its panel state (0: the
+ * status label, 1: the party-wide label, 2/3: the cursor window), and
+ * record the draw buffer they were built for. */
+#ifdef NON_MATCHING
+void func_80073538(void) {
+    s32 member;
+    s32 first;
+    s32 part;
+
+    UI_STATUS_PARTS(3) = 0;
+    for (member = 0; member < 3; member++) {
+        if (D_800C3EB4[member].field2 == 0x7F) {
+            continue;
+        }
+        switch (D_800D2D28->unk90[member]) {
+        case 0:
+            UI_STATUS_PARTS(member) = 0;
+            UI_STATUS_PARTS(member) += func_80076A10(
+                0x8F, PANEL_GRAPHICS->status[member][UI_STATUS_PARTS(member)],
+                member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x44), 0x1F);
+            UI_STATUS_PARTS(member) += func_80076A6C(
+                0x52, PANEL_GRAPHICS->status[member][UI_STATUS_PARTS(member)],
+                member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
+            first = UI_STATUS_PARTS(member);
+            part = first * 2;
+            UI_STATUS_PARTS(member) += func_80076A6C(
+                0x53, PANEL_GRAPHICS->status[member][first],
+                member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x48), 0x1C);
+            for (; part < UI_STATUS_PARTS(member) * 2; part += 2) {
+                func_80076C34(&PANEL_GRAPHICS->status[member][0][part + D_800CCB04.buffer]);
+            }
+            UI_STATUS_BUFFER(member) = D_800CCB04.buffer;
+            D_800D2D28->unkCC[member] = 1;
+            break;
+        case 1:
+            UI_STATUS_PARTS(3) = func_80025FA8(D_800D2F5C, 0x52, PANEL_GRAPHICS->status[3][0], D_800CCB04.buffer,
+                                            0x10, 0x98, 0x1000, 0x1000, 0xC00);
+            first = UI_STATUS_PARTS(3);
+            part = first * 2;
+            UI_STATUS_PARTS(3) += func_80025FA8(D_800D2F5C, 0x53, PANEL_GRAPHICS->status[3][first],
+                                             D_800CCB04.buffer, 0x10, 0x98, 0x1000, 0x1000, 0xC00);
+            for (; part < UI_STATUS_PARTS(3) * 2; part += 2) {
+                func_80076C34(&PANEL_GRAPHICS->status[3][0][part + D_800CCB04.buffer]);
+            }
+            UI_STATUS_BUFFER(3) = D_800CCB04.buffer;
+            break;
+        case 3:
+            if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
+                D_800D2D28->unkCC[member] = 0;
+            } else {
+                UI_STATUS_PARTS(member) = 0;
+            }
+            func_800765C4(member);
+            /* fallthrough */
+        case 2:
+            func_80076710(member);
+            if (D_800D32A0[member].unk1 == 0 || D_800D2D24[member] == 7) {
+                D_800D2D28->unk7F[member] = 0;
+            }
+            break;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073538);
+#endif
 
 /* When enabled, shade the current flat quad at graphics +0x63c8 grey by
  * +0x6410 and add it with its draw mode to the ordering table. */
@@ -858,7 +924,49 @@ void func_80073A58(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073A58);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80073B64);
+/* Draw the party panel: the list separator lines, the status glyphs, each
+ * member's panel value and digits, the command portrait and name glyphs,
+ * and each present member's portrait, gauge and gauge shade. */
+void func_80073B64(void) {
+    s32 i;
+
+    for (i = 0; i < D_800D2D28->unk97; i++) {
+        AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unk908[D_800D2D28->unk98 + i * 2]);
+    }
+    for (i = 0; i < 4; i++) {
+        func_800728B8(PANEL_GRAPHICS->status[i][0], UI_STATUS_PARTS(i), UI_STATUS_BUFFER(i));
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D28->unkCC[i] != 0) {
+            switch (PANEL_GRAPHICS->panels[i].state) {
+            case 1:
+                func_800728B8(PANEL_GRAPHICS->panels[i].value[0], PANEL_GRAPHICS->panels[i].parts[0],
+                              PANEL_GRAPHICS->panels[i].buffer);
+                break;
+            case 2:
+                func_800728B8(PANEL_GRAPHICS->panels[i].alone[0], PANEL_GRAPHICS->panels[i].parts[1],
+                              PANEL_GRAPHICS->panels[i].buffer);
+                break;
+            }
+            func_800728B8(D_800C3EA4->unk6008[i], D_800D2D28->unkEC[i], D_800D2D28->unk99[i]);
+        }
+    }
+    if (D_800D2D28->unkAF != 0) {
+        func_800728B8(D_800C3EA4->unk9C8[0], D_800D2D28->unk7B, D_800D2D28->unkA4);
+    }
+    for (i = 0; i < 3; i++) {
+        func_800728B8(D_800C3EA4->unk3A88[i], D_800D2D28->unkE0[i], D_800D2D28->unk93[i]);
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_800C3EB4[i].field2 != 0x7F) {
+            func_800728B8(PANEL_GRAPHICS->portrait[i], 1, UI_PORTRAIT_BUFFER);
+            if (D_800D2D28->unkCC[i] != 0) {
+                func_800728B8(PANEL_GRAPHICS->gauge[i][0], UI_GAUGE_PARTS(i), UI_GAUGE_BUFFER);
+                AddPrim(D_800CCB04.ot + 1, &PANEL_GRAPHICS->shade[i * 2 + D_800CCB04.buffer]);
+            }
+        }
+    }
+}
 
 /* Draw both 100-primitive lists at graphics +0x641c when UI +0xcb is set. */
 void func_80073E88(void) {
@@ -6718,7 +6826,7 @@ void func_8009B46C(u16 *damage) {
     u32 hp;
     u32 maxHp;
     s32 chance;
-    s32 scale;
+    s16 scale;
 
     for (i = 0; i < 3; i++) {
         Combatant *record = &D_800C34B0->records[i];
