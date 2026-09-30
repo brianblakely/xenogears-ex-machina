@@ -17,6 +17,14 @@ typedef struct {
 
 typedef struct {
     u_long mask;
+    long mode;
+    SpuVolume depth;
+    long delay;
+    long feedback;
+} SpuReverbAttr;
+
+typedef struct {
+    u_long mask;
     SpuVolume mvol;
     SpuVolume mvolmode;
     SpuVolume mvolx;
@@ -34,5 +42,15 @@ typedef void (*SpuTransferCallbackProc)(void);
 SpuTransferCallbackProc SpuSetTransferCallback(SpuTransferCallbackProc func);
 void SpuGetVoiceEnvelopeAttr(int voice, long *status, short *level);
 void SpuSetNoiseClock(long clock);
+long SpuSetIRQ(long on_off);
+long SpuSetReverb(long on_off);
+long SpuInitMalloc(long num, char *top);
+typedef void (*SpuIRQCallbackProc)(void);
+SpuIRQCallbackProc SpuSetIRQCallback(SpuIRQCallbackProc func);
+long SpuSetReverbModeType(long mode);
+void SpuSetReverbModeDepth(short depth_left, short depth_right);
+void SpuSetReverbModeDelayTime(long delay);
+void SpuSetReverbModeFeedback(long feedback);
+void SpuGetReverbModeType(long *type);
 
 #endif

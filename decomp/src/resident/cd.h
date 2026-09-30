@@ -20,6 +20,10 @@ typedef struct {
     void *data;
 } FileEntry;
 
+extern s32 D_8004FDE0;      /* largest sector gap read through between list files */
+extern s32 D_8004FDE4;      /* out-of-order sectors in single-file reads */
+extern s32 D_8004FDE8;      /* out-of-order sectors in list reads */
+extern s32 D_8004FDEC;      /* out-of-order sectors in stream reads */
 extern u8 *D_8004FDF0;      /* file index: 7 bytes per file */
 extern u16 *D_8004FDF4;     /* directory table: first file of each directory, 1-based */
 extern s32 D_8004FDF8;      /* bytes of the current read */
@@ -31,7 +35,8 @@ extern FileRequest *D_8004FE0C; /* the file list being read */
 extern s32 D_8004FE10;
 extern s32 D_8004FE14;      /* selected directory (first file - 1) */
 extern s32 D_8004FE18;      /* second directory selection */
-extern s32 D_8004FE1C;
+extern s32 D_8004FE1C;      /* CD command state (8002a68c) */
+extern s32 D_8004FE20;      /* retry reason of the failed command */
 extern s32 D_8004FE34;
 extern s32 D_8004FE38;      /* read mode */
 extern s32 D_8004FE3C;
@@ -46,7 +51,9 @@ extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4;
 extern s32 D_8005A4DC;
 extern s32 D_80059EF8[3];   /* read status words */
 extern s32 D_80059F0C;      /* the file being read */
+extern CdlCB D_80059F08;    /* ready callback saved while retrying */
 extern CdlLOC D_80059F10;   /* CD position of the current read */
+extern CdlFILTER D_80059F14; /* CdlSetfilter parameter */
 extern u8 D_80059F18[4];    /* CdlSetmode parameter: the mode byte, then 3 zero bytes */
 extern u8 D_80059F1C[];     /* CD command result */
 

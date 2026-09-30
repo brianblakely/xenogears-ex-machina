@@ -5,6 +5,8 @@
 # and the few unmatched members inside it were inspected by hand.
 80019524 80019578 handwritten Entry point: clears BSS 800592b8-8006faec, sets $sp 0x80200000/$fp/$gp (80019548, also used by the mode dispatcher to reset the stack), and a word-clear loop (80019560) with the same pre-increment form
 80026f44 8002709c handwritten GTE colour scaling and blending loops over 15-bit pixels (mtc2/gpf, addi/add)
+8002e010 8003014c handwritten GTE model primitive renderers (rtpt/nclip/avsz3 loops): no frame, $s registers saved below $sp, several entry points per routine selecting the packet size and code, and branches between routines into shared loop bodies and the common exit at 8002e1f4
+80030750 80030a30 handwritten Gouraud-lit GTE renderer and its patcher 80030988, which rewrites shift fields of instructions inside 80030750 (self-modifying code); saves below $sp, add/sub pseudo-ops, exits through 8002e1f4
 800315a0 80031894 handwritten ordering-table link helpers: $t0 and $at macro expansions of 32-bit and/or immediates
 80032e88 8003342c handwritten packed-data (LZSS) decoder and its allocate-and-decode entry, which branches into it; leaf code in $t registers
 800379b4 800379d0 handwritten store to D_80050618 through $t0 and the default report output, a tail jump to 8003700c

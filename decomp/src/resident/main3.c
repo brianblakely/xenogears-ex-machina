@@ -38,9 +38,13 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", OpenEvent);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", CloseEvent);
 
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", TestEvent);
+
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", EnableEvent);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", DisableEvent);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", UnDeliverEvent);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", EnterCriticalSection);
 
@@ -52,7 +56,13 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SwExitCriticalSecti
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", open);
 
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", read);
+
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", write);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", close);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", Krom2RawAdd);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ChangeClearPAD);
 
@@ -466,6 +476,8 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SquareRoot0);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", VectorNormalS);
 
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", VectorNormal);
+
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", VectorNormalSS);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", func_80048DD8);
@@ -483,6 +495,8 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", PopMatrix);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ScaleMatrixL);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", SetMulMatrix);
+
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", MulMatrix2);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main3", ApplyMatrix);
 

@@ -285,7 +285,7 @@ s32 func_80090FB4(WorldmapActor *actor) {
     actor->motion.vx = func_8003F8B0(D_8009BD38.vy);
     actor->motion.vy = func_8003F8B0(actor->unk70 >> 12);
     actor->motion.vz = -func_8003F8CC(D_8009BD38.vy);
-    func_80048D7C(&actor->motion, &actor->motion);
+    VectorNormal(&actor->motion, &actor->motion);
     if (D_8009BD10 & 0x20) {
         if (D_8009BD24 != -1) {
             return 1;
@@ -1157,7 +1157,7 @@ void func_80093740(VECTOR *normal, s32 x, s32 z) {
         }
     }
     OuterProduct0(&scratch->edge1, &scratch->edge0, &scratch->normal);
-    func_80048D7C(&scratch->normal, normal);
+    VectorNormal(&scratch->normal, normal);
 }
 
 /* Terrain surface height at a position (world units): the cell triangle's plane. */
@@ -1254,7 +1254,7 @@ s32 func_80093A5C(s32 x, s32 z) {
         }
     }
     OuterProduct0(&scratch->edge1, &scratch->edge0, &scratch->normal);
-    func_80048D7C(&scratch->normal, &scratch->edge0);
+    VectorNormal(&scratch->normal, &scratch->edge0);
     scratch->edge1.vx = (x >> 12) & 0x7F;
     scratch->edge1.vz = -((z >> 12) & 0x7F);
     if (cell[1] & 0x80) {

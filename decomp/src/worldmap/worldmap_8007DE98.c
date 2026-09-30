@@ -638,9 +638,9 @@ s32 func_8007EE34(s32 index) {
         scratch->axis[1].vx = scratch->axis[1].vz = 0;
         scratch->axis[1].vy = 0x1000;
         func_8004A480(&scratch->axis[1], &scratch->axis[0], &scratch->axis[2]);
-        func_80048D7C(&scratch->axis[2], &scratch->axis[2]);
+        VectorNormal(&scratch->axis[2], &scratch->axis[2]);
         func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[1]);
-        func_80048D7C(&scratch->axis[1], &scratch->axis[1]);
+        VectorNormal(&scratch->axis[1], &scratch->axis[1]);
         scratch->frame.m[0][0] = scratch->axis[2].vx;
         scratch->frame.m[0][1] = scratch->axis[2].vy;
         scratch->frame.m[0][2] = scratch->axis[2].vz;

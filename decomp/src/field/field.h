@@ -763,7 +763,6 @@ extern void func_8003852C(void *bank);
 extern void func_80039F9C(s32 id, s16 voice, s16 volume, s16 pan);
 extern void func_80039FF8(void);
 extern void func_8003A20C(s32 voice);
-extern void func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
 extern void func_8004A480(VECTOR *a, VECTOR *b, VECTOR *out); /* OuterProduct12 */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
@@ -782,7 +781,6 @@ extern void *func_8002A260(s32 sectors, s32);
 extern void func_800320E8(void *);
 extern void func_80032EB4(void *source, void *destination);
 extern MATRIX *func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
-extern void func_80049BDC(MATRIX *a, MATRIX *b);            /* MulRotMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 extern void func_80030A30(s32 index, FieldLight *light);
 extern void func_80030B14(MATRIX *m);

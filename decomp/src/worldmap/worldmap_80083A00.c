@@ -561,7 +561,7 @@ void func_80085158(VECTOR *position, VECTOR *offset, VECTOR *normal, u16 index, 
     edge2->vx >>= 2;
     edge2->vy >>= 2;
     edge2->vz >>= 2;
-    func_80048D7C(&FACE_SCRATCH->p[2], normal);
+    VectorNormal(&FACE_SCRATCH->p[2], normal);
     func_800935DC(offset, &FACE_SCRATCH->p[0], normal);
 }
 #else
@@ -615,7 +615,7 @@ s32 func_80085418(VECTOR *position, s32 height, u16 index, u16 face) {
     edge2->vx >>= 2;
     edge2->vy >>= 2;
     edge2->vz >>= 2;
-    func_80048D7C(&FACE_SCRATCH->p[2], &FACE_SCRATCH->normal);
+    VectorNormal(&FACE_SCRATCH->p[2], &FACE_SCRATCH->normal);
     FACE_SCRATCH->probe.m[1][0] = FACE_SCRATCH->probe.m[0][0] =
         (position->vx >> 12) - object->position.vx - origin->vx;
     FACE_SCRATCH->probe.m[0][1] = (position->vy >> 12) - origin->vy;
@@ -719,15 +719,15 @@ s32 func_80085760(VECTOR *from, VECTOR *to, s32 index, s32 face) {
     scratch->u.side[0].vx = scratch->p[1].vx - scratch->p[0].vx;
     scratch->u.side[0].vy = 0;
     scratch->u.side[0].vz = scratch->p[1].vz - scratch->p[0].vz;
-    func_80048D7C(&scratch->u.side[0], &scratch->u.side[0]);
+    VectorNormal(&scratch->u.side[0], &scratch->u.side[0]);
     scratch->u.side[1].vx = scratch->p[2].vx - scratch->p[1].vx;
     scratch->u.side[1].vy = 0;
     scratch->u.side[1].vz = scratch->p[2].vz - scratch->p[1].vz;
-    func_80048D7C(&scratch->u.side[1], &scratch->u.side[1]);
+    VectorNormal(&scratch->u.side[1], &scratch->u.side[1]);
     scratch->u.side[2].vx = scratch->p[0].vx - scratch->p[2].vx;
     scratch->u.side[2].vy = 0;
     scratch->u.side[2].vz = scratch->p[0].vz - scratch->p[2].vz;
-    func_80048D7C(&scratch->u.side[2], &scratch->u.side[2]);
+    VectorNormal(&scratch->u.side[2], &scratch->u.side[2]);
     return sides;
 }
 #else
@@ -1478,12 +1478,12 @@ void func_80087B84(VECTOR *direction, VECTOR *up, MATRIX *m) {
     up->vx = 0;
     up->vy = 0x1000;
     func_8004A480(up, direction, up);
-    func_80048D7C(up, up);
+    VectorNormal(up, up);
     m->m[0][0] = up->vx;
     m->m[0][1] = up->vy;
     m->m[0][2] = up->vz;
     func_8004A480(direction, up, up);
-    func_80048D7C(up, up);
+    VectorNormal(up, up);
     m->m[1][0] = up->vx;
     m->m[1][1] = up->vy;
     m->m[1][2] = up->vz;
@@ -1544,7 +1544,7 @@ s32 func_80087C6C(s32 index) {
         scratch->work.vy = 0;
         scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
         func_80093534(&scratch->work);
-        func_80048D7C(&scratch->work, &scratch->work);
+        VectorNormal(&scratch->work, &scratch->work);
         for (i = 0; i < 0x20; i++) {
             D_8009CD68[i].dx = scratch->work.vx;
             D_8009CD68[i].dz = scratch->work.vz;
@@ -1606,10 +1606,10 @@ s32 func_80087FD0(s32 index) {
         scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
         scratch->work.vy = 0;
         func_80093534(&scratch->work);
-        func_80048D7C(&scratch->work, &scratch->work);
+        VectorNormal(&scratch->work, &scratch->work);
         actor->motion.vx = ((scratch->work.vx + actor->motion.vx * 63) << 6) >> 12;
         actor->motion.vz = ((scratch->work.vz + actor->motion.vz * 63) << 6) >> 12;
-        func_80048D7C(&actor->motion, &actor->motion);
+        VectorNormal(&actor->motion, &actor->motion);
         D_8009CD68[actor->unk54].dx = actor->motion.vx;
         D_8009CD68[actor->unk54].dz = actor->motion.vz;
         actor->unk54 = (actor->unk54 + 1) & 0x1F;
@@ -2202,7 +2202,7 @@ void func_80089748(void) {
                     }
                     scratch->random.vx = (rand() & 0xFFF) - 0x800;
                     scratch->random.vz = (rand() & 0xFFF) - 0x800;
-                    func_80048D7C(&scratch->random, &scratch->normal);
+                    VectorNormal(&scratch->random, &scratch->normal);
                     if (flags & 4) {
                         distance = object->spread[0];
                     } else {
@@ -2222,7 +2222,7 @@ void func_80089748(void) {
                     }
                     scratch->random.vx = (rand() & 0xFFF) - 0x800;
                     scratch->random.vz = (rand() & 0xFFF) - 0x800;
-                    func_80048D7C(&scratch->random, &scratch->normal);
+                    VectorNormal(&scratch->random, &scratch->normal);
                     if (flags & 8) {
                         distance = object->spread[1];
                     } else {
@@ -2237,7 +2237,7 @@ void func_80089748(void) {
                     scratch->normal.vx = (scratch->normal.vx - slot->position.vx) >> 12;
                     scratch->normal.vy = (scratch->normal.vy - slot->position.vy) >> 12;
                     scratch->normal.vz = (scratch->normal.vz - slot->position.vz) >> 12;
-                    func_80048D7C(&scratch->normal, &scratch->random);
+                    VectorNormal(&scratch->normal, &scratch->random);
                     slot->velocity.vx = (scratch->random.vx * object->speed) >> 12;
                     slot->velocity.vy = (scratch->random.vy * object->speed) >> 12;
                     slot->velocity.vz = (scratch->random.vz * object->speed) >> 12;

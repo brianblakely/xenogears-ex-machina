@@ -835,9 +835,9 @@ void func_800747DC(void) {
             scratch->position.vy = func_80093978(scratch->position.vx, scratch->position.vz);
             func_80093740(&scratch->normal, scratch->position.vx, scratch->position.vz);
             func_8004A480(&scratch->up, &scratch->normal, &scratch->side);
-            func_80048D7C(&scratch->side, &scratch->forward);
+            VectorNormal(&scratch->side, &scratch->forward);
             func_8004A480(&scratch->normal, &scratch->forward, &scratch->scale);
-            func_80048D7C(&scratch->scale, &scratch->side);
+            VectorNormal(&scratch->scale, &scratch->side);
             scratch->local.m[0][0] = scratch->forward.vx;
             scratch->local.m[0][1] = scratch->forward.vy;
             scratch->local.m[0][2] = scratch->forward.vz;

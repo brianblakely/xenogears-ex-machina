@@ -2,6 +2,7 @@
 #define FIELD_FIELD_GLYPH_H
 
 #include "field.h"
+#include "psyq/libapi.h"
 
 /* Text lines of file 0xab drawn as 9x16 8-bit glyph cells into VRAM:
  * two-byte codes 8540..887f come from the font image at (380, 100), seven
@@ -27,7 +28,5 @@ typedef struct {
 
 extern TextRollLine *D_800AF770;  /* 16 lines */
 extern POLY_GT4 D_800AF788[2][2]; /* top and bottom fade per buffer */
-
-u16 *func_800405C4(s32 code); /* resident: 16x15 ROM font glyph of a code */
 
 #endif

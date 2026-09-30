@@ -150,7 +150,7 @@ void func_8004A92C(SVector *angles, Matrix *m);          /* RotMatrixYXZ */
 void MulMatrix0(Matrix *m0, Matrix *m1, Matrix *out);
 void CompMatrix(Matrix *m0, Matrix *m1, Matrix *out);
 void SetRotMatrix(Matrix *m);
-void func_80049BDC(Matrix *m0, Matrix *m1);              /* multiply m1 by m0 */
+void MulMatrix2(Matrix *m0, Matrix *m1);              /* multiply m1 by m0 */
 void OuterProduct0(Vector *v0, Vector *v1, Vector *out);
 void SetLightMatrix(Matrix *m);
 void SetTransMatrix(Matrix *m);
@@ -159,7 +159,7 @@ Vector *ApplyMatrix(Matrix *m, SVector *v0, Vector *v1);
 s32 VectorNormalS(Vector *v, SVector *out);
 void SetGeomScreen(s32 h);
 s32 ratan2(s32 y, s32 x);
-s32 func_80048D7C(Vector *v, Vector *out);                /* VectorNormal */
+s32 VectorNormal(Vector *v, Vector *out);                /* VectorNormal */
 void func_8004A480(Vector *a, Vector *b, Vector *out);   /* OuterProduct12 */
 
 #endif

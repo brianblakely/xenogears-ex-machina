@@ -320,11 +320,11 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
     d.vx = b->vx - a->vx;
     d.vy = b->vy - a->vy;
     d.vz = b->vz - a->vz;
-    func_80048D7C(&d, &edge_b);
+    VectorNormal(&d, &edge_b);
     d.vx = c->vx - a->vx;
     d.vy = c->vy - a->vy;
     d.vz = c->vz - a->vz;
-    func_80048D7C(&d, &edge_c);
+    VectorNormal(&d, &edge_c);
     func_8004A480(&edge_b, &edge_c, normal);
     if (normal->vy == 0) {
         p->vy = 0;
@@ -504,7 +504,7 @@ s32 func_8007B6C4(s16 heading, SVECTOR *edge, VECTOR *velocity, s32 unused) {
         d.vy = 0;
         d.vz = edge[1].vz - edge[0].vz;
     }
-    func_80048D7C(&d, &n);
+    VectorNormal(&d, &n);
     speed = func_80099A4C(velocity->vx >> 12, velocity->vz >> 12);
     velocity->vy = 0;
     velocity->vx = n.vx * speed;
@@ -655,7 +655,7 @@ s32 func_8007BAC0(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
         d.vx = -probe.vx >> 8;
         d.vy = ((floor.vy << 16) - actor->position[1]) >> 8;
         d.vz = -probe.vz >> 8;
-        func_80048D7C(&d, &n);
+        VectorNormal(&d, &n);
         speed = func_80099A4C(probe.vx >> 8, probe.vz >> 8);
         probe.vx = -(speed * n.vx) >> 4;
         probe.vy = (speed * n.vy) >> 4;
@@ -1356,7 +1356,7 @@ void func_8007D818(VECTOR *v, VECTOR *out) {
         v->vy = -v->vy;
         v->vz = -v->vz;
     }
-    func_80048D7C(v, out);
+    VectorNormal(v, out);
 }
 
 /* The component of largest magnitude (0 when none is strictly ahead). */
@@ -2820,7 +2820,7 @@ void func_80082620(s32 index, FieldDescriptor *descriptor, FieldActor *actor) {
             if (slope.vz == 0) {
                 slope.vz = 1;
             }
-            func_80048D7C(&slope, &normal);
+            VectorNormal(&slope, &normal);
             if (normal.vx == 0) {
                 normal.vx = 1;
             }
@@ -3138,7 +3138,7 @@ s32 func_80083288(s32 index, PolyModel *model, s32 x, s32 z, s32 *height, VECTOR
         work->angles.vz = D_800AF880.components.descriptors[index].actor->unk70;
     local:
         func_8003F738(&work->angles, &work->local);
-        func_80049BDC(&D_800AF880.components.descriptors[index].matrix, &work->local);
+        MulMatrix2(&D_800AF880.components.descriptors[index].matrix, &work->local);
         work->local.t[0] = D_800AF880.components.descriptors[index].matrix.t[0];
         work->local.t[1] = D_800AF880.components.descriptors[index].matrix.t[1];
         work->local.t[2] = D_800AF880.components.descriptors[index].matrix.t[2];
@@ -3773,7 +3773,7 @@ s32 func_80084A40(s32 index, s32 lowest, FieldDescriptor *descriptor, FieldActor
                 break;
             }
         }
-        func_80048D7C(&normals[actor->layer], (VECTOR *)actor->unk50);
+        VectorNormal(&normals[actor->layer], (VECTOR *)actor->unk50);
     } else {
         actor->unkF0 = 0;
     }

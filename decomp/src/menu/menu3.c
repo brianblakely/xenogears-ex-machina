@@ -3685,7 +3685,7 @@ void func_8007DC74(Vector *from, Vector *to) {
         drift = 0;
     }
     if (across.vz != 0 || across.vx != 0) {
-        func_80048D7C(&across, &across);
+        VectorNormal(&across, &across);
         nx = across.vx;
         nz = across.vz;
     }

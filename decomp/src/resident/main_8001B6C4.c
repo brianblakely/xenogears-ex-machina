@@ -36,7 +36,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001B9
 
 /* Pass the scene selector 8006f9de and three resident tables to 800379d8. */
 void func_8001BB0C(void) {
-    func_800379D8(D_8006F9DE, 0, D_80059470, D_80059520, D_8005949C);
+    func_800379D8(D_8006F9DE, 0, &D_80059470, &D_80059520, &D_8005949C);
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8001B6C4", func_8001BB50);

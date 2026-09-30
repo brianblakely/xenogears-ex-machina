@@ -634,7 +634,7 @@ s16 func_801E1258(ImageAnim *anim, s32 ticks);
 void func_801E22F8(Record24 *record, SVECTOR *light, MATRIX *m, u32 *ot, s32 buffer, s32 scale,
                    s32 floor);
 
-void func_80048D7C(VECTOR *v0, VECTOR *v1);   /* VectorNormal */
+void VectorNormal(VECTOR *v0, VECTOR *v1);
 VECTOR *ApplyMatrix(MATRIX *m, SVECTOR *v0, VECTOR *v1);
 
 void MoveImage(RECT *rect, s32 x, s32 y);
@@ -699,7 +699,7 @@ void func_801E3438(Record24 *record);
 u16 func_801DEF10(ModelPart *parts, s16 *data);
 void SetColorMatrix(MATRIX *m);              /* SetColorMatrix */
 void func_8003852C(void *bank);              /* release a sound effect bank */
-void func_80049BDC(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
+void MulMatrix2(MATRIX *m, MATRIX *out);  /* out = m * out (rotation) */
 u32 func_801DC5C0(ModelPart *parts, s32 scale);
 u32 func_801DC848(ModelPart *parts, s32 scale);
 s32 func_801DDBF8(SlotPool *pool, ModelPart *parts, u16 arg2, s16 scale);

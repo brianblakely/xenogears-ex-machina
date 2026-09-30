@@ -1,12 +1,17 @@
 #include "common.h"
 #include "psyq/libapi.h"
+#include "psyq/libc.h"
 #include "psyq/libcd.h"
+#include "psyq/libgpu.h"
+#include "psyq/libsn.h"
 #include "psyq/libspu.h"
 #include "text.h"
 #include "window.h"
 #include "pad.h"
 #include "console.h"
 #include "sound.h"
+#include "cd.h"
+#include "heap.h"
 
 /* Unpacked size of packed data (its first word). */
 s32 func_80032E7C(s32 *packed) {
@@ -290,7 +295,48 @@ u8 func_80033CD0(u8 *window) {
     return (*(u16 *)(window + 0x10) & 8) ? window[0x6B] : 0;
 }
 
+/* Decode `value` as ten decimal digit codes in palette `color` (with a
+ * sign code when `sign` is set) into text; leading zeros are dropped for
+ * plain palettes.
+ * Nonmatching: GCC reverses the digit loop counter, which the original
+ * counts up. */
+#ifdef NON_MATCHING
+void func_80033CF0(u32 value, s32 color, s32 sign) {
+    u32 divisor = 1000000000;
+    u16 *p;
+    s32 i;
+
+    color <<= 4;
+    if (sign != 0) {
+        sign = 11;
+        if ((s32)value < 0) {
+            value = -value;
+            sign = 10;
+        }
+    }
+    for (i = 0, p = &D_8005A0C8[1]; i < 10; i++) {
+        *p++ = value / divisor + color;
+        value %= divisor;
+        divisor /= 10;
+    }
+    D_8005A0C8[11] = 0xFFFF;
+    p = D_8005A0C8;
+    D_8005A0C8[0] = color;
+    if ((color & 0xFFF0) == color) {
+        while (p != &D_8005A0C8[10]) {
+            if (*++p != color) {
+                break;
+            }
+        }
+    }
+    if (sign != 0) {
+        *--p = sign + color;
+    }
+    func_80033ABC(p);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80033CF0);
+#endif
 
 void func_80033DD4(u8 *window, s32 value) {
     s32 previous = *(s32 *)(window + 0x1C);
@@ -683,9 +729,56 @@ void func_80035E44(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035F1C);
+/* Save a VRAM rectangle as a 16-bit TIM file on the PC file server. */
+void func_80035F1C(RECT *rect, char *name) {
+    TimHeader header;
+    s32 fd;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035FF8);
+    StoreImage(rect, (u_long *)0x80700000);
+    header.id = 0x10;
+    header.flag = 2;
+    header.bytes = rect->w * rect->h * 2 + 12;
+    header.rect.x = rect->x;
+    header.rect.y = rect->y;
+    header.rect.w = rect->w;
+    header.rect.h = rect->h;
+    fd = PCcreat(name, 0);
+    func_8004C470(fd, (char *)&header, sizeof(header));
+    func_8004C470(fd, (char *)0x80700000, rect->w * rect->h * 2);
+    PCclose(fd);
+}
+
+/* Save a VRAM rectangle as a PPM (P6) image on the PC file server.
+ * Returns 0, or -1 when the file cannot be created. */
+s32 func_80035FF8(RECT *rect, char *name) {
+    char header[256];
+    u16 *src;
+    u8 *dst;
+    s32 count;
+    s32 i;
+    s32 fd;
+
+    StoreImage(rect, (u_long *)0x80600000);
+    DrawSync(0);
+    sprintf(header, "P6\r%d %d\r255\r", rect->w, rect->h);
+    count = rect->w * rect->h;
+    src = (u16 *)0x80600000;
+    dst = (u8 *)0x80700000;
+    i = count;
+    while (i--) {
+        *dst++ = (*src & 0x1F) << 3;
+        *dst++ = (*src >> 2) & 0xF8;
+        *dst++ = (*src++ >> 7) & 0xF8;
+    }
+    fd = PCcreat(name, 0);
+    if (fd == -1) {
+        return -1;
+    }
+    func_8004C470(fd, header, strlen(header));
+    func_8004C470(fd, (char *)0x80700000, count * 3);
+    PCclose(fd);
+    return 0;
+}
 
 extern Actuator D_8005A1BC[2];
 
@@ -812,22 +905,267 @@ void func_80036420(void) {
     D_800594A8 = s5;
 }
 
+extern u8 D_80059430, D_80059434, D_80059438, D_8005943C; /* actuator values */
+
+/* Print a controller receive buffer in hex, and a digital pad's buttons.
+ * Kept as assembly: its C matches, but the string literals then end the
+ * rodata where 80036718's table, still assembly, needs the alignment its C
+ * literal would carry. */
+#ifdef NON_MATCHING
+void func_80036528(PadBuffer *pad) {
+    s32 count = (pad->type & 0xF) * 2 + 2;
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        func_8003700C("%02x ", ((u8 *)pad)[i]);
+    }
+    func_8003700C("\n");
+    if (pad->status == 0 && (pad->type & 0xF0) == 0x40) {
+        func_8003700C("%04x\n", (~pad->buttons[1] & 0xFF) | ((pad->buttons[0] << 8) ^ 0xFF00));
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036528);
+#endif
 
+/* Print both controller buffers, the actuator values, the held buttons and
+ * every queued pad entry.
+ * Kept as assembly: its C matches, but the string literals then end the
+ * rodata where 80036718's table, still assembly, needs the alignment its C
+ * literal would carry. */
+#ifdef NON_MATCHING
+void func_800365FC(void) {
+    func_80036528(&D_800625FC[0]);
+    func_80036528(&D_800625FC[1]);
+    func_8003700C("vect0 %02x %02x\n", D_80059430, D_80059438);
+    func_8003700C("vect1 %02x %02x\n", D_80059434, D_8005943C);
+    func_8003700C("PADD %04x %04x\n", D_80059570, D_80059574);
+    while (func_80035CDC() != 0) {
+        func_8003700C("%04x %04x %04x %04x\n", func_8003569C(0), D_80059570, D_8005948C, D_800594A4);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800365FC);
+#endif
 
-extern void (*D_80050594)(void);
+extern void (*D_80050594)(s32 c);
 
-/* Install the callback run by 800366f0. */
-void func_800366E0(void (*callback)(void)) {
+/* Install the character output run by 800366f0. */
+void func_800366E0(void (*callback)(s32 c)) {
     D_80050594 = callback;
 }
 
-void func_800366F0(void) {
-    D_80050594();
+/* Output a character through the installed callback. */
+void func_800366F0(s32 c) {
+    D_80050594(c);
 }
 
+/* Format `format` with the word arguments at `args` through the console's
+ * character output (800366F0): flags - + space 0, width and precision (or
+ * *), conversions b d i u p X x c s n and %%. Returns the characters
+ * written; an unknown conversion ends the output.
+ * Nonmatching: the format and argument pointers (and the hoisted sign
+ * characters) take each other's registers, and the digit loops reuse the
+ * condition's c - '0'. */
+#ifdef NON_MATCHING
+s32 func_80036718(s32 target, char *format, va_list args) {
+    char buffer[0x100];
+    FormatSpec spec;
+    char *p;
+    char *digits;
+    char *end;
+    s32 count = 0;
+    s32 length;
+    u32 value;
+    s32 c;
+    s32 i;
+
+    c = *format;
+    while (c != 0) {
+        if (c == '%') {
+            spec = D_8005A1CC;
+            for (;;) {
+                c = *++format;
+                if (c == '-') {
+                    spec.u.flags |= 1;
+                } else if (c == '+') {
+                    spec.u.flags |= 2;
+                } else if (c == ' ') {
+                    spec.u.bytes[1] = c;
+                } else if (c == '0') {
+                    spec.u.flags |= 4;
+                } else {
+                    break;
+                }
+            }
+            if (c == '*') {
+                spec.width = va_arg(args, s32);
+                if (spec.width < 0) {
+                    spec.width = -spec.width;
+                    spec.u.flags |= 1;
+                }
+                c = *++format;
+            } else {
+                while ((u32)(c - '0') < 10) {
+                    spec.width = spec.width * 10 - '0' + c;
+                    c = *++format;
+                }
+            }
+            if (c == '.') {
+                c = *++format;
+                if (c == '*') {
+                    spec.precision = va_arg(args, s32);
+                    c = *++format;
+                } else {
+                    while ((u32)(c - '0') < 10) {
+                        spec.precision = spec.precision * 10 - '0' + c;
+                        c = *++format;
+                    }
+                }
+                if (spec.precision >= 0) {
+                    spec.u.flags |= 8;
+                }
+            }
+            p = (char *)&spec;
+            if (spec.u.flags & 1) {
+                spec.u.flags &= ~4;
+            }
+            switch (c) {
+            case 'b':
+                value = va_arg(args, s32);
+                spec.base = 2;
+                spec.u.bytes[1] = 0;
+                goto number;
+            case 'd':
+            case 'i':
+                value = va_arg(args, s32);
+                if ((s32)value < 0) {
+                    value = -value;
+                    spec.u.bytes[1] = '-';
+                } else if (spec.u.flags & 2) {
+                    spec.u.bytes[1] = '+';
+                }
+                spec.base = 10;
+                goto number;
+            case 'u':
+                value = va_arg(args, s32);
+                spec.base = 10;
+                spec.u.bytes[1] = 0;
+            number:
+                if (!(spec.u.flags & 8)) {
+                    if (spec.u.flags & 4) {
+                        spec.precision = spec.width;
+                        if (spec.u.bytes[1] != 0) {
+                            spec.precision = spec.width - 1;
+                        }
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value != 0) {
+                    *--p = value % spec.base + '0';
+                    value /= spec.base;
+                    length++;
+                }
+                while (length < spec.precision) {
+                    *--p = '0';
+                    length++;
+                }
+                if (spec.u.bytes[1] != 0) {
+                    *--p = spec.u.bytes[1];
+                    length++;
+                }
+                break;
+            case 'p':
+                spec.precision = 8;
+                spec.u.flags |= 8;
+            case 'X':
+                digits = "0123456789ABCDEF";
+                goto hex;
+            case 'x':
+                digits = "0123456789abcdef";
+            hex:
+                value = va_arg(args, s32);
+                if (!(spec.u.flags & 8)) {
+                    if (spec.u.flags & 4) {
+                        spec.precision = spec.width;
+                    }
+                    if (spec.precision <= 0) {
+                        spec.precision = 1;
+                    }
+                }
+                length = 0;
+                while (value != 0) {
+                    *--p = digits[value & 0xF];
+                    value >>= 4;
+                    length++;
+                }
+                while (length < spec.precision) {
+                    *--p = '0';
+                    length++;
+                }
+                break;
+            case 'c':
+                *--p = va_arg(args, s32);
+                length = 1;
+                break;
+            case 's':
+                p = va_arg(args, char *);
+                if (!(spec.u.flags & 8)) {
+                    length = strlen(p);
+                } else {
+                    end = memchr(p, 0, spec.precision);
+                    length = end - p;
+                    if (end == NULL) {
+                        length = spec.precision;
+                    }
+                }
+                break;
+            case 'n':
+                *va_arg(args, s32 *) = count;
+                format++;
+                c = *format;
+                continue;
+            default:
+                if (c != '%') {
+                    return count;
+                }
+                func_800366F0(c);
+                count++;
+                format++;
+                c = *format;
+                continue;
+            }
+            if (length < spec.width && !(spec.u.flags & 1)) {
+                do {
+                    func_800366F0(' ');
+                    count++;
+                } while (length < --spec.width);
+            }
+            for (i = 0; i < length; i++) {
+                func_800366F0(p[i]);
+            }
+            count += length;
+            while (length < spec.width) {
+                func_800366F0(' ');
+                length++;
+                count++;
+            }
+            format++;
+        } else {
+            func_800366F0(c);
+            count++;
+            format++;
+        }
+        c = *format;
+    }
+    return count;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036718);
+#endif
 
 void func_80036CD8(s32 bits) {
     D_80059394->flags |= bits;
@@ -882,7 +1220,42 @@ void func_80036DC8(s32 r, s32 g, s32 b) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036E4C);
+extern u16 D_80050598[64]; /* console font CLUTs */
+extern RECT D_80059398;    /* their VRAM rectangle */
+
+/* Build and upload the console font CLUTs: four 16-color rows of
+ * foreground/background stripes 1, 2, 4 and 8 entries wide. */
+void func_80036E4C(u16 foreground, u16 background) {
+    u16 *p = D_80050598;
+    s32 i;
+    s32 j;
+
+    for (i = 0; i < 8; i++) {
+        *p++ = background;
+        *p++ = foreground;
+    }
+    for (; i < 12; i++) {
+        *p++ = background;
+        *p++ = background;
+        *p++ = foreground;
+        *p++ = foreground;
+    }
+    for (; i < 14; i++) {
+        for (j = 0; j < 4; j++) {
+            *p++ = background;
+        }
+        for (j = 0; j < 4; j++) {
+            *p++ = foreground;
+        }
+    }
+    for (j = 0; j < 8; j++) {
+        *p++ = background;
+    }
+    for (; j < 16; j++) {
+        *p++ = foreground;
+    }
+    LoadImage(&D_80059398, (u_long *)D_80050598);
+}
 
 s16 func_80036F44(void) {
     return D_80059394->unk14;
@@ -920,8 +1293,11 @@ void func_80036FE4(void) {
 
 /* printf to the console, when there is one. */
 void func_8003700C(char *format, ...) {
+    va_list args;
+
     if (D_80059394 != NULL) {
-        func_80036718(0, format, &format + 1);
+        va_start(args, format);
+        func_80036718(0, format, args);
     }
 }
 
@@ -947,7 +1323,64 @@ void func_8003708C(s32 x, s32 y) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800370DC);
+/* Put a character on the console: a font sprite for printable characters
+ * (wrapping, or stopping, at the right edge) and newlines; nothing once the
+ * window or the sprite budget is full. */
+void func_800370DC(s32 c) {
+    Console *con = D_80059394;
+    s32 width;
+
+    if (con == NULL) {
+        return;
+    }
+    if (con->y + con->unk16 > con->top + con->height) {
+        return;
+    }
+    if (con->unk34 > con->capacity) {
+        return;
+    }
+    if (c < 0x20) {
+        if (c == '\n') {
+            con->x = con->unk36;
+            con->y += con->unk16;
+        }
+        return;
+    }
+    if ((con->flags2E & 4) && c >= 0x60) {
+        c -= 0x20;
+    }
+    c -= 0x20;
+    if (con->flags2E & 8) {
+        width = con->widths[c];
+    } else {
+        width = con->unk14;
+    }
+    if (con->x + width >= con->left + con->width) {
+        if (con->flags & 8) {
+            return;
+        }
+        con->x = con->unk36;
+        con->y += con->unk16;
+    }
+    if (c != 0) {
+        *(u32 *)&((SPRT_8 *)con->current)->r0 = *(u32 *)&con->r;
+        *(u32 *)&((SPRT_8 *)con->current)->x0 = con->x | (con->y << 16);
+        if (con->flags2E & 2) {
+            /* glyphs on a 16-pixel grid, 8 to a row */
+            ((SPRT_8 *)con->current)->clut = con->cluts[(c & 0x18) >> 3];
+            *(u16 *)&((SPRT_8 *)con->current)->u0 =
+                ((c & 7) << 4) | ((con->texture_v + ((c & 0x60) >> 1)) << 8);
+        } else {
+            /* glyphs on an 8-pixel grid, 16 to a row */
+            ((SPRT_8 *)con->current)->clut = con->cluts[(c & 0x30) >> 4];
+            *(u16 *)&((SPRT_8 *)con->current)->u0 =
+                ((c & 0xF) << 3) | ((con->texture_v + ((c & 0xC0) >> 3)) << 8);
+        }
+        con->current += sizeof(SPRT_8);
+        con->unk34++;
+    }
+    con->x += width;
+}
 
 /* Home the console cursor and select the active text buffer.
  * Nonmatching: the original loads every field before the stores. */
@@ -969,7 +1402,57 @@ void func_800372CC(void) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800372CC);
 #endif
 
+/* Flush this frame's console sprites (and texture page, and background
+ * tile) into `ot`, or into the console's own ordering table, drawn at once,
+ * when `ot` is NULL or -1; then flip the sprite buffers and home the cursor.
+ * Nonmatching: the original copies the buffer index and the own-table flag
+ * into fresh registers before their last uses. */
+#ifdef NON_MATCHING
+void func_80037324(u_long *ot) {
+    Console *con = D_80059394;
+    s32 own;
+    s32 index;
+    s32 n;
+    SPRT_8 *sprite;
+
+    if (con != NULL) {
+        own = 0;
+        if (con->flags & 1) {
+            index = 0;
+            con->flags2E &= ~1;
+        } else {
+            index = con->flags2E & 1;
+            if (index) {
+                con->flags2E &= ~1;
+            } else {
+                con->flags2E |= 1;
+            }
+        }
+        if (ot == NULL || ot == (u_long *)-1) {
+            DrawSync(0);
+            ot = &con->ot[index];
+            own = 1;
+            TermPrim(ot);
+        }
+        n = con->unk34;
+        sprite = (SPRT_8 *)con->buffer[index];
+        while (n != 0) {
+            func_800317E0(ot, sprite++);
+            n--;
+        }
+        AddPrim(ot, &con->tpage[index]);
+        if (con->flags & 0x10) {
+            func_80031804(ot, &con->tile[index]);
+        }
+        func_800372CC();
+        if (own) {
+            DrawOTag(ot);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037324);
+#endif
 
 void func_8003747C(s32 value) {
     D_800593A0 = value;
@@ -990,7 +1473,27 @@ void func_8003748C(void) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800374E8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037878);
+/* Sort `count` elements of `size` bytes at `base` in place (selection
+ * sort): `compare` is positive when its second element goes first. */
+void func_80037878(u8 *base, s32 count, s32 size, s32 (*compare)(void *a, void *b)) {
+    u8 *temp = func_80031BDC(size, 0);
+    s32 i;
+    s32 j;
+    s32 best;
+
+    for (i = 0; i < count; i++) {
+        best = i;
+        for (j = i; j < count; j++) {
+            if (compare(base + size * best, base + j * size) > 0) {
+                best = j;
+            }
+        }
+        memcpy(temp, base + i * size, size);
+        memcpy(base + i * size, base + size * best, size);
+        memcpy(base + size * best, temp, size);
+    }
+    func_800320E8(temp);
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379B4);
 
@@ -999,11 +1502,210 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379C8);
 void func_800379D0(void) {
 }
 
+extern FileRequest D_8005A1DC[3]; /* the music file list */
+extern u8 *D_800658C8;            /* the loaded music's instrument data */
+
+/* Load the music of `scene` from directory 12/3: its sequence (file
+ * 6 + 2 * scene) and wave bank (file 7 + 2 * scene + `variant`). Returns 0
+ * with the sequence, 0 and the bank data after its first word, or -1 with
+ * zeros when the directory has no such scene.
+ * Nonmatching: the original computes the bank's file number twice, in
+ * forms GCC here folds into one, and so keeps more values in registers. */
+#ifdef NON_MATCHING
+s32 func_800379D8(s32 scene, s32 variant, u8 **sequence, s32 *unused, u8 **bank) {
+    s32 group;
+    s32 index;
+    s32 result = 0;
+    u8 *samples;
+    u8 *data;
+    s32 file;
+
+    func_800284B4(&group, &index);
+    func_80028470(12, 3);
+    func_80032498(4, 0);
+    if (scene >= func_80028928(5) / 2) {
+        result = -1;
+        *sequence = NULL;
+        *unused = 0;
+        *bank = NULL;
+    } else {
+        scene *= 2;
+        samples = func_80031BDC(func_800288EC(scene + (variant + 7)), 1);
+        func_800320A4(samples);
+        file = scene + 6;
+        data = func_80031BDC(func_800288EC(file), 1);
+        func_800320A4(data);
+        D_8005A1DC[0].file = file;
+        D_8005A1DC[0].destination = data;
+        D_8005A1DC[1].file = scene + 7 + variant;
+        D_8005A1DC[1].destination = samples;
+        D_8005A1DC[2].file = 0;
+        D_8005A1DC[2].destination = NULL;
+        func_80029AFC(D_8005A1DC, 0, 0);
+        *sequence = data;
+        *unused = 0;
+        *bank = (u8 *)D_8005A1DC[1].destination + 4;
+        D_800658C8 = (u8 *)D_8005A1DC[1].destination + 4;
+    }
+    func_80028470(group, index);
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800379D8);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037B88);
+/* The driver's SPU common attributes, the volumes they are built from and
+ * the master and CD volume fades (16.16 levels stepping toward targets). */
+typedef struct {
+    SpuCommonAttr attr;
+    s16 master;
+    s16 cd;
+    s16 unk2C;
+    s16 cd_request;
+    s32 master_level;
+    s32 master_step;
+    s16 master_frames;
+    s16 master_target;
+    s32 cd_level;
+    s32 cd_step;
+    s16 cd_frames;
+    s16 cd_target;
+} SoundVolumes;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037DC0);
+extern SoundVolumes D_8005A3C0;
+
+/* A voice whose volume pair follows the output mode (D_80059518). */
+typedef struct {
+    u16 flags;         /* bit 0: in use */
+    u8 unk2[0x10];
+    u16 volume;
+    u8 unk14[0x22];
+    s16 unk36;
+    s16 left;
+    s16 right;
+    u8 unk3C[0x26];
+    s16 unk62;
+    s16 unk64;
+    s16 unk66;
+} SoundModeVoice;
+
+extern SoundModeVoice *D_80059518;
+extern u8 D_8005940A, D_8005940B; /* reverb delay and feedback */
+extern SpuVolume D_8005940C;                   /* reverb depth */
+extern SoundTrack *D_80059564;
+extern s16 D_8005A3EE;
+s32 func_80038824(void);
+void func_8003885C(s32 volume);
+void func_80038DF4(void);
+
+extern void *D_80059458;     /* the SPU transfer ring */
+extern s32 D_800594E4;       /* random state */
+extern SoundSeq *D_800595D8; /* the sound effect channels */
+extern u32 D_800594FC;       /* voices held */
+extern u32 D_80059550;       /* voices to key off */
+extern u32 D_80059554;       /* voices whose registers changed */
+extern u32 D_80059504;       /* effect start clock */
+extern s32 D_80059514;
+extern u8 D_80065B0C[0x6300]; /* the driver memory pool */
+extern u8 D_8006FAC8[];      /* the SPU memory management table */
+extern u32 D_800594D8;       /* SPU address of the reverb work area, -1 none */
+extern s32 D_800595A4;       /* the zeroed transfer buffer */
+extern u8 D_80059409;        /* reverb type */
+void func_8003C020(void);    /* the driver tick */
+void func_8003BB64(void);    /* SPU transfer callback */
+void func_8003BFA0(void);    /* SPU interrupt callback */
+void func_8003E700(void);
+SoundSeq *func_8003B148(s32 count);
+void func_80038EC0(u32 start, s32 size);
+void func_80039360(void);
+void func_800386C4(s32 mode);
+void func_80038DB4(s32 reverb, s32 mix);
+void func_80038C68(s32 volume, s32 frames);
+void func_80038D18(s32 volume, s32 frames);
+void func_8003885C(s32 volume);
+void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback);
+
+/* Start the sound driver (error 0x28 when it runs): memory pools, the SPU
+ * memory map and transfer ring, the tick event on root counter 2 and the
+ * SPU callbacks, then default volumes, output mode, effect channels and
+ * reverb. */
+void func_80037B88(s32 flags) {
+    if (D_8005957C < 0) {
+        func_8003F6B0(0x28);
+        return;
+    }
+    D_8005957C = flags | 0xB801;
+    SpuInitMalloc(4, D_8006FAC8);
+    func_80038EC0((u32)D_80065B0C, 0x6300);
+    func_80039360();
+    D_80059458 = func_80038F18(0xA0);
+    func_8003E700();
+    D_800594E4 = 0x12345678;
+    D_80059564 = NULL;
+    D_800595D8 = NULL;
+    D_80059440 = NULL;
+    D_80059558 = NULL;
+    D_80059518 = NULL;
+    D_800594FC = 0;
+    D_80059550 = 0;
+    D_80059554 = 0;
+    D_8005A3C0.attr.mvolmode.left = 0;
+    D_8005A3C0.attr.mvolmode.right = 0;
+    D_8005A3C0.attr.mask = 0xC;
+    EnterCriticalSection();
+    D_800595BC = OpenEvent(0xF2000002, 2, 0x1000, (long (*)())func_8003C020);
+    SetRCnt(0xF2000002, 0x44E8, 0x1000);
+    StartRCnt(0xF2000002);
+    SpuSetTransferCallback(func_8003BB64);
+    SpuSetIRQCallback(func_8003BFA0);
+    SpuSetIRQ(0);
+    D_80059504 = 0;
+    D_80059514 = 0;
+    ExitCriticalSection();
+    func_800395B8(0x2000, 0x10000, 4);
+    func_800386C4(1);
+    func_80038DB4(0, 1);
+    func_80038C68(0x3FFF, 0);
+    func_80038D18(0x7FFF, 0);
+    if (D_8005957C & 0x4000) {
+        func_8003885C(0x80);
+    }
+    D_800595D8 = func_8003B148(0x10);
+    D_80059544 = 8;
+    D_800594D8 = -1;
+    D_800595A4 = 0;
+    D_80059409 = 0xFF;
+    func_80038934(4, 0, 0, 0);
+    SpuSetReverb(1);
+    D_80059500 = 0;
+}
+
+/* Shut the sound driver down: remove its SPU interrupt, transfer callback,
+ * timer and event, release every voice and clear the reverb (error 0x29
+ * when it is not running). */
+void func_80037DC0(void) {
+    s32 i;
+
+    if (D_8005957C == 0) {
+        func_8003F6B0(0x29);
+        return;
+    }
+    EnterCriticalSection();
+    D_8005957C = 0;
+    SpuSetIRQ(0);
+    SpuSetTransferCallback(NULL);
+    SpuSetIRQCallback(NULL);
+    StopRCnt(0xF2000002);
+    CloseEvent(D_800595BC);
+    ExitCriticalSection();
+    for (i = 0; i < 24; i++) {
+        func_8003F5BC(i, 6, 3);
+    }
+    func_8003F484(0xFFFFFF);
+    SpuSetReverbModeDepth(0, 0);
+    SpuSetReverbModeType(0);
+    D_80059500 = 0;
+}
 
 /* Mark every voice's channel for a full register update and clear the
  * voices-silenced state. */
@@ -1060,23 +1762,103 @@ void func_80037F88(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80037FD8);
+SoundSequence *func_800383EC(s32 key);
+void func_80038264(s32 address, s32 size);
+s32 func_8003827C(u8 *data, s32 size);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800380D0);
+/* Load a wave bank: allocate SPU memory for its samples (800381F4),
+ * transfer them and add a copy of its header to the loaded banks. Returns
+ * the copy, or NULL (error 0x1F without SPU memory, 0x1E without memory
+ * for the copy). */
+SoundSequence *func_80037FD8(SoundSequence *bank, s32 mode) {
+    s32 address = func_800381F4(bank, mode);
+    SoundSequence *copy;
+    SoundSequence **link;
 
-/* Stop a sequence's voice at once or with a fade (0: its own fade, -1:
- * none). */
-void func_800381F4(SoundSequence *sequence, s32 fade) {
-    if (fade == 0) {
-        fade = sequence->address;
-    } else if (fade == -1) {
-        fade = 0;
+    if (address == 0) {
+        func_8003F6B0(0x1F);
+        return NULL;
     }
-    if (fade == 0) {
-        func_800393B8(sequence->voice, sequence->volume);
+    func_8003BC10(address, (u8 *)bank + bank->offset, bank->size, NULL);
+    copy = func_80039024(bank->header_size);
+    if (copy == NULL) {
+        func_800396E0(address);
+        func_8003F6B0(0x1E);
+        return NULL;
+    }
+    func_80039248(copy, bank, bank->header_size);
+    copy->address = address;
+    DisableEvent(D_800595BC);
+    link = &D_80059558;
+    if (D_80059558 != NULL) {
+        do {
+            link = &(*link)->next;
+        } while (*link != NULL);
+    }
+    *link = copy;
+    copy->next = NULL;
+    EnableEvent(D_800595BC);
+    return copy;
+}
+
+/* Start loading a wave bank whose samples arrive in parts: allocate its SPU
+ * memory, transfer the samples among the first `size` bytes of the file
+ * (8003827C takes the rest) and add a copy of its header to the loaded
+ * banks. Returns the copy, or NULL (error 0x16 when a bank with its key is
+ * loaded, 0x1F without SPU memory, 0x1E without memory for the copy). */
+SoundSequence *func_800380D0(SoundSequence *bank, s32 size, s32 mode) {
+    s32 address;
+    SoundSequence *copy;
+    SoundSequence **link;
+
+    if (func_800383EC(bank->key) != NULL) {
+        func_8003F6B0(0x16);
+        return NULL;
+    }
+    address = func_800381F4(bank, mode);
+    if (address == 0) {
+        func_8003F6B0(0x1F);
+        return NULL;
+    }
+    func_80038264(address, bank->size);
+    func_8003827C((u8 *)bank + bank->offset, size - bank->header_size);
+    copy = func_80039024(bank->header_size);
+    if (copy == NULL) {
+        func_800396E0(address);
+        func_8003F6B0(0x1E);
+        return NULL;
+    }
+    func_80039248(copy, bank, bank->header_size);
+    copy->address = address;
+    DisableEvent(D_800595BC);
+    link = &D_80059558;
+    if (D_80059558 != NULL) {
+        do {
+            link = &(*link)->next;
+        } while (*link != NULL);
+    }
+    *link = copy;
+    copy->next = NULL;
+    EnableEvent(D_800595BC);
+    return copy;
+}
+
+/* Allocate SPU memory for a wave bank's samples: anywhere for mode -1, or
+ * for mode 0 when the bank asks for no address; otherwise at the bank's
+ * address. Returns the address, 0 when there is no room. */
+s32 func_800381F4(SoundSequence *bank, s32 mode) {
+    if (mode == 0) {
+        mode = bank->address;
+    } else if (mode == -1) {
+        mode = 0;
+    }
+    /* The allocator's result is returned as the value it leaves; the
+     * function has no return expression. */
+    if (mode == 0) {
+        func_800393B8(bank->size, bank->volume);
         return;
     }
-    func_800395B8(sequence->voice, sequence->address, sequence->volume);
+    func_800395B8(bank->size, bank->address, bank->volume);
 }
 
 extern s32 D_80059584;
@@ -1087,9 +1869,61 @@ void func_80038264(s32 a, s32 b) {
     D_80059588 = b;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003827C);
+/* Transfer the next part of a streamed wave bank's samples (at most what
+ * is still missing). Returns the bytes still missing.
+ * Nonmatching: the original takes the minimum through an extra register
+ * copy. */
+#ifdef NON_MATCHING
+s32 func_8003827C(u8 *data, s32 size) {
+    s32 left = D_80059588;
+    s32 address;
+    s32 n;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038310);
+    if (left == 0) {
+        return 0;
+    }
+    n = left;
+    if (size < left) {
+        n = size;
+    }
+    address = D_80059584;
+    func_8003BC10(address, data, n, NULL);
+    D_80059584 = address + n;
+    return D_80059588 = left - n;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003827C);
+#endif
+
+
+/* Release a loaded wave bank: unlink it, free its SPU memory (error 0x24
+ * when that fails, 0x11 when the bank is not loaded) and its copy. */
+void func_80038310(SoundSequence *bank) {
+    SoundSequence *entry;
+    SoundSequence *prev = NULL;
+
+    for (entry = D_80059558; entry != NULL; entry = entry->next) {
+        if (entry == bank) {
+            break;
+        }
+        prev = entry;
+    }
+    if (entry == NULL) {
+        func_8003F6B0(0x11);
+        return;
+    }
+    DisableEvent(D_800595BC);
+    if (prev != NULL) {
+        prev->next = bank->next;
+    } else {
+        D_80059558 = bank->next;
+    }
+    EnableEvent(D_800595BC);
+    if (bank->address != func_800396E0(bank->address)) {
+        func_8003F6B0(0x24);
+    }
+    func_80039144(bank);
+}
 
 /* The playing sequence with `key`, or NULL. */
 SoundSequence *func_800383EC(s32 key) {
@@ -1103,9 +1937,73 @@ SoundSequence *func_800383EC(s32 key) {
     return sequence;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038428);
+/* Add a sound effect bank to the loaded banks: error 0x15 when a bank
+ * with its id is loaded (unless the driver is in its error state), or the
+ * bank data's error. */
+void func_80038428(SoundBank *bank) {
+    SoundBank *added = bank;
+    SoundBank *entry;
+    SoundBank **link;
+    s16 error;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003852C);
+    if (!(D_8005957C & 0x80)) {
+        for (entry = D_80059440; entry != NULL; entry = entry->next) {
+            if (bank->id == entry->id) {
+                func_8003F6B0(0x15);
+                return;
+            }
+        }
+    }
+    error = func_8003F614((u32 *)bank, 0x73646573, 0x101);
+    if (error != 0) {
+        func_8003F6B0(error);
+        return;
+    }
+    DisableEvent(D_800595BC);
+    link = &D_80059440;
+    if (D_80059440 != NULL) {
+        do {
+            link = &(*link)->next;
+        } while (*link != NULL);
+    }
+    *link = added;
+    added->next = NULL;
+    EnableEvent(D_800595BC);
+}
+
+/* Remove a sound effect bank from the loaded banks (error 0x10 when it is
+ * not loaded, 0xB when its data is no longer valid). */
+void func_8003852C(SoundBank *bank) {
+    SoundBank *entry;
+    SoundBank *prev = NULL;
+    SoundBank *target = bank;
+    s16 error;
+
+    for (entry = D_80059440; entry != NULL; entry = entry->next) {
+        if (entry == target) {
+            break;
+        }
+        prev = entry;
+    }
+    if (entry == NULL) {
+        func_8003F6B0(0x10);
+        return;
+    }
+    func_8003A094(bank);
+    DisableEvent(D_800595BC);
+    if (prev != NULL) {
+        prev->next = target->next;
+    } else {
+        D_80059440 = target->next;
+    }
+    target->next = NULL;
+    error = func_8003F614((u32 *)bank, 0x73646573, 0x101);
+    if (error != 0) {
+        func_8003F6B0(0xB);
+        return;
+    }
+    EnableEvent(D_800595BC);
+}
 
 void func_80038624(void) {
     func_80039FF8();
@@ -1132,7 +2030,57 @@ void func_8003869C(void) {
     func_80039FF8();
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800386C4);
+
+/* Select the output mode (1, 2 or 3; otherwise the plain one) and reapply
+ * the volumes: master and CD, reverb depth, every sequence, the CD mix and
+ * the mode voice. */
+void func_800386C4(s32 mode) {
+    SoundTrack *track;
+    SoundModeVoice *voice;
+    s16 volume;
+
+    D_8005957C &= 0xF8FF;
+    switch (mode) {
+    case 0:
+        break;
+    case 1:
+        D_8005957C |= 0x100;
+        break;
+    case 2:
+        D_8005957C |= 0x300;
+        break;
+    case 3:
+        D_8005957C |= 0x500;
+        break;
+    }
+    func_80038DF4();
+    SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
+    for (track = D_80059564; track != NULL; track = track->next) {
+        func_8003E680(0x100, (SoundSeq *)track);
+    }
+    if (D_8005957C & 0x4000) {
+        func_8003885C(D_8005A3EE);
+    }
+    voice = D_80059518;
+    if (voice != NULL && (voice->flags & 1)) {
+        volume = voice->volume;
+        if (func_80038824() != 0) {
+            volume <<= 7;
+            voice->left = volume;
+            voice->right = 0;
+            voice->unk64 = 0;
+            voice->unk66 = volume;
+        } else {
+            volume <<= 6;
+            voice->left = volume;
+            voice->right = volume;
+            voice->unk64 = volume;
+            voice->unk66 = volume;
+        }
+        voice->unk36 = 1;
+        voice->unk62 = 1;
+    }
+}
 
 /* 0 without reverb, 1 or 2 by reverb mode. */
 s32 func_80038824(void) {
@@ -1149,7 +2097,6 @@ s32 func_80038824(void) {
     return mode;
 }
 
-extern s16 D_8005A3EE;
 extern CdlATV D_80059530;
 
 /* Set the CD audio volume (halved into the right channels without
@@ -1192,17 +2139,76 @@ void func_8003890C(SoundBank *bank, s32 enable) {
     }
 }
 
+extern s32 D_800508E8[10]; /* reverb work area size of each reverb type */
+void func_80038AD4(s32 address, s32 size);
+
+/* Set the reverb type, depth, delay and feedback: type 0 turns it off, -1
+ * keeps the current type and -2 changes nothing. A new type moves the work
+ * area to the top of SPU memory and clears it (error 0x20, reverb off,
+ * when there is no room).
+ * Nonmatching: the flag set for a new type is scheduled before the work area
+ * allocation instead of into the branch after it. */
+#ifdef NON_MATCHING
+void func_80038934(s32 type, s32 depth, s32 delay, s32 feedback) {
+    SpuReverbAttr attr; /* unused */
+    long current;
+    s32 changed = 0;
+    s32 size;
+    s32 address;
+
+    if (type == -2) {
+        return;
+    }
+    if (type == 0) {
+        feedback = 0;
+        delay = 0;
+        depth = 0;
+    } else if (type == -1) {
+        type = D_80059409;
+    }
+    SpuGetReverbModeType(&current);
+    if (current != type || type == 0) {
+        if (D_800594D8 != -1) {
+            func_800396E0(D_800594D8);
+        }
+        size = D_800508E8[type];
+        address = 0x80000 - size;
+        changed = 1;
+        if ((D_800594D8 = func_800395B8(size, address, 5)) == 0) {
+            func_8003F6B0(0x20);
+            type = 0;
+            feedback = 0;
+            delay = 0;
+            depth = 0;
+        }
+    }
+    D_80059409 = type;
+    D_8005A3C0.unk2C = depth;
+    D_8005940A = delay;
+    D_8005940B = feedback;
+    func_80038DF4();
+    if (changed) {
+        SpuSetReverbModeDepth(0, 0);
+        SpuSetReverbModeType(type);
+        func_80038AD4(address, size);
+    } else {
+        SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
+        SpuSetReverbModeDelayTime(delay);
+        SpuSetReverbModeFeedback(feedback);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038934);
+#endif
 
-extern s32 D_800595A4;
-extern s32 D_800595DC;
-extern s32 D_800595E0;
+extern s32 D_800595DC; /* next SPU address to clear */
+extern s32 D_800595E0; /* bytes left to clear */
 
-/* Start the reverb work area with parameters a/b, reserving its SPU memory
- * on first use. */
-void func_80038AD4(s32 a, s32 b) {
-    D_800595DC = a;
-    D_800595E0 = b;
+/* Clear `size` bytes of SPU memory at `address` (the reverb work area)
+ * from a zeroed buffer, allocated on first use, in chained transfers. */
+void func_80038AD4(s32 address, s32 size) {
+    D_800595DC = address;
+    D_800595E0 = size;
     if (D_800595A4 == 0) {
         D_800595A4 = (s32)func_80038F18(0x840);
         if (D_800595A4 == 0) {
@@ -1213,22 +2219,75 @@ void func_80038AD4(s32 a, s32 b) {
     func_80038B4C();
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038B4C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038C68);
+/* Clear the next part (at most 0x840 bytes, else 0x800) of the reverb work
+ * area, chaining itself as the transfer callback; when done, release the
+ * buffer and restore the reverb settings. */
+void func_80038B4C(void) {
+    s32 size;
+    s32 address;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038D18);
+    if (D_800595E0 == 0) {
+        func_80039144((void *)D_800595A4);
+        D_800595A4 = 0;
+        SpuSetReverbModeDepth(D_8005940C.left, D_8005940C.right);
+        SpuSetReverbModeDelayTime(D_8005940A);
+        SpuSetReverbModeFeedback(D_8005940B);
+        D_8005957C &= ~0x20;
+        return;
+    }
+    size = 0x800;
+    if (D_800595E0 <= 0x840) {
+        size = D_800595E0;
+    }
+    address = D_800595DC;
+    D_800595E0 -= size;
+    D_800595DC = address + size;
+    func_8003BC10(address, (u8 *)D_800595A4, size, func_80038B4C);
+    if (!(D_8005957C & 0x10)) {
+        func_8003BC10(address, (u8 *)D_800595A4, size, NULL);
+    }
+}
 
-/* The driver's SPU common attributes and the volumes they are built from. */
-typedef struct {
-    SpuCommonAttr attr;
-    s16 master;
-    s16 cd;
-    s16 unk2C;
-    s16 cd_request;
-} SoundVolumes;
+/* Set the master volume at once, or fade to it over `frames`. */
+void func_80038C68(s32 volume, s32 frames) {
+    s32 delta;
 
-extern SoundVolumes D_8005A3C0;
+    D_8005A3C0.master_target = volume;
+    if (frames == 0) {
+        D_8005A3C0.master_level = volume << 16;
+        D_8005A3C0.master_frames = 0;
+        D_8005A3C0.master = volume;
+        func_80038E6C(volume, &D_8005A3C0.attr.mvol, 0);
+        D_8005A3C0.attr.mask |= 3;
+        return;
+    }
+    delta = (volume << 8) - (D_8005A3C0.master_level >> 8);
+    if (delta != 0) {
+        D_8005A3C0.master_frames = frames;
+        D_8005A3C0.master_step = (delta / frames) << 8;
+    }
+}
+
+/* Set the CD volume at once, or fade to it over `frames`. */
+void func_80038D18(s32 volume, s32 frames) {
+    s32 delta;
+
+    D_8005A3C0.cd_target = volume;
+    if (frames == 0) {
+        D_8005A3C0.cd_level = volume << 16;
+        D_8005A3C0.cd_frames = 0;
+        D_8005A3C0.attr.cd.volume.left = D_8005A3C0.attr.cd.volume.right = D_8005A3C0.cd = volume;
+        D_8005A3C0.attr.mask |= 0xC0;
+        return;
+    }
+    delta = (volume << 8) - (D_8005A3C0.cd_level >> 8);
+    if (delta != 0) {
+        D_8005A3C0.cd_frames = frames;
+        D_8005A3C0.cd_step = (delta / frames) << 8;
+    }
+}
+
 
 /* Set the CD audio reverb and mix switches. */
 void func_80038DB4(s32 reverb, s32 mix) {
@@ -1237,8 +2296,6 @@ void func_80038DB4(s32 reverb, s32 mix) {
     D_8005A3C0.attr.mask |= 0x300;
     SpuSetCommonAttr(&D_8005A3C0.attr);
 }
-
-extern SpuVolume D_8005940C;
 
 /* Apply the master and CD volumes. */
 void func_80038DF4(void) {
@@ -1251,7 +2308,7 @@ void func_80038DF4(void) {
 /* Set a stereo volume pair, inverting one side for the surround modes.
  * Nonmatching: register allocation and branch layout differ. */
 #ifdef NON_MATCHING
-void func_80038E6C(s32 volume, SpuVolume *out, u8 channel) {
+void func_80038E6C(s16 volume, SpuVolume *out, u8 channel) {
     out->right = volume;
     out->left = volume;
     if (D_8005957C & 0x600) {
@@ -1272,13 +2329,11 @@ void func_80038E6C(s32 volume, SpuVolume *out, u8 channel) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038E6C);
 #endif
 
-extern SpuBlock *D_80059410;
 extern s32 D_8005951C;
-extern u32 D_800595E4;
 
-/* Make [start, start + size) the SPU memory pool, aligned to 16 bytes. */
+/* Make [start, start + size) the driver memory pool, aligned to 16 bytes. */
 void func_80038EC0(u32 start, s32 size) {
-    SpuBlock *block;
+    SoundBlock *block;
 
     size &= ~0xF;
     if (start & 0xF) {
@@ -1286,25 +2341,151 @@ void func_80038EC0(u32 start, s32 size) {
         start = (start + 0xF) & ~0xF;
     }
     D_800595E4 = start + size;
-    block = (SpuBlock *)start;
+    block = (SoundBlock *)start;
     block->flags = 0x8000;
     D_80059410 = block;
     D_8005951C = size;
     block->unk2 = 0;
     block->unk4 = 0;
-    block->next = start + 0x10;
-    block->unkC = 0;
+    block->end = start + 0x10;
+    block->next = NULL;
 }
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80038F18);
 
+/* Allocate `size` bytes of driver memory, cleared, from the highest gap
+ * that fits (between blocks or after the last one). Returns the data or
+ * NULL (then the driver event stays disabled).
+ * Nonmatching: the block pointers take other registers. */
+#ifdef NON_MATCHING
+void *func_80039024(s32 size) {
+    s32 need;
+    SoundBlock *after;
+    u32 limit;
+    SoundBlock *block;
+    u8 *data;
+
+    DisableEvent(D_800595BC);
+    need = ((size + 0xF) & ~0xF) + 0x10;
+    after = NULL;
+    limit = 0;
+    for (block = D_80059410;; block = block->next) {
+        if (block->next == NULL) {
+            if ((s32)(D_800595E4 - block->end) >= need) {
+                after = block;
+                limit = D_800595E4;
+            }
+            break;
+        }
+        if ((s32)((u32)block->next - block->end) >= need) {
+            after = block;
+            limit = (u32)block->next;
+        }
+    }
+    limit -= need;
+    if (after == NULL) {
+        return NULL;
+    }
+    block = (SoundBlock *)((limit + 0xF) & ~0xF);
+    data = (u8 *)(block + 1);
+    block->end = (u32)(data + size);
+    block->next = NULL;
+    block->unk4 = 0;
+    block->flags = 2;
+    block->unk2 = 0;
+    block->next = after->next;
+    after->next = block;
+    EnableEvent(D_800595BC);
+    func_800392EC((u32 *)data, size);
+    return data;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039024);
+#endif
 
+/* Release a block of driver memory.
+ * Nonmatching: the original keeps the pool head and the block address in
+ * separate registers from the walk. */
+#ifdef NON_MATCHING
+void func_80039144(void *data) {
+    SoundBlock *head = D_80059410;
+    SoundBlock *block;
+    SoundBlock *entry;
+    SoundBlock *prev;
+
+    DisableEvent(D_800595BC);
+    block = (SoundBlock *)data - 1;
+    entry = head;
+    prev = NULL;
+    while (entry != block) {
+        prev = entry;
+        entry = entry->next;
+    }
+    if (prev != NULL) {
+        prev->next = block->next;
+    }
+    EnableEvent(D_800595BC);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039144);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800391CC);
+/* The largest free gap of the driver memory pool, in 16-byte units. */
+s32 func_800391CC(void) {
+    SoundBlock *block = D_80059410;
+    s32 largest = 0;
+    s32 gap;
 
+    while (block->next != NULL) {
+        gap = (u32)block->next - block->end;
+        if (largest < gap) {
+            largest = gap;
+        }
+        block = block->next;
+    }
+    gap = D_800595E4 - block->end;
+    if (largest < gap) {
+        largest = gap;
+    }
+    return largest & ~0xF;
+}
+
+typedef struct {
+    s32 word[4];
+} Quad;
+
+/* Copy `size` bytes: sixteen at a time, then words, then bytes.
+ * Nonmatching: the source and destination offset pointers swap registers. */
+#ifdef NON_MATCHING
+void func_80039248(void *dst, void *src, s32 size) {
+    s32 *d = dst;
+    s32 *s = src;
+    s32 n;
+    s32 a, b, c;
+
+    for (n = size >> 4; n != 0; n--) {
+        a = s[1];
+        b = s[2];
+        c = s[3];
+        d[0] = s[0];
+        d[1] = a;
+        d[2] = b;
+        d[3] = c;
+        d += 4;
+        s += 4;
+    }
+    for (n = (size >> 2) & 3; n != 0; n--) {
+        *d++ = *s++;
+    }
+    for (n = size & 3; n != 0; n--) {
+        *(u8 *)d = *(u8 *)s;
+        d = (s32 *)((u8 *)d + 1);
+        s = (s32 *)((u8 *)s + 1);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039248);
+#endif
 
 /* Clear `size` bytes: sixteen at a time, then words, then bytes.
  * Nonmatching: the pointer and its offset copy swap registers. */
@@ -1331,37 +2512,330 @@ void func_800392EC(u32 *p, s32 size) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800392EC);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039360);
+/* Reset the SPU memory map to one reserved entry for the first 0x1010
+ * bytes. */
+void func_80039360(void) {
+    s32 i;
 
+    for (i = 11; i >= 0; i--) {
+        D_8006F9FC[i].flags = 0;
+    }
+    D_8006F9FC[0].flags = 0x81;
+    D_8006F9FC[0].unk1 = 5;
+    D_8006F9FC[0].address = 0;
+    D_8006F9FC[0].size = 0x1010;
+    D_8006F9FC[0].next = 0;
+}
+
+/* Allocate `size` bytes of SPU memory in the first gap of the map that
+ * fits (or after its last entry). Returns the address, 0 when none.
+ * Nonmatching: the entry and end registers are swapped and the map base
+ * is not rematerialised in the loop. */
+#ifdef NON_MATCHING
+s32 func_800393B8(s32 size, u16 mode) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *next;
+    SpuMemBlock *block;
+    u32 end = D_8006F9FC[0].address + D_8006F9FC[0].size;
+    s32 i;
+
+    while (entry->next != 0) {
+        next = &D_8006F9FC[entry->next];
+        if ((s32)(next->address - end) >= size) {
+            goto found;
+        }
+        entry = next;
+        end = next->address + next->size;
+    }
+    if ((s32)(0x80000 - end) < size) {
+        return 0;
+    }
+found:
+    i = func_80039784();
+    if (i < 0) {
+        return 0;
+    }
+    block = &D_8006F9FC[i];
+    block->flags = 0x80;
+    block->unk1 = 0;
+    block->address = end;
+    block->size = size;
+    block->next = entry->next;
+    entry->next = i;
+    return end;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800393B8);
+#endif
 
+/* Allocate `size` bytes of SPU memory at the top of the last gap of the
+ * map that fits (the space after the last entry included). The new entry
+ * is linked after the map's last entry. Returns the address, 0 when none.
+ * Nonmatching: the next entry and the new entry take swapped registers. */
+#ifdef NON_MATCHING
+s32 func_800394B8(s32 size) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *next;
+    SpuMemBlock *found = NULL;
+    SpuMemBlock *block;
+    u32 end;
+    u32 address;
+    s32 i;
+
+    for (;;) {
+        end = entry->address + entry->size;
+        if (entry->next == 0) {
+            if ((s32)(0x80000 - end) >= size) {
+                found = entry;
+                address = 0x80000 - size;
+            }
+            break;
+        }
+        next = &D_8006F9FC[entry->next];
+        if ((s32)(next->address - end) >= size) {
+            found = entry;
+            address = next->address - size;
+        }
+        entry = next;
+    }
+    if (found == NULL) {
+        return 0;
+    }
+    i = func_80039784();
+    if (i < 0) {
+        return 0;
+    }
+    block = &D_8006F9FC[i];
+    block->flags = 0x80;
+    block->unk1 = 0;
+    block->address = address;
+    block->size = size;
+    block->next = entry->next;
+    entry->next = i;
+    return address;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800394B8);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800395B8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800396E0);
+/* Release the SPU memory map entry at `address`, unlinking it. Returns the
+ * address, 0 when no entry has it. */
+u32 func_800396E0(u32 address) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *prev = NULL;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039748);
+    for (;;) {
+        if (entry->address == address) {
+            prev->next = entry->next;
+            entry->flags = 0;
+            entry->unk1 = 0;
+            entry->address = 0;
+            entry->next = 0;
+            return address;
+        }
+        prev = entry;
+        if (entry->next == 0) {
+            return 0;
+        }
+        entry = &D_8006F9FC[entry->next];
+    }
+}
+
+/* Set the second byte of the SPU memory map entry at `address`. */
+void func_80039748(u32 address, u8 value) {
+    SpuMemBlock *entry = func_800397C0(address);
+
+    if (entry != NULL) {
+        entry->unk1 = value;
+    }
+}
 
 s32 func_8003977C(void) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039784);
+/* The index of an unused SPU memory map entry, 0 when all are in use. */
+s32 func_80039784(void) {
+    s32 i;
 
+    for (i = 0; i < 12; i++) {
+        if (D_8006F9FC[i].flags == 0) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+/* The SPU memory map entry at `address`, or NULL. Only the first entry is
+ * examined: the walk returns as soon as that entry has a successor.
+ * Nonmatching: GCC sees that the walk never leaves the first entry and
+ * drops the entry pointer, which the original keeps. */
+#ifdef NON_MATCHING
+SpuMemBlock *func_800397C0(u32 address) {
+    SpuMemBlock *entry = D_8006F9FC;
+    s32 i;
+
+    while (entry->address != address) {
+        i = entry->next;
+        if (i != 0) {
+            return NULL;
+        }
+        entry = &D_8006F9FC[i];
+    }
+    return entry;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397C0);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800397FC);
+/* Create a sequence for `header` and play it. Returns the sequence. */
+SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames) {
+    SoundSeq *seq = func_80039850(header);
 
+    func_80039A80(seq, fade, frames);
+    return seq;
+}
+
+/* Create a sequence for valid sequence data in driver memory (with room
+ * for a snapshot when the data has a table). Returns it, or NULL (the
+ * data's error, or 0x1E without memory).
+ * Nonmatching: the original sign-extends the error again for the report
+ * call, so that call is not shared with the allocation failure's. */
+#ifdef NON_MATCHING
+SoundSeq *func_80039850(SoundSeqHeader *header) {
+    SoundSeqHeader *data = header;
+    s16 error = func_8003F67C(header);
+    s32 size;
+    SoundSeq *seq;
+
+    if (error == 0) {
+        size = func_8003BB40(data->channels);
+        if (data->entries != 0) {
+            size += 0x180;
+        }
+        seq = func_80038F18(size);
+        if (seq == NULL) {
+            func_8003F6B0(0x1E);
+            return NULL;
+        }
+        seq->header = data;
+        if (data->entries != 0) {
+            func_8003B0AC(seq, data);
+        }
+        func_8003B22C(seq);
+        func_8003B424(seq);
+        seq->muted = 0;
+        func_8003B9E4(seq);
+        return seq;
+    }
+    func_8003F6B0(error);
+    return NULL;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039850);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039910);
+/* Create a sequence for valid sequence data in memory the caller provides
+ * (flag 0x4000: not released with it). Returns it, or NULL. */
+SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq) {
+    s16 error = func_8003F67C(header);
+    s32 size;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800399D4);
+    if (error != 0) {
+        func_8003F6B0(error);
+        return NULL;
+    }
+    size = func_8003BB40(header->channels);
+    if (header->entries != 0) {
+        size += 0x180;
+    }
+    func_800392EC((u32 *)seq, size);
+    seq->header = header;
+    if (header->entries != 0) {
+        func_8003B0AC(seq, header);
+    }
+    func_8003B22C(seq);
+    func_8003B424(seq);
+    seq->muted = 0;
+    func_8003B9E4(seq);
+    seq->flags |= 0x4000;
+    return seq;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039A80);
+/* Stop and release a sequence (its memory unless the caller provided it). */
+void func_800399D4(SoundSeq *seq) {
+    if ((s16)seq->flags & 0x8000) {
+        func_80039C4C((SoundTrack *)seq);
+    }
+    if (func_8003F67C(seq->header) != 0) {
+        func_8003F6B0(0xA);
+        return;
+    }
+    if (func_8003BA38(seq) != 0) {
+        func_8003F6B0(5);
+        return;
+    }
+    func_8003B930(seq);
+    if (!(seq->flags & 0x4000)) {
+        func_80039144(seq);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80039B68);
+/* Play a sequence from its start, fading in over `frames`. */
+void func_80039A80(SoundSeq *seq, s32 fade, s32 frames) {
+    if (seq == NULL) {
+        func_8003F6B0(5);
+        return;
+    }
+    seq->flags &= 0x7FFF;
+    if (func_8003F67C(seq->header) != 0) {
+        func_8003F6B0(0xA);
+        return;
+    }
+    if ((s16)seq->flags & 0x8000) {
+        func_80039C4C((SoundTrack *)seq);
+    }
+    DisableEvent(D_800595BC);
+    func_8003B22C(seq);
+    func_8003B424(seq);
+    seq->fade.value = 0;
+    func_8003A89C(seq, fade, frames);
+    seq->flags |= 0x8000;
+    EnableEvent(D_800595BC);
+}
+
+/* Restart `seq` from its start: reload every channel's wave bank and
+ * sample addresses, mark it stopped by a fade and fade it in. */
+void func_80039B68(SoundSeq *seq, s32 fade, s32 frames) {
+    SoundSeqChannel *channel;
+    SoundSequence *bank;
+    SoundInstrument *instrument;
+    s32 count;
+    u32 start;
+
+    if (seq == NULL) {
+        func_8003F6B0(5);
+        return;
+    }
+    count = seq->channels;
+    channel = seq->channel;
+    do {
+        count--;
+        bank = func_800383EC(channel->unk25);
+        channel->instruments = bank;
+        instrument = &bank->instrument[channel->instrument];
+        start = instrument->start * 8;
+        channel->state.sample_start = start + bank->address;
+        channel->state.sample_loop = start + instrument->loop * 8;
+        channel->state.flags = 0xFFFF;
+        channel++;
+    } while (count != 0);
+    seq->fade.value = 0;
+    seq->flags |= 0x100;
+    func_8003A89C(seq, fade, frames);
+}
 
 /* Resume a track (error 5 without one). */
 void func_80039C4C(SoundTrack *track) {
@@ -1381,7 +2855,6 @@ void func_80039C8C(s32 a, s32 c) {
     func_8003A89C((SoundSeq *)a, 0, c);
 }
 
-extern SoundTrack *D_80059564;
 
 /* Resume every paused track (flag 1). */
 void func_80039CC4(void) {
