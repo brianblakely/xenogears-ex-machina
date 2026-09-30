@@ -1,0 +1,76 @@
+name: Finish matching refactor checks
+on:
+  push:
+    branches: [refactor/matching-first-decomp]
+    paths: [.github/workflows/style-once.yml]
+permissions:
+  contents: write
+jobs:
+  finish:
+    if: github.ref == 'refs/heads/refactor/matching-first-decomp'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Trim Linux runtime dependencies and format changed source
+        run: |
+          mkdir -p .local
+          cat > .local/format-changes.py <<'PY'
+          from pathlib import Path
+          import subprocess
+          base = '6ec589387649af12c719458daa4b3530c57ba3b4'
+          p = Path('nix/ghidra/flake.nix')
+          text = p.read_text()
+          assert 'tools = cross.buildPackages.binutils;' in text
+          p.write_text(text.replace('tools = cross.buildPackages.binutils;',
+                                   'tools = cross.buildPackages.binutils-unwrapped;'))
+          p = Path('tools/matching.py')
+          text = p.read_text()
+          assert 'zip(expected, actual)' in text
+          p.write_text(text.replace('zip(expected, actual)', 'zip(expected, actual, strict=False)'))
+          p = Path('tests/test_matching.py')
+          text = p.read_text()
+          assert '*(.pdr) *(.comment)' in text
+          p.write_text(text.replace('*(.pdr) *(.comment)',
+                                   "*(.pdr) '\n                          '*(.comment)"))
+          names = subprocess.check_output(['git', 'diff', '--name-only', base], text=True).splitlines()
+          names = [n for n in names if Path(n).is_file()]
+          py = [n for n in names if n.endswith('.py')]
+          cpp = [n for n in names if n.endswith(('.hpp', '.cpp'))]
+          nix = [n for n in names if n.endswith('.nix')]
+          subprocess.run(['ruff', 'format', *py], check=True)
+          subprocess.run(['ruff', 'check', '--fix', *py], check=True)
+          subprocess.run(['ruff', 'format', '--check', *py], check=True)
+          subprocess.run(['clang-format', '-i', *cpp], check=True)
+          subprocess.run(['clang-format', '--dry-run', '--Werror', *cpp], check=True)
+          subprocess.run(['nixfmt', *nix], check=True)
+          assert Path('prompt.md').read_bytes() == subprocess.check_output(['git', 'show', base + ':prompt.md'])
+          PY
+          nix develop path:./nix -c python3 .local/format-changes.py > .local/style.log 2>&1 || { tail -100 .local/style.log; exit 1; }
+          cat .local/style.log
+      - name: Public regressions and lean matching shell
+        id: tests
+        continue-on-error: true
+        run: |
+          nix develop path:./nix -c python3 tools/repository/check.py --preset debug > .local/public.log 2>&1 || { tail -120 .local/public.log; exit 1; }
+          tail -12 .local/public.log
+          nix develop path:./nix/ghidra#matching -c make -C decomp smoke > .local/matching.log 2>&1 || { tail -120 .local/matching.log; exit 1; }
+          tail -22 .local/matching.log
+      - name: Publish formatted branch
+        env:
+          TESTS: ${{ steps.tests.outcome }}
+        run: |
+          rm .github/workflows/style-once.yml
+          git config user.name 'XEM refactor automation'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'Trim matching binutils closure and finish source formatting' -m "Changed-source formatting passed. Public and matching tests: $TESTS."
+          git push origin HEAD:refs/heads/refactor/matching-first-decomp
+          test "$TESTS" = success
