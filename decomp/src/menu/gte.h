@@ -46,4 +46,7 @@
                      : "r"(r0)                                                 \
                      : "memory")
 
+/* Rotate and translate V0 by the current matrix into MAC1-MAC3 (sf = 1). */
+#define gte_rt() __asm__ volatile("nop;nop;.word 0x4A480012")
+
 #endif

@@ -205,7 +205,26 @@ s32 func_80073644(Actor *actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073B7C);
+/* World position of a model part's vertex (1-based; 0 or a non-model part
+ * gives the part's origin), relative to the actor's position. */
+void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out) {
+    Node *node = ((ModelSet *)actor->node->data)->nodes[part];
+
+    if (vertex != 0 && node->type == 1) {
+        gte_SetRotMatrix(&node->unk4C);
+        gte_SetTransMatrix(&node->unk4C);
+        gte_ldv0(&((SVector *)((Mesh *)((Model *)node->data)->file)->data)[vertex - 1]);
+        gte_rt();
+        gte_stlvnl(out);
+        out->vx += actor->pos.vx;
+        out->vy += actor->pos.vy;
+        out->vz += actor->pos.vz;
+    } else {
+        out->vx = node->unk4C.t[0] + actor->pos.vx;
+        out->vy = node->unk4C.t[1] + actor->pos.vy;
+        out->vz = node->unk4C.t[2] + actor->pos.vz;
+    }
+}
 
 /* Age an actor's trail segments: new ones start fading, fading ones are freed. */
 void func_80073CA4(Actor *actor) {
