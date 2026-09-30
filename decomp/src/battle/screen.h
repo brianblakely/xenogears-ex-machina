@@ -163,9 +163,12 @@ void func_800B3C74(BattleTask *draw);
 void func_800B3C2C(LightFade *fade);
 
 extern u32 *D_800C3CB4; /* the ordering table the shatter draws into */
-void func_800B6F0C(ScreenShatter *shatter);
-void func_800B7134(ScreenShatter *shatter);
-void func_800B7160(ScreenShatter *shatter);
+extern SVector D_800C3594[3]; /* the shards' triangles, per layer */
+extern SVector D_800C35AC[3];
+u8 func_80021AD8(u8 value, s32 delta); /* add, clamped to 0-255 */
+void func_800B6F0C(BattleTask *task);
+void func_800B7134(BattleTask *draw);
+void func_800B7160(BattleTask *draw);
 void func_800B7364(ScreenShatter *shatter);
 void func_800B73A0(void);
 ScreenShatter *func_800B7424(ScreenShatter *shatter);

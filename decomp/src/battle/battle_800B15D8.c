@@ -1055,15 +1055,105 @@ void func_800B6E84(BattleSprite *sprite, s8 *args) {
     sprite->speed[2] = speed.vz;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6F0C);
+/* Shatter update: after its delay each shard fades, moves, turns and
+ * falls, its velocity easing out. */
+void func_800B6F0C(BattleTask *task) {
+    ScreenShatter *shatter = task->data;
+    s32 layer;
+    s32 row;
+    s32 column;
+    ScreenShard *shard;
+    POLY_FT3 *poly;
+    SVector step;
 
-/* Shatter draw: into the ordering table (800B7160). */
-void func_800B7134(ScreenShatter *shatter) {
-    D_800C3CB4 = D_8005956C;
-    func_800B7160(shatter);
+    shatter->frame++;
+    for (layer = 0; layer != 2; layer++) {
+        for (row = 0; row != 14; row++) {
+            for (column = 0; column != 20; column++) {
+                shard = &shatter->shards[layer][row][column];
+                if (shard->delay != 0) {
+                    shard->delay--;
+                } else {
+                    poly = &shard->poly[BATTLE_STATE.buffer];
+                    poly->r0 = func_80021AD8(poly->r0, -6);
+                    poly->g0 = func_80021AD8(poly->g0, -6);
+                    poly->b0 = func_80021AD8(poly->b0, -6);
+                    step.vx = shard->velocity.vx >> 16;
+                    step.vy = shard->velocity.vy >> 16;
+                    step.vz = shard->velocity.vz >> 16;
+                    shard->position.vx += step.vx;
+                    shard->position.vy += step.vy;
+                    shard->position.vz += step.vz;
+                    shard->angles.vx += shard->spin.vx;
+                    shard->angles.vy += shard->spin.vy;
+                    shard->angles.vz += shard->spin.vz;
+                    shard->velocity.vy -= shard->velocity.vy / 16;
+                    shard->velocity.vx -= shard->velocity.vx / 16;
+                    shard->velocity.vz -= shard->velocity.vz / 16;
+                    shard->velocity.vy += shard->fall;
+                }
+            }
+        }
+    }
 }
 
+/* Shatter draw: into the ordering table (800B7160). */
+void func_800B7134(BattleTask *draw) {
+    D_800C3CB4 = D_8005956C;
+    func_800B7160(draw);
+}
+
+#ifdef NON_MATCHING
+/* Shatter draw: each shard that has fallen in front of the screen (z at
+ * least 64), its layer's triangle turned and placed, projected at the
+ * screen centre and distance 512. */
+void func_800B7160(BattleTask *draw) {
+    ScreenShatter *shatter = draw->data;
+    s32 offsetX;
+    s32 offsetY;
+    Matrix m;
+    s32 p;
+    s32 flag;
+    s32 screen;
+    s32 layer;
+    s32 row;
+    s32 column;
+    ScreenShard *shard;
+    POLY_FT3 *poly;
+    SVector *triangle;
+
+    ReadGeomOffset(&offsetX, &offsetY);
+    screen = ReadGeomScreen();
+    SetGeomOffset(160, 112);
+    SetGeomScreen(512);
+    for (layer = 0; layer != 2; layer++) {
+        for (row = 0; row != 14; row++) {
+            for (column = 0; column != 20; column++) {
+                shard = &shatter->shards[layer][row][column];
+                poly = &shard->poly[BATTLE_STATE.buffer];
+                if (shard->position.vz >= 64) {
+                    func_8003F738(&shard->angles, &m);
+                    TransMatrix(&m, &shard->position);
+                    SetRotMatrix(&m);
+                    SetTransMatrix(&m);
+                    if (layer == 0) {
+                        triangle = D_800C3594;
+                    } else {
+                        triangle = D_800C35AC;
+                    }
+                    AddPrim(D_800C3CB4 + (RotTransPers3(&triangle[0], &triangle[1], &triangle[2], (u32 *)&poly->x0,
+                                                        (u32 *)&poly->x1, (u32 *)&poly->x2, &p, &flag) >> 6),
+                            poly);
+                }
+            }
+        }
+    }
+    SetGeomOffset(offsetX, offsetY);
+    SetGeomScreen(screen);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B7160);
+#endif
 
 /* Free a heap block once drawing is done. */
 void func_800B7330(void *block) {
