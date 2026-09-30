@@ -867,9 +867,9 @@ extern u16 D_801E96A8[16]; /* single-bit masks */
 extern u16 D_801E96C8[16]; /* single-bit masks */
 extern u32 D_801E96E8[];   /* single-bit masks */
 extern s32 D_801E9768[];
-extern u8 D_801E9E64[];
-extern u8 D_801E9E84[];
-extern u8 D_801E9EA0[];
+extern s32 D_801E9E64[];      /* label x offsets: field menu commands */
+extern s32 D_801E9E84[];      /* title file screen commands */
+extern s32 D_801E9EA0[];
 extern MenuCommandImages D_801EA19C[]; /* field menu command cursor images */
 extern MenuCommandImages D_801EA1D4[]; /* title file screen cursor images */
 extern s32 D_801EA1EC[]; /* per command: four choices of cursor and label images */
@@ -925,6 +925,15 @@ extern s32 D_801E9994[21];    /* text character x per column */
 extern s32 D_801E99E8[];      /* text character y per row */
 extern s32 D_801E99F0;        /* cursor sprite x */
 extern s32 D_801E99F8;        /* cursor sprite y */
+extern s32 D_801E9A00[];      /* label x per row (mode 0) */
+extern s32 D_801E9A2C[];      /* label y per row (mode 0) */
+extern s32 D_801E9EC4[8];     /* label x (mode 1) */
+extern u16 D_801E9EE4;        /* label y (mode 1) */
+extern s32 D_801E9EE8[];      /* label x (modes 2, 5 from 8) */
+extern s32 D_801E9F28[2];     /* label y per row (mode 2) */
+extern s32 D_801E9F30[];      /* label y per row (mode 3) */
+extern s32 D_801E9F68[2];     /* label x (mode 6) */
+extern s32 D_801E9F70[];      /* label y (mode 6) */
 extern s32 D_801EA494[9];     /* view frame images, ffff none */
 extern s32 D_801E9F98[9];     /* view frame x (first view) */
 extern s32 D_801E9FBC[9];     /* view frame y */
@@ -1196,8 +1205,8 @@ void func_801E5E4C(void);
 void func_801E7E68(MenuLabelSlot *labels, u8 *layout, s32 first, s32 count);
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
-void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, u8 *arg3, u8 *flags, u8 selected, u8 arg6,
-                   s32 arg7);
+void func_801E8070(u8 count, MenuLabelSlot *labels, u8 *table, s32 *offsets, u8 *flags, u8 selected, u8 row,
+                   u8 mode);
 void func_801E8474(s32 count, MenuCommandImages *images);
 void func_801E92CC(void);
 s32 func_801E93A0(s32 disc);
