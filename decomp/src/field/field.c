@@ -793,7 +793,7 @@ void func_8007AE2C(s32 port, s32 x, s32 y) {
 /* Read a port's pointer into out[0..4]: x and y (unscaled), buttons (mouse
  * pads only, else -0x100), x and y motion. Declared int but returns nothing. */
 s32 func_8007AE78(s32 port, s32 *out) {
-    func_8007AF74();
+    func_8007AF74(port);
     out[0] = D_800B0068[port] / D_800B005C;
     out[1] = D_800B0070[port] / D_800B0060;
     out[2] = -0x100;
@@ -804,7 +804,23 @@ s32 func_8007AE78(s32 port, s32 *out) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AF74);
+/* Move a mouse port's pointer by its motion, kept inside the bounds. */
+void func_8007AF74(s32 port) {
+    if (D_800B0054[port][0] == 0 && D_800B0054[port][1] == 0x12) {
+        D_800B0068[port] += D_800B0054[port][4];
+        D_800B0070[port] += D_800B0054[port][5];
+        if (D_800B0068[port] > D_800C3A50) {
+            D_800B0068[port] = D_800C3A50;
+        } else if (D_800B0068[port] < D_800C3A44) {
+            D_800B0068[port] = D_800C3A44;
+        }
+        if (D_800B0070[port] > D_800C3A54) {
+            D_800B0070[port] = D_800C3A54;
+        } else if (D_800B0070[port] < D_800C3A4C) {
+            D_800B0070[port] = D_800C3A4C;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B07C);
 
@@ -1312,7 +1328,28 @@ void func_80085738(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085788);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085890);
+/* Load the field's sound-effect bank (file 0xa8), from the disc or from the
+ * copy at 8005a4bc, and open it. */
+void func_80085890(void) {
+    s32 size;
+
+    func_80028470(4, 0);
+    size = func_800288EC(0xA8);
+    D_8006259C = func_80031BDC(size, 0);
+    func_800320A4(D_8006259C);
+    if (D_8004F32C == -1) {
+        func_800295D8(0xA8, D_8006259C, 0, 0x80);
+        func_80028A60(0);
+    } else {
+        func_8003F968(D_8006259C, D_8005A4BC, size);
+        func_800320B8(D_8005A4BC);
+        func_800320E8(D_8005A4BC);
+    }
+    func_80038428(D_8006259C);
+    func_8003BDFC(0x10);
+    func_80028470(4, 0);
+    D_8004F32C = -1;
+}
 
 /* Unlink and release the field's sound-effect bank. */
 void func_80085988(void) {
@@ -1401,7 +1438,33 @@ void func_80086078(s32 distance, u32 *out, s32 volume) {
     *out = ((u32)(level << 16) / 127 * volume) >> 16;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800860F0);
+/* Update the voices of the emitter playing sound `id`: volume by distance,
+ * pan by the descriptor's screen X. */
+void func_800860F0(s32 unused0, s32 volume, s32 unused2, s32 distance, s32 id) {
+    s32 i;
+    s32 voice;
+    s32 pan;
+    u32 level;
+    s32 x;
+    s32 y;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800AFE88[i].id == id) {
+            voice = i * 2;
+            func_80086078(distance, &level, volume);
+            func_80086200(id, &x, &y);
+            if (x > 0x140) {
+                x = 0x13F;
+            }
+            if (x < 0) {
+                x = 0;
+            }
+            pan = (x * 0x6666) >> 16;
+            func_8003A344(voice, level);
+            func_8003A55C(voice, pan);
+        }
+    }
+}
 
 #ifdef NON_MATCHING
 /* The screen position of descriptor `index`. */
