@@ -42,8 +42,21 @@ segments:
     start: 0x0
     vram: 0x8006faf0
     subsegments:
-      - [0x0, .rodata, field]
+      # The overlay's number (4) ahead of the units' rodata (as in battle).
+      - [0x0, rodata, field_prefix]
+      # Units change where the jump tables change phase mod 8 (GCC's .align 3
+      # is relative to the unit's rodata, placed at 4-byte boundaries; see
+      # docs/matching.md). The text boundaries are documented in each file.
+      - [0x4, .rodata, field]
+      - [0x9C, .rodata, field_8007A44C]
+      - [0x198, .rodata, field_800854D0]
+      - [0x2BC, .rodata, field_800A4748]
+      - [0x2D8, .rodata, field_800A9274]
       - [0x2fc, c, field]
+      - [0xA95C, c, field_8007A44C]
+      - [0x159E0, c, field_800854D0]
+      - [0x34C58, c, field_800A4748]
+      - [0x39784, c, field_800A9274]
       - [0x3df78, data, field_data]
       # The decoded length is not word-aligned; its final bytes are zero.
       - [0x3fafc, databin, field_tail]

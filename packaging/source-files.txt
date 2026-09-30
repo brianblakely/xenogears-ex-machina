@@ -144,9 +144,15 @@ decomp/src/debug595/debug595.c
 decomp/src/debug595/debug595.h
 decomp/src/field/field.c
 decomp/src/field/field.h
+decomp/src/field/field_8007A44C.c
+decomp/src/field/field_800854D0.c
+decomp/src/field/field_800A4748.c
+decomp/src/field/field_800A9274.c
 decomp/src/field/field_actor_events.h
+decomp/src/field/field_anim.h
 decomp/src/field/field_effect.h
 decomp/src/field/field_glyph.h
+decomp/src/field/field_gte.h
 decomp/src/field/field_motion.h
 decomp/src/field/field_movie.h
 decomp/src/field/field_panel.h
