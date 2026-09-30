@@ -230,20 +230,16 @@ void func_80072150(void) {
     func_80049F8C(&D_800AF880.scaled_world);
 }
 
-#ifdef NON_MATCHING
 /* Rebuild a descriptor's matrix from its rotation, scaled by its actor. */
 void func_80072254(s32 index) {
     VECTOR scale;
 
-    scale.vx = D_800AFB10[index].actor->scale[0];
-    scale.vy = D_800AFB10[index].actor->scale[1];
-    scale.vz = D_800AFB10[index].actor->scale[2];
-    func_8003F738(&D_800AFB10[index].rotation, &D_800AFB10[index].matrix);
-    func_80049DCC(&D_800AFB10[index].matrix, &scale);
+    scale.vx = D_800AFB0C.descriptors[index].actor->scale[0];
+    scale.vy = D_800AFB0C.descriptors[index].actor->scale[1];
+    scale.vz = D_800AFB0C.descriptors[index].actor->scale[2];
+    func_8003F738(&D_800AFB0C.descriptors[index].rotation, &D_800AFB0C.descriptors[index].matrix);
+    func_80049DCC(&D_800AFB0C.descriptors[index].matrix, &scale);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80072254);
-#endif
 
 /* Compose the view and reload the scaled world matrix; 802815b0 runs unless
  * 800c268c is set. */
@@ -409,8 +405,8 @@ s32 func_8007469C(void) {
     s32 i;
     u16 flags;
 
-    for (i = 0; i < D_800AFB0C; i++) {
-        flags = D_800AFB10[i].flags;
+    for (i = 0; i < D_800AFB0C.descriptor_count; i++) {
+        flags = D_800AFB0C.descriptors[i].flags;
         if (!(flags & 0x40)) {
             if (flags & 0x8000) {
                 return 1;
@@ -454,7 +450,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800764B4);
 
 /* Sprite completion callback: flag the sprite's actor (layer bit 16). */
 void func_80076A74(FieldSprite *sprite) {
-    D_800AFB10[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
+    D_800AFB0C.descriptors[sprite->sequencer->actor].actor->layer_flags |= 0x10000;
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80076AC0);
@@ -567,7 +563,7 @@ s32 func_80077E10(void) {
     s32 result = 0;
 
     if (D_800ADBD0 == 1 && D_800B2344 == 0) {
-        result = -((D_800AFB10[D_800B226C].actor->flags & 0x800) != 0);
+        result = -((D_800AFB0C.descriptors[D_800B226C].actor->flags & 0x800) != 0);
     }
     return result;
 }
@@ -633,7 +629,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80079784);
 /* Set the battle-entry flag (80059179): clear only while the controlled
  * actor has neither bit 0x40 nor 0x80 of +14; 800b234c overrides it. */
 void func_800798BC(void) {
-    if (D_800B2268 != 0 && !(D_800AFB10[D_800B226C].actor->unk014 & 0xC0)) {
+    if (D_800B2268 != 0 && !(D_800AFB0C.descriptors[D_800B226C].actor->unk014 & 0xC0)) {
         D_80059179 = 0;
     } else {
         D_80059179 = 1;
@@ -947,7 +943,7 @@ u32 func_80080968(FieldActor *actor) {
     if ((actor->layer_flags >> (layer + 3)) & 1) {
         return 0;
     }
-    return D_800AFB20[D_800AFB24[layer][actor->triangle[layer]].attribute];
+    return D_800AFB0C.collision_attributes[D_800AFB0C.collision_triangles[layer][actor->triangle[layer]].attribute];
 }
 
 /* Frames (in 800b14ac, two per step) and height of a jump under the actor's
@@ -967,7 +963,7 @@ s32 func_800809D0(FieldActor *actor) {
 
 /* The next word of the current descriptor's actor list. */
 s32 func_80080A18(void) {
-    return D_800AFB10[D_800ADB58].actor->list[D_800ADB5C++];
+    return D_800AFB0C.descriptors[D_800ADB58].actor->list[D_800ADB5C++];
 }
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80080A74);
@@ -997,10 +993,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082494);
 
 /* Planar distance between two descriptors' actors (integer positions). */
 s32 func_800825AC(s32 from, s32 to) {
-    s32 to_x = D_800AFB10[to].actor->position[0] >> 16;
-    s32 to_z = D_800AFB10[to].actor->position[2] >> 16;
-    s32 from_x = D_800AFB10[from].actor->position[0] >> 16;
-    s32 from_z = D_800AFB10[from].actor->position[2] >> 16;
+    s32 to_x = D_800AFB0C.descriptors[to].actor->position[0] >> 16;
+    s32 to_z = D_800AFB0C.descriptors[to].actor->position[2] >> 16;
+    s32 from_x = D_800AFB0C.descriptors[from].actor->position[0] >> 16;
+    s32 from_z = D_800AFB0C.descriptors[from].actor->position[2] >> 16;
 
     return func_80099A4C(to_x - from_x, to_z - from_z);
 }
@@ -1311,7 +1307,7 @@ void func_80086BA8(void) {
 
     for (i = 0; i < 3; i++) {
         if (D_800B22E2[i] != -1) {
-            func_80086A1C(i, D_800AFB10[D_800B22E2[i]].actor->position);
+            func_80086A1C(i, D_800AFB0C.descriptors[D_800B22E2[i]].actor->position);
         }
     }
 }

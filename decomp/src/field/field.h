@@ -222,6 +222,19 @@ typedef struct {
     SpriteSequencer *sequencer;
 } FieldSprite;
 
+/* The loaded field components (80070cc8), one object: stores to structure
+ * members do not pass loads of these pointers. */
+typedef struct {
+    s32 descriptor_count;                      /* 800afb0c */
+    FieldDescriptor *descriptors;              /* 800afb10 */
+    void *geometry;                            /* 800afb14 */
+    void *unk08;                               /* 800afb18 */
+    void *unk0C;                               /* 800afb1c */
+    u32 *collision_attributes;                 /* 800afb20 */
+    CollisionTriangle *collision_triangles[4]; /* 800afb24 */
+    void *collision_vertices[4];               /* 800afb34 */
+} FieldComponents;
+
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
     u16 id;
@@ -357,8 +370,7 @@ extern void *D_800B235C; /* movie sound-effect bank */
 extern s16 D_800C3A38;
 extern s32 D_800ADB58; /* descriptor whose list is read */
 extern s32 D_800ADB5C; /* list position */
-extern u32 *D_800AFB20; /* collision attributes */
-extern CollisionTriangle *D_800AFB24[4]; /* collision triangles per layer */
+
 extern u16 D_800B14AC;
 extern DialogueWindow D_800C2698[4];
 extern s32 D_800ADC10; /* scratchpad words in use */
@@ -388,10 +400,10 @@ extern s32 D_800ADC04; /* fade mode; fades start only in mode 2 */
 extern s16 D_800ADC08; /* fade started */
 extern FieldView D_800AF880;
 extern s32 D_800ADB4C;
-extern s32 D_800AFB0C; /* descriptor count */
+extern FieldComponents D_800AFB0C;
 extern s16 D_800B218E;
 extern FieldDrawBlock *D_800C426C; /* current draw block */
-extern FieldDescriptor *D_800AFB10; /* descriptor table */
+
 extern s32 D_800C268C;
 extern s32 D_800ADC18;
 extern u8 D_800ADC1C[8]; /* octant bits */
