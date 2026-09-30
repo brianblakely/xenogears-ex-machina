@@ -9184,25 +9184,150 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9F18);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AA6B4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AA9DC);
+/* Set an instance's bounding centre and radius from its mesh bounds. */
+void func_800AA9DC(FieldInstance *instance) {
+    s32 min_x;
+    s32 min_y;
+    s32 min_z;
+    s32 dx;
+    s32 dy;
+    s32 dz;
+    s32 size;
+
+    dx = size = instance->mesh->max[0] - (min_x = instance->mesh->min[0]);
+    dy = instance->mesh->max[1] - (min_y = instance->mesh->min[1]);
+    dz = instance->mesh->max[2] - (min_z = instance->mesh->min[2]);
+    if (size < dy) {
+        size = dy;
+    }
+    if (size < dz) {
+        size = dz;
+    }
+    instance->center[0] = dx / 2 + min_x;
+    instance->center[1] = dy / 2 + min_y;
+    instance->center[2] = dz / 2 + min_z;
+    instance->radius = size * 2 + 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAA74);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AABD8);
+typedef struct {
+    DR_MODE modes[33][2];
+    SPRT sprites[33][2];
+} FieldSprites;
+extern FieldSprites *D_800AFC68;
 
+/* Release the sprite block. */
+void func_800AABD8(void) {
+    func_800320E8(D_800AFC68);
+    DrawSync(0);
+}
+
+#ifdef NON_MATCHING
+/* Allocate the 33 sprites (the first 16x16, the rest 8x8), each with a
+ * draw mode per buffer. Differs only in the i/copy register choice. */
+void func_800AAC08(void) {
+    RECT window;
+    SPRT *sprite;
+    SPRT *copy;
+    s32 size;
+    s32 i;
+
+    D_800AFC68 = func_80031BDC(0x840, 0);
+    window.x = 0;
+    window.y = 0;
+    window.w = 0xFF;
+    window.h = 0xFF;
+    for (i = 0; i < 33; i++) {
+        SetDrawMode(&D_800AFC68->modes[i][0], 0, 0, GetTPage(0, 0, 0x3C0, 0x100), &window);
+        SetDrawMode(&D_800AFC68->modes[i][1], 0, 0, GetTPage(0, 0, 0x3C0, 0x140), &window);
+        sprite = D_800AFC68->sprites[i];
+        SetSprt(sprite);
+        copy = sprite + 1;
+        sprite->r0 = 0x80;
+        sprite->g0 = 0x80;
+        sprite->b0 = 0x80;
+        if (i == 0) {
+            size = 0x10;
+            sprite->u0 = 0xE0;
+            sprite->v0 = 0x70;
+        } else {
+            sprite->v0 = 0x60;
+            size = 8;
+            sprite->u0 = 0xE0;
+        }
+        sprite->w = size;
+        sprite->h = size;
+        sprite->x0 = 0xA0;
+        sprite->y0 = 0x70;
+        sprite->clut = GetClut(0x100, 0xF7);
+        *copy = *sprite;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAC08);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AADC8);
+/* Set sprite `index`'s colour in both buffers. */
+void func_800AADC8(s32 index, s32 r, s32 g, s32 b) {
+    (D_800AFC68->sprites[index] + 0)->r0 = r;
+    (D_800AFC68->sprites[index] + 0)->g0 = g;
+    (D_800AFC68->sprites[index] + 0)->b0 = b;
+    (D_800AFC68->sprites[index] + 1)->r0 = r;
+    (D_800AFC68->sprites[index] + 1)->g0 = g;
+    (D_800AFC68->sprites[index] + 1)->b0 = b;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAE4C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AAF80);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB328);
+/* 0 when item `item` is held in inventory list 0, else -1. */
+s32 func_800AB328(s32 item) {
+    s32 i;
+
+    for (i = 0; i < 150; i++) {
+        if (D_8005A39C->id0[i] == item && D_8005A39C->count0[i] != 0) {
+            return 0;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB378);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB748);
+/* 0 when game flag `which` (bits 3-6 of +1a16) is set; for 4, when bit 7
+ * is clear; else -1. */
+s32 func_800AB748(u32 which) {
+    switch (which) {
+    case 0:
+        if (D_8005A39C->unk1A16 & 8) {
+            return 0;
+        }
+        break;
+    case 1:
+        if (D_8005A39C->unk1A16 & 0x10) {
+            return 0;
+        }
+        break;
+    case 2:
+        if (D_8005A39C->unk1A16 & 0x20) {
+            return 0;
+        }
+        break;
+    case 3:
+        if (D_8005A39C->unk1A16 & 0x40) {
+            return 0;
+        }
+        break;
+    case 4:
+        if (!(D_8005A39C->unk1A16 & 0x80)) {
+            return 0;
+        }
+        break;
+    }
+    return -1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB808);
 

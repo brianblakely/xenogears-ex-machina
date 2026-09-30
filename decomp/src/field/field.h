@@ -192,10 +192,24 @@ typedef struct {
     u16 unk84;       /* 84 */
 } FieldModel;
 
+/* A model's mesh header; +20/+28 bound it. */
+typedef struct {
+    u8 unk00[0x20];
+    s16 min[3];      /* 20 */
+    s16 unk26;
+    s16 max[3];      /* 28 */
+} FieldMesh;
+
 /* A model instance; +12 is its drawing mode. */
 typedef struct {
-    u8 unk00[0x12];
-    s16 mode;
+    u8 unk00[4];
+    FieldMesh *mesh; /* 04 */
+    u8 unk08[0x12 - 0x08];
+    s16 mode;        /* 12 */
+    u8 unk14[4];
+    s16 center[3];   /* 18 */
+    s16 unk1E;
+    s16 radius;      /* 20 */
 } FieldInstance;
 
 /* One 0x5C-byte descriptor; one per event actor. */
@@ -381,7 +395,9 @@ typedef struct GameState {
     s32 gold;            /* 1924 */
     u8 unk1928[0x1932 - 0x1928];
     s16 unk1932;         /* 1932 */
-    u8 unk1934[0x1D30 - 0x1934];
+    u8 unk1934[0x1A16 - 0x1934];
+    u16 unk1A16;         /* 1A16 */
+    u8 unk1A18[0x1D30 - 0x1A18];
     u16 unk1D30;         /* 1D30: characters waiting to join */
     u16 unk1D32;         /* 1D32: bit per character */
     u8 unk1D34[0x1D38 - 0x1D34];

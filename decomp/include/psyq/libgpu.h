@@ -55,6 +55,20 @@ typedef struct {
     u16 pad2;
 } POLY_FT4;
 
+typedef struct {
+    u32 tag;
+    u32 code[2];
+} DR_MODE;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 w, h;
+} SPRT;
+
 DRAWENV *SetDefDrawEnv(DRAWENV *env, s32 x, s32 y, s32 w, s32 h);
 DISPENV *SetDefDispEnv(DISPENV *env, s32 x, s32 y, s32 w, s32 h);
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
@@ -63,6 +77,8 @@ void AddPrims(void *ot, void *first, void *last);
 void SetSemiTrans(void *prim, s32 on);
 void SetPolyFT4(POLY_FT4 *poly);
 void SetTile(TILE *tile);
+void SetSprt(SPRT *sprite);
+void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw);
 void DrawSync(s32 mode);
 void ClearImage(RECT *rect, s32 r, s32 g, s32 b);
 void LoadImage(RECT *rect, u32 *pixels);
