@@ -513,6 +513,7 @@ extern u8 D_800D2C38;
 extern u8 D_800CCC58;
 extern s32 D_800D3288;
 extern u8 D_800D39D4;
+extern u16 D_800C3608;     /* slots that still count while down */
 extern u8 D_800D3280;      /* party panel layout */
 extern s16 D_800C3254[][3]; /* party panel x per layout */
 extern s16 D_800C3076[3][24]; /* party panel name glyph x */
@@ -548,7 +549,8 @@ typedef struct {
     u8 member;         /* +0x1 */
     u8 unk2;           /* 0x7f: none */
     u8 hidden;         /* +0x3 */
-    u8 unk4[6];
+    u8 gear;           /* +0x4 fights in gear */
+    u8 unk5[5];
     u16 unkA;
     u8 unkC[0x1C - 0xC];
 } SlotInfo;

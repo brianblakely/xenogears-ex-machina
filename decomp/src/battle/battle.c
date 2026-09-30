@@ -272,7 +272,80 @@ void func_800723E0(void) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800723E0);
 #endif
 
+/* Rebuild the alive mask: knocked-out slots lose their HP (gear +0x104) and
+ * leave the turn order unless held by 800c3608; set the outcome when a side
+ * is defeated; when every alive slot waits (+0x80 bit 0x1000), release the
+ * first. */
+#ifdef NON_MATCHING
+void func_8007252C(void) {
+    s32 slot;
+    u16 waiting;
+
+    D_800D39DC = 0;
+    for (slot = 0; slot < 3; slot++) {
+        if (D_800D2DCC.present[slot] != 0) {
+            if (D_800CCCE8[slot].flags7C & 0xC000) {
+                if (D_800CCCE8[slot].flags7C & 0x8000) {
+                    D_800CCCE8[slot].hp = 0;
+                }
+                D_800D2DCC.ready[slot] = 0xFF;
+            } else if (D_800C3EB4[slot].hidden == 0) {
+                D_800D39DC |= func_80089C08(slot);
+            }
+        }
+    }
+    for (slot = 3; slot < 11; slot++) {
+        if (D_800D2DCC.present[slot] != 0) {
+            if (D_800C3EB4[slot].gear == 0) {
+                if (D_800CCCE8[slot].flags7C & 0xC000) {
+                    if (!func_80089C9C(D_800C3608, slot)) {
+                        D_800CCCE8[slot].hp = 0;
+                        D_800D2DCC.ready[slot] = 0xFF;
+                        continue;
+                    }
+                    D_800D39DC |= func_80089C08(slot);
+                    continue;
+                }
+            } else if (D_800CCCE8[slot].unk120 & 0xC000) {
+                if (!func_80089C9C(D_800C3608, slot)) {
+                    D_800CCCE8[slot].unk104 = 0;
+                    D_800D2DCC.ready[slot] = 0xFF;
+                    continue;
+                }
+                D_800D39DC |= func_80089C08(slot);
+                continue;
+            }
+            if (D_800C3EB4[slot].hidden == 0 && D_800C3D18[slot - 3].unk3 == 0) {
+                D_800D39DC |= func_80089C08(slot);
+            }
+        }
+    }
+    if (!(D_800D39DC & 0x7F8)) {
+        D_800C48EA = 1;
+    }
+    if (!(D_800D39DC & 7)) {
+        D_800C48EA = 0x81;
+    }
+    if (D_800C48EA == 0) {
+        waiting = D_800D39DC;
+        for (slot = 0; slot < 11; slot++) {
+            if (func_80089C9C(waiting, slot) && (D_800CCCE8[slot].flags80 & 0x1000)) {
+                waiting &= func_80089C48(slot);
+            }
+        }
+        if (waiting == 0) {
+            for (slot = 0; slot < 11; slot++) {
+                if (func_80089C9C(D_800D39DC, slot) && (D_800CCCE8[slot].flags80 & 0x1000)) {
+                    D_800CCCE8[slot].flags80 &= 0xEFFF;
+                    return;
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007252C);
+#endif
 
 /* Add every other primitive from `first` to the ordering table. */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first) {
