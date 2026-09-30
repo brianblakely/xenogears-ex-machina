@@ -1251,7 +1251,7 @@ void func_80075D4C(void) {
 /* Roll an encounter for the terrain at a position and a party level: pick a
  * formation by the bracket's weights and copy the terrain's encounter set.
  * Returns 0 when the bracket has no formations. */
-#ifdef NON_MATCHING /* formation search: original keeps a second copy of the weight pointer */
+#ifdef NON_MATCHING /* formation search: the original tests the weight through a copy of the pointer */
 s32 func_80075E7C(VECTOR *position, s32 level) {
     u8 weights[16];
     s32 kind;
@@ -1287,9 +1287,11 @@ s32 func_80075E7C(VECTOR *position, s32 level) {
         weight = weights;
         do {
             roll--;
-            while (*weight == 0) {
+        next:
+            if (*weight == 0) {
                 weight++;
                 formation++;
+                goto next;
             }
             (*weight)--;
         } while (roll > 0);
