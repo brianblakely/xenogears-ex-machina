@@ -1855,7 +1855,7 @@ void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1) {
 void func_8008779C(s32 arg0, s32 arg1, s32 arg2) {
     D_80059598 = (D_80059598 & 0xFFFFFF) | 0x24000000;
     gte_ldrgb(&D_80059598);
-    func_800732AC((void *)0x1F800120, D_80091934, 0x30);
+    func_800732AC((void *)0x1F800120, &D_80091934, sizeof(MapTable));
     func_80072D18(arg0, arg1, arg2);
 }
 
@@ -1878,7 +1878,47 @@ void func_80087830(void) {
     func_800732AC(D_80092854[1], D_80092854[0], 0xE100);
 }
 
+/* Load the stage's icon, backdrop and extra TIM images into VRAM, noting
+ * the icon and backdrop palettes and texture pages; the backdrop palette's
+ * first entry is transparent and the rest semi-transparent. Does not match:
+ * the icon table is walked with two pointers and the loop counter is kept. */
+#ifdef NON_MATCHING
+void func_800878DC(StageFiles *files) {
+    TimImage tim;
+    s16 *clut;
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        func_800471B4(files->icon_tims[i]);
+        func_800471C4(&tim);
+        D_80091934.icons[i].clut = func_80043A58(tim.crect->x, tim.crect->y);
+        D_80091934.icons[i].tpage = func_80043A1C(1, 1, tim.prect->x, tim.prect->y);
+        func_80044894(tim.crect, tim.caddr);
+        func_80044894(tim.prect, tim.paddr);
+    }
+    func_800471B4(files->backdrop_tim);
+    func_800471C4(&tim);
+    D_800927D8 = func_80043A58(tim.crect->x, tim.crect->y);
+    D_800927D4 = func_80043A1C(0, 2, tim.prect->x, tim.prect->y);
+    D_800927DC = tim.prect->x << 2;
+    D_800927E0 = tim.prect->y;
+    clut = (s16 *)tim.caddr;
+    clut[0] = 0;
+    for (i = 1; i < 16; i++) {
+        clut[i] |= 0x8000;
+    }
+    func_80044894(tim.crect, tim.caddr);
+    func_80044894(tim.prect, tim.paddr);
+    for (i = 0x1C; i < 0x25; i++) {
+        func_800471B4(files->extra_tims[i - 0x1C]);
+        func_800471C4(&tim);
+        func_80044894(tim.crect, tim.caddr);
+        func_80044894(tim.prect, tim.paddr);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800878DC);
+#endif
 
 /* Build an actor's textured backdrop quad (64x64 texels) for both buffers. */
 void func_80087AB0(Actor *actor) {

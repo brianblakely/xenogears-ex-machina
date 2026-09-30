@@ -115,7 +115,6 @@ extern u8 D_800927E0;  /* backdrop texel v */
 void func_800732AC(void *dst, void *src, s32 size); /* copy bytes */
 
 extern u32 D_80059598; /* resident map colour (r, g, b, code) */
-extern u8 D_80091934[0x30];
 void func_80072D18(s32 arg0, s32 arg1, s32 arg2);
 
 /* Stage colours (17 bytes each). */
@@ -144,9 +143,28 @@ void func_80048AB0(s32 near, s32 far, s32 arg);
 
 /* Stage floor. */
 typedef struct {
-    u8 unk0[0x6C];
-    void *floor_tim;   /* 0x6C */
+    u8 unk0[0x38];
+    void *backdrop_tim;   /* 0x38 */
+    u8 unk3C[0xC];
+    void *icon_tims[4];   /* 0x48 */
+    u8 unk58[0x14];
+    void *floor_tim;      /* 0x6C */
+    void *extra_tims[9];  /* 0x70 */
 } StageFiles;
+
+/* Texture page and palette of an icon. */
+typedef struct {
+    u16 tpage;
+    u16 clut;
+} TexRef;
+
+/* Map drawing table copied into the scratchpad; ends with the icons. */
+typedef struct {
+    u8 unk0[0x20];
+    TexRef icons[4];   /* 0x20 */
+} MapTable;
+
+extern MapTable D_80091934;
 
 extern u16 D_800927A0; /* floor palette */
 extern u16 D_800927A4; /* floor texture page */
