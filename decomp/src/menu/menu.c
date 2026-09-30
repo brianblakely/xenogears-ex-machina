@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "trail.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -1507,35 +1508,113 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C620);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C7C0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C828);
+/* Set up a four-point spark line: semi-transparent, in the source colour,
+ * the same in both draw buffers. */
+void func_8008C828(SparkLine4 *spark, SparkSource *source) {
+    LineF4 *line = &spark->line[0];
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C8B4);
+    setlen(line, 6), setcode(line, 0x4C), line->pad = 0x55555555;
+    setSemiTrans(line, 1);
+    setRGB0(line, source->r, source->g, source->b);
+    spark->line[1] = spark->line[0];
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008C9B8);
+/* Project a four-point spark line through its trail, age the trail and add
+ * the line to the ordering table. */
+void func_8008C8B4(SparkLine4 *spark, u32 *ot) {
+    LineF4 *line = &spark->line[D_800928A0];
+    s32 depth;
+    s32 otz;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CA00);
+    otz = func_8004A73C(&spark->pos, &spark->trail[0], &spark->trail[1], &spark->trail[2],
+                        (s32 *)&line->x0, (s32 *)&line->x1, (s32 *)&line->x2, (s32 *)&line->x3,
+                        &depth, &depth);
+    spark->trail[2] = spark->trail[1];
+    spark->trail[1] = spark->trail[0];
+    spark->trail[0] = spark->pos;
+    func_80031750(ot + (otz >> 2), line);
+}
+
+/* Collapse a three-point spark line's trail onto its position. */
+void func_8008C9B8(SparkLine3 *spark) {
+    spark->trail[1] = spark->pos;
+    spark->trail[0] = spark->trail[1];
+}
+
+/* Set up a three-point spark line. */
+void func_8008CA00(SparkLine3 *spark, SparkSource *source) {
+    LineF3 *line = &spark->line[0];
+
+    setlen(line, 5), setcode(line, 0x48), line->pad = 0x55555555;
+    setSemiTrans(line, 1);
+    setRGB0(line, source->r, source->g, source->b);
+    spark->line[1] = spark->line[0];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CA84);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CC2C);
+/* Collapse a two-point spark line's trail onto its position. */
+void func_8008CC2C(SparkLine2 *spark) {
+    spark->trail[0] = spark->pos;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CC54);
+/* Set up a two-point spark line. */
+void func_8008CC54(SparkLine2 *spark, SparkSource *source) {
+    LineF2 *line = &spark->line[0];
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CCB0);
+    setlen(line, 3), setcode(line, 0x40);
+    setSemiTrans(line, 1);
+    setRGB0(line, source->r, source->g, source->b);
+    spark->line[1] = spark->line[0];
+}
+
+/* Project a two-point spark line, age its trail and add it. */
+void func_8008CCB0(SparkLine2 *spark, u32 *ot) {
+    LineF2 *line = &spark->line[D_800928A0];
+    s32 depth;
+    s32 otz;
+
+    otz = func_8004A67C(&spark->pos, &spark->trail[0], &depth, (s32 *)&line->x0,
+                        (s32 *)&line->x1, &depth, &depth, &depth);
+    spark->trail[0] = spark->pos;
+    func_800316C0(ot + (otz >> 2), line);
+}
 
 void func_8008CD54(void) {
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CD5C);
+/* Set up a spark drawn as a small semi-transparent tile of random size. */
+void func_8008CD5C(SparkTile *spark, SparkSource *source) {
+    Tile *tile = &spark->tile[0];
+
+    setlen(tile, 3), setcode(tile, 0x62);
+    tile->h = func_8003FA38() % 2 + 2;
+    tile->w = tile->h * 2;
+    setRGB0(tile, source->r, source->g, source->b);
+    spark->tile[1] = spark->tile[0];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CE0C);
 
 void func_8008CED4(void) {
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CEDC);
+/* Set up a spark drawn as a single semi-transparent dot. */
+void func_8008CEDC(SparkDot *spark, SparkSource *source) {
+    Tile1 *dot = &spark->dot[0];
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CF30);
+    setlen(dot, 2), setcode(dot, 0x6A);
+    setRGB0(dot, source->r, source->g, source->b);
+    spark->dot[1] = spark->dot[0];
+}
+
+/* Project a dot spark and add it. */
+void func_8008CF30(SparkDot *spark, u32 *ot) {
+    Tile1 *dot = &spark->dot[D_800928A0];
+    s32 depth;
+
+    func_80031870(ot + (func_8004A64C(&spark->pos, (s32 *)&dot->x0, &depth, &depth) >> 2), dot);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008CF9C);
 
