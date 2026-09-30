@@ -14,5 +14,6 @@ MASPSX_FLAGS := --aspsx-version=2.34 --expand-div
 # units built by a later compiler than GCC 2.6.3/2.7.2: cc1 itself splits
 # symbol addresses into scheduled %hi/%lo pairs (stores through lui into a
 # free register instead of $at) and positive li is addiu. Neither qualified
-# cc1 emits that, so those units stay assembly until that compiler is
+# cc1 emits that, so their functions that address symbols stay NON_MATCHING
+# (the symbol-free ones match) until that compiler is
 # qualified. stage (801e70e8-801e7f4c) is GCC 2.6.3 again.
