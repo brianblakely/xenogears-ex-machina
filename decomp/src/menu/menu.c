@@ -914,20 +914,21 @@ void func_80088D1C(void) {
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu", D_80070284);
 
 #ifdef NON_MATCHING
-/* Menu mode entry: start up, load the mode's data, then run the frame loop
- * forever (build one buffer while the other is shown, debug meters).
+/* Menu mode entry: start up, start the mode's task, then run the frame
+ * loop forever (resume the task, build one buffer while the other is
+ * shown, debug meters).
  * Does not match: the buffer flip stores are scheduled differently, and the
  * original rate string is followed by two non-zero padding bytes (0x0894)
  * that a C literal cannot reproduce. */
 void func_80088E90(void) {
     DispEnv disp;
-    void *state;
+    Task *task;
     s32 last;
     s32 fps;
     s32 load;
 
     func_80088D1C();
-    state = func_8008BA2C(((void **)func_80088BFC)[D_80050618], 0, (void *)0x801FE000, 0x400);
+    task = func_8008BA2C(((void (**)(s32))func_80088BFC)[D_80050618], 0, (u32 *)0x801FE000, 0x400);
     D_80059488;
 frame:
     D_800595C0 = 0;
@@ -944,7 +945,7 @@ frame:
         D_80092930(D_80092938);
     }
     func_80037324(D_80092938);
-    func_8008BB3C(state);
+    func_8008BB3C(task);
     func_8008EADC();
     func_80032CB8();
     if (D_80092920 & 1) {
@@ -1758,9 +1759,30 @@ s16 func_8008B650(s32 from, s32 to, s32 step) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B730);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BA2C);
+/* Create a task running entry(arg) on its own stack of `words` words and
+ * run it until it first yields. */
+Task *func_8008BA2C(void (*entry)(s32), s32 arg, u32 *stack, s32 words) {
+    Task *task;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BAE0);
+    func_800324B8(3);
+    task = func_80031BDC(sizeof(Task), 2);
+    for (i = 0; i < 32; i++) {
+        task->regs[i] = 0;
+    }
+    task->stack = stack;
+    task->regs[28] = func_800405E4();
+    task->regs[31] = (u32)entry;
+    task->regs[4] = arg;
+    task->regs[30] = task->regs[29] = (u32)(task->stack + words);
+    func_8008BB3C(task);
+    return task;
+}
+
+/* Free a task. */
+void func_8008BAE0(Task *task) {
+    func_800320E8(task);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BB00);
 
@@ -1770,9 +1792,49 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BB3C);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BC04);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BCC8);
+/* Set the mesh light direction (a fixed down-left vector) and light a
+ * mesh's vertices. */
+void func_8008BCC8(Mesh *mesh, s32 arg) {
+    Vector direction;
+    Vector unused; /* never used; the original frame has these bytes */
 
+    direction.vx = -8;
+    direction.vy = -8;
+    direction.vz = -0x10;
+    func_80048D7C(&direction, &D_8009A2C8);
+    D_8009A2C8.vx <<= 4;
+    D_8009A2C8.vy <<= 4;
+    D_8009A2C8.vz <<= 4;
+    func_8008C3A8(mesh->data, arg, mesh->count);
+}
+
+#ifdef NON_MATCHING
+/* Draw a mesh's primitive groups (flag 8 selects the second drawer) with
+ * the given drawing parameters. Does not match: the next-group pointer and
+ * the primitive count swap registers (t0/v1 vs v1/a0). */
+void func_8008BD70(Mesh *mesh, s32 a, s32 b, s32 c) {
+    u8 *group;
+    s32 groups = mesh->groups;
+    u8 *next = mesh->groupData;
+
+    D_80059424 = a;
+    D_80059568 = b;
+    D_8005953C = c;
+    D_800595C0 += mesh->prims;
+    while (D_80059528 = next, --groups != -1) {
+        group = D_80059528;
+        D_80059528 = group + 4;
+        if (group[0] & 8) {
+            func_8008C620(D_80059528, ((s16 *)group)[1]);
+        } else {
+            func_8008C4B0(D_80059528, ((s16 *)group)[1]);
+        }
+        next = D_80059528 + ((s16 *)group)[1] * 8;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BD70);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BE4C);
 

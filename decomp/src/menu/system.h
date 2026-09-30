@@ -145,11 +145,24 @@ typedef struct {
     u8 unk8[0xC];
 } ModelPrim;
 
+/* Mesh of a model: vertices and primitive groups. */
+typedef struct {
+    s16 unk0;
+    u16 count;         /* 0x02: vertices */
+    u16 prims;         /* 0x04 */
+    u16 groups;        /* 0x06 */
+    void *data;        /* 0x08: vertices */
+    s32 unkC;
+    u8 *groupData;     /* 0x10: per group a flag byte, a count, count x 8 bytes */
+} Mesh;
+
 /* Packet buffers built for a model. */
 typedef struct {
     s16 unk0;
     s16 count;         /* 0x02 */
-    u8 unk4[0xC];
+    s32 unk4;
+    void *unk8;
+    Mesh *mesh;        /* 0x0C */
     ModelPrim *prims[2]; /* 0x10: per display buffer */
 } ModelPrims;
 
@@ -270,6 +283,18 @@ typedef struct {
     u8 unk28B;
 } LightRig;
 
+/* Cooperative task: registers saved by number, then its stack. */
+typedef struct {
+    u32 regs[32];      /* 2 v0 .. 31 ra; 28 gp, 29 sp, 30 fp */
+    u32 *stack;        /* 0x80 */
+} Task;
+
+extern Vector D_8009A2C8;     /* mesh light direction */
+extern s32 D_80059424;
+extern s32 D_80059568;
+extern s32 D_8005953C;
+extern u8 *D_80059528;        /* primitive group being drawn */
+
 /* libgpu CVECTOR layout. */
 typedef struct {
     u8 r, g, b, cd;
@@ -365,6 +390,11 @@ void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(void *data);
 s32 func_8003FA38(void); /* rand */
+u32 func_800405E4(void);
+void func_8008BB3C(Task *task);
+void func_8008C3A8(void *vertices, s32 arg, s32 count);
+void func_8008C620(u8 *prims, s32 count);
+void func_8008C4B0(u8 *prims, s32 count);
 s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void func_80044AD8(u32 *ot, s32 length);
 void func_80043B84(u32 *ot, u32 *last, u32 *first);
@@ -384,11 +414,10 @@ void func_8002DFF0(s32 w, s32 h);
 void func_80089210(s32 width, s32 height);
 void func_80089330(s32 width, s32 height);
 void func_80089534(s32 width, s32 height);
-void *func_8008BA2C(void *file, s32 a, void *buffer, s32 size);
+
 void func_80019CA0(void);
 void func_80043BE4(void *block);
 void func_80037324(void *block);
-void func_8008BB3C(void *state);
 void func_8008EADC(void);
 void func_80032CB8(void);
 void func_80043B48(u32 *ot, void *prim);
