@@ -2154,10 +2154,7 @@ void func_801E2B80(void) {
 
 /* The equipment command: on the first party member's page, choose among
  * three choices (0 the 801e05d0 screen, 1 the 801ddf24 screen, 2 the
- * 801e1544 screen), switching members with 9/10, until cancelled.
- * Nonmatching: the original copies the slot to the shown slot through v0
- * in 801e3a80's delay slot; this build does it in 801e36d4's. */
-#ifdef NON_MATCHING
+ * 801e1544 screen), switching members with 9/10, until cancelled. */
 u8 func_801E2BE4(void) {
     s32 slot;
     u8 shown;
@@ -2182,9 +2179,9 @@ u8 func_801E2BE4(void) {
         func_801C7BF4();
         if (slot != shown) {
             func_801E36D4(D_800625A0->tables, D_800625A0->party->ids[slot]);
-            shown = slot;
             func_801E3A80(D_800625A0->tables, D_800625A0->party->ids[slot]);
-            func_801D2EC0(shown, 0);
+            func_801D2EC0(slot, 0);
+            shown = slot;
             if (first) {
                 first = 0;
                 func_801D1E80();
@@ -2265,9 +2262,6 @@ u8 func_801E2BE4(void) {
     D_800625A0->party->redraw3 = 0;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E2BE4);
-#endif
 
 /* Close the screen of the command at `offset` past the top cursor. */
 void func_801E3088(u8 offset) {
