@@ -5253,7 +5253,150 @@ u8 func_8008B224(u8 member, u8 column, u8 row) {
     return committed;
 }
 
+/* Run the member's technique menu: four windows, a two-column list of
+ * twelve visible cells scrolled by rows (800d3288 in pixels, 800d39d4 the
+ * scroll request), until a technique is committed (1, its index in the
+ * turn state +0x2e6) or the menu is cancelled (0). (Nonmatching: GCC aligns
+ * the jump table to 8 where the original's is at 0x80070314, and the cursor
+ * x multiply is synthesised differently.) */
+#ifdef NON_MATCHING
+u8 func_8008B478(u8 member) {
+    s32 frame;
+    u8 ticks;
+    u8 cell;
+    u8 top;
+    u8 shownCell;
+    u8 shownTop;
+    s32 shownScroll;
+    u8 result;
+    s32 target;
+
+    cell = 0;
+    top = 0;
+    shownCell = 0xFF;
+    shownTop = 0xFF;
+    shownScroll = 0xFFFF;
+    result = 2;
+    frame = 4;
+    ticks = 0;
+    D_800D3288 = 0;
+    D_800D39D4 = 0;
+    D_800D2D28->unkCB = 0;
+    func_8008F8F4(0, 0x1C, 0xA0, 0xAC, 0x38, 0, 1);
+    func_8008F8F4(1, 0x20, 0x2C, 0x118, 0x70, 0, 1);
+    func_8008F8F4(2, 0xD0, 0xA4, 0x50, 0x18, 0, 1);
+    func_8008F8F4(3, 0xE6, 0xC0, 0x4C, 0x18, 0, 1);
+    func_80091064(member);
+    func_80077698();
+    do {
+        if (cell != shownCell || top != shownTop) {
+            func_80091D38(member, cell, top);
+            shownCell = cell;
+            shownTop = top;
+        }
+        if (D_800D3288 != shownScroll) {
+            func_80091604(D_800D3288);
+            func_80091EC4(D_800D3288);
+            shownScroll = D_800D3288;
+        }
+        func_80090B90((cell % 2) * 0x84 + 0x2A, (cell / 2) * 16 + 0x38, &frame, &ticks);
+        func_800716D8();
+        switch (D_800D3014) {
+        case 5:
+            result = 0;
+            break;
+        case 4:
+            if (func_8008B224(member, cell, top)) {
+                result = 1;
+                D_800C3EAC->unk2E6 = cell + top * 2;
+            }
+            break;
+        case 0:
+            if (top * 2 + cell != 15) {
+                if (cell + 1 == 12) {
+                    D_800D39D4 = 1;
+                } else {
+                    cell++;
+                }
+            }
+            break;
+        case 2:
+            if (top * 2 + cell > 0) {
+                if (cell == 0 && top != 0) {
+                    D_800D39D4 = 2;
+                } else {
+                    cell--;
+                }
+            }
+            break;
+        case 1:
+            if (top * 2 + cell < 14) {
+                if (cell + 2 >= 12) {
+                    D_800D39D4 = 3;
+                } else {
+                    cell += 2;
+                }
+            }
+            break;
+        case 3:
+            if (top * 2 + cell >= 2) {
+                if (cell < 2 && top != 0) {
+                    D_800D39D4 = 4;
+                } else {
+                    cell -= 2;
+                }
+            }
+            break;
+        }
+        switch (D_800D39D4) {
+        case 1:
+            target = (top + 1) * 16;
+            if (D_800D3288 >= target) {
+                top++;
+                cell--;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        case 2:
+            target = (top - 1) * 16;
+            if (D_800D3288 < target) {
+                top--;
+                cell++;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        case 3:
+            target = (top + 1) * 16;
+            if (D_800D3288 >= target) {
+                top++;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        case 4:
+            target = (top - 1) * 16;
+            if (D_800D3288 < target) {
+                top--;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        }
+    } while (result == 2);
+    func_8008B108(result);
+    func_8007765C();
+    func_80077980();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    func_8008FA60(2);
+    func_8008FA60(3);
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B478);
+#endif
 
 /* Execute the chosen item (turn state +0x2e6) for the member: reset the
  * events, show the member's use model, commit the item against its targets
