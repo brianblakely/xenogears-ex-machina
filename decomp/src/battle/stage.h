@@ -40,4 +40,43 @@ void func_800A2ACC(EffectPool *pool, ModelPart *part);
 void func_800A2BB8(EffectPool *pool, ModelPart *part, u8 kind);
 void func_800B026C(EffectPool *pool, s32 steps, s32 arg2, s32 arg3);
 
+/* A resident sprite task (fields as far as the battle uses them): its
+ * sprite's position from +0x38, and at +link its caller block. */
+typedef struct EffectSprite {
+    u8 pad0[0x38];
+    s32 x, y, z; /* 0x38: 16.16 */
+    u8 pad44[0xBE - 0x44];
+    s16 link; /* 0xBE */
+} EffectSprite;
+
+/* The battle's block of a sprite following an object part (0x18 bytes). */
+typedef struct {
+    u8 pad0[4];
+    void (*update)(EffectSprite *sprite); /* 0x04: the sprite's own update */
+    BattleObject *object;                 /* 0x08 */
+    s16 part;                             /* 0x0C: 0 the root */
+    s16 onGround;                         /* 0x0E: keep the object's ground height */
+    SVector offset;                       /* 0x10: from the part */
+} SpriteFollow;
+
+/* An animation script command creating a sprite (fields as far as used). */
+typedef struct {
+    u8 pad0[5];
+    u8 part;      /* 0x05 */
+    s16 offset[3]; /* 0x06 */
+    u8 onGround;  /* 0x0C */
+    u8 padD[0x13 - 0xD];
+    u8 follow;    /* 0x13 */
+} SpriteCommand;
+
+/* Resident sprites. */
+EffectSprite *func_80023FD8(s32 kind, void *resource, SVector *position, s32 size);
+void func_80021FE0(s32 *body, s32 direction);
+void func_800223B0(s32 *body, s32 direction);
+void func_80022000(s32 *body, s32 scale);
+void *func_8001CD7C(EffectSprite *sprite); /* the task's update */
+void func_8001CD6C(EffectSprite *sprite, void (*update)(EffectSprite *sprite)); /* set it */
+
+void func_800AFC68(EffectSprite *sprite);
+
 #endif

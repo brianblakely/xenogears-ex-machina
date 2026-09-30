@@ -2257,9 +2257,55 @@ void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AFB4C);
+/* Create a sprite of kind from resource at position with a direction and a
+ * scale; when the command says so, it follows a part of object (800AFC68). */
+void func_800AFB4C(void *resource, s32 kind, SVector *position, s16 direction, s16 scale, SpriteCommand *command,
+                   BattleObject *object) {
+    EffectSprite *sprite;
+    SpriteFollow *follow;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AFC68);
+    sprite = func_80023FD8(kind, resource, position, sizeof(SpriteFollow));
+    func_80021FE0(&sprite->x, direction);
+    func_800223B0(&sprite->x, direction);
+    func_80022000(&sprite->x, scale);
+    follow = (SpriteFollow *)((u8 *)sprite + sprite->link);
+    follow->object = object;
+    follow->part = command->part;
+    if (command->follow) {
+        follow->update = func_8001CD7C(sprite);
+        func_8001CD6C(sprite, func_800AFC68);
+        follow->offset.vx = command->offset[0];
+        follow->offset.vy = command->offset[1];
+        follow->offset.vz = command->offset[2];
+        follow->onGround = command->onGround;
+    }
+}
+
+/* Update of a following sprite: place it at its offset from its object's
+ * part (on the object's ground height when asked), then run its own update. */
+void func_800AFC68(EffectSprite *sprite) {
+    SpriteFollow *follow = (SpriteFollow *)((u8 *)sprite + sprite->link);
+    Matrix *m = (Matrix *)0x1F800000;
+    Vector out;
+
+    if (follow->part != 0) {
+        CompMatrix(&follow->object->hierarchy->transform, &follow->object->hierarchy[follow->part].world, m);
+    } else {
+        m = &follow->object->hierarchy->transform;
+    }
+    SetRotMatrix(m);
+    SetTransMatrix(m);
+    gte_ldv0(&follow->offset);
+    gte_rtv0tr();
+    gte_stlvnl(&out);
+    if (follow->onGround) {
+        out.vy = follow->object->groundY;
+    }
+    sprite->x = out.vx << 16;
+    sprite->y = out.vy << 16;
+    sprite->z = out.vz << 16;
+    follow->update(sprite);
+}
 
 /* Set (or with mode bit 0x20 add to) a part's rotation (mode & 7 == 0),
  * translation (1) or scale (other) and mark it changed; with mode bit 0x80
