@@ -2651,7 +2651,90 @@ s32 func_80029AFC(FileRequest *list, s32 mode, s32 unused) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029AFC);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029EB0);
+/* Start streaming a file through a ring of at least two slots with six stream parameters; with the PC file server the whole stream is pumped now. Returns 0, -3 for a bad file, -4 for a bad ring, -6 when the file does not close. */
+s32 func_80029EB0(s32 file, StreamRing *ring, s32 mode, s32 unused, u16 a, u16 b, u16 c, u16 d, u16 e, u16 f) {
+    s32 count;
+    char *name;
+    s16 i;
+
+    if (ring == NULL || (u32)(count = ring->count) < 2) {
+        return -4;
+    }
+    if (file <= 0) {
+        return -3;
+    }
+    if (func_80028738(file) <= 0) {
+        return -3;
+    }
+    func_80028A60(0);
+    D_8004FE18 = D_8004FE14;
+    for (i = 0; i < 3; i++) {
+        D_80059EF8[i] = 0;
+    }
+    func_80028A94(ring);
+    D_80059F0C = file;
+    D_8004FE04 = func_800289D0(file);
+    D_8004FDF8 = func_800288EC(file);
+    D_8004FDFC = 1;
+    D_8004FE08 = (u8 *)ring + count * 8 + 0x24;
+    D_8004FE2C = ring->slots;
+    D_8004FE38 = mode & 0xFFFF;
+    D_8004FE10 = 0;
+    D_8004FE40 = count;
+    D_8004FE26 = 0;
+    D_8004FE28 = 0;
+    D_8004FE0C = NULL;
+    D_8004FE34 = 0;
+    D_8005A4DC = 0;
+    D_80059F24 = a;
+    D_80059F28 = b;
+    D_80059F2C = c;
+    D_80059F30 = d;
+    D_80059F34 = e;
+    D_80059F38 = f;
+    D_80059F3C = 0;
+    D_80059F40 = 0;
+    D_80059F44 = 0;
+    D_80059F48 = 0;
+    D_80059F4C = 0;
+    D_80059F50 = 0;
+    func_80028AAC();
+    func_80041430(D_8004FE04, D_80059F10);
+    if (D_8004FE48 != NULL) {
+        name = func_80028998(file);
+        for (i = 0; i < 4; i++) {
+            D_80059F04 = func_8004C318(name, 0, 0);
+            if (D_80059F04 != -1) {
+                break;
+            }
+            func_8002804C(i, 0xFF, 0, 0);
+        }
+        do {
+            func_8002B8B0(0, 0);
+            func_8002BF38(0, 0);
+        } while (D_8004FDFC > 0);
+        for (i = 0; i < 4; i++) {
+            i = func_8004C338(D_80059F04);
+            if (i == 0) {
+                break;
+            }
+            func_8002804C(i, 0, 0, 0xFF);
+        }
+        if (i != 0) {
+            return -6;
+        }
+        D_8004FDFC = 0;
+        D_8004FDF8 = 0;
+        return 0;
+    }
+    D_8004FE1C = 1;
+    func_800413EC(func_8002BB50);
+    func_80040FB4(func_8002A68C);
+    func_80040FCC(func_8002B5D0);
+    D_8005A488++;
+    func_8004111C(2, D_80059F10);
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A260);
 
