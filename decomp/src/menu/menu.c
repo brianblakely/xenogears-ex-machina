@@ -3043,9 +3043,75 @@ void func_80090504(Actor *actor, s32 kind) {
     brain->unk2E = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090580);
+/* The opponent's approach mode: give up when the other actor retreated,
+ * sidestep homing shots (and maybe counter-attack), attack when close,
+ * and pick a new heading and duration whenever the timer runs out. */
+void func_80090580(Actor *actor, Brain *brain) {
+    s32 roll;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090894);
+    if (func_8008F9B0(actor->opponent) && D_800928C4 && (actor->flags & 0x08000000)) {
+        func_8008FC7C(actor);
+        return;
+    }
+    if (actor->opponent->nearest_shot->steer == 1 && actor->opponent->nearest_dist < 0x500 &&
+        brain->unkF) {
+        brain->unkE = 1;
+        brain->unkA = brain->unk2C_12 ? 0x400 : -0x400;
+        if (brain->unkF >= 2 && (func_8003FA38() & 0xFF) < brain->unk14 &&
+            func_8008F5B4(actor, 0) && brain->unk2C_12) {
+            if ((func_8003FA38() & 3) == 0) {
+                func_8007639C(actor, 4);
+            }
+            func_8008F900(actor);
+            brain->unk2E = 0;
+        }
+        brain->unk2E++;
+    }
+    if (D_8009284C < 0x180) {
+        if ((func_8003FA38() & 3) == 0) {
+            func_8007639C(actor, 4);
+        }
+        func_80090174(actor);
+    }
+    if (!func_8008F580(actor)) {
+        brain->unkE = 0;
+    }
+    if (brain->timer < 0) {
+        brain->unkA = func_8003FA38() % 0x600 - 0x300;
+        roll = func_8003FA38();
+        brain->timer = (brain->unk2C_10 ? roll % 120 : roll % 100) + 10;
+        brain->unkC = 0xFF;
+        if (brain->unk9 != 0) {
+            brain->unk9--;
+        } else {
+            if ((func_8003FA38() & 3) == 0) {
+                func_8007639C(actor, 4);
+            }
+            if (func_80090258(actor, brain)) {
+                func_8008FC7C(actor);
+            }
+            brain->unk9 = func_8003FA38() % 4 + 1;
+        }
+    }
+    brain->timer--;
+}
+
+/* Enter the opponent's approach mode: maybe act first, then a random
+ * distance to keep and a few decisions. */
+void func_80090894(Actor *actor, s32 kind) {
+    Brain *brain = actor->brain;
+
+    brain->mode = 2;
+    if (func_8003FA38() % 3 == 0) {
+        func_800767C8(actor);
+    }
+    brain->unk28 = func_8003FA38() % 0x600 + 0x100;
+    brain->timer = 0;
+    brain->unk9 = func_8003FA38() % 5 + 3;
+    func_8008F7B8(brain);
+    brain->unkE = func_8008F720(actor, 0);
+    brain->unk2E = 0;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80090990);
 
