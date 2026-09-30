@@ -1681,7 +1681,83 @@ void func_8007DB28(void) {
     func_800732AC(D_800926CC[1], D_800926CC[0], 0x21C0);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007DC74);
+/* Throw up scene cells along a segment that reaches above height 0x80: one
+ * per six units of its length, starting around `from` below the floor and
+ * drifting across the segment (randomly to either side) or at random, with
+ * a rise and life that grow with its height difference. */
+void func_8007DC74(Vector *from, Vector *to) {
+    Vector across;
+    s32 nx;
+    s32 nz;
+    s32 life;
+    s32 speed;
+    s32 count;
+    s32 drift;
+    s32 height;
+    s32 i;
+    s32 r;
+    SceneCell12 *cell;
+
+    if (from->vy <= 0x80 && to->vy <= 0x80) {
+        return;
+    }
+    across.vz = to->vx - from->vx;
+    across.vx = from->vz - to->vz;
+    across.vy = from->vy - to->vy;
+    cell = D_800926C8;
+    count = func_800886FC(&across) / 6;
+    if (count <= 0) {
+        count = 1;
+    }
+    across.vy = 0x1000;
+    drift = func_80088754(&across);
+    if (drift < 0x10) {
+        drift = 0;
+    }
+    if (across.vz != 0 || across.vx != 0) {
+        func_80048D7C(&across, &across);
+        nx = across.vx;
+        nz = across.vz;
+    }
+    height = abs(from->vy - to->vy);
+    life = height / 3 + 1;
+    if ((u32)life > 0x78) {
+        life = 0x78;
+    }
+    for (i = 0; i < 0x218; i++, cell++) {
+        if (count == 0) {
+            return;
+        }
+        if (cell->unk6 != 0) {
+            continue;
+        }
+        if (drift != 0) {
+            r = rand() % 4096;
+            speed = drift / 7;
+            if (rand() & 1) {
+                cell->unk8 = ((nx * r) >> 14) + speed;
+                cell->unk9 = ((nz * r) >> 14) + speed;
+            } else {
+                cell->unk8 = -((nx * r) >> 14) - speed;
+                cell->unk9 = -((nz * r) >> 14) - speed;
+            }
+        } else {
+            cell->unk8 = (rand() & 0xF) - 8;
+            cell->unk9 = (rand() & 0xF) - 8;
+        }
+        if (height >= 9) {
+            cell->unkA = -(rand() % (height / 2)) + 1;
+            cell->unk6 = life;
+        } else {
+            cell->unkA = -4;
+            cell->unk6 = 0x14;
+        }
+        cell->unk0 = from->vx + (rand() % 32 - 0x10) + cell->unk8 * 2;
+        cell->unk4 = from->vz + (rand() % 32 - 0x10) + cell->unk9 * 2;
+        cell->unk2 = -0x10;
+        count--;
+    }
+}
 
 /* Draw and advance the scene cells: project the live ones three at a time
  * into their tiles, drift them sideways and let them rise or fall (capped

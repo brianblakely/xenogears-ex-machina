@@ -501,6 +501,7 @@ void func_800732AC(void *dst, void *src, s32 size);
 void func_80073064(SVector *dir, SVector *out, s32 scale);
 void func_8008859C(Vector *vector, void *out);
 s32 func_800886FC(Vector *v);
+s32 func_80088754(Vector *v);
 void func_8007E31C(Vector *from, Vector *to, Color *color);
 void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
