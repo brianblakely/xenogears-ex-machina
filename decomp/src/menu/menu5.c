@@ -429,7 +429,318 @@ s32 func_80085264(void) {
     return done;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800852C4);
+/* The menu mode: load its resources, then run the title/options screens
+ * (until a choice starts a bout or the demo idles out) and the bouts
+ * themselves, one scene mode (D_80092790) per frame. */
+void func_800852C4(s32 arg) {
+    LightRig *rig;
+    s32 *file;
+    void *model;
+    s32 sequence;
+    s32 step;
+    s32 idle;
+    s32 hold; /* never initialised: the first held frame counts from garbage */
+
+    D_800928D0 = 0;
+    D_80092920 |= 1;
+    D_800928DC = func_80031BDC(0x10010, 0);
+    rig = func_8008A3E0(func_8008A2B8(0x1000));
+    func_8002C59C(D_80091FB0);
+    func_8008518C(&D_800917C0[0], 0);
+    func_8008518C(&D_800917C0[1], 0);
+    func_8008518C(&D_800917C0[2], 1);
+    func_8008518C(&D_800917C0[3], 1);
+    func_8008518C(&D_800917C0[4], 1);
+    func_80029AFC(D_800917C0, 0, 0);
+    sequence = (s32)D_800917C0[0].data;
+    D_800927C4 = (s32)D_800917C0[1].data;
+    func_8008976C(0x140, 0xDA);
+    func_80088308();
+    func_80030988(1, 1, 0x40, 0x40);
+    D_80092784 = 0;
+    func_800363F0(func_80084FD0);
+    func_80036E4C(0x7FFF, 0x8000);
+    func_80033698(0x140, 0xFF);
+    func_800814AC();
+    func_80079A8C();
+    func_8008DF30();
+    D_800927B4[1] = NULL;
+    D_800927B4[0] = NULL;
+    D_80097010.object = NULL;
+    D_8009872C.object = NULL;
+    func_80080AA0(1);
+    func_80028A60(0);
+    func_80038428(D_800927C4);
+    if (D_800917F0 != 0) {
+        D_80092948 = func_80039850(sequence);
+        func_80039A80(D_80092948, 0x7F, 0);
+    } else {
+        D_80092948 = D_80062528;
+    }
+    func_80032EB4(D_800917C0[3].data, D_800928DC);
+    func_800320E8(D_800917C0[3].data);
+    func_80081ECC();
+    file = func_80032E88(D_800917C0[2].data, 0);
+    func_800320E8(D_800917C0[2].data);
+    func_8003342C(file);
+    D_80092880 = file[1];
+    D_80092874 = (struct MoveList *)file[2];
+    func_8007EEE8(D_8005061C == 1);
+    file = func_80032E88(D_800917C0[4].data, 1);
+    func_800320E8(D_800917C0[4].data);
+    func_8003342C(file);
+    func_80082C4C(file);
+    func_8007B388(file);
+    func_8007E634(file);
+    func_800878DC(file);
+    func_800868E0(file);
+    func_80071794(file);
+    func_800320E8(file);
+    func_8007EFB4();
+    func_800718C0();
+    func_8008BC04();
+    D_8009289C = 0;
+restart:
+    idle = 0x4650;
+    func_80032D60();
+    func_80089D5C(D_8009872C.object);
+    func_80089D5C(D_80097010.object);
+    func_80032D60();
+    func_800809D8();
+    D_80092780 = 0xFF;
+    D_80092784 = 0;
+    func_8008DF50();
+    func_80079B0C();
+    func_800346A4(&D_8009868C);
+    D_80092794 = -1;
+    D_800928C4 = 0;
+    D_800928B4 = 0;
+    if (D_8005061C == 1) {
+        D_80092898 = 0;
+        step = 0;
+    } else {
+        if (D_8005061C == 2) {
+            D_800928C4 = 1;
+            D_80092884 = 0;
+        }
+        D_8005061C = 0;
+        D_80099D98.level = D_80050621;
+        D_80099D98.option6 = D_80050620;
+        func_80080A58();
+        D_80099D9D = 0;
+        D_80092798 = D_8005061E;
+        D_8009279C = D_8005061F;
+        switch (D_8005061D) {
+        case 0:
+            D_80099D9E = 1;
+            func_80083C0C(1);
+            D_800928C8 = 1;
+            func_80080644(D_80092798, D_8009279C);
+            if (D_8009279C == 5) {
+                D_800928B4 = 1;
+            }
+            break;
+        case 1:
+            D_80099D9E = 1;
+            func_80083C0C(1);
+            D_800928C8 = 4;
+            break;
+        case 2:
+            D_80099D9E = 0;
+            func_80083C0C(7);
+            D_800928C8 = 5;
+            func_800719F0();
+            break;
+        }
+        func_8008509C(0, D_80092798);
+        step = 1;
+        func_8008509C(1, D_8009279C);
+        D_80092924 = 0;
+        D_80092898 = 2;
+    }
+    if (func_80085264()) {
+        func_80028A60(0);
+        step = 10;
+    }
+    if (step != 10) {
+        do {
+            if ((D_80059570 & ~1) || (D_80059574 & ~1)) {
+                idle = 0x4650;
+            }
+            if ((D_80059570 & 1) && func_800809BC()) {
+                if (++hold == 0x78) {
+                    idle = 0;
+                }
+            } else {
+                hold = 0;
+            }
+            if (idle != 0) {
+                idle--;
+            } else if (D_80092780 != 0) {
+                func_80080570();
+                D_80092780 = 0;
+                func_80028A60(0);
+                func_80085014();
+                break;
+            }
+            func_80084A40(rig);
+            switch (step) {
+            case 0:
+                func_80081D2C();
+                if (D_80092924 != 0) {
+                    D_80092898 = 2;
+                    step = 1;
+                }
+                if (D_800928E8 & 1) {
+                    func_8008E120();
+                }
+                break;
+            case 1:
+                func_80036420();
+                if (!func_80085264()) {
+                    func_8008E120();
+                    func_8007F258(D_80092938, 0);
+                }
+                if (!func_80028A60(1)) {
+                    step = 10;
+                }
+                break;
+            }
+            func_80084A64(rig);
+            func_8008BC04();
+        } while (step != 10);
+    }
+    D_80092898 = 0;
+    if (func_80085264()) {
+        D_80092780 = 0;
+        D_80092784 = 0;
+        func_8008E064();
+        func_80080A58();
+    }
+    model = func_80032E88(D_800927B4[0], 0);
+    func_800320E8(D_800927B4[0]);
+    D_800927B4[0] = model;
+    func_80084AE0();
+    model = func_80032E88(D_800927B4[1], 0);
+    func_800320E8(D_800927B4[1]);
+    D_800927B4[1] = model;
+    func_80084AE0();
+    func_80084C88(&D_8009872C, D_800927B4[0], 0);
+    func_80084AE0();
+    func_80084C88(&D_80097010, D_800927B4[1], 1);
+    func_80084AE0();
+    func_8007B270(&D_8009872C.colour, &D_80097010.colour);
+    func_80081E00();
+    if (D_80092780 != 0) {
+        D_80092784 = 1;
+        func_8003A838(D_80092948, 0x158, 0);
+        D_8009292C = 0x200;
+    }
+    D_80092890 = 2;
+new_bout:
+    func_80079B44();
+    D_8009872C.pos.vx = 0x3E80;
+    D_8009872C.pos.vy = 0;
+    D_8009872C.pos.vz = 0x3F80;
+    D_80097010.pos.vx = 0x4080;
+    D_80097010.pos.vy = 0;
+    D_80097010.pos.vz = 0x3F80;
+    for (;;) {
+        func_80036DC8(0, 0xFF, 0);
+        D_80092898 = 2;
+        D_800928B0 = 0;
+        D_80092790 = D_80092794;
+        func_80084B48();
+        func_80034888(&D_8009868C, D_80092938, D_800928A0);
+        switch (D_80092790) {
+        case 1:
+            func_80079DF0(&D_8009872C, &D_80097010);
+            SetGeomScreen(0xC0);
+            if (D_80092794 == 1) {
+                func_800796B8(&D_8009872C, &D_80097010);
+            }
+            func_800840CC(rig);
+            break;
+        case 6:
+            func_80072858(rig);
+            break;
+        case 7:
+            func_80071AD0();
+            SetGeomScreen(0xC0);
+            func_800840CC(rig);
+            if (D_80092794 == 3) {
+                D_80092898 = 0;
+                func_8008BC04();
+                goto leave;
+            }
+            break;
+        case 4:
+            SetGeomScreen(0x800);
+            func_8007A344(&D_8009872C, &D_80097010);
+            if (D_80092794 != 8) {
+                func_80083310(1);
+                D_800928B0 = 1;
+            }
+            func_800840CC(rig);
+            break;
+        case 8:
+            SetGeomScreen(0x200);
+            func_8007AE10(&D_8009872C, &D_80097010);
+            func_800840CC(rig);
+            break;
+        case 0:
+            func_80081D2C();
+            func_800849E0(rig);
+            D_80092898 = 0;
+            break;
+        case 5:
+            func_80036420();
+            if (D_8005948C != 0) {
+                D_8005948C = 0;
+                D_800594A4 = 0;
+                func_80085070();
+                D_80092898 = 0;
+                func_80081E6C();
+                func_8008BC04();
+                goto restart;
+            }
+            func_80079DF0(&D_8009872C, &D_80097010);
+            SetGeomScreen(0xC0);
+            func_800796B8(&D_8009872C, &D_80097010);
+            func_800846A0(rig);
+            break;
+        case 3:
+        leave:
+            if (D_8005061C == 0) {
+                func_800851D4();
+            }
+            func_80081E6C();
+            goto restart;
+        case 2:
+            if (D_80099D98.option6 != 0) {
+                if (D_8009872C.unkF2 == D_80099D98.option6) {
+                    if (D_80099D98.com1) {
+                        goto leave;
+                    }
+                    func_80083C0C(6);
+                    break;
+                }
+                if (D_80097010.unkF2 == D_80099D98.option6) {
+                    if (D_80099D98.driven) {
+                        goto leave;
+                    }
+                    func_80083C0C(6);
+                    break;
+                }
+            }
+            func_80083C0C(1);
+            goto new_bout;
+        }
+        func_8003708C(0x9E, 0);
+        func_80036DC8(0xFF, 0xFF, 0);
+        func_8008BC04();
+    }
+}
 
 /* Screen position of the left-hand gauge for a layout point. */
 void func_80085E34(DVector *point, DVector *out) {

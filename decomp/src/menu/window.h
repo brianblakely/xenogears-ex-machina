@@ -61,6 +61,17 @@ void func_8008E2B8(u32 *ot, s32 level, s32 subtract);
 void func_8003463C(MenuWindow *window);
 void func_800851D4(void);
 
+/* Menu mode main loop. */
+extern Resource D_800917C0[5]; /* sequence, sound bank, messages, map, scene */
+extern u8 D_8005061D;          /* resident: entry kind (0 bout, 1 bout mode 4, 2 scene) */
+extern u8 D_8005061E;          /* resident: first actor's model id */
+extern u8 D_8005061F;          /* resident: second actor's model id */
+extern u8 D_80050620;          /* resident: option 6 */
+extern u8 D_80050621;          /* resident: level */
+extern s32 D_80092798;         /* first actor's model id */
+extern s32 D_8009279C;         /* second actor's model id */
+extern s32 D_80062528;         /* resident: default sequence handle */
+
 /* Scene script interpreter. */
 extern Actor *D_80092894; /* actor the scene script drives */
 s32 func_80033CD0(MenuWindow *window); /* chosen answer, 0 while open */

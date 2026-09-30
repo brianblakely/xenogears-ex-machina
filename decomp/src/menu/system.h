@@ -474,7 +474,7 @@ s32 func_8008B730(Player *player, s32 frames, s32 steps);
 void ClearOTagR(u32 *ot, s32 length);
 void AddPrims(u32 *ot, u32 *last, u32 *first);
 void func_8008AC7C(OtPair *pair);
-void func_80028A60(s32 a);
+s32 func_80028A60(s32 a);
 SceneFile *func_8008AF6C(SceneFile *scene);
 s32 GetRCnt(s32 counter);
 Light *func_8008A254(void);
