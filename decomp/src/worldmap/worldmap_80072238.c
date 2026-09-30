@@ -560,9 +560,9 @@ s32 func_80076B34(s32 index) {
     actor = &D_8009BE24[index];
     step = 0;
     do {
-        actor->script += step;
-        word = *(s32 *)actor->script;
-        step = D_8009A3C0[word & 0xFFFF](actor, word >> 16, actor->script[2], actor->script[3]);
+        actor->u.script += step;
+        word = *(s32 *)actor->u.script;
+        step = D_8009A3C0[word & 0xFFFF](actor, word >> 16, actor->u.script[2], actor->u.script[3]);
     } while (step != 0);
     return 1;
 }
@@ -786,10 +786,10 @@ s32 func_80077DC8(s32 index) {
     D_8009BE0C = 0x78;
     D_8009D3F0 = 0x200000;
     actor = &D_8009BE24[index];
-    actor->unk20 = 0;
+    actor->state = 0;
     actor->unk58 = 0;
     actor->unk54 = 0;
-    actor->script = NULL;
+    actor->u.script = NULL;
     D_8009BD38.vz = 0;
     D_8009BD38.vy = 0;
     D_8009BD38.vx = 0;

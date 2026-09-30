@@ -162,16 +162,43 @@ void func_80048AB0(s32 a, s32 b, s32 c);
 
 /* Actor slots (0x80 bytes each). */
 typedef struct {
-    u8 pad0[0x20];
-    s16 unk20;
-    s16 wait;     /* script wait counter */
-    u8 pad24[0x28];
-    s32 handle;
-    s16 *script;  /* script position */
+    s32 unk0;
+    s16 unk4;
+    s16 unk6;
+    s32 unk8;
+    s32 unkC;
+    s32 unk10;
+    s32 unk14;
+    s32 unk18;
+    s32 unk1C;
+    s16 state;    /* 0x20 */
+    s16 wait;     /* 0x22: script wait counter */
+    s32 unk24;
+    s32 unk28;
+    s32 unk2C;
+    s32 unk30;
+    s32 unk34;
+    s32 unk38;
+    s32 unk3C;
+    s32 unk40;
+    s32 unk44;
+    s32 unk48;
+    s32 handle;   /* 0x4C */
+    union {
+        s16 *script; /* script position */
+        s32 step;
+    } u;          /* 0x50 */
     s32 unk54;
     s32 unk58;
     s32 unk5C;
-    u8 pad60[0x20];
+    s32 unk60;
+    s32 unk64;
+    s32 unk68;
+    s32 unk6C;
+    s32 unk70;
+    s32 unk74;
+    s32 unk78;
+    s32 unk7C;
 } WorldmapActor;
 
 /* Script opcode handler: returns the halfwords to advance, 0 to yield. */
@@ -312,6 +339,13 @@ typedef struct {
     u16 pad2;
 } PolyFT4;
 
+#define setlen(p, n) (((u8 *)(p))[3] = (n))
+#define setcode(p, c) (((u8 *)(p))[7] = (c))
+#define setPolyFT4(p) (setlen(p, 9), setcode(p, 0x2C))
+#define setRGB0(p, r, g, b) ((p)->r0 = (r), (p)->g0 = (g), (p)->b0 = (b))
+#define setSemiTrans(p, abe) \
+    ((abe) ? (((u8 *)(p))[7] |= 2) : (((u8 *)(p))[7] &= ~2))
+
 typedef struct {
     u32 tag;
     u32 code[2];
@@ -339,7 +373,6 @@ void func_80040454(void);
 void func_800404E4(void);
 void func_80039CC4(void);
 void func_800399D4(void *seq);
-void func_8003F968(void *header, s32 file, s32 size);
 void *func_80039850(void *header);
 void func_80039A80(void *seq, s32 volume, s32 c);
 void func_80097770(s32 a, s32 b);
@@ -356,6 +389,40 @@ extern s32 D_8009BE0C;
 extern s16 D_8006F94E; /* next scene */
 extern u16 D_8006F950; /* heading carried into the next scene */
 extern s32 D_8009BBC4;
+
+/* Sprite set of a scene object: quads built from a definition. */
+typedef struct {
+    u8 pad0[4];
+    u16 count;
+} SpriteDef;
+
+typedef struct {
+    u8 pad0[0x40];
+    SpriteDef *def;   /* 0x40 */
+    s32 unk44;
+    PolyFT4 *quads;   /* 0x48 */
+    s32 unk4C;
+    s32 unk50;
+} SceneSprite;
+
+/* World-map scene state (layout recovered field by field). */
+/* BEGIN WorldmapScene */
+typedef struct {
+    u8 pad0[0x8];
+    Vec3 position; /* 0x8 */
+    u8 pad14[0x484];
+    SceneSprite sprites[2]; /* 0x498 */
+    u8 pad540[0x18];
+    SVECTOR angle; /* 0x558 */
+    MATRIX rotation; /* 0x560 */
+} WorldmapScene;
+/* END WorldmapScene */
+
+extern WorldmapScene *D_8009C620;
+extern u16 D_8009A450;
+extern u16 D_8009A46C[];
+
+void func_8003F968(void *a, void *b, s32 size);
 
 /* Frame state. */
 typedef struct {
