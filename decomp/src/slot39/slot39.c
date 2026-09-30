@@ -1962,30 +1962,22 @@ u8 func_801CB8AC(u8 port) {
 }
 
 /* The save slot to use on `port`: `slot`, or for ff the first free one. */
-#ifdef NON_MATCHING
 u8 func_801CB9E8(u8 port, u8 slot) {
     s32 i;
-    s32 found;
-    u8 *used;
+    u8 found;
 
     found = 0;
     if (slot == 0xff) {
-        i = 0;
-        used = D_801EA6D0[port];
-        for (; i < 15; i++) {
-            if (*used == 0) {
+        for (i = 0; i < 15; i++) {
+            if (D_801EA6D0[port][i] == 0) {
                 found = i;
                 break;
             }
-            used++;
         }
         return found;
     }
     return slot;
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB9E8);
-#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CBA4C);
 
