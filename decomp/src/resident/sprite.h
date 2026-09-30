@@ -125,7 +125,8 @@ typedef struct Sprite {
     void *callback;          /* +0x68: completion callback */
     void *block;             /* +0x6c: the allocation holding the sprite */
     s32 word70;              /* +0x70 */
-    u8 unknown74[8];
+    s32 word74;              /* +0x74 */
+    s32 word78;              /* +0x78 */
     void *sequencer;         /* +0x7c */
     u16 word80;              /* +0x80: facing angle */
     u16 word82;              /* +0x82 */
@@ -163,6 +164,12 @@ typedef struct Sprite {
     union {
         u32 wordb0;          /* bit 11: destroy flag-29 child tasks with the sprite */
         u8 byteb0;
+        struct {
+            unsigned unknown0 : 8;
+            unsigned passive_children : 1; /* its child sprites start inactive */
+            unsigned share_rate : 1;       /* its child sprites take its speed factor */
+            unsigned unknown10 : 22;
+        } bits;
     } b0;                    /* +0xb0 */
 } Sprite; /* 0xb4 bytes; an inline renderer may follow */
 
@@ -354,5 +361,14 @@ Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused
 Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
+
+/* Second sprite unit (80022090-8002709c). */
+extern u8 D_8004FC40[]; /* frame command lengths */
+void func_80021CF8(Sprite *sprite, s32 value); /* push three bytes */
+void func_80022D44(Sprite *sprite);
+s32 func_80023440(u16 *entry);
+s32 func_80023468(s32 kind, s32 fallback);
+SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, Task *owner);
+void func_80024730(SpriteTask *task);
 
 #endif

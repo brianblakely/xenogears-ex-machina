@@ -191,7 +191,92 @@ void func_800223B0(Sprite *sprite, s16 angle) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_800223B0);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80022660);
+/* Replay a sprite's frame commands without timing until the script reaches
+ * `target` with `count` commands run: frame commands step or look up the
+ * frame and add their duration (commands 40-7f repeat the last one), b3
+ * sets the frame index, be shows a frame with its flip and duration, e2
+ * pushes its return point and jumps; 80-82 end, and 86, 87 and 97 end at
+ * the target. Others are skipped by their length (8004fc40). */
+void func_80022660(Sprite *sprite, u8 *target, s32 count) {
+    u8 *script;
+    u8 op;
+    s32 duration;
+    s32 value;
+    s16 offset;
+    u8 *args;
+
+next:
+    script = sprite->script;
+    if (script == target && sprite->frame_bits.field22 == count) {
+        return;
+    }
+    {
+        op = *script;
+        args = script + 1;
+        if (op < 0x80) {
+            sprite->script = args;
+            if (op < 0x10) {
+                func_8001D2B0(sprite, sprite->frame + 1);
+                duration = (op & 0xF) + 1;
+            } else if (op < 0x20) {
+                sprite->frame_bits.frame++;
+                func_80022D44(sprite);
+                duration = (op & 0xF) + 1;
+            } else if (op < 0x30) {
+                func_8001D2B0(sprite, sprite->frame - 1);
+                duration = (op & 0xF) + 1;
+            }
+            if (op < 0x40) {
+                duration = (op & 0xF) + 1;
+            }
+            sprite->countdown += duration;
+            if (++sprite->frame_bits.field22 == 0) {
+                sprite->frame_bits.field22--;
+            }
+            goto next;
+        }
+        switch (op) {
+        case 0xBE:
+            value = script[1] | (script[2] << 8);
+            sprite->motion.bits.frame_flip = value >> 9;
+            sprite->render.bits.flip = sprite->motion.bits.frame_flip ^ sprite->motion.bits.mirror;
+            if (sprite->frame != (value & 0x1FF)) {
+                func_8001D2B0(sprite, value & 0x1FF);
+            }
+            sprite->countdown += ((value >> 11) & 0xF) + 1;
+            break;
+        case 0xE2:
+            offset = script[1] + ((s8)args[1] << 8);
+            func_80021CF8(sprite, (s32)(script + 3));
+            sprite->script += offset;
+            goto next;
+        case 0xB3:
+            sprite->frame_bits.frame = (s8)script[1];
+            break;
+        case 0x80:
+        case 0x81:
+        case 0x82:
+            return;
+        case 0x86:
+            if (script == target) {
+                return;
+            }
+            break;
+        case 0x87:
+            if (script == target) {
+                return;
+            }
+            break;
+        case 0x97:
+            if (script == target) {
+                return;
+            }
+            break;
+        }
+        sprite->script += D_8004FC40[op];
+        goto next;
+    }
+}
 
 /* Derive a sprite's horizontal velocity from its walking speed, gravity divisor and direction. */
 void func_80022974(Sprite *sprite) {
@@ -744,7 +829,94 @@ SpriteTask *func_80023A48(s32 kind, s32 mode, SpriteSource *source, s32 extra, T
     return task;
 }
 
+/* Create a child sprite of `parent` running animation `header` from
+ * `source`: its kind from the frame entry (3: the parent's), its storage
+ * mode from the kind; it inherits the parent's facing, blending, speeds,
+ * frame, position, resources and (with a mode) renderer angles and scales,
+ * then takes the animation and its kind's callbacks. With the parent's
+ * passive_children flag the task starts inactive. */
+/* Nonmatching: the original also loads the child's image pointer (0x24) into $s3 after creating the task and never uses it, which shifts the register allocation and scheduling of the field copies. */
+#ifdef NON_MATCHING
+Sprite *func_80023B84(Sprite *parent, u16 *header, SpriteSource *source) {
+    u8 active = D_800591AC;
+    s32 kind;
+    s32 mode;
+    SpriteTask *task;
+    Sprite *child;
+    u32 split;
+
+    parent->b0.wordb0 |= 0x800;
+    if (parent->b0.bits.passive_children) {
+        D_800591AC = 0;
+    }
+    kind = func_80023440(header);
+    if (kind == 3) {
+        kind = (parent->flags >> 13) & 0xF;
+    }
+    mode = ((s32 (*)())func_80023468)(kind); /* the fallback argument is not passed */
+    task = func_80023A48(kind, mode, source, 0, parent->block);
+    task->task.link.bits.flag29 = 1;
+    child = &task->sprite;
+    child->flags = (child->flags & ~0x1E000) | ((kind & 0xF) << 13);
+    child->render.bits.sides = mode;
+    child->flags = (child->flags & ~0x1F00) | (parent->flags & 0x1F00);
+    child->render.word = (child->render.word & ~8) | (parent->render.word & 8);
+    child->render.word = (child->render.word & ~0x10) | (parent->render.word & 0x10);
+    child->render.bits.unknown8 = parent->render.bits.unknown8;
+    child->flags = (child->flags & ~0x40000) | (parent->flags & 0x40000);
+    child->render.word = (child->render.word | 0x4000000) & ~4;
+    child->speed = parent->speed;
+    child->direction = parent->direction;
+    child->scale = parent->scale;
+    child->frame = parent->frame;
+    child->b0.bits.share_rate = parent->b0.bits.share_rate;
+    if (parent->b0.bits.share_rate) {
+        child->rate = parent->rate;
+        child->flags = (child->flags & ~0x1F00) | 0x300;
+    }
+    split = (parent->motion.bits.unknown0 << 2) | parent->frame_bits.unknown30;
+    child->frame_bits.unknown30 = split;
+    child->motion.bits.unknown0 = split >> 2;
+    child->b0.bits.passive_children = parent->b0.bits.passive_children;
+    child->motion.bits.double_step = parent->motion.bits.double_step;
+    child->motion.bits.divisor = parent->motion.bits.divisor;
+    child->frame_bits.sequencer_owned = 0;
+    child->motion.bits.mirror = parent->motion.bits.mirror;
+    if (!parent->frame_bits.sequencer_owned) {
+        child->sequencer = parent->sequencer;
+    } else {
+        child->sequencer = NULL;
+    }
+    child->word70 = (s32)parent;
+    child->resource_block = parent->resource_block;
+    child->animations = parent->animations;
+    child->word74 = parent->word74;
+    child->word82 = parent->word82;
+    child->word50 = parent->word50;
+    child->unknown8d = parent->motion.bytes[3];
+    child->word78 = parent->word78;
+    child->x = parent->x;
+    child->y = parent->y;
+    child->z = parent->z;
+    child->speed_x = parent->speed_x;
+    child->speed_y = parent->speed_y;
+    child->speed_z = parent->speed_z;
+    if (mode != 0) {
+        child->renderer->angle_x = parent->renderer->angle_x;
+        child->renderer->angle_y = parent->renderer->angle_y;
+        child->renderer->angle_z = parent->renderer->angle_z;
+        child->renderer->scale_x = parent->renderer->scale_x;
+        child->renderer->scale_y = parent->renderer->scale_y;
+        child->renderer->scale_z = parent->renderer->scale_z;
+    }
+    func_80023538(child, header);
+    func_80024730(task);
+    D_800591AC = active;
+    return child;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023B84);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite_80022090", func_80023FD8);
 
