@@ -115,6 +115,7 @@ typedef struct ImageAnim {
 void func_80026F44(s32 size, s32 frame, u16 *out, u16 *pixels);
 void func_80026FE8(s32 size, s32 frame, u16 *out, u16 *pixels2, u16 *pixels);
 
+s16 func_800A3E98(ImageAnim *anim, s32 ticks);
 void func_800A429C(ImageAnim *anim);
 void func_800A4348(ImageAnim *anim, s16 level);
 void func_800A43F8(ImageAnim *anim, s16 level);

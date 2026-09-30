@@ -74,6 +74,13 @@ typedef struct {
     u8 *textureInfo; /* 0xB4 */
     u8 padB8[0x10A - 0xB8];
     u16 slotMask; /* 0x10A */
+    u8 channelCount;          /* 0x10C */
+    u8 surfaceCount;          /* 0x10D */
+    u8 imageCount;            /* 0x10E: image animations at 0x118 */
+    u8 pad10F;
+    void *channels;           /* 0x110 */
+    void *surfaces;           /* 0x114 */
+    struct ImageAnim *images; /* 0x118 */
 } BattleObject;
 
 /* An animation header (fields as far as recovered). */

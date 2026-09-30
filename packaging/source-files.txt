@@ -130,6 +130,7 @@ decomp/src/battle/gte.h
 decomp/src/battle/model.h
 decomp/src/battle/psyq.h
 decomp/src/battle/scene.h
+decomp/src/battle/stage.h
 decomp/src/debug2611/battle_debug.h
 decomp/src/debug2611/debug2611.c
 decomp/src/debug2611/pages.c

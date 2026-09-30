@@ -17,6 +17,7 @@
 #include "scene.h"
 #include "gte.h"
 #include "effect.h"
+#include "stage.h"
 
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
@@ -1674,7 +1675,35 @@ void func_800A44C0(BattleObject **objects) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4654);
+/* Draw the stage: advance the stage object's image animations, run the
+ * stage update (800A6AE8) on the scratchpad stack, step both resident
+ * records, draw the stage hierarchy (800A48EC), both resident handles and
+ * the stage geometry (800A4DB8) into ot[depth - 1]. */
+void func_800A4654(Matrix *view, Matrix *light, s32 arg2, u32 *ot, s32 buffer, s32 arg5, s32 arg6, s32 depth) {
+    ImageAnim *anim;
+    s32 i;
+
+    if (light != NULL) {
+        SetLightMatrix(light);
+    }
+    anim = D_800D3368[31]->images;
+    for (i = 0; i < D_800D3368[31]->imageCount; i++, anim++) {
+        func_800A3E98(anim, D_800CCC5C);
+    }
+    SPAD_STACK_ENTER();
+    func_800A6AE8();
+    SPAD_STACK_LEAVE();
+    for (i = 0; i < 2; i++) {
+        func_80027EAC(&D_800C3DA0[i]);
+    }
+    if (D_800C3E38 != 0) {
+        func_800A48EC(D_800C3E48, (ModelPart *)D_800C3E38, view, (s32)light, arg2, ot, buffer, depth);
+    }
+    for (i = 0; i < 2; i++) {
+        func_800273C4(D_800C3D50[i], arg5, arg6, view, ot + depth - 1, buffer);
+    }
+    func_800A4DB8(D_800C3EA0, arg5, arg6, view, ot + depth - 1, buffer);
+}
 
 /* Free the battle scene's resources: the stage objects, the scene data, both
  * resident handles of D_800C3D50 (80027D40), the block D_800C3EA0 and both
