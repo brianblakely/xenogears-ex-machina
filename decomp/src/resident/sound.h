@@ -33,8 +33,11 @@ typedef struct SoundBank {
     u16 flags;
     u8 unk12[2];
     u16 id;
-    u8 unk16[6];
+    u16 unk16;         /* instrument set key */
+    u16 volumes;       /* offset of the per-effect volume bytes */
+    u8 unk1A[2];
     struct SoundBank *next;
+    u16 effect[1][2];  /* data offsets of each effect's two channels */
 } SoundBank;
 
 /* A sound track (list through `next`); flag 1 marks it paused. */
@@ -53,38 +56,75 @@ typedef union {
     } part;
 } SoundEffectId;
 
+/* A 16.16 value whose whole part is also read on its own. */
+typedef union {
+    s32 value;
+    struct {
+        u16 fraction;
+        s16 whole;
+    } part;
+} SoundFixed;
+
+/* A per-channel modulator (four per channel). */
+typedef struct {
+    u8 unk0[0x1E];
+    u16 unk1E;
+} SoundModulator;
+
 /* One channel of a playing sequence (0x158 bytes). */
 typedef struct {
-    u16 flags;         /* bit 0: active */
-    u16 flags2;
+    u16 flags;         /* bit 0: active, 0x20: muted */
+    u16 flags2;        /* registers to update */
     u16 flags3;        /* bit 0x20: volume slide */
     u8 voice_bit;      /* bit of the channel in the sequence's voice mask */
-    u8 unk7;
+    u8 priority;
     SoundEffectId id;
-    u32 stamp;
-    u8 unk10[8];
+    u32 stamp;         /* start time (effect channels) */
+    u8 *position;      /* sequence data position */
+    u8 *start;
     u8 *loop;          /* sequence data position to return to */
-    u8 unk1C[4];
+    s32 unk1C;
     u16 unk20;
     u8 unk22;
     u8 unk23;
-    u8 unk24[3];
+    u8 unk24;
+    u8 unk25;
+    u8 unk26;
     u8 voice;          /* hardware voice */
-    u8 unk28[8];
+    u8 unk28[4];
+    struct SoundSequence *instruments;
     SoundChannel state;
-    u8 unk38[0x24];
+    u8 unk38[4];
+    u16 unk3C;
+    u16 unk3E;
+    u8 unk40[0x1C];
     s16 unk5C;
-    u8 unk5E[8];
+    u8 unk5E[2];
+    u8 unk60;
+    u8 unk61;
+    u16 unk62;
+    u8 unk64;
+    u8 unk65;
     s16 transpose;     /* in semitones */
-    u8 unk68[0xC];
-    s16 pan;
+    u8 unk68[6];
+    u16 unk6E;
+    u16 unk70;
+    u16 unk72;
+    s16 pan;           /* 0 left, 0x4000 centre, 0x7F00 right */
     s16 volume;
-    u8 unk78[0x14];
+    SoundFixed level;  /* its whole part scales the volume */
+    u8 unk7C[0x10];
     s16 volume_step;
     s16 volume_target;
     u8 unk90[0xA];
     s16 volume_frames;
-    u8 unk9C[0xBC];
+    u8 unk9C[0x32];
+    u16 unkCE;
+    u16 unkD0;
+    s16 unkD2;
+    s16 unkD4;
+    u8 unkD6[2];
+    SoundModulator modulator[4];
 } SoundSeqChannel;
 
 /* A linear slide of a 16.16 value. */
@@ -94,15 +134,6 @@ typedef struct {
     s16 frames;
     s16 target;
 } SoundSlide;
-
-/* A 16.16 value whose whole part is also read on its own. */
-typedef union {
-    s32 value;
-    struct {
-        u16 fraction;
-        s16 whole;
-    } part;
-} SoundFixed;
 
 /* A sequence being played: header, then its channels. Sequences are
  * listed through `next` (D_80059564). */
@@ -116,7 +147,7 @@ typedef struct SoundSeq {
     u16 unk12;
     u8 channels;
     u8 unk15;
-    u16 unk16;
+    s16 unk16;         /* instrument set key */
     u16 unk18;
     u8 unk1A;
     u8 unk1B;
@@ -185,6 +216,7 @@ typedef struct SoundSeqHeader {
     u8 reverb_feedback;
     u16 unk1E;
     u16 table;         /* offset of 5-byte (index, word) entries */
+    u16 channel[1];    /* data offset of each channel (0: unused) */
 } SoundSeqHeader;
 
 typedef struct {

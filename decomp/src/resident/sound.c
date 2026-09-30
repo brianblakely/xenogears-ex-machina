@@ -335,7 +335,7 @@ u32 func_8003A65C(s32 id, s32 width) {
     oldest = 0xFFFFFFFF;
     if (used & mask) {
         do {
-            if (channel->stamp < oldest && channel->unk7 < 0x21) {
+            if (channel->stamp < oldest && channel->priority < 0x21) {
                 oldest = channel->stamp;
                 found = index;
             }
@@ -829,9 +829,207 @@ void func_8003B370(SoundSeq *seq) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B370);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B424);
+extern SoundSequence *func_800383EC(s32 key);
+extern void func_8003E5BC(s32 unused, SoundSeqChannel *channel);
+extern void func_8003E724(SoundChannel *state, u32 voice);
 
+/* Start the channels of a sequence at the data offsets listed in its
+ * header: default note, volume, pan and modulators, muted when the
+ * sequence's mute mask says so.
+ * Nonmatching: the original schedules the modulator loop
+ * pointer and the id load later. */
+#ifdef NON_MATCHING
+void func_8003B424(SoundSeq *seq) {
+    s32 count = seq->channels;
+    SoundSeqChannel *channel = seq->channel;
+    SoundSeqHeader *header;
+    u16 *offset;
+    SoundSequence *instruments;
+    s32 index;
+    s32 voice;
+    u32 voices;
+    u32 bit;
+    s32 i;
+
+    if (count == 0) {
+        return;
+    }
+    index = 0;
+    voice = -1;
+    voices = 0;
+    header = seq->header;
+    offset = header->channel;
+    instruments = func_800383EC(seq->unk16);
+    if (instruments == NULL) {
+        instruments = D_80059558;
+    }
+    do {
+        if (*offset != 0) {
+            bit = 1 << index;
+            voices |= bit;
+            if (bit & seq->muted) {
+                channel->flags = 0x421;
+            } else {
+                channel->flags = 0x401;
+            }
+            if (seq->flags & 4) {
+                channel->flags |= 4;
+            }
+            channel->flags2 = 0x170;
+            channel->flags3 = 0;
+            channel->id.full = header->unk10;
+            channel->priority = 0x10;
+            channel->voice_bit = index;
+            channel->start = channel->position = (u8 *)header + *offset;
+            channel->transpose = 0x3C;
+            channel->unk62 = 0xF;
+            channel->unk72 = 0xFFFF;
+            channel->volume = 0x6000;
+            channel->level.value = 0x7F000000;
+            channel->loop = NULL;
+            channel->unk1C = 0;
+            channel->unk20 = 0;
+            channel->unk22 = 0;
+            channel->unk5C = 0;
+            channel->unk60 = 0;
+            channel->unk6E = 0;
+            channel->unk64 = 0;
+            channel->pan = 0x4000;
+            channel->unk70 = 0;
+            channel->unkD0 = 0;
+            channel->unkD2 = 0;
+            channel->unkD4 = 0;
+            channel->unk3C = 0;
+            channel->unk3E = 0;
+            channel->unkCE = 0;
+            for (i = 3; i >= 0; i--) {
+                channel->modulator[i].unk1E = 0;
+            }
+            channel->unk25 = seq->unk16;
+            channel->instruments = instruments;
+            if (instruments != NULL) {
+                func_8003E5BC(0, channel);
+            }
+            channel->voice = voice;
+            channel->state.mode = 0;
+            channel->state.priority = 0x100;
+            func_8003E724(&channel->state, voice);
+        } else {
+            channel->flags = 0;
+        }
+        offset++;
+        channel++;
+        index++;
+        count--;
+        voice++;
+    } while (count != 0);
+    seq->voices = voices;
+}
+#else
+INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B424);
+#endif
+
+extern SoundSeq *D_800595D8;     /* sound effect channels */
+extern s32 D_80059404;           /* channels of the next effect */
+extern u32 D_80059504;           /* effect start clock */
+
+/* Start effect `id` (bank in the high half) on the effect channels from
+ * index `code & 0xFF` with priority `code >> 8`, at `volume` (scaled by
+ * the bank's per-effect volume) and `pan`.
+ * Nonmatching: register allocation differs (the original keeps
+ * `id` on the stack and the level in the volume's register). */
+#ifdef NON_MATCHING
+void func_8003B644(s16 code, s32 id, s16 volume, s16 pan) {
+    SoundBank *bank = D_80059440;
+    s32 bank_id = id >> 16;
+    SoundSeq *effects = D_800595D8;
+    SoundSequence *instruments;
+    u32 level;
+    u16 *offset;
+    SoundSeqChannel *channel;
+    s32 count;
+    u8 priority;
+    s32 i;
+
+    while (bank->id != bank_id) {
+        bank = bank->next;
+        if (bank == NULL) {
+            return;
+        }
+    }
+    instruments = func_800383EC(bank->unk16);
+    if (instruments == NULL) {
+        instruments = D_80059558;
+    }
+    level = (u32)(volume * ((u8 *)bank + bank->volumes)[id & 0xFFFF]) >> 7;
+    if ((level >> 15) & 1) {
+        level = 0x7FFF;
+    }
+    offset = &bank->effect[id & 0xFFFF][0];
+    channel = &effects->channel[code & 0xFF];
+    count = D_80059404;
+    priority = code >> 8;
+    DisableEvent(D_800595BC);
+    do {
+        channel->id.full = id;
+        channel->stamp = D_80059504;
+        channel->priority = priority;
+        if (*offset != 0) {
+            effects->voices |= 1 << channel->voice_bit;
+            channel->flags = 0x409;
+            if (bank->flags & 1) {
+                channel->flags = 0x40B;
+            }
+            channel->flags2 = 0x170;
+            channel->flags3 = 0;
+            channel->transpose = 0x3C;
+            channel->unk62 = 0xF;
+            channel->unk72 = 0xFFFF;
+            channel->loop = NULL;
+            channel->unk1C = 0;
+            channel->unk20 = 0;
+            channel->unk22 = 0;
+            channel->unk5C = 0;
+            channel->unk60 = 0;
+            channel->unk6E = 0;
+            channel->unk64 = 0;
+            channel->volume = level;
+            channel->level.value = 0x7F000000;
+            channel->unk70 = 0;
+            channel->unkD0 = 0;
+            channel->unkD2 = 0;
+            channel->unkD4 = 0;
+            channel->unk3C = 0;
+            channel->unk3E = 0;
+            channel->unkCE = 0;
+            channel->pan = pan;
+            channel->position = channel->start = (u8 *)bank + *offset;
+            for (i = 3; i >= 0; i--) {
+                channel->modulator[i].unk1E = 0;
+            }
+            channel->instruments = instruments;
+            channel->unk25 = bank->unk16;
+            if (instruments != NULL) {
+                func_8003E5BC(0, channel);
+            }
+            channel->state.mode = 0;
+            channel->state.priority = 0x200;
+            func_8003E724(&channel->state, channel->voice);
+        } else {
+            effects->voices &= ~(1 << channel->voice_bit);
+            channel->flags = 0;
+            func_8003E83C(&channel->state, channel->voice);
+        }
+        offset += 2;
+        channel++;
+        count--;
+    } while (count != 0);
+    effects->flags |= 0x8000;
+    EnableEvent(D_800595BC);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B644);
+#endif
 
 /* Free a sequence's snapshot chain. */
 void func_8003B930(SoundSeq *seq) {
