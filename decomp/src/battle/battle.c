@@ -1308,7 +1308,116 @@ u8 func_8009A258(u8 member, u8 command) {
     return accuracy;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A2D4);
+/* Fill the gear HUD for member: its first commands' states, charge rate,
+ * attack, defense, the chance of a boost (from the gear's damage, when the
+ * boost flag of D_8006F8EA is on), warning bits and overheat; count down an
+ * active boost (level 4) or, at level 3, try to start one. */
+void func_8009A2D4(u8 member) {
+    Combatant *record = &D_800CCCE8.records[member];
+    GearRecord *gear = &D_800CCCE8.records[member].gear;
+    u8 *level = &D_800CCCE8.records[member].field148;
+    CommandDescriptor *commands = D_800CCCE8.gearCommands[member];
+    GearHud *hud = &D_800CCCE8.gearHud;
+    u8 i;
+    u8 chance;
+
+    for (i = 0; i < 15; i++) {
+        hud->commands[i] = commands->hudState;
+        commands++;
+    }
+    if (gear->chargeRate != 0) {
+        hud->charge = gear->chargeRate * hud->commands[0];
+    } else {
+        hud->charge = 30;
+    }
+    switch (*level) {
+    case 1:
+    case 2:
+    case 3:
+        hud->charge += *level * 20;
+        break;
+    case 4:
+        hud->charge *= 10;
+        break;
+    }
+    hud->attack = gear->attack * gear->attackScale;
+    hud->attack = gear->entries[0].valueE + hud->attack;
+    if (record->pilot.characterId == 4) {
+        hud->attack = gear->entries[2].valueE + hud->attack;
+    }
+    hud->field29 = gear->field98;
+    hud->defense = gear->defense;
+    if (gear->maxHp != gear->hp) {
+        chance = (gear->maxHp - gear->hp) / (gear->maxHp / 10);
+        if (chance == 0) {
+            chance++;
+        }
+    } else {
+        chance++; /* uninitialised in the original */
+    }
+    chance *= record->pilot.field54 + 5;
+    if (!(*(u16 *)D_8006F8EA & 0x4000)) {
+        chance = 0;
+    }
+    if (record->pilot.field62 < 50) {
+        chance = 0;
+    }
+    if (record->pilot.gearId == 3) {
+        chance = 0;
+    }
+    if (record->pilot.gearId == 15) {
+        chance = 99;
+    }
+    if (chance >= 100) {
+        chance = 99;
+    }
+    hud->boostChance = chance;
+    hud->status = 0;
+    if (gear->status7C & 0x100) {
+        hud->status = 0x8000;
+    }
+    if (gear->status7C & 0x200) {
+        hud->status |= 0x4000;
+    }
+    if (gear->status7C & 0x80) {
+        hud->status |= 0x2000;
+    }
+    if (gear->status7C & 0x10) {
+        hud->status |= 0x1000;
+    }
+    if (gear->fuel < gear->maxFuel >> 3) {
+        hud->status |= 0x800;
+    } else {
+        hud->status &= ~0x800;
+    }
+    if (gear->fuel == 0) {
+        gear->status80 &= ~0x8000;
+        record->pilot.status84.half.active &= ~0x8000;
+    }
+    if (gear->status80 & 0x8000) {
+        hud->overheat = 1;
+    } else {
+        hud->overheat = 0;
+    }
+    if (*level == 4) {
+        hud->level = 4;
+        if (--D_800CCCE8.records[member].statusTimers[6] == 0) {
+            gear->status80 &= ~0x4000;
+            *level = 0;
+            record->pilot.field54 = 0;
+        }
+    } else {
+        hud->level = *level;
+        if (*level == 3 && (*(u16 *)D_8006F8EA & 0x4000) && func_8003FA38() % 100 < chance) {
+            gear->status80 |= 0x4000;
+            D_800CCCE8.records[member].statusTimers[6] = 3;
+            if (D_800CCCE8.records[member].pilot.flags32 & 0x40) {
+                D_800CCCE8.records[member].statusTimers[6] = 6;
+            }
+            (*level)++;
+        }
+    }
+}
 
 /* Byte 5 of game-data unit record id. */
 u8 func_8009A7B8(u8 id) {

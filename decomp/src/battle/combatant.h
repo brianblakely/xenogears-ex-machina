@@ -48,7 +48,9 @@ typedef struct {
     u8 pad5C[0x5E - 0x5C];
     u8 field5E;
     u8 field5F;
-    u8 pad60[0x6F - 0x60];
+    u8 pad60[0x62 - 0x60];
+    u8 field62; /* 0x62 */
+    u8 pad63[0x6F - 0x63];
     u8 entryItems[4]; /* 0x6F: item slot of each entry */
     u8 pad73[0x7A - 0x73];
     u16 status7A;
@@ -85,9 +87,14 @@ typedef struct {
     u8 pad30[0x38 - 0x30];
     u16 fuel;    /* 0x38 */
     u16 maxFuel; /* 0x3A */
-    u8 pad3C[0x4F - 0x3C];
+    u8 attack;   /* 0x3C */
+    u8 pad3D[0x3F - 0x3D];
+    u8 attackScale; /* 0x3F */
+    u8 pad40[0x4F - 0x40];
     u8 field4F; /* 0x4F */
-    u8 pad50[0x60 - 0x50];
+    u8 pad50[0x57 - 0x50];
+    u8 chargeRate; /* 0x57 */
+    u8 pad58[0x60 - 0x58];
     u32 hp;    /* 0x60 */
     u32 maxHp; /* 0x64 */
     u8 pad68[0x72 - 0x68];
@@ -99,7 +106,7 @@ typedef struct {
     u16 status82;
     StatusPair status84;
     u8 resistances[16]; /* 0x88: by element bit */
-    u8 pad98;
+    u8 field98;
     u8 defense; /* 0x99: damage reduction in percent */
     u8 pad9A[0x9E - 0x9A];
     u8 frameFactor; /* 0x9E: attack scale in quarters */
@@ -160,7 +167,7 @@ typedef struct {
     u8 pad14A[0x15A - 0x14A];
     u8 flags15A; /* bit 0x80: fighting in a gear */
     u8 pad15B;
-    volatile u8 statusTimers[0x10]; /* remaining turns per timed status */
+    u8 statusTimers[0x10]; /* remaining turns per timed status */
     u8 pad16C[0x170 - 0x16C];
 } Combatant;
 
@@ -181,8 +188,25 @@ typedef struct {
     u8 formula; /* 0x16: index into the formula table */
     u8 pad17[0x20 - 0x17];
     u8 attributes[4]; /* 0x20: copied to the battle's current command */
-    u8 pad24[0x28 - 0x24];
+    u16 hudState;     /* 0x24: shown in the gear HUD */
+    u8 pad26[0x28 - 0x26];
 } CommandDescriptor;
+
+/* The gear command HUD state (0x30 bytes). */
+typedef struct {
+    u16 commands[15]; /* 0x00: the gear's first command states */
+    s16 attack;       /* 0x1E */
+    u8 pad20[0x24 - 0x20];
+    u16 status; /* 0x24: warning bits */
+    u16 charge; /* 0x26 */
+    u8 level;   /* 0x28: attack level */
+    u8 field29;
+    u8 defense; /* 0x2A */
+    u8 pad2B;
+    u8 overheat; /* 0x2C */
+    u8 pad2D;
+    u16 boostChance; /* 0x2E */
+} GearHud;
 
 /* Battle work area D_800CCCE8; D_800C34B0 points at it. */
 typedef struct {
@@ -193,7 +217,9 @@ typedef struct {
     CommandDescriptor enemyCommands[199];   /* 0x35D8 */
     u8 pad54F0[0x54F8 - 0x54F0];
     BattleItemLists lists; /* 0x54F8 */
-    u8 pad5B74[0x5F6C - 0x5B74];
+    u8 pad5B74[0x5F24 - 0x5B74];
+    GearHud gearHud; /* 0x5F24 */
+    u8 pad5F54[0x5F6C - 0x5F54];
     u32 damage[12]; /* 0x5F6C */
     u8 pad5F9C[0x5FA0 - 0x5F9C];
     u8 resultCode[12]; /* 0x5FA0: 0xFF untouched */
