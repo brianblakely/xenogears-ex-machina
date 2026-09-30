@@ -1446,17 +1446,138 @@ void func_801CAED4(void) {
     func_80049F8C(&D_800625A0->view_matrix);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB014);
+/* Run one frame: input, buffer swap, view, packets, then present the finished buffer. */
+void func_801CB014(void) {
+    s32 shown;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB13C);
+    if (*D_8005917C != -1) {
+        __asm__ volatile("break 1024");
+    }
+    func_801CACC8();
+    func_80019CA0();
+    D_800625A0->draw_env =
+        D_800625A0->draw_env == &D_800625A0->envs[0] ? &D_800625A0->envs[1] : &D_800625A0->envs[0];
+    D_800625A0->buffer = D_800625A0->buffer == 0;
+    func_80044AD8(D_800625A0->draw_env->ot, 16);
+    func_801CAED4();
+    func_801CABF4();
+    shown = D_800625A0->buffer == 0;
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80044C44(D_800625A0->draw_env->draw);
+    func_80044E9C(D_800625A0->draw_env->disp);
+    func_8004495C(&D_800625A0->images->screen, 0, shown * 224);
+    func_80044BD0(&D_800625A0->draw_env->ot[15]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB2FC);
+/* Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
+void func_801CB13C(u8 mode) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB340);
+    D_800625A0->marks = func_80031BDC(sizeof(MarkerBlock), 0);
+    func_8003F8E8(D_800625A0->marks, sizeof(MarkerBlock));
+    switch (mode) {
+    case 0:
+        D_800625A0->flags->marks_shown = 1;
+        D_800625A0->marks->at_cursor[0] = 1;
+        D_800625A0->marks->at_cursor[1] = 1;
+    case 2:
+        for (i = 0; i < 4; i++) {
+            func_8002675C(D_800625A0->sprite_sheet, 0x108, &D_800625A0->marks->packets[i * 2],
+                          D_800625A0->buffer, D_801D1FF8[i], D_801D2008[i], 0x800);
+            D_800625A0->marks->buffer[i] = D_800625A0->buffer;
+        }
+        break;
+    case 3:
+        func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->marks->packets, D_800625A0->buffer,
+                      0, 0, 0x800);
+        D_800625A0->marks->buffer[0] = D_800625A0->buffer;
+        D_800625A0->flags->marks_shown = 1;
+        break;
+    case 1:
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB370);
+/* Hide the markers, let a frame pass, and release them. */
+void func_801CB2FC(void) {
+    D_800625A0->flags->marks_shown = 0;
+    func_801CB014();
+    func_800320E8(D_800625A0->marks);
+}
 
+/* Start zooming the view out, with its sound. */
+void func_801CB340(void) {
+    D_800625A0->view_motion = 3;
+    func_801CAC7C(0x5B);
+}
+
+/* Start zooming the view in. */
+void func_801CB370(void) {
+    D_800625A0->view_motion = 4;
+}
+
+/* Open the message panel and show three lines of label text from entry `first`. */
+#ifdef NON_MATCHING
+void func_801CB384(u8 first) {
+    PanelGrowth *growth;
+    Label *label;
+    s32 i;
+    s32 x;
+
+    x = 0x50;
+    func_801C896C(4, 0x42, 0x46, 0xBC, 0x40, 1, 1, 4, 0);
+    growth = D_800625A0->growth[4];
+    while (growth->done == 0) {
+        func_801CB014();
+    }
+    for (i = 0; i < 4; i++) {
+        D_800625A0->message_labels[i] = func_80031BDC(sizeof(Label), 0);
+        func_8003F8E8(D_800625A0->message_labels[i], sizeof(Label));
+        if (!(i & 1)) {
+            D_800625A0->message_labels[i]->pixels = func_80031BDC(0x5CA, 0);
+            D_800625A0->message_labels[i]->rect.x = 0x140;
+            D_800625A0->message_labels[i]->rect.y = (i / 2) * 13 + 0x4E;
+            D_800625A0->message_labels[i]->rect.w = 0x3A;
+            D_800625A0->message_labels[i]->rect.h = 13;
+        } else {
+            D_800625A0->message_labels[i]->pixels = D_800625A0->message_labels[i - 1]->pixels;
+        }
+    }
+    i = 0;
+    do {
+        label = D_800625A0->message_labels[i];
+        label->width = func_80034EAC(func_80033728(D_800625A0->label_text, first + i), label->pixels,
+                                     0x36, i % 2);
+        func_801C5A7C(label, i, 0, 0);
+        func_801C6E90(label->quad, x, i * 16 + 0x50, label->width, 13);
+        (label->poly + D_800625A0->buffer)->u0 = 0;
+        (label->poly + D_800625A0->buffer)->v0 = (i / 2) * 13 + 0x4E;
+        (label->poly + D_800625A0->buffer)->u1 = label->width;
+        (label->poly + D_800625A0->buffer)->v1 = (i / 2) * 13 + 0x4E;
+        (label->poly + D_800625A0->buffer)->u2 = 0;
+        (label->poly + D_800625A0->buffer)->v2 = (i / 2) * 13 + 0x5B;
+        (label->poly + D_800625A0->buffer)->u3 = label->width;
+        (label->poly + D_800625A0->buffer)->v3 = (i / 2) * 13 + 0x5B;
+        i++;
+        label->projected = 1;
+        label->buffer = D_800625A0->buffer;
+    } while (i < 3);
+    func_80044894(&D_800625A0->message_labels[0]->rect, D_800625A0->message_labels[0]->pixels);
+    func_80044894(&D_800625A0->message_labels[2]->rect, D_800625A0->message_labels[2]->pixels);
+    func_800445D0(0);
+    D_800625A0->flags->message_shown = 1;
+    func_800320E8(D_800625A0->message_labels[0]->pixels);
+    func_800320E8(D_800625A0->message_labels[2]->pixels);
+    if (D_800625A0->flags->unk5B == 2) {
+        D_800625A0->flags->unk5B = 1;
+    }
+    func_801CB014();
+    func_801CB014();
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB384);
+#endif
 
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/ovl2601", func_801CB7F4);
 

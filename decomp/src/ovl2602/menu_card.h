@@ -88,7 +88,7 @@ typedef struct {
 typedef struct {
     POLY_FT4 packets[56];  /* 000 */
     POLY_FT4 packets2[56]; /* 8c0 */
-    u8 unk1180[8];
+    RECT screen;           /* 1180: area copied to the shown buffer */
     s32 count;             /* 1188 */
     s32 count2;            /* 118c */
     u8 buffer;             /* 1190 */
@@ -230,7 +230,9 @@ typedef struct {
     u8 scroll_shown; /* 49 */
     u8 unk4A[0x50 - 0x4A];
     u8 marker_shown[2]; /* 50 */
-    u8 unk52[0x6C - 0x52];
+    u8 unk52[0x5B - 0x52];
+    u8 unk5B;
+    u8 unk5C[0x6C - 0x5C];
 } ScreenFlags;
 
 /* A linked sound effect bank. */
@@ -239,10 +241,12 @@ typedef struct {
     u16 id; /* 14 */
 } EffectBank;
 
-/* A draw buffer's environment block; ordering table entries at +70. */
+/* A draw buffer's environments and ordering table (b4h bytes). */
 typedef struct {
-    u8 unk0[0x70];
-    u32 ot[16]; /* 70 */
+    u8 draw[0x5C]; /* 00: DRAWENV */
+    u8 disp[0x14]; /* 5c: DISPENV */
+    u32 ot[16];    /* 70 */
+    u32 unkB0;
 } DrawEnv;
 
 typedef struct {
@@ -257,7 +261,8 @@ typedef struct {
 
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
-    u8 unk0[0x1D4];
+    u8 unk0[0x6C];
+    DrawEnv envs[2];     /* 6c */
     DrawEnv *draw_env;   /* 1d4: current buffer's draw environment */
     SVECTOR view_rotation;    /* 1d8 */
     VECTOR view_translation;  /* 1e0 */
@@ -308,8 +313,8 @@ typedef struct {
     Label list_labels[8]; /* 6e0 */
     Label info_labels[6]; /* ae0 */
     u8 unkDE0[0x1DE0 - 0xDE0];
-    Label *message_labels[3]; /* 1de0 */
-    u8 unk1DEC[0x1E20 - 0x1DEC];
+    Label *message_labels[4]; /* 1de0 */
+    u8 unk1DF0[0x1E20 - 0x1DF0];
     void *unk1E20;       /* 1e20: dech bytes */
     u8 unk1E24[0x1E2C - 0x1E24];
     void *unk1E2C;       /* 1e2c */
@@ -323,6 +328,8 @@ extern MenuState *D_800625A0;
 /* Overlay data. */
 extern u16 D_801D6C68[]; /* party bit of each member id */
 extern u8 D_801D6A80[];  /* label text ids */
+extern s32 D_801D6A60[]; /* marker x */
+extern s32 D_801D6A70[]; /* marker y */
 extern s32 D_801D6A84[]; /* file slot -> list position */
 extern s32 D_801D6AFC[]; /* marker x per list position */
 extern s32 D_801D6B7C[]; /* marker y per list position */
@@ -337,6 +344,14 @@ extern u16 D_80059414;   /* highlighted text CLUT */
 extern u16 D_800595D4;   /* plain text CLUT */
 
 /* Resident services. */
+extern s32 *D_8005917C;                  /* debug word; not -1 stops at a break */
+void func_80019CA0(void);                /* soft reset combination */
+void func_80044AD8(u32 *ot, s32 n);      /* ClearOTagR */
+s32 func_8004B54C(s32 mode);             /* VSync */
+void func_80044C44(void *env);           /* PutDrawEnv */
+void func_80044E9C(void *env);           /* PutDispEnv */
+s32 func_8004495C(RECT *rect, s32 x, s32 y); /* MoveImage */
+void func_80044BD0(u32 *ot);             /* DrawOTag */
 s32 func_80035734(s32 port);             /* controller present */
 void func_80037EE4(void);                /* pause the sound */
 void func_80037E8C(void);                /* resume the sound */
@@ -416,16 +431,16 @@ void func_801CA874(void);
 void func_801CA9EC(void);
 void func_801CAA7C(void);
 void func_801C9264(void);
+void func_801CC1C4(void);
+void func_801C90E0(u8 index, s16 x, s16 y, s16 w, u16 h, u8 grow, u8 flat, s32 ot_entry, u8 has_bar);
 void func_801CA28C(void);
 void func_801CA404(void);
-void func_801CA388(void);
 void func_801CABE0(void);
 void func_801C959C(void);
 void func_801C9550(void);
 void func_801CAC20(void);
 void func_801CB2E8(void);
 void func_801CB35C(void);
-void func_801CCFF4(void);
 void func_801CB498(u8 sound);
 void func_801C94CC(s32 count, POLY_FT4 *packets, s32 first);
 void func_801C93B0(s32 count, SVECTOR *quads, POLY_FT4 *packets, s32 first);

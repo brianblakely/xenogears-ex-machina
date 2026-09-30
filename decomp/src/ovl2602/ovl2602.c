@@ -1245,9 +1245,41 @@ INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CBE60);
 
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC1C4);
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC31C);
+/* Create the marker block: both yes/no markers at the cursor (0), the four markers (2) or one (3). */
+void func_801CC31C(u8 mode) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801CC4DC);
+    D_800625A0->marks = func_80031BDC(sizeof(MarkerBlock), 0);
+    func_8003F8E8(D_800625A0->marks, sizeof(MarkerBlock));
+    switch (mode) {
+    case 0:
+        D_800625A0->flags->marks_shown = 1;
+        D_800625A0->marks->at_cursor[0] = 1;
+        D_800625A0->marks->at_cursor[1] = 1;
+    case 2:
+        for (i = 0; i < 4; i++) {
+            func_8002675C(D_800625A0->sprite_sheet, 0x108, &D_800625A0->marks->packets[i * 2],
+                          D_800625A0->buffer, D_801D6A60[i], D_801D6A70[i], 0x800);
+            D_800625A0->marks->buffer[i] = D_800625A0->buffer;
+        }
+        break;
+    case 3:
+        func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->marks->packets, D_800625A0->buffer,
+                      0, 0, 0x800);
+        D_800625A0->marks->buffer[0] = D_800625A0->buffer;
+        D_800625A0->flags->marks_shown = 1;
+        break;
+    case 1:
+        break;
+    }
+}
+
+/* Hide the markers, let a frame pass, and release them. */
+void func_801CC4DC(void) {
+    D_800625A0->flags->marks_shown = 0;
+    func_801CC1C4();
+    func_800320E8(D_800625A0->marks);
+}
 
 void func_801CC520(void) {
 }
