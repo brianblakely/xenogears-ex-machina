@@ -940,7 +940,65 @@ void func_80074554(void) {
     AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk2D0[D_800C3EA4->unkA230->buffer]);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_800745EC);
+/* Add the command window page's quads to the ordering table: the page
+ * frame (800743a4), then per page (800d2d28 +0xb7) its EP digits, icons,
+ * title and cost digits, or its gradient box. */
+void func_800745EC(void) {
+    switch (D_800D2D28->unkB7) {
+    case 1:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk669) {
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk410[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk460[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk4B0[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk500[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk550[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk5A0[D_800C3EA4->unkA230->unk66C]);
+        }
+        if (D_800C3EA4->unkA230->unk66B) {
+            if (D_800C3EA4->unkA230->unk66E) {
+                AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk3C0[D_800C3EA4->unkA230->unk66C]);
+            }
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk140[D_800C3EA4->unkA230->buffer]);
+            func_800728B8(D_800C3EA4->unkA230->unk190, D_800C3EA4->unkA230->unk66E, D_800C3EA4->unkA230->buffer);
+            func_80074554();
+            func_800744BC();
+        }
+        break;
+    case 2:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk66B) {
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk140[D_800C3EA4->unkA230->buffer]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk190[D_800C3EA4->unkA230->buffer]);
+        }
+        if (D_800C3EA4->unkA230->unk66D) {
+            func_800744BC();
+            func_80074554();
+        }
+        break;
+    case 3:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk66F) {
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk5F0[D_800C3EA4->unkA230->unk66C]);
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk638[D_800C3EA4->unkA230->unk66C]);
+        }
+        break;
+    case 4:
+        func_800743A4();
+        if (D_800C3EA4->unkA230->unk66B) {
+            if (D_800C3EA4->unkA230->unk66E) {
+                AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk3C0[D_800C3EA4->unkA230->unk66C]);
+            }
+            AddPrim(D_800CCB04.ot + 1, &D_800C3EA4->unkA230->unk140[D_800C3EA4->unkA230->buffer]);
+            func_80074554();
+            func_800744BC();
+        }
+        break;
+    case 5:
+        func_800743A4();
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_80070E2C", func_80074AB8);
 
