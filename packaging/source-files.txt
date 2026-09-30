@@ -133,6 +133,8 @@ decomp/src/ovl3384/ovl3384.c
 decomp/src/ovl3385/ovl3385.c
 decomp/src/ovl3386/ovl3386.c
 decomp/src/ovl3387/ovl3387.c
+decomp/src/resident/cd.h
+decomp/src/resident/heap.h
 decomp/src/resident/main.c
 decomp/src/slot39/slot39.c
 decomp/src/worldmap/worldmap.c

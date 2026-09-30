@@ -504,19 +504,148 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029AFC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029EB0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A260);
+#include "cd.h"
+#include "heap.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A2D0);
+/* Allocate a stream ring of `count` 2,048-byte sectors (plus the slot
+ * header), then select and reset it. Returns the ring or NULL. */
+StreamRing *func_8002A260(s32 count, s32 mode) {
+    StreamRing *ring;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A394);
+    if (count > 0) {
+        ring = func_80031BDC(count * 0x808 + 0x24, mode);
+        if (ring == NULL) {
+            return NULL;
+        }
+        ring->count = count;
+        func_80028A94(ring);
+        func_80028AAC();
+        return ring;
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A428);
+/* Unless a read is already running, seek to `file` (or pause for a
+ * nonpositive file) with the resident CD ready callback installed. */
+void func_8002A2D0(s32 file) {
+    if (D_8004FE48 == 0 && func_800286CC() == 0) {
+        D_8004FE18 = D_8004FE14;
+        if (file > 0) {
+            func_80041430(func_800289D0(file), D_80059F10);
+            D_8004FE1C = 3;
+            func_80040FB4(func_8002A68C);
+            func_8004111C(2, D_80059F10);
+        } else {
+            D_8004FE1C = 5;
+            func_80040FB4(func_8002A68C);
+            func_8004111C(9, NULL);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A498);
+/* Seek to `file` (or pause) unconditionally. */
+void func_8002A394(s32 file) {
+    if (file > 0) {
+        func_80041430(func_800289D0(file), D_80059F10);
+        D_8004FE1C = 3;
+        func_80040FB4(func_8002A68C);
+        func_8004111C(2, D_80059F10);
+    } else {
+        D_8004FE1C = 5;
+        func_80040FB4(func_8002A68C);
+        func_8004111C(9, NULL);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A524);
+/* Issue CdlSetmode with `mode`. */
+void func_8002A428(u8 mode) {
+    u8 *param;
+    s32 i;
 
+    D_8004FE1C = 9;
+    func_80040FB4(func_8002A68C);
+    for (i = 3, param = &D_80059F18[3]; i >= 0; i--) {
+        *param-- = 0;
+    }
+    D_80059F18[0] = mode;
+    func_8004111C(0xE, D_80059F18);
+}
+
+/* Request a stop with `reason`; when a read is active, drop it and close the
+ * open host file handle (retrying a few transient results). */
+void func_8002A498(s32 reason) {
+    s32 result;
+
+    D_8004FE34 = 1;
+    D_8004FE38 = reason;
+    if (D_8004FE48 != 0) {
+        D_8004FDF8 = 0;
+        D_8004FDFC = 0;
+        if (D_8004FE4C != -1) {
+            do {
+                result = func_8004C338(D_8004FE4C);
+            } while (result != 0 && result + 1 < 4);
+            D_8004FE4C = -1;
+        }
+    }
+}
+
+/* Free every loaded file's data in a zero-terminated file table. */
+void func_8002A524(FileEntry *table) {
+    FileEntry *entry;
+    void *data;
+
+    if (table->id != 0) {
+        entry = table;
+        do {
+            data = entry->data;
+            entry++;
+            if (data != NULL) {
+                func_800320E8(data);
+            }
+        } while (entry->id != 0);
+    }
+}
+
+/* Load the files following `first` into `table` (allocated when NULL). On an
+ * allocation failure everything loaded is freed and NULL returned.
+ * Nonmatching: GCC strength-reduces &table[i]; the original recomputes it. */
+#ifdef NON_MATCHING
+FileEntry *func_8002A57C(s32 first, FileEntry *table) {
+    s32 count;
+    s32 owned = 0;
+    s32 i;
+
+    count = func_80028928();
+    if (count > 0) {
+        if (table == NULL) {
+            table = func_80031BDC((count + 1) * 8, 0);
+            owned = 1;
+            if (table == NULL) {
+                return NULL;
+            }
+        }
+        for (i = 0; i < count; i++) {
+            table[i].id = first + i + 1;
+            table[i].data = func_80031BDC(func_800288EC(first + i + 1), 0);
+            if (table[i].data == NULL) {
+                func_8002A524(table);
+                if (owned > 0) {
+                    func_800320E8(table);
+                }
+                return NULL;
+            }
+        }
+        table[count].id = 0;
+        table[count].data = NULL;
+    } else {
+        table = NULL;
+    }
+    return table;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A57C);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A68C);
 
