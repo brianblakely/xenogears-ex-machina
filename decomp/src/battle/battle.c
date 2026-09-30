@@ -2464,7 +2464,138 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
 #endif
 
+/* Record gear combo step `step` for the member: unless the target fights in
+ * a gear (record +0x15a bit 0x80) or the attack level is 4, the step's flag
+ * becomes the combo step (+0x2dc) at once. Otherwise, when the attack level
+ * allows the step (or +0x2e7 is set), add it to the combo history (+0x2cc,
+ * length +0x2d6), show the history (list 12) and the deathblows it leads to
+ * (80086c88, lists 11 and 13) and, with an armed chain (+0x2e4), take a
+ * completed deathblow as the combo step. Returns whether a deathblow was
+ * shown (0 with an armed chain), else 1. Nonmatching: the text block loops
+ * address 800c3a70 through a pointer instead of an offset, and registers. */
+#ifdef NON_MATCHING
+u8 func_80086F98(u8 step, u8 member) {
+    s32 index;
+    s32 i;
+    s32 block;
+    s32 shown;
+    u8 flag;
+    u8 id;
+    u8 next;
+
+    flag = (step + 1) * 3;
+    index = 0;
+    shown = 0;
+    if (!(D_800CCCE8.records[D_800C3EAC->slots[member].defaultTarget].flags15A & 0x80) && D_800CCCE8.gearHud.level != 4) {
+        D_800C3EAC->unk2DC = D_800C34CC[step];
+        return 1;
+    }
+    if ((D_800CCCE8.gearHud.level != 0 && D_800CCCE8.gearHud.level - 1 >= step) || D_800C3EAC->unk2E7 != 0) {
+        for (block = 0; block < 3; block++) {
+            D_800C3A70[block] = (u32 *)func_8008AC00(0x1E);
+        }
+        D_800C3EAC->unk2CC[D_800C3EAC->unk2D6] = step;
+        D_800C3EAC->unk2D6++;
+        if (D_800C3EAC->unk2E1[3] != 0) {
+            D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = 0xFF;
+            D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = step;
+            flag = step + (D_800C3EAC->unk2CC[0] + 1) * 3;
+        }
+        D_800D2DB4->counts[12] = 0;
+        D_800D2DB4->counts[11] = 0;
+        D_800D2DB4->counts[13] = 0;
+        for (i = 0; i < D_800C3EAC->unk2D6; i++) {
+            if (D_800C3EAC->unk2CC[i] != 0xFF) {
+                switch (D_800C3EAC->unk2CC[i]) {
+                case 0:
+                    id = 0x5E;
+                    break;
+                case 1:
+                    id = 0x5F;
+                    break;
+                case 2:
+                    id = 0x5D;
+                    break;
+                }
+                D_800D2DB4->counts[12] +=
+                    func_80076A10(id, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
+            }
+        }
+        if (D_800CCCE8.gearHud.level == 4) {
+            flag = step + 12;
+            if (step == 0xFF) {
+                flag = 12;
+            }
+        }
+        if (func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[flag])) {
+            if (D_800C3EAC->unk2E1[3] == 0) {
+                shown = 1;
+                if (D_800C3EAC->slots[member].items[0] == 0) {
+                    D_800D2DB4->counts[12] +=
+                        func_80076A10(8, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x80 + i * 16, 0xD0 - index * 16);
+                    index = func_80086C88(member, index, i - 1, flag, &D_800C3A70[index / 2]);
+                }
+            } else {
+                shown = 1;
+                index = func_80086C88(member, index, i - 1, flag, &D_800C3A70[index / 2]);
+            }
+        }
+        if (D_800C3EAC->unk2E1[3] != 0 && shown) {
+            if (D_800C3EAC->unk2CC[0] == 0xFF) {
+                flag = step + 12;
+            }
+            D_800D2DB4->buffers[12] = D_800CCB04.buffer;
+            D_800C3EAC->unk2DC = D_800C34CC[flag];
+            D_800D2DB4->buffers[11] = D_800CCB04.buffer;
+            D_800D2DB4->buffers[13] = D_800CCB04.buffer;
+            D_800D2D28->unkA8 = 1;
+            func_800716D8();
+            for (block = 0; block < 3; block++) {
+                func_800320E8(D_800C3A70[block]);
+            }
+            return 0;
+        }
+        D_800C3EAC->unk2DC = step;
+        if (D_800CCCE8.gearHud.level != 4) {
+            next = (step + 1) * 3 + 1;
+        } else {
+            next = 13;
+        }
+        if (func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[next]) &&
+            D_800C3EAC->slots[member].items[1] == 0) {
+            shown = 1;
+            D_800D2DB4->counts[12] +=
+                func_80076A10(9, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x84 + i * 16, 0xD0 - index * 16);
+            index = func_80086C88(member, index, i, next, &D_800C3A70[index / 2]);
+        }
+        if (D_800CCCE8.gearHud.level != 4) {
+            next = (step + 1) * 3 + 2;
+        } else {
+            next = 14;
+        }
+        if (func_80089C6C(D_8006ECF8[D_800D2D24[member]].combos, D_800C34CC[next]) &&
+            D_800C3EAC->slots[member].items[2] == 0) {
+            shown = 1;
+            D_800D2DB4->counts[12] +=
+                func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x88 + i * 16, 0xD0 - index * 16);
+            func_80086C88(member, index, i, next, &D_800C3A70[index / 2]);
+        }
+        D_800D2DB4->buffers[12] = D_800CCB04.buffer;
+        D_800D2DB4->buffers[11] = D_800CCB04.buffer;
+        D_800D2DB4->buffers[13] = D_800CCB04.buffer;
+        D_800D2D28->unkA8 = 1;
+        func_800716D8();
+        for (block = 0; block < 3; block++) {
+            func_800320E8(D_800C3A70[block]);
+        }
+        return shown;
+    }
+    D_800C3EAC->unk2DC = step;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086F98);
+#endif
 
 /* Plan the approach route from `actor` to `target`: the actor's position,
  * then the route points the formation lists between their groups. Returns
