@@ -10945,7 +10945,75 @@ s32 func_800A9B1C(s32 value, s32 delta) {
     return value;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9B54);
+/* Transform a particle's quad: rotate it by `angle` at its position under
+ * `view` (mode 3 scales the view by `scale` and then the quad again),
+ * scale it by its size, tint it and link it at its depth (depth mode 0
+ * front, 1 nearer, 2 as is, 3 farther). */
+void func_800A9B54(Particle *particle, MATRIX *view, s16 angle, s32 depth_mode, VECTOR *scale, s32 mode) {
+    MATRIX m;
+    MATRIX local;
+    MATRIX scaled_view;
+    SVECTOR rotation;
+    VECTOR size;
+    s32 otz;
+    s32 p;
+
+    rotation.vx = 0;
+    rotation.vy = 0;
+    rotation.vz = angle;
+    func_8003F738(&rotation, &local);
+    local.t[0] = particle->position.vx >> 12;
+    local.t[1] = particle->position.vy >> 12;
+    local.t[2] = particle->position.vz >> 12;
+    if (mode == 3) {
+        scaled_view = *view;
+        ScaleMatrix(&scaled_view, scale);
+        CompMatrix(&scaled_view, &local, &m);
+        func_8007409C(&m, &local);
+        size.vx = particle->unk38.vx;
+        size.vy = particle->unk38.vy;
+        size.vz = particle->unk38.vz;
+        ScaleMatrix(&m, &size);
+        (particle->quads + D_800ADB08)->r0 = particle->unk48[0];
+        (particle->quads + D_800ADB08)->g0 = particle->unk48[1];
+        (particle->quads + D_800ADB08)->b0 = particle->unk48[2];
+        SetTransMatrix(&m);
+        ScaleMatrix(&m, scale);
+    } else {
+        CompMatrix(view, &local, &m);
+        func_8007409C(&m, &local);
+        size.vx = particle->unk38.vx;
+        size.vy = particle->unk38.vy;
+        size.vz = particle->unk38.vz;
+        ScaleMatrix(&m, &size);
+        (particle->quads + D_800ADB08)->r0 = particle->unk48[0];
+        (particle->quads + D_800ADB08)->g0 = particle->unk48[1];
+        (particle->quads + D_800ADB08)->b0 = particle->unk48[2];
+        SetTransMatrix(&m);
+    }
+    SetRotMatrix(&m);
+    otz = RotAverage4(&particle->corners[0], &particle->corners[1], &particle->corners[2], &particle->corners[3],
+                      (long *)&particle->quads[D_800ADB08].x0, (long *)&particle->quads[D_800ADB08].x1,
+                      (long *)&particle->quads[D_800ADB08].x2, (long *)&particle->quads[D_800ADB08].x3, &p, &p) >>
+          D_80050100;
+    switch (depth_mode) {
+    case 0:
+        p = 1;
+        break;
+    case 1:
+        p = otz - 0x10;
+        break;
+    case 2:
+        p = otz;
+        break;
+    case 3:
+        p = otz + 0x10;
+        break;
+    }
+    if (p > 0 && p < 0x1000) {
+        addPrim(&D_800C426C->ot[p], &particle->quads[D_800ADB08]);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9F18);
 

@@ -591,7 +591,8 @@ typedef struct {
     SVECTOR unk40;   /* 40 */
     u8 unk48[4];     /* 48 */
     s8 unk4C[4];     /* 4C */
-    u8 unk50[0xC0 - 0x50];
+    POLY_FT4 quads[2];  /* 50: per draw buffer */
+    SVECTOR corners[4]; /* A0 */
 } Particle;
 
 typedef struct {
