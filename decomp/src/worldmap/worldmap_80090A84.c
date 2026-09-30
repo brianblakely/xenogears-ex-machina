@@ -1,10 +1,146 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090A84);
+/* Walking input: steer by the d-pad relative to the camera; 3 on a menu request, 1 when a path or its entrance is selected, else 0. */
+s32 func_80090A84(WorldmapActor *actor) {
+    switch (D_8009CD4C >> 12) {
+    case 1:
+        actor->heading = D_8009BD38.vy;
+        break;
+    case 2:
+        actor->heading = (D_8009BD38.vy + 0x400) & 0xFFF;
+        break;
+    case 3:
+        actor->heading = (D_8009BD38.vy + 0x200) & 0xFFF;
+        break;
+    case 4:
+        actor->heading = (D_8009BD38.vy + 0x800) & 0xFFF;
+        break;
+    case 6:
+        actor->heading = (D_8009BD38.vy + 0x600) & 0xFFF;
+        break;
+    case 8:
+        actor->heading = (D_8009BD38.vy - 0x400) & 0xFFF;
+        break;
+    case 9:
+        actor->heading = (D_8009BD38.vy - 0x200) & 0xFFF;
+        break;
+    case 12:
+        actor->heading = (D_8009BD38.vy - 0x600) & 0xFFF;
+        break;
+    }
+    if (D_8009CD4C & 0xF000) {
+        actor->motion.vx = func_8003F8B0(actor->heading);
+        actor->motion.vz = -func_8003F8CC(actor->heading);
+    }
+    if (D_8009BD10 & 0x20) {
+        if (D_8009D738 != 0) {
+            return 3;
+        }
+        if (D_8009BD24 != -1) {
+            return 1;
+        }
+    } else if (D_8009BD24 != -1 && ((PathRegion *)D_8009D7D8)->kind == 1) {
+        return 1;
+    }
+    if ((D_8009BD10 & 0x10) && D_8009CE68 == -1 && D_8009BD24 == D_8009CE68) {
+        D_8009D804 = 1;
+    }
+    func_80090A18();
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090C68);
+/* Vehicle input: steer by the d-pad relative to the camera; 3 on a menu request, 1 when leaving at a path, else 0. */
+s32 func_80090C68(WorldmapActor *actor) {
+    switch (D_8009CD4C >> 12) {
+    case 1:
+        actor->heading = D_8009BD38.vy;
+        break;
+    case 2:
+        actor->heading = (D_8009BD38.vy + 0x400) & 0xFFF;
+        break;
+    case 3:
+        actor->heading = (D_8009BD38.vy + 0x200) & 0xFFF;
+        break;
+    case 4:
+        actor->heading = (D_8009BD38.vy + 0x800) & 0xFFF;
+        break;
+    case 6:
+        actor->heading = (D_8009BD38.vy + 0x600) & 0xFFF;
+        break;
+    case 8:
+        actor->heading = (D_8009BD38.vy - 0x400) & 0xFFF;
+        break;
+    case 9:
+        actor->heading = (D_8009BD38.vy - 0x200) & 0xFFF;
+        break;
+    case 12:
+        actor->heading = (D_8009BD38.vy - 0x600) & 0xFFF;
+        break;
+    }
+    if (D_8009CD4C & 0xF000) {
+        actor->motion.vx = func_8003F8B0(actor->heading);
+        actor->motion.vz = -func_8003F8CC(actor->heading);
+    }
+    if (D_8009BD10 & 0x20) {
+        if (D_8009D738 != 0) {
+            return 3;
+        }
+        if (D_8009BD24 != -1) {
+            return 1;
+        }
+    }
+    if ((D_8009BD10 & 0x10) && D_8009CE68 == -1 && D_8009BD24 == D_8009CE68) {
+        D_8009D804 = 1;
+    }
+    func_80090A18();
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090E14);
+/* Flying input: steer by the d-pad relative to the camera; 1 when landing at a path, 4 on the take-off button, else 0. */
+s32 func_80090E14(WorldmapActor *actor) {
+    switch (D_8009CD4C >> 12) {
+    case 1:
+        actor->heading = D_8009BD38.vy;
+        break;
+    case 2:
+        actor->heading = (D_8009BD38.vy + 0x400) & 0xFFF;
+        break;
+    case 3:
+        actor->heading = (D_8009BD38.vy + 0x200) & 0xFFF;
+        break;
+    case 4:
+        actor->heading = (D_8009BD38.vy + 0x800) & 0xFFF;
+        break;
+    case 6:
+        actor->heading = (D_8009BD38.vy + 0x600) & 0xFFF;
+        break;
+    case 8:
+        actor->heading = (D_8009BD38.vy - 0x400) & 0xFFF;
+        break;
+    case 9:
+        actor->heading = (D_8009BD38.vy - 0x200) & 0xFFF;
+        break;
+    case 12:
+        actor->heading = (D_8009BD38.vy - 0x600) & 0xFFF;
+        break;
+    }
+    if (D_8009CD4C & 0xF000) {
+        actor->motion.vx = func_8003F8B0(actor->heading);
+        actor->motion.vz = -func_8003F8CC(actor->heading);
+    }
+    if (D_8009BD10 & 0x20) {
+        if (D_8009BD24 != -1) {
+            return 1;
+        }
+    }
+    if (D_8009BD10 & 0x40) {
+        return 4;
+    }
+    if ((D_8009BD10 & 0x10) && D_8009CE68 == -1 && D_8009BD24 == D_8009CE68) {
+        D_8009D804 = 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80090FB4);
 
@@ -190,7 +326,40 @@ void func_800931B0(void) {
     func_800346D4(D_8009BD64);
 }
 
+/* Build `steps` fades of 256 CLUT entries towards `colour` (entry 0 stays transparent). */
+#ifdef NON_MATCHING /* the original keeps colour*t products inside the inner loop */
+void func_800931D8(u16 *clut, u16 *out, s32 steps, u8 *colour) {
+    CVECTOR c;
+    s32 r, g, b;
+    s32 i, j;
+    u32 t, inv;
+    u16 *src;
+
+    r = colour[0];
+    g = colour[1];
+    b = colour[2];
+    for (i = 0; i < steps; i++) {
+        t = (i << 12) / steps;
+        src = clut;
+        inv = 0x1000 - t;
+        for (j = 0; j < 0x100; j++) {
+            if (*src == 0) {
+                *out = *src;
+            } else {
+                c.r = (*src & 0x1F) << 3;
+                c.g = (*src >> 2) & 0xF8;
+                c.b = (*src >> 7) & 0xF8;
+                *out = (*src & 0x8000) | ((c.r * inv + r * t) >> 15) | (((c.g * inv + g * t) >> 15) << 5) |
+                       (((c.b * inv + b * t) >> 15) << 10);
+            }
+            src++;
+            out++;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800931D8);
+#endif
 
 /* Wrap a position (20.12) onto the area's extent. */
 void func_80093354(VECTOR *position) {
