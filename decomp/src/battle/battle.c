@@ -5206,7 +5206,47 @@ void func_8008B168(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B224);
+/* Confirm the technique in list cell (column, row) for the member: its
+ * command (from 22, or the gear's from 21 when the member is in a gear) needs
+ * the character's permission bit and the EP it costs. Hides the command
+ * windows and commits it, paying the EP; if the commit fails the windows
+ * come back. A refused technique plays the error sound. Returns 1 when
+ * committed. */
+u8 func_8008B224(u8 member, u8 column, u8 row) {
+    u8 committed = 0;
+    u8 refused = 1;
+    u8 allowed = 0;
+    u16 command;
+    u8 cost;
+
+    if (D_800D32A0[member].unk1 == 0) {
+        command = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
+        cost = D_800CCCE8.partyCommands[member][row * 2 + column + 22].cost;
+        allowed = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
+    } else {
+        command = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
+        cost = D_800CCCE8.gearCommands[member][row * 2 + column + 21].cost;
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2) != 0) {
+            allowed = 1;
+        }
+    }
+    if (D_800CCCE8.records[member].pilot.ep >= cost && allowed) {
+        func_8008B108(1);
+        D_800D2D28->unkC6 = 1;
+        if (func_80085084(command, member, 0)) {
+            D_800CCCE8.records[member].pilot.ep -= cost;
+            committed = 1;
+        } else {
+            D_800D2D28->unkC6 = 0;
+            func_8008B168(member);
+        }
+        refused = 0;
+    }
+    if (refused) {
+        func_8008AA74(0x4F);
+    }
+    return committed;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B478);
 

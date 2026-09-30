@@ -190,7 +190,8 @@ typedef struct {
     u8 padC[0x10 - 0xC];
     u8 pad10;
     u8 power; /* 0x11 */
-    u8 pad12[0x14 - 0x12];
+    u8 pad12;
+    u8 cost; /* 0x13: EP (fuel for gears) it costs */
     u8 accuracy; /* 0x14 */
     u8 pad15;
     u8 formula; /* 0x16: index into the formula table */
