@@ -673,6 +673,12 @@ extern CharRecord D_8006D8A0[]; /* game data: character records, then gears from
 extern GearRecord D_8006DFAC[]; /* game data: gear records (D_8006D8A0 + 11) */
 extern u8 D_8006F5C4[150];    /* game data: inventory item counts */
 extern u8 D_8006F65A[150];    /* game data: inventory item ids */
+/* The inventory at D_8006F5C4 as one record: item counts, then item ids. */
+typedef struct Inventory {
+    u8 counts[150];
+    u8 ids[150];
+} Inventory;
+#define INVENTORY ((Inventory *)D_8006F5C4)
 extern u16 D_8006F958[16];    /* game data */
 extern u16 D_8005A3A0[16];
 extern u8 D_8006F8E5[];       /* game data */
@@ -820,6 +826,9 @@ void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
 s32 func_80028530(void);
+u8 *func_80033818(u8 item);  /* item name text */
+void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
+u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
 s32 OpenEvent(u32 cause, s32 type, s32 mode, void *handler);
 void InitCARD(s32 shared);
 void StartCARD(void);
@@ -1003,6 +1012,7 @@ void func_801E64E0(void);
 void func_801E5924(s32 index);
 void func_801E5B88(void);
 void func_801E5E4C(void);
+void func_801E7C50(MenuLabelSlot *slot, s32 index, s32 x, s32 flags);
 void func_801E7E68(void *records, u8 *layout, s32 arg2, s32 count);
 void func_801E8018(u8 count, MenuLabelSlot *labels, u8 *table, u8 *flags);
 void func_801E8044(u8 count, u8 *flags);
