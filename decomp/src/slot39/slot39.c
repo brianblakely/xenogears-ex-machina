@@ -3800,7 +3800,41 @@ void func_801E8044(u8 count, u8 *flags) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8070);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8474);
+/* Open the command window: grow the cursor column one command per two
+ * frames (the label column one behind), up to `count` commands. */
+void func_801E8474(s32 count, MenuCommandImages *images) {
+    s32 n;
+    s32 i;
+
+    D_800625A0->screenImages->captured = 0;
+    D_800625A0->screenImages->refresh = 0;
+    D_800625A0->party->redraw9 = 1;
+    for (n = 1; n <= count; n++) {
+        if (n != count) {
+            D_800625A0->screenImages->cursorCount = 0;
+            for (i = 0; i < n; i++) {
+                D_800625A0->screenImages->cursorCount +=
+                    func_8002675C(D_800625A0->sheet, images[i].cursor,
+                                  D_800625A0->screenImages->cursor[D_800625A0->screenImages->cursorCount],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+            }
+            D_800625A0->screenImages->cursorBuffer = D_800625A0->bufferIndex;
+        }
+        D_800625A0->screenImages->cursor2Count = 0;
+        if (n != 1) {
+            for (i = 0; i < n - 1; i++) {
+                D_800625A0->screenImages->cursor2Count +=
+                    func_8002675C(D_800625A0->sheet, images[i].label,
+                                  D_800625A0->screenImages->cursor2[D_800625A0->screenImages->cursor2Count],
+                                  D_800625A0->bufferIndex, 0xa0, 0x96, 0x1000);
+            }
+            D_800625A0->screenImages->cursor2Buffer = D_800625A0->bufferIndex;
+        }
+        for (i = 0; i < 2; i++) {
+            func_801C7BF4();
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E86C8);
 
