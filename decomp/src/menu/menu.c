@@ -1170,7 +1170,7 @@ Node *func_80089B44(Node *node) {
     node->parent = NULL;
     node->child = NULL;
     node->next = NULL;
-    node->unk8 = 0;
+    node->callback = NULL;
     node->data = NULL;
     node->position.vz = 0;
     node->position.vy = 0;
@@ -1572,7 +1572,67 @@ void func_8008A78C(Node *node) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008A7E0);
+/* Update a node tree's matrices (model sets relative to the eye, other
+ * nodes relative to their parent) and draw its shown models and
+ * instances. */
+void func_8008A7E0(Node *node) {
+    if (node->callback != NULL) {
+        node->callback(node);
+    }
+    switch (node->type) {
+    case 2:
+        func_8003F738(&node->unk44, &node->view);
+        if (D_8009289C) {
+            func_8004920C(&node->parent->view, &node->view, &node->unk6C);
+        } else {
+            node->unk6C = node->view;
+        }
+        func_800731F8(&node->view, ((ModelSet *)node->data)->scale);
+        node->unk4C = node->view;
+        node->unk4C.t[0] = node->unk4C.t[1] = node->unk4C.t[2] = 0;
+        node->view.t[0] = node->position.vx - D_80096FA8.vx;
+        node->view.t[1] = node->position.vy - D_80096FA8.vy;
+        node->view.t[2] = node->position.vz - D_80096FA8.vz;
+        func_8004931C(&node->parent->view, &node->view, &node->view);
+        break;
+    case 0:
+    case 1:
+        if (node->parent != NULL) {
+            node->position.vx = node->rotation.vx;
+            node->position.vy = node->rotation.vy;
+            node->position.vz = node->rotation.vz;
+            func_8003F738(&node->unk44, &node->view);
+            func_80049D9C(&node->view, &node->position);
+            func_8004920C(&node->parent->unk6C, &node->view, &node->unk6C);
+            func_8004931C(&node->parent->unk4C, &node->view, &node->unk4C);
+            func_8004931C(&node->parent->view, &node->view, &node->view);
+        }
+        if (node->type == 1 && !(((Model *)node->data)->flags & 1)) {
+            func_80030B14(&node->unk6C);
+            gte_SetRotMatrix(&node->view);
+            gte_SetTransMatrix(&node->view);
+            func_8008A63C(node->data);
+        }
+        break;
+    case 5:
+        if (((Instance *)node->data)->type == 1) {
+            node->view = ((Instance *)node->data)->source->unk4C;
+            gte_SetRotMatrix(&node->view);
+            gte_SetTransMatrix(&node->view);
+            if (D_80092914) {
+                func_8008A78C(node);
+            }
+            func_8008BCC8(((Instance *)node->data)->prims->mesh, ((Instance *)node->data)->prims->work);
+        }
+        break;
+    }
+    if (node->child != NULL) {
+        func_8008A7E0(node->child);
+    }
+    if (node->next != NULL) {
+        func_8008A7E0(node->next);
+    }
+}
 
 /* Load the three rig lights into the light slots. */
 void func_8008ABAC(Node **lights) {
@@ -1955,7 +2015,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008BC04);
 
 /* Set the mesh light direction (a fixed down-left vector) and light a
  * mesh's vertices. */
-void func_8008BCC8(Mesh *mesh, s32 arg) {
+void func_8008BCC8(Mesh *mesh, u8 *work) {
     Vector direction;
     Vector unused; /* never used; the original frame has these bytes */
 
@@ -1966,7 +2026,7 @@ void func_8008BCC8(Mesh *mesh, s32 arg) {
     D_8009A2C8.vx <<= 4;
     D_8009A2C8.vy <<= 4;
     D_8009A2C8.vz <<= 4;
-    func_8008C3A8(mesh->data, arg, mesh->count);
+    func_8008C3A8(mesh->data, work, mesh->count);
 }
 
 #ifdef NON_MATCHING

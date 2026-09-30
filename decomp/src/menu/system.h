@@ -114,13 +114,13 @@ typedef struct {
 typedef struct Node {
     s32 type;          /* 1 model, 2 model set, 3, 4, 5, 6 */
     void *data;        /* type-specific payload */
-    s32 unk8;
-    Matrix view;       /* 0x0C */
-    SVector rotation;  /* 0x2C */
+    void (*callback)(struct Node *node); /* 0x08: run before each update */
+    Matrix view;       /* 0x0C: local-to-screen */
+    SVector rotation;  /* 0x2C: offset from the parent (0/1 nodes) */
     Vector position;   /* 0x34 */
-    SVector unk44;
-    Matrix unk4C;
-    Matrix unk6C;
+    SVector unk44;     /* 0x44: rotation angles */
+    Matrix unk4C;      /* 0x4C: local-to-world rotation */
+    Matrix unk6C;      /* 0x6C: light matrix */
     struct Node *parent; /* 0x8C */
     struct Node *next;   /* 0x90: next sibling */
     struct Node *child;  /* 0x94: first child */
@@ -435,10 +435,18 @@ Node *func_8008C298(Node *source);
 s32 func_8003FA38(void); /* rand */
 u32 func_800405E4(void);
 void func_8008BB3C(Task *task);
-void func_8008C3A8(void *vertices, s32 arg, s32 count);
+void func_8008C3A8(void *vertices, u8 *work, s32 count);
 void func_8008C620(u8 *prims, s32 count);
 void func_8002C700(ModelFile *file, void *packets, u32 *ot, s32 mode);
 void func_80030B14(Matrix *m);
+void func_8003F738(SVector *angles, Matrix *m);
+void func_8004920C(Matrix *a, Matrix *b, Matrix *out);
+void func_8004931C(Matrix *a, Matrix *b, Matrix *out);
+void func_80049D9C(Matrix *m, Vector *t);
+void func_800731F8(Matrix *m, s16 *scale);
+void func_8008A63C(Model *model);
+void func_8008A78C(Node *node);
+void func_8008BCC8(Mesh *mesh, u8 *work);
 
 extern s32 D_80050104;
 
