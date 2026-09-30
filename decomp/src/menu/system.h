@@ -179,21 +179,6 @@ typedef struct {
     s32 unk1C;
 } Model;
 
-/* Record of a model set (0x14 bytes). */
-typedef struct {
-    s32 loaded;
-    void *data;
-    u8 unk8[0xC];
-} ModelEntry;
-
-/* Model set payload. */
-typedef struct {
-    s16 unk0;
-    s16 count;         /* 0x02 */
-    struct Node **nodes; /* 0x04 */
-    ModelEntry *entries; /* 0x08 */
-} ModelSet;
-
 /* Instance payload (type 5, 0x10 bytes): draws another node's model. */
 typedef struct {
     s32 type;          /* the source node's type */
@@ -201,17 +186,6 @@ typedef struct {
     s32 unk8;
     ModelPrims *prims; /* 0x0C: own packet buffers for model sources */
 } Instance;
-
-/* Scale payload (0x1C bytes). */
-typedef struct {
-    s32 unk0;
-    s32 unk4;
-    s32 unk8;
-    s32 unkC;
-    s16 scale[3];      /* 0x10: 4096 = 1.0 */
-    s16 unk16;
-    s32 unk18;
-} Scale;
 
 /* Light payload (0x14 bytes). */
 typedef struct {
@@ -292,6 +266,35 @@ typedef struct {
     s16 frame;         /* 0x12 */
 } Player;
 
+/* Hierarchy record of a model set file (0x10 bytes). */
+typedef struct {
+    s16 parent;        /* -1: the set's root */
+    s16 model;         /* -1: none; else index of a 0x38-byte model */
+    SVector angle;     /* 0x04 (x, y, z) */
+    s16 offset[3];     /* 0x0A: initial 0x2C components */
+} HierarchyRecord;
+
+/* Model set payload (type 2, 0x1C bytes): a node per hierarchy record and
+ * an animation player per animation. */
+typedef struct {
+    s16 nodeCount;
+    s16 count;         /* 0x02: players */
+    struct Node **nodes; /* 0x04 */
+    Player *players;   /* 0x08 */
+    s32 unkC;
+    s16 scale[3];      /* 0x10: 4096 = 1.0 */
+    s16 unk16;
+    HierarchyRecord *records; /* 0x18 */
+} ModelSet;
+
+/* Model set file: hierarchy (count, records), models, animations
+ * (count, then that many animation data pointers or null). */
+typedef struct {
+    u32 *hierarchy;
+    u8 *models;
+    u32 *animations;
+} ModelSetFile;
+
 /* Model resource holder freed with its resource. */
 typedef struct {
     s32 unk0;
@@ -336,9 +339,9 @@ extern s32 D_80092810;
 extern CVector D_80092818[2]; /* current colour per display buffer */
 extern s32 D_80092914;        /* colour changed this frame */
 
-extern s32 D_80091C2C;
+extern s32 D_80091C2C;   /* nonzero: model set players do not own their keys */
 extern s32 D_80092824;   /* nodes instanced by the last copy */
-extern Node *D_80092828; /* root being instanced */   /* nonzero: model set entries are not owned */
+extern Node *D_80092828; /* root being instanced */
 extern s16 D_80092800;   /* model texture page x (-1: none) */
 extern s16 D_80092804;   /* model texture page y */
 extern s16 D_80092808;   /* model CLUT x (-1: none) */
@@ -416,6 +419,15 @@ void func_80089D5C(Node *node);
 void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(Instance *instance);
+void func_8002C3E8(u8 *models);
+ModelSet *func_80089E74(void);
+Node *func_80089C54(void);
+Model *func_80089FC4(void);
+void func_80089E2C(Node *node, Model *model);
+void func_80089E54(Node *node, ModelSet *set);
+void func_80089C88(Node *parent, Node *child);
+void func_8008A184(Model *model, ModelFile *file);
+void func_8008B13C(u8 *data, Player *player, Node *root);
 void func_8008B0D8(Player *player);
 void func_8008BE4C(ModelPrims *prims, Mesh *mesh);
 void func_8008BD70(Mesh *mesh, ModelPrim *prims, u32 *ot, u8 *work);

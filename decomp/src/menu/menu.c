@@ -1291,37 +1291,38 @@ void func_80089E64(Node *node, void *data) {
     node->type = 6;
 }
 
-/* Allocate a unit scale payload. */
-Scale *func_80089E74(void) {
-    Scale *scale;
+/* Allocate an empty model set payload at unit scale. */
+ModelSet *func_80089E74(void) {
+    ModelSet *set;
 
     func_800324B8(4);
-    scale = func_80031BDC(sizeof(Scale), 0);
-    scale->scale[2] = 0x1000;
-    scale->scale[1] = 0x1000;
-    scale->scale[0] = 0x1000;
-    scale->unk4 = 0;
-    scale->unk8 = 0;
-    return scale;
+    set = func_80031BDC(sizeof(ModelSet), 0);
+    set->scale[2] = 0x1000;
+    set->scale[1] = 0x1000;
+    set->scale[0] = 0x1000;
+    set->nodes = NULL;
+    set->players = NULL;
+    return set;
 }
 
-/* Free a model set's data and, when owned, its entries' data. */
+/* Free a model set's node table and players (and, when owned, the
+ * players' keys). */
 void func_80089EB4(ModelSet *set) {
     s32 i;
 
     if (set->nodes != NULL) {
         func_800320E8(set->nodes);
     }
-    if (set->entries != NULL) {
+    if (set->players != NULL) {
         if (!D_80091C2C) {
             i = set->count;
             while (--i != -1) {
-                if (set->entries[i].loaded) {
-                    func_800320E8(set->entries[i].data);
+                if (set->players[i].header != NULL) {
+                    func_800320E8(set->players[i].keys);
                 }
             }
         }
-        func_800320E8(set->entries);
+        func_800320E8(set->players);
     }
 }
 
@@ -1796,7 +1797,67 @@ void func_8008B13C(u8 *data, Player *player, Node *root) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B13C);
 #endif
 
+#ifdef NON_MATCHING
+/* Build a model set node tree from a model set file: a node per hierarchy
+ * record (with its model, parent, angle and offset) and a player per
+ * animation. Returns the root node. Does not match: register allocation
+ * spills the models pointer where the original spills the animations. */
+Node *func_8008B38C(ModelSetFile *file) {
+    u32 i;
+    u8 *models = file->models;
+    u32 *hierarchy = file->hierarchy;
+    u32 *animations = file->animations;
+    u32 count = hierarchy[0];
+    HierarchyRecord *records = (HierarchyRecord *)(hierarchy + 1);
+    Node **nodes;
+    ModelSet *set;
+    Node *root;
+    Node *node;
+    Model *model;
+    Player *player;
+
+    func_8002C3E8(models);
+    func_800324B8(0x12);
+    nodes = func_80031BDC(count * 4, 0);
+    set = func_80089E74();
+    root = func_80089C54();
+    func_80089E54(root, set);
+    set->nodes = nodes;
+    set->nodeCount = count;
+    set->records = records;
+    for (i = 0; i < count; i++) {
+        node = nodes[i] = func_80089C54();
+        if (records[i].model != -1) {
+            model = func_80089FC4();
+            func_80089E2C(node, model);
+            func_8008A184(model, (ModelFile *)(models + records[i].model * 0x38 + 0x10));
+        }
+        func_80089C88(records[i].parent == -1 ? root : nodes[records[i].parent], node);
+        node->unk44.vx = records[i].angle.vx;
+        node->unk44.vy = records[i].angle.vy;
+        node->unk44.vz = records[i].angle.vz;
+        node->rotation.vx = records[i].offset[0];
+        node->rotation.vy = records[i].offset[1];
+        node->rotation.vz = records[i].offset[2];
+    }
+    if (animations != NULL) {
+        func_800324B8(0x11);
+        player = set->players = func_80031BDC(animations[0] * sizeof(Player), 0);
+        set->count = animations[0];
+        for (i = 0; i < animations[0]; i++) {
+            if (animations[i + 1] != 0) {
+                func_8008B13C((u8 *)animations[i + 1], player, root);
+            } else {
+                player->header = NULL;
+            }
+            player++;
+        }
+    }
+    return root;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B38C);
+#endif
 
 /* Advance a player by some frames, snapping to the keys. */
 s32 func_8008B5DC(Player *player, s32 frames) {
