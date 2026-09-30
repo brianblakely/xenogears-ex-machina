@@ -42,7 +42,8 @@ segments:
     start: 0x0
     vram: 0x801c5000
     subsegments:
-      - [0x0, .rodata, ovl2601]
+      - [0x0, rodata, ovl2601_prefix]
+      - [0x10, .rodata, ovl2601]
       - [0x40, c, ovl2601]
       - [0xcf50, data, ovl2601_data]
   - [0xd264]

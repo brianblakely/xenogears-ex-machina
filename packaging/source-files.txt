@@ -141,7 +141,9 @@ decomp/src/ovl2598/ovl2598.c
 decomp/src/ovl2598/party_menu.h
 decomp/src/ovl2600/name_entry.h
 decomp/src/ovl2600/ovl2600.c
+decomp/src/ovl2601/menu_card.h
 decomp/src/ovl2601/ovl2601.c
+decomp/src/ovl2602/menu_card.h
 decomp/src/ovl2602/ovl2602.c
 decomp/src/ovl2606/ovl2606.c
 decomp/src/ovl2606/scene_select.h
