@@ -10224,7 +10224,66 @@ void func_800A94A4(s32 value) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A9688);
+#include "field_effect.h"
+
+/* Run the effect slots for a frame: count down emitter delays, spawn and
+ * draw particles, count down emitter lifetimes (7fff lasts), and release
+ * the slots with nothing left alive. */
+void func_800A9688(void) {
+    MATRIX view;
+    s32 spawned;
+    Record78 *emitter;
+    s32 alive;
+    s32 slot;
+    s32 i;
+    s32 j;
+
+    if (D_800ADB34 != 0) {
+        return;
+    }
+    view = *(MATRIX *)D_800AFA64;
+    for (slot = 0; slot < 64; slot++) {
+        alive = 0;
+        if (D_800B14B0[slot] == 1) {
+            emitter = D_800C3918[slot];
+            for (i = 0; i < 8; i++) {
+                spawned = 0;
+                if (emitter->count != 0) {
+                    if (emitter->unk02 == 0) {
+                        for (j = 0; j < emitter->count; j++) {
+                            if (emitter->particles[j].unk00 == 0) {
+                                if (emitter->unk04 != 0) {
+                                    func_800AA6B4(emitter, &emitter->particles[j], &spawned);
+                                    func_800A9F18(emitter, &emitter->particles[j], &view);
+                                    alive = 1;
+                                }
+                            } else {
+                                func_800A9F18(emitter, &emitter->particles[j], &view);
+                                alive = 1;
+                            }
+                        }
+                        if (emitter->unk04 != 0) {
+                            if (emitter->unk04 != 0x7FFF) {
+                                emitter->unk04--;
+                            }
+                            alive = 1;
+                        }
+                    } else {
+                        alive = 1;
+                        emitter->unk02--;
+                    }
+                }
+                emitter++;
+            }
+            if (alive == 0) {
+                func_800A92AC(slot);
+            }
+        }
+    }
+    if (D_800C268C == 0) {
+        func_80281B00("PARTICLE  ");
+    }
+}
 
 /* A random number in 0..range. */
 s32 func_800A987C(s32 range) {
@@ -10527,13 +10586,37 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB808);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABA98);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ABD18);
-
 typedef struct {
     DR_MODE modes[5][2];
     SPRT sprites[5][2];
 } OverlaySprites;
 extern OverlaySprites D_800B0188; /* per sprite and draw buffer */
+
+/* Set up the five 128x224 overlay sprites (8-bit pages from x 280) with
+ * their draw modes in both buffers. */
+void func_800ABD18(void) {
+    RECT window;
+    SPRT *sprite;
+    s32 i;
+
+    setRECT(&window, 0, 0, 0xFF, 0xFF);
+    for (i = 0; i < 5; i++) {
+        SetDrawMode(&D_800B0188.modes[i][0], 0, 0, GetTPage(1, 0, 0x280 + i * 0x40, 0), &window);
+        SetDrawMode(&D_800B0188.modes[i][1], 0, 0, GetTPage(1, 0, 0x280 + i * 0x40, 0), &window);
+        sprite = &D_800B0188.sprites[i][0];
+        SetSprt(sprite);
+        sprite->x0 = i << 7;
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        sprite->y0 = 0;
+        sprite->u0 = 0;
+        sprite->v0 = 0;
+        sprite->w = 0x80;
+        sprite->h = 0xE0;
+        SetSemiTrans(sprite, 0);
+        sprite->clut = GetClut(0, 0xE8);
+        D_800B0188.sprites[i][1] = *sprite;
+    }
+}
 
 /* Link the five overlay sprites and their draw modes of the current
  * buffer into the overlay ordering table. */

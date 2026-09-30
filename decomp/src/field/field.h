@@ -588,8 +588,8 @@ typedef struct {
 
 typedef struct {
     s16 unk00;       /* 00 */
-    s16 unk02;       /* 02 */
-    s16 unk04;       /* 04 */
+    u16 unk02;       /* 02: start delay */
+    u16 unk04;       /* 04: lifetime, 7fff lasting */
     s16 count;       /* 06: particles */
     s32 unk08;       /* 08 */
     SVECTOR unk0C;   /* 0C */
