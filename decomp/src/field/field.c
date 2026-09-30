@@ -4366,6 +4366,7 @@ s32 func_8007B814(VECTOR *delta, FieldActor *actor, SVECTOR *edge, s16 heading) 
     return 0;
 }
 
+
 s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
                   s32 *attribute);
 
@@ -4483,7 +4484,173 @@ done:
  * are used by 8008110c, 80084158, 80084a40). Its text starts after 80077dac
  * and at or before 8007bef4 and ends after 80084a40 and before 8008e59c.
  * Switch functions in it cannot match until field.c is split there. */
+#ifdef NON_MATCHING
+/* The attribute-aware floor search: walk the actor's collision layer from
+ * its current triangle toward `position` moved by `probe` (at most 32
+ * steps), stopping at triangles whose attribute blocks the actor (its flag
+ * bits 8-10 against attribute bits 5-7, or 800000 on the first layer) and
+ * at ledges (attribute 400000 above the actor, unless it started on one or
+ * `mode` is 0x80). Returns 0 with the floor point (and, unless `mode` is -1,
+ * its plane height) in `floor`, else -1 with the crossed edge in `edge`.
+ * The masked attribute of the last triangle goes to `attribute`.
+ * NON_MATCHING: its jump table belongs to the rodata unit noted with it. */
+s32 func_8007BEF4(VECTOR *probe, s32 *position, FieldActor *actor, SVECTOR *edge, SVECTOR *floor, s32 mode,
+                  s32 *attribute) {
+    VECTOR normal;
+    CollisionTriangle *triangles;
+    SVECTOR *vertices;
+    CollisionTriangle *tri;
+    s32 previous;
+    s32 mask;
+    s32 origin;
+    s32 steps;
+    s32 on_ledge;
+    s32 point;
+    s32 a;
+    s32 b;
+    s32 c;
+    u32 side;
+    u32 bits;
+    s16 current;
+
+    current = actor->triangle[actor->layer];
+    triangles = D_800AF880.components.collision_triangles[actor->layer];
+    vertices = D_800AF880.components.collision_vertices[actor->layer];
+    if (current == -1) {
+        return -1;
+    }
+    floor->vx = (position[0] + probe->vx) >> 16;
+    point = (floor->vx << 16) + ((position[2] + probe->vz) >> 16);
+    mask = 0;
+    floor->vy = 0;
+    floor->vz = (position[2] + probe->vz) >> 16;
+    origin = ((position[0] >> 16) << 16) + (position[2] >> 16);
+    if (!((actor->layer_flags >> (actor->layer + 3)) & 1)) {
+        mask = -(D_800B2078.party_processing_mode == 0);
+    }
+    if ((D_800AF880.components.collision_attributes[triangles[current].attribute].word & mask & 0x400000) ||
+        mode == 0x80) {
+        on_ledge = 1;
+    } else {
+        on_ledge = 0;
+    }
+    steps = 0;
+    for (;;) {
+        previous = current;
+        tri = &triangles[current];
+        a = (vertices[tri->unk00[0]].vx << 16) + vertices[tri->unk00[0]].vz;
+        b = (vertices[tri->unk00[1]].vx << 16) + vertices[tri->unk00[1]].vz;
+        c = (vertices[tri->unk00[2]].vx << 16) + vertices[tri->unk00[2]].vz;
+        side = (u32)func_8004A70C(a, b, point) >> 31;
+        if (func_8004A70C(b, c, point) < 0) {
+            side |= 2;
+        }
+        if (func_8004A70C(c, a, point) < 0) {
+            side |= 4;
+        }
+        switch (side) {
+        case 0:
+            steps = 0xFF;
+            break;
+        case 1:
+            current = triangles[current].unk00[3];
+            break;
+        case 2:
+            current = triangles[current].unk00[4];
+            break;
+        case 4:
+            current = triangles[current].unk00[5];
+            break;
+        case 3:
+            if (func_8004A70C(b, point, origin) >= 0) {
+                current = triangles[current].unk00[4];
+                side = 2;
+            } else {
+                current = triangles[current].unk00[3];
+                side = 1;
+            }
+            break;
+        case 5:
+            if (func_8004A70C(a, point, origin) >= 0) {
+                current = triangles[current].unk00[3];
+                side = 1;
+            } else {
+                current = triangles[current].unk00[5];
+                side = 4;
+            }
+            break;
+        case 6:
+            if (func_8004A70C(c, point, origin) < 0) {
+                current = triangles[current].unk00[4];
+                side = 2;
+            } else {
+                current = triangles[current].unk00[5];
+                side = 4;
+            }
+            break;
+        case 7:
+            current = -1;
+            break;
+        }
+        tri = &triangles[current];
+        bits = D_800AF880.components.collision_attributes[tri->attribute].word & mask;
+        *attribute = bits;
+        if ((((actor->flags >> 8) & 7) & (bits >> 5)) || ((bits & 0x800000) && actor->layer == 0)) {
+            current = -1;
+            break;
+        }
+        if ((bits & 0x400000) && on_ledge == 0) {
+            func_8007B07C(&vertices[tri->unk00[0]], &vertices[tri->unk00[1]], &vertices[tri->unk00[2]], floor,
+                          &normal);
+            if (floor->vy < WHOLE(position[1])) {
+                current = -1;
+                break;
+            }
+        }
+        if (current == -1) {
+            goto crossed;
+        }
+        if (++steps >= 0x20) {
+            break;
+        }
+    }
+    if (current != -1 && steps != 0x20) {
+        if (mode == -1) {
+            return 0;
+        }
+        tri = &triangles[current];
+        func_8007B07C(&vertices[tri->unk00[0]], &vertices[tri->unk00[1]], &vertices[tri->unk00[2]], floor, &normal);
+        return 0;
+    }
+crossed:
+    tri = &triangles[previous];
+    switch (side) {
+    case 1:
+        a = tri->unk00[0];
+        b = tri->unk00[1];
+        break;
+    case 2:
+        a = tri->unk00[1];
+        b = tri->unk00[2];
+        break;
+    case 4:
+        a = tri->unk00[2];
+        b = tri->unk00[0];
+        break;
+    default:
+        return -1;
+    }
+    edge[0].vx = vertices[a].vx;
+    edge[0].vy = vertices[a].vy;
+    edge[0].vz = vertices[a].vz;
+    edge[1].vx = vertices[b].vx;
+    edge[1].vy = vertices[b].vy;
+    edge[1].vz = vertices[b].vz;
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007BEF4);
+#endif
 
 /* The floor range: `high` is `low` raised by a nonnegative extent. */
 void func_8007C670(s32 *low, s32 *high, s32 extent) {
