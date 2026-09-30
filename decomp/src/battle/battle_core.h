@@ -699,6 +699,7 @@ void func_80074EEC(void);
 void func_800745EC(void);
 void func_80074D4C(void);
 void func_80077074(void);
+void func_80077610(void);
 void func_800785D4(u8 actor, u8 index);
 void func_80078658(u8 index, u8 actor);
 void func_800787E0(u8 value, u8 actor);
@@ -823,14 +824,30 @@ void func_80087EDC(u8 actor, u8 target);
 void func_800881B8(u8 actor, u8 target);
 void func_800883AC(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
-u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
-u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
+u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 read);
+u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 read);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(u8 mode);
 
 /* Action list handlers (800793f0). */
-void func_80078E24(u8 slot, u8 index, u8 target);
+void func_80078998(u8 actor, u8 index, u8 target);
+void func_80078B34(u8 actor, u8 index, u8 target);
+void func_80078C9C(u8 actor, u8 index, u8 target);
+void func_80078CEC(u8 actor, u8 index, u8 target);
+void func_80078D48(u8 actor, u8 index, u8 target);
+void func_80078D6C(u8 actor, u8 index, u8 target);
+void func_80078E24(u8 actor, u8 index, u8 target);
+void func_80079054(u8 actor, u8 index, u8 target);
+void func_80079098(u8 actor, u8 index, u8 target);
+void func_80079114(u8 actor, u8 index, u8 target);
+void func_8007916C(u8 actor, u8 index, u8 target);
+void func_800791FC(u8 actor, u8 index, u8 target);
+void func_80079270(u8 actor, u8 index, u8 target);
+
+void func_80076B00(POLY_FT4 *prim);
+void func_8007FE3C(void);
+s32 func_80079AB0(u8 slot); /* run the enemy reaction script; it ran action 0x62 */
 
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);

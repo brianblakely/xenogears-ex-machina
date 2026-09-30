@@ -39,6 +39,27 @@ property of each translation unit: most code is `-G0`, while units that address
 `.sdata`/`.sbss` (around `_gp = 0x80059170`) through `$gp` need `-G8`; set
 `GP_<file> := 8` in the target fragment.
 
+Jump tables: GCC emits `.align 3` before each table in `.rdata`. The original
+assembler honoured it relative to the unit's own rodata section, and the
+original linker placed each unit's section at a 4-byte boundary, so all tables
+of one unit share one phase mod 8. `tools/jump_table_phases.py` (after
+`all-verify`) finds every original switch dispatch in the 25 distinct images:
+45 odd-length tables followed by another table are padded with one zero word
+that keeps the phase, 20 of them at 4 mod 8 (resident 800188f4 -> 8001892c
+within 8002a68c; slot39 801c50fc -> 801c512c; battle 80070514 -> 8007053c);
+the phase changes 34 times, never within one function; no odd-length table
+abuts a same-phase table. Ignoring the directive or taking it as 4-byte would
+leave no pads; absolute 8-byte alignment would leave no tables at 4 mod 8.
+GNU as pads the same way, and splat's `SUBALIGN(4)` overrides the 8-byte
+section alignment it records, so maspsx passes `.align` through unchanged:
+what matters is that each object's rodata starts where the original unit's
+did. A phase change between two tables marks a unit boundary in the target
+yaml (menu, battle, slot39). The five overlays at 8006faf0 open with their
+number (field 4, worldmap 5, battle 6, menu 7, movie 8) ahead of the first
+unit's rodata. spimdisasm emits `.align 3` only before 8-aligned tables, so a
+file whose rodata starts at 4 mod 8 cannot hold assembly tables of a
+0-mod-8 unit.
+
 A third compiler builds the later battle code: the Cygnus CDK build of GCC
 2.7.2 (`psx-cc1-2.7.2-cdk`, old-gcc 0.17 `gcc-2.7.2-cdk`, cdk-gcc b18) at `-O2`
 with a later ASPSX (positive `li` as `addiu`; maspsx `--aspsx-version=2.56`).

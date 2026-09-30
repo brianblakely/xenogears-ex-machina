@@ -122,6 +122,9 @@ decomp/include/psyq/libspu.h
 decomp/include/psyq/types.h
 decomp/src/battle/action_resolve.h
 decomp/src/battle/battle.c
+decomp/src/battle/battle_80070E2C.c
+decomp/src/battle/battle_800792F8.c
+decomp/src/battle/battle_80079ED8.c
 decomp/src/battle/battle_8009E53C.c
 decomp/src/battle/battle_800B1720.c
 decomp/src/battle/battle_command.h
@@ -149,6 +152,16 @@ decomp/src/debug595/debug595.c
 decomp/src/debug595/debug595.h
 decomp/src/field/field.c
 decomp/src/field/field.h
+decomp/src/field/field_actor_events.h
+decomp/src/field/field_effect.h
+decomp/src/field/field_glyph.h
+decomp/src/field/field_motion.h
+decomp/src/field/field_movie.h
+decomp/src/field/field_panel.h
+decomp/src/field/field_party.h
+decomp/src/field/field_picture.h
+decomp/src/field/field_screen.h
+decomp/src/field/field_script.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
 decomp/src/menu/brain.h
@@ -231,6 +244,8 @@ decomp/src/resident/text.h
 decomp/src/resident/window.h
 decomp/src/slot39/menu.h
 decomp/src/slot39/slot39.c
+decomp/src/slot39/slot39_801DBE54.c
+decomp/src/slot39/slot39_801E8070.c
 decomp/src/worldmap/worldmap.c
 decomp/src/worldmap/worldmap.h
 decomp/src/worldmap/worldmap_80072238.c
@@ -701,6 +716,7 @@ tools/decomp_rename.py
 tools/extraction/README.md
 tools/extraction/disc_files.py
 tools/extraction/overlays.py
+tools/jump_table_phases.py
 tools/matching.py
 tools/matching_coverage.py
 tools/matching_diff.py

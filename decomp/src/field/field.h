@@ -92,7 +92,9 @@ typedef struct FieldActor {
     s16 unk60;           /* 060 */
     u8 unk062[2];
     s16 unk64;           /* 064 */
-    u8 unk066[0x70 - 0x66];
+    u8 unk066[2];
+    s16 last_position[3]; /* 068: whole x, y, z at the last gather step */
+    u16 stuck;           /* 06E: gather steps without moving */
     s16 unk70;           /* 070 */
     s16 unk72;           /* 072 */
     u8 unk074;           /* 074 */
@@ -150,7 +152,8 @@ typedef struct FieldActor {
     u32 unk130 : 9;      /* 130: bits 0-8 */
     u32 unk130_9 : 10;   /* bits 9-18 */
     u32 unk130_19 : 9;   /* bits 19-27 */
-    u32 unk130_28 : 4;
+    u32 unk130_28 : 2;   /* bits 28-29 */
+    u32 unk130_30 : 2;
     u32 unk134;          /* 134 */
 } FieldActor;
 
@@ -188,7 +191,8 @@ typedef struct {
     s16 unk382;      /* 382 */
     u8 unk384[0x408 - 0x384];
     s16 timer;       /* 408 */
-    u8 unk40A[0x40E - 0x40A];
+    u8 unk40A[2];
+    u16 layout;      /* 40C: 1 above, 0x81 below the speaker; 0x40 kept */
     s16 busy;        /* 40E */
     u16 age;         /* 410: 0xffff when free */
     s16 unk412;      /* 412 */
@@ -228,7 +232,11 @@ typedef struct {
 
 /* A model's mesh header; +20/+28 bound it. */
 typedef struct {
-    u8 unk00[0x20];
+    u8 unk00[6];
+    u16 group_count; /* 06: primitive groups */
+    u8 unk08[0x10 - 0x08];
+    u32 *groups;     /* 10: group headers (code, flags, count << 16) and data */
+    u8 unk14[0x20 - 0x14];
     s16 min[3];      /* 20 */
     s16 unk26;
     s16 max[3];      /* 28 */
@@ -238,7 +246,8 @@ typedef struct {
 typedef struct {
     u8 unk00[4];
     FieldMesh *mesh; /* 04 */
-    u8 unk08[0x12 - 0x08];
+    void *prims[2];  /* 08: primitives per draw buffer */
+    u8 unk10[0x12 - 0x10];
     s16 mode;        /* 12 */
     u8 unk14[4];
     s16 center[3];   /* 18 */
@@ -580,32 +589,41 @@ typedef struct {
 /* One 0x78-byte particle emitter: the eight at 800b02cc, and copies of
  * them per effect slot (*800c3918). */
 typedef struct {
-    s16 unk00;       /* 00 */
-    u8 unk02[2];
-    s16 unk04;       /* 04: set to 1 to release */
-    u8 unk06[0xC0 - 6];
+    s16 unk00;       /* 00: alive */
+    u16 unk02;       /* 02: start delay */
+    u16 unk04;       /* 04: life; set to 1 to release */
+    u16 angle;       /* 06 */
+    VECTOR position; /* 08 */
+    VECTOR velocity; /* 18 */
+    VECTOR unk28;    /* 28 */
+    SVECTOR unk38;   /* 38 */
+    SVECTOR unk40;   /* 40 */
+    u8 unk48[4];     /* 48 */
+    s8 unk4C[4];     /* 4C */
+    POLY_FT4 quads[2];  /* 50: per draw buffer */
+    SVECTOR corners[4]; /* A0 */
 } Particle;
 
 typedef struct {
     s16 unk00;       /* 00 */
-    s16 unk02;       /* 02 */
-    s16 unk04;       /* 04 */
+    u16 unk02;       /* 02: start delay */
+    u16 unk04;       /* 04: lifetime, 7fff lasting */
     s16 count;       /* 06: particles */
     s32 unk08;       /* 08 */
     SVECTOR unk0C;   /* 0C */
     SVECTOR unk14;   /* 14 */
     SVECTOR unk1C;   /* 1C */
     s16 unk24;       /* 24 */
-    s16 unk26;       /* 26 */
-    s16 unk28;       /* 28 */
+    u16 unk26;       /* 26: spawn radius */
+    u16 unk28;       /* 28: velocity spread */
     u16 flags;       /* 2A */
     Particle *particles; /* 2C */
     s16 unk30[8][2]; /* 30 */
     s16 unk50;       /* 50 */
     s16 unk52;       /* 52 */
     s16 unk54;       /* 54 */
-    s16 unk56;       /* 56 */
-    s16 unk58;       /* 58 */
+    u16 unk56;       /* 56: spawn interval */
+    u16 unk58;       /* 58: particle life */
     SVECTOR unk5A;   /* 5A */
     SVECTOR unk62;   /* 62 */
     u8 unk6A;        /* 6A */
@@ -618,7 +636,7 @@ typedef struct {
     u8 unk71;
     s16 unk72;       /* 72 */
     s16 unk74;       /* 74 */
-    s16 unk76;       /* 76 */
+    u16 unk76;       /* 76: particle angle */
 } Record78;
 
 /* A pointer marker: its quad's corners and primitive per buffer. */
@@ -704,7 +722,7 @@ extern void func_80033698(s32, s32);
 extern void func_8003747C(s32);
 extern void func_800374E8(s32, s32, s32, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void func_80021B98(void *, s32 r, s32 g, s32 b);
-extern void func_80028A60(s32);
+extern s32 func_80028A60(s32 mode); /* wait for the disc (1: poll) */
 extern void func_80029EB0(s32 file, void *ring, s32, s32, s32, s32, s32, s32, s32, s32);
 extern void *func_8002A260(s32 sectors, s32);
 extern void func_800320E8(void *);
