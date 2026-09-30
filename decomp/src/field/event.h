@@ -41,7 +41,7 @@ typedef struct FieldActor {
     u8 color1[3];       /* 0FF */
     u8 unk102[0x104 - 0x102];
     u16 unk104;          /* 104 */
-    u16 unk106;          /* 106 */
+    s16 unk106;          /* 106: facing */
     u8 unk108[0x118 - 0x108];
     s32 *words;         /* 118 */
     u8 unk11C[0x12C - 0x11C];

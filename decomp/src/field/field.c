@@ -3234,33 +3234,165 @@ void func_80096C40(void) {
     D_800B0078->pc += 4;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096D28);
+/* Set the HP of party slot operand 1 (capped at its maximum); operand 3
+ * selects the slot that must be occupied. */
+void func_80096D28(void) {
+    s32 hp;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096E20);
+    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+        hp = func_800ACDEC(2);
+        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_hp < hp) {
+            hp = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_hp;
+        }
+        D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].hp = hp;
+    }
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80096F18);
+/* Set the EP of party slot operand 1 (capped at its maximum). */
+void func_80096E20(void) {
+    s32 ep;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097010);
+    if (D_80062590[EVENT_OPERAND_BYTE(3)] != 0xFF) {
+        ep = func_800ACDEC(2);
+        if (D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_ep < ep) {
+            ep = D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].max_ep;
+        }
+        D_8005A39C->characters[D_80062590[EVENT_OPERAND_BYTE(1)]].ep = ep;
+    }
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097108);
+/* Restore the EP of the masked party members by a selected operand (as
+ * func_80097108). */
+void func_80096F18(void) {
+    s32 slot;
+    s32 amount;
+    s32 mask;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097200);
+    amount = func_8009CF78(1, EVENT_OPERAND_BYTE(3));
+    slot = 0;
+    mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
+    do {
+        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+            func_80096920(slot, amount);
+        }
+        mask >>= 1;
+        slot++;
+    } while (slot < 3);
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097264);
+/* Reduce the EP of the masked party members by a selected operand. */
+void func_80097010(void) {
+    s32 slot;
+    s32 amount;
+    s32 mask;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800972AC);
+    amount = func_8009CF78(1, EVENT_OPERAND_BYTE(3));
+    slot = 0;
+    mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
+    do {
+        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+            func_800969A8(slot, amount);
+        }
+        mask >>= 1;
+        slot++;
+    } while (slot < 3);
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800972F4);
+/* Restore the EP of the masked party members by a selected operand. */
+void func_80097108(void) {
+    s32 slot;
+    s32 amount;
+    s32 mask;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009731C);
+    amount = func_8009CF78(1, EVENT_OPERAND_BYTE(3));
+    slot = 0;
+    mask = D_800AEA2C[EVENT_OPERAND_BYTE(3) & 3];
+    do {
+        if (D_80062590[slot] != 0xFF && (mask & 1)) {
+            func_80096920(slot, amount);
+        }
+        mask >>= 1;
+        slot++;
+    } while (slot < 3);
+    D_800B0078->pc += 4;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097364);
+/* Fully restore HP and EP of character operand 1. */
+void func_80097200(void) {
+    s32 id;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800973A4);
+    id = func_800ACDEC(1);
+    D_8005A39C->characters[id].hp = D_8005A39C->characters[id].max_hp;
+    D_8005A39C->characters[id].ep = D_8005A39C->characters[id].max_ep;
+    D_800B0078->pc += 3;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80097410);
+/* Fully restore every character's HP. */
+void func_80097264(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009744C);
+    for (i = 0; i < 11; i++) {
+        D_8005A39C->characters[i].hp = D_8005A39C->characters[i].max_hp;
+    }
+    D_800B0078->pc += 1;
+}
+
+/* Fully restore every character's EP. */
+void func_800972AC(void) {
+    s32 i;
+
+    for (i = 0; i < 11; i++) {
+        D_8005A39C->characters[i].ep = D_8005A39C->characters[i].max_ep;
+    }
+    D_800B0078->pc += 1;
+}
+
+/* Yield once. */
+void func_800972F4(void) {
+    D_800B00C0 = 1;
+    D_800B0078->pc += 1;
+}
+
+void func_8007D93C(s32 a);
+void func_80071E58(s32 a);
+
+/* Field 8007D93C(0), then 80071E58(operand 1). */
+void func_8009731C(void) {
+    func_8007D93C(0);
+    func_80071E58(func_800ACDEC(1));
+    D_800B0078->pc += 3;
+}
+
+void func_80071DCC(s32 a);
+
+/* Field 80071DCC(operand 1). */
+void func_80097364(void) {
+    func_80071DCC(func_800ACDEC(1));
+    D_800B0078->pc += 3;
+}
+
+s32 func_8001B484(s32 a, s32 b);
+
+/* Re-run until resident 8001B484(raw operand 2, operand byte 1) returns 0. */
+void func_800973A4(void) {
+    if (func_8001B484(func_800ACDB8(2) & 0xFFFF, EVENT_OPERAND_BYTE(1)) == 0) {
+        D_800B0078->pc += 4;
+    }
+}
+
+/* Skip operand-1 three-byte entries (and this opcode). */
+void func_80097410(void) {
+    D_800B0078->pc += func_800ACDEC(1) * 3 + 3;
+}
+
+/* Facing octant (0..7) of the controlled actor. */
+s32 func_8009744C(void) {
+    return (((D_800AFA64.descriptors[D_800B226C].actor->unk106 + 0x100) >> 9) + 2) & 7;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009749C);
 
