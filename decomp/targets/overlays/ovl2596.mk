@@ -5,8 +5,5 @@ ORIGINAL_SHA256 := f474fd482506b89eaff9601d5958a1c867d35a4ad11c1f58f0ecef630008a
 BUILD := .local/decomp/build/ovl2596
 IMAGE := .local/decomp/build/ovl2596.bin
 LINKER_SCRIPT := .local/decomp/ovl2596/ovl2596.ld
-LINKER_EXTRA := .local/decomp/ovl2596/undefined_syms_auto.txt .local/decomp/ovl2596/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/ovl2596/undefined_syms_auto.txt .local/decomp/ovl2596/undefined_funcs_auto.txt decomp/targets/overlays/ovl2596.resident.ld
 SOURCE_DIRS := decomp/src/ovl2596
-# Its code expands `li` to `ori` (positive) / `addiu` (negative): ASPSX
-# behaviour before 2.50 in maspsx's model, not the resident's 2.79.
-override MASPSXFLAGS := --aspsx-version=2.34

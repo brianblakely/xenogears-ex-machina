@@ -166,6 +166,7 @@ decomp/targets/overlays/ovl2143.mk
 decomp/targets/overlays/ovl2143.symbols.txt
 decomp/targets/overlays/ovl2143.yaml
 decomp/targets/overlays/ovl2596.mk
+decomp/targets/overlays/ovl2596.resident.ld
 decomp/targets/overlays/ovl2596.symbols.txt
 decomp/targets/overlays/ovl2596.yaml
 decomp/targets/overlays/ovl2598.mk
@@ -181,6 +182,7 @@ decomp/targets/overlays/ovl2602.mk
 decomp/targets/overlays/ovl2602.symbols.txt
 decomp/targets/overlays/ovl2602.yaml
 decomp/targets/overlays/ovl2606.mk
+decomp/targets/overlays/ovl2606.resident.ld
 decomp/targets/overlays/ovl2606.symbols.txt
 decomp/targets/overlays/ovl2606.yaml
 decomp/targets/overlays/ovl2615.mk
