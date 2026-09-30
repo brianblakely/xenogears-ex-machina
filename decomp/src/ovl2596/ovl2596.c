@@ -1129,7 +1129,30 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E2EB0);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E308C);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E335C);
+/* Level A growth of the current record: max HP, then stats 58, 59, 5e
+ * and 5f toward the growth data's targets for its level range. */
+void func_801E335C(void) {
+    u8 high;
+    u8 cap;
+    u8 level;
+
+    high = 0;
+    cap = 100;
+    if (D_801E44EC->level >= 100) {
+        high = 1;
+        cap = 200;
+    }
+    level = D_801E44EC->level;
+    D_801E44EC->maxHp = func_801E3700(D_801E44EC->maxHp, D_801E44EC->level);
+    D_801E44EC->attack = func_801E3610(D_801E44EC->attack,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[0][high], cap, level);
+    D_801E44EC->stat59 = func_801E3610(D_801E44EC->stat59,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[1][high], cap, level);
+    D_801E44EC->stat5E = func_801E3610(D_801E44EC->stat5E,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[2][high], cap, level);
+    D_801E44EC->stat5F = func_801E3610(D_801E44EC->stat5F,
+        D_801E44E8->characters[D_801E44EC->id].statTargets[3][high], cap, level);
+}
 
 /* Level B growth of the current record: max EP, then stats 5b and 5c
  * toward the growth data's targets for its level range. */
@@ -1154,29 +1177,50 @@ void func_801E3500(void) {
 
 /* Grow a stat by 0 or 1: the chance is the share of the distance to the
  * target left over the levels to the cap. Capped at 200. */
-#ifdef NON_MATCHING
-/* The original keeps a second copy of stat for the subtraction (s4 = s3
- * at entry) and adds the unmasked parameter; this C shares one register. */
+/* Grow a stat by 0 or 1: the chance is the share of the distance to the
+ * target left over the levels to the cap. Capped at 200. */
 u8 func_801E3610(u8 stat, u8 target, u8 cap, u8 level) {
     s32 random;
     s32 share;
-    u8 result;
+    u8 grow;
 
     random = rand();
     share = (target - stat) * 100 / (cap - level) - 50;
-    result = stat + ((s16)(share + random % 100) > 49);
-    if (result > 200) {
-        result = 200;
+    grow = (s16)(share + random % 100) > 49;
+    stat += grow;
+    if (stat > 200) {
+        stat = 200;
     }
-    return result;
+    return stat;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3610);
-#endif
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3700);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E38CC);
+/* Grow max EP by 0 or 1 toward the growth data's target for the level
+ * range (as func_801E3610). Capped at 99. */
+u8 func_801E38CC(u8 maxEp, u8 level) {
+    u8 target;
+    u8 cap;
+    s32 random;
+    s32 share;
+    u8 grow;
+
+    if (level < 100) {
+        target = D_801E44E8->characters[D_801E44EC->id].maxEpTargets[0];
+        cap = 99;
+    } else {
+        target = D_801E44E8->characters[D_801E44EC->id].maxEpTargets[1];
+        cap = 200;
+    }
+    random = rand();
+    share = (target - maxEp) * 100 / (cap - level) - 50;
+    grow = (s16)(share + random % 100) > 49;
+    maxEp += grow;
+    if (maxEp >= 100) {
+        maxEp = 99;
+    }
+    return maxEp;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E3A18);
 
