@@ -86,7 +86,7 @@ extern u8 D_80091834[]; /* per map row: leftmost allowed column */
 extern u8 D_800918B4[]; /* per map row: rightmost allowed column */
 
 void func_80085EC8(OverlayBuffer *buffer);
-s32 func_8008F530(s32 entry, s32 which);
+s32 func_8008F530(Actor *actor, s32 which);
 
 /* Flat line packet (libgpu LINE_F2). */
 typedef struct {

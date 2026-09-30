@@ -2105,13 +2105,13 @@ void func_80086E70(void *ot, GaugeBar *bar, s32 value, s32 mirrored) {
     func_80043B48(ot, &bar->parts[2]);
 }
 
-/* Colour a marker packet by the state of an entry: none (returns 0),
+/* Colour a marker packet by an actor's state: none (returns 0),
  * yellow when set, red otherwise. */
-s32 func_80086FF8(s32 entry, PolyF4 *packet) {
-    if (func_8008F530(entry, 0)) {
+s32 func_80086FF8(Actor *actor, PolyF4 *packet) {
+    if (func_8008F530(actor, 0)) {
         return 0;
     }
-    if (func_8008F530(entry, 1)) {
+    if (func_8008F530(actor, 1)) {
         ((PacketTag *)packet)->len = 5;
         *(u32 *)&packet->r0 = 0x2800FFFF;
     } else {
@@ -2121,7 +2121,118 @@ s32 func_80086FF8(s32 entry, PolyF4 *packet) {
     return 1;
 }
 
+/* Link the HUD and map overlay for this frame: each side's arrows (one per
+ * point), state marks, name plates, icons, gauges, the charge bars (flashing
+ * when nearly full) and the level bars (tinted by the level). Does not match:
+ * one fewer saved register is used (register allocation of the buffer, HUD and count temporaries). */
+#ifdef NON_MATCHING
+void func_80087068(Actor *left, Actor *right) {
+    OverlayBuffer *buf;
+    Hud *hud;
+    DrawTPage *tpage;
+    PolyF4 *mark;
+    PolyFT4 *bar;
+    s32 n;
+    s32 level;
+    s32 green;
+    s32 blue;
+
+    buf = &D_8009A2F8[D_800928A0];
+    n = left->unkF2;
+    if (n > 0) {
+        func_80043B48(D_80092938, &buf->arrows[0][0]);
+    }
+    if (n > 1) {
+        func_80043B48(D_80092938, &buf->arrows[0][1]);
+    }
+    if (n > 2) {
+        func_80043B48(D_80092938, &buf->arrows[0][2]);
+    }
+    n = right->unkF2;
+    if (n > 0) {
+        func_80043B48(D_80092938, &buf->arrows[1][0]);
+    }
+    if (n > 1) {
+        func_80043B48(D_80092938, &buf->arrows[1][1]);
+    }
+    if (n > 2) {
+        func_80043B48(D_80092938, &buf->arrows[1][2]);
+    }
+    mark = &buf->marks[2];
+    if (func_80086FF8(left, mark)) {
+        func_80043B48(D_80092938, mark);
+    }
+    mark = &buf->marks[3];
+    if (func_80086FF8(right, mark)) {
+        func_80043B48(D_80092938, mark);
+    }
+    hud = &D_80095698;
+    func_80043B48(D_80092938, &hud->name_l[D_800928A0]);
+    func_80043B48(D_80092938, &hud->name_r[D_800928A0]);
+    func_80043B48(D_80092938, &hud->icon[D_800928A0]);
+    func_80043B48(D_80092938, &hud->icon[2 + D_800928A0]);
+    tpage = D_80095918;
+    func_80043B48(D_80092938, &tpage[D_800928A0]);
+    func_80043B48(D_80092938, &hud->gauge[D_800928A0]);
+    func_80043B48(D_80092938, &hud->gauge[2 + D_800928A0]);
+    tpage += 2;
+    func_80043B48(D_80092938, &tpage[D_800928A0]);
+    func_80043B48(D_80092938, &hud->bar_r[D_800928A0]);
+    func_80043B48(D_80092938, &hud->bar_l[D_800928A0]);
+    func_80043B48(D_80092938, &buf->marks[0]);
+    func_80043B48(D_80092938, &buf->marks[1]);
+    func_80043B48(D_80092938, &buf->frame[0]);
+    func_80043B48(D_80092938, &buf->frame[2]);
+    func_80086E70(D_80092938, (GaugeBar *)&buf->bars[0], D_8009872C.unkC0, 0);
+    func_80086E70(D_80092938, (GaugeBar *)&buf->bars[3], D_80097010.unkC0, 1);
+    n = left->charge >> 6;
+    bar = &D_80095698.bar_l[D_800928A0];
+    if (n > 0x38) {
+        bar->r0 = D_80059488 << 3;
+    } else {
+        bar->r0 = 0xFF;
+    }
+    bar->y0 = bar->y1 = 0x60 - n;
+    bar->v0 = bar->v1 = D_80092860 - (n - 0x40);
+    n = right->charge >> 6;
+    bar = &D_80095698.bar_r[D_800928A0];
+    if (n > 0x38) {
+        bar->r0 = D_80059488 << 3;
+    } else {
+        bar->r0 = 0xFF;
+    }
+    bar->y0 = bar->y1 = 0x60 - n;
+    bar->v0 = bar->v1 = D_80092860 - (n - 0x40);
+    if (left->level != 0) {
+        level = 0x100 - left->level;
+        green = (level * 3) >> 3;
+        blue = level >> 1;
+        for (n = 0; n < 3; n++) {
+            buf->bars_lit[n].g0 = green;
+            buf->bars_lit[n].b0 = blue;
+            buf->bars_lit[n].r0 = green + ((left->level * 255) >> 8);
+        }
+        func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[0], left->unkC1, 0);
+    }
+    if (right->level != 0) {
+        level = 0x100 - right->level;
+        green = (level * 3) >> 3;
+        blue = level >> 1;
+        for (n = 3; n < 6; n++) {
+            buf->bars_lit[n].g0 = green;
+            buf->bars_lit[n].b0 = blue;
+            buf->bars_lit[n].r0 = green + ((right->level * 255) >> 8);
+        }
+        func_80086E70(D_80092938, (GaugeBar *)&buf->bars_lit[3], right->unkC1, 1);
+    }
+    for (n = 0; n < 6; n++) {
+        func_80043B48(D_80092938, &buf->bars_dim[n]);
+    }
+    func_80043B48(D_80092938, buf);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80087068);
+#endif
 
 /* Build the overlay packets for buffer 0 and copy them to buffer 1. */
 void func_800875EC(void) {

@@ -104,7 +104,13 @@ typedef struct Actor {
     u8 unk64[0x18];
     s32 unk7C;
     u8 (*parts)[4];      /* 0x80 */
-    u8 unk84[0x4A];
+    u8 unk84[0x32];
+    s16 charge;          /* 0xB6: 0x1000 = full */
+    u8 unkB8[8];
+    u8 unkC0;
+    u8 unkC1;
+    u8 level;            /* 0xC2 */
+    u8 unkC3[0xB];
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
     u32 unkD4;           /* 0xD4: bit 5 = coloured glow */
