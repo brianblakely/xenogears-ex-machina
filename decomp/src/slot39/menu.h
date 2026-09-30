@@ -139,7 +139,8 @@ typedef struct MenuParty {
     u8 ready[3]; /* 60 */
     u8 pad63[0x4];
     u8 unk67; /* 67 */
-    u8 pad68[0x4];
+    u8 unk68; /* 68: card headers shown */
+    u8 pad69[0x3];
 } MenuParty;
 
 /* Screen images (*(state + 350)). */
@@ -179,6 +180,12 @@ typedef struct MenuCardFile {
     u8 pad59[0x3];
 } MenuCardFile;
 
+/* A memory card's header on the file screen: its label and name sprites. */
+typedef struct MenuCardHeader {
+    POLY_FT4 label[2]; /* 0 */
+    POLY_FT4 name[4];  /* 50 */
+} MenuCardHeader;
+
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
     MenuCardFile files[32]; /* 0 */
@@ -190,7 +197,8 @@ typedef struct MenuCard {
     char saveTitle[0x5C]; /* 4B98: Shift-JIS */
     u8 savePalette[0x20]; /* 4BF4 */
     u8 saveIcon[0x80]; /* 4C14 */
-    u8 pad4C94[0x2E0];
+    u8 pad4C94[0x100];
+    MenuCardHeader cardHeaders[2]; /* 4D94: per port */
     s32 result[2]; /* 4F74: per port: last card check result */
     s32 cursor; /* 4F7C: file cursor over both ports (port 2 from 15) */
     s32 unk4F80; /* 4F80 */

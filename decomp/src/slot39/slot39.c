@@ -2292,7 +2292,47 @@ void func_801CF5E4(s32 first, s32 firstSlot, s32 end) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CF8D8);
+/* While the file screen is up, build (while party flag +68 is set) and draw
+ * the header of each present card: its label (122 on the cursor's card
+ * while +2f is set, else 115) and its name sprite. */
+void func_801CF8D8(void) {
+    u8 built[2];
+    s32 side;
+    s32 parts;
+    s32 i;
+    u8 normal;
+
+    built[1] = 0;
+    built[0] = 0;
+    if (D_800625A0->loadState != 0) {
+        for (side = 0; side < 2; side++) {
+            if (D_800625A0->card->present[side] != 0 && D_800625A0->party->unk68 != 0) {
+                normal = 1;
+                if (D_800625A0->party->unk2F != 0 && side == D_801E981C[D_800625A0->card->cursor] / 16) {
+                    normal = 0;
+                }
+                if (normal) {
+                    func_8002675C(D_800625A0->sheet, 0x115, D_800625A0->card->cardHeaders[side].label,
+                                  D_800625A0->bufferIndex, side * 0x90 + 0x1e, 0x36, 0x1000);
+                } else {
+                    func_8002675C(D_800625A0->sheet, 0x122, D_800625A0->card->cardHeaders[side].label,
+                                  D_800625A0->bufferIndex, side * 0x90 + 0x1e, 0x36, 0x1000);
+                }
+                parts = func_8002675C(D_800625A0->sheet, side + 0x162, D_800625A0->card->cardHeaders[side].name,
+                                      D_800625A0->bufferIndex, side * 0x90 + 0x1b, 0x36, 0x1000);
+                built[side] = 1;
+            }
+            if (built[side]) {
+                for (i = 0; i < parts; i++) {
+                    AddPrim(&D_800625A0->current->ot[4],
+                            &D_800625A0->card->cardHeaders[side].name[i * 2 + D_800625A0->bufferIndex]);
+                }
+                AddPrim(&D_800625A0->current->ot[4],
+                        &D_800625A0->card->cardHeaders[side].label[D_800625A0->bufferIndex]);
+            }
+        }
+    }
+}
 
 /* While the file screen is up, draw the connector lines of every slot but
  * the last of each present card: red within the selected file during file
