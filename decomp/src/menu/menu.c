@@ -1087,7 +1087,7 @@ void func_8008976C(s32 width, s32 height) {
 
 /* Set a layer's drawing areas and offsets for both buffers (the second
  * buffer lies `second` lines lower) and its black background tiles. */
-void func_800897AC(Layer *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
+void func_800897AC(OtPair *layer, s32 x, s32 y, s32 w, s32 h, s32 second) {
     Rect area;
     s16 offset[2];
 
@@ -1447,7 +1447,7 @@ OtPair *func_8008A2B8(u16 length) {
     ot = func_80031BDC(length * 8, 0);
     pair->ot[0] = ot;
     pair->ot[1] = ot + length;
-    pair->unk16 = 1;
+    pair->flags = 1;
     pair->shift = 14;
     pair->unk0 = 0;
     pair->length = length;
@@ -1630,13 +1630,80 @@ void func_8008ACB8(s32 frames) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008AE1C);
+/* Link a layer's table into the frame's ordering table with its area,
+ * offset and background packets for the current buffer. */
+void func_8008AE1C(OtPair *layer) {
+    func_8008AC7C(layer);
+    func_80043B84(D_80092938, layer->last[D_800928A0], layer->ot[D_800928A0]);
+    if (!(layer->flags & 4)) {
+        func_800453E8(layer->area[D_800928A0], &D_80092868->draw.clip);
+    }
+    if (!(layer->flags & 8)) {
+        func_8004546C(layer->offset[D_800928A0], D_80092868->draw.ofs);
+    }
+    if (layer->flags & 0x10) {
+        func_80043B48(D_80092938, &layer->tile[D_800928A0]);
+    }
+    func_80043B48(D_80092938, layer->offset[D_800928A0]);
+    func_80043B48(D_80092938, layer->area[D_800928A0]);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008AF6C);
+/* Relocate a scene file's pointers to where it was loaded. */
+SceneFile *func_8008AF6C(SceneFile *scene) {
+    s32 delta = (u8 *)scene - scene->base;
+    u32 i;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B070);
+    scene->base = (u8 *)scene;
+    scene->unk0 += delta;
+    scene->unk4 += delta;
+    scene->unk10 += delta;
+    scene->unk14 += delta;
+    scene->unk18 += delta;
+    scene->unk20 += delta;
+    scene->unk24 += delta;
+    if (scene->target != NULL) {
+        scene->target += delta;
+        func_8008A040(scene->target);
+    }
+    if (scene->table != NULL) {
+        scene->table = (u32 *)((u8 *)scene->table + delta);
+        for (i = 1; i < scene->table[0] + 1; i++) {
+            if (scene->table[i] != 0) {
+                scene->table[i] += delta;
+            }
+        }
+    }
+    return scene;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B0D8);
+/* Load and relocate a scene file. */
+SceneFile *func_8008B070(s32 file) {
+    SceneFile *scene;
+
+    func_800324B8(0xA);
+    scene = func_80031BDC(func_80028738(file), 0);
+    func_800295D8(file, scene, 0, 0);
+    func_80028A60(0);
+    return func_8008AF6C(scene);
+}
+
+/* Rewind every channel of a player. */
+void func_8008B0D8(Player *player) {
+    s32 unused; /* never used; the original frame has these bytes */
+    Channel *channel;
+    s32 i;
+
+    player->unk10 = 0;
+    player->unk12 = 0;
+    channel = player->channels;
+    for (i = 0; i < player->header->channels; i++) {
+        channel->unkC = 0;
+        channel->unkE = 0;
+        channel->current = channel->start;
+        channel->unk10 = 0;
+        channel++;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008B13C);
 

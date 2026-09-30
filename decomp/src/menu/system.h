@@ -109,17 +109,6 @@ typedef struct {
     s16 vx, vy, vz, pad;
 } SVector;
 
-/* Drawing layer: area/offset packets for both buffers and a background
- * tile per buffer. */
-typedef struct {
-    u8 unk0[0x16];
-    u8 flags;          /* 0x16 */
-    u8 unk17;
-    u32 area[2][3];    /* 0x18: DR_AREA per buffer */
-    u32 offset[2][3];  /* 0x30: DR_OFFSET per buffer */
-    Tile tile[2];      /* 0x48 */
-} Layer;
-
 /* Scene node (0x9C bytes): a typed payload with its own transform, linked
  * into a tree of children. */
 typedef struct Node {
@@ -210,16 +199,60 @@ typedef struct {
     s16 unk12;
 } Light;
 
-/* Ordering table pair (0x68 bytes). */
+/* Drawing layer (0x68 bytes): an ordering table per display buffer with
+ * its drawing area, offset and background packets. */
 typedef struct {
     s32 unk0;
     u32 *ot[2];        /* 0x04: per display buffer */
     u32 *last[2];      /* 0x0C: last entry of each */
     s16 length;        /* 0x14 */
-    u8 unk16;
+    u8 flags;          /* 0x16: 4 own area, 8 own offset, 0x10 background */
     u8 shift;          /* 0x17: 14 - log2(length) */
-    u8 unk18[0x50];
+    u32 area[2][3];    /* 0x18: DR_AREA per buffer */
+    u32 offset[2][3];  /* 0x30: DR_OFFSET per buffer */
+    Tile tile[2];      /* 0x48 */
 } OtPair;
+
+/* Scene file loaded as one block; its pointers are relative to the
+ * address it was built at (0x1C). */
+typedef struct {
+    u8 *unk0;
+    u8 *unk4;
+    u32 *table;        /* 0x08: count, then that many pointers */
+    u8 *target;        /* 0x0C: texture/CLUT target */
+    u8 *unk10;
+    u8 *unk14;
+    u8 *unk18;
+    u8 *base;          /* 0x1C */
+    u8 *unk20;
+    u8 *unk24;
+} SceneFile;
+
+/* Animation channel of a player (0x14 bytes). */
+typedef struct {
+    s32 start;
+    s32 current;       /* 0x04 */
+    s32 unk8;
+    s16 unkC;
+    s16 unkE;
+    s16 unk10;
+    s16 unk12;
+} Channel;
+
+typedef struct {
+    u8 unk0[6];
+    s16 channels;      /* 0x06 */
+} AnimHeader;
+
+/* Animation player. */
+typedef struct {
+    AnimHeader *header;
+    s32 unk4;
+    Channel *channels; /* 0x08 */
+    s32 unkC;
+    s16 unk10;
+    s16 unk12;
+} Player;
 
 /* Model resource holder freed with its resource. */
 typedef struct {
@@ -332,6 +365,10 @@ void func_80089EB4(ModelSet *set);
 void func_80089FF8(Model *model);
 void func_8008C120(void *data);
 void func_80044AD8(u32 *ot, s32 length);
+void func_80043B84(u32 *ot, u32 *last, u32 *first);
+void func_8008AC7C(OtPair *pair);
+void func_80028A60(s32 a);
+SceneFile *func_8008AF6C(SceneFile *scene);
 s32 func_80040690(s32 counter);
 Light *func_8008A254(void);
 void func_80089E64(Node *node, void *data);
@@ -352,7 +389,7 @@ void func_80037324(void *block);
 void func_8008BB3C(void *state);
 void func_8008EADC(void);
 void func_80032CB8(void);
-void func_80043B48(void *block, void *data);
+void func_80043B48(u32 *ot, void *prim);
 s32 func_8004B54C(s32 mode);
 void func_80088C28(void);
 void func_8003700C(char *format, ...);
