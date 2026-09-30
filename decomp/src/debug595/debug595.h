@@ -116,7 +116,7 @@ s32 RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s
                   s32 *flag);
 void SetLineG2(LINE_G2 *p);
 MATRIX *func_8003F738(SVECTOR *rot, MATRIX *m); /* RotMatrix */
-MATRIX *func_80049BDC(MATRIX *m0, MATRIX *m1);
+MATRIX *MulMatrix2(MATRIX *m0, MATRIX *m1);
 void func_8004A6DC(SVECTOR *v, s32 *t, SVECTOR *r);
 void func_80037324(u32 *ot);
 

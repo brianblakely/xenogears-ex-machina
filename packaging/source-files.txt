@@ -111,6 +111,7 @@ decomp/README.md
 decomp/include/common.h
 decomp/include/include_asm.h
 decomp/include/macro.inc
+decomp/include/psyq/inline_c.h
 decomp/include/psyq/libapi.h
 decomp/include/psyq/libc.h
 decomp/include/psyq/libcd.h
@@ -119,6 +120,7 @@ decomp/include/psyq/libgpu.h
 decomp/include/psyq/libgte.h
 decomp/include/psyq/libsn.h
 decomp/include/psyq/libspu.h
+decomp/include/psyq/stdarg.h
 decomp/include/psyq/types.h
 decomp/src/battle/action_resolve.h
 decomp/src/battle/actor.h
@@ -247,6 +249,7 @@ decomp/src/resident/main3.c
 decomp/src/resident/main_8001B6C4.c
 decomp/src/resident/main_8002709C.c
 decomp/src/resident/main_8002A260.c
+decomp/src/resident/main_8002CC10.c
 decomp/src/resident/menu.h
 decomp/src/resident/mode.h
 decomp/src/resident/model.h
@@ -255,6 +258,7 @@ decomp/src/resident/sound.c
 decomp/src/resident/sound.h
 decomp/src/resident/sprite.c
 decomp/src/resident/sprite.h
+decomp/src/resident/sprite_80022090.c
 decomp/src/resident/stream.h
 decomp/src/resident/text.h
 decomp/src/resident/window.h

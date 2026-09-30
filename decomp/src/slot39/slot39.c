@@ -1212,28 +1212,28 @@ void func_801C8694(u8 disc) {
 
 /* Discard pending memory-card events. */
 void func_801C87C4(void) {
-    func_800404C4(0xf4000001, 4);
-    func_800404C4(0xf4000001, 0x8000);
-    func_800404C4(0xf4000001, 0x100);
-    func_800404C4(0xf4000001, 0x2000);
+    UnDeliverEvent(0xf4000001, 4);
+    UnDeliverEvent(0xf4000001, 0x8000);
+    UnDeliverEvent(0xf4000001, 0x100);
+    UnDeliverEvent(0xf4000001, 0x2000);
 }
 
 /* Wait for a memory-card event; returns 0 done, 1 error, 2 timeout, 3 new card. */
 u8 func_801C881C(void) {
     for (;;) {
-        if (func_80040494(D_800625A0->card->events[3]) == 1) {
+        if (TestEvent(D_800625A0->card->events[3]) == 1) {
             func_801C87C4();
             return 3;
         }
-        if (func_80040494(D_800625A0->card->events[1]) == 1) {
+        if (TestEvent(D_800625A0->card->events[1]) == 1) {
             func_801C87C4();
             return 1;
         }
-        if (func_80040494(D_800625A0->card->events[0]) == 1) {
+        if (TestEvent(D_800625A0->card->events[0]) == 1) {
             func_801C87C4();
             return 0;
         }
-        if (func_80040494(D_800625A0->card->events[2]) == 1) {
+        if (TestEvent(D_800625A0->card->events[2]) == 1) {
             func_801C87C4();
             return 2;
         }
@@ -1415,11 +1415,11 @@ s32 func_801C9038(char *name, void *dst) {
     if (fd == -1) {
         return -1;
     }
-    if (func_80040544(fd, dst, 0x200) != 0x200) {
-        func_80040564(fd);
+    if (read(fd, dst, 0x200) != 0x200) {
+        close(fd);
         return -1;
     }
-    func_80040564(fd);
+    close(fd);
     return 0;
 }
 
@@ -2253,19 +2253,19 @@ u8 func_801CB304(void) {
                         func_801C7BF4();
                         retry = 5;
                         do {
-                            if (func_80040544(fd, p, 0x100) != 0x100) {
+                            if (read(fd, p, 0x100) != 0x100) {
                                 fd = 0;
                                 func_801C8CA4(port);
                             }
                         } while (fd == 0 && --retry != 0);
                         if (fd == 0) {
-                            func_80040564(file);
+                            close(file);
                             goto release;
                         }
                         done += 0x100;
                         p += 0x100;
                     } while (done < D_800625A0->card->saveBlocks << 13);
-                    func_80040564(fd);
+                    close(fd);
                     p = buffer + 0x100;
                     sum = 0;
                     for (i = 0; i < 0x1eff; i++) {
@@ -2552,7 +2552,7 @@ u8 func_801CBD90(u8 kind) {
                         created = fd;
                     }
                 } while (fd == 0 && --retry != 0);
-                func_80040564(created);
+                close(created);
                 if (fd != 0) {
                     retry = 3;
                     do {
@@ -2577,7 +2577,7 @@ u8 func_801CBD90(u8 kind) {
                         }
                     } while (fd == 0 && --retry != 0);
                     if (fd == 0) {
-                        func_80040564(0);
+                        close(0);
                         func_800405B4(tempName);
                     } else {
                         written = 0x100;
@@ -2602,7 +2602,7 @@ u8 func_801CBD90(u8 kind) {
                                 }
                             } while (fd == 0 && --retry != 0);
                             if (fd == 0) {
-                                func_80040564(created);
+                                close(created);
                                 strcpy(tempName, device);
                                 strcat(tempName, D_801C50B8);
                                 func_800405B4(tempName);
@@ -2611,7 +2611,7 @@ u8 func_801CBD90(u8 kind) {
                             written += 0x100;
                             p += 0x100;
                         } while (written < D_800625A0->card->saveBlocks << 13);
-                        func_80040564(fd);
+                        close(fd);
                         strcpy(tempName, device);
                         strcat(tempName, D_801C50B8);
                         retry = 3;
@@ -2825,13 +2825,13 @@ u8 func_801CC6D8(void) {
                     srcFd = fd;
                     retry = 3;
                     do {
-                        if (func_80040544(fd, header, 0x200) == -1) {
+                        if (read(fd, header, 0x200) == -1) {
                             fd = 0;
                             func_801C8CA4(src);
                         }
                     } while (fd == 0 && --retry != 0);
                     if (fd == 0) {
-                        func_80040564(srcFd);
+                        close(srcFd);
                     } else {
                         func_800405B4(tempName);
                         retry = 1;
@@ -2843,9 +2843,9 @@ u8 func_801CC6D8(void) {
                             }
                         } while (fd == 0 && --retry != 0);
                         if (fd == 0) {
-                            func_80040564(srcFd);
+                            close(srcFd);
                         }
-                        func_80040564(destFd);
+                        close(destFd);
                         if (fd != 0) {
                             retry = 3;
                             do {
@@ -2856,7 +2856,7 @@ u8 func_801CC6D8(void) {
                                 }
                             } while (fd == 0 && --retry != 0);
                             if (fd == 0) {
-                                func_80040564(srcFd);
+                                close(srcFd);
                                 func_800405B4(tempName);
                             } else {
                                 retry = 3;
@@ -2868,8 +2868,8 @@ u8 func_801CC6D8(void) {
                                 } while (fd == 0 && --retry != 0);
                                 written = 0x200;
                                 if (fd == 0) {
-                                    func_80040564(srcFd);
-                                    func_80040564(destFd);
+                                    close(srcFd);
+                                    close(destFd);
                                     destFd = 0;
                                     func_800405B4(tempName);
                                 }
@@ -2880,7 +2880,7 @@ u8 func_801CC6D8(void) {
                                     if (phase == 0) {
                                         retry = 3;
                                         do {
-                                            if (func_80040544(fd, buffer, 0x200) != 0x200) {
+                                            if (read(fd, buffer, 0x200) != 0x200) {
                                                 fd = 0;
                                                 func_801C8CA4(src);
                                             }
@@ -2907,15 +2907,15 @@ u8 func_801CC6D8(void) {
                                         }
                                     }
                                 }
-                                func_80040564(destFd);
-                                func_80040564(fd);
+                                close(destFd);
+                                close(fd);
                                 strcpy(tempName, other);
                                 strcat(tempName, D_801C50B8);
                                 func_800405A4(tempName, destName);
                                 goto copied;
                             fail:
-                                func_80040564(srcFd);
-                                func_80040564(destFd);
+                                close(srcFd);
+                                close(destFd);
                                 strcpy(tempName, other);
                                 strcat(tempName, D_801C50B8);
                                 func_800405B4(tempName);

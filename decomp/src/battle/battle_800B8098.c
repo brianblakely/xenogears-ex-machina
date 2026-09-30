@@ -786,11 +786,11 @@ void func_800BB844(MATRIX *m, SVECTOR *eye, SVECTOR *target, SVECTOR *up) {
     upward.vx = up->vx;
     upward.vy = up->vy;
     upward.vz = up->vz;
-    func_80048D7C(&v, &forward);
+    VectorNormal(&v, &forward);
     func_8004A480(&upward, &forward, &v);
-    func_80048D7C(&v, &right);
+    VectorNormal(&v, &right);
     func_8004A480(&forward, &right, &v);
-    func_80048D7C(&v, &upward);
+    VectorNormal(&v, &upward);
     m->m[0][0] = right.vx;
     m->m[0][1] = right.vy;
     m->m[0][2] = right.vz;

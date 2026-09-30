@@ -3,6 +3,17 @@
 
 #include "gpu.h"
 
+/* A task's link word: its owner's serial and its state flags. */
+typedef union {
+    u32 word;
+    struct {
+        unsigned owner_serial : 29;  /* the owner's creation number */
+        unsigned flag29 : 1;
+        unsigned flag30 : 1;
+        unsigned active : 1;
+    } bits;
+} TaskLink;
+
 /* A task node of the sprite engine's lists. */
 typedef struct Task {
     struct Task *owner;
@@ -16,15 +27,7 @@ typedef struct Task {
             unsigned flags : 3;
         } bits;
     } id;                                /* +0x10 */
-    union {
-        u32 word;
-        struct {
-            unsigned owner_serial : 29;  /* the owner's creation number */
-            unsigned flag29 : 1;
-            unsigned flag30 : 1;
-            unsigned active : 1;
-        } bits;
-    } link;                              /* +0x14: flag tests read the word */
+    TaskLink link;                       /* +0x14: flag tests read the word */
     struct Task *next;                   /* +0x18 */
 } Task;
 
@@ -67,8 +70,7 @@ typedef struct {
     s16 angle_x, angle_y, angle_z; /* +0x0 */
     s16 scale_x, scale_y, scale_z; /* +0x6 */
     MATRIX matrix;                 /* +0xc: local screen matrix */
-    void *parts;                   /* +0x2c: 0x18 bytes per part */
-    SpritePart *part_cursor;       /* +0x30 */
+    SpritePart *parts[2];          /* +0x2c: two part lists (0x18 bytes per part); 80025718 draws the one of the queue being filled */
     SpriteRendererEntry *pointer34; /* +0x34: 8 entries */
     struct Sprite *next_pending;   /* +0x38 */
     s8 offset_x;                   /* +0x3c: screen offset, before scaling */
@@ -87,7 +89,8 @@ typedef struct Sprite {
     u8 red, green, blue;     /* +0x28: colour of one-sided parts */
     u8 colour_flags;         /* +0x2b: bit 0 set: no colour */
     s16 scale;               /* +0x2c */
-    u8 unknown2e[4];
+    s16 depth;               /* +0x2e: ordering-table depth of its last draw */
+    s16 half30;              /* +0x30 */
     s16 direction;           /* +0x32 */
     u16 frame;               /* +0x34: pending frame, 0 none */
     u8 unknown36[4];
@@ -100,26 +103,34 @@ typedef struct Sprite {
         unsigned flip : 1;       /* mirrored frame */
         unsigned flip_y : 1;
         unsigned blend : 3;      /* blend rate + 1 */
-        unsigned unknown8 : 20;
+        unsigned unknown8 : 8;
+        unsigned field16 : 4;
+        unsigned mode : 4;       /* resource binding mode (80022224) */
+        unsigned no_view : 1;    /* drawn without the view matrix */
+        unsigned unknown25 : 3;
         unsigned dirty : 1;      /* orientation needs rebuilding */
         unsigned unknown29 : 3;
         } bits;
     } render;                /* +0x3c: tests read the word, as the original does */
     u32 flags;               /* +0x40: bits 8-12 facing group */
-    u8 unknown44[8];
+    s32 *resource_block;     /* +0x44: the block the image's sections come from */
+    s32 *animations;         /* +0x48: the animation block, NULL none */
     s32 resource;            /* +0x4c */
-    u8 unknown50[4];
-    u16 *frame_table;        /* +0x54 */
-    u8 unknown58[0xC];
-    s32 frames_left;         /* +0x64 */
+    s32 word50;              /* +0x50 */
+    u16 *frame_table;        /* +0x54: the facing's frame table */
+    u16 *animation;          /* +0x58: the animation header */
+    u16 *facings;            /* +0x5c */
+    u16 *word60;             /* +0x60: after the first section's count */
+    u8 *script;              /* +0x64: the next animation command, NULL once finished */
     void *callback;          /* +0x68: completion callback */
-    u8 unknown6c[4];
+    void *block;             /* +0x6c: the allocation holding the sprite */
     s32 word70;              /* +0x70 */
     u8 unknown74[8];
     void *sequencer;         /* +0x7c */
-    u16 word80;              /* +0x80 */
+    u16 word80;              /* +0x80: facing angle */
     u16 word82;              /* +0x82 */
-    u8 unknown84[4];
+    s16 ground;              /* +0x84: floor height (whole units) */
+    u16 size;                /* +0x86: bytes allocated for the sprite */
     u8 *frames;              /* +0x88 */
     s8 stack_top;            /* +0x8c: byte stack index, growing down */
     u8 unknown8d;
@@ -128,12 +139,13 @@ typedef struct Sprite {
     u8 unknowna0[8];
     struct {
         unsigned sequencer_owned : 1; /* the sequencer buffer is allocated */
-        unsigned unknown1 : 10;
+        unsigned bounce : 10;    /* rebound speed on landing, / 256 */
         unsigned frame : 6;      /* frame table index */
-        unsigned step : 3;
-        unsigned phase : 2;
-        unsigned field22 : 6;
-        unsigned unknown28 : 4;
+        unsigned step : 3;       /* facing group of the current angle */
+        unsigned phase : 2;      /* facing groups: 0 one, 1 four, 2 eight */
+        unsigned field22 : 6;    /* commands run in the current step */
+        unsigned field28 : 2;
+        unsigned unknown30 : 2;
     } frame_bits;            /* +0xa8 */
     union {
         u32 word;
@@ -154,20 +166,43 @@ typedef struct Sprite {
     } b0;                    /* +0xb0 */
 } Sprite; /* 0xb4 bytes; an inline renderer may follow */
 
-/* A sprite's animation sequencer (0x1c bytes; inline at sprite + 0xf4). */
-typedef struct {
-    s32 word0;
-    s32 word4;
-    u8 unknown8[0x10];
-    u16 *buffer;           /* +0x18: allocated by 8002303c */
-} SpriteSequencer;
-
-/* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
     u16 width;
     u16 height;
 } SpriteImageSize;
 
+/* A sprite's animation sequencer (0x1c bytes; inline at sprite + 0xf4). */
+typedef struct {
+    s32 word0;
+    s32 word4;
+    s32 word8;
+    s16 halfc;
+    SpriteImageSize size;  /* +0xe: image size for sequencer frames */
+    u8 unknown12[6];
+    u16 *buffer;           /* +0x18: allocated by 8002303c */
+} SpriteSequencer;
+
+/* A sprite's source data (sprite->image): its frame directory (a count, then
+ * the offsets of the frame records from the directory) and its animations. */
+typedef struct {
+    u16 *frames;           /* +0x0 */
+    u8 unknown4[0xC];
+    u16 *animations;       /* +0x10 */
+} SpriteSource;
+
+/* The texture placement of one sheet entry (after its first word). */
+typedef struct {
+    u16 u;             /* +0x0: texture column, in its top bits */
+    s16 v;             /* +0x2 */
+    u8 unknown4[0xC];
+    s16 mode;          /* +0x10: nonzero: 8-bit texture (column / 4, else / 16) */
+    s16 clut_x;        /* +0x12 */
+    s16 clut_y;        /* +0x14 */
+    u16 page_x;        /* +0x16 */
+    u16 page_y;        /* +0x18 */
+} SheetPart;
+
+/* A sprite image header (inline at sprite + 0x110). */
 typedef struct {
     u8 unknown0[4];
     SpriteImageSize size;  /* +0x4 */
@@ -209,22 +244,51 @@ typedef struct {
     Sprite sprite;
 } SpriteTask;
 
-/* The unit addresses these small globals absolutely, not through $gp: its
- * declarations carry no size (incomplete arrays), so they are not small data
- * under -G8. */
-extern u8 D_800591AF[]; /* [0]: allocation mode for sprite tasks */
-extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
-extern s16 D_80059494[];
-extern u8 D_800591AC[];   /* [0]: new main-list tasks count as active */
-extern s32 D_80059464[];  /* [0]: active main-list tasks */
-extern s32 D_800591A8[];
-extern u8 D_800591AD[];
-extern u8 D_800591AE[];
-extern u8 D_800591B0[];
-extern u8 D_800591B3[];
+/* Run the code between the two on the stack whose top is `top`. */
+#define STACK_ENTER(top)                                                                           \
+    __asm__ volatile("move $8, %0\n\tsw $29, 0($8)\n\taddiu $8, $8, -4\n\tmove $29, $8"            \
+                     :                                                                             \
+                     : "r"(top)                                                                    \
+                     : "$8", "memory")
+#define STACK_LEAVE() __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory")
+
+/* Small globals of other units: this unit addresses them absolutely (its
+ * assembler ignored the `.extern` sizes GCC gives them). */
+extern u8 D_800591AF;  /* allocation mode for sprite tasks */
+extern s32 D_80059428; /* frames the main task list stays paused */
+extern s16 D_80059494;
+extern u8 D_800591AC;  /* new main-list tasks count as active */
+extern s32 D_80059464; /* active main-list tasks */
+extern s32 D_800591A8;
+extern u8 D_800591AD;
+extern u8 D_800591AE;
+extern u8 D_800591B0;
+extern u8 D_800591B3;
 extern u8 D_8005A474[];
-extern u8 *D_800594B8[];  /* [0]: end of the queue entry block */
+extern u8 *D_800594B8; /* end of the queue entry block */
 extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */
+
+/* A queued VRAM upload (LoadImage, or ClearImage without pixels), from the
+ * queue block; 80025044 runs the list of the queue being filled. */
+typedef struct ImageUpload {
+    RECT rect;
+    u_long *pixels;
+    struct ImageUpload *next;
+} ImageUpload;
+
+/* The point and draw-mode primitives 8002541c takes from the queue block. */
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 colour;
+    u32 xy;
+} PointPrim;
+
+typedef struct {
+    u8 addr[3];
+    u8 len;
+    u32 code;
+} ModePrim;
 
 /* An entry of the two sprite queues (bump-allocated from 800594b4). */
 typedef struct SpriteQueueEntry {
@@ -232,7 +296,7 @@ typedef struct SpriteQueueEntry {
     struct SpriteQueueEntry *next;
 } SpriteQueueEntry;
 extern u8 D_8006BE10[];
-extern s32 D_8005956C[];
+extern s32 D_8005956C;
 
 /* The view matrix sprites are placed with (80024ff4 sets it). */
 extern MATRIX D_8004FBB8;
@@ -253,11 +317,19 @@ void func_80025180(u32 value);
 void func_8001CE74(Task *owner);
 void func_8001D034(Task *owner);
 void func_8001D3F4(Sprite *sprite);
+s32 func_8001EE74(u16 *header); /* the part count of a frame header */
+void func_80022000(Sprite *sprite, s32 scale);
+void func_800239A0(Sprite *sprite);
 void func_80023804(Sprite *sprite);
 void func_8002393C(SpriteRenderer *renderer);
 
 void func_8001F6B0(Sprite *sprite); /* recolour the parts */
 void func_80022090(Sprite *sprite); /* rebuild the orientation */
+void func_80022224(SpriteResource *resource, s32 *data, SVECTOR origin, s32 mode);
+void func_800222BC(Sprite *sprite, s32 *data);
+void func_800223B0(Sprite *sprite, s16 angle);
+void func_80022660(Sprite *sprite, u8 *target, s32 count);
+void func_80023538(Sprite *sprite, u16 *animation);
 void func_80022974(Sprite *sprite); /* velocity from speed and direction */
 void func_80023210(Sprite *sprite);
 void func_800245D8(Sprite *sprite, s32 value);
@@ -269,19 +341,17 @@ void func_8001E3D8(Sprite *sprite, s32 frame);
 void func_8001E9BC(Sprite *sprite, s32 frame);
 void func_8001EE88(Sprite *sprite, s32 frame, void *image);
 void func_8001F1D4(Sprite *sprite, s32 frame, void *image);
-void func_8001F8E8(Sprite *sprite, s32 frame);
+void func_800BA8F4(Sprite *sprite); /* battle overlay: rest a sprite on the stage floor */
+void func_8001F750(Sprite *sprite, s32 frame, SpriteSource *source);
+void func_8001F8E8(Sprite *sprite, s32 frame, SpriteSource *source);
 void func_800234AC(Sprite *sprite);
 s32 func_8003F8B0(s32 angle); /* rcos */
 s32 func_8003F8CC(s32 angle); /* rsin */
 void func_800248D4(Sprite *sprite); /* run the next script command */
-/* Frame timing; only the first word is known here. */
-extern struct {
-    s32 skip; /* extra frames per update */
-    s32 unknown[2];
-} D_80059198;
+extern s32 D_80059198; /* extra frames per update */
 void func_80022B2C(Sprite *sprite);
-void func_80024524(void *a0, s16 a1, s16 a2, s16 a3, s16 a4, s16 a5);
-void func_8002435C(void *a0, s32 a1, s16 a2, s16 a3, s16 a4, s16 a5, s16 a6);
+Sprite *func_80024524(s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
+Sprite *func_8002435C(Sprite *sprite, s32 *data, s16 x, s16 y, s16 width, s16 height, s16 unused);
 s32 func_80022CAC(Sprite *sprite, s32 value);
 void func_80022CDC(Sprite *sprite);
 

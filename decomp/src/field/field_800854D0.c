@@ -3750,7 +3750,7 @@ void func_800903BC(void) {
         delta.vx = (D_800AF880.saved_target.vx - D_800AF880.point_actor_a.vx) >> 16;
         delta.vy = (D_800AF880.saved_target.vy - D_800AF880.point_actor_a.vy) >> 16;
         delta.vz = (D_800AF880.saved_target.vz - D_800AF880.point_actor_a.vz) >> 16;
-        func_80048D7C(&delta, &direction);
+        VectorNormal(&delta, &direction);
         distance = func_80099A04((D_800AF880.saved_target.vx - D_800AF880.point_actor_a.vx) >> 16,
                                  (D_800AF880.saved_target.vy - D_800AF880.point_actor_a.vy) >> 16,
                                  (D_800AF880.saved_target.vz - D_800AF880.point_actor_a.vz) >> 16);
@@ -3773,7 +3773,7 @@ void func_800903BC(void) {
         delta.vx = (D_800AF880.saved_eye.vx - D_800AF880.point_actor_b.vx) >> 16;
         delta.vy = (D_800AF880.saved_eye.vy - D_800AF880.point_actor_b.vy) >> 16;
         delta.vz = (D_800AF880.saved_eye.vz - D_800AF880.point_actor_b.vz) >> 16;
-        func_80048D7C(&delta, &direction);
+        VectorNormal(&delta, &direction);
         distance = func_80099A04((D_800AF880.saved_eye.vx - D_800AF880.point_actor_b.vx) >> 16,
                                  (D_800AF880.saved_eye.vy - D_800AF880.point_actor_b.vy) >> 16,
                                  (D_800AF880.saved_eye.vz - D_800AF880.point_actor_b.vz) >> 16);
@@ -6430,7 +6430,7 @@ s32 func_80097A50(s32 speed) {
     delta.vx = from_x - x;
     delta.vy = from_y - y;
     delta.vz = from_z - z;
-    func_80048D7C(&delta, &direction);
+    VectorNormal(&delta, &direction);
     scale = model->unk18 >> 8;
     step.vx = -((direction.vx * scale) >> 4);
     step.vy = -((direction.vy * scale) >> 4);

@@ -302,11 +302,14 @@ typedef struct {
     u8 unkE[2];
 } SoundInstrument;
 
-/* A playing sequence (list through `next`). */
+/* A loaded wave bank (list through `next`): a copy of the bank file's
+ * header, whose samples were transferred to SPU memory at `address`. */
 typedef struct SoundSequence {
-    u8 unk0[0x14];
-    s32 voice;
-    u8 unk18[6];
+    u8 unk0[0x10];
+    s32 header_size;   /* bytes of this header, instruments included */
+    s32 size;          /* sample bytes */
+    s32 offset;        /* file offset of the samples */
+    u8 unk1C[2];
     u16 volume;
     u16 key;
     u8 unk22[6];
@@ -315,45 +318,87 @@ typedef struct SoundSequence {
     SoundInstrument instrument[1];
 } SoundSequence;
 
-/* A block of the driver's SPU memory pool. */
-typedef struct {
-    u16 flags;
+/* The header of a block of the driver's memory pool (80038EC0); the block's
+ * data follows it. */
+typedef struct SoundBlock {
+    u16 flags;         /* 0x8000: the pool head; 2: allocated */
     u16 unk2;
     u32 unk4;
-    u32 next;
+    u32 end;           /* end of the block's data */
+    struct SoundBlock *next;
+} SoundBlock;
+
+/* An entry of the SPU memory map (12 entries, chained by index from the
+ * first). */
+typedef struct {
+    u8 flags;          /* 0: unused */
+    u8 unk1;
+    s16 next;          /* index of the next entry, 0 at the end */
+    u32 address;       /* SPU address */
+    u32 size;
     u32 unkC;
-} SpuBlock;
+} SpuMemBlock;
+
+extern SpuMemBlock D_8006F9FC[12];
+
+u32 func_800396E0(u32 address);                        /* release SPU memory */
+SpuMemBlock *func_800397C0(u32 address);
+
+extern SoundBlock *D_80059410;        /* the pool head */
+extern u32 D_800595E4;                /* end of the pool */
 
 extern SpuRegs *D_800508E4;           /* SPU registers */
-extern u16 D_8005957C;                /* driver state flags */
+extern s16 D_8005957C;                /* driver state flags */
 extern s32 D_80059404;
 extern s32 D_80059478;                /* voice count of the effect channels */
 extern s32 D_80059544;                /* voices kept for music */
 extern s32 D_800595BC;                /* driver event */
+extern s16 D_80059500;                /* last driver error */
 extern SoundChannel *D_8006252C[24];  /* channel of each voice */
 extern SoundBank *D_80059440;         /* loaded banks */
 extern SoundSequence *D_80059558;     /* playing sequences */
 
 /* Driver interface (0x80037e8c-0x8003f738). */
-s32 func_80037FD8(void *data, s32 flags);
-void func_80038310(s32 bank);      /* release a wave bank */
+SoundSequence *func_80037FD8(SoundSequence *bank, s32 mode);
+s32 func_800381F4(SoundSequence *bank, s32 mode);
+void *func_80039024(s32 size);                         /* allocate driver memory */
+void func_80039144(void *data);                        /* release driver memory */
+void func_80039248(void *dst, void *src, s32 size);    /* copy */
+void func_80038310(SoundSequence *bank); /* release a wave bank */
 void func_80038B4C(void);
-void func_80038E6C(s32 volume, SpuVolume *out, u8 channel);
+void func_80038E6C(s16 volume, SpuVolume *out, u8 channel);
 void *func_80038F18(s32 size);
-void func_800393B8(s32 voice, u16 volume);
-void func_800395B8(s32 voice, s32 fade, u16 volume);
-void func_800399D4(s32 sequence);  /* release a sequence */
+s32 func_800393B8(s32 size, u16 mode);                 /* allocate SPU memory */
+s32 func_800395B8(s32 size, s32 address, u16 mode);    /* allocate SPU memory at */
+SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames); /* start a sequence */
+SoundSeq *func_80039850(SoundSeqHeader *header);
+SoundSeq *func_80039910(SoundSeqHeader *header, SoundSeq *seq);
+void func_800399D4(SoundSeq *seq);  /* release a sequence */
+void func_80039A80(SoundSeq *seq, s32 fade, s32 frames); /* play from the start */
 void func_80039C4C(SoundTrack *track); /* resume a track */
 void func_80039CC4(void);
 void func_80039FF8(void);
 u32 func_8003A65C(s32 id, s32 width);
 void func_8003A89C(SoundSeq *seq, s32 fade, s32 frames);
 void func_8003B060(SoundSeq *seq);
+void func_8003B0AC(SoundSeq *seq, SoundSeqHeader *header); /* take a snapshot */
+void func_8003B22C(SoundSeq *seq);
+void func_8003B424(SoundSeq *seq);
+void func_8003B930(SoundSeq *seq);
+void func_8003B9E4(SoundSeq *seq);
+s32 func_8003BA38(SoundSeq *seq);
+s32 func_8003BB40(s32 channels);   /* size of a sequence with `channels` */
+s16 func_8003F67C(SoundSeqHeader *header); /* error code of sequence data, 0 when valid */
+s32 func_8003F614(u32 *data, u32 magic, s32 id); /* check a sound file */
+void func_8003A094(SoundBank *bank);
 void func_8003B644(s16 id, s32 channel, s16 volume, s16 pan);
 void func_8003BCA0(u32 address, u8 *data, s32 size, void (*callback)(void), u16 type);
 s32 func_8003BDFC(s32 wait);
 void func_8003E680(s32 bits, SoundSeq *seq);
 void func_8003E83C(SoundChannel *state, u32 voice);
+void func_8003F484(u32 voices);   /* key off */
+void func_8003F5BC(s32 voice, s32 rate, s32 mode); /* set a voice's release */
 void func_8003F6B0(s32 error);
+void func_8003BC10(u32 address, u8 *data, s32 size, void (*callback)(void)); /* SPU transfer */
 
 #endif

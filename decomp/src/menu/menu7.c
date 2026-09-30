@@ -150,11 +150,11 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
     D_8009A918.vx = up->vx;
     D_8009A918.vy = up->vy;
     D_8009A918.vz = up->vz;
-    func_80048D7C(&D_8009A0C8, &D_80096F98);
+    VectorNormal(&D_8009A0C8, &D_80096F98);
     func_8004A480(&D_8009A918, &D_80096F98, &D_8009A0C8);
-    func_80048D7C(&D_8009A0C8, &D_80097000);
+    VectorNormal(&D_8009A0C8, &D_80097000);
     func_8004A480(&D_80096F98, &D_80097000, &D_8009A0C8);
-    func_80048D7C(&D_8009A0C8, &D_8009A918);
+    VectorNormal(&D_8009A0C8, &D_8009A918);
     m->m[0][0] = D_80097000.vx;
     m->m[0][1] = D_80097000.vy;
     m->m[0][2] = D_80097000.vz;
@@ -165,7 +165,7 @@ void func_800898BC(Matrix *m, SVector *eye, SVector *at, SVector *up) {
     m->m[2][1] = D_80096F98.vy;
     m->m[2][2] = D_80096F98.vz;
     ApplyMatrix(m, eye, &D_8009A0C8);
-    func_80049BDC(&D_80096FE0, m);
+    MulMatrix2(&D_80096FE0, m);
     m->t[0] = -D_8009A0C8.vx;
     m->t[1] = -D_8009A0C8.vy;
     m->t[2] = -D_8009A0C8.vz;
@@ -1135,7 +1135,7 @@ void func_8008BCC8(Mesh *mesh, u8 *work) {
     direction.vx = -8;
     direction.vy = -8;
     direction.vz = -0x10;
-    func_80048D7C(&direction, &D_8009A2C8);
+    VectorNormal(&direction, &D_8009A2C8);
     D_8009A2C8.vx <<= 4;
     D_8009A2C8.vy <<= 4;
     D_8009A2C8.vz <<= 4;

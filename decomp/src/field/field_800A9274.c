@@ -432,7 +432,7 @@ void func_800A9F18(Record78 *emitter, Particle *particle, MATRIX *view) {
             sv.vy = particle->velocity.vy;
             sv.vz = particle->velocity.vz;
             func_800495DC(&sv, &v);
-            func_80048D7C(&v, &particle->velocity);
+            VectorNormal(&v, &particle->velocity);
             particle->velocity.vx = (particle->velocity.vx * emitter->unk08 >> 12) * emitter->unk24;
             particle->velocity.vy = (particle->velocity.vy * emitter->unk08 >> 12) * emitter->unk24;
             particle->velocity.vz = (particle->velocity.vz * emitter->unk08 >> 12) * emitter->unk24;
@@ -1044,7 +1044,7 @@ s32 func_800ABFDC(u8 *text, s32 *own) {
         return code - GLYPH_OWN_FIRST;
     }
     *own = 0;
-    return (s32)func_800405C4(code);
+    return Krom2RawAdd(code);
 }
 
 /* Expand a 16x15 1-bit ROM glyph into an 8-bit glyph cell (0xff set, 0

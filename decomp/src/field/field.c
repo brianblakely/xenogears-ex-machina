@@ -16,7 +16,7 @@ void func_8006FDEC(s16 *record) {
 
     func_80073750(&D_800AF880.previous_view, &D_800AF880.eye, &D_800AF880.target, &D_800AF880.up);
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
-    func_80049BDC(&D_800AF880.previous_view, &D_800AF880.scaled_world);
+    MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
 
     D_800AF880.lights[0].direction[0] = *record++;
     D_800AF880.lights[0].direction[1] = *record++;
@@ -821,7 +821,7 @@ void func_80072150(void) {
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.world_matrix);
     func_80072140(&D_800AF880.world_matrix);
     func_8003F738(&D_800AF880.world_angles, &D_800AF880.scaled_world);
-    func_80049BDC(&D_800AF880.previous_view, &D_800AF880.scaled_world);
+    MulMatrix2(&D_800AF880.previous_view, &D_800AF880.scaled_world);
     SetRotMatrix(&D_800AF880.previous_view);
     SetTransMatrix(&D_800AF880.previous_view);
     func_8004A6DC(&D_800AF880.anchor, D_800AF880.scaled_world.t, &flag);
@@ -895,11 +895,11 @@ void func_800723E4(DVECTOR *a, DVECTOR *b, DVECTOR *out) {
     d.vx = a[1].vx - a[0].vx;
     d.vy = 0;
     d.vz = a[1].vy - a[0].vy;
-    func_80048D7C(&d, &ua);
+    VectorNormal(&d, &ua);
     d.vx = b[1].vx - b[0].vx;
     d.vy = 0;
     d.vz = b[1].vy - b[0].vy;
-    func_80048D7C(&d, &ub);
+    VectorNormal(&d, &ub);
     cross = (ub.vx * ua.vz - ub.vz * ua.vx) >> 12;
     if (cross == 0) {
         t = 0;
@@ -1334,11 +1334,11 @@ void func_80073750(MATRIX *view, VECTOR *eye, VECTOR *target, VECTOR *up) {
     y.vx >>= 16;
     y.vy >>= 16;
     y.vz >>= 16;
-    func_80048D7C(&v, &forward);
+    VectorNormal(&v, &forward);
     func_8004A480(&y, &forward, &v);
-    func_80048D7C(&v, &side);
+    VectorNormal(&v, &side);
     func_8004A480(&forward, &side, &v);
-    func_80048D7C(&v, &y);
+    VectorNormal(&v, &y);
     view->m[0][0] = side.vx;
     view->m[0][1] = side.vy;
     view->m[0][2] = side.vz;
@@ -1609,7 +1609,7 @@ void func_80074108(void) {
     angles.vz = 0;
     func_80072140(&turn);
     func_8003F738(&angles, &turn);
-    func_80049BDC(&look, &turn);
+    MulMatrix2(&look, &turn);
     turn.t[2] = 0x1000;
     CompMatrix(&base, &turn, &placed);
     if (D_800B2078.script_control[1] == 0 && D_800ADC18 == 0 && D_8004F378 == 0) {
@@ -1618,14 +1618,14 @@ void func_80074108(void) {
         }
     }
     func_80070594(&turn);
-    func_80049BDC(&look, &turn);
+    MulMatrix2(&look, &turn);
     turn.t[2] = 0x1000;
     CompMatrix(&base, &turn, &placed);
     MulMatrix0(&base, &turn, &D_800AF880.unk204);
     SetRotMatrix(&base);
     SetTransMatrix(&base);
     func_80070594(&turn);
-    func_80049BDC(&D_800AF880.previous_view, &turn);
+    MulMatrix2(&D_800AF880.previous_view, &turn);
     turn.t[2] = 0x1000;
     CompMatrix(&base, &turn, &placed);
     func_80074038(&base, &placed);
@@ -1773,7 +1773,7 @@ void func_800748E8(void) {
                 angles.vz = descriptor->actor->unk70;
             turn:
                 func_8003F738(&angles, &work);
-                func_80049BDC(&D_800AF880.components.descriptors[i].matrix, &work);
+                MulMatrix2(&D_800AF880.components.descriptors[i].matrix, &work);
                 work.t[0] = D_800AF880.components.descriptors[i].matrix.t[0];
                 work.t[1] = D_800AF880.components.descriptors[i].matrix.t[1];
                 work.t[2] = D_800AF880.components.descriptors[i].matrix.t[2];
@@ -1827,7 +1827,7 @@ void func_800748E8(void) {
                     func_8007409C(&placed, &D_800AF880.components.descriptors[i].matrix);
                     ScaleMatrix(&placed, &scale);
                 }
-                func_80049BDC(&D_800AF880.orbit, &placed);
+                MulMatrix2(&D_800AF880.orbit, &placed);
             }
         }
         instance = descriptor->instance;
@@ -2065,9 +2065,9 @@ void func_800759E4(MATRIX *m, VECTOR *axis) {
     VECTOR cross;
 
     func_8004A480(&up, axis, &cross);
-    func_80048D7C(&cross, &side);
+    VectorNormal(&cross, &side);
     func_8004A480(&side, axis, &cross);
-    func_80048D7C(&cross, &up);
+    VectorNormal(&cross, &up);
     m->m[0][0] = side.vx;
     m->m[0][1] = side.vy;
     m->m[0][2] = side.vz;
@@ -2296,9 +2296,9 @@ void func_800764B4(u32 *ot, s32 buffer) {
         up.vy = 0;
         up.vz = 0x1000;
         gte_OuterProduct12(&up, descriptor->actor->unk50, &cross);
-        func_80048D7C(&cross, &side);
+        VectorNormal(&cross, &side);
         gte_OuterProduct12(&side, descriptor->actor->unk50, &cross);
-        func_80048D7C(&cross, &up);
+        VectorNormal(&cross, &up);
         floor.m[0][0] = side.vx;
         floor.m[0][1] = side.vy;
         floor.m[0][2] = side.vz;

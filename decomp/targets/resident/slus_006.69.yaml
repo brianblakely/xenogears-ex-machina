@@ -55,6 +55,10 @@ segments:
       # Sprite/actor engine unit (8001C8DC-8002709C): its jump tables and
       # constants open at 0x800183D8.
       - [0x8BD8, .rodata, sprite]
+      # Second sprite unit: its identity matrix constant (80022090) follows
+      # the first unit's jump tables (8001FBE4); a -G8 CDK unit emits its
+      # constants ahead of its jump tables, so the two are separate units.
+      - [0x8E44, .rodata, sprite_80022090]
       - [0x90EC, .rodata, main_8002709C]
       - [0x90F4, .rodata, main_8002A260]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
@@ -77,12 +81,23 @@ segments:
       # before it (8001C76C) stay at the end of main.c; which object held
       # them is not established.
       - [0xD0DC, c, sprite]
+      # Second sprite unit (same build): it starts after 8001FBE4's jump
+      # tables and by 80022090, whose constant opens its rodata; 80022090 is
+      # chosen.
+      - [0x12890, c, sprite_80022090]
       # Texture-scroll and disc unit (GCC 2.6.3, inline division checks):
       # 80027D64/80027EAC/80028808/80029AFC match only so. It ends after
       # 80029EB0 and before 8002DB84 (a register division without checks);
       # 8002A260, where the rodata continues at 0x800188F4, is chosen.
       - [0x1789C, c, main_8002709C]
+      # CD read callback, stream and model buffer unit: GCC 2.6.3 (8002BB50
+      # matches only so).
       - [0x1AA60, c, main_8002A260]
+      # GCC 2.7.2 by 8002CCC8 (it, 8002CD24 and 8002CD64 match only so); the
+      # C functions from 8002CB54 compile identically under both, and no rodata
+      # follows 8002C700's jump table. 8002CC10, the first of the texture
+      # override functions that 8002CCC8 applies, is chosen.
+      - [0x1D410, c, main_8002CC10]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in

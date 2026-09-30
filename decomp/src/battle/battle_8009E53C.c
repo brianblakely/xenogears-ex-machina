@@ -2572,11 +2572,11 @@ void func_800A5BE8(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *point, VECTOR *n
     edge.vx = b->vx - a->vx;
     edge.vy = b->vy - a->vy;
     edge.vz = b->vz - a->vz;
-    func_80048D7C(&edge, &edgeB);
+    VectorNormal(&edge, &edgeB);
     edge.vx = c->vx - a->vx;
     edge.vy = c->vy - a->vy;
     edge.vz = c->vz - a->vz;
-    func_80048D7C(&edge, &edgeC);
+    VectorNormal(&edge, &edgeC);
     func_8004A480(&edgeB, &edgeC, normal);
     if (normal->vy == 0) {
         point->vy = 0;
@@ -3246,7 +3246,7 @@ void func_800A7948(Surface *surface, SVECTOR *wind, MATRIX *m, u32 *ot, s32 buff
         n.vx /= 8;
         n.vy /= 8;
         n.vz /= 8;
-        func_80048D7C(&n, &e1);
+        VectorNormal(&n, &e1);
         for (k = 0; k < 3; k++) {
             points[poly->index[k]].normal[0] += e1.vx;
             points[poly->index[k]].normal[1] += e1.vy;
@@ -4142,8 +4142,8 @@ void func_800AAB34(BattleObject *object) {
                 } else {
                     m = &D_800D3368[object->field5C]->hierarchy->world;
                 }
-                func_80049BDC(m, &object->hierarchy->transform);
-                func_80049BDC(m, &object->hierarchy->world);
+                MulMatrix2(m, &object->hierarchy->transform);
+                MulMatrix2(m, &object->hierarchy->world);
             }
             if (object->parentPart != 0) {
                 CompMatrix(&D_800D3368[object->field5C]->hierarchy->transform,

@@ -3461,7 +3461,7 @@ u16 *func_801E65E4(u8 *s) {
             D_801EA8C0 = 0;
         }
     }
-    return func_800405C4(lo | (hi << 8));
+    return (u16 *)Krom2RawAdd(lo | (hi << 8));
 }
 
 /* Render listed file `index`'s save title (up to 32 characters, 64 bytes)

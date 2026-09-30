@@ -117,7 +117,7 @@ s32 func_8003569C(s32 port);                   /* controller buttons */
 void func_80038D18(s32 volume, s32 speed);     /* CD input volume */
 void func_80039A80(s32 arg0, s32 arg1, s32 arg2);
 void func_8003F738(SVECTOR *rotation, MATRIX *m); /* rotation matrix */
-void func_80049BDC(MATRIX *m0, MATRIX *m1);    /* matrix product */
+void MulMatrix2(MATRIX *m0, MATRIX *m1);    /* matrix product */
 
 /* One display buffer: its drawing and display environments, the ordering
  * table and the two frame primitives drawn over it. */
