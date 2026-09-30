@@ -33,6 +33,10 @@ typedef struct {
     u8 pad0, pad1;
 } DISPENV;
 
+extern void func_800445D0(s32 mode);         /* DrawSync */
+extern void func_80044AD8(u32 *ot, s32 n);   /* ClearOTagR */
+extern void func_80044BD0(u32 *ot);          /* DrawOTag */
+extern void func_8004B54C(s32 mode);         /* VSync */
 extern void func_80044534(s32 mask);         /* SetDispMask */
 extern void func_80044C44(DRAWENV *env);     /* PutDrawEnv */
 extern void func_80044E9C(DISPENV *env);     /* PutDispEnv */
@@ -94,12 +98,29 @@ extern void func_8008AB70(void);
 extern void *func_8008ABB8(s32 size, s32 mode); /* battle allocation */
 extern void func_8009B1E4(void);
 
+/* Resident debug text: print into the text stream, then draw the stream
+ * into an ordering table. */
+extern void func_8003700C(const char *fmt, ...);
+extern void func_80037324(u32 *ot);
+
+/* Battle menu input decode (battle overlay) and its decoded command code:
+ * 0-3 right/down/left/up, 4 Circle, 5 Cross, 7 Triangle, 13, 14 Start. */
+extern void func_80089CCC(s32);
+extern u8 D_800D3014;
+
+/* Row labels ("SceneNo ", "Party   ", "Robo    ", "FileNo  ") and the
+ * character names (the twelfth is empty) the screen prints. */
+extern char *D_801E1D40[4];
+extern char *D_801E1D50[12];
+
 /* Per-character gear for the gear columns 1 and 2. */
 extern u8 D_801E1D80[16];
 extern u8 D_801E1D90[16];
 
-/* Selector state (overlay data). The four rows are the scene number, the
- * three party slots, ... ; each row has three decimal digit columns. */
+/* Selector values (overlay data): row 0 the scene (enemy set, 0-15), row 1
+ * the three party characters (0-11, ff none), row 2 their gear mode (Off,
+ * Nml, Bar), row 3 the file number (253-255 the three event files). The
+ * second table marks the columns shown on each row. */
 extern s32 D_801E1DA0[4][3];
 extern u8 D_801E1DD0[4][3];
 
