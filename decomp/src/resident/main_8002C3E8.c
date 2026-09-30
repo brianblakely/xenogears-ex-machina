@@ -22,29 +22,32 @@
 
 /* Relocate a model group's offsets to addresses (once). Returns the number
  * of models.
- * Nonmatching: the original walks the models through one pointer at their
- * list fields. */
+ * Nonmatching: the original has an 8-byte frame, walks the models through
+ * one pointer at their list fields and the entries from their start. */
 #ifdef NON_MATCHING
 s32 func_8002C3E8(ModelGroup *group) {
     s32 flags = group->flags;
     s32 count = group->count;
-    Model *model;
+    ModelList *list;
+    ModelListEntry *entries;
     ModelListEntry *entry;
     s32 i;
     s32 n;
 
     if (!(flags & 1)) {
         group->flags = flags | 1;
-        for (i = 0, model = group->models; i < count; i++, model++) {
-            model->table0 += (s32)group;
-            model->table8 += (s32)group;
-            model->table4 += (s32)group;
-            model->primitives += (s32)group;
-            if (model->list != NULL) {
-                model->list = (ModelList *)((u8 *)model->list + (s32)group);
-                n = model->list->last;
+        for (i = 0; i < count; i++) {
+            group->models[i].table0 += (s32)group;
+            group->models[i].table8 += (s32)group;
+            group->models[i].table4 += (s32)group;
+            group->models[i].primitives += (s32)group;
+            if (group->models[i].list != NULL) {
+                list = (ModelList *)((u8 *)group->models[i].list + (s32)group);
+                group->models[i].list = list;
+                entries = list->entries;
+                n = list->last;
                 if (n != -1) {
-                    entry = &model->list->entries[n];
+                    entry = &entries[n];
                     do {
                         n--;
                         entry->first += (s32)group;
