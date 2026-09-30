@@ -871,13 +871,106 @@ void func_8007999C(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800799D4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A44C);
+/* Set a quad's texture coordinates, each clamped to 0..255. */
+void func_8007A44C(POLY_FT4 *poly, s16 u0, s16 v0, s16 u1, s16 v1, s16 u2, s16 v2, s16 u3, s16 v3) {
+    if (u0 < 0) {
+        u0 = 0;
+    }
+    if (u1 < 0) {
+        u1 = 0;
+    }
+    if (u2 < 0) {
+        u2 = 0;
+    }
+    if (u3 < 0) {
+        u3 = 0;
+    }
+    if (v0 < 0) {
+        v0 = 0;
+    }
+    if (v1 < 0) {
+        v1 = 0;
+    }
+    if (v2 < 0) {
+        v2 = 0;
+    }
+    if (v3 < 0) {
+        v3 = 0;
+    }
+    if (u0 >= 0x100) {
+        u0 = 0xFF;
+    }
+    if (u1 >= 0x100) {
+        u1 = 0xFF;
+    }
+    if (u2 >= 0x100) {
+        u2 = 0xFF;
+    }
+    if (u3 >= 0x100) {
+        u3 = 0xFF;
+    }
+    if (v0 >= 0x100) {
+        v0 = 0xFF;
+    }
+    if (v1 >= 0x100) {
+        v1 = 0xFF;
+    }
+    if (v2 >= 0x100) {
+        v2 = 0xFF;
+    }
+    if (v3 >= 0x100) {
+        v3 = 0xFF;
+    }
+    poly->u0 = u0;
+    poly->v0 = v0;
+    poly->u1 = u1;
+    poly->v1 = v1;
+    poly->u2 = u2;
+    poly->v2 = v2;
+    poly->u3 = u3;
+    poly->v3 = v3;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A5C4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007A7F4);
 
+#ifdef NON_MATCHING
+/* Set up a pointer marker: a 48x48 quad around the origin and its
+ * semi-transparent textured primitive, copied for the second buffer. */
+void func_8007AA44(FieldMarker *m) {
+    func_80043CB0(&m->poly[0]);
+    m->v[3].vx = -0x18;
+    m->v[3].vy = 0;
+    m->v[3].vz = -0x18;
+    m->v[2].vx = 0x18;
+    m->v[2].vy = 0;
+    m->v[2].vz = -0x18;
+    m->v[1].vx = -0x18;
+    m->v[1].vy = 0;
+    m->v[1].vz = 0x18;
+    m->v[0].vx = 0x18;
+    m->v[0].vy = 0;
+    m->v[0].vz = 0x18;
+    m->poly[0].r0 = 0x80;
+    m->poly[0].g0 = 0x80;
+    m->poly[0].b0 = 0x80;
+    m->poly[0].tpage = func_80043A1C(0, 2, 0x280, 0x1E0);
+    m->poly[0].clut = func_80043A58(0x100, 0xF3);
+    func_80043BFC(&m->poly[0], 1);
+    m->poly[0].u0 = 0;
+    m->poly[0].v0 = 0xE0;
+    m->poly[0].u1 = 0xF;
+    m->poly[0].v1 = 0xE0;
+    m->poly[0].u2 = 0;
+    m->poly[0].v2 = 0xEF;
+    m->poly[0].u3 = 0xF;
+    m->poly[0].v3 = 0xEF;
+    m->poly[1] = m->poly[0];
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AA44);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007AB6C);
 

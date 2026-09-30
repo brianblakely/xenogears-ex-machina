@@ -448,6 +448,12 @@ typedef struct {
     s16 unk76;       /* 76 */
 } Record78;
 
+/* A pointer marker: its quad's corners and primitive per buffer. */
+typedef struct {
+    SVECTOR v[4];
+    POLY_FT4 poly[2];
+} FieldMarker;
+
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
     u16 id;
@@ -463,6 +469,9 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80043CB0(POLY_FT4 *poly); /* setPolyFT4 */
+extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+extern u16 func_80043A58(s32 x, s32 y); /* GetClut */
 extern void func_8002DFF0(s32 w, s32 h);
 extern DRAWENV *func_80043928(DRAWENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDrawEnv */
 extern DISPENV *func_800439E0(DISPENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDispEnv */
