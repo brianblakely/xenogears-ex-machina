@@ -2995,7 +2995,80 @@ u32 func_801E1418(u8 slot, u8 row) {
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1418);
 #endif
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1544);
+/* Lay out row `row` of the 801e1544 screen: mode 1 its five sheet images
+ * (D_801E97AC); mode 2 its completion `percent` as three digits into
+ * `pixels` (uploaded to the row's label image) and its green gauge
+ * (54 pixels at 100%). */
+void func_801E1544(u8 row, u8 mode, u8 *pixels, u32 percent) {
+    u8 text[6];
+    u8 glyphs[8];
+    RECT rect;
+    s32 i;
+    u32 tens;
+
+    text[5] = 0;
+    text[3] = 0;
+    text[1] = 0;
+    switch (mode) {
+    case 1:
+        for (i = 0; i < 5; i++) {
+            if (D_801E97AC[row * 5 + i] != 0xff) {
+                D_800625A0->block438->counts[row] +=
+                    func_8002675C(D_800625A0->sheet, D_801E97AC[row * 5 + i],
+                                  &D_800625A0->block438->lists[row][D_800625A0->block438->counts[row] * 2],
+                                  D_800625A0->bufferIndex, 0xd4 + i * 16, row * 13 + 0x1f, 0x1000);
+            }
+        }
+        D_800625A0->block438->starts[row] = D_800625A0->bufferIndex;
+        break;
+    case 2:
+        if (percent / 100) {
+            text[0] = 0x11;
+            percent -= 100;
+        } else {
+            text[0] = 0xc3;
+        }
+        tens = percent / 10;
+        if (tens != 0 || text[0] != 0) {
+            text[2] = tens + 0x10;
+            text[4] = percent - tens * 10 + 0x10;
+        } else {
+            text[2] = 0xc3;
+            text[4] = 0xc3;
+        }
+        func_80033B34(text, glyphs, 3);
+        D_800625A0->block438->values[row].width = func_80034EAC(glyphs, pixels, 0x24, 1);
+        rect.x = (row & 1) * 24 + 0x180;
+        rect.y = (row >> 1) * 13 + 0x80;
+        rect.w = 0x28;
+        rect.h = 0xd;
+        LoadImage(&rect, pixels);
+        DrawSync(0);
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x0 = 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y0 = row * 13 + 0x1f;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x1 =
+            D_800625A0->block438->values[row].width + 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y1 = row * 13 + 0x1f;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x2 = 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2c;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->x3 =
+            D_800625A0->block438->values[row].width + 0x10a;
+        (D_800625A0->block438->values[row].polys + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2c;
+        percent = percent * 5400 / 10000;
+        func_801E7C50(&D_800625A0->block438->values[row], row, 0x80, 0x82);
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x0 = 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y0 = row * 13 + 0x23;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x1 = percent + 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y1 = row * 13 + 0x23;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x2 = 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y2 = row * 13 + 0x2b;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->x3 = percent + 0xd4;
+        (D_800625A0->block438->gauges[row] + D_800625A0->bufferIndex)->y3 = row * 13 + 0x2b;
+        D_800625A0->block438->gaugeBuffer[row] = D_800625A0->bufferIndex;
+        D_800625A0->block438->gaugeShown[row] = 1;
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1AC8);
 
