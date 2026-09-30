@@ -3642,7 +3642,62 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800826CC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082820);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800829F4);
+/* Confirm the selected entry of the member's on-foot command window: entries
+ * 4, 6 and 7 open the attack page (0x19) when the member has a target; 0 and
+ * 1 open pages 0x15 and 0x11 unless their item is unavailable (buzzer 0x4f);
+ * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
+ * press of the repeat entry page 0x18. */
+void func_800829F4(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
+            func_80087A38(member);
+            func_80084A7C(member);
+            D_800C3EAC->page = 0x19;
+            func_80077698();
+            D_800D366C = 0;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 0x12;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[6] == 0) {
+            D_800C3EAC->page = 0x13;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[4] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x18;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[13] == 0) {
+            D_800C3EAC->page = 0x15;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 /* Confirm the selected entry of the member's gear command window: entries 4,
  * 6 and 7 open the part list when the gear has one (else page 0x11); 0 and 1
