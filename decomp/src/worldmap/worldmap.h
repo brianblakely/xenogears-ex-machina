@@ -510,7 +510,7 @@ s32 ratan2(s32 y, s32 x);               /* ratan2 */
 s32 func_8003F8B0(s32 angle);                  /* rsin */
 s32 func_8003F8CC(s32 angle);                  /* rcos */
 s32 func_8002C3D8(void);
-void func_800967E4(void);
+s32 func_800967E4(void); /* stream step: func_800968E0 status */
 s32 func_80096668(void);
 
 extern void *D_8009C184[0x100]; /* terrain block buffers */

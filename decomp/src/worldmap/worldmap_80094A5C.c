@@ -395,7 +395,28 @@ void func_800966CC(EffectCommand4 *request) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800967E4);
+/* Step the stream queue: from disc, advance the reader and start the next
+ * queued list when idle; from the host, read the next list at once. */
+s32 func_800967E4(void) {
+    s32 first;
+    s32 second;
+    s32 status;
+
+    status = 0;
+    first = func_8002C3D8();
+    second = func_8002C3D8();
+    if ((first == 0) | (second == -1)) {
+        status = func_800968E0();
+        if (status == 0 && D_8009D788[D_8009BCB8] != NULL) {
+            func_8009699C(D_8009D788[D_8009BCB8]);
+        }
+    } else if (D_8009C624[D_8009BCB8] != NULL) {
+        func_800966CC(D_8009C624[D_8009BCB8]);
+        D_8009C624[D_8009BCB8] = NULL;
+        D_8009BCB8 = (D_8009BCB8 + 1) & 0xF;
+    }
+    return status;
+}
 
 /* Step the stream reader: 0 idle, 1 busy, 2 finished a frame, 3 error. */
 s32 func_800968E0(void) {
