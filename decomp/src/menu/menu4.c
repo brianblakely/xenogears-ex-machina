@@ -677,7 +677,33 @@ void func_8008040C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_80080570);
+/* Show both sides' picks; entries 4, 7, 11, 30 and 31 show as a plain
+ * flag instead, depending on the other side's pick. */
+void func_80080570(void) {
+    s32 first = D_800928EC[D_80092700]->id;
+    s32 second = D_800928EC[D_80092704]->id;
+
+    switch (first) {
+    case 4:
+    case 7:
+    case 11:
+    case 30:
+    case 31:
+        first = second == 0;
+        break;
+    }
+    func_8008509C(0, first);
+    switch (second) {
+    case 4:
+    case 7:
+    case 11:
+    case 30:
+    case 31:
+        second = first != 1;
+        break;
+    }
+    func_8008509C(1, second);
+}
 
 /* Load both picks' portraits (palette and image) into their VRAM slots and
  * mark both sides confirmed. */
