@@ -635,7 +635,7 @@ void func_801C70FC(u8 index) {
 void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
     Marker *marker;
     POLY_FT4 *poly;
-    s32 visible;
+    u8 visible;
     s32 y;
 
     visible = 1;
@@ -648,8 +648,10 @@ void func_801C7178(s32 row, s32 unused, u8 fixed, u8 index) {
     }
     if (!fixed) {
         y = row * 13 + 0x32;
+        visible = 1;
+    } else {
+        visible = 1;
     }
-    visible = 1;
     if (visible) {
         func_8002675C(D_800625A0->sprite_sheet, marker->frame + 0x15B, marker, D_800625A0->buffer, 0,
                       0, 0x1000);
