@@ -3726,7 +3726,38 @@ void func_801E6CFC(u8 index, MenuViewSet *set) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E6F5C);
+/* Lay out view `index`'s values C (+10) and D (+13) as up to two digit
+ * sprites each (D packed without leading blanks). */
+void func_801E6F5C(u8 index, MenuViewSet *set) {
+    s32 i;
+    s32 drawn;
+    u8 digit;
+
+    func_801C80B8(set->valueC[index]);
+    D_800625A0->block34C->views[index].cCount = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[i + 7];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].cCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].cDigits[D_800625A0->block34C->views[index].cCount],
+                              D_800625A0->bufferIndex, D_801EA03C + index * 0x50 + i * 8, D_801EA040, 0x1000);
+        }
+    }
+    drawn = 0;
+    func_801C80B8(set->valueD[index]);
+    D_800625A0->block34C->views[index].dCount = 0;
+    for (i = 0; i < 2; i++) {
+        digit = D_800625A0->digits[i + 7];
+        if (digit != 0xff) {
+            D_800625A0->block34C->views[index].dCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              D_800625A0->block34C->views[index].dDigits[D_800625A0->block34C->views[index].dCount],
+                              D_800625A0->bufferIndex, D_801EA044 + index * 0x50 + drawn * 8, D_801EA048, 0x1000);
+            drawn++;
+        }
+    }
+}
 
 /* Render the name of view `index`'s sheet entry from listed file `file`'s
  * header (up to ten two-byte characters) and upload it to label row
