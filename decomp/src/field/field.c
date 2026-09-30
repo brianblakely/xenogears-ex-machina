@@ -9518,7 +9518,59 @@ void func_800A0EE8(void) {
     D_800B00C0 = 1;
 }
 
+#ifdef NON_MATCHING
+void func_800A0FD8(void) {
+    s32 layer;
+
+    if (D_800ADB2C != 0 || func_8008A558() != 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc--;
+        return;
+    }
+    layer = D_800B0078->state.bits.layer;
+    D_800B0078->layer_flags &= ~0x2000;
+    func_80028470(4, 0);
+    switch (D_800ADC00[D_800B0078->pc + 1]) {
+    case 0:
+        D_801E8670[layer][0x34] = 0;
+        D_800B0078->pc += 2;
+        break;
+    case 1:
+        func_801E8030(D_800B0078->state.bits.layer);
+        D_800B2078.unk21DC[layer] = func_800ACDEC(5) * 2;
+        D_800B2394[0].file = D_800B2078.unk21DC[layer] + 0x6BA;
+        D_800B2394[0].destination = D_8005A420[layer] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[layer] + 0x6BA), 0);
+        D_800B2394[1].file = D_800B2078.unk21DC[layer] + 0x6BB;
+        D_800B2394[1].destination = D_8005A450[layer] = func_80031BDC(func_800288EC(D_800B2078.unk21DC[layer] + 0x6BB), 1);
+        D_800B2394[2].file = 0;
+        D_800B2394[2].destination = 0;
+        func_80029AFC(D_800B2394, 0, 0);
+        D_800B0078->pc += 2;
+        break;
+    case 2:
+        if (func_80028A60(1) != 0) {
+            D_800B0078->pc--;
+            break;
+        }
+        func_800ACDEC(2);
+        func_801E742C(layer, 0, D_8005A420[layer], D_8005A450[layer],
+                      0x240 - ((layer + D_800B2078.unk225F[layer]) << 6), 0x100, 0, layer + 0xFC,
+                      LAYER_STATE.motion[layer]);
+        LAYER_STATE.scale[layer] = ((EffectLayer *)D_801E8670[layer])->scale;
+        func_800320E8(D_8005A450[layer]);
+        D_800B0078->pc += 4;
+        D_800B0078->layer_flags |= 0x2000;
+        ((EffectLayer *)D_801E8670[layer])->scale = (D_800B0078->scale[0] * 5) >> 6;
+        ((EffectLayer *)D_801E8670[layer])->y = D_800B0078->position[1] >> 16;
+        ((EffectLayer *)D_801E8670[layer])->model->x = WHOLE(D_800B0078->position[0]);
+        ((EffectLayer *)D_801E8670[layer])->model->z = WHOLE(D_800B0078->position[2]);
+        break;
+    }
+    D_800B00C0 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0FD8);
+#endif
 
 /* Give the current actor the field's first sprite on the next free 801e
  * layer (operand 1: layer parameter) and show it. */
