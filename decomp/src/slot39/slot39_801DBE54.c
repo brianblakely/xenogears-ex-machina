@@ -2203,9 +2203,7 @@ void func_801E35BC(MenuTables *tables, u8 user, u8 target, u8 effect, u8 gear) {
 
 /* Recompute character `id`'s equipment values: sum its three accessories
  * (amount, kind bits and stat bonuses) and take its weapon's values (kind 4
- * characters: both weapons). The code matches except the jump table
- * address, which marks a separate unit (see 801e3ecc). */
-#ifdef NON_MATCHING
+ * characters: both weapons). */
 void func_801E36D4(MenuTables *tables, u8 id) {
     CharRecord *chara;
     MenuAccessory *accessory;
@@ -2232,7 +2230,8 @@ void func_801E36D4(MenuTables *tables, u8 id) {
     chara->unk8E = 0;
     chara->unkA1 = 0;
     for (i = 0; i < 3; i++) {
-        accessory = &tables->accessories[chara->accessories[i]];
+        accessory = tables->accessories;
+        accessory += chara->accessories[i];
         chara->bonus[5] += accessory->amount;
         switch (accessory->kind) {
         case 1:
@@ -2287,18 +2286,21 @@ void func_801E36D4(MenuTables *tables, u8 id) {
             chara->bonus[5] += amount;
         }
     }
-    weapon = &tables->weapons[chara->weapons[0]];
+    weapon = tables->weapons;
+    weapon += chara->weapons[0];
     chara->level = weapon->level;
     chara->weaponValue = weapon->value;
     chara->weaponA = weapon->a;
     chara->weaponB = weapon->b;
     if (chara->unk56 == 4) {
-        weapon = &tables->weapons[chara->specials[0]];
+        weapon = tables->weapons;
+        weapon += chara->specials[0];
         chara->level = weapon->level;
         chara->weaponValue = weapon->value;
         chara->weaponA = weapon->a;
         chara->weaponB = weapon->b;
-        weapon = &tables->weapons[chara->specials[3]];
+        weapon = tables->weapons;
+        weapon += chara->specials[3];
         chara->unk1C = weapon->level;
         chara->weapon2Value = weapon->value;
         chara->weapon2A = weapon->a;
@@ -2308,9 +2310,6 @@ void func_801E36D4(MenuTables *tables, u8 id) {
         chara->unk8E |= chara->weaponValue;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801E36D4);
-#endif
 
 /* Compute character `id`'s shown stats: base values plus equipment bonuses
  * (the first from the level, scaled 6/10 with +1c for kind 4), capped at
