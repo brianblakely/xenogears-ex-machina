@@ -2673,7 +2673,53 @@ s32 func_800394B8(s32 size) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800394B8);
 #endif
 
+/* Reserve `size` bytes of SPU memory at `address` when the map leaves
+ * that range free, linking the new entry after the one before it.
+ * Returns the address, 0 when the range is taken or no entry is free.
+ * Nonmatching: the entry and the address (and the next entry and its
+ * address) take swapped registers, as in 800393B8 and 800394B8. */
+#ifdef NON_MATCHING
+s32 func_800395B8(s32 size, s32 address, u16 mode) {
+    SpuMemBlock *entry = D_8006F9FC;
+    SpuMemBlock *next;
+    SpuMemBlock *block;
+    s32 gap = 0;
+    s32 end = entry->address + entry->size;
+    s32 top = address + size;
+    s32 i;
+
+    while ((s32)entry->address < address) {
+        if (entry->next == 0) {
+            gap = 0x80000 - end;
+            break;
+        }
+        next = &D_8006F9FC[entry->next];
+        if ((s32)next->address >= top) {
+            gap = next->address - end;
+            break;
+        }
+        end = next->address + next->size;
+        entry = next;
+    }
+    if (gap < size || address < end) {
+        return 0;
+    }
+    i = func_80039784();
+    if (i < 0) {
+        return 0;
+    }
+    block = &D_8006F9FC[i];
+    block->flags = 0x80;
+    block->unk1 = 0;
+    block->address = address;
+    block->size = size;
+    block->next = entry->next;
+    entry->next = i;
+    return address;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800395B8);
+#endif
 
 /* Release the SPU memory map entry at `address`, unlinking it. Returns the
  * address, 0 when no entry has it. */
