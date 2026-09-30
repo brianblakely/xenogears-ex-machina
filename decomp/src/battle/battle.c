@@ -2782,7 +2782,18 @@ void func_80085350(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085388);
+/* Clear the current event's per-slot results (the event index is re-read for
+ * every store). */
+void func_80085388(void) {
+    s32 slot;
+
+    for (slot = 0; slot < 11; slot++) {
+        D_800C3FE8[D_800C3EAC->eventCount].amounts[slot] = 0;
+        D_800C3FE8[D_800C3EAC->eventCount].codes[slot] = 0xFF;
+        D_800C3FE8[D_800C3EAC->eventCount].totals[slot] = 0;
+        D_800C3FE8[D_800C3EAC->eventCount].totalCodes[slot] = 0xFF;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085454);
 
@@ -2792,15 +2803,46 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085AC4);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085B58);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085C48);
+/* Commit the targets for an item/effect and run 80098c6c with `param`. */
+void func_80085C48(u8 actor, s16 targets, u16 param) {
+    D_800C48E8 = 0;
+    D_800D2C94 = targets;
+    D_800D2C96 = D_800D39DC;
+    func_80098C6C(param);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085C88);
+/* Accumulate and apply event `queue`'s results. */
+void func_80085C88(u8 queue) {
+    func_80085454(queue);
+    func_80085618(queue);
+    D_800D2D28->unkAD = 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085CCC);
+/* Commit an action (attacker, target mask, animation) and resolve it. */
+void func_80085CCC(u8 actor, s16 targets, s16 animation) {
+    u8 action; /* 1-based */
+
+    D_800C48E8 = 0;
+    D_800D2CA9 = actor;
+    action = D_800C3EAC->unk2DC;
+    D_800D2C94 = targets;
+    D_800D2C98 = animation;
+    D_800D2C96 = D_800D39DC;
+    D_800D2CAA = action - 1;
+    func_800941A4();
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085D34);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085E78);
+/* Reset the turn state's seven +0x2cc bytes to 0xff and clear +0x2d6. */
+void func_80085E78(void) {
+    s32 i;
+
+    for (i = 0; i < 7; i++) {
+        D_800C3EAC->unk2CC[i] = 0xFF;
+    }
+    D_800C3EAC->unk2D6 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085EB4);
 
@@ -2826,11 +2868,24 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800881B8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800883AC);
+/* Drop a slot from its formation group (enemy entries from 8, flagged slots
+ * add 0x10). */
+void func_800883AC(u8 slot) {
+    u8 base = (slot >= 3) * 8;
+
+    if (D_800D32A0[slot].unk1 != 0) {
+        base |= 0x10;
+    }
+    D_800D301C[D_800C3EB4[slot].group + base].count--;
+    D_800D301C[D_800C3EB4[slot].group + base].members &= func_80089C48(D_800C3EB4[slot].member);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088490);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800885D0);
+/* The member count of the slot's group among the flagged enemy groups. */
+u8 func_800885D0(u8 slot) {
+    return D_800D301C[D_800C3EB4[slot].group + 0x18].count;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008860C);
 
@@ -2856,7 +2911,17 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800897CC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800898F0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089AF8);
+/* Run the eight 8008860c..800897cc steps. */
+void func_80089AF8(void) {
+    func_8008860C();
+    func_80089038();
+    func_80089110();
+    func_800891E4();
+    func_80089348();
+    func_8008946C();
+    func_8008963C();
+    func_800897CC();
+}
 
 /* A random value in low..high (0xffff for low 0xffff, 0 for high 0). */
 #ifdef NON_MATCHING

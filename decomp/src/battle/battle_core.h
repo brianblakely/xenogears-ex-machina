@@ -82,12 +82,15 @@ typedef struct {
 /* Turn and menu state: the heap block at *800c3eac. */
 typedef struct {
     TurnSlot slots[11];
-    u8 unk2C0[0x2D3 - 0x2C0];
+    u8 unk2C0[0x2CC - 0x2C0];
+    u8 unk2CC[7];
     u8 actor;          /* +0x2D3 acting slot */
-    u8 unk2D4[0x2DA - 0x2D4];
+    u8 unk2D4[2];
+    u8 unk2D6;
+    u8 unk2D7[0x2DA - 0x2D7];
     u8 eventCount;     /* +0x2DA queued presentation events */
     u8 eventsDone;     /* +0x2DB */
-    u8 unk2DC;
+    u8 unk2DC;         /* action index + 1 */
     u8 page;           /* +0x2DD command page */
     u8 menuDone;       /* +0x2DE */
     u8 unk2DF[0x2EB - 0x2DF];
@@ -115,7 +118,9 @@ typedef struct {
     u8 unkA6;
     u8 unkA7;
     u8 unkA8;
-    u8 unkA9[0xB4 - 0xA9];
+    u8 unkA9[0xAD - 0xA9];
+    u8 unkAD;
+    u8 unkAE[0xB4 - 0xAE];
     u8 unkB4;
     u8 unkB5;
     u8 unkB6[0xC6 - 0xB6];
@@ -212,6 +217,10 @@ extern MessageImage D_800D39B8;
 extern void *D_800D39F0;   /* battle message table */
 extern u8 D_800D2CAF;      /* pending battle message id */
 extern s16 D_800D2C94;     /* committed target mask */
+extern u16 D_800D2C96;     /* alive mask at commit */
+extern s16 D_800D2C98;     /* committed animation */
+extern u8 D_800D2CA9;      /* committing actor */
+extern u8 D_800D2CAA;      /* committed action index */
 extern s16 D_800C48E8;
 extern u16 D_800D2C9E;     /* party members whose timers are held */
 
@@ -345,7 +354,8 @@ extern SlotFlags D_800D32A0[11];
 /* Formation group entries (4 bytes from 800d301c). */
 typedef struct {
     u8 count;
-    u8 unk1[3];
+    u8 members;        /* member bits */
+    u8 unk2[2];
 } GroupEntry;
 
 extern GroupEntry D_800D301C[16];
@@ -452,6 +462,19 @@ u8 func_8007A6C8(u8 slot, u8 arg1);
 u8 func_8007A744(u8 slot);
 u16 func_80089C08(u8 slot);
 u16 func_80089BEC(u8 bit);
+u16 func_80089C48(u8 slot);
+void func_80098C6C(u16 param);
+void func_80085454(u8 queue);
+void func_80085618(u8 queue);
+void func_800941A4(void);
+void func_8008860C(void);
+void func_80089038(void);
+void func_80089110(void);
+void func_800891E4(void);
+void func_80089348(void);
+void func_8008946C(void);
+void func_8008963C(void);
+void func_800897CC(void);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
 void func_800883AC(u8 slot);
