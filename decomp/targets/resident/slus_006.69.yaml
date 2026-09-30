@@ -55,6 +55,7 @@ segments:
       # constants open at 0x800183D8.
       - [0x8BD8, .rodata, sprite]
       - [0x90EC, .rodata, main_8002709C]
+      - [0x90F4, .rodata, main_8002A260]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
@@ -71,6 +72,7 @@ segments:
       # them is not established.
       - [0xD0DC, c, sprite]
       - [0x1789C, c, main_8002709C]
+      - [0x1AA60, c, main_8002A260]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in

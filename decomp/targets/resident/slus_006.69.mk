@@ -20,3 +20,7 @@ CC_sound := 2.6.3
 # addresses its small globals through $gp.
 GP_sprite := 8
 MASPSX_sprite := --aspsx-version=2.79 --use-comm-section
+# The texture-scroll and disc unit (8002709C-8002A260) is compiled by GCC
+# 2.6.3 with inline division checks.
+CC_main_8002709C := 2.6.3
+MASPSX_main_8002709C := --aspsx-version=2.34 --expand-div
