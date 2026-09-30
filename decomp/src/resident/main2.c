@@ -578,7 +578,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035C0C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035CDC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035DA0);
+extern s32 D_8005937C;
+
+s32 func_80035DA0(void) {
+    return D_8005937C;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035DB0);
 
@@ -588,29 +592,89 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035F1C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80035FF8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003611C);
+extern Actuator D_8005A1BC[2];
+extern void func_80040C3C(u8 *data0, s32 size0, u8 *data1, s32 size1);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036188);
+/* Stop both controllers' actuators and register their data with libpad. */
+void func_8003611C(void) {
+    D_8005A1BC[0].act[0] = 0;
+    D_8005A1BC[0].timer = 0;
+    D_8005A1BC[0].state = 0;
+    D_8005A1BC[0].disabled = 0;
+    D_8005A1BC[1] = D_8005A1BC[0];
+    func_80040C3C(D_8005A1BC[0].act, 4, D_8005A1BC[1].act, 4);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036220);
+/* Step one actuator: run while its timer lasts, then wind down. */
+void func_80036188(Actuator *actuator) {
+    if (actuator->disabled == 0) {
+        if (actuator->timer != 0) {
+            actuator->act[0] = 1;
+            actuator->act[1] = 0x40;
+            actuator->act[2] = 1;
+            actuator->act[3] = 0;
+            actuator->state = 1;
+            actuator->timer--;
+        } else if (actuator->state == 1) {
+            actuator->act[0] = 1;
+            actuator->act[1] = 0x40;
+            actuator->act[2] = 0;
+            actuator->act[3] = 0;
+            actuator->state = 2;
+        } else if (actuator->state == 2) {
+            actuator->act[0] = 0;
+            actuator->state = 0;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036258);
+void func_80036220(void) {
+    func_80036188(&D_8005A1BC[0]);
+    func_80036188(&D_8005A1BC[1]);
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036270);
+/* Run the actuator of `port` for `frames` frames. */
+void func_80036258(s32 port, s16 frames) {
+    D_8005A1BC[port].timer = frames;
+}
+
+void func_80036270(s32 port, u8 disabled) {
+    D_8005A1BC[port].disabled = disabled;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036288);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003633C);
+extern u8 D_8005938C;
+
+void func_8003633C(u8 value) {
+    D_8005938C = value;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_8003634C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800363E0);
+extern s32 D_80059390;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800363F0);
+void func_800363E0(s32 value) {
+    D_80059390 = value;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036400);
+extern s32 D_800501FC;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036410);
+void func_800363F0(s32 value) {
+    D_800501FC = value;
+}
+
+extern s32 D_80050200;
+
+void func_80036400(s32 value) {
+    D_80050200 = value;
+}
+
+extern s32 D_80050208;
+
+s32 func_80036410(void) {
+    return D_80050208;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036420);
 
@@ -618,31 +682,71 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036528);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800365FC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800366E0);
+extern void (*D_80050594)(void);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_800366F0);
+/* Install the callback run by 800366f0. */
+void func_800366E0(void (*callback)(void)) {
+    D_80050594 = callback;
+}
+
+void func_800366F0(void) {
+    D_80050594();
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036718);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036CD8);
+typedef struct {
+    u16 flags;
+    u8 unk2[0x12];
+    s16 unk14;
+    s16 unk16;
+    u8 unk18[0x16];
+    u16 flags2E;
+    s16 unk30;
+    s16 unk32;
+} Block59394;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036CF8);
+extern Block59394 *D_80059394;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036D18);
+void func_80036CD8(s32 bits) {
+    D_80059394->flags |= bits;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036D30);
+void func_80036CF8(s32 bits) {
+    D_80059394->flags &= ~bits;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036D50);
+s16 func_80036D18(void) {
+    return D_80059394->flags;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036D70);
+void func_80036D30(s32 bits) {
+    D_80059394->flags2E |= bits;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036D88);
+void func_80036D50(s32 bits) {
+    D_80059394->flags2E &= ~bits;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036D98);
+s16 func_80036D70(void) {
+    return D_80059394->flags2E;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036DA8);
+void func_80036D88(s16 value) {
+    D_80059394->unk14 = value;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036DB8);
+void func_80036D98(s16 value) {
+    D_80059394->unk16 = value;
+}
+
+void func_80036DA8(s16 value) {
+    D_80059394->unk30 = value;
+}
+
+void func_80036DB8(s16 value) {
+    D_80059394->unk32 = value;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main2", func_80036DC8);
 
