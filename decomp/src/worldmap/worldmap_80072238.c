@@ -2,9 +2,98 @@
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072238);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007299C);
+/* Leave the world map: stop audio, release actor handles, shut down each
+ * subsystem and free the area buffers. */
+void func_8007299C(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072BB0);
+    if (D_8009D7CC == 0) {
+        func_8003A89C(D_80062528, 0, 0xF0);
+    }
+    func_80039FF8();
+    func_8003852C(D_8006259C);
+    func_800320E8(D_8006259C);
+    for (i = 0; i < 0x40; i++) {
+        if (D_8009BE24[i].handle != 0) {
+            func_800230A8(D_8009BE24[i].handle);
+            D_8009BE24[i].handle = 0;
+        }
+    }
+    if (D_8009D7CC == 1) {
+        func_80075460();
+        D_8006F954[0] |= 0x8000;
+    }
+    func_80092DD0();
+    func_800931B0();
+    func_80084818();
+    func_80086124();
+    func_80024FB8();
+    func_80086568();
+    func_800866C8();
+    func_8007474C();
+    func_80074F04();
+    func_800750DC();
+    func_80088FF4();
+    func_80089128();
+    func_80097D64();
+    func_800320E8(D_8009BC38);
+    func_800320E8(D_8009BCB0);
+    func_800320E8(D_8009BC3C);
+    func_800320E8(D_8009BCB4);
+    func_800320E8(D_8009C180);
+    for (i = 0; i < 3; i++) {
+        if (D_8009CD34[i] != NULL) {
+            func_800320E8(D_8009CD34[i]);
+        }
+        if (D_8009BDF8[i] != NULL) {
+            func_800320E8(D_8009BDF8[i]);
+        }
+    }
+    func_800976A0();
+    func_800960BC();
+}
+
+/* Set up the double-buffered 320x216 display and the background colour. */
+void func_80072BB0(void) {
+    func_80044110(1);
+    D_8009BCDC = 0x100;
+    func_8004A14C(0x100);
+    func_80043928(&D_8009BBC8[0].draw, 0, 0, 0x140, 0xD8);
+    func_80043928(&D_8009BBC8[1].draw, 0, 0xD8, 0x140, 0xD8);
+    func_800439E0(&D_8009BBC8[0].disp, 0, 0xD8, 0x140, 0xD8);
+    func_800439E0(&D_8009BBC8[1].disp, 0, 0, 0x140, 0xD8);
+    D_8009BBC8[1].draw.isbg = 1;
+    D_8009BBC8[0].draw.isbg = 1;
+    D_8009BBC8[1].draw.dtd = 1;
+    D_8009BBC8[0].draw.dtd = 1;
+    if (D_8009D7CC == 2) {
+        D_8009BBC8[0].draw.r0 = 0;
+        D_8009BBC8[0].draw.g0 = 0;
+        D_8009BBC8[0].draw.b0 = 0;
+        D_8009BBC8[1].draw.r0 = 0;
+        D_8009BBC8[1].draw.g0 = 0;
+        D_8009BBC8[1].draw.b0 = 0;
+    } else {
+        D_8009BBC8[0].draw.r0 = 0;
+        D_8009BBC8[0].draw.g0 = 0;
+        D_8009BBC8[0].draw.b0 = 0x70;
+        D_8009BBC8[1].draw.r0 = 0;
+        D_8009BBC8[1].draw.g0 = 0;
+        D_8009BBC8[1].draw.b0 = 0x70;
+    }
+    D_8009BBC8[1].disp.screen.y = 0xA;
+    D_8009BBC8[0].disp.screen.y = 0xA;
+    D_8009BBC8[1].disp.screen.w = 0x100;
+    D_8009BBC8[0].disp.screen.w = 0x100;
+    D_8009BBC8[1].disp.screen.x = 0;
+    D_8009BBC8[0].disp.screen.x = 0;
+    D_8009BBC8[1].disp.screen.h = 0xD8;
+    D_8009BBC8[0].disp.screen.h = 0xD8;
+    func_8002C6E0(0x80, 0x80, 0x80);
+    func_8004A0EC(0x80, 0x80, 0x80);
+    func_8004A10C(D_8009BB48[0], D_8009BB48[1], D_8009BB48[2]);
+    func_80048AB0(D_8009D7CC == 2 ? 0xB00 : 0x800, 0xE80, D_8009BCDC);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80072DB4);
 
@@ -79,7 +168,42 @@ void func_80073448(s32 id) {
     D_8009C5AC.vz = 0;
 }
 
+/* Unpack the area file and resolve its section offsets to pointers. */
+#ifdef NON_MATCHING /* area pointer reaches $a0 through an extra copy */
+void func_80073530(void) {
+    u8 *block;
+    u8 *base;
+    AreaHeader *area;
+    s32 *table;
+    s32 i;
+
+    block = D_8009C180;
+    D_8009C180 = func_80032E88(block, 0);
+    func_800320E8(block);
+    base = D_8009C180;
+    area = (AreaHeader *)base;
+    block = base + area->spots;
+    D_8009CD48 = base + area->off8;
+    D_8009D308 = base + area->offC;
+    D_8009BD30 = base + area->off10;
+    D_8009C7EC = base + area->off14;
+    D_8009BCC0 = base + area->off18;
+    D_8009D784 = base + area->off1C;
+    D_8009D77C = base + area->off20;
+    D_8009D7C8 = base + area->off24;
+    for (i = 0; i < 16; i++) {
+        D_8009D73C[i] = base + area->models[i];
+    }
+    D_8009D3F4 = (WorldmapSpot *)(block + ((SpotHeader *)block)->spots);
+    D_8009BD00 = table = (s32 *)(block + ((SpotHeader *)block)->table);
+    table[0] = (s32)block + table[0];
+    D_8009BD00[1] = (s32)block + table[1];
+    D_8009BD00[2] = (s32)block + table[2];
+    D_8009BD00[3] = (s32)block + table[3];
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073530);
+#endif
 
 /* Allocate the two 4 KiB work buffers. */
 void func_8007369C(void) {

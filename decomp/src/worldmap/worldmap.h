@@ -113,6 +113,101 @@ extern WorldmapSpot *D_8009D3F4;
 
 void func_8008DFF4(Vec3 *position);
 
+/* PsyQ libgpu environments. */
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+typedef struct {
+    RECT clip;
+    s16 ofs[2];
+    RECT tw;
+    u16 tpage;
+    u8 dtd, dfe, isbg, r0, g0, b0;
+    u32 dr_env[16];
+} DRAWENV;
+
+typedef struct {
+    RECT disp;
+    RECT screen;
+    u8 isinter, isrgb24, pad0, pad1;
+} DISPENV;
+
+typedef struct {
+    DRAWENV draw;
+    DISPENV disp;
+    u32 unk70;
+    u32 unk74;
+} DisplayBuffer;
+
+extern DisplayBuffer D_8009BBC8[2];
+extern s32 D_8009BCDC;
+extern u8 D_8009BB48[3]; /* background colour */
+
+void func_80044110(s32 mode);
+void func_8004A14C(s32 value);
+DRAWENV *func_80043928(DRAWENV *env, s32 x, s32 y, s32 w, s32 h);
+DISPENV *func_800439E0(DISPENV *env, s32 x, s32 y, s32 w, s32 h);
+void func_8002C6E0(s32 r, s32 g, s32 b);
+void func_8004A0EC(s32 r, s32 g, s32 b);
+void func_8004A10C(s32 r, s32 g, s32 b);
+void func_80048AB0(s32 a, s32 b, s32 c);
+
+/* Actor slots (0x80 bytes each). */
+typedef struct {
+    u8 pad0[0x4C];
+    s32 handle;
+    u8 pad50[0x30];
+} WorldmapActor;
+
+extern WorldmapActor *D_8009BE24;
+extern void *D_80062528;
+extern u16 D_8006F954[]; /* resident flag words */
+extern void *D_8009BC3C, *D_8009BCB4;
+
+void func_800320E8(void *block); /* free a block */
+void *func_80032E88(void *block, s32 mode);
+void func_800230A8(s32 handle);
+void func_8003A89C(void *a, s32 b, s32 c);
+void func_80039FF8(void);
+void func_8003852C(void *data);
+void func_80024FB8(void);
+void func_8007474C(void);
+void func_80074F04(void);
+void func_800750DC(void);
+void func_80075460(void);
+void func_80084818(void);
+void func_80086124(void);
+void func_80086568(void);
+void func_800866C8(void);
+void func_80088FF4(void);
+void func_80089128(void);
+void func_80092DD0(void);
+void func_800931B0(void);
+void func_800960BC(void);
+void func_800976A0(void);
+void func_80097D64(void);
+
+/* Area file: section offsets from its start. */
+typedef struct {
+    s32 unk0;
+    s32 spots;   /* spot block */
+    s32 off8, offC, off10, off14, off18, off1C, off20, off24;
+    s32 unk28;
+    s32 models[16];
+} AreaHeader;
+
+/* Spot block: arrival points and a table of four sections. */
+typedef struct {
+    s32 spots;
+    s32 table;
+} SpotHeader;
+
+extern void *D_8009D308, *D_8009CD48, *D_8009C7EC, *D_8009BD30, *D_8009D784;
+extern void *D_8009BCC0, *D_8009D7C8, *D_8009D77C;
+extern void *D_8009D73C[16];
+extern s32 *D_8009BD00;
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];
