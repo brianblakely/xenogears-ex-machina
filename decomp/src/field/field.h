@@ -32,7 +32,7 @@ typedef struct {
 
 /* One screen fade channel (800b20c4 + 0x58 * channel). Levels are 8.8. */
 typedef struct {
-    u8 modes[2][12]; /* DR_MODE per draw buffer */
+    DR_MODE modes[2]; /* per draw buffer */
     TILE tiles[2];   /* per draw buffer */
     s32 level[3];
     s32 step[3];
@@ -181,14 +181,16 @@ typedef struct {
 
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
-    u8 unk000[0x18];
+    DR_MODE modes[2]; /* 000: per buffer */
     TextBox text;    /* 018 */
     u8 unk0B4[0x37C - 0xB4];
     s16 status;      /* 37C: zero while displayed */
     s16 unk37E;      /* 37E: first line */
     s16 unk380;      /* 380: line count */
     s16 unk382;      /* 382 */
-    u8 unk384[0x408 - 0x384];
+    u8 unk384[0x3C4 - 0x384];
+    s16 unk3C4;      /* 3C4 */
+    u8 unk3C6[0x408 - 0x3C6];
     s16 timer;       /* 408 */
     u8 unk40A[0x40E - 0x40A];
     s16 busy;        /* 40E */
@@ -217,9 +219,7 @@ typedef struct {
 /* The model object at descriptor offset 04. */
 typedef struct {
     s32 position[3]; /* 00 */
-    s32 unk0C;       /* 0C */
-    s32 unk10;       /* 10 */
-    s32 unk14;       /* 14 */
+    s32 velocity[3]; /* 0C: 16.16 x, y, z */
     s32 unk18;       /* 18 */
     s32 unk1C;       /* 1C */
     u8 unk20[0x2C - 0x20];
@@ -248,7 +248,7 @@ typedef struct {
     void *packets[2]; /* 08: per draw buffer */
     u8 unk10[2];
     s16 mode;        /* 12 */
-    void *unk14;     /* 14 */
+    struct FieldAnimTable *anims; /* 14 */
     s16 center[3];   /* 18 */
     s16 unk1E;
     s16 radius;      /* 20 */
@@ -712,7 +712,7 @@ extern void func_8003BDFC(s32);
 extern s32 func_80028B14(void);
 extern void func_800295D8(s32 file, void *ring, s32, s32);
 extern void func_8003852C(void *bank);
-extern void func_80039F9C(s32 id, s32 voice, s16 volume, s16 pan);
+extern void func_80039F9C(s32 id, s16 voice, s16 volume, s16 pan);
 extern void func_80039FF8(void);
 extern void func_8003A20C(s32 voice);
 extern void func_80048D7C(VECTOR *v, VECTOR *out); /* VectorNormal */
@@ -745,6 +745,8 @@ extern void func_8008A7DC(s32 member, s32 slot);
 extern void func_80085560(s32 file, s32 unused, void (*callback)(s32));
 extern void func_800859DC(WaveChunk *chunk);
 extern void func_80086024(void);
+extern s32 func_80085F30(void);
+extern void func_80085FB8(void);
 extern void func_800A47D4(void);
 extern void func_800ACE24(void);
 extern void func_800A30B4(void);
@@ -772,6 +774,8 @@ extern s32 func_8008DBF0(s32 member, s32 amount);
 extern s32 func_8009D044(s32 offset, s32 flags); /* operand, immediate with flag 0x10 */
 extern void func_800A94A4(s32 actor);
 extern void func_8007AF74(s32 port);
+extern void func_8007AA44(FieldMarker *marker);
+extern void func_80080A74(s32 index);
 extern void func_8008B978(s32);
 extern void func_80071D08(s32 channel, s32 steps, s32 red, s32 green, s32 blue, s32 abr);
 extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag 0x20 */
@@ -802,8 +806,6 @@ extern void func_801E72CC(MATRIX *m, MATRIX *work, s32 a, s32 b);
 /* The field frame (8007554c). */
 extern s32 D_800ADB9C; /* frame start time */
 extern s32 D_800ADBA0; /* frame draw time */
-extern RECT D_800AFC58;
-extern u_long *D_800AF87C;
 extern void func_800748E8(void);
 extern void func_80086908(void);
 extern void func_800A9688(void);
@@ -829,7 +831,7 @@ extern void func_8008110C(void);
 extern void func_800722F4(void);
 extern s32 func_80073988(s32 angle, s32 goal, s32 step);
 extern void func_800223B0(FieldModel *model, s16 angle);
-extern void func_80021FE0(FieldModel *model, s16 angle);
+extern void func_80021FE0(FieldModel *model, s32 heading); /* set its facing */
 extern MATRIX D_800AFC30; /* sprite view rotation matrix */
 extern s32 D_800B00B4;     /* camera pitch */
 extern s32 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
@@ -867,7 +869,8 @@ extern void func_800A3074(u16 reference, s32 value); /* write an event variable 
 extern s32 func_800ACDB8(s32 offset); /* raw halfword operand */
 extern s32 func_800ACDEC(s32 offset); /* operand: bit 15 immediate, else variable */
 extern void func_80086A1C(s32 emitter, s32 *position);
-extern void func_80081F80(void *owner, s32 heading);
+struct FieldSpriteMotion;
+extern void func_80081F80(struct FieldSpriteMotion *sprite, s16 heading, FieldDescriptor *descriptor);
 extern s32 func_800854D0(void);
 extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
 extern s32 func_80099A4C(s32 dx, s32 dz);
@@ -883,7 +886,7 @@ extern void func_8007AD8C(void *pad0, void *pad1);
 extern void func_8007ADA4(s32 left, s32 right, s32 top, s32 bottom);
 extern void func_8007AE14(s32 x_divisor, s32 y_divisor);
 extern void func_8007AE2C(s32 port, s32 x, s32 y);
-extern void func_8007DA44(void *ot, s32 buffer);
+extern void func_8007DA44(u32 *ot, s32 buffer);
 extern void func_80074038(MATRIX *to, MATRIX *from);
 extern void func_80074078(MATRIX *to, MATRIX *from);
 extern void func_8007409C(MATRIX *to, MATRIX *from);
@@ -909,6 +912,16 @@ extern s32 D_8004F300;
 extern u8 D_80050622;
 extern GameState *D_8005A39C;
 extern s32 D_8004F2FC; /* cached sequence */
+extern s32 D_8004F338; /* loaded music sequence */
+extern s32 D_8004F340; /* -1: start the sequence at full volume */
+extern s32 D_8004F348; /* reuse the cached sequence */
+extern s32 D_8004F358; /* sequence read pending */
+extern s32 D_8004F35C; /* sequence active */
+extern s32 D_8004F360; /* wave loaded this request */
+extern u8 D_80062648[]; /* sequence buffer */
+extern s32 func_80039850(void *data, s32 volume);
+extern void func_80039A80(s32 sequence, s32 volume, s32);
+extern void func_80039B68(s32 sequence, s32 volume, s32 fade);
 extern s32 D_8004F364;
 extern s32 D_8004F368; /* shared wave bank released */
 extern s16 D_8004F384;
@@ -938,6 +951,7 @@ extern s32 D_800ADBE4;
 extern s32 D_800ADBE8;
 extern EventPackage *D_800ADBF8;
 extern s32 D_800ADBFC; /* event actor count */
+extern s32 D_800B2180[]; /* +0: event actors created */
 extern void *D_800ADBC0; /* pending party sprite buffer */
 extern s32 D_800ADBC8;
 extern s32 D_800ADBCC; /* pending party slot */
@@ -980,8 +994,14 @@ extern FieldSoundBank *D_800B235C; /* movie sound-effect bank */
 extern u8 *D_800ADC00; /* event bytecode */
 extern void (*D_800AE6A0[])(void); /* extended event instructions */
 extern EmitterSlot D_800AFE88[3];
+extern void func_800862CC(s32 sound, s32 volume, s32 unused, s32 distance, s32 actor);
 extern FieldActor *D_800B0078; /* current event actor */
 extern s32 D_800B00C0; /* yield */
+extern RECT D_800AFC58;    /* screen band saved by event op dd */
+extern u16 *D_800C3A48;    /* the band's saved pixels */
+extern u16 *D_800AF87C;    /* the band's working pixels */
+extern s32 D_800ADBB4;
+extern void func_80026F44(s32 w, s32 h, u16 *work, u16 *saved);
 extern void *D_800B00E0; /* shared wave bank buffer */
 extern void *D_800ADBB8; /* music-wave stream ring */
 extern s32 D_800ADBBC;   /* stream arrivals */
@@ -992,6 +1012,13 @@ extern s32 D_800ADB5C; /* list position */
 
 extern u16 D_800B14AC;
 extern DialogueWindow D_800C2698[4];
+extern RECT D_800AFC80[16]; /* text texture windows */
+extern RECT D_800AFE3C[2]; /* fade texture windows */
+extern DR_MODE D_800B1DF4[2][16]; /* text draw modes per buffer */
+extern void func_8007EE0C(s32 window);
+extern u16 D_800C3900; /* pad buttons that move a window's choice */
+extern void func_80034874(TextBox *text, s32 line);
+extern void func_8003487C(TextBox *text);
 extern s32 D_800ADC10; /* scratchpad words in use */
 extern s8 *D_800B0054[2]; /* pointer pad buffers */
 extern u16 D_800B005C; /* pointer X divisor */
