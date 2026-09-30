@@ -186,6 +186,7 @@ void func_801E693C(FileEntry *list) {
 /* Set up the members placed with a model (800bb760). */
 void func_801E6A4C(void) {
     s32 member;
+    s32 x, y, z;
     s32 type;
 
     for (member = 0; member != 3; member++) {
@@ -199,7 +200,6 @@ void func_801E6A4C(void) {
 /* Each party member's sprite: its row takes the next image columns at row
  * 1c0, its sequencer word and a fresh 0x300-byte part block; then (unless
  * 800d36b8) the members are put on the stage floor facing their home. */
-#ifdef NON_MATCHING
 void func_801E6AC4(void) {
     BattleSprite *sprite;
     s32 member;
@@ -230,14 +230,11 @@ void func_801E6AC4(void) {
                 sprite->home[0] = x;
                 sprite->home[1] = y;
                 sprite->home[2] = z;
-                func_800245D8(sprite, 0x17, z);
+                func_800245D8(sprite, 0x17);
             }
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6AC4);
-#endif
 
 /* Loading state: after the delay, wait until every member sprite has
  * reached the ground, then mark loading done and end the task. */
