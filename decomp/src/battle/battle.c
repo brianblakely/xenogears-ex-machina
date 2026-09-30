@@ -1298,7 +1298,31 @@ void func_800780A8(BattleMessage *message, u32 row) {
     message->shown = 0;
 }
 
+/* Set up windows 5 and 4 (closed) and the eight battle messages: each pair
+ * shares a text image block and a VRAM rectangle row. */
+#ifdef NON_MATCHING
+void func_8007819C(void) {
+    s32 i;
+
+    func_8008F8F4(5, 8, 0x2A, 0x70, 0x12, 0, 0);
+    D_800D2D28->windows[5] = 0;
+    func_8008F8F4(4, 0x20, 0xC8, 0xF4, 0x12, 0, 0);
+    D_800D2D28->windows[4] = 0;
+    for (i = 0; i < 8; i += 2) {
+        D_800D36C8[i].pixels = (u32 *)func_8008AC00(0x39);
+        D_800D36C8[i + 1].pixels = D_800D36C8[i].pixels;
+        D_800D36C8[i].rect.x = 0x3C0;
+        D_800D36C8[i].rect.y = (i / 2) * 13;
+        D_800D36C8[i].rect.w = 0x3C;
+        D_800D36C8[i].rect.h = 13;
+        D_800D36C8[i + 1].rect = D_800D36C8[i].rect;
+        func_800780A8(&D_800D36C8[i], i);
+        func_800780A8(&D_800D36C8[i + 1], i + 1);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007819C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078310);
 

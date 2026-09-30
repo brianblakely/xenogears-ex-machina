@@ -564,6 +564,8 @@ void func_80070EDC(void);
 void func_800723E0(void);
 void func_8007252C(void);
 void func_8007819C(void);
+void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait);
+void func_800780A8(BattleMessage *message, u32 row);
 void func_80077990(void);
 void func_8009892C(void);
 void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e);
