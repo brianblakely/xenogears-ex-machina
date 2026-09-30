@@ -570,7 +570,23 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002FC
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8002FF0C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003014C);
+/* Default morph channel update: step the weight toward the target by the
+ * step, without overshooting. Returns the weight. */
+s32 func_8003014C(MorphChannel *channel) {
+    if (channel->weight > channel->target) {
+        channel->weight -= channel->step;
+        if (channel->weight < channel->target) {
+            channel->weight = channel->target;
+        }
+    }
+    if (channel->weight < channel->target) {
+        channel->weight += channel->step;
+        if (channel->weight > channel->target) {
+            channel->weight = channel->target;
+        }
+    }
+    return channel->weight;
+}
 
 /* Copy the vertices listed in `indices` (last first) from `in` to `out`. */
 void func_800301C8(SVECTOR *out, SVECTOR *in, s32 count, s16 *indices) {
@@ -585,15 +601,127 @@ void func_800301C8(SVECTOR *out, SVECTOR *in, s32 count, s16 *indices) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030228);
+/* Add `count` morph deltas times `weight` (4.12) to their vertices. */
+void func_80030228(SVECTOR *vertices, MorphDelta *deltas, s32 count, s32 weight) {
+    s32 k;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800302D4);
+    if (weight != 0) {
+        while (--count != -1) {
+            k = deltas->index;
+            vertices[k].vx += (deltas->dx * weight) >> 12;
+            vertices[k].vy += (deltas->dy * weight) >> 12;
+            vertices[k].vz += (deltas->dz * weight) >> 12;
+            deltas++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800303C8);
+/* Add `count` morph deltas times `weight` (4.12) to their normals and
+ * renormalize them. */
+void func_800302D4(SVECTOR *normals, MorphDelta *deltas, s32 count, s32 weight) {
+    s32 k;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800305D8);
+    if (weight != 0) {
+        while (--count != -1) {
+            k = deltas->index;
+            normals[k].vx += (deltas->dx * weight) >> 12;
+            normals[k].vy += (deltas->dy * weight) >> 12;
+            normals[k].vz += (deltas->dz * weight) >> 12;
+            VectorNormalSS(&normals[k], &normals[k]);
+            deltas++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_800306D0);
+/* Start morphing a sprite model: keep its vertex (and normal) arrays in a
+ * new morph state and give the model copies to morph; every channel starts
+ * at weight 0 with the default update. NULL when the model has no morphs. */
+MorphState *func_800303C8(SpriteModel *model, s32 mode) {
+    MorphTable *table = model->morphs;
+    MorphState *state;
+    MorphChannel *channel;
+    s32 i;
+
+    if (table == NULL) {
+        return NULL;
+    }
+    func_800324B8(0x2B);
+    state = func_80031BDC((table->count << 5) | 0x14, mode);
+    state->model = model;
+    state->vertices = model->vertices;
+    state->normals = model->normals;
+    state->channels = channel = (MorphChannel *)(state + 1);
+    state->count = table->count;
+    func_800324B8(0x2C);
+    model->vertices = func_80031BDC(model->vertex_count * 8, mode);
+    i = model->vertex_count;
+    while (--i != -1) {
+        model->vertices[i].vx = state->vertices[i].vx;
+        model->vertices[i].vy = state->vertices[i].vy;
+        model->vertices[i].vz = state->vertices[i].vz;
+    }
+    if (model->flags & 0x10) {
+        func_800324B8(0x2D);
+        model->normals = func_80031BDC(model->vertex_count * 8, mode);
+        i = model->vertex_count;
+        while (--i != -1) {
+            model->normals[i].vx = state->normals[i].vx;
+            model->normals[i].vy = state->normals[i].vy;
+            model->normals[i].vz = state->normals[i].vz;
+        }
+    }
+    for (i = 0; i < state->count; channel++, i++) {
+        channel->update = func_8003014C;
+        channel->target = 0;
+        channel->weight = 0;
+        channel->step = 0;
+    }
+    return state;
+}
+
+/* Morph a sprite model: restore the touched vertices, then add each
+ * target's deltas at the weight its channel update returns (and to the
+ * normals). */
+void func_800305D8(MorphState *state) {
+    SpriteModel *model;
+    MorphTarget *target;
+    MorphChannel *channel;
+    s32 count;
+    s32 weight;
+    s32 i;
+
+    if (state != NULL) {
+        model = state->model;
+        count = state->count;
+        target = model->morphs->targets;
+        channel = state->channels;
+        func_800301C8(model->vertices, state->vertices, target[count].count, target[count].deltas);
+        for (i = 0; i < count; channel++, i++) {
+            weight = channel->update(channel);
+            func_80030228(model->vertices, target[i].deltas, target[i].count, weight);
+            if (model->flags & 0x10) {
+                func_800302D4(model->normals, target[i].normals, target[i].count, weight);
+            }
+        }
+    }
+}
+
+/* Stop morphing: free the model's morphed copies, give it back its own
+ * vertex and normal arrays and free the state. */
+void func_800306D0(MorphState *state) {
+    SpriteModel *model;
+
+    if (state != NULL) {
+        model = state->model;
+        func_800320E8(model->vertices);
+        if (model->flags & 0x10) {
+            func_800320E8(model->normals);
+        }
+        model->vertices = state->vertices;
+        model->normals = state->normals;
+        func_800320E8(state);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030750);
 

@@ -52,6 +52,56 @@ typedef struct {
     s32 size;
 } ModelBuffer;
 
+/* Vertex morphing. A morph delta moves vertex `index` by the delta times
+ * the channel weight (4.12 fixed point). */
+typedef struct {
+    s16 dx, dy, dz;
+    s16 index;
+} MorphDelta;
+
+/* A morph target: `count` vertex and normal deltas. The entry after the
+ * last target lists the `count` vertices the morphs touch (s16 indices). */
+typedef struct {
+    s32 count;
+    void *deltas;
+    MorphDelta *normals;
+} MorphTarget;
+
+typedef struct {
+    s32 count;
+    MorphTarget targets[1];
+} MorphTable;
+
+/* A sprite model (relocated by 8002C59C). */
+typedef struct {
+    u16 flags;          /* bit 4: has normals; bit 5: relocated */
+    u16 vertex_count;
+    u8 unk4[4];
+    SVECTOR *vertices;
+    SVECTOR *normals;
+    u8 unk10[0xC];
+    MorphTable *morphs; /* optional */
+} SpriteModel;
+
+/* A morph channel: its update function steps `weight` toward `target`. */
+typedef struct MorphChannel {
+    s32 (*update)(struct MorphChannel *channel);
+    s32 target;
+    s32 weight;
+    s32 step;
+    u8 unk10[0x10];
+} MorphChannel;
+
+/* The morph state of a sprite model: its own vertex and normal arrays
+ * (the model draws from morphed copies) and one channel per target. */
+typedef struct {
+    SpriteModel *model;
+    SVECTOR *vertices;
+    SVECTOR *normals;
+    s32 count;
+    MorphChannel *channels;
+} MorphState;
+
 /* Renderer output packet header. */
 typedef struct {
     u8 unk0[3];

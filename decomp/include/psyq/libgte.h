@@ -62,6 +62,7 @@ void NormalColorCol(SVECTOR *v0, CVECTOR *v1, CVECTOR *v2);
 void NormalColorCol3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, CVECTOR *v3, CVECTOR *v4, CVECTOR *v5,
                      CVECTOR *v6);
 long VectorNormalS(VECTOR *v0, SVECTOR *v1);
+void VectorNormalSS(SVECTOR *v0, SVECTOR *v1);
 long VectorNormal(VECTOR *v0, VECTOR *v1);
 MATRIX *MulMatrix2(MATRIX *m0, MATRIX *m1);
 
