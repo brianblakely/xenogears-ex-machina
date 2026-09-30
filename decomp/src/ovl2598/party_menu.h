@@ -129,10 +129,19 @@ typedef struct {
     u8 pad_1188[0xC];
 } ListBlock;
 
+/* PsyQ libgs TIM image descriptor (ReadTIM). */
+typedef struct {
+    u32 mode;
+    RECT *crect;
+    u32 *caddr;
+    RECT *prect;
+    u32 *paddr;
+} TIM_IMAGE;
+
 /* The 0x5034-byte menu work block. */
 typedef struct {
     u8 pad_0[0xB80];
-    u32 *tim[5];      /* 0xB80: TIM_IMAGE of the card icon (mode, crect, caddr, prect, paddr) */
+    TIM_IMAGE tim;    /* 0xB80: the card icon */
     u8 pad_B94[0x4B94 - 0xB94];
     u8 magic[2];      /* 0x4B94: save header "SC" */
     u8 icon_type;     /* 0x4B96 */
@@ -142,7 +151,9 @@ typedef struct {
     u8 icon[0x80];    /* 0x4C14 */
     u8 pad_4C94[0x4F7C - 0x4C94];
     s32 cursor;       /* 0x4F7C: file screen cursor */
-    u8 pad_4F80[0x5034 - 0x4F80];
+    u8 pad_4F80[0x4FCE - 0x4F80];
+    char file_name[13]; /* 0x4FCE: card file name prefix */
+    u8 pad_4FDB[0x5034 - 0x4FDB];
 } MenuWork;
 
 /* The six outputs of func_80026338 for one sprite. */
@@ -350,7 +361,8 @@ extern void func_800295D8(s32 id, void *buffer, s32 a, s32 b);
 extern void func_80028A60(s32 a);
 extern void func_80038428(void *bank);
 extern void func_800471B4(void *tim);          /* OpenTIM */
-extern void func_800471C4(void *image);        /* ReadTIM */
+extern void func_800471C4(TIM_IMAGE *image);   /* ReadTIM */
+extern char *strcpy(char *dst, const char *src);
 extern void func_80044894(RECT *rect, void *data); /* LoadImage */
 extern void func_800445D0(s32 mode);           /* DrawSync */
 extern void func_8004B54C(s32 mode);           /* VSync */

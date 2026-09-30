@@ -138,14 +138,14 @@ void func_801C5390(void) {
     func_8003342C(archive);
     data = func_80032E88(archive->entry[0], 1);
     func_800471B4(data);
-    func_800471C4(D_800625A0->work->tim);
+    func_800471C4(&D_800625A0->work->tim);
     D_800625A0->work->magic[0] = 'S';
     D_800625A0->work->magic[1] = 'C';
     D_800625A0->work->icon_type = 0x11;
     D_800625A0->work->blocks = 1;
     func_8003F8E8(D_800625A0->work->title, 0x5C);
-    func_8003F99C(D_800625A0->work->clut, D_800625A0->work->tim[2], 0x20);
-    func_8003F99C(D_800625A0->work->icon, D_800625A0->work->tim[4], 0x80);
+    func_8003F99C(D_800625A0->work->clut, D_800625A0->work->tim.caddr, 0x20);
+    func_8003F99C(D_800625A0->work->icon, D_800625A0->work->tim.paddr, 0x80);
     func_800320E8(data);
     data = func_80032E88(archive->entry[1], 1);
     func_8002DD20(data);
