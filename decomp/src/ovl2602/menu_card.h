@@ -176,6 +176,17 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
+/* The gear screen block (ovl2602, menu state + 454, 1f00h bytes). */
+typedef struct {
+    u8 unk0[0x80];
+    POLY_FT4 packets[2]; /* 80 */
+    u8 unkD0[0x1ED9 - 0xD0];
+    u8 unk1ED9[7];       /* 1ed9 */
+    u8 unk1EE0;
+    u8 buffer;           /* 1ee1 */
+    u8 unk1EE2[0x1F00 - 0x1EE2];
+} GearScreen;
+
 /* A model part block (ovl2602, menu state + 458/45c). */
 typedef struct {
     void *data0; /* 00 */
@@ -336,7 +347,7 @@ typedef struct {
     u8 draw[0x5C]; /* 00: DRAWENV */
     u8 disp[0x14]; /* 5c: DISPENV */
     u32 ot[16];    /* 70 */
-    u32 unkB0;
+    u32 *ot_big;   /* b0: ovl2602's 400h-entry ordering table */
 } DrawEnv;
 
 typedef struct {
@@ -429,7 +440,7 @@ typedef struct {
     Marker *markers[2];  /* 444 */
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
-    u8 *unk454;          /* 454: ovl2602's 1f00h-byte block */
+    GearScreen *unk454;  /* 454: ovl2602's gear screen block */
     ModelParts *model_parts[2]; /* 458: ovl2602 */
     u8 unk460[0x46C - 0x460];
     SheetEntry sheet_entries[4]; /* 46c */
@@ -692,7 +703,7 @@ extern Gear D_8006DFAC[];
 extern u32 D_801D6C88[];  /* party bit of each member id */
 extern s32 D_801D6FD8;    /* available members 1-10 */
 s32 func_8003FA38(void);  /* rand */
-void func_801E7D14(void *a, void *b, u32 ot, s32 buffer);
+void func_801E7D14(void *a, void *b, u32 *ot, s32 buffer);
 u32 func_801C527C(u32 mask, u8 id);
 u32 func_801C5260(u8 id);
 void func_801CCEBC(u8 count, u8 *shown);
@@ -725,5 +736,24 @@ void func_801CC9A0(void);
 void func_801CC528(void);
 u8 func_801D5828(void);
 void func_801CCE90(u8 count, Label *labels, u8 *text_ids, u8 *shown);
+extern u8 D_801D6A24[];    /* transfer list label text ids */
+extern s32 D_801D6FDC;     /* index of the gear screen's member among the available ones */
+extern s32 D_801D905C, D_801D9060, D_801D9064; /* camera target */
+extern s32 D_801D9050, D_801D9054, D_801D9058; /* previous camera target */
+extern u32 D_8006EF58;     /* party gold */
+void func_80044764(void *env, s32 unk1, s32 unk2, s32 unk3);
+void func_80043B84(u32 *ot, u32 *first, u32 *last); /* link an OT range into another OT */
+void func_801CB4E4(void);
+void func_801CBE60(void);
+void func_801CABD8(void);
+void func_801E8030(s32 unk0);
+void func_801CFAB8(u8 unk0, u8 id);
+void func_801CB690(void);
+void func_801D2784(void);
+void func_801D27C4(void);
+void func_801CE82C(void);
+void func_801CF33C(void);
+void func_801CE7E0(void);
+void func_801C962C(void);
 
 #endif

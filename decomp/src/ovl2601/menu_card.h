@@ -176,6 +176,17 @@ typedef struct {
     u8 unk4786[2];
 } DetailBlock;
 
+/* The gear screen block (ovl2602, menu state + 454, 1f00h bytes). */
+typedef struct {
+    u8 unk0[0x80];
+    POLY_FT4 packets[2]; /* 80 */
+    u8 unkD0[0x1ED9 - 0xD0];
+    u8 unk1ED9[7];       /* 1ed9 */
+    u8 unk1EE0;
+    u8 buffer;           /* 1ee1 */
+    u8 unk1EE2[0x1F00 - 0x1EE2];
+} GearScreen;
+
 /* A model part block (ovl2602, menu state + 458/45c). */
 typedef struct {
     void *data0; /* 00 */
@@ -336,7 +347,7 @@ typedef struct {
     u8 draw[0x5C]; /* 00: DRAWENV */
     u8 disp[0x14]; /* 5c: DISPENV */
     u32 ot[16];    /* 70 */
-    u32 unkB0;
+    u32 *ot_big;   /* b0: ovl2602's 400h-entry ordering table */
 } DrawEnv;
 
 typedef struct {
@@ -429,7 +440,7 @@ typedef struct {
     Marker *markers[2];  /* 444 */
     u8 unk44C[4];
     DetailBlock *details; /* 450 */
-    u8 *unk454;          /* 454: ovl2602's 1f00h-byte block */
+    GearScreen *unk454;  /* 454: ovl2602's gear screen block */
     ModelParts *model_parts[2]; /* 458: ovl2602 */
     u8 unk460[0x46C - 0x460];
     SheetEntry sheet_entries[4]; /* 46c */
