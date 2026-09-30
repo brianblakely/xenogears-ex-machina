@@ -188,7 +188,73 @@ void func_801C5664(u8 allocate) {
     }
 }
 
+/* Load the screen's resources: the card header (prefix, icon), text images, sprite sheet, labels, the party's portraits, the sound bank and the gear shop tables. */
+#ifdef NON_MATCHING
+void func_801C56C8(void) {
+    TIM_IMAGE tim;
+    SheetEntry entries[3];
+    MenuResources *res;
+    u32 *packed;
+    s32 i;
+    s32 id;
+
+    res = D_8005945C;
+    func_8003342C(res);
+    packed = func_80032E88(res->files[0], 1);
+    func_800471B4(packed);
+    func_800471C4(&D_800625A0->card->icon);
+    *(CardPrefix *)D_800625A0->card->game_prefix = D_801C5000;
+    D_800625A0->card->save_magic[0] = 'S';
+    D_800625A0->card->save_magic[1] = 'C';
+    D_800625A0->card->save_icon_flag = 0x11;
+    D_800625A0->card->save_blocks = 1;
+    func_8003F8E8(D_800625A0->card->save_title, sizeof(D_800625A0->card->save_title));
+    func_8003F99C(D_800625A0->card->save_palette, D_800625A0->card->icon.caddr, 0x20);
+    func_8003F99C(D_800625A0->card->save_icon, D_800625A0->card->icon.paddr, 0x80);
+    func_800320E8(packed);
+    packed = func_80032E88(res->files[1], 1);
+    func_8002DD20(packed);
+    func_800320E8(packed);
+    D_800625A0->sprite_sheet = func_80032E88(res->files[2], 0);
+    D_800625A0->label_text = func_80032E88(res->files[3], 0);
+    func_80026338(D_800625A0->sprite_sheet, 0x14B, &entries[0].unk0, &entries[0].mode, &entries[0].clut_x,
+                  &entries[0].clut_y, &entries[0].page_x, &entries[0].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x14C, &entries[1].unk0, &entries[1].mode, &entries[1].clut_x,
+                  &entries[1].clut_y, &entries[1].page_x, &entries[1].page_y);
+    func_80026338(D_800625A0->sprite_sheet, 0x14D, &entries[2].unk0, &entries[2].mode, &entries[2].clut_x,
+                  &entries[2].clut_y, &entries[2].page_x, &entries[2].page_y);
+    entries[1].page_x += 0xC;
+    packed = func_80032E88(res->files[4], 1);
+    for (i = 0; i < 3; i++) {
+        id = D_800625A0->flags->members[i];
+        if (id != 0xFF) {
+            func_800471B4((u8 *)packed + id * 0xB20);
+            func_800471C4(&tim);
+            tim.crect->x = entries[i].clut_x;
+            tim.crect->y = entries[i].clut_y;
+            tim.prect->x = entries[i].page_x;
+            tim.prect->y = entries[i].page_y;
+            func_80044894(tim.crect, tim.caddr);
+            func_80044894(tim.prect, tim.paddr);
+        }
+    }
+    func_800445D0(0);
+    func_800320E8(packed);
+    if (D_80059178 != 0) {
+        func_80028470(0x10, 2);
+        D_8006259C = func_80031BDC(func_800288EC(5), 0);
+        func_800295D8(5, D_8006259C, 0, 0x80);
+        func_80028A60(0);
+        func_80028470(0x10, 0);
+        func_80038428(D_8006259C);
+    }
+    D_800625A0->effect_bank = D_8006259C;
+    D_800625A0->gear_tables = func_80032E88(res->files[7], 1);
+    func_800320E8(res);
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2602/asm/nonmatchings/ovl2602", func_801C56C8);
+#endif
 
 /* Reset the screen state, note which party members are available (and selectable) and load the resources. */
 void func_801C5B08(void) {

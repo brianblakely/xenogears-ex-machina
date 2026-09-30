@@ -476,7 +476,7 @@ typedef struct {
     u8 *unk1E2C;         /* 1e2c: shop tables, 5ch bytes (three kinds of 30 ids) per shop */
     u8 shop_items[0x30]; /* 1e30: the shop's item ids */
     u8 shop_kinds[0x30];  /* 1e60: their kind (0 weapon, 1 armour, 2 item) */
-    u8 unk1E90[0x1E94 - 0x1E90];
+    u8 *gear_tables;     /* 1e90: ovl2602 */
     u8 select_toggle;    /* 1e94: flipped by select */
     u8 unk1E95;          /* 1e95: counts button-1 presses */
 } MenuState;
