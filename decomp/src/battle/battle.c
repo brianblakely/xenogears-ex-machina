@@ -2454,15 +2454,180 @@ ModelList *func_8009EBA8(u8 *group, ModelList *list) {
     list->count = count;
     if (list->models != NULL) {
         for (i = 0; i < count; i++) {
-            list->models[i] = group + 0x10 + i * 0x38;
+            list->models[i] = (Model *)(group + 0x10 + i * 0x38);
         }
     }
     return list;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EC4C);
+/* Build a model hierarchy from (model, parent) pairs, up to the first pair
+ * naming neither a listed model nor 0xFFFF: a root part, then one part per
+ * pair with its packets for both buffers (built with mode; offset by (x0, y0)
+ * and (x1, y1) when offset is set). Returns the root, NULL on failure. */
+ModelPart *func_8009EC4C(ModelList *list, u16 *hierarchy, s32 mode, s32 offset, u16 x0, u16 y0,
+                         u16 x1, u16 y1) {
+    ModelPart *root;
+    ModelPart *part;
+    u16 *pair;
+    s32 count;
+    s16 index;
+    u16 id;
+    u16 parent;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EF3C);
+    func_80032498(4, 0);
+    pair = hierarchy;
+    count = 0;
+    while (pair[0] < list->count || pair[0] == 0xFFFF) {
+        count++;
+        pair += 2;
+    }
+    if (count == 0) {
+        return NULL;
+    }
+    count++;
+    root = func_80031BDC(count * sizeof(ModelPart), 0);
+    pair = hierarchy;
+    if (root == NULL) {
+        return NULL;
+    }
+    part = root + 1;
+    index = 1;
+    id = pair[0];
+    parent = pair[1];
+    root->flag4 = 1;
+    root->flag5 = 1;
+    root->flag6 = 1;
+    root->scale[0] = 0x1000;
+    root->scale[1] = 0x1000;
+    root->scale[2] = 0x1000;
+    root->parent = NULL;
+    root->flag7 = 0;
+    root->modelId = 0xFFFF;
+    root->index = count;
+    root->packets[0] = NULL;
+    root->packets[1] = NULL;
+    root->rotation.vx = 0;
+    root->rotation.vy = 0;
+    root->rotation.vz = 0;
+    root->translation[0] = 0;
+    root->translation[1] = 0;
+    root->translation[2] = 0;
+    root->field70 = 0;
+    root->field74 = 0;
+    root->field78 = 0;
+    while (id < list->count || id == 0xFFFF) {
+        if (parent == 0xFFFF) {
+            part->parent = NULL;
+        } else {
+            part->parent = root + parent + 1;
+        }
+        part->index = index;
+        index++;
+        part->flag4 = 1;
+        part->flag5 = 1;
+        part->flag7 = 1;
+        part->scale[0] = 0x1000;
+        part->scale[1] = 0x1000;
+        part->scale[2] = 0x1000;
+        part->flag6 = 0;
+        part->field52 = 0;
+        part->modelId = id;
+        if (id != 0xFFFF) {
+            func_8002CB54(list->models[id], &part->packets[0], &part->packets[1]);
+            if (part->packets[0] == NULL) {
+                func_8009F708(root);
+                return NULL;
+            }
+            if (offset) {
+                func_8002CC10(x0, y0);
+                func_8002CC74(x1, y1);
+            }
+            func_8002C8CC(list->models[id], part->packets[0], mode);
+            func_8003F968(part->packets[1], part->packets[0], list->models[id]->packetSize);
+            part->rotation.vx = 0;
+        } else {
+            part->packets[0] = NULL;
+            part->packets[1] = NULL;
+            part->rotation.vx = 0;
+        }
+        part->rotation.vy = 0;
+        part->rotation.vz = 0;
+        part->translation[0] = 0;
+        part->translation[1] = 0;
+        part->translation[2] = 0;
+        part->field70 = 0;
+        part->field74 = 0;
+        part->field78 = 0;
+        part++;
+        pair += 2;
+        id = pair[0];
+        parent = pair[1];
+    }
+    return root;
+}
+
+/* Pose a model hierarchy: the root's rotation (YXZ order when flag6 is set)
+ * with its translation, scaled by scale (4.12) per axis into its transform;
+ * each changed part (flag5) its rotation, and each part marked (flag4, or
+ * under a marked parent) its translation and world matrix. Clears the marks
+ * and returns the part count. */
+u16 func_8009EF3C(ModelPart *part, s32 scale) {
+    Matrix *diagonal = (Matrix *)0x1F800000;
+    ModelPart *root = part;
+    u32 count = root->index;
+    u32 i;
+
+    root->world.t[0] = root->translation[0];
+    root->world.t[1] = root->translation[1];
+    root->world.t[2] = root->translation[2];
+    if (root->flag6) {
+        func_8004A92C(&root->rotation, &root->world);
+    } else {
+        func_8003F738(&root->rotation, &root->world);
+    }
+    diagonal->m[0][0] = scale * part->scale[0] >> 12;
+    diagonal->m[0][1] = 0;
+    diagonal->m[0][2] = 0;
+    diagonal->m[1][0] = 0;
+    diagonal->m[1][1] = scale * part->scale[1] >> 12;
+    diagonal->m[1][2] = 0;
+    diagonal->m[2][0] = 0;
+    diagonal->m[2][1] = 0;
+    diagonal->m[2][2] = scale * part->scale[2] >> 12;
+    func_8004920C(&part->world, diagonal, &part->transform);
+    part->transform.t[0] = part->world.t[0];
+    part->transform.t[1] = part->world.t[1];
+    part->transform.t[2] = part->world.t[2];
+    for (i = 1; i < count; i++) {
+        part++;
+        if (part->flag5) {
+            if (part->flag6) {
+                func_8004A92C(&part->rotation, &part->transform);
+            } else {
+                func_8003F738(&part->rotation, &part->transform);
+            }
+            part->flag5 = 0;
+        }
+        if (part->parent != NULL && part->parent->flag4 == 1) {
+            part->flag4 = 1;
+        }
+        if (part->flag4) {
+            part->transform.t[0] = part->translation[0];
+            part->transform.t[1] = part->translation[1];
+            part->transform.t[2] = part->translation[2];
+            if (part->parent != NULL) {
+                func_8004931C(&part->parent->world, &part->transform, &part->world);
+            } else {
+                part->world = part->transform;
+            }
+        }
+    }
+    for (i = 1; i < count; i++) {
+        root++;
+        root->flag4 = 0;
+    }
+    return count;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F1C4);
 
@@ -2471,9 +2636,42 @@ void func_8009F5B0(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F5B8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F708);
+/* Free a model hierarchy: every part's packets, then the parts. */
+void func_8009F708(ModelPart *root) {
+    ModelPart *part;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F794);
+    if (root != NULL) {
+        part = root;
+        for (i = 0; i < root->index; i++, part++) {
+            if (part->packets[0] != NULL) {
+                func_800320E8(part->packets[0]);
+                part->packets[0] = NULL;
+                part->packets[1] = NULL;
+            }
+        }
+        root->index = 0;
+        func_800320E8(root);
+    }
+}
+
+/* Free a model list's table, releasing its models first when release is
+ * set. */
+void func_8009F794(ModelList *list, s32 release) {
+    u32 i;
+
+    if (list != NULL) {
+        for (i = 0; i < list->count; i++) {
+            if (list->models != NULL && list->models[i] != NULL && release) {
+                func_8002CBBC(list->models[i]);
+            }
+        }
+        if (list->models != NULL) {
+            func_800320E8(list->models);
+            list->models = NULL;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F844);
 
