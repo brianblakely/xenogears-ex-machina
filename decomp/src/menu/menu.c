@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "window.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -602,17 +603,140 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080D20);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080F04);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081094);
+/* Render a caption's text into its image and centre it on the screen. */
+void func_80081094(Caption *caption, s32 text, s32 arg) {
+    s32 width;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081100);
+    width = func_80034EAC(func_80033728(D_80092880, text), caption->image, 0x3F, arg);
+    caption->width = width;
+    caption->x = (0x140 - width) / 2;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800811AC);
+/* Show a text in the upper (0) or lower (1) caption; re-render only when
+ * the text changes. */
+void func_80081100(s32 text, s32 lower) {
+    Rect rect;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800812BC);
+    if (lower == 0) {
+        if (text == D_8009273C) {
+            return;
+        }
+        D_8009273C = text;
+        func_80081094(&D_80095510, text, 0);
+    } else {
+        if (text == D_80092740) {
+            return;
+        }
+        D_80092740 = text;
+        func_80081094(&D_80095540, text, 1);
+    }
+    rect.x = 0x140;
+    rect.y = 0x30;
+    rect.w = 0x42;
+    rect.h = 0xD;
+    func_80044894(&rect, D_80095510.image);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800814AC);
+/* Link the shown captions into the ordering table. */
+void func_800811AC(void *ot) {
+    Caption *caption;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008151C);
+    if (D_8009273C != 0) {
+        caption = &D_80095510;
+        caption->sprite[D_800928A0].w = caption->width;
+        caption->sprite[D_800928A0].x0 = caption->x;
+        func_80043B48(ot, &caption->sprite[D_800928A0]);
+    }
+    if (D_80092740 != 0) {
+        caption = &D_80095540;
+        caption->sprite[D_800928A0].w = caption->width;
+        caption->sprite[D_800928A0].x0 = caption->x;
+        func_80043B48(ot, &caption->sprite[D_800928A0]);
+    }
+    if (D_8009273C | D_80092740) {
+        func_80043B48(ot, D_80095570[D_800928A0]);
+    }
+}
+
+/* Measure a menu's lines and size its panel around the widest one. */
+void func_800812BC(Menu *menu) {
+    MenuItem *item;
+    Tile *panel;
+    s32 i;
+    s32 widest;
+
+    widest = 0;
+    for (i = 0; i < menu->count; i++) {
+        item = &menu->items[i];
+        item->half_width = func_8007EB6C(item->text) / 2;
+        widest = (widest < item->half_width) ? item->half_width : widest;
+    }
+    panel = &menu->panel[0];
+    ((PacketTag *)panel)->len = 3;
+    panel->w = widest * 2 + 0x14;
+    panel->x0 = 0x96 - widest;
+    menu->unk12 = 0;
+    *(u32 *)&panel->r0 = 0x60102020;
+    menu->y = 0x6D - menu->count * 10;
+    panel->code |= 2;
+    panel->h = menu->count * 20 + 0x14;
+    panel->y0 = menu->y - 10;
+    for (i = 0; i < menu->count; i++) {
+        item = &menu->items[i];
+        if (item->flags & 2) {
+            item->half_width = widest;
+        }
+    }
+    if (menu->title_width != 0) {
+        panel->w += menu->title_width;
+        panel->x0 -= menu->title_width >> 1;
+        menu->x = 0xA0 - (menu->title_width >> 1) - widest;
+    }
+    menu->panel[1] = menu->panel[0];
+    func_8007EE08(0);
+}
+
+/* Lay out all eight menus and reset the menu display. */
+void func_800814AC(void) {
+    u32 i;
+
+    for (i = 0; i < 8; i++) {
+        func_800812BC(&D_800915AC[i]);
+    }
+    D_80092734 = NULL;
+    D_80092700 = 0;
+    D_80092704 = 1;
+    func_80080F04();
+}
+
+/* Open a menu: place the cursor and draw every line. */
+void func_8008151C(Menu *menu) {
+    s32 i;
+
+    if (menu == NULL) {
+        return;
+    }
+    D_80092734 = menu;
+    if (menu == &D_800915AC[5]) {
+        return;
+    }
+    if (menu->title_width != 0) {
+        func_8007E894(menu->x, menu->y);
+    } else {
+        func_8007E894(0xA0, menu->y);
+    }
+    for (i = 0; i < menu->count; i++) {
+        func_8007F948(menu, i);
+        if (menu->title_width != 0) {
+            func_8007EBE0(menu->items[i].text);
+        } else {
+            func_8007ED84(menu->items[i].text, menu->items[i].half_width);
+        }
+    }
+    if (menu->draw != NULL) {
+        menu->draw(menu);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008162C);
 
