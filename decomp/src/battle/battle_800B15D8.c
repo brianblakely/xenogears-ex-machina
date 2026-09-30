@@ -278,7 +278,70 @@ void func_800B397C(s32 frames, s32 blend, u8 r, u8 g, u8 b) {
     D_800C355C = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B39C0);
+/* Fade the screen (800B36BC) to colour r, g, b over frames * 2 frames with
+ * the given blend mode; starts the fade tasks from black, or eases on from
+ * the current colour when a fade runs (the second fade, D_800C3C00, when
+ * D_800C355C is set). Defined without a prototype: the colours arrive as
+ * bytes. */
+void func_800B39C0(frames, blend, r, g, b)
+    s32 frames;
+    s32 blend;
+    u8 r;
+    u8 g;
+    u8 b;
+{
+    ScreenFade *fade;
+
+    if (D_800D3638 != 0) {
+        return;
+    }
+    frames *= 2;
+    if (D_800C355C != 0) {
+        if (D_800C3558 == NULL) {
+            fade = &D_800C3C00;
+            D_800C3554 = fade;
+        } else {
+            fade = D_800C3554;
+            goto resume;
+        }
+    } else {
+        if (D_800C3558 == NULL) {
+            fade = &D_800C3C50;
+            D_800C3558 = fade;
+        } else {
+            fade = D_800C3558;
+            goto resume;
+        }
+    }
+    func_8001CC18(0, fade);
+    func_8001CA58(fade, &fade->draw);
+    fade->task.link &= 0x7FFFFFFF;
+    if (D_800591AC != 0) {
+        D_80059464--;
+    }
+    func_8001CD6C(fade, func_800B36BC);
+    func_8001CD64(&fade->draw, func_800B3878);
+    func_8001CD74(fade, func_800B383C);
+    fade->task.data = fade;
+    fade->draw.data = fade;
+    fade->field40 = 0;
+    fade->from[0] = 0;
+    fade->from[1] = 0;
+    fade->from[2] = 0;
+    goto start;
+resume:
+    fade->from[0] = fade->colour[0];
+    fade->from[1] = fade->colour[1];
+    fade->from[2] = fade->colour[2];
+start:
+    fade->blend = blend;
+    fade->to[0] = r;
+    fade->to[1] = g;
+    fade->to[2] = b;
+    fade->total = frames;
+    fade->left = frames;
+    func_800B36BC(fade);
+}
 
 /* The screen fade's blend mode (1 when none runs). */
 u8 func_800B3B6C(void) {
