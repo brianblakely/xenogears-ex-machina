@@ -64,10 +64,24 @@ typedef struct {
     u8 padA1[0xA4 - 0xA1];
 } CharacterRecord;
 
+/* One of a gear record's four 8-byte part entries at +0x10. */
+typedef struct {
+    u8 pad0[2];
+    u8 valueE;              /* +2 */
+    u8 value10;             /* +3 */
+    u8 value11;             /* +4 */
+    u8 id;                  /* +5 */
+    u8 pad6[2];
+} GearEntry;
+
 /* Gear record (0xA4 bytes): the game data's (after the characters) and the
  * battle copy at combatant +0xA4. */
 typedef struct {
-    u8 pad0[0x38];
+    u8 pad0[4];
+    u8 partItems[4];        /* 0x04: item slot of each part */
+    u8 pad8[0x10 - 0x8];
+    GearEntry entries[4];   /* 0x10 */
+    u8 pad30[0x38 - 0x30];
     u16 fuel;               /* 0x38 */
     u16 maxFuel;            /* 0x3A */
     u8 pad3C[0x4F - 0x3C];
@@ -97,7 +111,7 @@ typedef struct {
     GearRecord gears[20];
 } UnitRecords;
 
-/* A 16-byte item entry of the battle work area. */
+/* A 16-byte entry of the battle's character item list. */
 typedef struct {
     u8 pad0[3];
     u8 durability;          /* +3 */
@@ -109,6 +123,32 @@ typedef struct {
     u8 valueC;
     u8 padD[3];
 } BattleItem;
+
+/* A 20-byte entry of the battle's gear part list. */
+typedef struct {
+    u8 pad0[0xC];
+    u8 durability;          /* +0xC */
+    u8 padD;
+    u8 valueE;
+    u8 id;                  /* +0xF */
+    u8 value10;
+    u8 value11;
+    u8 pad12[2];
+} BattlePart;
+
+/* The item lists share one area: character items, or gear parts. Both hold
+ * 50 entries followed by three the party members use. */
+typedef union {
+    struct {
+        BattleItem list[50];
+        BattleItem members[3];
+    } items;
+    struct {
+        u8 pad[0x258];
+        BattlePart list[50];
+        BattlePart members[3];
+    } parts;
+} BattleItemLists;
 
 /* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes. */
 typedef struct {
@@ -147,9 +187,8 @@ typedef struct {
     CommandDescriptor partyCommands[3][38]; /* 0x1058 */
     CommandDescriptor gearCommands[3][42];  /* 0x2228 */
     u8 pad35D8[0x54F8 - 0x35D8];
-    BattleItem items[50];                   /* 0x54F8 */
-    BattleItem gearItems[3];                /* 0x5818 */
-    u8 pad5848[0x5F6C - 0x5848];
+    BattleItemLists lists;                  /* 0x54F8 */
+    u8 pad5B74[0x5F6C - 0x5B74];
     u32 damage[12];                         /* 0x5F6C */
     u8 pad5F9C[0x5FA0 - 0x5F9C];
     u8 resultCode[12];                      /* 0x5FA0: 0xFF untouched */
@@ -168,11 +207,13 @@ typedef struct {
 #define BATTLE_OFFSET(type, field) ((u32)&((type *)0)->field)
 typedef char BattleLayoutCheck[(sizeof(CharacterRecord) == 0xA4 && sizeof(GearRecord) == 0xA4 && sizeof(Combatant) == 0x170
                                && sizeof(CommandDescriptor) == 0x28 && sizeof(BattleItem) == 0x10
+                               && sizeof(BattlePart) == 0x14
                                && BATTLE_OFFSET(BattleWork, targetMask) == 0x5FAC
                                && BATTLE_OFFSET(BattleWork, message) == 0x5FC7) ? 1 : -1];
 
 extern UnitRecords D_8006D8A0;
 extern u8 D_8006F8BA[];                 /* item durability by slot */
+extern u8 D_8006F8EA[];                 /* gear part durability by slot */
 extern u8 D_8006F5C4[];                 /* inventory counts */
 extern u8 D_8006F65A[];                 /* inventory items */
 

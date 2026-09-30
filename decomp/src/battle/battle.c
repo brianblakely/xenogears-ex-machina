@@ -1314,7 +1314,7 @@ u8 func_8009A7B8(u8 id) {
 
 /* Whether gear item index is one of character 4's four entries. */
 s32 func_8009A7E4(u8 index) {
-    BattleItem *item = &D_800C34B0->gearItems[index];
+    BattleItem *item = &D_800C34B0->lists.items.members[index];
 
     if (D_8006D8A0.characters[4].entries[0].id == item->id
         || D_8006D8A0.characters[4].entries[1].id == item->id
@@ -1328,7 +1328,7 @@ s32 func_8009A7E4(u8 index) {
  * none does): copy its values, record the item slot and durability, and update
  * the battle copies of character 4. */
 void func_8009A854(u8 index, u8 k) {
-    BattleItem *item = &D_800C34B0->items[index];
+    BattleItem *item = &D_800C34B0->lists.items.list[index];
     u8 i;
 
     if (D_8006D8A0.characters[4].entries[0].id == item->id) {
@@ -1945,6 +1945,11 @@ void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
     }
 }
 
+/* Unit note: a new translation unit starts between 8009BAC4 and 8009E788.
+ * GCC aligns jump tables to 8 within a unit's rodata; the tables up to
+ * 8009BAC4's (0x800704A0, ending at 0x800704CC) sit at 0 mod 8, those from
+ * 8009E788's (0x800704CC) at 4 mod 8, so that unit's rodata starts at
+ * 0x800704CC. Its text boundary is not yet known. */
 /* Damage the target by the command's power in twentieths of its gear's
  * maximum HP. */
 void func_8009BD94(void) {
@@ -2230,17 +2235,122 @@ void func_8009E3C8(void) {
     D_800CCCE8.records[D_800C3E50].statusTimers[6] = 3;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E410);
+/* Drain the target gear's fuel (result 10) by the command's power in
+ * twentieths of its maximum fuel. */
+void func_8009E410(void) {
+    s32 amount = D_800D2DC8->maxFuel * D_800C3DFC->power / 20;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E48C);
+    D_800C34B0->resultCode[D_800C3E50] = 10;
+    D_800C34B0->damage[D_800C3E50] = amount;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E508);
+/* Restore the target gear's fuel (result 11) by the command's power in
+ * twentieths of its maximum fuel. */
+void func_8009E48C(void) {
+    s32 amount = D_800D2DC8->maxFuel * D_800C3DFC->power / 20;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E53C);
+    D_800C34B0->resultCode[D_800C3E50] = 11;
+    D_800C34B0->damage[D_800C3E50] = amount;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E5C8);
+/* Clear the target gear's statuses 0x7F4 and the target's status 0x20. */
+void func_8009E508(void) {
+    D_800D2DC8->status7C &= 0xF80B;
+    D_800C3E34->pilot.status7A &= ~0x20;
+}
 
+/* Whether gear part 50 + index is one of the parts of character 4's gear. */
+s32 func_8009E53C(u8 index) {
+    BattlePart *part = &D_800C34B0->lists.parts.members[index];
+
+    if (D_8006D8A0.gears[D_8006D8A0.characters[4].gearId].entries[0].id == part->id || D_8006D8A0.gears[D_8006D8A0.characters[4].gearId].entries[1].id == part->id) {
+        return 1;
+    }
+    return D_8006D8A0.gears[D_8006D8A0.characters[4].gearId].entries[2].id == part->id;
+}
+
+/* Put battle gear part index into character 4's gear entry holding its id
+ * (entry k when none does; the third entry's match selects entry 3): copy its
+ * values, record the part slot and durability, and update the battle copies of
+ * character 4's gear. */
+void func_8009E5C8(u8 index, u8 k) {
+    BattlePart *part = &D_800C34B0->lists.parts.list[index];
+    u8 gearId = D_8006D8A0.characters[4].gearId;
+    u8 i;
+
+    if (D_8006D8A0.gears[gearId].entries[0].id == part->id) {
+        k = 0;
+    }
+    if (D_8006D8A0.gears[gearId].entries[1].id == part->id) {
+        k = 1;
+    }
+    if (D_8006D8A0.gears[gearId].entries[2].id == part->id) {
+        k = 3;
+    }
+    D_8006D8A0.gears[gearId].entries[k].valueE = part->valueE;
+    D_8006D8A0.gears[gearId].entries[k].value11 = part->value11;
+    D_8006D8A0.gears[gearId].entries[k].value10 = part->value10;
+    D_8006D8A0.gears[gearId].entries[k].value11 = part->value11;
+    D_8006D8A0.gears[gearId].partItems[k] = index;
+    D_8006F8BA[index] = part->durability;
+    for (i = 0; i < 3; i++) {
+        if ((D_800C34B0->records + i)->pilot.characterId == 4) {
+            D_800C34B0->records[i].gear.entries[k].valueE = part->valueE;
+            D_800C34B0->records[i].gear.entries[k].value11 = part->value11;
+            D_800C34B0->records[i].gear.entries[k].value10 = part->value10;
+            D_800C34B0->records[i].gear.entries[k].value11 = part->value11;
+            D_800C34B0->records[i].gear.partItems[k] = index;
+        }
+    }
+}
+
+#ifdef NON_MATCHING
+/* Matches instruction for instruction; its jump table must start a new unit's
+ * rodata at 0x800704CC (see the unit note above func_8009BD94).
+ * Wear the attacker gear's parts for the current command: command 0 the first
+ * part's, 2 and 17 the fourth's, 3-14 both, 15 the first's. */
+void func_8009E788(void) {
+    switch (D_800C34B0->commandIndex) {
+    case 0:
+        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
+            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        }
+        break;
+    case 3:
+    case 4:
+    case 5:
+    case 6:
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
+            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        }
+        if (D_8006F8EA[D_800D2D6C->partItems[3]] != 0) {
+            D_8006F8EA[D_800D2D6C->partItems[3]] += -1;
+        }
+        break;
+    case 15:
+        if (D_8006F8EA[D_800D2D6C->partItems[0]] != 0) {
+            D_8006F8EA[D_800D2D6C->partItems[0]] += -1;
+        }
+        break;
+    case 2:
+    case 17:
+        if (D_8006F8EA[D_800D2D6C->partItems[3]] != 0) {
+            D_8006F8EA[D_800D2D6C->partItems[3]] += -1;
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E788);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E868);
 
