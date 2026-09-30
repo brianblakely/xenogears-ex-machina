@@ -1600,7 +1600,63 @@ void func_8007D7A8(Vector *pos, s32 count) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D918);
+/* Link a projected point tile into the ordering table at the depth left in
+ * the scratchpad. */
+#define LINK_TILE1(ot, scratch, tile)                                         \
+    prev = (ot)[(scratch)->depth >> 4];                                        \
+    addr = (u32)(tile) & 0xFFFFFF;                                             \
+    (ot)[(scratch)->depth >> 4] = addr;                                        \
+    prev |= 0x02000000;                                                        \
+    *(u32 *)addr = prev
+
+/* Draw and advance this buffer's half of the ground particles: project
+ * them three at a time into point tiles, then let each fall (accelerating)
+ * until it reaches its ground height. */
+void func_8007D918(u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    Tile1 *tile = D_800926C0[D_800928A0];
+    SceneCell10 *cell = &D_800926BC[D_800928A0];
+    s32 cx = scratch->camera.vx;
+    s32 cy = scratch->camera.vy;
+    s32 cz = scratch->camera.vz;
+    s32 loaded = 0;
+    s32 i;
+    u32 prev;
+    u32 addr;
+
+    for (i = D_800928A0; i < 0xFC; i += 2, cell += 2) {
+        if (cell->unk6 == 0) {
+            continue;
+        }
+        scratch->point.vx = cell->unk0 - cx;
+        scratch->point.vy = cell->unk2 - cy;
+        scratch->point.vz = cell->unk4 - cz;
+        if (loaded == 0) {
+            gte_ldv0(&scratch->point);
+            loaded = 1;
+        } else if (loaded == 1) {
+            gte_ldv1(&scratch->point);
+            loaded = 2;
+        } else {
+            gte_ldv2(&scratch->point);
+            gte_rtpt();
+            loaded = 0;
+            gte_stsxy3(&tile[0].x0, &tile[1].x0, &tile[2].x0);
+            gte_stsz1(&scratch->depth);
+            LINK_TILE1(ot, scratch, &tile[0]);
+            gte_stsz2(&scratch->depth);
+            LINK_TILE1(ot, scratch, &tile[1]);
+            gte_stsz3(&scratch->depth);
+            LINK_TILE1(ot, scratch, &tile[2]);
+            tile += 3;
+        }
+        cell->unk2 += cell->unk7;
+        if (cell->unk2 >= cell->unk8) {
+            cell->unk6 = 0;
+        }
+        cell->unk7 += 2;
+    }
+}
 
 /* Allocate the 540 scene cells and their small tiles (2..4 pixels square,
  * pale blue), with a copy of the tiles for the other draw buffer. */
