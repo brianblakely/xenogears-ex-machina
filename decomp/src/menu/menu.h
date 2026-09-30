@@ -53,6 +53,20 @@ typedef struct {
     u8 *image;         /* 0x20: palette and emblem pixels */
 } ModelData;
 
+/* A node of a loaded model hierarchy. */
+typedef struct ModelNode {
+    u8 unk0[4];
+    struct ModelNode *next; /* 0x04 */
+    u8 unk8[0x28];
+    void *unk30;
+} ModelNode;
+
+/* A placed scene object. */
+typedef struct {
+    u8 unk0[0x44];
+    SVector rotation;  /* 0x44 */
+} SceneObject;
+
 /* A character moved in the menu scene. */
 typedef struct Actor {
     Vector pos;          /* 0x00 */
@@ -61,7 +75,7 @@ typedef struct Actor {
     u8 unk4C[0x8];
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
-    void *model;         /* 0x5C */
+    ModelNode *model;    /* 0x5C */
     void *object;        /* 0x60 */
     u8 unk64[0x18];
     s32 unk7C;
@@ -183,6 +197,10 @@ void func_80089C88(void *object, void *model);
 void func_8008A168(void);
 void func_80084BEC(Actor *actor);
 void func_8008E6F8(Actor *actor);
+void *func_80089FC4(void);
+void func_80089E2C(void *object, void *part);
+void func_8008A184(void *part, void *model);
+extern u8 D_80091FB0[];
 void func_80032C18(void *block, s32 arg);
 
 #endif

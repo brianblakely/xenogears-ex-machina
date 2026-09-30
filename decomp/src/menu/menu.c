@@ -1168,7 +1168,20 @@ void func_80084B48(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084BEC);
+/* Attach an extra object (model D_80091FB0) to the actor's model, turned
+ * by (0, 0xC00, 0x400). */
+void func_80084BEC(Actor *actor) {
+    void *parent = actor->model->next->next->unk30;
+    SceneObject *object = func_80089C54();
+    void *part = func_80089FC4();
+
+    func_80089E2C(object, part);
+    func_8008A184(part, D_80091FB0);
+    func_80089C88(parent, object);
+    object->rotation.vy = 0xC00;
+    object->rotation.vx = 0;
+    object->rotation.vz = 0x400;
+}
 
 /* Set up an actor from its loaded model file on one side of the scene:
  * opponent link, model object, kind flags from the model id, part counts,
