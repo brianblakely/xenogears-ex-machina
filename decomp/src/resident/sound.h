@@ -144,10 +144,11 @@ typedef struct {
     s32 unk88;
     s16 volume_step;
     s16 volume_target;
-    u8 unk90[4];
+    s16 pan_step;
+    s16 pan_target;
     s16 unk94;
     s16 unk96;
-    u8 unk98[2];
+    s16 pan_frames;
     s16 volume_frames;
     SoundLoop loops[4];
     u8 unkCC[2];

@@ -2044,23 +2044,132 @@ u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DC50);
+extern void func_8003F240(void *modulator);
 
+/* Tremolo: start the volume modulator with a signed depth, a rate (with a
+ * quadratic boost), a delay and the sawtooth shape. */
+u8 *func_8003DC50(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 depth = ((s8 *)data)[1];
+    s16 rate = data[0];
+    SoundModulator *modulator;
+
+    if (depth != 0 && rate != 0) {
+        rate += rate * rate / 64;
+        modulator = &channel->modulator[1];
+        modulator->step = func_8003E290(depth << 24, rate, 2);
+        modulator->rate = rate;
+        modulator->delay = data[2] * 4;
+        modulator->unk1A = 0x400;
+        modulator->wave = func_8003F240;
+        modulator->shape = 2;
+        modulator->unk1C = 1;
+        modulator->flags = 3;
+        channel->unkCE |= 2;
+        func_8003E3E0(modulator);
+    }
+    return data + 3;
+}
+
+/* Tremolo with an explicit shape (low nibble of the third operand; bit 4
+ * selects a one-sided wave).
+ * Nonmatching: register allocation of rate/mode differs. */
+#ifdef NON_MATCHING
+u8 *func_8003DD24(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    s32 rate = data[0];
+    s32 depth = ((s8 *)data)[1];
+    s32 mode = data[2];
+    SoundModulator *modulator;
+    s32 flags;
+
+    if (depth != 0 && rate != 0) {
+        rate += rate * rate / 64;
+        flags = ((mode & 0x10) == 0) * 2;
+        mode &= 0xF;
+        modulator = &channel->modulator[1];
+        modulator->step = func_8003E290(depth << 24, rate, mode);
+        modulator->unk1A = 0x400;
+        modulator->rate = rate;
+        modulator->delay = 0;
+        modulator->unk1C = 1;
+        modulator->shape = mode;
+        modulator->flags = flags + 1;
+        modulator->wave = D_800508A4[mode];
+        channel->unkCE |= 2;
+        func_8003E3E0(modulator);
+    }
+    return data + 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DD24);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DE18);
+/* Set the volume modulator's period. */
+u8 *func_8003DE18(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 period = *data++ + 1;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DE54);
+    if (period != 0) {
+        channel->modulator[1].unk18 = channel->modulator[1].unk1A = 0x400 / (period * 4);
+    }
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DE74);
+/* Volume modulator on and off. */
+u8 *func_8003DE54(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->unkCE |= 2;
+    channel->modulator[1].flags |= 1;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DE94);
+u8 *func_8003DE74(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->unkCE &= ~2;
+    channel->modulator[1].flags &= ~1;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DEB4);
+/* Set the pan (0 left, 0x40 centre, 0x7F right). */
+u8 *func_8003DE94(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->pan = *data << 8;
+    channel->flags2 |= 0x100;
+    return data + 1;
+}
 
+/* Add to the pan (wrapping). */
+u8 *func_8003DEB4(s8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    channel->pan = (channel->pan + (s16)(*data << 8)) & 0x7FFF;
+    channel->flags2 |= 0x100;
+    return data + 1;
+}
+
+/* Slide the pan to a target over `frames`.
+ * Nonmatching: the original tests the frame count before computing the
+ * distance (register allocation differs). */
+#ifdef NON_MATCHING
+u8 *func_8003DEE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u16 frames = data[0];
+    s32 delta = ((s8 *)data)[1] - (channel->pan >> 8);
+
+    if (frames != 0 && delta != 0) {
+        delta <<= 8;
+        channel->pan_target = delta;
+        channel->pan_frames = frames;
+        channel->flags3 |= 0x10;
+        channel->pan_step = delta / frames;
+    }
+    return data + 2;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DEE4);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DF3C);
+/* Set the pan modulator's period. */
+u8 *func_8003DF3C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 period = *data++ + 1;
+
+    if (period != 0) {
+        channel->modulator[2].unk18 = channel->modulator[2].unk1A = 0x400 / (period * 4);
+    }
+    return data;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003DF78);
 
