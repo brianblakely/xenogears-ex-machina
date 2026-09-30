@@ -4998,8 +4998,8 @@ void func_8009E208(void) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E208);
 #endif
 
-void func_8009E574(s32 a, s32 b);
-void func_8009E810(s32 a);
+void func_8009E574(s32 x, s32 z);
+void func_8009E810(s32 y);
 
 /* Start a jump (func_8009E574 / func_8009E810 from signed operands). */
 void func_8009E248(void) {
@@ -5024,21 +5024,82 @@ s16 func_8009E330(s32 offset) {
     return D_800ADC00[offset] + (D_800ADC00[offset + 1] << 8);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E35C);
+/* Place the current actor on layer operand 5 at a selected x/z. */
+void func_8009E35C(void) {
+    s32 x;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E428);
+    D_800B0078->layer = EVENT_OPERAND_BYTE(5);
+    x = func_8009CF78(1, EVENT_OPERAND_BYTE(6));
+    func_8009E574(x, func_8009CFBC(3, EVENT_OPERAND_BYTE(6)));
+    D_800B0078->layer_flags &= ~0x200000;
+    D_800B0078->flags &= ~0x10000;
+    D_800B0078->pc += 7;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E4BC);
+/* Move the current actor to layer operand 1 at its own x/z. */
+void func_8009E428(void) {
+    FieldActor *actor;
+
+    D_800B0078->layer = EVENT_OPERAND_BYTE(1);
+    actor = D_800AFA64.descriptors[D_800AFD1C].actor;
+    func_8009E574(actor->position[0].s.whole, actor->position[2].s.whole);
+    D_800B0078->pc += 2;
+}
+
+/* Place the current actor at a selected x/z. */
+void func_8009E4BC(void) {
+    s32 x;
+
+    x = func_8009CF78(1, EVENT_OPERAND_BYTE(5));
+    func_8009E574(x, func_8009CFBC(3, EVENT_OPERAND_BYTE(5)));
+    D_800B0078->layer_flags &= ~0x200000;
+    D_800B0078->flags &= ~0x10000;
+    D_800B0078->pc += 6;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E574);
 
+#ifdef NON_MATCHING
+/* Set the current actor's height `y` (whole units). */
+void func_8009E810(s32 y) {
+    D_800B0078->position[1].value = y << 16;
+    D_800B0078->unkEC = y;
+    D_800B0078->unk72 = y;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E810);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E83C);
+/* Set the current actor's extents from non-zero operand bytes (doubled). */
+void func_8009E83C(void) {
+    if (EVENT_OPERAND_BYTE(1) != 0) {
+        D_800B0078->unk18 = EVENT_OPERAND_BYTE(1) * 2;
+    }
+    if (EVENT_OPERAND_BYTE(2) != 0) {
+        D_800B0078->unk1C = EVENT_OPERAND_BYTE(2) * 2;
+    }
+    if (EVENT_OPERAND_BYTE(3) != 0) {
+        D_800B0078->height = EVENT_OPERAND_BYTE(3) * 2;
+    }
+    if (EVENT_OPERAND_BYTE(4) != 0) {
+        D_800B0078->unk1E = EVENT_OPERAND_BYTE(4) * 2;
+    }
+    D_800B0078->pc += 5;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E91C);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009EB48);
+/* -1 when one of the actor's slots carries event tag `tag`, else 0. */
+s32 func_8009EB48(FieldActor *actor, s32 tag) {
+    s32 i;
+
+    for (i = 0; i < 8; i++) {
+        if (tag == actor->slots[i].tag) {
+            return -1;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009EB78);
 
@@ -5046,11 +5107,55 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ED68);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F0A0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F424);
+/* Wander: every 16 frames turn the facing target by +/- an octant. */
+void func_8009F424(void) {
+    s32 facing;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F4CC);
+    facing = D_800B0078->unk106;
+    if ((++D_800B0078->unk102 & 0xF) == 0) {
+        if (!(func_8003FA38() & 1)) {
+            facing = (D_800B0078->unk106 + 0x200) & 0xFFF;
+        } else {
+            facing = (D_800B0078->unk106 - 0x200) & 0xFFF;
+        }
+    }
+    D_800B00C0 = 1;
+    D_800B0078->unk104 = facing;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F5A8);
+/* Wander with pauses: as func_8009F424, sometimes holding the facing. */
+void func_8009F4CC(void) {
+    s32 facing;
+    s32 random;
+
+    facing = D_800B0078->unk106;
+    if ((++D_800B0078->unk102 & 0xF) == 0) {
+        random = func_8003FA38();
+        if (random & 0x30) {
+            facing = D_800B0078->unk106 |= 0x8000;
+        } else if (!(random & 1)) {
+            facing = (D_800B0078->unk106 + 0x200) & 0xFFF;
+        } else {
+            facing = (D_800B0078->unk106 - 0x200) & 0xFFF;
+        }
+    }
+    D_800B00C0 = 1;
+    D_800B0078->unk104 = facing;
+    D_800B0078->pc += 1;
+}
+
+void func_8009F5F4(void);
+
+/* Run player control for this frame and repeat this opcode. */
+void func_8009F5A8(void) {
+    u16 pc;
+
+    pc = D_800B0078->pc;
+    func_8009F5F4();
+    D_800B00C0 = 1;
+    D_800B0078->pc = pc;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F5F4);
 

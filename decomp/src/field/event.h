@@ -26,9 +26,11 @@ typedef struct FieldActor {
     u32 layer_flags;    /* 004 */
     s16 triangle[4];     /* 008: located triangle per layer */
     s16 layer;           /* 010 */
-    u8 unk012[0x01A - 0x012];
+    u8 unk012[0x018 - 0x012];
+    s16 unk18;           /* 018 */
     s16 height;          /* 01A */
-    u8 unk01C[0x020 - 0x01C];
+    s16 unk1C;           /* 01C */
+    s16 unk1E;           /* 01E */
     Fixed position[3];  /* 020: x, y, z */
     u8 unk02C[0x030 - 0x02C];
     s32 unk30[3];        /* 030 */
@@ -68,7 +70,7 @@ typedef struct FieldActor {
     u8 unk0F0[0xFC - 0x0F0];
     u8 color0[3];       /* 0FC */
     u8 color1[3];       /* 0FF */
-    u8 unk102[0x104 - 0x102];
+    u16 unk102;          /* 102 */
     u16 unk104;          /* 104 */
     s16 unk106;          /* 106: facing */
     s16 unk108;          /* 108 */
