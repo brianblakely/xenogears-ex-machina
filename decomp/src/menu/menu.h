@@ -134,7 +134,14 @@ typedef struct {
 
 /* Header of an actor's loaded model file (Actor 0x8FC). */
 typedef struct {
-    u8 unk0[0xC];
+    u8 core_part;    /* model part and vertex of the upper anchor */
+    u8 foot_a_part;  /* model parts and vertices of the feet */
+    u8 foot_b_part;
+    u8 unk3;
+    s16 foot_a_vertex;
+    s16 foot_b_vertex;
+    s16 core_vertex;
+    u8 unkA[0x2];
     u16 unkC;
     u8 unkE;
     u8 unkF;
@@ -239,7 +246,8 @@ typedef struct Actor {
     u8 unkC3;
     u8 unkC4;
     u8 unkC5;
-    u8 unkC6[0x2];
+    u8 unkC6;            /* 0xC6: last unkC4 */
+    u8 unkC7;
     s16 unkC8;
     s16 unkCA;
     s16 unkCC;
@@ -282,7 +290,8 @@ typedef struct Actor {
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     Vector start_home;   /* 0x95C: home at the round start */
-    u8 unk96C[0x4];
+    s16 foot_b_y;        /* 0x96C: last foot heights */
+    s16 foot_a_y;
     s32 unk970;
     Vector hit_from;     /* 0x974: where the last hit came from */
     u8 unk984[0x14];
@@ -532,6 +541,9 @@ void func_80074678(Actor *actor, s16 frame, s16 count);
 void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
 u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
+void func_8007D7A8(Vector *pos, s32 count);
+void func_8008ED6C(Actor *owner, s32 index);
+void func_8007E528(s32 state);
 s32 func_8007D190(Vector *pos, u32 kind);
 s32 func_8007D25C(s32 type);
 void func_8007D65C(Vector *from, Vector *to, s32 code);

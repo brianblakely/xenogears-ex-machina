@@ -1085,7 +1085,85 @@ s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078704);
 #endif
 
+#ifdef NON_MATCHING
+/* Keep two close actors apart: when their bodies overlap in height, take
+ * each one's anchor across the line between their start positions, and if
+ * those are closer than the actors' radii, push both apart along the line
+ * between them, each by the other's share of their combined speed.
+ * Does not match: only the delay slot of the last height test's first branch: the original leaves it empty (a nop); declaring the function s32 reproduces that but rotates the registers of the anchor point arithmetic. */
+void func_80078920(Actor *first, Actor *second) {
+    Vector unused; /* keeps the original's 16-byte frame slot */
+    Vector point_a;
+    Vector point_b;
+    Vector mid;
+    Vector across;
+    Vector *anchor_a;
+    Vector *anchor_b;
+    s32 radius_a;
+    s32 radius_b;
+    s32 dist;
+    s32 push;
+    s32 angle;
+    s32 speed_a;
+    s32 speed_b;
+    s32 total;
+
+    if (D_8009284C <= 0x300 && ((first->home.vy < second->unk92C.vy && second->home.vy < first->home.vy) ||
+        (second->unk92C.vy < first->unk92C.vy && first->unk92C.vy < second->home.vy) ||
+        (second->home.vy < first->unk92C.vy && first->home.vy < second->home.vy) ||
+        (first->unk92C.vy < second->unk92C.vy && second->unk92C.vy < first->home.vy))) {
+        mid.vx = (first->start.vx + second->start.vx) / 2;
+        mid.vz = (first->start.vz + second->start.vz) / 2;
+        across.vz = second->start.vx - first->start.vx + mid.vz;
+        across.vx = first->start.vz - second->start.vz + mid.vx;
+        radius_a = first->header->unk3;
+        radius_b = second->header->unk3;
+        func_80078704(&mid, &across, first, &anchor_a);
+        func_80078704(&mid, &across, second, &anchor_b);
+        point_a = *anchor_a;
+        point_b = *anchor_b;
+        point_a.vx -= first->start.vx;
+        point_a.vy -= first->start.vy;
+        point_a.vz -= first->start.vz;
+        point_b.vx -= second->start.vx;
+        point_b.vy -= second->start.vy;
+        point_b.vz -= second->start.vz;
+        point_a.vx += first->pos.vx;
+        point_a.vy += first->pos.vy;
+        point_a.vz += first->pos.vz;
+        point_b.vx += second->pos.vx;
+        point_b.vy += second->pos.vy;
+        point_b.vz += second->pos.vz;
+        dist = func_80088838(&point_a, &point_b);
+        total = radius_a + radius_b;
+        if (dist < total) {
+            push = func_80088838(&first->start, &point_a);
+            if (func_80088838(&first->start, &point_b) < push) {
+                push = dist + total;
+            } else {
+                push = total - dist;
+            }
+            angle = ratan2(first->start.vx - second->start.vx, first->start.vz - second->start.vz);
+            speed_a = func_80088754(&first->velocity);
+            speed_b = func_80088754(&second->velocity);
+            total = speed_a + speed_b;
+            if (total == 0) {
+                speed_b = 1;
+                speed_a = 1;
+                total = 2;
+            }
+            speed_a = (speed_a * push << 8) / total;
+            speed_b = (speed_b * push << 8) / total;
+            first->pos.vx += (func_8003F8B0(angle) * speed_b) >> 20;
+            first->pos.vz += (func_8003F8CC(angle) * speed_b) >> 20;
+            second->pos.vx -= (func_8003F8B0(angle) * speed_a) >> 20;
+            second->pos.vz -= (func_8003F8CC(angle) * speed_a) >> 20;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078920);
+#endif
 
 /* Move an actor by its velocity: take the floor height and cell kind (bits
  * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
@@ -1226,9 +1304,159 @@ void func_80078F00(Actor *actor) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
+#ifdef NON_MATCHING
+/* Per-frame anchors of an actor: home between its feet, dust when landing
+ * or skidding, cells thrown up while it stands in deep ground, the upper
+ * anchor and core, the charged glow and its effect, and the stance effects
+ * (7 and 9) when the stance changes.
+ * Does not match: the stance word and the flag word swap v0/v1 in the stance-1 branch, and the final flag update uses a0/a1 instead of v1/a0. */
+void func_8007920C(Actor *actor) {
+    Vector foot_a;
+    Vector foot_b;
+    Vector unused; /* keeps the original's 16-byte frame slot */
+    SceneHeader *header = actor->header;
+    s32 state;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800796B8);
+    func_80073B7C(actor, header->foot_a_part, header->foot_a_vertex, &foot_a);
+    func_80073B7C(actor, header->foot_b_part, header->foot_b_vertex, &foot_b);
+    actor->home.vx = (foot_a.vx + foot_b.vx) / 2;
+    actor->home.vy = (foot_a.vy + foot_b.vy) / 2;
+    actor->home.vz = (foot_a.vz + foot_b.vz) / 2;
+    if ((actor->flags & 0x80000) && (actor->flags & 0x60000000) != 0x20000000 && !(actor->kind & 1)) {
+        func_8007D190(&foot_a, 9);
+        func_8007D190(&foot_b, 9);
+    }
+    if (actor->unk90B != 0) {
+        if (foot_a.vy + 0x40 > actor->floor_y - 0x20 && actor->foot_a_y + 6 < foot_a.vy) {
+            func_8007D7A8(&foot_a, 0x20);
+        }
+        if (foot_b.vy + 0x40 > actor->floor_y - 0x20 && actor->foot_b_y + 6 < foot_b.vy) {
+            func_8007D7A8(&foot_b, 0x20);
+        }
+        actor->unk90B--;
+    }
+    if ((actor->flags & 0x60000000) == 0x20000000) {
+        func_8007DC74(&actor->home, &actor->start_home);
+    }
+    if (func_80083CD8() != 7 && (actor->flags & 0x60000000) == 0x20000000 && actor->home.vy > 0x80 &&
+        actor->start_home.vy < 0x80) {
+        func_8008EB88(actor, 0x3A, &actor->home, 2);
+    }
+    actor->foot_a_y = foot_a.vy;
+    actor->foot_b_y = foot_b.vy;
+    func_80073B7C(actor, header->core_part, header->core_vertex, &actor->unk92C);
+    actor->unk92C.vy -= 0x38;
+    actor->core.vx = (actor->home.vx + actor->unk92C.vx) / 2;
+    actor->core.vz = (actor->home.vz + actor->unk92C.vz) / 2;
+    actor->core.vy = (actor->home.vy + actor->unk92C.vy) / 2;
+    if ((actor->flags & 0x8000) && actor->unkC5 == 0 && (actor->unkC4 & 1)) {
+        func_8007C100(&actor->colour);
+        func_8007CD44(ACTOR_SIDE(actor), &actor->unk92C, &actor->home, ACTOR_SIDE(actor));
+        if (!(actor->flags & 0x10000)) {
+            func_8008ED6C(actor, 8);
+            func_8008EBD0(actor, 8, &actor->home, 2);
+        }
+    }
+    if (actor->unkC5 != 4) {
+        if (actor->unkC4 != 1) {
+            actor->unkD4 &= ~3;
+        } else {
+            actor->unkD4 = (actor->unkD4 & ~3) | 1;
+            if (actor->flags & 0x8000) {
+                actor->unkD4 = (actor->unkD4 & ~3) | 2;
+            }
+        }
+        if (actor->unkC5 == 2) {
+            actor->unkD4 |= 3;
+        }
+    }
+    state = actor->unkD4 & 3;
+    if (state != ((actor->unkD4 >> 2) & 3)) {
+        switch (state) {
+        case 0:
+        case 3:
+            func_8008ED6C(actor, 7);
+            func_8008ED6C(actor, 9);
+            break;
+        case 1:
+            func_8008EBD0(actor, 7, &actor->pos, 2);
+            func_8008ED6C(actor, 9);
+            break;
+        case 2:
+            func_8008EBD0(actor, 9, &actor->home, 2);
+            func_8008ED6C(actor, 7);
+            break;
+        }
+    }
+    actor->unkC6 = actor->unkC4;
+    actor->flags = (actor->flags & ~0x10000) | (((actor->flags >> 15) & 1) << 16);
+    actor->unkD4 = (actor->unkD4 & ~0xC) | ((actor->unkD4 & 3) << 2);
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
+#endif
+
+/* Frame both actors with the camera: look at their midpoint, choose the
+ * side (left or right of the line between them) whose eye point is nearer
+ * the current one (the comparison reads the heights uninitialised, as the
+ * original does), and ease the eye there, above the ground. */
+void func_800796B8(Actor *first, Actor *second) {
+    Vector eye;
+    Vector step;
+    s32 angle;
+    s32 dist;
+    s32 radius;
+    s32 floor;
+
+    if (D_8009293C != 0) {
+        return;
+    }
+    angle = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+    dist = func_80088838(&first->pos, &second->pos);
+    D_80092934 = angle;
+    D_8009284C = dist;
+    dist = func_800887A4(&first->pos, &second->pos);
+    radius = dist * 2 / 3 + 0xC0;
+    D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
+    D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
+    D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
+    eye.vx = D_8009867C.vx + ((func_8003F8B0(angle - 0x400) * radius) >> 12);
+    eye.vz = D_8009867C.vz + ((func_8003F8CC(angle - 0x400) * radius) >> 12);
+    step.vx = D_8009867C.vx + ((func_8003F8B0(angle + 0x400) * radius) >> 12);
+    step.vz = D_8009867C.vz + ((func_8003F8CC(angle + 0x400) * radius) >> 12);
+    eye.vx -= D_8009871C.vx;
+    eye.vy -= D_8009871C.vy;
+    eye.vz -= D_8009871C.vz;
+    step.vx -= D_8009871C.vx;
+    step.vy -= D_8009871C.vy;
+    step.vz -= D_8009871C.vz;
+    floor = func_80088754(&eye);
+    if (func_80088754(&step) < floor) {
+        D_8009290C = 0x400;
+        D_800928F4 = 0;
+    } else {
+        D_8009290C = -0x400;
+        D_800928F4 = 1;
+    }
+    dist /= 4;
+    if (dist > 0x300) {
+        dist = 0x300;
+    }
+    eye.vy = D_8009867C.vy - 0x40 - dist;
+    eye.vx = D_8009867C.vx + ((func_8003F8B0(angle + D_8009290C) * radius) >> 12);
+    eye.vz = D_8009867C.vz + ((func_8003F8CC(angle + D_8009290C) * radius) >> 12);
+    step.vx = (eye.vx - D_8009871C.vx) / D_8009287C;
+    step.vz = (eye.vz - D_8009871C.vz) / D_8009287C;
+    func_800828F8(&D_8009871C, &step, 0x3A00);
+    D_8009871C.vx += step.vx;
+    D_8009871C.vz += step.vz;
+    floor = func_80082488(&D_8009871C, 0) - 0x100;
+    if (floor < eye.vy) {
+        eye.vy = floor;
+    }
+    D_8009871C.vy += (eye.vy - D_8009871C.vy) / D_8009287C;
+    D_8009287C = 0x64;
+}
 
 /* Reset the bout: effects, glow and the round settings. */
 void func_80079A8C(void) {
@@ -1329,7 +1557,112 @@ void func_80079DE0(void) {
     D_80092640 = 0;
 }
 
+#ifdef NON_MATCHING
+/* One frame of the bout (every D_80099D9A + 1 frames): record the pose
+ * slot, read the pads (letting a player on the free port take over while
+ * the pause is open), then run both actors' frame: moves, AI, physics,
+ * separation, model placement, anchors and frame events.
+ * Does not match: only the pose slot setup is scheduled differently: the original loads the slot index and the frame delay (and sets the first call's argument) before the pose stores, one instruction shorter. */
+void func_80079DF0(Actor *first, Actor *second) {
+    if (D_80092664 != 0) {
+        D_80092664--;
+        return;
+    }
+    D_80092664 = D_80099D9A;
+    first->pose = (Pose *)first->unk9CC + D_800928C0;
+    second->pose = (Pose *)second->unk9CC + D_800928C0;
+    first->move = (Move *)first->pose;
+    D_800928C0++;
+    second->move = (Move *)second->pose;
+    first->flags = (first->flags & ~0x40) | ((D_80099D9D & 1) << 6);
+    second->flags = (second->flags & ~0x40) | ((D_80099D9E & 1) << 6);
+    func_80073644(first);
+    func_80073644(second);
+    func_800764CC(first);
+    func_800764CC(second);
+    D_80092648 = 0;
+    func_80075B50(first);
+    func_80075B50(second);
+    func_8003708C(0xA, 0x60);
+    func_8007E528(0);
+    if (D_800928D4 != 0) {
+        if (func_80036410()) {
+            func_80035DB0();
+        } else {
+        poll:
+            if (func_80035CDC()) {
+                if ((((D_8005948C | D_80059490) & 0x800) && D_8009263C < 0x14) || !func_80035734(0) ||
+                    (!func_80035734(1) && D_800928C8 == 2)) {
+                    if ((D_8005948C & 0x800) || !func_80035734(0)) {
+                        D_800928FC = 0;
+                    } else {
+                        if (second->flags & 0x40) {
+                            goto next;
+                        }
+                        D_800928FC = 1;
+                    }
+                    if (D_800928C4 == 0) {
+                        func_80080C48(D_800928C8 == 4 ? 2 : 1);
+                    }
+                }
+            next:
+                func_80076884(first);
+                func_80076884(second);
+                goto poll;
+            }
+        }
+    } else {
+        func_80036420();
+    }
+    if (D_800928D4 != 0) {
+        if (D_80092944 != 0x2BF1F) {
+            D_80092944++;
+        }
+        if (D_800928C8 == 4) {
+            func_8008F280(second);
+        } else {
+            func_80090E10(first);
+            func_80090E10(second);
+        }
+    }
+    if (D_80092638 != 0) {
+        first->state = 0;
+        second->state = 0;
+        func_80076424(first);
+        func_80076424(second);
+    }
+    func_800751C8(first, second);
+    func_80077038(first);
+    func_80077038(second);
+    func_8003708C(0x4A, 0);
+    func_80077A9C(first);
+    func_8003708C(0x6A, 0);
+    func_80077A9C(second);
+    func_8003708C(0xA, 0x80);
+    func_80078194(first);
+    func_80078194(second);
+    func_80078D20(second);
+    func_80078D20(first);
+    func_80078920(first, second);
+    func_80078E94(second);
+    func_80078E94(first);
+    func_80072170();
+    func_80074BA4(first);
+    func_80074BA4(second);
+    func_80079D08(first);
+    func_80079D08(second);
+    func_8007920C(first);
+    func_8007920C(second);
+    func_80074678(first, first->unk998, first->unk99A);
+    func_80074678(second, second->unk998, second->unk99A);
+    func_8007BACC();
+    if (D_80092884 != 0) {
+        func_8007D65C(&first->core, &second->core, 0x13);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079DF0);
+#endif
 
 /* Save both actors' positions and homes (at height 0x100) and set the
  * countdown from the given frame count. */
@@ -1347,7 +1680,76 @@ void func_8007A21C(s32 frames) {
     D_80092A34[0].vy = D_80092A34[1].vy = D_80092A34[2].vy = D_80092A34[3].vy = 0x100;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A344);
+/* One frame of a replay: step both actors to the next recorded pose (the
+ * first frame after a reset shows every part), show "REPLAY", then run
+ * the actors' frame as in play and count down the replay. */
+void func_8007A344(Actor *first, Actor *second) {
+    u8 frame = D_800928C0++;
+
+    first->pose = (Pose *)first->unk9CC + frame;
+    second->pose = (Pose *)second->unk9CC + frame;
+    first->move = (Move *)((Pose *)first->unk9CC + D_800928C0);
+    second->move = (Move *)((Pose *)second->unk9CC + D_800928C0);
+    if (D_800928AC == 0xFF) {
+        first->move->flags |= 0x1000;
+        second->move->flags |= 0x1000;
+        first->move->unkA = 1;
+        second->move->unkA = 1;
+        first->move->unk9 = 1;
+        second->move->unk9 = 1;
+    }
+    if (D_800928E8 & 8) {
+        func_8007E894(0x10, 0x10);
+        func_8007EBE0("REPLAY");
+    }
+    func_80073644(first);
+    func_80073644(second);
+    func_800764CC(first);
+    func_800764CC(second);
+    first->start_home = first->home;
+    second->start_home = second->home;
+    first->start = first->pos;
+    second->start = second->pos;
+    D_80092648 = 0;
+    if (D_8009287C >= 2) {
+        D_8009287C = 1;
+    }
+    func_80036420();
+    if (D_800928FC == 1) {
+        if (D_80059490 & 0x20) {
+            func_80083C0C(8);
+        }
+        func_800832C0(D_80059574);
+    } else {
+        if (D_8005948C & 0x20) {
+            func_80083C0C(8);
+        }
+        func_800832C0(D_80059570);
+    }
+    func_80074AB4(first);
+    func_80074AB4(second);
+    func_80078E94(first);
+    func_80078E94(second);
+    first->flags = (first->flags & ~0x60000000) | ((func_800828C4(&first->pos) & 0x3000000) << 5);
+    second->flags = (second->flags & ~0x60000000) | ((func_800828C4(&second->pos) & 0x3000000) << 5);
+    func_80079D6C(first);
+    func_80079D6C(second);
+    func_8007920C(first);
+    func_8007920C(second);
+    func_80075B50(first);
+    func_80075B50(second);
+    func_8007BACC();
+    if (D_80092884 != 0) {
+        func_8007D65C(&first->core, &second->core, 0x13);
+    }
+    if (D_800928AC == 0xFF) {
+        func_8008369C();
+    }
+    if (D_800928AC == 0) {
+        func_80083C0C(8);
+    }
+    D_800928AC--;
+}
 
 /* Put an actor into its round-end pose: a win pose when the round took
  * under two seconds. */
