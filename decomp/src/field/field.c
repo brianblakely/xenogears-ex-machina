@@ -8655,7 +8655,54 @@ void func_8009E4BC(void) {
     D_800B0078->pc += 6;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E574);
+/* Place the current actor at integer (x, z) on the floor of its layer:
+ * locate the floor triangle of every layer, take its terrain, normal and
+ * height, move the descriptor and model there and clear the motion. */
+void func_8009E574(s32 x, s32 z) {
+    VECTOR normals[4];
+    SVECTOR points[4];
+    FieldModel *model;
+    s32 layer;
+
+    model = D_800AF880.components.descriptors[D_800AFD1C].model;
+    for (layer = 0; layer < D_800AF880.components.layer_count - 1; layer++) {
+        D_800B0078->triangle[layer] = func_8007B1C4(x, z, layer, &points[layer], &normals[layer]);
+    }
+    D_800B0078->unk014 = func_80080968(D_800B0078);
+    D_800B0078->unk50[0] = (normals + D_800B0078->layer)->vx;
+    D_800B0078->unk50[1] = (normals + D_800B0078->layer)->vy;
+    D_800B0078->unk50[2] = (normals + D_800B0078->layer)->vz;
+    D_800AF880.components.descriptors[D_800AFD1C].transform.t[0] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[0] = x;
+    D_800AF880.components.descriptors[D_800AFD1C].transform.t[1] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[1] = points[D_800B0078->layer].vy;
+    D_800AF880.components.descriptors[D_800AFD1C].transform.t[2] = D_800AF880.components.descriptors[D_800AFD1C].matrix.t[2] = z;
+    model->unk84 = points[D_800B0078->layer].vy;
+    D_800B0078->position[0] = x << 16;
+    D_800B0078->position[1] = points[D_800B0078->layer].vy << 16;
+    D_800B0078->position[2] = z << 16;
+    D_800B0078->unk72 = points[D_800B0078->layer].vy;
+    model->position[0] = D_800B0078->position[0];
+    model->position[1] = D_800B0078->position[1];
+    model->position[2] = D_800B0078->position[2];
+    D_800B0078->unk40[0] = 0;
+    D_800B0078->unk40[1] = 0;
+    D_800B0078->unk40[2] = 0;
+    D_800B0078->unk030[0] = 0;
+    D_800B0078->unk030[1] = 0;
+    D_800B0078->unk030[2] = 0;
+    D_800B0078->target[0] = 0;
+    D_800B0078->target[1] = 0;
+    D_800B0078->target[2] = 0;
+    *(s16 *)D_800B0078->unk062 = 0;
+    D_800B0078->unk60 = 0;
+    D_800B0078->unk64 = 0;
+    model->unk0C = 0;
+    model->unk10 = 0;
+    model->unk14 = 0;
+    *(s32 *)D_800B0078->unk0F0 = 0;
+    D_800B0078->unkEC = 0;
+    D_800B0078->unk72 = D_800B0078->position[1] >> 16;
+    D_800B0078->flags = (D_800B0078->flags & ~0x40000) | 0x400000;
+}
 
 #ifdef NON_MATCHING
 /* Set the current actor's height `y` (whole units). */

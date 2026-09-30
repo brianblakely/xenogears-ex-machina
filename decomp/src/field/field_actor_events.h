@@ -54,6 +54,9 @@ extern u8 D_80059484;
 void func_800A30FC(void);
 s32 func_8009FEE4(s32 slot);
 
+/* Floor triangle of `layer` under (x, z), with its point and normal. */
+s16 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal);
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
