@@ -28,6 +28,11 @@ extern u16 D_800ADF68[16];     /* d-pad direction per button state */
 extern u16 D_800ADF88[16];     /* alternate d-pad directions */
 extern void func_80079288(void);
 
+extern s32 D_8006F990[3];    /* descriptor of each party slot's actor */
+void func_8009E574(s32 x, s32 z);
+void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c);
+void func_800A0D3C(void);
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 

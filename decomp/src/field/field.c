@@ -9143,7 +9143,33 @@ void func_8009FE4C(void) {
     D_800B0078->pc += 2;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FEE4);
+/* Record party slot `slot`'s map (its layer in bits 14 up) and integer x/z
+ * in event variables 2a/2c/2e, 30/32/34 or 36/38/3a. Declared int without
+ * a return value: the original keeps $v0 live on exit. */
+s32 func_8009FEE4(s32 slot) {
+    s32 layer;
+
+    if (D_8005A444[slot] != 0xFF) {
+        layer = D_800AF880.components.descriptors[D_8005A444[slot]].actor->layer << 14;
+        switch (slot) {
+        case 0:
+            func_800A3074(0x2A, (D_8004F34C & 0xFFF) | layer);
+            func_800A3074(0x2C, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
+            func_800A3074(0x2E, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            break;
+        case 1:
+            func_800A3074(0x30, (D_8004F34C & 0xFFF) | layer);
+            func_800A3074(0x32, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
+            func_800A3074(0x34, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            break;
+        case 2:
+            func_800A3074(0x36, (D_8004F34C & 0xFFF) | layer);
+            func_800A3074(0x38, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[0]));
+            func_800A3074(0x3A, WHOLE(D_800AF880.components.descriptors[D_8005A444[slot]].actor->position[2]));
+            break;
+        }
+    }
+}
 
 /* Read party slot `slot`'s variable triple (see func_8009FD10). */
 void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c) {
@@ -9166,7 +9192,65 @@ void func_800A0158(s32 slot, s32 *a, s32 *b, s32 *c) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A0228);
+/* Event 5c: the current actor becomes party slot operand 1 (at most 2):
+ * take its member's sprite and shown it at the slot's recorded map
+ * position (variables 2a..3a) when that is this map; with no member, show
+ * the field's first sprite instead. Members away from this map stay hidden
+ * (descriptor flag 0x20). */
+void func_800A0228(void) {
+    FieldDescriptor *descriptor;
+    s32 slot;
+    s32 shown;
+    s32 map;
+    s32 x;
+    s32 z;
+
+    descriptor = &D_800AF880.components.descriptors[D_800AFD1C];
+    slot = func_800ACDEC(1);
+    if (slot >= 3) {
+        slot = 2;
+    }
+    shown = 1;
+    D_8006F990[slot] = D_800AFD1C;
+    if (D_80062590[slot] != 0xFF && func_8001ACF0(D_80062590[slot]) != 0xFF) {
+        func_800A0158(slot, &map, &x, &z);
+        D_800B0078->layer = (map >> 14) & 3;
+        if ((D_8004F34C & 0xFFF) != (map & 0x3FFF)) {
+            shown = 0;
+            x = 0;
+            z = 0;
+            D_800B0078->layer = 0;
+        }
+        if (D_8005A39C->unk22B1[slot] != 0) {
+            shown = 0;
+        } else if (D_80062590[slot] == 7) {
+            shown = 0;
+        }
+        descriptor->flags = (descriptor->flags & 0xF07F) | 0x200;
+        func_80076AC0(D_800AFD1C, slot, D_8005A414[slot], 1, 0, slot, 1);
+        D_800AF880.components.descriptors[D_800AFD1C].flags &= 0xFFDF;
+        if ((D_8004F34C & 0xFFF) != (map & 0x3FFF)) {
+            D_800B0078->layer = 0;
+        }
+        func_8009E574(x, z);
+        func_800A0C94();
+        D_800B0078->flags = (D_800B0078->flags | 0x400) & ~0x300;
+        if (shown == 0) {
+            D_800AF880.components.descriptors[D_800AFD1C].flags |= 0x20;
+        }
+    } else {
+        func_800A0D3C();
+        D_800B0078->pc += 2;
+        D_800B0078->layer_flags |= 0x800;
+        return;
+    }
+    if (D_800AF880.components.layer_count - 1 < D_800B0078->layer) {
+        D_800B0078->layer = 0;
+    }
+    D_800B0078->flags |= 0x20000;
+    D_800B0078->layer_flags |= 0xC00;
+    D_800B0078->pc += 3;
+}
 
 /* Copy actor `from`'s collision state, height, +50 words, position and
  * matrix to actor `to` and move `to`'s model to it. */
