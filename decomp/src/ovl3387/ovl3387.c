@@ -51,18 +51,20 @@ void func_801FC000(TaskNode *node) {
  * 1: of the angle plus its distance; otherwise the cosine of its distance)
  * scaled by the twist, and lights up with it; projected with a 512 screen
  * distance about the screen centre. */
-#ifdef NON_MATCHING
 void func_801FC11C(TaskNode *node) {
     Burst *burst = node->object;
-    BurstCell *cell;
-    POLY_GT3 *prim;
+    s32 ofs[2];
     MATRIX m;
-    s32 ofx, ofy, screen;
+    BurstCell *cell;
+    SVECTOR *corner;
+    POLY_GT3 *prim;
+    s32 twist;
+    s32 screen;
     s32 p, flag;
-    s32 half, row, col, k;
     s32 wave, light, otz;
+    s32 row, half, col, k;
 
-    ReadGeomOffset(&ofx, &ofy);
+    ReadGeomOffset(&ofs[0], &ofs[1]);
     screen = ReadGeomScreen();
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(0x200);
@@ -74,15 +76,20 @@ void func_801FC11C(TaskNode *node) {
         for (row = 0; row != 14; row++) {
             for (col = 0; col != 20; col++) {
                 cell = &burst->cells[half][row][col];
+                corner = cell->corner;
                 prim = &cell->prim[D_800C3EB0.buffer];
                 for (k = 0; k != 3; k++) {
                     if (D_801FCE14 != 0) {
-                        wave = func_8003F8B0(burst->angle + cell->distance[k]) * burst->twist / 4096;
+                        twist = burst->twist;
+                        wave = func_8003F8B0(burst->angle + cell->distance[k]);
                     } else {
-                        wave = func_8003F8CC(cell->distance[k]) * burst->twist / 4096;
+                        twist = burst->twist;
+                        wave = func_8003F8CC(cell->distance[k]);
                     }
-                    cell->corner[k].vz = wave >> 2;
-                    light = (wave >> 7) + burst->brightness;
+                    wave = wave * twist / 4096;
+                    corner[k].vz = wave >> 2;
+                    light = wave >> 7;
+                    light += burst->brightness;
                     if (light < 0) {
                         light = 0;
                     }
@@ -101,20 +108,18 @@ void func_801FC11C(TaskNode *node) {
                         break;
                     }
                 }
-                otz = RotTransPers3(&cell->corner[0], &cell->corner[1], &cell->corner[2],
-                                    (s32 *)&prim->x0, (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (s32 *)&prim->x0,
+                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz >>= 6;
                 if (!(flag & 0x8000)) {
-                    AddPrim(D_801FCE48 + (otz >> 6), prim);
+                    AddPrim(D_801FCE48 + otz, prim);
                 }
             }
         }
     }
-    SetGeomOffset(ofx, ofy);
+    SetGeomOffset(ofs[0], ofs[1]);
     SetGeomScreen(screen);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC11C);
-#endif
 
 /* Wait for drawing to finish and release the effect. */
 void func_801FC400(Burst *burst) {
