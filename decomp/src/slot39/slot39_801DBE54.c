@@ -9,9 +9,9 @@
  * windows. Confirm selects an entry, uses it when selected again or swaps
  * it with the selected one; cancel clears the selection or leaves. */
 #ifdef NON_MATCHING
-/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table
- * (the original's is at 801c50fc, only 4-aligned); the case-4 tails also
- * cross-jump differently. */
+/* Nonmatching: its jump table lands at 801c50fc now; the scheduling around
+ * the 0x51eb851f division differs and the case-4 tails cross-jump
+ * differently. */
 u8 func_801DBE54(void) {
     u8 running;
     u8 windows;
@@ -628,8 +628,8 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39_801DBE54", func_801DD7
 #endif
 
 #ifdef NON_MATCHING
-/* Cannot match as C in this unit yet: GCC 8-aligns the input jump table (the
- * original's is at 801c512c, only 4-aligned). */
+/* Nonmatching: its jump table lands at 801c512c now; GCC allocates one
+ * more saved register (frame 0x70, the original's 0x68). */
 /* The arts screen of party slot `slot` (`kind` 0 the character's, 1 its
  * gear's, 2 the gear's other list): a cursor over twelve rows (two columns,
  * one for kind 2), the selected art's description; confirm uses a usable
@@ -1724,9 +1724,10 @@ void func_801E2368(void) {
  * labels when its +f8e5 flag is set) and choose among four choices (0 the
  * 801e05d0 screen, 1 and 2 the 801ddf24 screen modes, 3 toggles the flag
  * when the member has a gear; member 7 and the flag D_80059179 refuse),
- * switching members with 9/10, until cancelled. The code matches except
- * the jump table address (see 801e3ecc). The first 801d9704 call passes
- * the slot before it is set, as the original does. */
+ * switching members with 9/10, until cancelled. The first 801d9704 call
+ * passes the slot before it is set, as the original does. Nonmatching: the
+ * original keeps that slot unmasked and masks 801e2250's result (register
+ * allocation differs from there). */
 #ifdef NON_MATCHING
 u8 func_801E23CC(void) {
     u8 slot;
@@ -1906,8 +1907,9 @@ void func_801E2B80(void) {
 
 /* The equipment command: on the first party member's page, choose among
  * three choices (0 the 801e05d0 screen, 1 the 801ddf24 screen, 2 the
- * 801e1544 screen), switching members with 9/10, until cancelled. The code
- * matches except the jump table address (see 801e3ecc). */
+ * 801e1544 screen), switching members with 9/10, until cancelled.
+ * Nonmatching: GCC allocates one more saved register (frame 0x30, the
+ * original's 0x28). */
 #ifdef NON_MATCHING
 u8 func_801E2BE4(void) {
     u8 slot;
