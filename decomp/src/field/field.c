@@ -10,7 +10,34 @@ void func_8007008C(s32 unused, void *source, void *destination) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800700B0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80070340);
+/* Load a TIM's image at (x, y) and its CLUT at (clut_x, clut_y) with the
+ * given size; a CLUT y of -1 or a zero size keeps the TIM's own. */
+void func_80070340(u32 *tim, s16 x, s16 y, s16 clut_x, s16 clut_y, s16 clut_w, s16 clut_h) {
+    TIM_IMAGE image;
+
+    func_800471B4(tim);
+    if (func_800471C4(&image) != NULL) {
+        if (image.caddr != NULL) {
+            if (clut_y != -1) {
+                image.crect->x = clut_x;
+                image.crect->y = clut_y;
+            }
+            if (clut_w != 0) {
+                image.crect->w = clut_w;
+            }
+            if (clut_h != 0) {
+                image.crect->h = clut_h;
+            }
+            func_80044894(image.crect, image.caddr);
+        }
+        /* Only the x placement is guarded; the image is always loaded. */
+        if (image.paddr != NULL) {
+            image.prect->x = x;
+        }
+        image.prect->y = y;
+        func_80044894(image.prect, image.paddr);
+    }
+}
 
 /* Start the map's own stream (file 0xb9 + 2 * map) into a four-sector ring,
  * unless one already runs. */
@@ -194,7 +221,36 @@ void func_80071F64(s32 x, s32 y, s32 w, s32 h) {
     D_800B249C[1].draw.clip.h = h;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80071FB0);
+/* Display setup: geometry defaults and offset, both draw blocks'
+ * environments, clip areas and screens, black backgrounds, then show the
+ * second block and set the renderer's limits. */
+void func_80071FB0(void) {
+    D_80059198 = 1;
+    func_800445D0(0);
+    func_8004B54C(0);
+    func_80048BC4();
+    func_8004A12C(0xA0, 0x70);
+    func_80043928(&D_800B249C[0].draw, 0, 0, 0x140, 0xE0);
+    func_80043928(&D_800B249C[1].draw, 0, 0x100, 0x140, 0xE0);
+    func_80043928(&D_800B249C[0].draw2, 0, 0, 0x140, 0xE0);
+    func_80043928(&D_800B249C[1].draw2, 0, 0x100, 0x140, 0xE0);
+    func_800439E0(&D_800B249C[0].disp, 0, 0x100, 0x140, 0xE0);
+    func_800439E0(&D_800B249C[1].disp, 0, 0, 0x140, 0xE0);
+    func_80071F64(0, 0, 0x140, 0xE0);
+    func_80086D8C();
+    D_800B249C[0].draw.r0 = 0;
+    D_800B249C[0].draw.g0 = 0;
+    D_800B249C[0].draw.b0 = 0;
+    D_800B249C[1].draw.r0 = 0;
+    D_800B249C[1].draw.g0 = 0;
+    D_800B249C[1].draw.b0 = 0;
+    D_800B249C[0].draw.dtd = 1;
+    D_800B249C[1].draw.dtd = 1;
+    func_8004B54C(0);
+    func_80044E9C(&D_800B249C[1].disp);
+    func_80044C44(&D_800B249C[1].draw);
+    func_8002DFF0(0x140, 0xF0);
+}
 
 /* Clear a matrix's translation. */
 void func_80072140(MATRIX *m) {

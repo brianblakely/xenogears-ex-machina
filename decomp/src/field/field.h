@@ -463,6 +463,11 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_8002DFF0(s32 w, s32 h);
+extern DRAWENV *func_80043928(DRAWENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDrawEnv */
+extern DISPENV *func_800439E0(DISPENV *env, s32 x, s32 y, s32 w, s32 h); /* SetDefDispEnv */
+extern void func_80048BC4(void); /* InitGeom */
+extern void func_8004A12C(s32 x, s32 y); /* SetGeomOffset */
 extern void func_80038428(void *bank);
 extern void func_8003A344(s32 voice, s32 volume);
 extern void func_8003A55C(s32 voice, s32 pan);
@@ -540,6 +545,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80086D8C(void);
 extern void func_80086078(s32 distance, u32 *out, s32 volume);
 extern void func_80086200(s32 index, s32 *x, s32 *y);
 extern void func_800AA9DC(FieldInstance *instance);
@@ -608,6 +614,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_80059198;
 extern void *D_8005A4BC; /* field sound-effect bank copy */
 extern u8 D_8005061C[6];
 extern s32 D_8004F36C; /* sequence playing */
