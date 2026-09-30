@@ -1,6 +1,6 @@
 # Disc 2 resident boot program. Identical to Disc 1 outside the embedded disc
 # index at 0x80010000-0x8001807c; it builds from the same decomp/src/resident.
-CC_VERSION := 2.6.3
+CC_VERSION := 2.7.2
 SPLAT_CONFIG := decomp/targets/resident/slus_006.69.yaml
 ORIGINAL := .local/extract/disc2/SLUS_006.69
 ORIGINAL_SHA256 := 3246e15f4040305b280adae06bc7bb908ee882794183bec9fc23e71d85c19c35
@@ -11,3 +11,5 @@ LINKER_EXTRA := .local/decomp/resident2/undefined_syms_auto.txt .local/decomp/re
 OBJCOPY_FLAGS := --gap-fill 0 --pad-to 0x4a000
 SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
+# The heap unit addresses its small globals through $gp.
+GP_heap := 8

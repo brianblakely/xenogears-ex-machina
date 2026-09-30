@@ -50,7 +50,13 @@ segments:
       # directory table (EVID-REF-007); user-supplied disc data, not code.
       - [0x800, rodatabin, disc_index]
       - [0x8880, .rodata, main]
+      # Heap unit (80031894-80032E7C): its allocation-name strings open the
+      # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
+      - [0x9198, .rodata, heap]
+      - [0x927C, .rodata, main2]
       - [0x9D24, c, main]
+      - [0x22094, c, heap]
+      - [0x2367C, c, main2]
       - [0x3F288, data, data]
       - { start: 0x49ABC, type: bss, vram: 0x800592BC }
   - [0x4A000]

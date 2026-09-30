@@ -504,19 +504,148 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029AFC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80029EB0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A260);
+#include "cd.h"
+#include "heap.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A2D0);
+/* Allocate a stream ring of `count` 2,048-byte sectors (plus the slot
+ * header), then select and reset it. Returns the ring or NULL. */
+StreamRing *func_8002A260(s32 count, s32 mode) {
+    StreamRing *ring;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A394);
+    if (count > 0) {
+        ring = func_80031BDC(count * 0x808 + 0x24, mode);
+        if (ring == NULL) {
+            return NULL;
+        }
+        ring->count = count;
+        func_80028A94(ring);
+        func_80028AAC();
+        return ring;
+    }
+    return NULL;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A428);
+/* Unless a read is already running, seek to `file` (or pause for a
+ * nonpositive file) with the resident CD ready callback installed. */
+void func_8002A2D0(s32 file) {
+    if (D_8004FE48 == 0 && func_800286CC() == 0) {
+        D_8004FE18 = D_8004FE14;
+        if (file > 0) {
+            CdIntToPos(func_800289D0(file), D_80059F10);
+            D_8004FE1C = 3;
+            CdSyncCallback(func_8002A68C);
+            CdControlF(2, D_80059F10);
+        } else {
+            D_8004FE1C = 5;
+            CdSyncCallback(func_8002A68C);
+            CdControlF(9, NULL);
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A498);
+/* Seek to `file` (or pause) unconditionally. */
+void func_8002A394(s32 file) {
+    if (file > 0) {
+        CdIntToPos(func_800289D0(file), D_80059F10);
+        D_8004FE1C = 3;
+        CdSyncCallback(func_8002A68C);
+        CdControlF(2, D_80059F10);
+    } else {
+        D_8004FE1C = 5;
+        CdSyncCallback(func_8002A68C);
+        CdControlF(9, NULL);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A524);
+/* Issue CdlSetmode with `mode`. */
+void func_8002A428(u8 mode) {
+    u8 *param;
+    s32 i;
 
+    D_8004FE1C = 9;
+    CdSyncCallback(func_8002A68C);
+    for (i = 3, param = &D_80059F18[3]; i >= 0; i--) {
+        *param-- = 0;
+    }
+    D_80059F18[0] = mode;
+    CdControlF(0xE, D_80059F18);
+}
+
+/* Request a stop with `reason`; when a read is active, drop it and close the
+ * open host file handle (retrying a few transient results). */
+void func_8002A498(s32 reason) {
+    s32 result;
+
+    D_8004FE34 = 1;
+    D_8004FE38 = reason;
+    if (D_8004FE48 != 0) {
+        D_8004FDF8 = 0;
+        D_8004FDFC = 0;
+        if (D_8004FE4C != -1) {
+            do {
+                result = PCclose(D_8004FE4C);
+            } while (result != 0 && result + 1 < 4);
+            D_8004FE4C = -1;
+        }
+    }
+}
+
+/* Free every loaded file's data in a zero-terminated file table. */
+void func_8002A524(FileEntry *table) {
+    FileEntry *entry;
+    void *data;
+
+    if (table->id != 0) {
+        entry = table;
+        do {
+            data = entry->data;
+            entry++;
+            if (data != NULL) {
+                func_800320E8(data);
+            }
+        } while (entry->id != 0);
+    }
+}
+
+/* Load the files following `first` into `table` (allocated when NULL). On an
+ * allocation failure everything loaded is freed and NULL returned.
+ * Nonmatching: GCC strength-reduces &table[i]; the original recomputes it. */
+#ifdef NON_MATCHING
+FileEntry *func_8002A57C(s32 first, FileEntry *table) {
+    s32 count;
+    s32 owned = 0;
+    s32 i;
+
+    count = func_80028928();
+    if (count > 0) {
+        if (table == NULL) {
+            table = func_80031BDC((count + 1) * 8, 0);
+            owned = 1;
+            if (table == NULL) {
+                return NULL;
+            }
+        }
+        for (i = 0; i < count; i++) {
+            table[i].id = first + i + 1;
+            table[i].data = func_80031BDC(func_800288EC(first + i + 1), 0);
+            if (table[i].data == NULL) {
+                func_8002A524(table);
+                if (owned > 0) {
+                    func_800320E8(table);
+                }
+                return NULL;
+            }
+        }
+        table[count].id = 0;
+        table[count].data = NULL;
+    } else {
+        table = NULL;
+    }
+    return table;
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A57C);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002A68C);
 
@@ -530,7 +659,11 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B5D0);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002B8B0);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BA40);
+extern s32 D_8004FE00;
+
+void func_8002BA40(void) {
+    D_8004FDFC = D_8004FE00;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BA58);
 
@@ -540,7 +673,10 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002BF38);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C310);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C3D8);
+/* Whether a disc read is active. */
+s32 func_8002C3D8(void) {
+    return D_8004FE48;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C3E8);
 
@@ -548,41 +684,155 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C4BC);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C59C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C644);
+#include "model.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C68C);
+/* Trim a model group's heap block to its data (once). Returns 1 when it
+ * was already trimmed. */
+s32 func_8002C644(ModelGroup *group) {
+    if (group->flags & 2) {
+        return 1;
+    }
+    group->flags |= 2;
+    func_80031F70(group, group->primitives - (u8 *)group);
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C6E0);
+/* Trim a model buffer's heap block at its end (once). Returns 1 when it
+ * was already trimmed. */
+s32 func_8002C68C(ModelBuffer *buffer) {
+    if (buffer->flags & 0x40) {
+        return 1;
+    }
+    buffer->flags |= 0x40;
+    func_80031F70(buffer, buffer->end - (u8 *)buffer);
+    buffer->end = NULL;
+    return 0;
+}
+
+extern u8 D_80059598;
+extern u8 D_80059599;
+extern u8 D_8005959A;
+
+void func_8002C6E0(u8 r, u8 g, u8 b) {
+    D_80059598 = r;
+    D_80059599 = g;
+    D_8005959A = b;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C700);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002C8CC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CB54);
+/* Allocate a model buffer's two halves of `size` bytes each. */
+void func_8002CB54(ModelBuffer *buffer, u8 **first, u8 **second) {
+    u8 *block;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CBBC);
+    func_800324B8(0x25);
+    block = func_80031BDC(buffer->size * 2, 0);
+    *first = block;
+    *second = block + buffer->size;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CC10);
+/* Release a model buffer's owned block. */
+void func_8002CBBC(ModelBuffer *buffer) {
+    if (buffer->flags & 1) {
+        func_800320E8(buffer->buffer);
+        buffer->flags &= ~1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CC54);
+extern s32 D_80050108; /* texture page override: 0 none, 1 page, 2 raw */
+extern s32 D_8005010C; /* CLUT override: 0 on */
+extern s32 D_80059310;
+extern s32 D_80059314;
+extern u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
+extern u16 GetClut(s32 x, s32 y);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CC74);
+/* Override model texture pages with the page at (x, y). */
+void func_8002CC10(u16 x, u16 y) {
+    D_80059310 = GetTPage(0, 0, x, y) & 0x1F;
+    D_80050108 = 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CCAC);
+void func_8002CC54(u16 tpage) {
+    D_80059310 = tpage;
+    D_80050108 = 2;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CCC8);
+/* Override model CLUTs with the CLUT at (x, y). */
+void func_8002CC74(u16 x, u16 y) {
+    D_80059314 = GetClut(x, y) & 0xFFF0;
+    D_8005010C = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CD24);
+void func_8002CCAC(void) {
+    D_80050108 = 0;
+    D_8005010C = 1;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CD64);
+extern u16 D_80059308;
+extern u16 D_8005930C;
+
+/* Apply the texture page override to a primitive's page. */
+void func_8002CCC8(u16 *tpage) {
+    u16 value = *tpage;
+
+    D_80059308 = value;
+    if (D_80050108 == 1) {
+        D_80059308 = value & 0xFFE0;
+        D_80059308 = (value & 0xFFE0) | D_80059310;
+    } else if (D_80050108 == 2) {
+        D_80059308 = D_80059310;
+    }
+}
+
+/* Apply the CLUT override to a primitive's CLUT. */
+void func_8002CD24(u16 *clut) {
+    u16 value = *clut;
+
+    D_8005930C = value;
+    if (D_8005010C == 0) {
+        D_8005930C = value & 0xF;
+        D_8005930C = (value & 0xF) | D_80059314;
+    }
+}
+
+/* Handle a texture page (0xC4) or CLUT (0xC8) command. Returns 1 for any
+ * other command. */
+s32 func_8002CD64(u8 *command) {
+    if ((command[3] & 0xF0) != 0xC0) {
+        return 1;
+    }
+    switch (command[3]) {
+    case 0xC4:
+        func_8002CCC8((u16 *)command);
+        return 0;
+    case 0xC8:
+        func_8002CD24((u16 *)command);
+        return 0;
+    }
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CDCC);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CF34);
+s32 func_8002CF34(s32 *value) {
+    RenderPacket *packet = D_80059424;
+
+    packet->code = 4;
+    packet->value = *value;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002CF58);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D0C0);
+s32 func_8002D0C0(s32 *value) {
+    RenderPacket *packet = D_80059424;
+
+    packet->code = 5;
+    packet->value = *value;
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002D0E4);
 
@@ -616,9 +866,20 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DD20);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DDE4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DFE0);
+extern u8 D_8006FAF0[];
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002DFF0);
+/* The shared unpack buffer. */
+u8 *func_8002DFE0(void) {
+    return D_8006FAF0;
+}
+
+extern s32 D_800500F8;
+extern s32 D_800500FC;
+
+void func_8002DFF0(s32 a, s32 b) {
+    D_800500FC = (b - 1) << 16;
+    D_800500F8 = a;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002E010);
 
@@ -652,7 +913,22 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8002FF0C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003014C);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800301C8);
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+/* Copy the vertices listed in `indices` (last first) from `in` to `out`. */
+void func_800301C8(SVECTOR *out, SVECTOR *in, s32 count, s16 *indices) {
+    s32 i;
+    s32 k;
+
+    for (i = count - 1; i != -1; i--) {
+        k = indices[i];
+        out[k].vx = in[k].vx;
+        out[k].vy = in[k].vy;
+        out[k].vz = in[k].vz;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80030228);
 
@@ -723,1574 +999,3 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031828);
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003184C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031870);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031894);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800318A8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800318BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800318DC);
-
-void func_800318F0(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800318F8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031A30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031A68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031B10);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031B9C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031BA8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031BB4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031BC4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031BDC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031F70);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80031FF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800320A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800320B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800320D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800320E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003218C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003223C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800322B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032340);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800323B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032404);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032498);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800324B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800324C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032584);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018998);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003278C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032B0C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032B64);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032BAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032BDC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032C18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032CB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032D60);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032DCC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032E04);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032E7C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032E88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80032EB4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003342C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033474);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800334B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800334C8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800334D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033518);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033558);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800335F4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033668);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033698);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033728);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003373C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033760);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033784);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800337B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800337E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033818);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033848);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033878);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800338A8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800338D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033908);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033938);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033968);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033998);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800339C8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800339FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033A2C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033A5C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033A8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033ABC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033B34);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033BAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033C20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033CD0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033CF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033DD4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80033DF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800345E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034614);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003463C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800346A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800346D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034714);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800347AC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800347C0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034800);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034874);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003487C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034888);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034EAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034F98);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80034FFC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003569C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035734);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800357C0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003582C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035884);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800358A0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800358BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035C0C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035CDC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035DA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035DB0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035E44);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035F1C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80035FF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003611C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036188);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036220);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036258);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036270);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036288);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003633C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003634C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800363E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800363F0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036400);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036410);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036420);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036528);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800365FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800366E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800366F0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036718);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036CD8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036CF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036D18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036D30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036D50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036D70);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036D88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036D98);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036DA8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036DB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036DC8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036E4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036F44);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036F5C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036F74);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036F8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036FA4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036FBC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80036FE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003700C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037058);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003708C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800370DC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800372CC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037324);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003747C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003748C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800374E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037878);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800379B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800379C8);
-
-void func_800379D0(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800379D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037B88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037DC0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037E8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037EE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037F44);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037F88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80037FD8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800380D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800381F4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038264);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003827C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038310);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800383EC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038428);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003852C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038624);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003864C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003869C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800386C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038824);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003885C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800388D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003890C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038934);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038AD4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038B4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038C68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038D18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038DB4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038DF4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038E6C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038EC0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80038F18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039024);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039144);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800391CC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039248);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800392EC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039360);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800393B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800394B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800395B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800396E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039748);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003977C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039784);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800397C0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800397FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039850);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039910);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_800399D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039A80);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039B68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039C4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039C8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039CC4);
-
-void func_80039D24(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039D2C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039D78);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039DB8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039E18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039E60);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039EC4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039F18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039F9C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80039FF8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A094);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A14C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A20C);
-
-void func_8003A2D4(void) {
-}
-
-void func_8003A2DC(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A2E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A344);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A3B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A450);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A4FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A55C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A5D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A65C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A82C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A838);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A89C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A948);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003A9BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AA30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AAC4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003ABE8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003ABF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AC58);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003ACC8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AD20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AD98);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003ADCC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AE84);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AF24);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AFA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003AFFC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B060);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B0AC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B148);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B1FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B22C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B32C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B370);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B424);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B644);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B930);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B97C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003B9E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BA38);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BB08);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BB40);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BB64);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BC10);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BC34);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BC58);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BC7C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BCA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BDBC);
-
-void func_8003BDF4(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BDFC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BE68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003BFA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003C010);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003C020);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003C484);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003C4C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003C6E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CC84);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD00);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD08);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD30);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD4C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD54);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD7C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD84);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CD8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CE04);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CE18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CE38);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CE50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CE68);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CE9C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CEC0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CED4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CEF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CF38);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CFA4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003CFF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D034);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D070);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D0E8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D110);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D13C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D17C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D1BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D208);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D21C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D298);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D2D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D300);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D328);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D340);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D358);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D370);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D3A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D3D8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D438);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D4A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D4C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D4E4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D53C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D59C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D5BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D5C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D5CC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D5D4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D60C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D640);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D65C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D678);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D694);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D6B4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D6D0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D6F8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D714);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D730);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D74C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D770);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D79C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D7C8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D7FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D854);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D86C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D884);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D8B8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003D9A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DAB0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DAEC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DB0C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DB2C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DB58);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DB98);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DBE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DC50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DD24);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DE18);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DE54);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DE74);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DE94);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DEB4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DEE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DF3C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003DF78);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E04C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E140);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E160);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E180);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E1F8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E290);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E308);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E358);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E360);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E3E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E40C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E44C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E4BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E4F0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E54C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E5BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E680);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E6C0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E700);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E724);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E7E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E83C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E8A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003E900);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003EB5C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003EBF0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003EEA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003EF04);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003EFA0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003EFE4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F190);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F1A4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F1EC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F240);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F2A0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F308);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F354);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F3C0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F42C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F43C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F468);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F484);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F4A0);
-
-void func_8003F4BC(void) {
-}
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F4C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F4E0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F4FC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F518);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F530);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F560);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F588);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F5BC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F5EC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F614);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F67C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F684);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F6B0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F738);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F8B0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8003F8CC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", bzero);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", memchr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", memcpy);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", memmove);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", memset);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", rand);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", srand);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", strcat);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", strcmp);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", strcpy);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", strlen);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", sprintf);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", FlushCache);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _bu_init);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", OpenEvent);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CloseEvent);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", EnableEvent);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DisableEvent);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", EnterCriticalSection);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ExitCriticalSection);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SwEnterCriticalSection);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SwExitCriticalSection);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", open);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", write);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ChangeClearPAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetRCnt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetRCnt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StartRCnt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StopRCnt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ResetRCnt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetInitPadFlag);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ReadInitPadFlag);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PAD_init);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", InitPAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StartPAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StopPAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPatchPad);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RemovePatchPad);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _Pad1);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _IsVSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80040A8C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80040A9C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80040AAC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80040ABC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SysEnqIntRP);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SysDeqIntRP);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", EnablePAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DesablePAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _patch_pad);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SendPAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _send_pad);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80040C20);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80040C3C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _remove_ChgclrPAD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DsSyncCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DsReadyCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DsDataCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdInit);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", def_cbsync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", def_cbready);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", def_cbread);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DeliverEvent);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdStatus);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdMode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdLastCom);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdLastPos);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReset);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdFlush);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdSetDebug);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdComstr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdIntstr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReady);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdSyncCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReadyCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdControl);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdControlF);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdControlB);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdMix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdGetSector);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdGetSector2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdDataCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdDataSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdIntToPos);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdPosToInt);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018CE4);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018E28);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018E38);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", getintr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_sync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_ready);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_cw);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_vol);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_flush);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_initvol);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_initintr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_init);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_datasync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_getsector);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_getsector2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CD_set_test_parmnum);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", callback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", puts);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", putchar);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", toupper);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", tolower);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", cb_read);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", cb_data);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", cd_read_retry);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReadBreak);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdRead);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReadSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReadCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CdReadMode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", LoadTPage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", LoadClut);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", LoadClut2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDefDrawEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDefDispEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetTPage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetClut);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80043A70);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80018F88);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DumpClut);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", NextPrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", IsEndPrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", AddPrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", AddPrims);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CatPrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", TermPrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetSemiTrans);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetShadeTex);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyF3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyFT3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyG3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyGT3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyF4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyFT4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyG4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPolyGT4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetSprt8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetSprt16);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetSprt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetTile1);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetTile8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetTile16);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetTile);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetLineF2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetLineG2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetLineF3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80043DC0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetLineF4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80043E00);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawTPage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawMove);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawLoad);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", MargePrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80043F50);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80044064);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ResetGraph);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetGraphReverse);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetGraphDebug);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetGraphQueue);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetGraphType);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetGraphDebug);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DrawSyncCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDispMask);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DrawSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", checkRECT);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ClearImage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ClearImage2);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_80019180);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", LoadImage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StoreImage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", MoveImage);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ClearOTag);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ClearOTagR);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DrawPrim);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DrawOTag);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PutDrawEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DrawOTagEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetDrawEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PutDispEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetDispEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetODE);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetTexWindow);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawArea);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawOffset);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetPriority);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawMode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawEnv);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDrawEnv2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_mode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_cs);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_ce);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_ofs);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_tw);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_dx);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _status);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _otc);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _clr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _dws);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _drs);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _ctl);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _getctl);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _cwb);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _cwc);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _param);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _addque);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _addque2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _exeque);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _reset);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _sync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", set_alarm);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_alarm);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _version);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80047178);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GPU_cw);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", OpenTIM);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ReadTIM);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", OpenTMD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ReadTMD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_tim_addr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", get_tmd_addr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", unpack_packet);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetFogNearFar);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80048BBC);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", InitGeom);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SquareRoot0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", VectorNormalS);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", VectorNormalSS);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_80048DD8);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", MulMatrix0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CompMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ApplyMatrixLV);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PushMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PopMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ScaleMatrixL);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetMulMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ApplyMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ApplyMatrixSV);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", TransMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ScaleMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetRotMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetLightMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetColorMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetTransMatrix);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDQA);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetDQB);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ReadGeomOffset);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ReadGeomScreen);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetBackColor);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetGeomOffset);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetGeomScreen);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", NormalColor);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", NormalColor3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", NormalColorCol);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", NormalColorCol3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", OuterProduct0);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RotTransSV);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RotTransPers);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RotTransPers3);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RotTransPers4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RotAverage4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", RotMatrixZ);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ratan2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _patch_gte);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", VSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", v_wait);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ChangeClearRCnt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ResetCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", InterruptCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", DMACallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", VSyncCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", CheckCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetIntrMask);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", trapIntr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", memclr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", setjmp);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _96_remove);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ReturnFromException);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", ResetEntryInt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", HookEntryInt);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", startIntrVSync);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004C01C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", startIntrDMA);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004C2C4);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SetVideoMode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", GetVideoMode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PCopen);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PCclose);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PClseek);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", PCcreat);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004C38C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004C398);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SN_read);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004C470);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SN_write);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuInit);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SpuInit);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuStart);
-
-INCLUDE_RODATA(".local/decomp/resident/asm/nonmatchings/main", D_8001946C);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_init);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_FwriteByIO);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_Fr_);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_t);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_Fw);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_Fr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_FsetRXX);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_FsetRXXa);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_FsetDelayW);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_FsetDelayR);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_Fw1ts);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SpuDataCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuQuit);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuInitMalloc);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetNoiseClock);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetReverb);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SpuIsInAllocateArea_);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuReadDecodedData);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetIRQ);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetIRQCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _SpuCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuGetVoiceEnvelopeAttr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004D818);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004D878);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetTransferStartAddr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetTransferMode);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetTransferCallback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetCommonAttr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetReverbModeType);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _spu_setReverbAttr);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuClearReverbWorkArea);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", WaitEvent);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetReverbModeDepth);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetReverbModeDelayTime);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuSetReverbModeFeedback);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", SpuGetReverbModeType);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", InitCARD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StartCARD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004E850);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", func_8004E860);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", StopCARD);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _patch_card);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _patch_card2);
-
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main", _ExitCard);

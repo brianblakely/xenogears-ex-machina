@@ -1,0 +1,65 @@
+#ifndef RESIDENT_HEAP_H
+#define RESIDENT_HEAP_H
+
+#include "common.h"
+
+/* Resident game heap. Every block's data is preceded by this header; the
+ * blocks form a list through `next`, the data address of the following
+ * block. Tag 0 marks a free block and tag 1 the end of the heap. */
+typedef struct {
+    u8 *next;
+    u32 caller : 21; /* word address of the allocating call */
+    u32 tag : 4;     /* owner tag */
+    u32 keep : 1;    /* release refuses the block */
+    u32 kind : 6;    /* allocation class */
+} HeapHeader;
+
+#define HEAP_HEADER(data) ((HeapHeader *)(data) - 1)
+
+/* Store the return address register at `p` (the heap records its callers). */
+#define GET_RA(p) __asm__ volatile("move $15, %0\n\tsw $31, 0($15)" : : "r"(p) : "$15")
+
+/* Resident fatal error handler; does not return. */
+extern void func_80019ACC() __attribute__((noreturn));
+
+/* A release deferred by `frames` frames ("DelayFree" blocks). */
+typedef struct DelayedFree {
+    struct DelayedFree *next;
+    void *data;
+    s32 frames;
+} DelayedFree;
+
+/* Heap state ($gp-relative in the heap unit). */
+extern u16 D_80059318;     /* allocation class of the next block */
+extern u16 D_8005931C;     /* owner tag of the next block */
+extern u8 *D_80059320;     /* data address of the first block */
+extern s32 D_8005932C;     /* free blocks await coalescing */
+extern s32 D_80059330;     /* failures return NULL instead of stopping */
+extern u8 *D_80059334;     /* loaded symbol data ("SYM1") and its end */
+extern u8 *D_80059338;
+extern s32 D_8005933C;     /* size of the last request */
+extern s32 D_80059340;     /* caller of the last request */
+extern s32 D_80059FA4[];   /* per-tag words */
+extern DelayedFree *D_80059FCC[]; /* one list head; not small data */
+extern s32 D_80059348;     /* host file of the heap report */
+extern void (*D_800592B8)(char *line); /* heap report output */
+
+/* PsyQ libsn host file access (SDK region): PCinit, PCopen, PClseek, PCread,
+ * PCclose. */
+extern s32 func_8004C38C(void);
+extern s32 PCopen(char *name, s32 flags, s32 perms);
+extern s32 PClseek(s32 fd, s32 offset, s32 mode);
+extern s32 func_8004C398(s32 fd, void *buffer, s32 size);
+extern s32 PCclose(s32 fd);
+extern s32 PCcreat(char *name, s32 perms);
+extern s32 func_8004C470(s32 fd, void *buffer, s32 size);
+
+/* PsyQ libc (SDK region): strlen, vsprintf. */
+extern s32 strlen(char *s);
+extern s32 sprintf(char *out, char *format, void *args);
+
+/* Allocate `size` bytes with an allocation mode, free a block. */
+extern void *func_80031BDC(s32 size, s32 mode);
+extern s32 func_800320E8(void *block);
+
+#endif
