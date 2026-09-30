@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+#define ABS(x) ((x) < 0 ? -(x) : (x))
+
 /* Resident services used by the world map. */
 s32 func_800288EC(s32 file);                              /* file size, rounded to words */
 void *func_80031BDC(s32 size, s32 mode);                  /* allocate a block */
@@ -160,12 +162,16 @@ void func_80048AB0(s32 a, s32 b, s32 c);
 
 /* Actor slots (0x80 bytes each). */
 typedef struct {
-    u8 pad0[0x22];
+    u8 pad0[0x20];
+    s16 unk20;
     s16 wait;     /* script wait counter */
     u8 pad24[0x28];
     s32 handle;
     s16 *script;  /* script position */
-    u8 pad54[0x2C];
+    s32 unk54;
+    s32 unk58;
+    s32 unk5C;
+    u8 pad60[0x20];
 } WorldmapActor;
 
 /* Script opcode handler: returns the halfwords to advance, 0 to yield. */
@@ -277,7 +283,6 @@ typedef struct {
      *(u32 *)(ot) = (*(u32 *)(ot) & 0xFF000000) | ((u32)(p) & 0xFFFFFF))
 
 extern SVECTOR D_8009A280[4][4]; /* sky band corners */
-extern u16 D_8009BD3A;          /* camera yaw */
 extern MATRIX D_8009C808;       /* camera matrix */
 extern s32 D_8009D7F0;          /* current buffer */
 extern s32 D_80050100;          /* ordering-table depth shift */
@@ -343,6 +348,10 @@ void func_800894C8(s32 a);
 void func_80089514(s32 a);
 void func_80039E60(s32 sound);
 void func_8003A3B8(s32 sound, s32 b, s32 c);
+
+extern SVECTOR D_8009BD38; /* camera angle */
+extern s32 D_8009D3F0;    /* camera distance */
+extern s32 D_8009BE0C;
 
 /* Frame state. */
 typedef struct {

@@ -248,7 +248,7 @@ void func_800737EC(void) {
     corners = D_8009A280[0];
     SKY_SCRATCH->angle.vz = 0;
     SKY_SCRATCH->angle.vx = 0;
-    SKY_SCRATCH->angle.vy = D_8009BD3A;
+    SKY_SCRATCH->angle.vy = D_8009BD38.vy;
     offset = 0;
     func_8004A92C(&SKY_SCRATCH->angle, &SKY_SCRATCH->rotation);
     SKY_SCRATCH->rotation.t[2] = 0;
@@ -486,16 +486,69 @@ void func_800767D4(s32 mode, s32 file) {
     func_80039A80(D_80062528, 0x7F, 0);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076858);
+/* Quadratic Bezier point at t (0..0x1000) through three control points. */
+void func_80076858(s32 t, SVECTOR *p0, SVECTOR *p1, SVECTOR *p2, Vec3 *out) {
+    s32 w0;
+    s32 w1;
+    s32 w2;
+    s32 s;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076954);
+    s = 0x1000 - t;
+    w0 = (s * s * 8) >> 12;
+    w1 = ((s * t) >> 8) + 0x8000;
+    w2 = (t * t * 8) >> 12;
+    out->vx = p0->vx * w0 + p1->vx * w1 + p2->vx * w2;
+    out->vy = p0->vy * w0 + p1->vy * w1 + p2->vy * w2;
+    out->vz = p0->vz * w0 + p1->vz * w1 + p2->vz * w2;
+}
+
+/* Unpack a replacement area file and resolve its sections (no spots or
+ * models). */
+void func_80076954(void) {
+    void *block;
+
+    block = D_8009C180;
+    D_8009C180 = func_80032E88(block, 0);
+    func_800320E8(block);
+    D_8009CD48 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off8;
+    D_8009D308 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->offC;
+    D_8009BD30 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off10;
+    D_8009C7EC = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off14;
+    D_8009BCC0 = (u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off18;
+    D_8009D77C = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off20);
+    D_8009D7C8 = (s32 *)((u8 *)D_8009C180 + ((AreaHeader *)D_8009C180)->off24);
+}
 
 /* Mode step that has nothing to do; always reports done. */
 s32 func_80076A14(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076A1C);
+/* One world-map frame of a scripted scene (no player input). */
+s32 func_80076A1C(void) {
+    if (D_8009D144 == 0) {
+        func_80097440(D_8009BD40);
+    } else {
+        func_80097244(D_8009BD40);
+    }
+    func_80089748();
+    func_80089C78();
+    func_8008615C();
+    func_800848F4();
+    func_800980D4(D_8009BBB4);
+    if (D_8009D558 != 0) {
+        func_800981C8(D_8009BE28);
+        func_80096130();
+        func_80098CC0();
+    }
+    func_800983A0(D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, D_8009BE28);
+    D_8009C5BC += 0x40;
+    func_80073B04();
+    func_800737EC();
+    func_80086798();
+    return 1;
+}
 
 /* Run an actor's script until an opcode yields. */
 s32 func_80076B34(s32 index) {
@@ -600,11 +653,46 @@ s32 func_80076D8C(WorldmapActor *actor, s32 a, s32 b) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076DA4);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076F54);
+/* Ease the camera distance towards the actor's, snapping when close. */
+void func_80076F54(WorldmapActor *actor) {
+    s32 target;
+    s32 step;
+
+    target = actor->unk5C;
+    if (target != D_8009D3F0) {
+        step = (target - D_8009D3F0) >> 3;
+        if ((step < 0 ? -step : step) < 0x40) {
+            D_8009D3F0 = target;
+        } else {
+            D_8009D3F0 += step;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80076FA8);
 
+/* Step `value` towards `target` by `delta`, stopping on it. */
+#ifdef NON_MATCHING /* first branch delay slot filled with the delta copy */
+s32 func_800771D8(s32 value, s32 target, s32 delta) {
+    s32 distance;
+    s32 size;
+
+    if (value != target) {
+        distance = target - value;
+        if (distance < 0) {
+            distance = -distance;
+        }
+        size = ABS(delta);
+        value += delta;
+        if (distance < size) {
+            value = target;
+        }
+    }
+    return value;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800771D8);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077214);
 
@@ -614,7 +702,10 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800776E0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077954);
+/* Mode step that has nothing to do; always reports done. */
+s32 func_80077954(void) {
+    return 1;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007795C);
 
@@ -622,4 +713,22 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077CC0);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80077DC8);
+/* Start a scripted camera: reset the actor and camera, play a sound. */
+s32 func_80077DC8(s32 index) {
+    WorldmapActor *actor;
+
+    D_8009BE0C = 0x78;
+    D_8009D3F0 = 0x200000;
+    actor = &D_8009BE24[index];
+    actor->unk20 = 0;
+    actor->unk58 = 0;
+    actor->unk54 = 0;
+    actor->script = NULL;
+    D_8009BD38.vz = 0;
+    D_8009BD38.vy = 0;
+    D_8009BD38.vx = 0;
+    D_8009D144 = 1;
+    func_80039E60((D_8006259C->id << 16) | 0xA4);
+    actor->wait = 0x18;
+    return 1;
+}
