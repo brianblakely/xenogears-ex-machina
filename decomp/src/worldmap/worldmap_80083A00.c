@@ -1188,18 +1188,18 @@ void func_80088F64(void) {
         object->unk4 = 0;
         object->unkA = 0;
         object->unk12 = 0;
-        object->unk18 = 0;
-        object->unk16 = 0;
-        object->unk14 = 0;
-        object->unk20 = 0;
-        object->unk1E = 0;
-        object->unk1C = 0;
+        object->position.vz = 0;
+        object->position.vy = 0;
+        object->position.vx = 0;
+        object->angle.vz = 0;
+        object->angle.vy = 0;
+        object->angle.vx = 0;
         object++;
     }
     D_8009BDF4 = slot = func_80031BDC(0x4C00, 0);
     for (i = 0xFF; i != -1; i--) {
-        slot->unk6 = 0;
-        slot->active = 0;
+        EFFECT_ENABLED(slot) = 0;
+        EFFECT_COUNT(slot) = 0;
         slot++;
     }
 }
@@ -1234,9 +1234,112 @@ void func_80089128(void) {
     func_800320E8(D_8009BE1C[1]);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
+/* Place the eight emitters of group `group` at `position` facing `angle`
+ * (either may be NULL for zero); start them unless one is already live. */
+#ifdef NON_MATCHING /* emitter start: two field loads scheduled above the flag store */
+void func_80089160(s32 group, SVECTOR *position, SVECTOR *angle) {
+    AreaObject *object;
+    s32 live;
+    s32 i;
 
+    live = 0;
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--) {
+        if (object->flags & 0x80) {
+            live++;
+            break;
+        }
+    }
+    object = &D_8009BCC0[group * 8];
+    if ((position == NULL) & (angle == NULL)) {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            *(s32 *)&object->position.vx = *(s32 *)&object->angle.vx = 0;
+            object->position.vz = object->angle.vz = 0;
+        }
+    } else if ((position != NULL) & (angle == NULL)) {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            object->position = *position;
+            SVECTOR_ZERO(&object->angle);
+        }
+    } else if ((position == NULL) & (angle != NULL)) {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            SVECTOR_ZERO(&object->position);
+            object->angle.vx = -angle->vx;
+            object->angle.vy = -angle->vy;
+            object->angle.vz = -angle->vz;
+        }
+    } else {
+        for (i = 7; i != -1; i--, object++) {
+            if (live == 0) {
+                object->flags |= 0x80;
+                object->unkA = 0;
+                object->unk12 = object->unk10;
+                object->unk4 = object->unk0;
+            }
+            object->position = *position;
+            object->angle.vx = -angle->vx;
+            object->angle.vy = -angle->vy;
+            object->angle.vz = -angle->vz;
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089160);
+#endif
+
+/* Place the eight emitters of group `group` at the origin, aimed along
+ * `direction` and turned by `angle`; start them unless one is already live. */
+#ifdef NON_MATCHING /* load/store scheduling in the emitter loop */
+void func_800893E0(s32 group, SVECTOR *direction, SVECTOR *angle) {
+    AreaObject *object;
+    s32 live;
+    s32 i;
+
+    live = 0;
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--) {
+        if (object->flags & 0x80) {
+            live++;
+            break;
+        }
+    }
+    object = &D_8009BCC0[group * 8];
+    for (i = 7; i != -1; i--, object++) {
+        if (live == 0) {
+            object->flags |= 0x80;
+            object->unkA = 0;
+            object->unk12 = object->unk10;
+            object->unk4 = object->unk0;
+        }
+        *(s32 *)&object->position.vx = 0;
+        *(s32 *)&object->direction.vx = *(s32 *)&direction->vx;
+        *(s32 *)&object->angle.vx = *(s32 *)&angle->vx;
+        object->position.vz = 0;
+        object->direction.vz = direction->vz;
+        object->angle.vz = angle->vz;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_800893E0);
+#endif
 
 /* Deactivate the eight area objects of group `group`. */
 void func_800894C8(s32 group) {
@@ -1259,8 +1362,8 @@ void func_80089514(s32 group) {
     slot = D_8009BDF4;
     for (i = 0xFF; i != -1; i--) {
         for (j = 0; j < 8; j++) {
-            if (slot->id == group * 8 + j && slot->unk6 != 0) {
-                slot->active = 0;
+            if (slot->id == group * 8 + j && EFFECT_ENABLED(slot) != 0) {
+                EFFECT_COUNT(slot) = 0;
                 break;
             }
         }
@@ -1268,7 +1371,79 @@ void func_80089514(s32 group) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089580);
+/* Age the particles: move, accelerate, spin and fade the live ones; when a
+ * particle's life runs out, release it from its emitter. */
+void func_80089580(void) {
+    EffectSlot *slot;
+    s32 step;   /* life word, then the colour step */
+    s32 colour; /* live flag, then the colour */
+    s32 i;
+    s32 r;
+    s32 g;
+    s32 b;
+    s32 px, py, pz;
+    s32 vx, vy, vz;
+
+    slot = D_8009BDF4;
+    for (i = 0xFF; i != -1; slot++, i--) {
+        step = slot->timer;
+        colour = step >> 16;
+        step = (s16)step;
+        if (colour != 0) {
+            if (step > 0) {
+                px = slot->position.vx;
+                py = slot->position.vy;
+                pz = slot->position.vz;
+                vx = slot->velocity.vx;
+                vy = slot->velocity.vy;
+                vz = slot->velocity.vz;
+                colour = slot->colour;
+                EFFECT_COUNT(slot)--;
+                step = slot->fade;
+                px += vx;
+                py += vy;
+                pz += vz;
+                vx += slot->accel.vx;
+                vy += slot->accel.vy;
+                vz += slot->accel.vz;
+                r = (colour & 0xFF) + (s8)step;
+                g = ((colour >> 8) & 0xFF) + (s8)(step >> 8);
+                b = ((colour >> 16) & 0xFF) + (s8)(step >> 16);
+                slot->rot[0] += slot->spin[0];
+                slot->rot[1] += slot->spin[1];
+                if (r < 0) {
+                    r = 0;
+                }
+                if (r > 0xFF) {
+                    r = 0xFF;
+                }
+                if (g < 0) {
+                    g = 0;
+                }
+                if (g > 0xFF) {
+                    g = 0xFF;
+                }
+                if (b < 0) {
+                    b = 0;
+                }
+                if (b > 0xFF) {
+                    b = 0xFF;
+                }
+                slot->colour = (colour & 0xFF000000) | (b << 16) | (g << 8) | r;
+                slot->position.vx = px;
+                slot->position.vy = py;
+                slot->position.vz = pz;
+                slot->velocity.vx = vx;
+                slot->velocity.vy = vy;
+                slot->velocity.vz = vz;
+            } else {
+                D_8009BCC0[slot->id].unkA--;
+                slot->id = 0;
+                slot->timer = 0;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089748);
 
@@ -1516,7 +1691,146 @@ s32 func_8008B54C(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B644);
+/* Party follower: a command (1-3, 5) starts a scripted walk; otherwise
+ * follow the vehicle trail a fixed delay behind (or stand at the leader
+ * while riding), walk to a target, walk out of or back to the vehicle,
+ * and keep the model on the ground. */
+s32 func_8008B644(s32 index) {
+    WorldmapActor *actor;
+    WorldmapActor *target;
+    TrailPoint *point;
+    VECTOR *work;
+    s32 result;
+    u16 heading;
+    VECTOR unused; /* unreferenced; the original frame reserves it */
+
+    result = 1;
+    work = (VECTOR *)0x1F800000;
+    actor = &D_8009BE24[index];
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 8;
+        target = &D_8009BE24[actor->unk6];
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 0x28;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 1;
+        break;
+    case 5:
+        actor->unk4 = 0;
+        actor->state = 0x30;
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+    case 1:
+        if (D_8006F8E4[index] == 0) {
+            point = &D_8009CEC4[(D_8009D154 - actor->unk58) & 0x1F];
+            if ((actor->position.vx == point->position.vx) & (actor->position.vy == point->position.vy) &
+                (actor->position.vz == point->position.vz)) {
+                if (((s8 *)actor->handle)[0xAF] != 0) {
+                    func_800245D8(actor->handle, 0);
+                    func_800894C8(index + 0x2E);
+                }
+            } else {
+                if (((s8 *)actor->handle)[0xAF] != 1) {
+                    func_800245D8(actor->handle, 1);
+                }
+                func_8008C1DC(index + 0x2E, actor, (ActorScratch *)work);
+            }
+            actor->position.vx = point->position.vx;
+            actor->position.vy = point->position.vy;
+            actor->position.vz = point->position.vz;
+            actor->heading = point->heading;
+            actor->unk24 = 0;
+        } else {
+            target = &D_8009BE24[index + 3];
+            actor->position.vx = target->position.vx;
+            actor->position.vy = target->position.vy;
+            actor->position.vz = target->position.vz;
+            actor->heading = target->heading;
+            actor->unk24 = 1;
+            func_800894C8(index + 0x2E);
+        }
+        break;
+    case 2:
+        actor->position.vx = D_8009BE24[7].position.vx;
+        actor->position.vy = D_8009BE24[7].position.vy;
+        actor->position.vz = D_8009BE24[7].position.vz;
+        actor->heading = D_8009BE24[7].heading;
+        break;
+    case 8:
+        func_800941C4(&actor->position, &target->position, &actor->motion, &actor->heading);
+        actor->u.step = target->position.vx >> 12;
+        actor->unk54 = target->position.vz >> 12;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+        /* fallthrough */
+    case 9:
+        if (func_8008BEC8(actor) == 3) {
+            actor->state++;
+        }
+        func_8008C1DC(index + 0x2E, actor, (ActorScratch *)work);
+        break;
+    case 10:
+        if (func_80097770(actor->unk6, 4) != 0) {
+            actor->unk24 = 1;
+            actor->state = 2;
+            func_800894C8(index + 0x2E);
+        }
+        break;
+    case 0x28:
+        actor->position.vx = D_8006EF8A[index].x << 12;
+        actor->position.vz = D_8006EF8A[index].z << 12;
+        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        heading = D_8006EE58[index];
+        actor->unk5C = heading;
+        actor->heading = heading;
+        work->vx = actor->position.vx + func_8003F8B0(actor->heading) * 0x30;
+        work->vz = actor->position.vz + -func_8003F8CC(actor->heading) * 0x30;
+        func_800941C4(&actor->position, work, &actor->motion, &actor->heading);
+        actor->u.step = work->vx >> 12;
+        actor->unk54 = work->vz >> 12;
+        actor->unk24 = 0;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+        goto walk;
+    case 0x2A:
+        D_8006F8E4[index] = 0;
+        actor->state = 0x40;
+        break;
+    case 0x30:
+        func_800941C4(&actor->position, &D_8009BE24[1].position, &actor->motion, &actor->heading);
+        actor->u.step = D_8009BE24[1].position.vx >> 12;
+        actor->unk54 = D_8009BE24[1].position.vz >> 12;
+        func_800245D8(actor->handle, 1);
+        actor->state++;
+        /* fallthrough */
+    case 0x29:
+    case 0x31:
+    walk:
+        if (func_8008BEC8(actor) == 3) {
+            actor->state++;
+        }
+        break;
+    case 0x32:
+        if (func_80097770(1, 6) != 0) {
+            actor->state = 0;
+        }
+        break;
+    case 0x40: /* parked */
+        break;
+    }
+    if (actor->unk24 == 0) {
+        func_80074794(0, &actor->position);
+    }
+    return result;
+}
 
 /* Create party member 3's model sprite (if present) at the saved world-map
  * position; in movement modes 1-7 follow the player or start hidden. */

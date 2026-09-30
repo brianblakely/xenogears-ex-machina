@@ -562,34 +562,51 @@ void func_80022000(s32 handle, s32 scale);
 void func_80032F54(void *window, s32 x, s32 y, s32 w, s32 h, s32 a, s32 b);
 void func_80034614(void *window);
 
-/* Area object (0x54 bytes, 512 of them, eight per group). */
+/* Area object (0x54 bytes, 512 of them, eight per group): a particle
+ * emitter. */
 typedef struct {
-    s32 unk0;
-    s32 unk4;
+    s32 unk0;         /* emit timer reload */
+    s32 unk4;         /* packed emit timer: low delay, high repeats */
     s16 unk8;
-    s16 unkA;
-    s32 unkC;
+    s16 unkA;         /* live particles */
+    s16 unkC;
+    s16 unkE;
     s16 unk10;
     s16 unk12;
-    s16 unk14;
-    s16 unk16;
-    s16 unk18;
-    s16 unk1A;
-    s16 unk1C;
-    s16 unk1E;
-    s16 unk20;
-    u8 pad22[0x2D];
-    u8 flags;     /* 0x4F: 0x80 active */
+    SVECTOR position; /* 0x14 */
+    SVECTOR angle;    /* 0x1C */
+    SVECTOR unk24;
+    SVECTOR direction; /* 0x2C */
+    u8 pad34[0x1B];
+    u8 flags;         /* 0x4F: 0x80 active */
     u8 pad50[4];
 } AreaObject;
 
-/* Effect slot (0x4C bytes, 256 of them). */
+/* Short vectors handled as a word (vx, vy) plus vz. */
+#define SVECTOR_ZERO(v) (*(s32 *)&(v)->vx = 0, (v)->vz = 0)
+#define SVECTOR_COPY(d, s) (*(s32 *)&(d)->vx = *(s32 *)&(s)->vx, (d)->vz = (s)->vz)
+
 typedef struct {
-    s16 id;
+    u8 r, g, b, cd;
+} CVECTOR;
+
+/* Particle life word: low half frames left, high half nonzero while live. */
+#define EFFECT_COUNT(slot) (((s16 *)&(slot)->timer)[0])
+#define EFFECT_ENABLED(slot) (((s16 *)&(slot)->timer)[1])
+
+/* Effect slot (0x4C bytes, 256 of them): one particle. */
+typedef struct {
+    s16 id;            /* emitting area object */
     s16 unk2;
-    s16 active;
-    s16 unk6;
-    u8 pad8[0x44];
+    s32 timer;         /* 0x04: see EFFECT_COUNT, EFFECT_ENABLED */
+    VECTOR position;   /* 0x08 */
+    VECTOR velocity;   /* 0x18 */
+    VECTOR accel;      /* 0x28 */
+    s16 rot[2];        /* 0x38 */
+    s16 spin[2];       /* 0x3C */
+    s32 colour;        /* 0x40: packed r, g, b and the primitive code */
+    s32 fade;          /* 0x44: packed signed r, g, b steps */
+    u8 pad48[4];
 } EffectSlot;
 
 /* Drifting position (0x10 bytes) and its velocity (8 bytes). */
@@ -1251,10 +1268,6 @@ typedef struct {
 extern FlightSave D_8006EE80;
 s32 func_8008868C(void);
 
-typedef struct {
-    u8 r, g, b, cd;
-} CVECTOR;
-
 extern u16 D_8009BCE0[16]; /* faded CLUT ids */
 void func_8002DD20(void *image);                            /* unpack an image to VRAM */
 void StoreImage(RECT *rect, void *data);                     /* read back from VRAM */
@@ -1530,5 +1543,19 @@ extern DR_MOVE D_8009D164[2]; /* haze copy-back, per display buffer */
 /* Pulsing effect settings per slot: position x, y, z, then the actor's
  * step..unk74 words (see func_80082F64). */
 extern s16 D_8009AABC[], D_8009AB48[], D_8009ABD4[]; /* 14 per slot */
+
+/* Party slot spots (x, z world units), 6 bytes apart. */
+typedef struct {
+    u16 x;
+    u16 z;
+    u16 flags;
+} PartySpot;
+
+extern PartySpot D_8006EF8A[];
+extern u8 D_8006F8E4[];   /* per party slot: riding */
+extern u16 D_8006EE58[];  /* per party slot: saved heading */
+void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
+void func_80074794(s16 id, VECTOR *position);
+void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
 
 #endif
