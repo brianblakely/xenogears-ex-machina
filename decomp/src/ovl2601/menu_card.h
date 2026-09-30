@@ -410,18 +410,42 @@ typedef struct {
 
 extern GameData D_8006D634;
 
-/* An entry of the item table (resource 7, 10h bytes). */
-typedef struct {
-    u8 unk0[6];
-    u8 flags; /* 06: 10h cannot be sold */
-    u8 unk7[9];
-} ItemInfo;
-
 /* A party member's detail view; its nine stat words at +b8. */
 typedef struct {
     u8 unk0[0xB8];
     u16 stats[9]; /* b8 */
 } MemberView;
+
+/* Entries of the weapon, armour and item tables (10h bytes each). */
+typedef struct {
+    u16 users; /* 00: party bits of the members who can equip it */
+    u16 unk2;
+    u16 price; /* 04 */
+    u8 unk6[10];
+} WeaponInfo;
+
+typedef struct {
+    u16 users; /* 00 */
+    u16 price; /* 02 */
+    u8 unk4[12];
+} ArmourInfo;
+
+typedef struct {
+    u16 unk0;
+    u16 price; /* 02 */
+    u8 unk4[2];
+    u8 flags;  /* 06: 10h cannot be sold */
+    u8 unk7[9];
+} ItemInfo;
+
+/* The unpacked resources (menu state + 330, cch bytes). */
+typedef struct {
+    WeaponInfo *weapons; /* 00 */
+    ArmourInfo *armour;  /* 04 */
+    void *unk8[5];
+    ItemInfo *items;     /* 1c */
+    u8 unk20[0xCC - 0x20];
+} ResourceSet;
 
 /* Menu state (*800625a0); only the fields this overlay touches are named. */
 typedef struct {
@@ -452,7 +476,7 @@ typedef struct {
     u8 sounds;           /* 32a: menu sound effects enabled */
     u8 unk32B;
     CardState *card;     /* 32c */
-    void **resources;    /* 330: cch bytes of unpacked resources */
+    ResourceSet *resources; /* 330 */
     u8 unk334;
     u8 unk335;
     u8 top_cursor;       /* 336 */
@@ -586,6 +610,9 @@ void func_8003342C(void *list);          /* relocate an offset list */
 void func_80026338(void *sheet, s32 id, s32 *u, s32 *v, s32 *w, s32 *h, s32 *x, s32 *y);
 void func_80033698(s32 x, s32 y);        /* text palettes */
 u8 *func_80033728(void *table, s32 index); /* entry of a text table */
+u8 *func_80033848(s32 id);               /* weapon name */
+u8 *func_800337E8(s32 id);               /* armour name */
+u8 *func_80033818(s32 id);               /* item name */
 s32 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line */
 s32 func_8002675C(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale); /* sprite */
 s32 func_800263E4(void *sheet, s32 id, void *packets, s32 buffer, s32 x, s32 y, s32 scale, s32 flip_x,
@@ -617,7 +644,6 @@ void LoadImage(RECT *rect, void *data);        /* LoadImage */
 s32 DrawSync(s32 mode);                       /* DrawSync */
 
 /* This overlay. */
-u16 func_801C50B0(u16 mask, u8 id);
 void func_801C54B4(void);
 void func_801C5A7C(Label *label, s32 index, s32 row, s32 mode);
 void func_801C5E6C(void);
@@ -680,7 +706,6 @@ u32 func_801CFF58(u8 id, u8 kind);
 void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held);
 void func_801D1968(u8 unk0, u8 unk1);
 void func_801C50E8(u32 value);
-u16 func_801C50CC();
 void func_801CB370(void);
 u8 func_801D1CA4(void);
 u8 func_801CF780(void);
