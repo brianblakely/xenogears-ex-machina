@@ -7345,15 +7345,16 @@ void func_80095D6C(void) {
     D_800B0078->pc = func_800ACDB8(4);
 }
 
-#ifdef NON_MATCHING
 /* Continue when a selected actor is nearer than operand 2 to the published
  * actor, otherwise jump to operand 4. */
 void func_80095E48(void) {
     FieldActor *other;
+    FieldDescriptor *descriptor;
     s32 distance;
 
     if (func_8009CDB4(1) != 0xFF) {
-        other = D_800AF880.components.descriptors[func_8009CDB4(1)].actor;
+        descriptor = &D_800AF880.components.descriptors[func_8009CDB4(1)];
+        other = descriptor->actor;
         distance = func_80099A04(WHOLE(D_800B06B8->actor->position[0]) - WHOLE(other->position[0]),
                                  WHOLE(D_800B06B8->actor->position[1]) - WHOLE(other->position[1]),
                                  WHOLE(D_800B06B8->actor->position[2]) - WHOLE(other->position[2]));
@@ -7364,9 +7365,6 @@ void func_80095E48(void) {
     }
     D_800B0078->pc = func_800ACDB8(4);
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095E48);
-#endif
 
 /* Continue when the party's gold is at least the 32-bit operand 1,
  * otherwise jump to operand 5. */
