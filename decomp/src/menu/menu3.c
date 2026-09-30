@@ -1123,7 +1123,7 @@ void func_8007639C(Actor *actor, u8 input) {
 }
 
 /* Take the oldest queued input of an actor, 0 when none. */
-u8 func_800763E4(Actor *actor) {
+s32 func_800763E4(Actor *actor) {
     u8 input;
 
     if (actor->input_count == 0) {
@@ -1713,7 +1713,203 @@ void func_80077A88(Actor *actor) {
     actor->flags |= 0x80000;
 }
 
+/* Per-frame actor action: unless busy or stunned, start the move for the
+ * decoded command (combo attacks by button, the charged shot, the jump,
+ * the dash), then set the animation, drift and turn for the current
+ * stance, derive the walking speed and let a dash use up charge.
+ * Does not match: in the charged-shot case the animation is computed in
+ * $v1 and the flag word loaded before it is stored ($v0 in the original). */
+#ifdef NON_MATCHING
+void func_80077A9C(Actor *actor) {
+    MoveSlot *slot;
+    s32 bounce;
+    u8 anim;
+
+    if (actor->unkC4 == 5) {
+        return;
+    }
+    if (actor->unk100 != 0) {
+        func_80077770(actor);
+        return;
+    }
+    bounce = 0;
+    if (actor->unkE8 != 0) {
+        func_80076424(actor);
+        return;
+    }
+    actor->flags &= ~1;
+    if (actor->unk914 != 0) {
+        func_80076424(actor);
+    }
+    if ((actor->flags & 0x800) && actor->unkC5 != 4) {
+        actor->unkC5 = 0;
+    }
+    if (actor->unkC5 == 0 && actor->unkC4 != 4) {
+        switch (func_800763E4(actor)) {
+        case 1:
+            if (actor->unk914 != 0) {
+                break;
+            }
+            slot = func_80077A38(actor, 1);
+            goto start;
+        case 2:
+            if (actor->unk914 != 0) {
+                break;
+            }
+            slot = func_80077A38(actor, 0);
+        start:
+            if (actor->unkC4 & 2) {
+                break;
+            }
+            if (slot->unk0[0] != 0) {
+                actor->anim = slot->unk0[0] + 0x12;
+                actor->unk4E = 0xFF;
+                actor->flags |= 0x1000;
+                if (slot->unk0[1] != 0) {
+                    bounce = 1;
+                }
+                actor->flags |= 1;
+                actor->unkC5 = 2;
+                actor->unk84 = (u8 *)slot;
+                actor->unk644 = actor->moves->learned[actor->unk9C3 - 1] * actor->moves->base / 100;
+                break;
+            }
+            actor->unk914 = 0xF;
+            func_80076424(actor);
+            break;
+        case 0:
+            func_80076424(actor);
+            break;
+        case 3:
+            if (actor->unk914 == 0 && actor->moves->unk18 != 0 && actor->model_id != 0x29) {
+                anim = 4;
+                if (!(actor->unkC4 & 2)) {
+                    anim = 3;
+                }
+                actor->anim = anim;
+                actor->unk4E = 0xFF;
+                actor->flags |= 0x1000;
+                bounce = 1;
+                actor->unkC5 = 2;
+                actor->flags |= 1;
+            }
+            break;
+        case 4:
+            if (actor->unkCA != 0) {
+                return;
+            }
+            if (!(actor->unkC4 & 2)) {
+                func_8007D190(&actor->home, 9);
+                actor->velocity.vy -= 0x8C;
+                actor->unkC4 |= 2;
+                func_8008ED6C(actor, 0xA);
+                func_8008EBD0(actor, 0xA, &actor->home, 2);
+            }
+            break;
+        case 5:
+            actor->anim = 0xF;
+            actor->unk4E = 0xFF;
+            actor->flags |= 0x1000;
+            func_8008EBD0(actor, 0xE, &actor->pos, 2);
+            actor->unkC3 = 6;
+            actor->unkC5 = 4;
+            break;
+        }
+    }
+    actor->unk52 = 0;
+    actor->flags &= ~4;
+    switch (actor->unkC4) {
+    case 0:
+        actor->target_angle = 0;
+        switch (actor->unkC5) {
+        case 0:
+            if (actor->flags & 2) {
+                actor->anim = 0x11;
+                if ((actor->flags & 0x38) == 0x10) {
+                    actor->flags |= 4;
+                } else {
+                    actor->flags = (actor->flags & ~0x38) | (((((actor->flags >> 3) & 7) + 1) & 7) << 3);
+                }
+            } else {
+                actor->anim = 0;
+            }
+            break;
+        case 2:
+            if (bounce) {
+                actor->unk44 += 0x40;
+            }
+            break;
+        case 4:
+            func_80077A88(actor);
+            break;
+        }
+        actor->unkFC = func_8008B650(actor->unkFC, actor->target_angle, 0x100);
+        break;
+    case 1:
+        actor->unk52 = actor->state * actor->unk15F2 / 4096;
+        switch (actor->unkC5) {
+        case 0:
+            actor->anim = 1;
+            break;
+        case 2:
+            if (bounce) {
+                actor->unk44 += 0x40;
+            }
+            break;
+        case 4:
+            func_80077A88(actor);
+            break;
+        }
+        actor->unkFC = func_8008B650(actor->unkFC, actor->target_angle, 0x100);
+        if ((actor->flags & 0x60000000) == 0x20000000 && !(actor->kind & 2)) {
+            actor->flags &= ~0x8000;
+        }
+        break;
+    case 2:
+        actor->state = 0;
+        actor->unk44 = 0;
+        actor->target_angle = 0;
+        if (actor->unkC5 == 0) {
+            actor->anim = 2;
+        }
+        break;
+    case 3:
+        if (actor->unkC5 == 0) {
+            actor->anim = 2;
+        }
+        break;
+    case 4:
+        actor->state = 0;
+        break;
+    }
+    actor->unk40 = actor->state * actor->unk15F0 * actor->unk15F2 >> 16;
+    if (!(actor->flags & 0x8000)) {
+        actor->unkD4 &= ~0x40;
+        if (!(actor->flags & 0x8000)) {
+            goto done;
+        }
+    }
+    if (actor->unkC5 == 0 && !(actor->unkD4 & 0x40) && actor->unk40 > 0x30 &&
+        !(actor->unkC4 == 2 || actor->unkC4 == 3)) {
+        if (func_80073E2C(actor, 0x20, 2)) {
+            actor->unk40 *= 2;
+            actor->unk52 *= 2;
+        } else {
+            actor->flags &= ~0x8000;
+            actor->unkD4 |= 0x40;
+        }
+        if (D_8009287C >= 2) {
+            D_8009287C = 1;
+        }
+    }
+done:
+    if (actor->unkC4 == 0 || (actor->unkD4 & 0x40)) {
+        actor->flags &= ~0x8000;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077A9C);
+#endif
 
 /* Put an actor back at its home position, idle. */
 void func_80078154(Actor *actor) {
