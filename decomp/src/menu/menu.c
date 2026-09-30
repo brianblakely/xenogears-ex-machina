@@ -1777,7 +1777,147 @@ void func_80085EAC(s32 mirrored, s16 *out, s32 y) {
     }
 }
 
+/* Build one buffer's overlay packets: texture page modes, the frame
+ * outlines and gauge quads of both sides (left from the corner layout,
+ * right mirrored), the arrow triangles and the marks. The mirror loop runs
+ * over six arrows and so also writes three past the array into the marks,
+ * which are set afterwards. Does not match:
+ * the arrow mirroring and final mark stores are scheduled differently. */
+#ifdef NON_MATCHING
+void func_80085EC8(OverlayBuffer *buf) {
+    s32 i;
+
+    func_80043E20(&buf->tpage[0], 0, 1, func_80043A1C(0, 2, 0, 0));
+    func_80043E20(&buf->tpage[1], 0, 0, func_80043A1C(0, 1, 0, 0));
+    ((PacketTag *)&buf->frame[0])->len = 6;
+    *(u32 *)&buf->frame[0].r0 = 0x4C000000;
+    buf->frame[0].pad = 0x55555555;
+    ((PacketTag *)&buf->frame[1])->len = 6;
+    *(u32 *)&buf->frame[1].r0 = 0x4C000000;
+    buf->frame[1].pad = 0x55555555;
+    ((PacketTag *)&buf->frame[2])->len = 6;
+    *(u32 *)&buf->frame[2].r0 = 0x4C000000;
+    buf->frame[2].pad = 0x55555555;
+    ((PacketTag *)&buf->frame[3])->len = 6;
+    *(u32 *)&buf->frame[3].r0 = 0x4C000000;
+    buf->frame[3].pad = 0x55555555;
+    func_80085E34(&D_800917F4[0], (DVector *)&buf->frame[0].x0);
+    func_80085E34(&D_800917F4[1], (DVector *)&buf->frame[0].x1);
+    func_80085E34(&D_800917F4[2], (DVector *)&buf->frame[0].x2);
+    func_80085E34(&D_800917F4[3], (DVector *)&buf->frame[0].x3);
+    func_80085E34(&D_800917F4[3], (DVector *)&buf->frame[1].x0);
+    func_80085E34(&D_800917F4[4], (DVector *)&buf->frame[1].x1);
+    func_80085E34(&D_800917F4[5], (DVector *)&buf->frame[1].x2);
+    func_80085E34(&D_800917F4[0], (DVector *)&buf->frame[1].x3);
+    func_80085E60(&D_800917F4[0], (DVector *)&buf->frame[2].x0);
+    func_80085E60(&D_800917F4[1], (DVector *)&buf->frame[2].x1);
+    func_80085E60(&D_800917F4[2], (DVector *)&buf->frame[2].x2);
+    func_80085E60(&D_800917F4[3], (DVector *)&buf->frame[2].x3);
+    func_80085E60(&D_800917F4[3], (DVector *)&buf->frame[3].x0);
+    func_80085E60(&D_800917F4[4], (DVector *)&buf->frame[3].x1);
+    func_80085E60(&D_800917F4[5], (DVector *)&buf->frame[3].x2);
+    func_80085E60(&D_800917F4[0], (DVector *)&buf->frame[3].x3);
+    func_80043F18(&buf->frame[0], &buf->frame[1]);
+    func_80043F18(&buf->frame[2], &buf->frame[3]);
+    buf->frame[0].x0 = 0x1D;
+    buf->frame[2].x0 = 0x121;
+    ((PacketTag *)&buf->bars[0])->len = 5;
+    *(u32 *)&buf->bars[0].r0 = 0x280000FF;
+    ((PacketTag *)&buf->bars[1])->len = 5;
+    *(u32 *)&buf->bars[1].r0 = 0x280000FF;
+    ((PacketTag *)&buf->bars[2])->len = 5;
+    *(u32 *)&buf->bars[2].r0 = 0x280000FF;
+    ((PacketTag *)&buf->bars[3])->len = 5;
+    *(u32 *)&buf->bars[3].r0 = 0x280000FF;
+    ((PacketTag *)&buf->bars[4])->len = 5;
+    *(u32 *)&buf->bars[4].r0 = 0x280000FF;
+    ((PacketTag *)&buf->bars[5])->len = 5;
+    *(u32 *)&buf->bars[5].r0 = 0x280000FF;
+    func_80085E34(&D_800917F4[0], (DVector *)&buf->bars[0].x0);
+    func_80085E34(&D_800917F4[7], (DVector *)&buf->bars[0].x1);
+    func_80085E34(&D_800917F4[5], (DVector *)&buf->bars[0].x2);
+    func_80085E34(&D_800917F4[4], (DVector *)&buf->bars[0].x3);
+    func_80085E34(&D_800917F4[7], (DVector *)&buf->bars[1].x0);
+    func_80085E34(&D_800917F4[6], (DVector *)&buf->bars[1].x1);
+    func_80085E34(&D_800917F4[4], (DVector *)&buf->bars[1].x2);
+    func_80085E34(&D_800917F4[3], (DVector *)&buf->bars[1].x3);
+    func_80085E34(&D_800917F4[6], (DVector *)&buf->bars[2].x0);
+    func_80085E34(&D_800917F4[1], (DVector *)&buf->bars[2].x1);
+    func_80085E34(&D_800917F4[3], (DVector *)&buf->bars[2].x2);
+    func_80085E34(&D_800917F4[2], (DVector *)&buf->bars[2].x3);
+    func_80085E60(&D_800917F4[0], (DVector *)&buf->bars[3].x0);
+    func_80085E60(&D_800917F4[7], (DVector *)&buf->bars[3].x1);
+    func_80085E60(&D_800917F4[5], (DVector *)&buf->bars[3].x2);
+    func_80085E60(&D_800917F4[4], (DVector *)&buf->bars[3].x3);
+    func_80085E60(&D_800917F4[7], (DVector *)&buf->bars[4].x0);
+    func_80085E60(&D_800917F4[6], (DVector *)&buf->bars[4].x1);
+    func_80085E60(&D_800917F4[4], (DVector *)&buf->bars[4].x2);
+    func_80085E60(&D_800917F4[3], (DVector *)&buf->bars[4].x3);
+    func_80085E60(&D_800917F4[6], (DVector *)&buf->bars[5].x0);
+    func_80085E60(&D_800917F4[1], (DVector *)&buf->bars[5].x1);
+    func_80085E60(&D_800917F4[3], (DVector *)&buf->bars[5].x2);
+    func_80085E60(&D_800917F4[2], (DVector *)&buf->bars[5].x3);
+    func_80043E20(&buf->bar_tpage, 0, 1, func_80043A1C(0, 1, 0, 0));
+    func_800732AC(buf->bars_dim, buf->bars, sizeof(buf->bars));
+    func_800732AC(buf->bars_lit, buf->bars, sizeof(buf->bars));
+    for (i = 0; i < 6; i++) {
+        ((PacketTag *)&buf->bars_dim[i])->len = 5;
+        *(u32 *)&buf->bars_dim[i].r0 = 0x28806060;
+    }
+    for (i = 0; i < 6; i++) {
+        ((PacketTag *)&buf->bars_lit[i])->len = 5;
+        *(u32 *)&buf->bars_lit[i].r0 = 0x280000FF;
+    }
+    *(u32 *)&buf->arrows[0][0].x0 = 0x200014;
+    *(u32 *)&buf->arrows[0][0].x1 = 0x20001C;
+    *(u32 *)&buf->arrows[0][0].x2 = 0x28001C;
+    *(u32 *)&buf->arrows[0][1].x0 = 0x200013;
+    *(u32 *)&buf->arrows[0][1].x1 = 0x290013;
+    *(u32 *)&buf->arrows[0][1].x2 = 0x29001B;
+    *(u32 *)&buf->arrows[0][2].x0 = 0x320013;
+    *(u32 *)&buf->arrows[0][2].x1 = 0x2A0013;
+    *(u32 *)&buf->arrows[0][2].x2 = 0x2A001B;
+    for (i = 0; i < 6; i++) {
+        ((PacketTag *)&buf->arrows[0][i])->len = 4;
+        *(u32 *)&buf->arrows[0][i].r0 = 0x2000FF00;
+        ((PacketTag *)&buf->arrows[1][i])->len = 4;
+        *(u32 *)&buf->arrows[1][i].r0 = 0x2000FF00;
+        buf->arrows[1][i].y0 = buf->arrows[0][i].y0;
+        buf->arrows[1][i].y1 = buf->arrows[0][i].y1;
+        buf->arrows[1][i].x0 = 0x140 - buf->arrows[0][i].x0;
+        buf->arrows[1][i].y2 = buf->arrows[0][i].y2;
+        buf->arrows[1][i].x1 = 0x140 - buf->arrows[0][i].x1;
+        buf->arrows[1][i].x2 = 0x140 - buf->arrows[0][i].x2;
+    }
+    *(u32 *)&buf->marks[1].r0 = *(u32 *)&buf->marks[0].r0 = 0x28000000;
+    buf->marks[0].x1 = 0x63;
+    buf->marks[0].x3 = 0x5E;
+    buf->marks[0].y0 = buf->marks[0].y1 = 9;
+    buf->marks[0].y2 = buf->marks[0].y3 = 0x14;
+    buf->marks[1].x0 = buf->marks[1].x2 = 0x122;
+    buf->marks[1].x1 = 0xE3;
+    buf->marks[1].x3 = 0xDE;
+    buf->marks[1].y0 = buf->marks[1].y1 = 0x13;
+    buf->arrows[1][1].y0--;
+    buf->marks[1].y2 = buf->marks[1].y3 = buf->marks[0].x0 = buf->marks[0].x2 = 0x1E;
+    buf->arrows[1][1].x2--;
+    ((PacketTag *)&buf->marks[2])->len = ((PacketTag *)&buf->marks[1])->len =
+        ((PacketTag *)&buf->marks[0])->len = 5;
+    *(u32 *)&buf->marks[2].r0 = 0x280000FF;
+    *(u32 *)&buf->marks[2].x0 = 0x320006;
+    *(u32 *)&buf->marks[2].x1 = 0x36000A;
+    *(u32 *)&buf->marks[2].x2 = 0x4C0006;
+    *(u32 *)&buf->marks[2].x3 = 0x48000A;
+    ((PacketTag *)&buf->marks[3])->len = 5;
+    *(u32 *)&buf->marks[3].r0 = 0x280000FF;
+    *(u32 *)&buf->marks[3].x0 = 0x32013A;
+    *(u32 *)&buf->marks[3].x1 = 0x360136;
+    *(u32 *)&buf->marks[3].x2 = 0x4C013A;
+    *(u32 *)&buf->marks[3].x3 = 0x480136;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085EC8);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800864B4);
 
@@ -1787,7 +1927,7 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800868E0);
 
 /* Link this buffer's overlay packets into the overlay ordering table. */
 void func_80086E24(void) {
-    func_80043B48(D_80092938, D_8009A2F8[D_800928A0].packets);
+    func_80043B48(D_80092938, &D_8009A2F8[D_800928A0].tpage[1]);
 }
 
 /* Link a gauge bar filled to `value`: the first part up to 0x38, a sloped

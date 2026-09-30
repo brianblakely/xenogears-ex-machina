@@ -59,13 +59,27 @@ typedef struct {
     Panel *panel;      /* 0x284 */
 } PanelOwner;
 
-/* Per-buffer overlay packets (map screen). */
+/* libgpu DR_TPAGE. */
 typedef struct {
-    u32 unk0[2];
-    u8 packets[0x308];
+    u32 tag;
+    u32 code[1];
+} DrawTPage;
+
+/* Per-buffer overlay packets (map screen, 0x310 bytes). */
+typedef struct {
+    DrawTPage tpage[2];   /* 0x000 */
+    LineF4 frame[4];      /* 0x010: map frame outline, both sides */
+    PolyF4 bars[6];       /* 0x080: gauge backgrounds */
+    DrawTPage bar_tpage;  /* 0x110 */
+    PolyF4 bars_dim[6];   /* 0x118 */
+    PolyF4 bars_lit[6];   /* 0x1A8 */
+    PolyF3 arrows[2][3];  /* 0x238: three per side */
+    PolyF4 marks[4];      /* 0x2B0 */
 } OverlayBuffer;
 
 extern OverlayBuffer D_8009A2F8[2];
+extern DVector D_800917F4[8]; /* map frame corner layout */
+void func_80043F18(void *packet, void *next); /* chain two packets */
 extern u8 *D_800927CC; /* per map row: right edge of the drawn span */
 extern u8 *D_800927D0; /* per map row: left edge of the drawn span */
 extern u8 D_80091834[]; /* per map row: leftmost allowed column */
@@ -184,10 +198,6 @@ void func_80085E90(s32 mirrored, s16 *out, s32 x);
 void func_80085EAC(s32 mirrored, s16 *out, s32 y);
 
 /* Backdrop texture pages and sprites. */
-typedef struct {
-    u32 tag;
-    u32 code[1];
-} DrawTPage;
 
 extern DrawTPage D_800955C8[4];
 extern Sprite D_800955F8[6];
