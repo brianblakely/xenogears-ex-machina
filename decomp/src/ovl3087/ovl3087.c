@@ -325,11 +325,9 @@ s32 func_801E5D24(s32 thread, u8 *insn) {
     return 0;
 }
 
-#ifdef NON_MATCHING
 /* Opcode 03 (request): start entry (low five bits) of another thread on a
  * free level with the priority in the top three bits. Retries (length 0)
- * while that thread has no free level. (Register allocation of the entry
- * table lookup differs.) */
+ * while that thread has no free level. */
 s32 func_801E5DCC(s32 thread, u8 *insn) {
     s32 length = 0;
     u8 level = func_801E57C4(&D_800D3278->threads[insn[1]]);
@@ -338,15 +336,12 @@ s32 func_801E5DCC(s32 thread, u8 *insn) {
         D_800D3278->threads[thread].request = insn[2] & 0x1F;
         D_800D3278->threads[insn[1]].priority[level] = insn[2] >> 5;
         D_800D3278->threads[insn[1]].pc[level] =
-            D_800D39D0->entries[insn[1]].entry[D_800D3278->threads[thread].request];
+            (D_800D39D0->entries + insn[1])->entry[D_800D3278->threads[thread].request];
         length = 3;
         D_800D3278->threads[insn[1]].entry[level] = D_800D3278->threads[thread].request;
     }
     return length;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3087/asm/nonmatchings/ovl3087", func_801E5DCC);
-#endif
 
 /* Opcode 04 (request and wait for start): issue the request, then wait
  * until the other thread is running the requested entry. */

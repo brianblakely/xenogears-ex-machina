@@ -119,7 +119,7 @@ typedef struct {
 
 /* Text cursor and colour of the menu's text drawing. */
 extern u8 D_800926F0, D_800926F4, D_800926F8; /* text colour r, g, b */
-extern s32 D_80059488;
+extern volatile s32 D_80059488;
 
 extern char *D_800912F4[];
 extern u32 D_8009274C; /* pad buttons repeating this frame */

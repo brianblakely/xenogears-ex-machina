@@ -3834,37 +3834,30 @@ void func_801E63A8(Actor *actor) {
 }
 
 /* Hide node `index` of `parts` and its descendants, showing the same nodes of
- * `other`, and release their attachments. Differs in register assignment and
- * one addu operand order. */
-#ifdef NON_MATCHING
+ * `other`, and release their attachments. */
 void func_801E6578(SlotPool *pool, s32 index, ModelPart *parts, ModelPart *other) {
-    ModelPart *part;
     ModelPart *child;
     s32 count;
     s32 i;
 
     child = parts;
-    part = &parts[index];
     count = parts->count;
-    part->visible = 0;
+    parts[index].visible = 0;
     other[index].visible = 1;
-    func_801DF7A8(pool, part->attachments[0]);
-    part->attachments[0] = NULL;
-    func_801DF7A8(pool, part->attachments[1]);
-    part->attachments[1] = NULL;
-    func_801DF7A8(pool, part->attachments[2]);
-    part->attachments[2] = NULL;
+    func_801DF7A8(pool, parts[index].attachments[0]);
+    parts[index].attachments[0] = NULL;
+    func_801DF7A8(pool, parts[index].attachments[1]);
+    parts[index].attachments[1] = NULL;
+    func_801DF7A8(pool, parts[index].attachments[2]);
+    parts[index].attachments[2] = NULL;
     for (i = 1; i < count;) {
         child++;
         i++;
-        if (child->parent == part) {
+        if (child->parent == &parts[index]) {
             func_801E6578(pool, child->count, parts, other);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2143/asm/nonmatchings/ovl2143", func_801E6578);
-#endif
 
 /* Move the visibility of every shown node of `parts` to the same node of
  * `other`. */

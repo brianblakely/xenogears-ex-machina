@@ -30,7 +30,7 @@ typedef struct {
 } SoundPair;
 
 extern SoundPair D_80091EE0[]; /* command sounds: up to two effect ids each */
-extern s32 D_80059488;   /* tag of menu sound effects */
+extern volatile s32 D_80059488; /* vertical blanks counted */
 
 void func_80039FF8(void);                                      /* sound driver reset */
 void func_80039F9C(s32 sound, s32 voice, s16 volume, s16 pan); /* key on */
