@@ -103,8 +103,11 @@ typedef struct {
     Sprite sprite;
 } SpriteTask;
 
-extern u8 D_800591AF; /* allocation mode for sprite tasks */
-extern s32 D_8005956C;
+/* The unit addresses these small globals absolutely, not through $gp: its
+ * declarations carry no size (incomplete arrays), so they are not small data
+ * under -G8. */
+extern u8 D_800591AF[]; /* [0]: allocation mode for sprite tasks */
+extern s32 D_8005956C[];
 
 /* 0x20 bytes of lighting state copied by 80024ff4. */
 typedef struct {

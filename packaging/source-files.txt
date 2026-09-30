@@ -191,12 +191,14 @@ decomp/src/resident/heap.h
 decomp/src/resident/main.c
 decomp/src/resident/main2.c
 decomp/src/resident/main3.c
+decomp/src/resident/main_8002709C.c
 decomp/src/resident/menu.h
 decomp/src/resident/mode.h
 decomp/src/resident/model.h
 decomp/src/resident/pad.h
 decomp/src/resident/sound.c
 decomp/src/resident/sound.h
+decomp/src/resident/sprite.c
 decomp/src/resident/sprite.h
 decomp/src/resident/stream.h
 decomp/src/resident/text.h

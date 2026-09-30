@@ -51,6 +51,10 @@ segments:
       # directory table (EVID-REF-007); user-supplied disc data, not code.
       - [0x800, rodatabin, disc2_index]
       - [0x8880, .rodata, main]
+      # Sprite/actor engine unit (8001C8DC-8002709C): its jump tables and
+      # constants open at 0x800183D8.
+      - [0x8BD8, .rodata, sprite]
+      - [0x90EC, .rodata, main_8002709C]
       # Heap unit (80031894-80032E7C): its allocation-name strings open the
       # rodata (0x80018998 "DelayFree"), its $gp-relative accesses need -G8.
       - [0x9198, .rodata, heap]
@@ -60,6 +64,13 @@ segments:
       # Hand-written rotation helpers and the PsyQ library objects.
       - [0x93F0, .rodata, main3]
       - [0x9D24, c, main]
+      # Sprite/actor engine unit (8001C8DC-8002709C): -G8 ($gp-relative
+      # small globals) and positive `li` assembled as `addiu` (ASPSX 2.50+),
+      # unlike its neighbours. The 0x170 bytes of constant data in text
+      # before it (8001C76C) stay at the end of main.c; which object held
+      # them is not established.
+      - [0xD0DC, c, sprite]
+      - [0x1789C, c, main_8002709C]
       - [0x22094, c, heap]
       - [0x2367C, c, main2]
       # Sound driver unit (GCC 2.6.3) to 8003F738. Its start lies in

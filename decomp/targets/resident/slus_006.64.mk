@@ -20,5 +20,8 @@ SPLIT_ALSO := decomp/targets/resident/slus_006.69.yaml
 GP_heap := 8
 # The sound driver unit is compiled by GCC 2.6.3.
 CC_sound := 2.6.3
-# The unit around 0x8001c944-0x8002709c assembles positive `li` as `addiu`
-# (ASPSX 2.50+); the rest of the game code uses `ori` (the default 2.34).
+# The sprite unit (8001C8DC-8002709C) assembles positive `li` as `addiu`
+# (ASPSX 2.50+; the rest of the game code uses `ori`, the default 2.34) and
+# addresses its small globals through $gp.
+GP_sprite := 8
+MASPSX_sprite := --aspsx-version=2.79
