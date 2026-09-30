@@ -13,5 +13,9 @@ extern u16 D_8006EF64;    /* game data word; below 0xbb 8009892c adjusts gears *
 s32 func_80099498(void);
 void func_8009B684(u8 kind, u16 flag);
 void func_8009B46C(u16 *damage);
+s8 func_8009D3A0(void);
+u16 func_8009D948(void);
+u16 func_8009DA04(void);
+s32 func_8009DB54(s32 damage);
 
 #endif

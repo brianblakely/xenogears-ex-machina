@@ -5786,7 +5786,7 @@ void func_80096018(void) {
  * the attacker's own element status) against the target's weakness, its
  * resistance statuses (which may also force hit result 4) and its single
  * element guards, then a 20% boost for either side's +0x32 bit 0x10. */
-void func_80096494(u16 *attack, u16 *defense, u8 *hit) {
+void func_80096494(u16 *attack, u16 *defense, s8 *hit) {
     s32 ether = 0;
     u8 flag = 0;
     u8 element;
@@ -8072,7 +8072,142 @@ void func_8009CB68(u8 slot) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CBC4);
+/* Gear attack damage: the gear hit outcome, attack and defense values with
+ * the element adjustment and both gears' boost/break statuses, the command's
+ * drain effects, then (5a - 4d for ether, else 4a - 3d) times the power over
+ * 20, a random spread, the element resistance and the hit outcome's result
+ * code; at most 9999. */
+void func_8009CBC4(void) {
+    u16 attack;
+    u16 defense;
+    s8 hit;
+    u8 power;
+    s32 damage;
+    s32 attackScale;
+    s32 defenseScale;
+    u16 flags;
+    u8 guard;
+
+    power = D_800C3DFC->power;
+    hit = func_8009D3A0();
+    attack = func_8009D948();
+    defense = func_8009DA04();
+    func_80096494(&attack, &defense, &hit);
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 8) {
+        attack += attack / 5;
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 2) {
+        attack += attack / 10;
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 4) {
+        attack -= attack / 5;
+    }
+    if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 1) {
+        attack -= attack / 10;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 4) {
+        defense += defense / 5;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 1) {
+        defense += defense / 10;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 8) {
+        defense -= defense / 5;
+    }
+    if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 2) {
+        defense -= defense / 10;
+    }
+    if (D_800C3DFC->attributes[2] & 0x10) {
+        if (!(D_800C3E34->pilot.status82 & 0x40)) {
+            D_800C3E34->pilot.status80 |= 0x40;
+        }
+        if ((D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent) & 0x4000) {
+            D_800D2C88[D_800C3E04] = 3;
+            D_800D2C54[D_800C3E04] = (u16)(D_800C3E00->pilot.maxEp / 10) * 2;
+        }
+        if ((D_800D2D6C->status84.half.active | D_800D2D6C->status84.half.permanent) & 0x1000) {
+            D_800D2C88[D_800C3E04] = 2;
+            D_800D2C54[D_800C3E04] = D_800D2D6C->maxHp / 10 * 2;
+        }
+    }
+    if ((D_800C3DFC->attributes[2] & 0x20) && !(D_800C3E34->pilot.status82 & 0x80)) {
+        D_800C3E34->pilot.status80 |= 0x80;
+    }
+    if (D_800C3E34->pilot.status80 & 0x40) {
+        defense -= defense >> 2;
+        D_800C3E34->pilot.status80 &= 0xFFBF;
+    }
+    if (D_800C3E00->pilot.status80 & 0x80) {
+        attack -= attack >> 2;
+        D_800C3E00->pilot.status80 &= 0xFF7F;
+    }
+    flags = D_800C3DFC->flagsA;
+    if (flags & 0x400) {
+        power = 20;
+    }
+    if (flags & 0x100) {
+        attackScale = 5;
+        defenseScale = 4;
+    } else {
+        attackScale = 4;
+        defenseScale = 3;
+    }
+    if (defense != 0) {
+        damage = attackScale * attack - defenseScale * defense;
+    } else {
+        damage = attackScale * attack;
+    }
+    switch (D_800C3DFC->amountKind) {
+    case 0:
+    case 1:
+        damage = power * damage / 20;
+        break;
+    case 2:
+        break;
+    }
+    if (damage <= 0) {
+        damage = 0;
+    } else if (damage < 15) {
+        damage += rand() % 3;
+    } else {
+        damage += rand() % (damage / 15 + 2);
+    }
+    if (D_800C3DFC->elements != 0) {
+        damage = func_8009DB54(damage);
+    }
+    switch (hit) {
+    case 1:
+        D_800C34B0->resultCode[D_800C3E50] = 0;
+        break;
+    case 2:
+        D_800C34B0->resultCode[D_800C3E50] = 5;
+        guard = D_800D2DC8->guard;
+        if (guard >= 10) {
+            guard = 9;
+        }
+        if (damage != 0) {
+            damage = damage * (10 - guard) / 20;
+        }
+        break;
+    case 3:
+        damage = 0;
+        D_800C34B0->resultCode[D_800C3E50] = 4;
+        break;
+    case 4:
+        D_800C34B0->resultCode[D_800C3E50] = 2;
+        break;
+    }
+    if (D_800D2DC4 && (D_800C3DFC->flagsA & 0x100) && damage != 0) {
+        damage /= 3;
+    }
+    if (damage >= 10000) {
+        damage = 9999;
+    }
+    if (damage < 0) {
+        damage = 0;
+    }
+    D_800C34B0->damage[D_800C3E50] = damage;
+}
 
 /* Mark the target missed (result 6) when 8009DBFC finds no hit. */
 void func_8009D354(void) {

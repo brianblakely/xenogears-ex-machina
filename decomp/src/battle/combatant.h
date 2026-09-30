@@ -126,7 +126,9 @@ typedef struct {
     u8 resistances[16]; /* 0x88: by element bit */
     u8 speed;   /* 0x98 */
     u8 defense; /* 0x99: damage reduction in percent */
-    u8 pad9A[0x9E - 0x9A];
+    u8 pad9A[0x9C - 0x9A];
+    u8 guard; /* 0x9C: tenths a half hit loses (at most 9) */
+    u8 pad9D;
     u8 frameFactor; /* 0x9E: attack scale in quarters */
     u8 pad9F[0xA4 - 0x9F];
 } GearRecord;
