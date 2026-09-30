@@ -599,8 +599,11 @@ typedef struct MenuBlock35C {
 
 /* A position record passed to the panel builders (+28 base). */
 typedef struct MenuAnchor {
-    u8 pad0[0x28];
-    s32 base; /* 28 */
+    s32 parts[9]; /* 0: layout sprite positions */
+    s32 frame; /* 24: frame sprite */
+    s32 base; /* 28: level digits */
+    u8 pad2C[0x14];
+    s32 label; /* 40: name label */
 } MenuAnchor;
 
 /* A panel built by 801ce0cc: frame quads and part lists (two quads per entry). */
@@ -945,6 +948,7 @@ extern s32 D_801E977C[2]; /* detail panel tab sprites */
 extern s32 D_801E9D40[7]; /* stat name positions per row: x */
 extern s32 D_801E9D5C[7]; /* y */
 extern s32 D_801EA45C[];  /* stat name sprites, seven per start row */
+extern s32 D_801EA4DC[]; /* status panel layout sprites, nine per layout, ffff none */
 extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */

@@ -2007,7 +2007,39 @@ u8 func_801CD710(u8 arg) {
     return stay;
 }
 
+/* Build status panel `panel`'s layout sprites (layout `layout`) for character
+ * `ch` on row `row` at the positions of `x` and `y`, its frame sprite (14b +
+ * row) and its name label (the character's or, in layout 1, its gear's).
+ * Register allocation and the order of the last call's argument arithmetic
+ * differ. */
+#ifdef NON_MATCHING
+void func_801CD81C(MenuPanel *panel, u8 ch, u8 row, MenuAnchor *x, MenuAnchor *y, u8 layout) {
+    s32 i;
+
+    panel->count0 = 0;
+    for (i = 0; i < 9; i++) {
+        if (D_801EA4DC[layout * 9 + i] != 0xffff) {
+            panel->count0 += func_8002675C(D_800625A0->sheet, D_801EA4DC[layout * 9 + i],
+                                           &panel->list0[panel->count0 * 2], D_800625A0->bufferIndex,
+                                           x->parts[i], row * 56 + y->parts[i], 0x1000);
+        }
+    }
+    func_8002675C(D_800625A0->sheet, row + 0x14b, panel->frameA, D_800625A0->bufferIndex, x->frame,
+                  row * 56 + y->frame, 0x1000);
+    func_801E927C(&panel->frameB[D_800625A0->bufferIndex]);
+    panel->frameB[D_800625A0->bufferIndex].tpage = GetTPage(0, 0, 0x180, 0);
+    if (layout == 0) {
+        panel->frameB[D_800625A0->bufferIndex].clut = (ch & 1) ? D_80059414 : D_800595D4;
+    } else {
+        panel->frameB[D_800625A0->bufferIndex].clut = (D_8006D8A0[ch].gear & 1) ? D_800595D4 : D_80059414;
+    }
+    func_801E920C(&panel->frameB[D_800625A0->bufferIndex], (u16)x->label, (u16)(y->label + row * 56),
+                  (u8)(D_801EA578[layout * 3 + row] * 4), (u8)D_801EA5C4[layout * 3 + row], (layout * 3) * 8 + 0x48,
+                  13);
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CD81C);
+#endif
 
 /* Lay out character `ch`'s level digits (the last three of +62) at row `row`
  * of `panel` and prepare the +63 digits. */
