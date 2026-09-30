@@ -1603,7 +1603,82 @@ void func_8009B104(u8 slot, Combatant *chuchu) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B1E4);
+/* Debug setup: 99 of every item 1-47, and fixed skill masks for all eleven
+ * characters. */
+void func_8009B1E4(void) {
+    u8 i;
+
+    for (i = 1; i < 48; i++) {
+        D_8006F65A[i] = i;
+        D_8006F5C4[i] = 99;
+    }
+    D_8006ECF4[0].mask0 = 0xFFF8;
+    D_8006ECF4[0].mask2 = 0xFF00;
+    D_8006ECF4[0].mask4 = 0xFFFF;
+    D_8006ECF4[0].mask6 = 0xFE00;
+    D_8006ECF4[0].flags1A = 0xF000;
+    D_8006ECF4[0].field17 = 7;
+    D_8006ECF4[1].mask0 = 0xFFE0;
+    D_8006ECF4[1].mask2 = 0xFFF0;
+    D_8006ECF4[1].mask4 = 0xFFFF;
+    D_8006ECF4[1].mask6 = 0xFFF0;
+    D_8006ECF4[1].flags1A = 0xC000;
+    D_8006ECF4[1].field17 = 7;
+    D_8006ECF4[2].mask0 = 0xFFE0;
+    D_8006ECF4[2].mask2 = 0xFFE0;
+    D_8006ECF4[2].mask4 = 0xFFFF;
+    D_8006ECF4[2].mask6 = 0xFF00;
+    D_8006ECF4[2].flags1A = 0x8000;
+    D_8006ECF4[2].field17 = 7;
+    D_8006ECF4[3].mask0 = 0xFFE0;
+    D_8006ECF4[3].mask2 = 0xFFC0;
+    D_8006ECF4[3].mask4 = 0xFFFF;
+    D_8006ECF4[3].mask6 = 0xFF00;
+    D_8006ECF4[3].flags1A = 0xF000;
+    D_8006ECF4[3].field17 = 7;
+    D_8006ECF4[4].mask0 = 0xFFC0;
+    D_8006ECF4[4].mask2 = 0xFFC0;
+    D_8006ECF4[4].mask4 = 0xFFFF;
+    D_8006ECF4[4].mask6 = 0xFC00;
+    D_8006ECF4[4].flags1A = 0xE000;
+    D_8006ECF4[4].field17 = 7;
+    D_8006ECF4[5].mask0 = 0xFFC0;
+    D_8006ECF4[5].mask2 = 0xF000;
+    D_8006ECF4[5].mask4 = 0xFFFF;
+    D_8006ECF4[5].mask6 = 0xF000;
+    D_8006ECF4[5].flags1A = 0x8000;
+    D_8006ECF4[5].field17 = 7;
+    D_8006ECF4[6].mask0 = 0xFFC0;
+    D_8006ECF4[6].mask2 = 0xFF00;
+    D_8006ECF4[6].mask4 = 0xFFFF;
+    D_8006ECF4[6].mask6 = 0xFF00;
+    D_8006ECF4[6].flags1A = 0x8000;
+    D_8006ECF4[6].field17 = 7;
+    D_8006ECF4[7].mask0 = 0;
+    D_8006ECF4[7].mask2 = 0xFF00;
+    D_8006ECF4[7].mask4 = 0;
+    D_8006ECF4[7].mask6 = 0xFF00;
+    D_8006ECF4[7].flags1A = 0;
+    D_8006ECF4[7].field17 = 7;
+    D_8006ECF4[8].mask0 = 0;
+    D_8006ECF4[8].mask2 = 0xF800;
+    D_8006ECF4[8].mask4 = 0xFFFF;
+    D_8006ECF4[8].mask6 = 0;
+    D_8006ECF4[8].flags1A = 0xE000;
+    D_8006ECF4[8].field17 = 7;
+    D_8006ECF4[9].mask0 = 0xFFE0;
+    D_8006ECF4[9].mask2 = 0xFFE0;
+    D_8006ECF4[9].mask4 = 0xFFFF;
+    D_8006ECF4[9].mask6 = 0xFFE0;
+    D_8006ECF4[9].flags1A = 0x8000;
+    D_8006ECF4[9].field17 = 7;
+    D_8006ECF4[10].mask0 = 0xFFC0;
+    D_8006ECF4[10].mask2 = 0xFF00;
+    D_8006ECF4[10].mask4 = 0xFFFF;
+    D_8006ECF4[10].mask6 = 0xFF00;
+    D_8006ECF4[10].flags1A = 0xC000;
+    D_8006ECF4[10].field17 = 7;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B46C);
 
@@ -1611,15 +1686,54 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B684);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BAC4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BD94);
+/* Damage the target by the command's power in twentieths of its gear's
+ * maximum HP. */
+void func_8009BD94(void) {
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = D_800C3DFC->power * D_800D2DC8->maxGearHp / 20;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BE0C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C050);
+/* Gear warning flags of slot: 1 gear status 0x400, 2 gear HP below an eighth
+ * (unless the pilot's flag 1 at +0x36), 4 when field 0x148 is 4. */
+u8 func_8009C050(u8 slot) {
+    Combatant *record = &D_800CCCE8.records[slot];
+    UnitRecord *gear = &D_800CCCE8.records[slot].gear;
+    u8 *state = &D_800CCCE8.records[slot].field148;
+    u8 flags = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C0E0);
+    if (gear->status7C & 0x400) {
+        flags = 1;
+    }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C134);
+    if (gear->gearHp < gear->maxGearHp >> 3 && !(record->pilot.flags36 & 1)) {
+        flags |= 2;
+    }
+    if (*state == 4) {
+        flags |= 4;
+    }
+    return flags;
+}
+
+/* Put slot into state 4 with timer 6 at three turns, and set flag 0x4000 of
+ * character 0. */
+void func_8009C0E0(u8 slot) {
+    D_800CCCE8.records[slot].field148 = 4;
+    D_800CCCE8.records[slot].statusTimers[6] = 3;
+    D_8006ECF4[0].flags1A |= 0x4000;
+}
+
+/* Target the party member that is character 3. */
+void func_8009C134(void) {
+    u8 i;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800CCCE8.records[i].pilot.characterId == 3) {
+            D_800CCCE8.targetMask = 1 << i;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C198);
 

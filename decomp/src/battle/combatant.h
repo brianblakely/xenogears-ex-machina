@@ -32,7 +32,9 @@ typedef struct {
     UnitEntry entries[4];   /* 0x00 */
     u8 pad20[0x32 - 0x20];
     u16 flags32;            /* 0x32: bit 0x40 doubles status durations */
-    u8 pad34[0x3A - 0x34];
+    u8 pad34[0x36 - 0x34];
+    u16 flags36;            /* 0x36 */
+    u8 pad38[0x3A - 0x38];
     u16 field3A;            /* 0x3A: a gear's regeneration base */
     u8 pad3C[0x4C - 0x3C];
     u16 hp;                 /* 0x4C */
@@ -79,7 +81,7 @@ typedef struct {
 typedef struct {
     UnitRecord pilot;
     UnitRecord gear;
-    u8 pad148;
+    u8 field148;
     u8 field149;
     u8 pad14A[0x15A - 0x14A];
     u8 flags15A;            /* bit 0x80: fighting in a gear */
@@ -94,7 +96,10 @@ typedef struct {
     u16 state;              /* 0x00: 1 usable, 0x2000 sealed */
     u8 pad2[0xA - 0x2];
     u16 flagsA;             /* 0x0A */
-    u8 padC[0x14 - 0xC];
+    u8 padC[0x10 - 0xC];
+    u8 pad10;
+    u8 power;               /* 0x11 */
+    u8 pad12[0x14 - 0x12];
     u8 accuracy;            /* 0x14 */
     u8 pad15[0x20 - 0x15];
     u8 attributes[4];       /* 0x20: copied to the battle's current command */
@@ -110,7 +115,10 @@ typedef struct {
     u8 pad35D8[0x54F8 - 0x35D8];
     BattleItem items[50];                   /* 0x54F8 */
     BattleItem gearItems[3];                /* 0x5818 */
-    u8 pad5848[0x5FAC - 0x5848];
+    u8 pad5848[0x5F6C - 0x5848];
+    u32 damage[12];                         /* 0x5F6C */
+    u8 pad5F9C[0x5FA0 - 0x5F9C];
+    u8 resultCode[12];                      /* 0x5FA0: 0xFF untouched */
     u16 targetMask;                         /* 0x5FAC */
     u16 targetMask2;                        /* 0x5FAE */
     u8 pad5FB0[0x5FBC - 0x5FB0];
@@ -122,8 +130,32 @@ typedef struct {
     u8 defendEffect;                        /* 0x5FC7 */
 } BattleWork;
 
+/* Layout checks (a negative array size fails the build). */
+#define BATTLE_OFFSET(type, field) ((u32)&((type *)0)->field)
+typedef char BattleLayoutCheck[(sizeof(UnitRecord) == 0xA4 && sizeof(Combatant) == 0x170
+                               && sizeof(CommandDescriptor) == 0x28 && sizeof(BattleItem) == 0x10
+                               && BATTLE_OFFSET(BattleWork, targetMask) == 0x5FAC
+                               && BATTLE_OFFSET(BattleWork, defendEffect) == 0x5FC7) ? 1 : -1];
+
 extern UnitRecord D_8006D8A0[31];
 extern u8 D_8006F8BA[];                 /* item durability by slot */
+extern u8 D_8006F5C4[];                 /* inventory counts */
+extern u8 D_8006F65A[];                 /* inventory items */
+
+/* Per-character battle data in the game data (0x20 bytes). */
+typedef struct {
+    u16 mask0;
+    u16 mask2;
+    u16 mask4;
+    u16 mask6;
+    u8 pad8[0x17 - 0x8];
+    u8 field17;
+    u8 pad18[0x1A - 0x18];
+    u16 flags1A;
+    u8 pad1C[0x20 - 0x1C];
+} CharacterBattleData;
+
+extern CharacterBattleData D_8006ECF4[11];
 
 extern BattleWork D_800CCCE8;
 extern BattleWork *D_800C34B0;
@@ -133,6 +165,8 @@ extern CommandDescriptor *D_800C3DFC;   /* current command descriptor */
 extern Combatant *D_800C3E00;           /* attacker record */
 extern u8 D_800C3E04;                   /* attacker slot */
 extern Combatant *D_800C3E34;           /* target record */
+extern u8 D_800C3E50;                   /* target slot */
+extern UnitRecord *D_800D2DC8;          /* target's gear record */
 extern u8 D_800D2C34;
 
 s32 func_8003FA38(void);                /* resident rand: 0..0x7FFF */
