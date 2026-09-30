@@ -161,29 +161,25 @@ void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
 }
 
 /* Start the actor above the player and build scene object 2 there. */
-#ifdef NON_MATCHING /* scene-object pointer loaded at a different point */
 s32 func_800817A0(s32 index) {
     WorldmapActor *actor;
     SceneObject *objects;
 
     actor = &D_8009BE24[index];
+    objects = D_8009C620;
     actor->state = 0;
     actor->position.vx = D_8009C5AC.vx;
-    objects = D_8009C620;
     actor->position.vy = D_8009C5AC.vy - 0x100000;
+    actor->position.vz = D_8009C5AC.vz;
     actor->u.step = 0;
     actor->unk54 = 0;
     actor->unk58 = 0;
-    actor->position.vz = D_8009C5AC.vz;
     func_800816DC(&objects[2], objects[2].prims, objects[2].def->count, 1);
     objects[2].position.vx = actor->position.vx >> 12;
     objects[2].position.vy = actor->position.vy >> 12;
     objects[2].position.vz = actor->position.vz >> 12;
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_800817A0);
-#endif
 
 /* Fade scene object 2 in (command 1) or reset it to opaque grey (command 2). */
 #ifdef NON_MATCHING /* loop pointer biased to b0 instead of the code byte */
