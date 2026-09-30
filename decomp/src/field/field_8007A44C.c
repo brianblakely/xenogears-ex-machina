@@ -87,19 +87,18 @@ extern FieldMarker D_800B0FEC[4]; /* the four compass letters */
 extern s16 D_800ADE30[32];        /* letter corners: x, z per corner */
 extern u8 D_800ADE70[32];         /* letter texture coordinates */
 
-#ifdef NON_MATCHING
 /* Build the four compass letters: corners from 800ade30, texture
  * coordinates from 800ade70 (v offset c0), semi-transparent, then copy the
- * quad to the second buffer.
- * Does not match: the original copies the quad's destination address
- * through one more register before the block copy. */
+ * quad to the second buffer. */
 void func_8007A5C4(void) {
     FieldMarker *record;
     POLY_FT4 *quad;
+    POLY_FT4 *copy;
     s32 i;
 
     for (i = 0; i < 4; i++) {
         record = &D_800B0FEC[i];
+        copy = &D_800B0FEC[i].poly[1];
         quad = &D_800B0FEC[i].poly[0];
         SetPolyFT4(quad);
         record->v[0].vx = D_800ADE30[i * 8];
@@ -123,12 +122,9 @@ void func_8007A5C4(void) {
         SetSemiTrans(quad, 1);
         quad->tpage = GetTPage(0, 2, 0x280, 0x1C0);
         quad->clut = GetClut(0x100, 0xF2);
-        quad[1] = quad[0];
+        *copy = *quad;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007A5C4);
-#endif
 
 extern s16 D_800ADCE0[][4]; /* compass corner x by column */
 extern s16 D_800ADD28[][4]; /* compass corner z by row */
@@ -136,15 +132,14 @@ extern s16 D_800ADD70[][4]; /* texture u by column */
 extern s16 D_800ADDB8[][4]; /* texture v by row */
 extern s16 D_800ADE00[][6]; /* texture page (tp, abr, x, y) and palette (x, y) by style */
 
-#ifdef NON_MATCHING
 /* Build a compass quad record for a grid column and row in a style, then
- * copy the quad to the second buffer.
- * Does not match: as in 8007a5c4, the original copies the quad's
- * destination address through one more register before the block copy. */
+ * copy the quad to the second buffer. */
 void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style) {
     u8 unused[0x88]; /* never used; the original frame reserves it */
     POLY_FT4 *quad;
+    POLY_FT4 *copy;
 
+    copy = &record->poly[1];
     quad = &record->poly[0];
     SetPolyFT4(quad);
     record->v[0].vx = D_800ADCE0[column][0];
@@ -166,16 +161,14 @@ void func_8007A7F4(FieldMarker *record, s32 column, s32 row, s32 style) {
     quad->clut = GetClut(D_800ADE00[style][4], D_800ADE00[style][5]);
     func_8007A44C(quad, D_800ADD70[column][0], D_800ADDB8[row][0], D_800ADD70[column][1], D_800ADDB8[row][1],
                   D_800ADD70[column][2], D_800ADDB8[row][2], D_800ADD70[column][3], D_800ADDB8[row][3]);
-    record->poly[1] = record->poly[0];
+    *copy = record->poly[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007A7F4);
-#endif
 
-#ifdef NON_MATCHING
 /* Set up a pointer marker: a 48x48 quad around the origin and its
  * semi-transparent textured primitive, copied for the second buffer. */
 void func_8007AA44(FieldMarker *m) {
+    POLY_FT4 *copy = &m->poly[1];
+
     SetPolyFT4(&m->poly[0]);
     m->v[3].vx = -0x18;
     m->v[3].vy = 0;
@@ -203,11 +196,8 @@ void func_8007AA44(FieldMarker *m) {
     m->poly[0].v2 = 0xEF;
     m->poly[0].u3 = 0xF;
     m->poly[0].v3 = 0xEF;
-    m->poly[1] = m->poly[0];
+    *copy = m->poly[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_8007A44C", func_8007AA44);
-#endif
 
 /* Project a marker quad's four corners with the given matrix into its buffer's
  * textured polygon and link that polygon into the ordering table entry. */
@@ -3077,19 +3067,23 @@ void func_800831D0(SVECTOR *out, VECTOR *in) {
 
 #ifdef NON_MATCHING
 /* While the actor moves, turn its heading a quarter (left with flag bit 0,
- * else right) once, apply it, and mark the heading as turned. */
+ * else right) once, apply it, and mark the heading as turned.
+ * NON_MATCHING: the original copies the loaded goal into a second register
+ * and keeps the goal store ahead of the heading reload. */
 void func_800831F4(void *owner, FieldActor *actor, FieldDescriptor *descriptor, s32 flags) {
     s32 heading;
+    s32 unused[2]; /* never used; the original frame reserves it */
 
     if (actor->unk030[0] != 0 || actor->unk030[2] != 0) {
-        heading = actor->heading_goal;
-        if (!(heading & 0x8000)) {
-            if (!(flags & 1)) {
-                heading += 0x400;
+        if (!(actor->heading_goal & 0x8000)) {
+            if (flags & 1) {
+                heading = actor->heading_goal - 0x400;
             } else {
-                heading -= 0x400;
+                heading = actor->heading_goal + 0x400;
             }
-            actor->heading = actor->heading_goal = heading & 0xFFF;
+            heading &= 0xFFF;
+            actor->heading = heading;
+            actor->heading_goal = heading;
             func_80081F80(owner, actor->heading, descriptor);
             actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
         }
