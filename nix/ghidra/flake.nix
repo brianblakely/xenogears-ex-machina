@@ -121,6 +121,19 @@
           platforms = [ system ];
         };
       };
+      psxBinutils =
+        let
+          cross = pkgs.pkgsCross.mipsel-linux-gnu;
+          tools = cross.buildPackages.binutils;
+          prefix = "${cross.stdenv.hostPlatform.config}-";
+        in
+        pkgs.runCommand "xem-psx-binutils" { } ''
+          mkdir -p "$out/bin"
+          for tool in as ld objcopy objdump readelf nm size; do
+            test -x "${tools}/bin/${prefix}$tool"
+            ln -s "${tools}/bin/${prefix}$tool" "$out/bin/psx-$tool"
+          done
+        '';
       base = pkgs.mkShell {
         packages = [
           ghidra
@@ -138,17 +151,18 @@
     {
       packages.${system} = {
         default = ghidra;
-        inherit ghidra m2c spimdisasm;
+        inherit ghidra m2c spimdisasm psxBinutils;
         psx-loader = psxLoader;
       };
       devShells.${system} = {
         default = base;
-        matching = base.overrideAttrs (previous: {
-          nativeBuildInputs = previous.nativeBuildInputs ++ [
-            m2c
-            spimdisasm
-          ];
-        });
+        matching = pkgs.mkShell {
+          packages = [ m2c spimdisasm psxBinutils pkgs.gnumake pkgs.diffutils pkgs.git pkgs.python3 ];
+          shellHook = ''
+            export PYTHONDONTWRITEBYTECODE=1
+            export SOURCE_DATE_EPOCH=0
+          '';
+        };
       };
     };
 }

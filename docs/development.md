@@ -1,139 +1,33 @@
-# Development on Arch Linux
+# Development
 
-The leading development host is Arch Linux. Phase 0 was exercised on x86_64
-Omarchy (Arch-derived); the verification record identifies the actual host. The
-project uses C++20, CMake and Ninja. No game-specific dependency or disc data is
-needed for the empty build or public tests. Nix supplies all development tooling.
+Phase 1 starts with [matching](matching.md), not a repository-wide document audit.
 
-From the repository root:
+```sh
+nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra#matching
+make -C decomp smoke
+```
+
+For Ghidra, enter `path:./nix/ghidra` instead. Reuse qualified private projects and
+source identities; importer usage is in [reverse engineering](reverse-engineering.md).
+
+For the retained host C++ reference and its public regressions:
 
 ```sh
 nix --extra-experimental-features 'nix-command flakes' develop path:./nix
-python3 tools/repository/check.py
+python3 tools/repository/build.py debug --target test-program --test connected-program
+python3 tools/repository/check.py --preset debug
 ```
 
-The tracked `nix/flake.lock` pins every tool through a specific nixpkgs revision
-and content hash. Network/store access is needed to realize that lock initially.
-No user Nix configuration, `HOME`, `CODEX_HOME`, or system package set is modified.
-The flake is deliberately inside `nix/`: `path:.` would copy ignored private disc
-data into the Nix store. Keep that directory free of project/data symlinks or
-imports outside its tooling boundary. Review all lock-file updates.
+Use `--preset all` explicitly for debug/release/sanitizers. Formatting is an explicit
+`python3 tools/repository/format.py --check` operation, not a reason to regenerate
+requirements metadata. The source allowlist and JSON integrity are checked by
+`tools/repository/validate.py`; historical evidence validators remain available to
+the tests that exercise them. No generated requirements matrix is required.
 
-Individual workflows inside the shell:
+Heavy reference captures/builds retain their host-wide concurrency locks. Do not
+recapture a passing route per function or poll files in indefinite sleep loops.
+Read only the current implementation, tests and evidence needed for the change.
 
-For daily Phase 1 work, begin with the focused build/run/compare commands in the
-[executable reconstruction workflow](executable-reconstruction.md). Analysis
-execution, tests and future native integration use `xem-reconstruction`. Run the
-full public gate at integration milestones; original comparisons require their
-separately qualified local evidence.
-
-Builds hold the host's single build slot, shared by every worktree (see the
-[capture and concurrency policy](executable-reconstruction.md#choosing-the-validation-and-capturing-lean)):
-
-```sh
-python3 tools/repository/build.py debug --test .
-python3 tools/repository/build.py sanitize --test .
-python3 tools/repository/build.py release --test .
-python3 tools/repository/format.py
-python3 tools/repository/matrix.py
-python3 tools/repository/validate.py
-python3 tools/repository/source_archive.py
-```
-
-`debug` retains debug information. `sanitize` enables AddressSanitizer and
-UndefinedBehaviorSanitizer, frame pointers and fatal diagnostics; its CTest preset
-enables leak checks. These presets use strict warnings as errors. Sanitizers fail
-configuration on unsupported platforms rather than silently disabling themselves.
-`release` is optimized and is separately exercised for reproducibility. Builds,
-generated headers, compile databases and install experiments belong under ignored
-`build/` or `.local/`. Optional local presets belong in ignored CMakeUserPresets.json.
-
-The public repository gate also checks the [native agent specification](agent/README.md):
-wire/query/scenario schemas, examples, architecture acceptance definitions, full
-plan traceability and emulator parity source hashes. These are specification and
-tooling checks; native gameplay/agent acceptance remains unexecuted. After a plan
-edit, review task-to-facet coverage and update `docs/requirement-review.json` before
-regenerating the matrix. After changing a reference runner dependency, inspect the
-parity rows and bump their version and reviewed hashes. Do not refresh these
-records merely to silence drift errors.
-
-For private original-source measurement, enter the separate analysis shell:
-
-```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix#analysis
-python3 tools/reference/capture.py 'discs/Xenogears disc 1.chd' .local/references/new-source-1
-python3 tools/reference/capture.py 'discs/Xenogears disc 2.chd' .local/references/new-source-2
-```
-
-The output directory must be new; the tool never overwrites previous evidence.
-It runs pinned chdman integrity verification and extraction, then bounded standard
-metadata inspection. It makes no guesses about game archives, disc sequence or
-retail revision names. Consult the reference profile and evidence workflow before
-promoting a measurement. Source CUE paths and raw bytes remain private.
-
-Ghidra with the pinned PlayStation loader is the primary reverse-engineering
-environment. Follow [the qualified import and review workflow](reverse-engineering.md)
-for both original discs and optional m2c reconstruction:
-
-```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix/ghidra
-```
-
-The `disassembly` shell supplies secondary Capstone Python bindings for
-original-MIPS byte inspection. It replaces the plain Python interpreter with the
-Nix Python environment containing those bindings:
-
-```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix#disassembly
-```
-
-The `observation` shell supplies the pinned external libretro core through
-`XEM_REFERENCE_CORE`. Follow `tools/reference/README.md` for its evidence limits
-and the required go-anywhere testing workflow. These optional tools are excluded
-from the default build and installed baseline.
-
-Windows/macOS source portability is designed into CMake, but native compile checks
-begin in Phase 2 and runtime/backend qualification occurs later. The Nix shell's
-Darwin entries are prospective tooling configurations, not tested platform support.
-No SDL, renderer, emulator or event runtime is linked into `xem-baseline`.
-
-## Separate authoring dependency qualification
-
-The [authoring contract](authoring/README.md) is a Phase 0 specification. Its
-dependency fixture qualifies the selected libraries without implementing the SDK
-or native bridge. The separate `nix/authoring/` flake copies the reviewed nixpkgs
-pin without modifying the observation/default flake or its historical evidence
-hashes. It supplies Node 24.19.0 and npm 11.17.0; entering the default Nix shell does
-not add Node to the native build.
-
-Dependency acquisition is explicit and runs no npm lifecycle scripts:
-
-```sh
-nix --extra-experimental-features 'nix-command flakes' develop path:./nix/authoring
-npm ci --prefix tools/authoring --ignore-scripts --no-audit --no-fund --cache .local/authoring/npm-cache
-python3 tools/authoring/qualify.py
-```
-
-The first `npm ci` requires registry access; after the reviewed tarballs are cached,
-add `--offline` to the same command to verify a network-free installation. Never
-run `npm install` to repair a qualification failure: it would resolve a new closure.
-Review package/lock changes explicitly. The fixture verifies actual installed
-manifests against the complete lock before running `tsc --noEmit`, esbuild and
-repository-owned geometry/schema/GLB checks. The declared `ES2025.Float16` type
-library is required by glTF Transform's declarations; no Float16 runtime material
-or accessor support is inferred from the type check.
-
-Every run writes a fresh immutable report beneath `.local/authoring/`; optionally
-choose a new path with `--output .local/authoring/review-name/report.json`.
-Reusing a report path fails. Reports include source/toolchain hashes, installed
-package identities and command outcomes. Dependency-review evidence points to one
-specific report; rerunning the fixture does not change that reviewed record.
-`node_modules/`, caches, generated JS/WASM/GLBs and qualification reports stay out
-of source archives. Public CMake/tests validate the text contracts and locks
-without installing npm packages or requiring Node.
-
-This command accepts only the repository-owned fixture. It does not implement OS
-isolation and must not be extended to execute arbitrary mods before the required
-untrusted-build gate passes. Windows/macOS authoring, native package loading,
-legal gameplay, cross-platform output identity and SDK redistribution remain
-separate acceptance obligations.
+Original images, extracted bytes and execution artifacts stay outside distributed
+sources. Keep Nix path inputs restricted to their tool directories. Matching game
+images needs the user's originals; public synthetic tests never claim game parity.

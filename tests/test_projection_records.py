@@ -8,7 +8,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.repository.matrix import ROOT
 from tools.repository.projections import validate_projections
 
 

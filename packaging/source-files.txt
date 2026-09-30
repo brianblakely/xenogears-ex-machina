@@ -105,6 +105,8 @@ analysis/slices/forest23.json
 analysis/subsystems.json
 analysis/templates/finding.json
 cmake/ProjectOptions.cmake
+decomp/Makefile
+decomp/README.md
 docs/agent/README.md
 docs/agent/acceptance.json
 docs/agent/emulator-parity.json
@@ -123,18 +125,11 @@ docs/dependencies.json
 docs/development.md
 docs/evidence-workflow.md
 docs/executable-reconstruction.md
-docs/phase1-handoff.md
+docs/matching.md
 docs/phase1-progress.md
-docs/phase1-slice-contract.md
 docs/platforms.json
 docs/recovery-inventory.md
-docs/requirement-facets.txt
-docs/requirement-review.json
-docs/requirements-migration.json
-docs/requirements.json
-docs/requirements.md
 docs/reverse-engineering.md
-docs/traceability.json
 docs/verification/phase0-agent.json
 docs/verification/phase0-authoring.json
 docs/verification/phase0-gaps.json
@@ -144,6 +139,8 @@ docs/verification/phase0.json
 editors/README.md
 include/xem/build_info.hpp.in
 include/xem/reconstruction/battle.hpp
+include/xem/reconstruction/call_state.hpp
+include/xem/reconstruction/disc_state.hpp
 include/xem/reconstruction/disc_stream.hpp
 include/xem/reconstruction/field_actor.hpp
 include/xem/reconstruction/field_battle.hpp
@@ -160,10 +157,14 @@ include/xem/reconstruction/field_script.hpp
 include/xem/reconstruction/field_sprite.hpp
 include/xem/reconstruction/field_sprite_factory.hpp
 include/xem/reconstruction/field_sprite_model.hpp
+include/xem/reconstruction/field_state.hpp
 include/xem/reconstruction/field_text.hpp
 include/xem/reconstruction/field_view.hpp
 include/xem/reconstruction/gpu.hpp
+include/xem/reconstruction/gpu_state.hpp
 include/xem/reconstruction/gte.hpp
+include/xem/reconstruction/input_state.hpp
+include/xem/reconstruction/interrupt_state.hpp
 include/xem/reconstruction/interrupts.hpp
 include/xem/reconstruction/menu.hpp
 include/xem/reconstruction/menu_overlay.hpp
@@ -175,8 +176,10 @@ include/xem/reconstruction/program.hpp
 include/xem/reconstruction/resident_gte.hpp
 include/xem/reconstruction/resident_heap.hpp
 include/xem/reconstruction/resident_memory.hpp
+include/xem/reconstruction/resident_state.hpp
 include/xem/reconstruction/resident_text.hpp
 include/xem/reconstruction/sound_driver.hpp
+include/xem/reconstruction/source_point.hpp
 nix/authoring/flake.lock
 nix/authoring/flake.nix
 nix/flake.lock
@@ -246,6 +249,7 @@ src/reconstruction/field_script.cpp
 src/reconstruction/field_sprite.cpp
 src/reconstruction/field_sprite_factory.cpp
 src/reconstruction/field_sprite_model.cpp
+src/reconstruction/field_state.cpp
 src/reconstruction/field_text.cpp
 src/reconstruction/field_transition.cpp
 src/reconstruction/field_update.cpp
@@ -359,6 +363,7 @@ tests/test_instruction_trace.py
 tests/test_interrupts.cpp
 tests/test_inventory_records.py
 tests/test_jump_physics.py
+tests/test_matching.py
 tests/test_media_survey.py
 tests/test_memory_case.py
 tests/test_memory_case_lifecycle.py
@@ -374,7 +379,6 @@ tests/test_music_load.cpp
 tests/test_music_loading.py
 tests/test_observe.py
 tests/test_packed_field.cpp
-tests/test_phase1_slice.py
 tests/test_planar_motion.py
 tests/test_position.py
 tests/test_program.cpp
@@ -469,6 +473,7 @@ tools/authoring/qualification.ts
 tools/authoring/qualify.py
 tools/authoring/tsconfig.json
 tools/extraction/README.md
+tools/matching.py
 tools/reference/README.md
 tools/reference/capture.py
 tools/reference/fingerprint_survey.py
@@ -487,8 +492,6 @@ tools/repository/authoring_contract.py
 tools/repository/build.py
 tools/repository/check.py
 tools/repository/format.py
-tools/repository/matrix.py
-tools/repository/phase1_slice.py
 tools/repository/projections.py
 tools/repository/recovery.py
 tools/repository/reproduce.py

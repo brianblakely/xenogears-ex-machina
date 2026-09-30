@@ -6,7 +6,6 @@ import copy
 import json
 import unittest
 
-from tools.repository.matrix import ROOT
 from tools.repository.validate import validate_baseline_inventory, validate_inventory
 
 

@@ -13,6 +13,7 @@ target_link_libraries(xem-baseline PRIVATE xem_project_options)
 # yet launch the original game or supply the unresolved subsystem services.
 add_library(xem-reconstruction STATIC
   src/reconstruction/program.cpp
+  src/reconstruction/field_state.cpp
   src/reconstruction/field_events.cpp
   src/reconstruction/field_return.cpp
   src/reconstruction/packed_field.cpp
@@ -252,3 +253,18 @@ endif()
 
 install(TARGETS xem-baseline RUNTIME DESTINATION bin)
 install(FILES LICENSE DESTINATION share/licenses/xenogears-ex-machina)
+
+
+# Every extracted state header must compile independently, without Program.
+if(BUILD_TESTING)
+  set(state_header_sources)
+  foreach(header call_state disc_state field_state gpu_state input_state interrupt_state resident_state source_point)
+    set(unit "${CMAKE_CURRENT_BINARY_DIR}/state-headers/${header}.cpp")
+    file(GENERATE OUTPUT "${unit}" CONTENT "#include \"xem/reconstruction/${header}.hpp\"\n")
+    list(APPEND state_header_sources "${unit}")
+  endforeach()
+  add_library(test-state-headers OBJECT ${state_header_sources})
+  target_link_libraries(test-state-headers PRIVATE xem-reconstruction)
+  add_test(NAME matching-verifier COMMAND "${Python3_EXECUTABLE}" -m unittest tests.test_matching)
+  set_tests_properties(matching-verifier PROPERTIES WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+endif()
