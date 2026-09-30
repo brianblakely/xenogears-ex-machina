@@ -31,7 +31,7 @@ s32 func_80071A58(void) {
         func_80098CC0();
     }
     func_800983A0(&D_8009BE28);
-    func_8009932C(D_8009BE3C->unk70, D_8009BE3C->unk74, &D_8009BE28);
+    func_8009932C(D_8009BE3C->ot, D_8009BE3C->unk74, &D_8009BE28);
     D_8009C5BC += 0x40;
     func_80073B04();
     func_800737EC();

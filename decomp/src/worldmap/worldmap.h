@@ -238,10 +238,82 @@ extern void *D_8009BE14, *D_8009BE18;
 extern WorldmapSpot *D_8009D30C; /* ring of 16 recent positions */
 extern s32 D_8009BE38;
 
+/* PsyQ libgte types. */
+typedef struct {
+    s16 vx, vy, vz, pad;
+} SVECTOR;
+
+typedef struct {
+    s16 m[3][3];
+    s32 t[3];
+} MATRIX;
+
+/* Scratchpad work area of the sky renderer. */
+typedef struct {
+    SVECTOR angle;
+    MATRIX view;
+    MATRIX rotation;
+    s32 p;
+    s32 flag;
+} SkyScratch;
+
+#define SKY_SCRATCH ((SkyScratch *)0x1F800000)
+
+#define addPrim(ot, p) \
+    (*(u32 *)(p) = (*(u32 *)(p) & 0xFF000000) | (*(u32 *)(ot) & 0xFFFFFF), \
+     *(u32 *)(ot) = (*(u32 *)(ot) & 0xFF000000) | ((u32)(p) & 0xFFFFFF))
+
+extern SVECTOR D_8009A280[4][4]; /* sky band corners */
+extern u16 D_8009BD3A;          /* camera yaw */
+extern MATRIX D_8009C808;       /* camera matrix */
+extern s32 D_8009D7F0;          /* current buffer */
+extern s32 D_80050100;          /* ordering-table depth shift */
+
+void func_8004A92C(SVECTOR *angle, MATRIX *m); /* RotMatrix */
+MATRIX *func_8004931C(MATRIX *a, MATRIX *b, MATRIX *out); /* MulMatrix0 */
+void func_80049EFC(MATRIX *m); /* SetRotMatrix */
+void func_80049F8C(MATRIX *m); /* SetTransMatrix */
+s32 func_8004A73C(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1,
+                  s32 *sxy2, s32 *sxy3, s32 *p, s32 *flag); /* RotAverage4 */
+
+/* Textured quad packet (PsyQ POLY_FT4 layout). */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} PolyFT4;
+
+typedef struct {
+    u32 tag;
+    u32 code[2];
+} DR_TWIN;
+
+extern PolyFT4 D_8009C744[4];
+extern DR_TWIN D_8009D3D8[2];
+
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 func_80043A58(s32 x, s32 y);                  /* GetClut */
+void func_80043BFC(void *p, s32 abe);             /* SetSemiTrans */
+void func_800453AC(DR_TWIN *p, RECT *tw);         /* SetTexWindow */
+
+extern s16 D_8009C854[16];
+extern s32 D_8009D64C, D_8009BE40, D_8009BCC4, D_8009D80C;
+
 /* Frame state. */
 typedef struct {
     u8 pad0[0x70];
-    s32 unk70;
+    u32 *ot; /* ordering table */
     s32 unk74;
 } WorldmapView;
 
@@ -268,6 +340,6 @@ void func_800980D4(void *);
 void func_800981C8(void *);
 void func_800983A0(void *);
 void func_80098CC0(void);
-void func_8009932C(s32, s32, void *);
+void func_8009932C(u32 *ot, s32, void *);
 
 #endif

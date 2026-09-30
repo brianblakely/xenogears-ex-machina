@@ -235,9 +235,83 @@ void func_800736DC(void) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800736DC);
 #endif
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800737EC);
+/* Transform the four sky bands with the camera yaw and link them into the
+ * ordering table. */
+#ifdef NON_MATCHING /* register allocation and scheduling differ */
+void func_800737EC(void) {
+    SVECTOR *corners;
+    PolyG4 *band;
+    s32 otz;
+    s32 i;
+    s32 offset;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800739B8);
+    corners = D_8009A280[0];
+    SKY_SCRATCH->angle.vz = 0;
+    SKY_SCRATCH->angle.vx = 0;
+    SKY_SCRATCH->angle.vy = D_8009BD3A;
+    offset = 0;
+    func_8004A92C(&SKY_SCRATCH->angle, &SKY_SCRATCH->rotation);
+    SKY_SCRATCH->rotation.t[2] = 0;
+    SKY_SCRATCH->rotation.t[1] = 0;
+    SKY_SCRATCH->rotation.t[0] = 0;
+    func_8004931C(&D_8009C808, &SKY_SCRATCH->rotation, &SKY_SCRATCH->view);
+    func_80049EFC(&SKY_SCRATCH->view);
+    func_80049F8C(&SKY_SCRATCH->view);
+    for (i = 0; i < 4; i++) {
+        band = (PolyG4 *)((u8 *)&D_8009D194[0][D_8009D7F0] + offset);
+        otz = func_8004A73C(&corners[0], &corners[1], &corners[2], &corners[3], &band->xy0, &band->xy1,
+                            &band->xy2, &band->xy3, &SKY_SCRATCH->p, &SKY_SCRATCH->flag);
+        if (SKY_SCRATCH->flag >= 0) {
+            addPrim(&D_8009BE3C->ot[otz >> D_80050100], band);
+        }
+        offset += sizeof(D_8009D194[0]);
+        corners += 4;
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800737EC);
+#endif
+
+/* Initialise the four textured horizon quads and the two texture windows. */
+void func_800739B8(void) {
+    RECT window;
+    PolyFT4 *quad;
+    u16 tpage;
+    u16 clut;
+    s32 i;
+
+    tpage = func_80043A1C(0, 1, 0x380, 0x100);
+    clut = func_80043A58(0x110, 0x1FE);
+    quad = D_8009C744;
+    for (i = 0; i < 4; i++, quad++) {
+        ((u8 *)quad)[3] = 9;
+        quad->code = 0x2C;
+        quad->r0 = 0x30;
+        quad->g0 = 0x30;
+        quad->b0 = 0x30;
+        quad->u0 = 0;
+        quad->v0 = 0;
+        quad->u1 = 0xFF;
+        quad->v1 = 0;
+        quad->u2 = 0;
+        quad->v2 = 0x3F;
+        quad->u3 = 0xFF;
+        quad->v3 = 0x3F;
+        quad->tpage = tpage;
+        quad->clut = clut;
+        func_80043BFC(quad, 1);
+    }
+    window.x = 0;
+    window.y = 0;
+    window.w = 0x80;
+    window.h = 0;
+    func_800453AC(&D_8009D3D8[0], &window);
+    window.x = 0;
+    window.y = 0;
+    window.w = 0;
+    window.h = 0;
+    func_800453AC(&D_8009D3D8[1], &window);
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80073B04);
 
@@ -327,9 +401,50 @@ void func_800750DC(void) {
     func_800320E8(D_8009D7D0);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075104);
+/* Advance the second texture animations; images are rect-sized. */
+void func_80075104(void) {
+    TexAnim *anim;
+    RECT *rect;
+    s32 size;
+    s32 i;
 
+    anim = D_8009D7D0;
+    for (i = 0; i < D_8009CD64; i++, anim++) {
+        if (--anim->timer == 0) {
+            anim->frame++;
+            anim->timer = anim->slot->frames[anim->frame].duration;
+            if (anim->timer < 0) {
+                anim->frame = 0;
+                anim->timer = anim->slot->frames[0].duration;
+            }
+            rect = &anim->slot->rect;
+            size = rect->h * rect->w * 2;
+            func_80044894(rect, anim->images + anim->slot->frames[anim->frame].image * size);
+        }
+    }
+}
+
+/* Reset the movement state; vehicles move twice as fast as on foot. */
+#ifdef NON_MATCHING /* constant 1 is reused after the branch instead of reloaded */
+void func_80075228(void) {
+    s32 i;
+    s32 speed;
+
+    for (i = 15; i >= 0; i--) {
+        D_8009C854[i] = 0;
+    }
+    D_8009D64C = 1;
+    speed = 0x300;
+    if (!(D_8006EE54.flags & 0x4000)) {
+        speed = 0x180;
+    }
+    D_8009BE40 = speed;
+    D_8009BCC4 = 1;
+    D_8009D80C = 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075228);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007528C);
 
