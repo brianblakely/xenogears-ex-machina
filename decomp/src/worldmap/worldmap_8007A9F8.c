@@ -1,6 +1,82 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007A9F8);
+/* Scene director: state 1 steps the timed sequence at D_8009A450/D_8009A46C;
+ * the other states start effects, sounds and actor commands and return to 1. */
+s32 func_8007A9F8(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = (&D_8009A450)[actor->u.step];
+            actor->wait = D_8009A46C[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 2:
+        func_80089160(0x11, NULL, NULL);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 1);
+        break;
+    case 3:
+        func_80097770(2, 2);
+        actor->state = 1;
+        func_80089160(0xF, NULL, NULL);
+        func_80089160(0x10, NULL, NULL);
+        func_80039E60((D_8006259C->id << 16) | 4);
+        func_80039E60((D_8006259C->id << 16) | 5);
+        func_80039E60((D_8006259C->id << 16) | 6);
+        break;
+    case 4:
+        func_80097770(2, 3);
+        func_80097770(3, 1);
+        actor->state = 1;
+        break;
+    case 5:
+        func_80097770(2, 6);
+        func_80097770(4, 1);
+        func_80097770(5, 1);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 7);
+        func_80039E60((D_8006259C->id << 16) | 8);
+        func_80039E60((D_8006259C->id << 16) | 9);
+        break;
+    case 6:
+        func_80097770(2, 4);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 0xA);
+        func_80039E18((D_8006259C->id << 16) | 0xB);
+        func_80039E18((D_8006259C->id << 16) | 0xC);
+        break;
+    case 7:
+        func_80097770(2, 5);
+        actor->state = 1;
+        break;
+    case 8:
+        func_80097770(2, 1);
+        actor->state = 1;
+        break;
+    case 9:
+        func_80097770(6, 1);
+        func_80097770(2, 7);
+        actor->state = 1;
+        break;
+    case 10:
+        func_80097770(0, 0xD);
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 11:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 1;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera looking at the player from yaw 0x480. */
 #ifdef NON_MATCHING /* return value loaded before the stores */
@@ -20,7 +96,119 @@ s32 func_8007AD34(s32 index) {
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007AD34);
 #endif
 
+/* Scene camera shake: commands pick a shot or a shake ramp (u.step is the
+ * shake amplitude, 20.12); every frame jitter both view vectors by it. */
+#ifdef NON_MATCHING /* state 4: target.vz address lands in $a1 instead of $a2 */
+s32 func_8007ADD4(s32 index) {
+    WorldmapActor *actor;
+    CameraScratch *scratch;
+
+    actor = &D_8009BE24[index];
+    scratch = (CameraScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 1;
+        break;
+    case 2:
+        actor->state = 2;
+        actor->unk4 = 0;
+        actor->u.step = 0x40000;
+        break;
+    case 3:
+        D_8009D3F0 = 0x640000;
+        actor->unk4 = 0;
+        actor->state = 0;
+        D_8009BD38.vx = -0x1E0;
+        D_8009BD38.vy = 0x480;
+        D_8009BD38.vz = 0;
+        break;
+    case 4:
+        actor->unk4 = 0;
+        actor->state = 0;
+        D_8009D3F0 = 0x1E0000;
+        D_8009BD38.vx = 0x40;
+        D_8009BD38.vy = 0x418;
+        D_8009BD38.vz = 0;
+        D_8009D144 = 0;
+        D_8009BE28.target.vz = D_8009C5AC.vz;
+        break;
+    case 5:
+        actor->unk4 = 0;
+        actor->state = 3;
+        break;
+    case 6:
+        actor->unk4 = 0;
+        actor->state = 4;
+        actor->unk58 = D_8009C5AC.vx + 0xC7C00;
+        D_8009D144 = 1;
+        actor->unk5C = D_8009C5AC.vz + 0x3EC400;
+        break;
+    case 7:
+        actor->unk4 = 0;
+        actor->state = 5;
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    case 1:
+        actor->u.step += 0x200;
+        if (actor->u.step > 0x8000) {
+            actor->u.step = 0x8000;
+            actor->state = 0;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    case 2:
+        actor->u.step -= 0x200;
+        if (actor->u.step < 0x8000) {
+            actor->u.step = 0x8000;
+            actor->state = 0;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    case 3:
+        actor->u.step -= 0x100;
+        if (actor->u.step < 0x1000) {
+            actor->u.step = 0x1000;
+            actor->state = 0;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    case 4:
+        D_8009BE28.target.vz += 0x3A000;
+        if (D_8009BE28.target.vz > 0x77FFFFF) {
+            actor->state = 0;
+        }
+        VIEW.eye.vx = (actor->unk58 - D_8009BE28.target.vx) >> 12;
+        VIEW.at.vx = VIEW.at.vz = 0;
+        VIEW.at.vy = D_8009BE28.target.vy >> 12;
+        VIEW.eye.vy = (D_8009BE28.target.vy >> 12) - 0x40;
+        VIEW.eye.vz = (D_8009BE28.target.vz - actor->unk5C) >> 12;
+        func_80097244(D_8009BD40);
+        func_80097070(&D_8009C808, &D_8009BD38);
+        break;
+    case 5:
+        D_8009BD38.vy += 4;
+        if (D_8009BD38.vy > 0x600) {
+            actor->state = 0;
+        }
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        break;
+    }
+    scratch->view.vx = rand() % (actor->u.step >> 12) - (actor->u.step >> 13);
+    scratch->view.vy = rand() % (actor->u.step >> 12) - (actor->u.step >> 13);
+    ((s16 *)D_8009BD40)[0] += scratch->view.vx; /* VIEW.eye.vx */
+    VIEW.at.vx += scratch->view.vx;
+    VIEW.eye.vy += scratch->view.vy;
+    VIEW.at.vy += scratch->view.vy;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007ADD4);
+#endif
 
 /* Rebuild scene objects 4-5 and show objects 6-7 at zero scale. */
 s32 func_8007B200(s32 index) {
@@ -209,7 +397,95 @@ s32 func_8007BB60(s32 index) {
     return 3;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007BBEC);
+/* Fly scene object 0 along the rig path (speeding up, braking, then rolling
+ * out); orient it to the path and emit exhaust while low. Done (3) at the end
+ * of the path. */
+s32 func_8007BBEC(s32 index) {
+    s32 result;
+    WorldmapActor *actor;
+    FollowScratch *scratch;
+    SVECTOR *points;
+    SceneObject *object;
+
+    result = 1;
+    actor = &D_8009BE24[index];
+    scratch = (FollowScratch *)0x1F800000;
+    switch (actor->u.step >> 12) {
+    case 0:
+    case 1:
+        actor->u.step += actor->unk58;
+        actor->unk54 += 4;
+        break;
+    case 2:
+    case 3:
+    case 4:
+        actor->u.step += actor->unk58;
+        actor->unk58 -= 8;
+        if (actor->unk58 < 0x80) {
+            actor->unk58 = 0x80;
+        }
+        actor->unk54 += 4;
+        break;
+    case 5:
+    case 6:
+    case 7:
+        actor->u.step += actor->unk58;
+        actor->unk58 += 8;
+        if (actor->unk58 > 0x100) {
+            actor->unk58 = 0x100;
+        }
+        actor->unk54 -= 0x10;
+        break;
+    case 8:
+        result = 3;
+        break;
+    }
+    points = &D_8009A490[actor->u.step >> 12];
+    if (points[2].pad != -1) {
+        func_80076858(actor->u.step & 0xFFF, &points[0], &points[1], &points[2], &scratch->axis[0]);
+    }
+    points = &D_8009A490[(actor->u.step + 0x80) >> 12];
+    func_80076858((actor->u.step + 0x80) & 0xFFF, &points[0], &points[1], &points[2], &scratch->axis[1]);
+    object = D_8009C620;
+    object->position.vx = scratch->axis[0].vx >> 16;
+    object->position.vy = scratch->axis[0].vy >> 16;
+    object->position.vz = scratch->axis[0].vz >> 16;
+    scratch->axis[1].vx = (scratch->axis[1].vx - scratch->axis[0].vx) >> 12;
+    scratch->axis[1].vy = (scratch->axis[1].vy - scratch->axis[0].vy) >> 12;
+    scratch->axis[1].vz = -((scratch->axis[1].vz - scratch->axis[0].vz) >> 12);
+    func_80048D7C(&scratch->axis[1], &scratch->axis[0]);
+    scratch->angle.vx = 0;
+    scratch->angle.vy = ratan2(scratch->axis[0].vx, scratch->axis[0].vz) & 0xFFF;
+    scratch->angle.vz = actor->unk54;
+    func_8004A92C(&scratch->angle, &scratch->frame);
+    scratch->angle.vx = 0;
+    scratch->angle.vy = -0x1000;
+    scratch->angle.vz = 0;
+    ApplyMatrix(&scratch->frame, &scratch->angle, &scratch->axis[1]);
+    func_8004A480(&scratch->axis[0], &scratch->axis[1], &scratch->axis[3]);
+    func_80048D7C(&scratch->axis[3], &scratch->axis[2]);
+    func_8004A480(&scratch->axis[0], &scratch->axis[2], &scratch->axis[3]);
+    func_80048D7C(&scratch->axis[3], &scratch->axis[1]);
+    scratch->frame.m[0][0] = scratch->axis[2].vx;
+    scratch->frame.m[0][1] = scratch->axis[2].vy;
+    scratch->frame.m[0][2] = scratch->axis[2].vz;
+    scratch->frame.m[1][0] = scratch->axis[1].vx;
+    scratch->frame.m[1][1] = scratch->axis[1].vy;
+    scratch->frame.m[1][2] = scratch->axis[1].vz;
+    scratch->frame.m[2][0] = scratch->axis[0].vx;
+    scratch->frame.m[2][1] = scratch->axis[0].vy;
+    scratch->frame.m[2][2] = scratch->axis[0].vz;
+    func_8004A8EC(&scratch->frame, &object->matrix);
+    func_80097070(&scratch->frame, &scratch->heading);
+    if (object->position.vy >= -0x7F) {
+        scratch->angle.vx = object->position.vx;
+        scratch->angle.vy = object->position.vy;
+        scratch->angle.vz = object->position.vz;
+        scratch->heading.vz = -scratch->heading.vz;
+        func_80089160(0x12, &scratch->angle, &scratch->heading);
+    }
+    return result;
+}
 
 /* Set up the second vehicle scene: fixed start position, its director and object actors. */
 void func_8007BF50(void) {

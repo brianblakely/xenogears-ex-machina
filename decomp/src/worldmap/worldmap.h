@@ -1561,4 +1561,48 @@ void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
 void func_80074794(s16 id, VECTOR *position);
 void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
 
+/* worldmap.c main loop (round 3) */
+void CdSync(s32 mode, u8 *result);
+void SetGeomOffset(s32 x, s32 y);
+void func_800250E0(s32 buffer);
+void func_8001D468(void);
+void func_80097800(void);
+void func_80019CA0(void);
+void func_8001C634(void);
+void func_80025044(void);
+void func_80074F2C(void);
+void func_80075104(void);
+void func_800762FC(void);
+void func_8007634C(void);
+void func_80076594(void);
+void func_800758C0(void);
+void func_80075B58(void);
+s32 func_80075E7C(VECTOR *position, s32 level);
+extern u8 D_80059460, D_80059178, D_80059171, D_8005954C;
+/* Resident return-state words read-modify-written as their own variables
+ * (fields flags and unk76 of D_8006EE54). */
+extern u16 D_8006EE68, D_8006EE76;
+
+void func_80039E18(s32 sound);
+
+extern SVECTOR D_8009A490[]; /* rig flight path; pad -1 ends */
+/* Scratchpad work area of the rig path follower. */
+typedef struct {
+    VECTOR axis[4];   /* 0x00 */
+    u8 pad40[0x60];
+    SVECTOR angle;    /* 0xA0 */
+    SVECTOR heading;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX frame;     /* 0xF0 */
+} FollowScratch;
+
+extern SVECTOR D_8009A4F8[], D_8009A568[]; /* camera shot paths; pad -1 ends */
+
+/* Scratchpad work area of the camera shot director. */
+typedef struct {
+    VECTOR point;     /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR spot;     /* 0xA0 */
+} ShotScratch;
+
 #endif
