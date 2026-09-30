@@ -14,9 +14,12 @@ typedef struct {
     u16 unk82;
     u16 status84; /* 0x8000 (with +0x86) haste */
     u16 status86;
-    u8 unk88[0x14C - 0x88];
+    u8 unk88[0x104 - 0x88];
+    s32 unk104;
+    s32 unk108;
+    u8 unk10C[0x14C - 0x10C];
     s32 unk14C;
-    u8 unk150[0x156 - 0x150];
+    u8 unk150[6];
     u16 unk156;
     u8 unk158[0x15C - 0x158];
     u8 delay15C;
@@ -167,8 +170,10 @@ extern s16 D_800D2DF0[2][11]; /* turn timers: [0] reload values, [1] counters */
 extern u16 D_800D2E1C[11]; /* slow-status alternation */
 extern s32 *D_8005917C;
 extern s16 D_8005A3A0[];
+extern s32 D_8006EF58;     /* party gold */
 
 /* Resident services. */
+u8 func_8001BD40(u8 low, u8 high);
 void func_80043B48(u32 *ot, void *prim);
 void func_80043C24(void *prim, s32 abe);
 void *func_80033728(void *table, s32 index);
@@ -186,6 +191,7 @@ void func_80079E18(s32);
 void func_80079E4C(s32);
 s32 func_800716D8(void);
 u8 func_80079E7C(u16 mask);
+u16 func_80089B50(u16 low, u16 high);
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
 u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
 u16 func_80089C9C(u16 mask, u8 slot);
