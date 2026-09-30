@@ -69,14 +69,15 @@ void func_801FC0EC(TaskNode *node) {
 /* Queue `count` sprite cells as textured quads offset by (dx, dy) in the
  * sprite frame, mirrored or flipped per cell, projected with the actor's
  * sprite scale and linked at `depth`. Nothing is drawn unless all fit. */
-#ifdef NON_MATCHING
 void func_801FC168(SpriteCell *cell, s32 count, s32 dx, s32 dy, s32 depth, Actor *actor) {
     SVECTOR quad[4];
     s32 p, flag;
     POLY_FT4 *prim;
-    s32 x, y, right, bottom;
+    s16 x, y;
     s32 i;
-    u8 w, h;
+    s32 w, h;
+    u16 u, v;
+    u16 du, dv;
 
     memset(quad, 0, sizeof(quad));
     if (D_80059580 + count * sizeof(POLY_FT4) >= D_80059534) {
@@ -93,27 +94,25 @@ void func_801FC168(SpriteCell *cell, s32 count, s32 dx, s32 dy, s32 depth, Actor
         h = cell->height;
         x = cell->x;
         y = cell->y;
-        right = x + w;
         if (!((cell->flags >> 4) & 1)) {
             quad[0].vx = x;
-            quad[1].vx = right;
-            quad[2].vx = right;
+            quad[1].vx = x + w;
+            quad[2].vx = x + w;
             quad[3].vx = x;
         } else {
-            quad[0].vx = right;
+            quad[0].vx = x + w;
             quad[1].vx = x;
             quad[2].vx = x;
-            quad[3].vx = right;
+            quad[3].vx = x + w;
         }
-        bottom = y + h;
         if (!((cell->flags >> 5) & 1)) {
             quad[0].vy = y;
             quad[1].vy = y;
-            quad[2].vy = bottom;
-            quad[3].vy = bottom;
+            quad[2].vy = y + h;
+            quad[3].vy = y + h;
         } else {
-            quad[0].vy = bottom;
-            quad[1].vy = bottom;
+            quad[0].vy = y + h;
+            quad[1].vy = y + h;
             quad[2].vy = y;
             quad[3].vy = y;
         }
@@ -135,20 +134,21 @@ void func_801FC168(SpriteCell *cell, s32 count, s32 dx, s32 dy, s32 depth, Actor
         quad[3].vy <<= actor->shift;
         RotAverage4(&quad[0], &quad[1], &quad[2], &quad[3], (s32 *)&prim->x0, (s32 *)&prim->x1,
                     (s32 *)&prim->x3, (s32 *)&prim->x2, &p, &flag);
-        prim->u0 = cell->u;
-        prim->v0 = cell->v;
-        prim->u1 = cell->u + cell->width - 1;
-        prim->v1 = cell->v;
-        prim->u2 = cell->u;
-        prim->v2 = cell->v + cell->height - 1;
-        prim->u3 = cell->u + cell->width - 1;
-        prim->v3 = cell->v + cell->height - 1;
+        u = cell->u;
+        v = cell->v;
+        du = cell->width - 1;
+        dv = cell->height - 1;
+        prim->u0 = u;
+        prim->v0 = v;
+        prim->u1 = u + du;
+        prim->v1 = v;
+        prim->u2 = u;
+        prim->v2 = v + dv;
+        prim->u3 = u + du;
+        prim->v3 = v + dv;
         addPrim(D_8005956C + depth, prim);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3385/asm/nonmatchings/ovl3385", func_801FC168);
-#endif
 
 /* Draw the held actor's sprite repeated side by side across the screen: from
  * the place it would have moved to rightward until off screen (x 320), then
