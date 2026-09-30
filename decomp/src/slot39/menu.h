@@ -737,6 +737,9 @@ extern s32 D_801EA708;
 extern s32 D_801EA70C;
 extern u8 D_801EA710;
 extern u8 D_801EA714;
+extern u8 D_8006D634[][2][0x14]; /* game data: name line pairs */
+extern u16 D_801EA578[][2];      /* label image x per row pair */
+extern u16 D_801EA5C4[][2];      /* label image y per row pair */
 extern s32 D_801EA34C[20]; /* field block part images, ffff none */
 extern s32 D_801E9A78[20];
 extern s32 D_801E9AC8[20];

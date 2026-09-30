@@ -3504,7 +3504,26 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8978);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8B4C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E8DA8);
+/* Render the two name lines of name pair `image` (ff: blank) and upload them
+ * to the label area of row `row` (rows pair up on one 40x13 image). */
+void func_801E8DA8(u8 image, u8 row) {
+    RECT rect;
+    u8 *pixels;
+
+    pixels = func_80031BDC(0x3f6, 0);
+    bzero(pixels, 0x3f6);
+    if (image != 0xff) {
+        func_80034EAC(D_8006D634[image >> 1][0], pixels, 0x24, 0);
+        func_80034EAC(D_8006D634[image >> 1][1], pixels, 0x24, 1);
+    }
+    rect.x = D_801EA578[row >> 1][0] + 0x180;
+    rect.y = D_801EA5C4[row >> 1][0];
+    rect.w = 0x28;
+    rect.h = 0xd;
+    LoadImage(&rect, pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+}
 
 /* Set `poly`'s blending for `mode`: 0 opaque, 1 additive-dim, 2 plain,
  * 3 dim. */
