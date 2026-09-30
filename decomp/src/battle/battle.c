@@ -4051,7 +4051,54 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFB4C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFC68);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFD98);
+/* Set (or with mode bit 0x20 add to) a part's rotation (mode & 7 == 0),
+ * translation (1) or scale (other) and mark it changed; with mode bit 0x80
+ * also its descendants. */
+void func_800AFD98(BattleObject *object, ModelPart *part, u8 mode, s16 x, s16 y, s16 z) {
+    ModelPart *child;
+    s32 i;
+
+    if ((mode & 7) == 0) {
+        if (mode & 0x20) {
+            part->rotation.vx += x;
+            part->rotation.vy += y;
+            part->rotation.vz += z;
+        } else {
+            part->rotation.vx = x;
+            part->rotation.vy = y;
+            part->rotation.vz = z;
+        }
+    } else if ((mode & 7) == 1) {
+        if (mode & 0x20) {
+            part->translation[0] += x;
+            part->translation[1] += y;
+            part->translation[2] += z;
+        } else {
+            part->translation[0] = x;
+            part->translation[1] = y;
+            part->translation[2] = z;
+        }
+    } else if (mode & 0x20) {
+        part->scale[0] += x;
+        part->scale[1] += y;
+        part->scale[2] += z;
+    } else {
+        part->scale[0] = x;
+        part->scale[1] = y;
+        part->scale[2] = z;
+    }
+    part->flag4 = 1;
+    part->flag5 = 1;
+    if (mode & 0x80) {
+        child = object->hierarchy;
+        for (i = 1; i < object->hierarchy->index; i++) {
+            child++;
+            if (child->parent == part) {
+                func_800AFD98(object, child, mode, x, y, z);
+            }
+        }
+    }
+}
 
 /* Put a battle object on the ground: find the scene triangle under its
  * hierarchy's translation and take its height (into the translation unless
