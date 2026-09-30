@@ -6205,7 +6205,103 @@ void func_800939CC(u8 member, u8 kind) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093B08);
+/* For party character 4 with no command page open: show the two equipped
+ * items' (in a gear: parts') names and durability (two digits, no leading
+ * zero) in window 0. */
+void func_80093B08(u8 member) {
+    RECT nameRect;
+    RECT onesRect;
+    RECT digitRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect; /* unused */
+    TextImage images[2];
+    u16 divisors[2];
+    u8 slots[2];
+    u16 values[2];
+    u8 shown;
+    s32 i;
+    s32 j;
+    u8 digit;
+
+    if (D_800D2D24[member] == 4 && D_800D2D28->unkB7 == 0) {
+        divisors[0] = 100;
+        divisors[1] = 10;
+        if (D_800D32A0[member].unk1 == 0) {
+            slots[0] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[0];
+            slots[1] = D_8006D8A0.characters[D_800D2D24[member]].entryItems[3];
+            values[0] = D_8006F8BA[slots[0]];
+            values[1] = D_8006F8BA[slots[1]];
+        } else {
+            slots[0] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[0];
+            slots[1] = D_8006D8A0.gears[D_8006D8A0.characters[D_800D2D24[member]].gearId].partItems[3];
+            values[0] = D_8006F8EA[slots[0]];
+            values[1] = D_8006F8EA[slots[1]];
+        }
+        func_80077610();
+        func_80076EA4();
+        D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+        bzero(D_800D2DB0, 0x618);
+        for (i = 0; i < 2; i++) {
+            images[i].pixels = (u32 *)func_8008AC00(0x1B);
+            bzero(images[i].pixels, 0x30C);
+            rowRect.x = 0x380;
+            rowRect.y = i * 16 + 0x100;
+            rowRect.w = 0x1B;
+            rowRect.h = 16;
+            func_800769E8(&rowRect, D_800D2DB0);
+            if (slots[i] != 0) {
+                func_80034EAC(func_80033848(slots[i]), images[i].pixels, 0x1B, 0);
+                nameRect.x = 0x380;
+                nameRect.y = i * 16 + 0x102;
+                nameRect.w = 30;
+                nameRect.h = 13;
+                func_800769E8(&nameRect, images[i].pixels);
+            }
+            rightRect.x = 0x3C0;
+            rightRect.y = i * 16 + 0x100;
+            rightRect.w = 0x1B;
+            rightRect.h = 16;
+            func_800769E8(&rightRect, D_800D2DB0);
+            shown = 0;
+            for (j = 0; j < 2; j++) {
+                digitRect.x = j * 2 + 0x3C0;
+                digitRect.y = i * 16 + 0x102;
+                digitRect.w = 6;
+                digitRect.h = 13;
+                digit = values[i] / divisors[j];
+                if (digit != 0 || shown) {
+                    func_800769E8(&digitRect, D_800C3E5C[digit].pixels);
+                    shown = 1;
+                    values[i] -= digit * divisors[j];
+                } else {
+                    func_800769E8(&digitRect, D_800D2DB0);
+                }
+            }
+            onesRect.x = 0x3C4;
+            onesRect.y = i * 16 + 0x102;
+            onesRect.w = 6;
+            onesRect.h = 13;
+            if (slots[i] != 0) {
+                func_800769E8(&onesRect, D_800C3E5C[(u16)(values[i] % 10)].pixels);
+            } else {
+                func_800769E8(&onesRect, D_800D2DB0);
+            }
+        }
+        for (i = 0; i < 2; i++) {
+            func_800320E8(images[i].pixels);
+        }
+        func_800320E8(D_800D2DB0);
+        D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+        func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0xA0, 0xAC, 0, 0, 0x60, 0x20);
+        func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x104, 0xAC, 0, 0, 0x18, 0x20);
+        D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+        D_800C3EA4->unkA230->unk669 = 1;
+        func_8008F8F4(0, 0x98, 0xA8, 0x8C, 0x28, 0, 1);
+        D_800D2D28->unkB7 = 5;
+        D_800D2D28->unk8E = 1;
+    }
+}
 
 /* For party character 4: close its command window and, with `release`,
  * its extra resources. */
