@@ -1775,7 +1775,36 @@ void func_800A48EC(ModelList *models, ModelPart *root, Matrix *view, s32 arg3, s
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A48EC);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A4B3C);
+/* Push point (relative to origin, in the ground plane) out of the first
+ * listed circle (x, z, radius) it lies inside, onto its rim; whether it was
+ * pushed. */
+s32 func_800A4B3C(SVector *origin, SVector *point) {
+    u16 *circle = D_800D2FD0;
+    s32 i;
+    s32 pushed = 0;
+    s16 cx;
+    s16 cz;
+    s16 radius;
+    s32 dx;
+    s32 dz;
+    s32 distance;
+
+    for (i = 0; i < D_800D2FC8; i++) {
+        cx = *circle++ - origin->vx;
+        dx = point->vx - cx;
+        cz = *circle++ - origin->vz;
+        dz = point->vz - cz;
+        radius = *circle++;
+        distance = SquareRoot0(dx * dx + dz * dz) + 1;
+        if (distance < radius) {
+            pushed = 1;
+            point->vx = cx + dx * radius / distance;
+            point->vz = cz + dz * radius / distance;
+            break;
+        }
+    }
+    return pushed;
+}
 
 /* Place a copy of stage object index (800B10EC) at every listed point, its
  * height raised by the object's size. */
