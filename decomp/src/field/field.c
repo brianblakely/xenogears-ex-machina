@@ -7068,6 +7068,7 @@ void func_8009B184(void) {
 }
 
 s32 func_8009AEE0(s32 member, s32 x, s32 z, s32 range);
+void func_8009B338(void);
 
 /* Yield until all three party members are near the leader, then release
  * party processing and continue. */
