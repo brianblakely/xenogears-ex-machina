@@ -116,6 +116,7 @@ decomp/src/debug2611/debug2611.c
 decomp/src/debug595/debug595.c
 decomp/src/field/field.c
 decomp/src/mdec/mdec.c
+decomp/src/menu/gte.h
 decomp/src/menu/menu.c
 decomp/src/menu/menu.h
 decomp/src/menu/window.h

@@ -164,6 +164,7 @@ extern Line3D D_80095938[100];
 
 s32 func_8002DC9C(s32 x, s32 y, s32 z);
 void func_80048D7C(Vector *vector, void *out);
+void func_80048D68(Vector *vector, void *out);
 
 /* A map view; only its backdrop quads are known. */
 typedef struct {

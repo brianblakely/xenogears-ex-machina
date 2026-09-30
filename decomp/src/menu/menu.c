@@ -1,5 +1,6 @@
 #include "menu.h"
 #include "window.h"
+#include "gte.h"
 
 /* Start the menu camera: mode 3 setup and its script block. */
 void func_800707A8(void) {
@@ -1508,13 +1509,63 @@ void func_800884E0(Vector *vector, void *out) {
     func_80048D7C(&scaled, out);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008859C);
+/* Scale a vector down by the square root of its (absolute) length measure
+ * and pass it to func_80048D68. */
+void func_8008859C(Vector *vector, void *out) {
+    Vector scaled = *vector;
+    s32 square;
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088658);
+    square = func_8002DC9C(scaled.vx, scaled.vy, scaled.vz);
+    if (square < 0) {
+        square = -square;
+    }
+    length = func_80048C4C(square);
+    scaled.vx /= length;
+    scaled.vy /= length;
+    scaled.vz /= length;
+    func_80048D68(&scaled, out);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800886FC);
+/* The same for a short vector. */
+void func_80088658(SVector *vector, void *out) {
+    Vector scaled;
+    s32 square;
+    s32 length;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80088754);
+    scaled.vx = vector->vx;
+    scaled.vy = vector->vy;
+    scaled.vz = vector->vz;
+    square = func_8002DC9C(scaled.vx, scaled.vy, scaled.vz);
+    if (square < 0) {
+        square = -square;
+    }
+    length = func_80048C4C(square);
+    scaled.vx /= length;
+    scaled.vy /= length;
+    scaled.vz /= length;
+    func_80048D68(&scaled, out);
+}
+
+/* Length of a vector. */
+s32 func_800886FC(Vector *vector) {
+    Vector square;
+
+    gte_ldlvl(vector);
+    gte_sqr0();
+    gte_stlvnl(&square);
+    return func_80048C4C(square.vx + square.vy + square.vz);
+}
+
+/* Horizontal (x/z) length of a vector. */
+s32 func_80088754(Vector *vector) {
+    Vector square;
+
+    gte_ldlvl(vector);
+    gte_sqr0();
+    gte_stlvnl(&square);
+    return func_80048C4C(square.vx + square.vz);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800887A4);
 
