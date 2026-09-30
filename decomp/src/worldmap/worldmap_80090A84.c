@@ -992,11 +992,8 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 #endif
 
 /* Show the destination name while it changes and draw its marker. */
-#ifdef NON_MATCHING /* marker base address loaded later than the original */
 s32 func_80092FD8(s32 index) {
     WorldmapActor *actor;
-    PolyFT4 *marker;
-    WorldmapView *view;
 
     actor = &D_8009BE24[index];
     switch (actor->state) {
@@ -1021,16 +1018,10 @@ s32 func_80092FD8(s32 index) {
     }
     func_80034888(&D_8009BD64, D_8009BE3C->ot, D_8009D7F0);
     if (actor->state == 1) {
-        view = D_8009BE3C;
-        marker = &D_8009D2B8[D_8009D7F0];
-        ((P_TAG *)marker)->addr = ((P_TAG *)view->ot)->addr;
-        ((P_TAG *)view->ot)->addr = (u32)marker;
+        addPrim(D_8009BE3C->ot, &D_8009D2B8[D_8009D7F0]);
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80092FD8);
-#endif
 
 /* Release a resident object. */
 void func_800931B0(void) {
