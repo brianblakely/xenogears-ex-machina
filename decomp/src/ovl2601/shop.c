@@ -394,7 +394,91 @@ void func_801CDD14(s32 top, s32 gold, u8 *dims) {
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CDD14);
 #endif
 
+/*
+ * Compare member `member`'s attack (kind 0) or defence (kind 1) with item
+ * `id` equipped: `diffs` gets the two differences and `worse` whether each
+ * would drop. Member 4 equips four armour slots from the equipment table;
+ * accessories of one group replace each other, otherwise the weakest is
+ * replaced.
+ */
+#ifdef NON_MATCHING
+void func_801CE480(s32 *diffs, u8 *worse, u8 id, u8 kind, u8 member) {
+    s16 after[2];
+    s16 before[2];
+    u8 lowest;
+    u8 replace;
+    s32 weakest;
+    s32 k;
+
+    before[1] = 0;
+    before[0] = 0;
+    after[1] = 0;
+    after[0] = 0;
+    switch (kind) {
+    case 0:
+        if (member != 4) {
+            before[0] = D_800625A0->resources->equipment[D_8006D8A0[member].weapons[0]].power +
+                        D_8006D8A0[member].bonus[0];
+            after[0] = D_800625A0->resources->equipment[id].power + D_8006D8A0[member].bonus[0];
+        } else {
+            for (k = 0; k < 4; k++) {
+                before[0] += D_800625A0->resources->equipment[D_8006D8A0[4].armour[k]].power;
+            }
+            for (k = 0; k < 4; k++) {
+                if (D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]].type == D_800625A0->resources->equipment[id].type &&
+                    D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]].type != 5) {
+                    after[0] += D_800625A0->resources->equipment[id].power;
+                } else {
+                    after[0] += D_800625A0->resources->equipment[D_8006D8A0[member].armour[k]].power;
+                }
+            }
+        }
+        break;
+    case 1:
+        replace = 1;
+        before[1] = after[1] = D_8006D8A0[member].bonus[1];
+        for (k = 0; k < 3; k++) {
+            before[1] += D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+        }
+        for (k = 0; k < 3; k++) {
+            if (D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].group != 0 &&
+                D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].group == D_800625A0->resources->accessories[id].group) {
+                after[1] += D_800625A0->resources->accessories[id].power;
+                replace = 0;
+            } else {
+                after[1] += D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+            }
+        }
+        if (replace) {
+            lowest = 0xFF;
+            for (k = 0; k < 3; k++) {
+                if (lowest >= D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power) {
+                    lowest = D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+                    weakest = k;
+                }
+            }
+            after[1] = D_8006D8A0[member].bonus[1] + D_800625A0->resources->accessories[id].power;
+            for (k = 0; k < 3; k++) {
+                if (k != weakest) {
+                    after[1] += D_800625A0->resources->accessories[D_8006D8A0[member].accessories[k]].power;
+                }
+            }
+        }
+        break;
+    }
+    for (k = 0; k < 2; k++) {
+        if (after[k] >= before[k]) {
+            diffs[k] = after[k] - before[k];
+            worse[k] = 0;
+        } else {
+            diffs[k] = before[k] - after[k];
+            worse[k] = 1;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2601/asm/nonmatchings/shop", func_801CE480);
+#endif
 
 /* The count held of item `id` in an inventory of `n` ids and counts (0 if absent). */
 u16 func_801CE8D8(u8 *ids, u8 *counts, s32 n, u8 id) {
