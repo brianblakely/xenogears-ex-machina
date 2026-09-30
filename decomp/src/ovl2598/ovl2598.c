@@ -1486,22 +1486,27 @@ void func_801CA5C0(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_h
 
 /* Build the three party panels and the six member panels of list page
  * `first` (hiding panels without a character). */
-#ifdef NON_MATCHING
+/* Build the three party panels and the six member panels of list page
+ * `first` (hiding panels without a character). */
 void func_801CA690(u8 first) {
     s32 i;
     s32 index;
     StatusPanel *panel;
-    u8 id;
+    s32 *x;
+    s32 *y;
 
+    x = D_801CB22C;
+    y = D_801CB2B8;
     for (i = 0; i < 3; i++) {
         panel = D_800625A0->party_panels[i];
-        id = D_800625A0->flags->party[i];
-        if (id != 0xFF) {
-            func_801CA5C0(panel, id, i, D_801CB22C, D_801CB2B8, 0x38, 1);
+        if (D_800625A0->flags->party[i] != 0xFF) {
+            func_801CA5C0(panel, D_800625A0->flags->party[i], i, x, y, 0x38, 1);
         } else {
             panel->shown = 0;
         }
     }
+    x = D_801CB1E8;
+    y = D_801CB274;
     D_800625A0->flags->status_on = 1;
     for (i = 0; i < 6; i++) {
         index = first + i;
@@ -1511,15 +1516,12 @@ void func_801CA690(u8 first) {
         panel = D_800625A0->member_panels[i];
         if (D_800625A0->members[index] != 0xFF) {
             func_801C94A0();
-            func_801CA5C0(panel, D_800625A0->members[index], i, D_801CB1E8, D_801CB274, 0x20, 0);
+            func_801CA5C0(panel, D_800625A0->members[index], i, x, y, 0x20, 0);
         } else {
             panel->shown = 0;
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA690);
-#endif
 
 /* Place cursor marker `marker` on row `row` of the party list (`list` 0)
  * or the member list and show the markers. */
