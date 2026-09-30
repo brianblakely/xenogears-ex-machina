@@ -2730,6 +2730,7 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80095520);
 /* Continue when the controlled actor is inside trigger zone operand 1,
  * else jump to operand 2. */
 void func_80095734(void) {
+    u8 *operand;
     FieldActor *player;
     Zone *zone;
     s32 point;
@@ -2739,8 +2740,9 @@ void func_80095734(void) {
     s32 d;
 
     player = D_800AFA64.descriptors[D_800B226C].actor;
+    operand = &D_800ADC00[D_800B0078->pc];
     point = (player->position[2].s.whole << 16) + player->position[0].s.whole;
-    zone = &D_800ADBF4[EVENT_OPERAND_BYTE(1)];
+    zone = &D_800ADBF4[operand[1]];
     a = (zone->corner[0].z << 16) + zone->corner[0].x;
     b = (zone->corner[1].z << 16) + zone->corner[1].x;
     c = (zone->corner[2].z << 16) + zone->corner[2].x;
