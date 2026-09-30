@@ -99,7 +99,7 @@ typedef struct {
     u8 chargeRate; /* 0x57 */
     u8 pad58[0x5C - 0x58];
     u8 fileVariant; /* 0x5C: the gear's extra file (D_800C3508), 0 none */
-    u8 pad5D[0x60 - 0x5D];
+    u8 spriteVariants[3]; /* 0x5D: added (less one) to its animations' sprite kinds */
     u32 hp;    /* 0x60 */
     u32 maxHp; /* 0x64 */
     u8 pad68[0x72 - 0x68];

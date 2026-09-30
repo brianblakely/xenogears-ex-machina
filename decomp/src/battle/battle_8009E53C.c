@@ -842,9 +842,9 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A2F
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A32D8);
 
-/* Mark a halfword slot empty. */
-void func_800A3484(s16 *slot) {
-    *slot = -1;
+/* Mark an effect channel idle. */
+void func_800A3484(ObjectChannel *channel, s32 arg1) {
+    channel->id = -1;
 }
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3490);
@@ -2102,7 +2102,305 @@ s32 func_800AE220(BattleObject *object, s32 source) {
     }
 }
 
+#ifdef NON_MATCHING
+/* Run the events of object's animation for its current frame (sprites,
+ * lights, effect channels, sounds, part flags, the slots' effect scripts and
+ * image animations), then advance the frame, looping at its loop length.
+ * Nonmatching: the original hoists the constant 1 of four compares out of
+ * the event loop (reloaded into $t7), and adds 0x400 to the event's angle
+ * before the object's. */
+void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2) {
+    AnimEvent *event;
+    SpriteCommand *sprite;
+    LightEvent *light;
+    SoundEvent *sound;
+    SlotEvent *slots;
+    BattleObject *target;
+    Matrix *m;
+    SVector point;
+    Vector out;
+    Vector ground;
+    s16 kind;
+    u16 offset;
+    s16 slot;
+    s32 angle;
+    s16 scale;
+    u8 *resource;
+    s32 base;
+    s32 variant;
+    s16 volume;
+    s32 i;
+    BattleObject **stage = D_800D3368;
+    BattleObject **objects;
+    u16 savedMask;
+    s16 savedIndex;
+    s32 mask;
+    u8 onTarget;
+    s32 script;
+    ImageAnim *source;
+    Matrix *colour;
+    s16 x;
+    s16 y;
+    s16 x2;
+    s16 y2;
+    s16 field10;
+    void *step;
+
+    if (object->animation >= 0) {
+        for (; object->animationFrame < object->animationLength; object->animationFrame++) {
+            {
+                event = (AnimEvent *)object->animationStart;
+                if (object->animation != event->header.time) {
+                    break;
+                }
+                switch (event->header.type) {
+                case 1:
+                    slot = 0;
+                    m = (Matrix *)0x1F800000;
+                    sprite = &event->sprite;
+                    if (sprite->flags & 0x80) {
+                        offset = D_800CCCE8.records[object->slot].gear.spriteVariants[sprite->kind] - 1;
+                        kind = sprite->kind + offset;
+                    } else {
+                        kind = sprite->kind;
+                    }
+                    if ((sprite->mode & 0x80) || (sprite->flags & 0x80)) {
+                        target = stage[func_800AF400()];
+                        if (target == NULL) {
+                            slot = func_800AF400() + 1;
+                            target = object;
+                        }
+                    } else {
+                        target = object;
+                    }
+                    if (kind >= 0) {
+                        if (sprite->part != 0) {
+                            CompMatrix(&target->hierarchy->transform, &target->hierarchy[sprite->part].world, m);
+                        } else {
+                            *m = target->hierarchy->transform;
+                        }
+                        if (slot != 0) {
+                            m->t[0] = (u16)D_800C3EB4[slot - 1].x;
+                            m->t[1] = (u16)D_800C3EB4[slot - 1].y;
+                            m->t[2] = (u16)D_800C3EB4[slot - 1].z;
+                        }
+                        SetRotMatrix(m);
+                        SetTransMatrix(m);
+                        point.vx = sprite->offset[0];
+                        point.vy = sprite->offset[1];
+                        point.vz = sprite->offset[2];
+                        gte_ldv0(&point);
+                        gte_rtv0tr();
+                        gte_stlvnl(&out);
+                        point.vx = out.vx;
+                        point.vz = out.vz;
+                        if ((sprite->mode & 0x7F) == 1) {
+                            point.vy = object->groundY;
+                        } else if ((sprite->mode & 0x7F) == 2) {
+                            point.vx = D_800658C8->centre.vx;
+                            point.vy = D_800658C8->centre.vy;
+                            point.vz = D_800658C8->centre.vz;
+                            func_800A5870(&point, func_800A579C(&point), &ground);
+                        } else {
+                            point.vy = out.vy;
+                        }
+                        if (sprite->absolute) {
+                            angle = sprite->angle;
+                        } else {
+                            angle = object->hierarchy->rotation.vy + (sprite->angle + 0x400);
+                        }
+                        resource = D_8006BE10;
+                        scale = sprite->scale * object->scale1C >> 8;
+                        if (sprite->resource) {
+                            resource = D_8005A474;
+                        }
+                        if (func_800B12D0(func_800AF400(), sprite->flags)) {
+                            func_800AFB4C(resource, kind, &point, angle, scale, sprite, object);
+                        }
+                    }
+                    object->animationStart += sizeof(SpriteCommand);
+                    break;
+                case 2:
+                    if (event->light.on) {
+                        if (event->light.light < 2) {
+                            light = &event->light;
+                            if (light->free) {
+                                D_800D3304[light->light].object = -1;
+                            } else {
+                                D_800D3304[light->light].object = object->slot;
+                            }
+                            D_800D3304[light->light].part = light->part;
+                            D_800D2FC0->m[0][light->light + 1] = light->r * 16;
+                            D_800D2FC0->m[1][light->light + 1] = light->g * 16;
+                            D_800D2FC0->m[2][light->light + 1] = light->b * 16;
+                            D_800D3304[light->light].offset.vx = light->offset[0];
+                            D_800D3304[light->light].offset.vy = light->offset[1];
+                            D_800D3304[light->light].offset.vz = light->offset[2];
+                            D_800D3304[light->light].active = light->active;
+                        }
+                        object->animationStart += sizeof(LightEvent);
+                    } else {
+                        D_800D3304[event->light.light].active = 0;
+                        object->animationStart += 6;
+                    }
+                    break;
+                case 3:
+                case 4:
+                    func_800A3484(&object->channels[event->channel.channel], arg2);
+                    if (event->channel.on) {
+                        if (event->channel.channel < object->channelCount) {
+                            func_800A32D8(&object->channels[event->channel.channel], &D_800C3D04,
+                                          event->channel.field5, event->channel.type - 3, event->channel.bytes[0],
+                                          event->channel.bytes[1], event->channel.bytes[2], event->channel.bytes[3],
+                                          event->channel.bytes[4], event->channel.bytes[5], event->channel.bytes[6],
+                                          event->channel.bytes[7], event->channel.values[0],
+                                          event->channel.values[1], event->channel.values[2],
+                                          event->channel.values[3], event->channel.values[4],
+                                          event->channel.values[5], event->channel.last);
+                        }
+                        object->animationStart += sizeof(ChannelEvent);
+                    } else {
+                        object->animationStart += 6;
+                    }
+                    break;
+                case 5:
+                    sound = &event->sound;
+                    if (func_800B12D0(func_800AF400(), sound->flags)) {
+                        variant = 0;
+                        if (sound->kind == 1 && D_800658C8->soundMode != 0) {
+                            func_80039E60((object->model->sounds->bank << 16) | (D_800658C8->soundMode + 10));
+                        }
+                        base = func_800AE220(object, sound->source);
+                        if (D_800658C8->soundMode == 3 && sound->kind == 2) {
+                            variant = 8;
+                        }
+                        func_80039E60(base + sound->sound + variant);
+                        if (sound->sound2 != 0) {
+                            func_80039E60(base + sound->sound2 + variant);
+                        }
+                        volume = object->field39;
+                        if (D_800658C8->soundMode == 3 && sound->kind != 2) {
+                            volume = volume * 60 / 107;
+                        }
+                        func_8003A2E4(base + sound->sound + variant, volume);
+                        if (sound->sound2 != 0) {
+                            func_8003A2E4(base + sound->sound2 + variant, volume);
+                        }
+                    }
+                    object->animationStart += sizeof(SoundEvent);
+                    break;
+                case 6:
+                    func_800BF6CC();
+                    object->animationStart += 4;
+                    break;
+                case 7:
+                    object->hierarchy[event->header.arg4].flag7 = event->header.arg5 & 1;
+                    object->animationStart += 6;
+                    break;
+                case 8:
+                    slots = &event->slots;
+                    i = 0;
+                    objects = D_800D3368;
+                    savedIndex = D_800C3D40;
+                    savedMask = D_800C3E30;
+                    mask = 1 << savedIndex;
+                    for (; i < 13; i++, objects++) {
+                        if ((object->slotMask >> i) & 1) {
+                            onTarget = slots->onTarget;
+                            script = -1;
+                            if (*objects != NULL && ((*objects)->flags4A & 2)) {
+                                onTarget = 0;
+                            }
+                            switch (D_800C3FE8[D_800C360C - 1].codes[i]) {
+                            case 0:
+                            case 1:
+                                if (*objects != NULL && ((*objects)->flags4A & 2)) {
+                                    script = slots->scripts[1];
+                                } else {
+                                    script = slots->scripts[0];
+                                }
+                                break;
+                            case 5:
+                                script = slots->scripts[2];
+                                break;
+                            case 4:
+                                script = slots->scripts[3];
+                                break;
+                            case 2:
+                            case 3:
+                                script = slots->scripts[4];
+                                break;
+                            }
+                            if (!func_800B12D0(i, slots->kinds)) {
+                                script = -1;
+                            }
+                            if (*objects != NULL && script > 0) {
+                                if (onTarget) {
+                                    func_800AA564(object, i, mask, script);
+                                } else {
+                                    func_800AA454(i, mask, script);
+                                }
+                            }
+                        }
+                    }
+                    D_800C3D40 = savedIndex;
+                    D_800C3E30 = savedMask;
+                    object->animationStart += sizeof(SlotEvent);
+                    break;
+                case 9:
+                    if (event->image.on) {
+                        if (event->image.anim < object->imageAnimCount) {
+                            if (event->image.source != 0xFF && event->image.source < object->imageAnimCount) {
+                                source = &object->imageAnims[event->image.source];
+                            } else {
+                                source = NULL;
+                            }
+                            colour = NULL;
+                            if ((event->image.mode & 0x7F) >= 4) {
+                                colour = D_800D2FC0;
+                            }
+                            step = func_800AA820(event->image.step);
+                            x = event->image.x;
+                            y = event->image.y;
+                            x2 = event->image.x2;
+                            y2 = event->image.y2;
+                            field10 = event->image.field10;
+                            if (event->image.mode & 0x80) {
+                                if (object->placement[0] < 0) {
+                                    break;
+                                }
+                                x += object->placement[2];
+                                y += object->placement[3];
+                                if (event->image.field12 >> 4 == 1) {
+                                    x2 += object->placement[2];
+                                    y2 += object->placement[3];
+                                }
+                            }
+                            func_800A3640(&object->imageAnims[event->image.anim], source, event->image.mode & 0x7F,
+                                          event->image.field12 | 0x700, colour, x, y, 0, x2, y2, field10, x, y,
+                                          event->image.field13, event->image.field14, event->image.field16, event->image.field18,
+                                          event->image.field1A, step);
+                        }
+                        object->animationStart += sizeof(ImageEvent);
+                    } else {
+                        func_800A429C(&object->imageAnims[event->image.anim]);
+                        object->animationStart += 6;
+                    }
+                    break;
+                }
+            }
+        }
+        object->animation++;
+        if (object->animationLoop >= 0 && object->animation >= object->animationLoop) {
+            object->animation = 0;
+            object->animationFrame = 0;
+            object->animationStart = object->animationCursor;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AE2A4);
+#endif
 
 /* Stop a battle object's animation. */
 void func_800AEEEC(BattleObject *object) {
@@ -2467,7 +2765,7 @@ void func_800AFB4C(void *resource, s32 kind, SVector *position, s16 direction, s
         follow->offset.vx = command->offset[0];
         follow->offset.vy = command->offset[1];
         follow->offset.vz = command->offset[2];
-        follow->onGround = command->onGround;
+        follow->onGround = command->mode;
     }
 }
 

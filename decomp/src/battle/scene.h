@@ -100,10 +100,10 @@ typedef struct {
     s16 placement[4]; /* 0x90: where its images went (x, y, z, w), x -1 none */
     s16 animation;       /* 0x98: -1 none */
     s16 animationLoop;   /* 0x9A: -1 none */
-    u16 animationFrame;  /* 0x9C */
-    u16 animationLength; /* 0x9E */
-    u8 *animationStart;  /* 0xA0 */
-    u8 *animationCursor; /* 0xA4 */
+    s16 animationFrame;  /* 0x9C: the next event */
+    s16 animationLength; /* 0x9E: the events */
+    u8 *animationStart;  /* 0xA0: the next event (AnimEvent) */
+    u8 *animationCursor; /* 0xA4: the first event */
     u8 *modelBlock;  /* 0xA8: its own copy of its models, NULL none */
     void *scriptFile; /* 0xAC: its script file, NULL shared */
     struct ObjectData *model;     /* 0xB0: the model data */
@@ -143,10 +143,14 @@ typedef struct {
     s16 minX;        /* 0x34E */
     s16 minZ;        /* 0x350 */
     s16 maxZ;        /* 0x352 */
-    u8 pad354[0x474 - 0x354];
+    u8 pad354[0x35F - 0x354];
+    u8 soundMode; /* 0x35F */
+    u8 pad360[0x474 - 0x360];
     u8 ambient[3]; /* 0x474: the objects' back colour */
     u8 pad477;
     u8 shadow[3]; /* 0x478: the shadow sprites' colour */
+    u8 pad47B[0x4DC - 0x47B];
+    SVector centre; /* 0x4DC */
 } BattleSceneData;
 
 /* An effect sprite record (0x7C bytes) of a sprite pool. */
