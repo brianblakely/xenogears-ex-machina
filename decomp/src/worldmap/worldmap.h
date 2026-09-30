@@ -783,6 +783,8 @@ s32 func_8007CD20(), func_8007CE84(), func_8007CF18(), func_8007D078(), func_800
 s32 func_8007D228(), func_8007D2B8(), func_8007D414(), func_8007D4A4(), func_8007D600();
 s32 func_8007D690(), func_8007D774(), func_8007D7FC();
 void func_800721E4(void);
+s32 func_80081174(), func_800811C0(), func_800813E8(), func_80081470(), func_800817A0(), func_80081868();
+s32 func_800819C8(), func_80081B24(), func_80081C3C(), func_80081D80(), func_80081FB4(), func_80081FD8();
 s32 func_800838E8(), func_80076B34(), func_8008390C(), func_80083A00(), func_80083FE4(), func_80084068();
 
 extern MATRIX D_8009BE4C;

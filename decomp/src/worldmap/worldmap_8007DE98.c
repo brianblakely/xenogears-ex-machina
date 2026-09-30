@@ -818,47 +818,40 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_80
 #endif
 
 /* Grow and fade scene objects 9 and 10 at the actor; ends the step when faded out. */
-#ifdef NON_MATCHING /* the two object pointers swap s2/s3 */
 s32 func_8007FD30(s32 index) {
-    SceneObject *objects;
-    WorldmapActor *actor;
     SceneObject *object;
-    SceneObject *object2;
+    WorldmapActor *actor;
 
-    objects = D_8009C620;
     actor = &D_8009BE24[index];
-    object = &objects[9];
+    object = &D_8009C620[9];
     if (actor->unk4 == 1) {
         actor->unk4 = 0;
     }
-    objects[9].position.vx = objects[10].position.vx = actor->position.vx >> 12;
-    objects[9].position.vy = objects[10].position.vy = actor->position.vy >> 12;
-    objects[9].position.vz = objects[10].position.vz = actor->position.vz >> 12;
-    objects[10].matrix = D_8009A180;
-    objects[9].matrix = objects[10].matrix;
+    object[0].position.vx = object[1].position.vx = actor->position.vx >> 12;
+    object[0].position.vy = object[1].position.vy = actor->position.vy >> 12;
+    object[0].position.vz = object[1].position.vz = actor->position.vz >> 12;
+    object[1].matrix = D_8009A180;
+    object[0].matrix = object[1].matrix;
     SCALE_SCRATCH->scale[0].vx = SCALE_SCRATCH->scale[0].vz = actor->u.step;
     SCALE_SCRATCH->scale[1].vx = SCALE_SCRATCH->scale[1].vz = actor->unk54;
     SCALE_SCRATCH->scale[0].vy = SCALE_SCRATCH->scale[1].vy = 0x1000;
-    ScaleMatrix(&objects[9].matrix, &SCALE_SCRATCH->scale[0]);
-    ScaleMatrix(&objects[10].matrix, &SCALE_SCRATCH->scale[1]);
-    object2 = &objects[10];
+    ScaleMatrix(&object[0].matrix, &SCALE_SCRATCH->scale[0]);
+    ScaleMatrix(&object[1].matrix, &SCALE_SCRATCH->scale[1]);
     if ((actor->u.step += 0x180) > 0x7FFF) {
         actor->u.step = 0x7FFF;
     }
     if ((actor->unk54 += 0x180) > 0x7FFF) {
         actor->unk54 = 0x7FFF;
     }
-    func_800809EC((&object->prims)[D_8009D7F0], objects[9].def->count, actor->unk58, actor->unk58, actor->unk58);
-    func_800809EC((&object2->prims)[D_8009D7F0], objects[10].def->count, actor->unk58, actor->unk58, actor->unk58);
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
+    object++;
+    func_800809EC((&object->prims)[D_8009D7F0], object->def->count, actor->unk58, actor->unk58, actor->unk58);
     if ((actor->unk58 -= 3) < 0) {
         actor->unk58 = 0;
         return 3;
     }
     return 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007DE98", func_8007FD30);
-#endif
 
 /* Set up the third cutscene mode: display, terrain loader, scene objects and
  * its actors. */
