@@ -347,7 +347,109 @@ s32 func_80081FB4(s32 index) {
     return 1;
 }
 
+/* Heat-haze strength: set every row (1-3, 5) or scatter random rows (1, 4) per command. */
+#ifdef NON_MATCHING /* row counter and row pointer swap s0/s1 */
+s32 func_80081FD8(s32 index) {
+    WorldmapActor *actor;
+    s32 i;
+    s32 start;
+    u16 *flags;
+
+    actor = &D_8009BE24[index];
+    switch (actor->unk4) {
+    case 1:
+        actor->unk4 = 0;
+        actor->state = 1;
+        break;
+    case 2:
+        actor->unk4 = 0;
+        actor->state = 2;
+        break;
+    case 3:
+        actor->unk4 = 0;
+        actor->state = 3;
+        break;
+    case 4:
+        actor->unk4 = 0;
+        actor->state = 4;
+        break;
+    case 5:
+        actor->unk4 = 0;
+        actor->state = 5;
+        break;
+    }
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        flags = D_8009D148;
+        for (i = 0; i < 0xC0; i++) {
+            *flags++ = actor->u.value;
+        }
+        start = rand() & 0x3F;
+        flags = &D_8009D148[start];
+        for (i = start; i < start + (rand() & 0x1F) + 1; i++) {
+            if (!(rand() & 3)) {
+                *flags = (rand() & 0x3F) + 1;
+            }
+            flags++;
+        }
+        start = (rand() & 0x3F) + 0x40;
+        flags = &D_8009D148[start];
+        for (i = start; i < start + (rand() & 0x1F) + 1; i++) {
+            if (!(rand() & 3)) {
+                *flags = (rand() & 0x3F) + 1;
+            }
+            flags++;
+        }
+        start = (rand() & 0x1F) + 0x80;
+        flags = &D_8009D148[start];
+        for (i = start; i < start + (rand() & 0x1F) + 1; i++) {
+            if (!(rand() & 3)) {
+                *flags = (rand() & 0x3F) + 1;
+            }
+            flags++;
+        }
+        break;
+    case 2:
+        if (++actor->u.step > 0x40) {
+            actor->u.step = 0x40;
+        }
+        flags = D_8009D148;
+        for (i = 0; i < 0xC0; i++) {
+            *flags++ = actor->u.value;
+        }
+        break;
+    case 3:
+        if (--actor->u.step < 2) {
+            actor->u.step = 2;
+        }
+        flags = D_8009D148;
+        for (i = 0; i < 0xC0; i++) {
+            *flags++ = actor->u.value;
+        }
+        break;
+    case 4:
+        flags = D_8009D148;
+        for (i = 0; i < 0xC0; i++) {
+            if (!(rand() & 3)) {
+                *flags = (rand() & 0x3F) + 1;
+            }
+            flags++;
+        }
+        break;
+    case 5:
+        flags = D_8009D148;
+        for (i = 0; i < 0xC0; i++) {
+            *flags++ = 2;
+        }
+        break;
+    }
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081FD8);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80082324);
 

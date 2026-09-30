@@ -191,6 +191,7 @@ typedef struct {
     s32 handle;   /* 0x4C */
     union {
         s16 *script; /* script position */
+        u16 value;   /* low half of step */
         s32 step;
     } u;          /* 0x50 */
     s32 unk54;
