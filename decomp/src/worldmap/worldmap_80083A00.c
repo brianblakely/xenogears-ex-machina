@@ -865,7 +865,97 @@ s32 func_80087F60(void) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80087FD0);
+/* Run the ferry: before scene 0xCD it only follows the ground; otherwise
+ * it steers along its waypoints, turns its model, moves by its delayed
+ * heading history at a speed that eases in and out near the dock, sprays
+ * its wake above speed 0x1000 and saves its route state. */
+s32 func_80087FD0(s32 index) {
+    FerryScratch *scratch;
+    WorldmapActor *actor;
+    SceneObject *object;
+    s32 distance;
+    s32 dock;
+
+    scratch = FERRY_SCRATCH;
+    actor = &D_8009BE24[index];
+    object = &D_8009C620[D_8009B674[D_8009C610]];
+    if (D_8006EF64[0] < 0xCD) {
+        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        object->position.vx = actor->position.vx >> 12;
+        object->position.vy = actor->position.vy >> 12;
+        object->position.vz = actor->position.vz >> 12;
+    } else {
+        scratch->work.vx = D_8009AF80[actor->u.step] << 12;
+        scratch->work.vz = D_8009AF90[actor->u.step] << 12;
+        distance = func_80094154(&actor->position, &scratch->work);
+        if (distance < 0) {
+            distance = -distance;
+        }
+        if (distance < 8) {
+            actor->u.step = (actor->u.step + 1) & 7;
+        }
+        scratch->work.vx = D_8009AF80[actor->u.step] - (actor->position.vx >> 12);
+        scratch->work.vz = D_8009AF90[actor->u.step] - (actor->position.vz >> 12);
+        scratch->work.vy = 0;
+        func_80093534(&scratch->work);
+        func_80048D7C(&scratch->work, &scratch->work);
+        actor->motion.vx = ((scratch->work.vx + actor->motion.vx * 63) << 6) >> 12;
+        actor->motion.vz = ((scratch->work.vz + actor->motion.vz * 63) << 6) >> 12;
+        func_80048D7C(&actor->motion, &actor->motion);
+        D_8009CD68[actor->unk54].dx = actor->motion.vx;
+        D_8009CD68[actor->unk54].dz = actor->motion.vz;
+        actor->unk54 = (actor->unk54 + 1) & 0x1F;
+        scratch->work.vx = actor->motion.vx;
+        scratch->work.vy = actor->motion.vy;
+        scratch->work.vz = -actor->motion.vz;
+        func_80087B84(&scratch->work, &scratch->up, &scratch->m);
+        object->matrix = scratch->m;
+        actor->position.vx += D_8009CD68[actor->unk58].dx * (actor->unk4A >> 12);
+        actor->position.vz += D_8009CD68[actor->unk58].dz * (actor->unk4A >> 12);
+        actor->unk58 = (actor->unk58 + 1) & 0x1F;
+        func_80093354(&actor->position);
+        actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+        object->position.vx = actor->position.vx >> 12;
+        object->position.vy = actor->position.vy >> 12;
+        object->position.vz = actor->position.vz >> 12;
+        scratch->work.vx = (u16)D_8006EE54.unk60 - (actor->position.vx >> 12);
+        scratch->work.vz = (u16)D_8006EE54.unk64 - (actor->position.vz >> 12);
+        scratch->work.vy = D_8006EE54.unk62;
+        func_80093534(&scratch->work);
+        dock = SquareRoot0(scratch->work.vx * scratch->work.vx + scratch->work.vz * scratch->work.vz);
+        if (dock < 0x100 && scratch->work.vy >= -0xBF) {
+            actor->unk4A = 0;
+        } else if (dock < 0x300 && scratch->work.vy >= -0xBF) {
+            actor->unk4A -= 0x100;
+            if (actor->unk4A < 0) {
+                actor->unk4A = 0;
+            }
+        } else {
+            actor->unk4A += 0x200;
+            if (actor->unk4A > 0x4000) {
+                actor->unk4A = 0x4000;
+            }
+        }
+        if (actor->unk4A > 0x1000) {
+            scratch->wake.vx = object->position.vx;
+            scratch->wake.vy = object->position.vy;
+            scratch->wake.vz = object->position.vz;
+            func_8004A8EC(&object->matrix, &scratch->m2);
+            func_80097070(&scratch->m2, &scratch->wake_angle);
+            func_80089160(0x13, &scratch->wake, &scratch->wake_angle);
+        } else {
+            func_800894C8(0x13);
+        }
+    }
+    D_8006EE78[0] = actor->position.vx >> 12;
+    D_8006EE78[1] = actor->position.vz >> 12;
+    D_8006EE78[2] = actor->u.step;
+    scratch->work.vx = actor->position.vx;
+    scratch->work.vy = actor->position.vy + 0x30000;
+    scratch->work.vz = actor->position.vz;
+    func_8008BFD4(index, &scratch->work, 0x80, 0xB0);
+    return 1;
+}
 
 /* Start the actor circling above the map from the saved position (first
  * time: from 0, 0x480), and save it back. */

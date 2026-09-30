@@ -890,6 +890,23 @@ typedef struct {
 
 #define FLIGHT_SCRATCH ((FlightScratch *)0x1F800000)
 
+/* Scratchpad work area of the ferry update. */
+typedef struct {
+    VECTOR work;
+    VECTOR up;           /* 0x10 */
+    u8 pad20[0x80];
+    SVECTOR wake;        /* 0xA0 */
+    SVECTOR wake_angle;  /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX m;            /* 0xF0 */
+    u8 pad110[0x40];
+    MATRIX m2;           /* 0x150 */
+} FerryScratch;
+
+#define FERRY_SCRATCH ((FerryScratch *)0x1F800000)
+
+void func_80097070(MATRIX *m, SVECTOR *angle); /* matrix to angles */
+
 MATRIX *ScaleMatrix(MATRIX *m, VECTOR *scale);
 void func_8004A6DC(SVECTOR *v, VECTOR *out, s32 *flag); /* RotTrans */
 void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
