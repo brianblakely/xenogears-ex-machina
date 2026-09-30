@@ -6033,7 +6033,92 @@ void func_80092B74(u8 member, u8 ap) {
     D_800C3EA4->unkA230->unk66F = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800930AC);
+/* Build the member's gear value page: the four entries' names (gear text
+ * gearId * 4 + entry) and up to four-digit values (no leading zeros) into
+ * VRAM text images; each shown digit is taken off the value. */
+void func_800930AC(u8 member, u8 *present, u16 *values) {
+    RECT nameRect;
+    RECT onesRect;
+    RECT digitRect;
+    RECT rowRect;
+    RECT rightRect;
+    RECT rect;
+    TextImage images[4];
+    u16 divisors[3];
+    u8 shown;
+    s32 i;
+    s32 j;
+    u8 digit;
+
+    divisors[0] = 1000;
+    divisors[1] = 100;
+    divisors[2] = 10;
+    func_80077610();
+    func_80076EA4();
+    D_800D2DB0 = (u32 *)func_8008AC00(0x39);
+    bzero(D_800D2DB0, 0x618);
+    rect.x = 0x3C0;
+    rect.w = 0x3C;
+    rect.y = 0;
+    rect.h = 0xD;
+    func_800769E8(&rect, D_800D2DB0);
+    for (i = 0; i < 4; i++) {
+        images[i].pixels = (u32 *)func_8008AC00(0x1B);
+        bzero(images[i].pixels, 0x30C);
+        rowRect.x = 0x380;
+        rowRect.y = i * 16 + 0x100;
+        rowRect.w = 0x1B;
+        rowRect.h = 16;
+        func_800769E8(&rowRect, D_800D2DB0);
+        if (present[i] != 0xFF) {
+            func_80034EAC(func_80033A8C(D_800CCCE8.records[member].pilot.gearId * 4 + i), images[i].pixels, 0x1B, 0);
+            nameRect.x = 0x380;
+            nameRect.y = i * 16 + 0x102;
+            nameRect.w = 30;
+            nameRect.h = 13;
+            func_800769E8(&nameRect, images[i].pixels);
+        }
+        rightRect.x = 0x3C0;
+        rightRect.y = i * 16 + 0x100;
+        rightRect.w = 0x1B;
+        rightRect.h = 16;
+        func_800769E8(&rightRect, D_800D2DB0);
+        shown = 0;
+        for (j = 0; j < 3; j++) {
+            digitRect.x = j * 2 + 0x3C0;
+            digitRect.y = i * 16 + 0x102;
+            digitRect.w = 6;
+            digitRect.h = 13;
+            digit = values[i] / divisors[j];
+            if (digit != 0 || shown) {
+                func_800769E8(&digitRect, D_800C3E5C[digit].pixels);
+                shown = 1;
+                values[i] -= digit * divisors[j];
+            } else {
+                func_800769E8(&digitRect, D_800D2DB0);
+            }
+        }
+        onesRect.x = 0x3C6;
+        onesRect.y = i * 16 + 0x102;
+        onesRect.w = 6;
+        onesRect.h = 13;
+        if (present[i] != 0xFF) {
+            func_800769E8(&onesRect, D_800C3E5C[(u16)(values[i] % 10)].pixels);
+        } else {
+            func_800769E8(&onesRect, D_800D2DB0);
+        }
+    }
+    for (i = 0; i < 4; i++) {
+        func_800320E8(images[i].pixels);
+    }
+    func_800320E8(D_800D2DB0);
+    D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x94, 0x54, 0, 0, 0x60, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0xFC, 0x54, 0, 0, 0x20, 0x40);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 4;
+}
 
 /* Point the gear page `kind` quads at their images: the page title cell, the
  * command's state icon (9 sealed, 7 flag 0x1000, else 8) and its level frame
