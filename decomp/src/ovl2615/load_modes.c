@@ -39,15 +39,12 @@ void func_801E8088(TaskNode *node) {
 /* Shatter drawing: each cell still in front (z >= 0x40) as its triangle,
  * rotated and moved by the cell, projected with a 512 screen distance
  * about the screen centre. */
-#ifdef NON_MATCHING
 void func_801E80B4(TaskNode *node) {
     ShatterTask *task = node->object;
     ShatterCell *cell;
     POLY_FT3 *prim;
-    SVECTOR *triangle;
-    MATRIX m;
-    s32 ofx, ofy, screen;
-    s32 p, flag;
+    s32 ofx, ofy;
+    s32 screen;
     s32 half, row, col;
 
     ReadGeomOffset(&ofx, &ofy);
@@ -60,16 +57,20 @@ void func_801E80B4(TaskNode *node) {
                 cell = &task->cells[half][row][col];
                 prim = &cell->prim[D_800C3EB0.buffer];
                 if (cell->trans.vz >= 0x40) {
+                    SVECTOR *triangle;
+                    MATRIX m;
+                    s32 p, flag;
+                    s32 otz;
+
                     func_8003F738(&cell->rot, &m);
                     TransMatrix(&m, &cell->trans);
                     SetRotMatrix(&m);
                     SetTransMatrix(&m);
                     triangle = half == 0 ? D_801E9640 : D_801E9658;
-                    AddPrim(D_801E96B8 + (RotTransPers3(&triangle[0], &triangle[1], &triangle[2],
-                                                        (s32 *)&prim->x0, (s32 *)&prim->x1,
-                                                        (s32 *)&prim->x2, &p, &flag) >>
-                                          6),
-                            prim);
+                    otz = RotTransPers3(&triangle[0], &triangle[1], &triangle[2],
+                                        (s32 *)&prim->x0, (s32 *)&prim->x1, (s32 *)&prim->x2,
+                                        &p, &flag) >> 6;
+                    AddPrim(D_801E96B8 + otz, prim);
                 }
             }
         }
@@ -77,9 +78,6 @@ void func_801E80B4(TaskNode *node) {
     SetGeomOffset(ofx, ofy);
     SetGeomScreen(screen);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E80B4);
-#endif
 
 /* Release the shatter task after the drawing finishes. */
 void func_801E827C(void *block) {
