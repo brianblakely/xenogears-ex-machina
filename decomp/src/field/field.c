@@ -10079,7 +10079,94 @@ void func_800A2714(void) {
     }
 }
 
+#ifdef NON_MATCHING
+void func_800A28D4(void) {
+    s32 i;
+    FieldModel *model;
+    FieldActor *actor;
+    s32 *sprites;
+
+    if (D_8004F30C != 0) {
+        func_800A3474();
+        for (i = 0; i < D_800ADBFC; i++) {
+            actor = D_800AF880.components.descriptors[i].actor;
+            if (!(actor->unk126[0] & 0x80)) {
+                func_80076AC0(i, actor->unk126[1], D_8005A414[actor->unk126[0]], actor->unk130_28 & 3,
+                              actor->unk134 & 0xF, D_800AF880.components.descriptors[i].actor->unk126[0],
+                              (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
+            } else {
+                sprites = D_800AF880.components.sprites;
+                func_80076AC0(i, actor->unk126[1], (u8 *)(sprites[(actor->unk126[0] & 0x7F) + 1] + (s32)sprites),
+                              actor->unk130_28 & 3, actor->unk134 & 0xF,
+                              D_800AF880.components.descriptors[i].actor->unk126[0],
+                              (D_800AF880.components.descriptors[i].actor->unk134 >> 4) & 1);
+                switch (D_800AF880.components.descriptors[i].actor->state.bits.unk16) {
+                case 1:
+                    func_8002303C(D_800AF880.components.descriptors[i].model, 2, 0);
+                    D_800AF880.components.descriptors[i].model->animation->unk18[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[3] = D_800AF880.components.descriptors[i].actor->unk130;
+                    break;
+                case 2:
+                    func_8002303C(D_800AF880.components.descriptors[i].model, 3, 0);
+                    D_800AF880.components.descriptors[i].model->animation->unk18[2] = D_800AF880.components.descriptors[i].actor->state.bits.unk18;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[3] = D_800AF880.components.descriptors[i].actor->unk130;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[4] = D_800AF880.components.descriptors[i].actor->unk130_9;
+                    D_800AF880.components.descriptors[i].model->animation->unk18[5] = D_800AF880.components.descriptors[i].actor->unk130_19;
+                    break;
+                }
+            }
+        }
+        if (D_800B2078.unk2268 != 0) {
+            for (i = 0; i < 3; i++) {
+                if (D_8005A444[i] != 0xFF) {
+                    if (D_8005A39C->unk22B1[i] != 0) {
+                        model = D_800AF880.components.descriptors[D_8005A444[i]].model;
+                        D_800AF880.components.descriptors[D_8005A444[i]].model = D_800AF880.components.descriptors[D_8006F990[i]].model;
+                        D_800AF880.components.descriptors[D_8006F990[i]].model = model;
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags |= 0x200;
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags &= ~0x500;
+                        D_800AF880.components.descriptors[D_8006F990[i]].flags |= 0x20;
+                    } else {
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags |= 0x400;
+                        D_800AF880.components.descriptors[D_8006F990[i]].actor->flags &= ~0x300;
+                    }
+                }
+            }
+        }
+    } else {
+        func_800A3074(0x10, 0);
+        func_800A30B4();
+        for (i = 0; i < D_800ADBFC; i++) {
+            D_800AFD1C = i;
+            D_800B06B8 = &D_800AF880.components.descriptors[i];
+            D_800B0078 = D_800B06B8->actor;
+            D_800B0078->pc = func_800A3090(i, 2);
+            if (D_800ADC00[D_800B0078->pc] == 0) {
+                D_800B0078->layer_flags |= 0x4000000;
+            }
+            D_800AFD1C = i;
+            D_800B06B8 = &D_800AF880.components.descriptors[i];
+            D_800B0078 = D_800B06B8->actor;
+            D_800B0078->pc = func_800A3090(i, 0);
+        }
+        for (i = 0; i < D_800ADBFC; i++) {
+            D_800AFD1C = i;
+            D_800AFC74 = 0;
+            D_800AFFEC = 0;
+            D_800B06B8 = &D_800AF880.components.descriptors[i];
+            D_800B0078 = D_800B06B8->actor;
+            func_800A1EC8(0xFFFF);
+            if (D_800AFC74 == 0) {
+                sprites = D_800AF880.components.sprites;
+                func_80076AC0(i, 0, (u8 *)(sprites[1] + (s32)sprites), 0, 0, 0x80, 0);
+                D_800B0078->layer_flags |= 0x800;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A28D4);
+#endif
 
 /* Advance one byte. */
 void func_800A2FC0(void) {

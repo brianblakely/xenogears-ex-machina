@@ -118,6 +118,10 @@ void func_80021EBC(FieldModel *model, u8 *checkpoint);
         *(Block *)(destination) = *(Block *)(source);            \
     }
 
+extern s32 D_800AFC74;         /* set when an initialization made a sprite */
+void func_8002303C(FieldModel *model, s32, s32);
+void func_800A3474(void);
+
 s32 func_8009EB48(FieldActor *actor, s32 tag); /* -1 when a slot has `tag` */
 s32 func_800A3090(s32 actor, s32 event);       /* entry PC of an actor's event */
 
