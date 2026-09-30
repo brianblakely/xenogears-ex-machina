@@ -1084,7 +1084,6 @@ void func_8008FB98(void) {
     D_800AF930.scripted_zoom = (D_800AF930.projection * D_800AF930.distance) >> 12;
 }
 
-extern s32 D_800B21D8[]; /* camera counter */
 
 /* Leave the scripted camera: mode 0 just clears the hold flag; mode 1 either
  * ends at once (operand 0, also skipping the next opcode) or blends back over
@@ -1103,7 +1102,7 @@ void func_8008FC4C(void) {
             D_800AF930.mode = 0;
             D_800AF930.flags &= 0x7FFF;
             D_800B0078->pc += 3;
-            D_800B21D8[0] = 2;
+            D_800B2174.camera_counter = 2;
         } else {
             D_800AF930.mode = 2;
             D_800AF930.target_a = frames;
@@ -1524,24 +1523,19 @@ void func_80091720(void) {
     D_800B0078->pc += 3;
 }
 
-extern s16 D_800B218E;
-extern u8 D_800B2190[3];
-extern u8 D_800B2194[3];
-extern s16 D_800B2198;
-extern s16 D_800B219A;
 void func_80073E38(void);
 
 /* Set two colour triples and two ranges from operands, then apply them. */
 void func_80091944(void) {
-    D_800B2190[0] = func_800ACDEC(1);
-    D_800B2190[1] = func_800ACDEC(3);
-    D_800B2190[2] = func_800ACDEC(5);
-    D_800B2194[0] = func_800ACDEC(7);
-    D_800B2194[1] = func_800ACDEC(9);
-    D_800B2194[2] = func_800ACDEC(11);
-    D_800B2198 = func_800ACDEC(13);
-    D_800B219A = func_800ACDEC(15);
-    D_800B218E = 1;
+    D_800B2174.fog_color[0] = func_800ACDEC(1);
+    D_800B2174.fog_color[1] = func_800ACDEC(3);
+    D_800B2174.fog_color[2] = func_800ACDEC(5);
+    D_800B2174.far_color[0] = func_800ACDEC(7);
+    D_800B2174.far_color[1] = func_800ACDEC(9);
+    D_800B2174.far_color[2] = func_800ACDEC(11);
+    D_800B2174.fog_range[0] = func_800ACDEC(13);
+    D_800B2174.fog_range[1] = func_800ACDEC(15);
+    D_800B2174.sprite_gate = 1;
     func_80073E38();
     D_800B0078->pc += 17;
 }
@@ -1555,13 +1549,12 @@ void func_80091A08(void) {
     D_800B0078->pc += 9;
 }
 
-extern u8 D_800B219C[3];
 
 /* Set a colour triple from three operands. */
 void func_80091A78(void) {
-    D_800B219C[0] = func_800ACDEC(1);
-    D_800B219C[1] = func_800ACDEC(3);
-    D_800B219C[2] = func_800ACDEC(5);
+    D_800B2174.clear_color[0] = func_800ACDEC(1);
+    D_800B2174.clear_color[1] = func_800ACDEC(3);
+    D_800B2174.clear_color[2] = func_800ACDEC(5);
     D_800B0078->pc += 7;
 }
 
@@ -1776,34 +1769,31 @@ void func_800924D4(s32 index, s32 which, s32 value) {
     }
 }
 
-extern s32 D_800B217C;
-extern s16 D_800B21D6;
 
-/* Select mode 0..2 in D_800B217C and set D_800B21D6 to 8, 6 or 4. */
+/* Select mode 0..2 (unk17C) and set the text speed to 8, 6 or 4. */
 void func_800925A0(void) {
     s32 mode;
 
     mode = func_800ACDEC(1);
-    D_800B217C = mode;
+    D_800B2174.unk17C = mode;
     switch (mode) {
     case 0:
-        D_800B21D6 = 8;
+        D_800B2174.text_speed = 8;
         break;
     case 1:
-        D_800B21D6 = 6;
+        D_800B2174.text_speed = 6;
         break;
     case 2:
-        D_800B21D6 = 4;
+        D_800B2174.text_speed = 4;
         break;
     }
     D_800B0078->pc += 3;
 }
 
-extern s16 D_800B217A[];
 
-/* Set D_800B217A from a raw operand. */
+/* Set the input mask from a raw operand. */
 void func_80092628(void) {
-    D_800B217A[0] = func_800ACDB8(1);
+    D_800B2174.input_mask = func_800ACDB8(1);
     D_800B0078->pc += 3;
 }
 
@@ -1894,12 +1884,11 @@ void func_80092F44(void) {
 
 extern s32 D_800ADBD8;
 extern s32 D_800B0064;
-extern s16 D_800B2176;
 
 /* When D_800ADBD8 is set, consume it and store an operand in D_800B0064. */
 void func_80092FB4(void) {
     if (D_800ADBD8 != 0) {
-        D_800B2176 = -1;
+        D_800B2174.encounter_inhibition = -1;
         D_800ADBD8 = 0;
         D_800B0064 = func_800ACDEC(1);
     }
@@ -1943,7 +1932,7 @@ void func_800932D0(void) {
         D_800ADB70 != 0) {
         D_800B00C0 = 1;
     } else {
-        D_800B2176 = -1;
+        D_800B2174.encounter_inhibition = -1;
         if (D_800ADBEC != 0) {
             entry = func_800ACDEC(3);
             field = func_800ACDEC(1);
@@ -2078,7 +2067,7 @@ void func_80093888(void) {
     s32 entry;
     s32 field;
 
-    D_800B2176 = -1;
+    D_800B2174.encounter_inhibition = -1;
     entry = func_800ACDEC(3);
     field = func_800ACDEC(1);
     func_80092F44();
@@ -2124,29 +2113,108 @@ void func_80093A04(void) {
     D_800B0078->pc += 3;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093A68);
+/* Clear the camera hold flag (0x8000). */
+void func_80093A68(void) {
+    D_800AF930.flags &= 0x7FFF;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093A98);
+/* Set the camera hold flag (0x8000). */
+void func_80093A98(void) {
+    D_800AF930.flags |= 0x8000;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093AC8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093B10);
+/* Release script control: clear the encounter inhibition, both control
+ * bytes and the camera hold flags. */
+void func_80093AC8(void) {
+    D_800B2174.encounter_inhibition = 0;
+    D_800B2174.script_control[0] = 0;
+    D_800B2174.script_control[1] = 0;
+    D_800AF930.flags &= 0x3FFF;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093BB0);
+/* Take script control (both control bytes, camera hold flags); re-runs
+ * while the field is not ready. */
+void func_80093B10(void) {
+    D_800B2174.encounter_inhibition = -1;
+    D_800B2174.script_control[0] = 1;
+    D_800B2174.script_control[1] = 1;
+    D_800AF930.flags |= 0xC000;
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0) {
+        D_800B00C0 = 1;
+        D_800B0078->pc -= 1;
+        return;
+    }
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093BD4);
+/* Clear script control byte 0. */
+void func_80093BB0(void) {
+    D_800B2174.script_control[0] = 0;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093BFC);
+/* Set script control byte 0. */
+void func_80093BD4(void) {
+    D_800B2174.script_control[0] = 1;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093C20);
+/* Clear script control byte 1. */
+void func_80093BFC(void) {
+    D_800B2174.script_control[1] = 0;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093C48);
+/* Set script control byte 1. */
+void func_80093C20(void) {
+    D_800B2174.script_control[1] = 1;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093C6C);
+/* Clear the encounter inhibition. */
+void func_80093C48(void) {
+    D_800B2174.encounter_inhibition = 0;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093CD0);
+/* Inhibit encounters once the field is ready; yield until then. */
+void func_80093C6C(void) {
+    if (D_800ADBDC == 0 || D_800ADBE4 == 0) {
+        D_800B00C0 = 1;
+    } else {
+        D_800B2174.encounter_inhibition = -1;
+        D_800B0078->pc += 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093D48);
+/* Load a bytecode table byte (table offset + index) into a variable. */
+void func_80093CD0(void) {
+    u16 offset;
+
+    offset = func_800ACDB8(1);
+    offset += func_800ACDEC(5);
+    func_800A3074(func_800ACDB8(3), D_800ADC00[offset]);
+    D_800B0078->pc += 7;
+}
+
+/* Load a bytecode table halfword (unsigned when operand 7 is zero, else
+ * signed) into a variable. */
+void func_80093D48(void) {
+    u16 offset;
+
+    offset = func_800ACDB8(1);
+    offset += func_800ACDEC(5);
+    if (EVENT_OPERAND_BYTE(7) == 0) {
+        func_800A3074(func_800ACDB8(3), D_800ADC00[offset] | (D_800ADC00[offset + 1] << 8));
+    } else {
+        func_800A3074(func_800ACDB8(3), (s16)(D_800ADC00[offset] + (D_800ADC00[offset + 1] << 8)));
+    }
+    D_800B0078->pc += 8;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80093E30);
 

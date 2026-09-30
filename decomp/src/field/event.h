@@ -56,6 +56,29 @@ typedef struct GameState {
 extern GameState *D_8005A39C;
 extern s16 D_800C3A68[];            /* event variable bank */
 
+/* Field settings block at 800b2174 (meanings from src/reconstruction/
+ * original_layout.cpp); addressed as one aggregate. */
+typedef struct FieldSettings {
+    s16 talk_inhibited;         /* 174 */
+    s16 encounter_inhibition;   /* 176 */
+    s16 terrain_angle;          /* 178 */
+    s16 input_mask;             /* 17a */
+    s32 unk17C;                 /* 17c */
+    u8 unk180[0x18E - 0x180];
+    s16 sprite_gate;            /* 18e */
+    u8 fog_color[4];            /* 190 */
+    u8 far_color[4];            /* 194 */
+    s16 fog_range[2];           /* 198 */
+    u8 clear_color[4];          /* 19c */
+    u8 unk1A0[0x1D0 - 0x1A0];
+    u8 script_control[2];       /* 1d0 */
+    u8 unk1D2[0x1D6 - 0x1D2];
+    s16 text_speed;             /* 1d6 */
+    s32 camera_counter;         /* 1d8 */
+} FieldSettings;
+
+extern FieldSettings D_800B2174;
+
 extern u8 *D_800ADC00;              /* event bytecode */
 extern FieldDescriptor *D_800AFB10; /* descriptor table */
 extern s32 D_800AFD1C;              /* current actor index */
