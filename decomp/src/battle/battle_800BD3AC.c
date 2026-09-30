@@ -18,8 +18,100 @@
 #include "popup.h"
 #include "frame.h"
 #include "stage.h"
+#include "battle_command.h"
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BD3AC);
+/* Show value over sprite as a damage popup of kind (replacing the sprite's
+ * earlier ones): 1 a prefix glyph, 2 green, 3 magenta with a prefix, 4 a
+ * single glyph that only fades, 5 red, 10 and 11 (blue) with a suffix
+ * glyph; the digits follow. Only while the battle menu is open. */
+void func_800BD3AC(BattleSprite *sprite, s32 value, s32 kind) {
+    DamagePopup *popup;
+    u8 text[0x38];
+    s32 x;
+    s32 i;
+
+    if (D_800C3610 == NULL) {
+        return;
+    }
+    func_800BDE58();
+    D_800C4929 = 0;
+    for (popup = D_800C3750; popup != NULL; popup = popup->next) {
+        if (popup->sprite == sprite) {
+            popup->task.destroy(&popup->task);
+        }
+    }
+    popup = func_8001D1D8(sizeof(DamagePopup), NULL, func_800BDC78, func_800BDA1C, func_800BD7A0);
+    popup->sprite = sprite;
+    popup->timer = 8;
+    popup->next = D_800C3750;
+    popup->x.fixed = sprite->x.fixed;
+    D_800C3750 = popup;
+    popup->y.fixed = sprite->y.fixed;
+    popup->z.fixed = sprite->z.fixed;
+    popup->scale.vx = 0x2000;
+    popup->scale.vy = 0x2000;
+    popup->scale.vz = 0x2000;
+    popup->colour.rgbc[3] = 0x2D;
+    popup->angles.vx = 0;
+    popup->angles.vy = 0;
+    popup->angles.vz = 0;
+    popup->colour.rgbc[0] = 0x80;
+    popup->colour.rgbc[1] = 0x80;
+    popup->colour.rgbc[2] = 0x80;
+    popup->right = sprite->motion.bits.flip;
+    popup->glyphCount = 0;
+    if (kind != 4) {
+        func_800BE6E8(value, text, 5, 0, 0);
+        x = D_800C3752[text[0]];
+    }
+    switch (kind) {
+    case 4:
+        popup->timer = 0x40;
+        popup->glyphCount = func_80026DCC(D_800D2F5C, 0x7C, popup->glyphs, -0x14, -0x10);
+        popup->colour.rgbc[3] = (popup->colour.rgbc[3] & ~1) | 2;
+        func_8001CD6C(popup, func_800BDB08);
+        break;
+    case 5:
+        popup->colour.rgbc[0] = 0x80;
+        popup->colour.rgbc[1] = 0;
+        popup->colour.rgbc[2] = 0;
+        popup->colour.rgbc[3] &= ~1;
+        break;
+    case 10:
+        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x7F, &popup->glyphs[popup->glyphCount], x, 0);
+        break;
+    case 11:
+        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x91, &popup->glyphs[popup->glyphCount], x, 0);
+        popup->colour.rgbc[2] = 0x80;
+        popup->colour.rgbc[0] = 0;
+        popup->colour.rgbc[1] = 0;
+        popup->colour.rgbc[3] &= ~1;
+        break;
+    case 1:
+        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
+        x += 0x20;
+        break;
+    case 3:
+        popup->glyphCount += func_80026DCC(D_800D2F5C, 0x80, &popup->glyphs[popup->glyphCount], x, -0x10);
+        popup->colour.rgbc[0] = 0x80;
+        popup->colour.rgbc[2] = 0x80;
+        popup->colour.rgbc[1] = 0;
+        popup->colour.rgbc[3] &= ~1;
+        x += 0x20;
+        break;
+    case 2:
+        popup->colour.rgbc[0] = 0;
+        popup->colour.rgbc[1] = 0x80;
+        popup->colour.rgbc[2] = 0;
+        popup->colour.rgbc[3] &= ~1;
+        break;
+    }
+    if (kind != 4) {
+        for (i = 0; i != text[0]; i++, x += 10) {
+            popup->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &popup->glyphs[popup->glyphCount], x, -0x10);
+        }
+    }
+}
 
 /* Damage popup destroy: unlink it from D_800C3750 and end it. */
 void func_800BD7A0(BattleTask *task) {
@@ -41,7 +133,59 @@ void func_800BD7A0(BattleTask *task) {
     func_8001D19C(task);
 }
 
+#ifdef NON_MATCHING
+/* Draw a popup glyph as a textured quad in colour (its word also sets the
+ * primitive code) through the current matrices, added to the ordering
+ * table's first entry, while the primitive buffer has room. Nonmatching:
+ * the corner sums are scheduled before the first corner stores and the
+ * registers differ; the texture half matches. */
+void func_800BD810(PopupGlyph *glyph, s32 colour) {
+    POLY_FT4 *poly = (POLY_FT4 *)D_80059580;
+    long p;
+    long flag;
+    u16 x, y;
+    u8 w, h;
+    u8 u, v;
+    u8 uw, vh;
+
+    if (D_80059580 + sizeof(POLY_FT4) < D_80059534) {
+        D_80059580 += sizeof(POLY_FT4);
+        setlen(poly, 9);
+        *(s32 *)&poly->r0 = colour;
+        poly->tpage = glyph->tpage;
+        poly->clut = glyph->clut;
+        w = glyph->w;
+        h = glyph->h;
+        x = glyph->x;
+        y = glyph->y;
+        D_8004FB98[0].vx = x;
+        D_8004FB98[0].vy = y;
+        D_8004FB98[1].vx = x + w;
+        D_8004FB98[1].vy = y;
+        D_8004FB98[2].vx = x + w;
+        D_8004FB98[2].vy = y + h;
+        D_8004FB98[3].vx = x;
+        D_8004FB98[3].vy = y + h;
+        RotTransPers4(&D_8004FB98[0], &D_8004FB98[1], &D_8004FB98[2], &D_8004FB98[3], (long *)&poly->x0,
+                      (long *)&poly->x1, (long *)&poly->x3, (long *)&poly->x2, &p, &flag);
+        u = glyph->u;
+        v = glyph->v;
+        uw = glyph->w;
+        vh = glyph->h;
+        poly->u0 = u;
+        poly->v0 = v;
+        poly->u1 = u + uw;
+        poly->v1 = v;
+        poly->u2 = u;
+        poly->v2 = v + vh;
+        poly->u3 = u + uw;
+        poly->v3 = v + vh;
+        addPrim(D_8005956C, poly);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800BD3AC", func_800BD810);
+#endif
 
 /* The camera-space offset of point's projection from the geometry offset
  * (doubled), at the screen distance. */

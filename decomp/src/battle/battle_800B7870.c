@@ -209,7 +209,7 @@ void func_800B7C34(s32 index) {
  * sprite an effect sprite running its command motion (else the file becomes
  * the sprite's own resource); start its sound bank. 1 when the sprite runs
  * it itself. */
-s32 func_800B7E94(void) {
+u8 func_800B7E94(void) {
     VramPoint at;
     VramPoint clut;
     BattleTask wait;

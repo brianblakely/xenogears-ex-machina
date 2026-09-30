@@ -115,6 +115,9 @@ typedef struct BattleSprite {
         u8 pad4[4];
         s32 field8;
         s16 fieldC;
+        struct {
+            s16 a, b;
+        } fieldE;          /* copied whole (800B9508) */
     } *resource;           /* 0x7C */
     u16 field80;
     u16 field82;           /* 0x82 */

@@ -114,13 +114,14 @@ typedef struct BattleMenu {
     void (*update)(struct BattleMenu *menu); /* 0x08 */
     u8 padC[0x1C - 0xC];
     s32 state;                              /* 0x1C */
-    u8 pad20[0x24 - 0x20];
+    s32 turnSlot;                           /* 0x20: the slot whose turn it is */
     s32 slot;                               /* 0x24: the acting slot */
     s32 targetSlot;                         /* 0x28 */
     s32 field2C;                            /* 0x2C: the next path point */
     s32 field30;                            /* 0x30 */
     s32 field34;                            /* 0x34 */
-    u8 pad38[0x44 - 0x38];
+    u8 pad38[0x40 - 0x38];
+    s32 field40;                            /* 0x40 */
     s32 field44;                            /* 0x44 */
     u8 field48;                             /* 0x48 */
     u8 field49;                             /* 0x49 */
@@ -151,7 +152,7 @@ void func_80037324(u32 *ot);
 void func_80280A9C(void); /* the debugger's frame hook */
 s32 func_8003569C(s32 pad);
 void func_800B8354(void);
-s32 func_800B7E94(void);
+u8 func_800B7E94(void); /* start the loaded single action file; 1 when the acting sprite runs it itself */
 void func_800B89F4(void);
 void func_800BED30(void);
 void func_800BE108(void);
@@ -250,7 +251,7 @@ s32 func_800BF720(void);
 /* Requested loads, gear restarts and effect sprites (800BF9EC-800BFDA8). */
 extern u8 D_800C3620;            /* the sound bank of file 5 is loaded */
 extern u8 D_800C3621;            /* upload the images of file 1 */
-extern s8 D_800C3622;
+extern u8 D_800C3622;            /* wave bank 7 is loaded (a gear frame's turn) */
 extern u8 D_800C362C;            /* restart the party's gears (2: all but the acting) */
 extern s32 D_800C3A6C;
 extern struct ActorTask *D_8005958C;   /* the main task list */
