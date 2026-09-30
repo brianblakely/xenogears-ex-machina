@@ -6247,7 +6247,106 @@ s16 func_80097610(void) {
 void func_8009795C(void) {
 }
 
+#ifdef NON_MATCHING
+/* Roll a status onto the target (never a gear): with the chance in percent,
+ * check the kind's immunities and clear the statuses it overrides, then set
+ * the flag bits in the kind's status word and show its message. Returns 1
+ * when the status took (or cancelled its opposite). */
+s8 func_80097964(u8 chance, u8 kind, u16 flags) {
+    if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+        return 0;
+    }
+    if (chance < rand() % 100) {
+        return 0;
+    }
+    switch (kind) {
+    case 0:
+        if (D_800C3E34->pilot.status7E & (flags & 0xFFFD)) {
+            return 0;
+        }
+        if (flags & 0x1000) {
+            D_800C3E34->pilot.status84.half.active &= 0x7FFF;
+        }
+        break;
+    case 2:
+        if (flags & D_800C3E34->pilot.status82) {
+            return 0;
+        }
+        break;
+    case 5:
+        if ((D_800C3E34->pilot.status7C | D_800C3E34->pilot.status7E) & 1) {
+            return 0;
+        }
+        if (flags & 0x8000) {
+            D_800C3E34->pilot.status7C &= 0xEFFF;
+        }
+        break;
+    case 7:
+        if ((D_800C3E34->pilot.status80 | D_800C3E34->pilot.status82) & 1) {
+            return 0;
+        }
+        if (flags & 0xA) {
+            if (!(D_800C3E34->pilot.status88.half.active & 5)) {
+                break;
+            }
+            D_800C3E34->pilot.status88.half.active &= 0xFFFA;
+            return 1;
+        }
+        if (flags & 5) {
+            if (!(D_800C3E34->pilot.status88.half.active & 0xA)) {
+                break;
+            }
+            D_800C3E34->pilot.status88.half.active &= 0xFFF5;
+            return 1;
+        }
+    case 9:
+        if (flags & 0xF000) {
+            if (D_800C3E34->pilot.status8C.half.permanent & 0xF000) {
+                D_800C34B0->message = 0x39;
+                return 0;
+            }
+            D_800C3E34->pilot.status8C.half.active &= 0xFFF;
+        }
+        if (flags & 0xF00) {
+            if (D_800C3E34->pilot.status8C.half.permanent & 0xF00) {
+                D_800C34B0->message = 0x39;
+                return 0;
+            }
+            D_800C3E34->pilot.status8C.half.active &= 0xF0FF;
+        }
+        break;
+    }
+    switch (kind) {
+    case 0:
+        D_800C3E34->pilot.status7C = (flags | D_800C3E34->pilot.status7C) & 0xFFFD;
+        if (flags & 2) {
+            if ((u8)func_80099498()) {
+                D_800C3E34->pilot.status7C |= flags;
+                D_800C34B0->message = 0x31;
+                D_800C3E34->pilot.status7A = 0xFFEF;
+            } else {
+                D_800C34B0->message = 0x32;
+            }
+        }
+        break;
+    case 2:
+        D_800C3E34->pilot.status80 |= flags;
+        if (flags & 0x800) {
+            D_800C3E34->pilot.status7A |= 0x20;
+        }
+        break;
+    case 5:
+    case 7:
+    case 9:
+        (&D_800C3E34->pilot.status7A)[kind] |= flags;
+        break;
+    }
+    func_8009B684(kind, flags);
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80097964);
+#endif
 
 /* Clear the per-slot damage and result codes (12 entries). */
 void func_80097D08(void) {

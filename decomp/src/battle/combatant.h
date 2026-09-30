@@ -64,7 +64,7 @@ typedef struct {
     u16 status7C; /* bits 0xC002 mark a member out of action; 0x80 inactive,
                    * 0x1000 slow (ticks every other frame), 0x2000 delay
                    * counter statusTimers[0] active */
-    u8 pad7E[0x80 - 0x7E];
+    u16 status7E; /* immunities to status7C bits */
     u16 status80; /* 0x1000 turn timer held */
     u16 status82;
     StatusPair status84; /* 0x8000 haste */
