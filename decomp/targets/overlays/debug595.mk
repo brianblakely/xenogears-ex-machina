@@ -6,5 +6,5 @@ ORIGINAL_SHA256 := c123c880e71cfa0448a6ea4d9961bb0f1c0e2ced0595d9fa5eefc4a913248
 BUILD := .local/decomp/build/debug595
 IMAGE := .local/decomp/build/debug595.bin
 LINKER_SCRIPT := .local/decomp/debug595/debug595.ld
-LINKER_EXTRA := .local/decomp/debug595/undefined_syms_auto.txt .local/decomp/debug595/undefined_funcs_auto.txt
+LINKER_EXTRA := .local/decomp/debug595/undefined_syms_auto.txt .local/decomp/debug595/undefined_funcs_auto.txt decomp/targets/overlays/debug595.field.ld
 SOURCE_DIRS := decomp/src/debug595
