@@ -29,7 +29,9 @@ typedef struct {
     u8 unk2DC;         /* action index + 1 */
     u8 page;           /* +0x2DD command page */
     u8 menuDone;       /* +0x2DE */
-    u8 unk2DF[0x2E8 - 0x2DF];
+    u8 unk2DF;
+    u8 unk2E0;         /* shade step of the fading list quads (x16) */
+    u8 unk2E1[0x2E8 - 0x2E1];
     u8 unk2E8;         /* attack page target */
     u8 unk2E9;
     u8 unk2EA;

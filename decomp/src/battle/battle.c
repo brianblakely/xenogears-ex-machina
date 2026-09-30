@@ -5245,11 +5245,78 @@ void func_8008CD28(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CDE4);
+/* Confirm the member's gear command `index` (0-3, the gear's commands from
+ * 37): it needs the fuel it costs, the character's permission bit and no
+ * seal status for it. Hides the command windows and commits the command,
+ * paying the fuel; if the commit fails the windows come back. A refused
+ * command plays the error sound. Returns 1 when committed. */
+u8 func_8008CDE4(u8 member, u8 index) {
+    u16 sealed[4];
+    u8 committed;
+    u16 cost;
+    u16 command;
+    u8 refused;
+
+    sealed[0] = D_800C3234[13];
+    sealed[1] = D_800C3234[14];
+    sealed[2] = D_800C3234[15];
+    sealed[3] = D_800C3234[3];
+    committed = 0;
+    cost = D_800CCCE8.gearCommands[member][index + 37].hudState;
+    command = D_800CCCE8.gearCommands[member][index + 37].state;
+    refused = 1;
+
+    if (D_800CCCE8.records[member].gear.fuel >= cost &&
+        func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, index) != 0 &&
+        !(D_800CCCE8.records[member].pilot.status7A & sealed[index])) {
+        func_8008CCCC(1);
+        D_800D2D28->unkC6 = 1;
+        if (func_80085084(command, member, 0)) {
+            D_800CCCE8.records[member].gear.fuel -= cost;
+            committed = 1;
+        } else {
+            D_800D2D28->unkC6 = 0;
+            func_8008CD28(member);
+        }
+        refused = 0;
+    }
+    if (refused) {
+        func_8008AA74(0x4F);
+    }
+    return committed;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CFB8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008D328);
+/* Fade the list quads of both draw buffers (every other one from 800d2d28
+ * +0xa3): semi-transparent, raw texture, darker by the turn state's step
+ * each frame. When all have faded out, clear the fading flag (+0xcb). */
+void func_8008D328(void) {
+    s32 buffer;
+    s32 i;
+    u8 fading = 0;
+    u8 shade;
+
+    for (buffer = 0; buffer < 2; buffer++) {
+        if (D_800D2D28->unkD0[buffer] != 0) {
+            for (i = 0; i < D_800D2D28->unkD0[buffer] * 2; i += 2) {
+                SetSemiTrans(&D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3], 1);
+                SetShadeTex(&D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3], 0);
+                D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3].tpage |= 0x20;
+                shade = D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3].r0;
+                if (shade != 0) {
+                    fading = 1;
+                    (D_800C3EA4->unk641C[buffer] + (i + D_800D2D28->unkA3))->r0 = shade - D_800C3EAC->unk2E0 * 16;
+                    (D_800C3EA4->unk641C[buffer] + (i + D_800D2D28->unkA3))->g0 = shade - D_800C3EAC->unk2E0 * 16;
+                    (D_800C3EA4->unk641C[buffer] + (i + D_800D2D28->unkA3))->b0 = shade - D_800C3EAC->unk2E0 * 16;
+                }
+            }
+        }
+    }
+    if (!fading) {
+        D_800D2D28->unkCB = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008D598);
 
