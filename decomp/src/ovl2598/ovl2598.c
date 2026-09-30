@@ -8,7 +8,18 @@
 #include "party_menu.h"
 
 extern u16 D_801CB57C[];
+
+void func_801C9A08(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
+void func_801C9F80(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
+void func_801CA24C(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height);
+void func_801CAD14(void);
 extern u8 D_801CB400[];
+extern s32 D_801CB1A0[]; /* marker x by list row */
+extern s32 D_801CB1C4[]; /* marker y by list row */
+extern s32 D_801CB1E8[]; /* member panel layout x */
+extern s32 D_801CB22C[]; /* party panel layout x */
+extern s32 D_801CB274[]; /* member panel layout y */
+extern s32 D_801CB2B8[]; /* party panel layout y */
 extern u16 D_801CB344[]; /* name slot x */
 extern u16 D_801CB390[]; /* name slot y */
 extern s32 D_801CB404[]; /* file cursor -> slot */
@@ -1332,18 +1343,110 @@ INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C9F80);
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA24C);
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA5C0);
+/* Build status panel `panel` for character `id` in row `slot` of a layout
+ * (x/y tables, row height) and show it for this buffer. */
+void func_801CA5C0(StatusPanel *panel, u8 id, u8 slot, s32 *x, s32 *y, s32 row_height,
+                   u8 party) {
+    func_801C9A08(panel, id, slot, x, y, row_height);
+    func_801C9F80(panel, id, slot, x, y, row_height);
+    func_801CA24C(panel, id, slot, x, y, row_height);
+    panel->extra_count = 0;
+    panel->shown = 1;
+    panel->buffer = D_800625A0->buffer_index;
+}
 
+/* Build the three party panels and the six member panels of list page
+ * `first` (hiding panels without a character). */
+#ifdef NON_MATCHING
+void func_801CA690(u8 first) {
+    s32 i;
+    s32 index;
+    StatusPanel *panel;
+    u8 id;
+
+    for (i = 0; i < 3; i++) {
+        panel = D_800625A0->party_panels[i];
+        id = D_800625A0->flags->party[i];
+        if (id != 0xFF) {
+            func_801CA5C0(panel, id, i, D_801CB22C, D_801CB2B8, 0x38, 1);
+        } else {
+            panel->shown = 0;
+        }
+    }
+    D_800625A0->flags->status_on = 1;
+    for (i = 0; i < 6; i++) {
+        index = first + i;
+        if (index >= 11) {
+            break;
+        }
+        panel = D_800625A0->member_panels[i];
+        if (D_800625A0->members[index] != 0xFF) {
+            func_801C94A0();
+            func_801CA5C0(panel, D_800625A0->members[index], i, D_801CB1E8, D_801CB274, 0x20, 0);
+        } else {
+            panel->shown = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA690);
+#endif
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA810);
+/* Place cursor marker `marker` on row `row` of the party list (`list` 0)
+ * or the member list and show the markers. */
+void func_801CA810(u8 list, s32 row, u8 marker) {
+    s32 base = list ? 3 : 0;
+
+    if (marker == 0) {
+        func_8002675C(D_800625A0->sprite_sheet, 0x108, D_800625A0->markers->poly,
+                      D_800625A0->buffer_index, D_801CB1A0[base + row], D_801CB1C4[base + row],
+                      0x800);
+    } else {
+        func_8002675C(D_800625A0->sprite_sheet, 0x108, &D_800625A0->markers->poly[2],
+                      D_800625A0->buffer_index, D_801CB1A0[base + row], D_801CB1C4[base + row],
+                      0x800);
+    }
+    D_800625A0->markers->shown[marker] = 1;
+    D_800625A0->markers->buffer[marker] = D_800625A0->buffer_index;
+    D_800625A0->flags->markers_on = 1;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CA944);
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAB04);
+/* Hide the markers, let one frame pass and release them. */
+void func_801CAB04(void) {
+    D_800625A0->flags->markers_on = 0;
+    func_801C94A0();
+    func_800320E8(D_800625A0->markers);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAB48);
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CAD14);
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801CB0A8);
+/* Overlay entry: allocate and set up the party screen, run it and leave. */
+void func_801CB0A8(void) {
+    MenuState *state;
+
+    func_801C5034(1);
+    func_801C5098(1);
+    func_801C50FC(1);
+    func_801C5160(1);
+    func_801C51C4(1);
+    func_801C5228(1);
+    func_801C528C(1);
+    state = D_800625A0;
+    state->block_350->screen.x = 0x2C0;
+    state->block_350->screen.y = 0x100;
+    state->block_350->screen.w = 0x140;
+    state->block_350->screen.h = 0xE0;
+    state->backdrop->b_15B = 0x40;
+    func_801C559C();
+    func_801C5714();
+    func_801C5B90();
+    func_801C5DA0();
+    func_801C5BEC();
+    D_800625A0->active = 1;
+    func_801CAD14();
+    func_801C9748();
+}
