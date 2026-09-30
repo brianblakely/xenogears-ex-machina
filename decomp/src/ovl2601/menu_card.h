@@ -410,6 +410,13 @@ typedef struct {
 
 extern GameData D_8006D634;
 
+/* An entry of the item table (resource 7, 10h bytes). */
+typedef struct {
+    u8 unk0[6];
+    u8 flags; /* 06: 10h cannot be sold */
+    u8 unk7[9];
+} ItemInfo;
+
 /* A party member's detail view; its nine stat words at +b8. */
 typedef struct {
     u8 unk0[0xB8];
@@ -666,7 +673,11 @@ void func_801CC720(u8 menu);
 void func_801C70B8(void);
 void func_801C7314(u8 index);
 void func_80033B34(u8 *codes, u8 *text, s32 count); /* codes to text */
-void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 unk4, u8 *counts2, u8 unk6);
+void func_801D0E68(s32 n, u8 *ids, u8 *counts, u8 kind, u8 same_kind, u8 *kinds, u8 member);
+void func_801D0C18(u32 gold, u8 *ids, u8 *amounts, s32 n, u8 *inv_ids, u8 *inv_counts, u8 *kinds,
+                   u8 inventory, u8 member);
+u32 func_801CFF58(u8 id, u8 kind);
+void func_801D05BC(s32 top, u8 *ids, u8 *kinds, u8 *chosen, u8 *held);
 void func_801D1968(u8 unk0, u8 unk1);
 void func_801C50E8(u32 value);
 u16 func_801C50CC();
