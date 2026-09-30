@@ -119,7 +119,8 @@ typedef struct MenuState {
     void *sheet; /* 2DC: sprite sheet */
     void *labels; /* 2E0: label text */
     MenuSoundBank *effectBank; /* 2E4: menu sound effect bank */
-    u8 pad2E8[0x20];
+    u8 pad2E8[0x4];
+    s32 time[7]; /* 2EC: play time digits: hours (three), minutes and seconds (two each) */
     s32 bufferIndex; /* 308: 0/1: the buffer being built; the drawing callback clears it */
     u8 pad30C[0x10];
     u8 digits[9]; /* 31C: decimal digits of a number, leading zeros ff */
@@ -181,6 +182,8 @@ extern u8 D_8006F008;         /* game data: disc of the loaded file */
 extern u16 D_8006EF64;        /* game data: save title line of text file 1 */
 extern u8 D_800594D0;         /* load result: 0, 1 title timeout, 2 loaded */
 
+extern u16 D_8005948C;         /* pad buttons pressed this frame */
+extern u16 D_800594A4;         /* pad buttons of the dequeued input (repeating) */
 extern s32 D_80059488;         /* play time in frames */
 extern s32 *D_8005917C;       /* stack guard word, -1 while intact */
 
@@ -215,9 +218,16 @@ void func_80028A60(s32 arg0);                                /* wait for the rea
 void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
 void func_80033698(s32 x, s32 y);
+s32 func_80035734(s32 port);  /* pad connected */
+s32 func_80035CDC(void);      /* dequeue pad input */
+void func_80035DB0(void);
+s32 func_80036410(void);
+void func_80037E8C(void);     /* resume sound */
+void func_80037EE4(void);     /* pause sound */
 void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
 void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
 void func_80040484(s32 event);           /* EnableEvent */
+s32 func_80040494(s32 event);            /* TestEvent */
 void func_800404D4(void);                /* EnterCriticalSection */
 void func_800404E4(void);                /* ExitCriticalSection */
 void func_80043CC4(POLY_G4 *poly);       /* SetPolyG4 */
@@ -251,7 +261,7 @@ void func_801C6F70(void);
 void func_801C7B0C(void);
 void func_801C7BF4(void);
 void func_801C7D78(void);
-void func_801C7F34(s32 frames);
+void func_801C7F34(u32 frames);
 u8 func_801C881C(void);
 void func_801C8BEC(void);
 void func_801C8EE8(void);
@@ -266,6 +276,8 @@ void func_801D22F4(u8 arg0);
 void func_801D2484(void);
 void func_801D2968(void);
 void func_801D2D38(void);
+void func_801D2F4C(u8 message);
+void func_801D32B4(void);
 u8 func_801D9808(void);
 u8 func_801D9F98(u8 mode, u8 save);
 void func_801D1EB0(void);
@@ -283,6 +295,8 @@ void func_801E8044(u8 count, u8 *placement);
 void func_801E8070(u8 count, u8 *labels, u8 *table, u8 *arg3, u8 *placement, u8 selected, s32 arg6,
                    s32 arg7);
 void func_801E8474(u8 count, u8 *positions);
+void func_801E92CC(void);
+s32 func_801E93A0(s32 disc);
 void func_801E8978(u8 count, u8 cursor, u8 *positions);
 
 #endif

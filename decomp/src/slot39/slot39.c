@@ -622,9 +622,112 @@ void func_801C7BF4(void) {
     func_801C8EE8();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C7D78);
+/* Decode this frame's input into D_800625A0->input (0-3 directions, 4-7 the
+ * face buttons, 9/10 the shoulder buttons, 12 select, 8 none), playing the
+ * cursor sounds; while the pad is disconnected, pause the sound and the play
+ * time. */
+void func_801C7D78(void) {
+    u8 waiting;
+    u8 paused;
+    s32 frames;
+    u8 input;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C7F34);
+    waiting = 1;
+    paused = 0;
+    do {
+        if (func_80035734(0) == 0) {
+            if (!paused) {
+                paused++;
+                func_80037EE4();
+                frames = D_80059488;
+            }
+        } else {
+            waiting--;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = frames;
+            }
+        }
+    } while (waiting);
+    input = 8;
+    if (func_80036410() != 0) {
+        func_80035DB0();
+    } else {
+        while (func_80035CDC() != 0) {
+            if (D_800594A4 & 0x2000) {
+                input = 0;
+                func_801C8574(1);
+                break;
+            }
+            if (D_800594A4 & 0x4000) {
+                input = 1;
+                func_801C8574(1);
+                break;
+            }
+            if (D_800594A4 & 0x8000) {
+                input = 2;
+                func_801C8574(1);
+                break;
+            }
+            if (D_800594A4 & 0x1000) {
+                input = 3;
+                func_801C8574(1);
+                break;
+            }
+            if (D_8005948C & 0x20) {
+                input = 4;
+                func_801C8574(2);
+                break;
+            }
+            if (D_8005948C & 0x40) {
+                input = 5;
+                func_801C8574(3);
+                break;
+            }
+            if (D_8005948C & 0x80) {
+                input = 6;
+                break;
+            }
+            if (D_8005948C & 0x10) {
+                input = 7;
+                break;
+            }
+            if (D_800594A4 & 4) {
+                input = 10;
+                func_801C8574(1);
+                break;
+            }
+            if (D_800594A4 & 8) {
+                input = 9;
+                func_801C8574(1);
+                break;
+            }
+            if (D_8005948C & 0x100) {
+                input = 12;
+                break;
+            }
+        }
+    }
+    D_800625A0->input = input;
+}
+
+/* Split the play time `frames` into the digits of hhh:mm:ss (the hundreds,
+ * tens and units of hours, then tens and units of minutes and seconds). */
+void func_801C7F34(u32 frames) {
+    D_800625A0->time[0] = frames / 21600000;
+    frames %= 21600000;
+    D_800625A0->time[1] = frames / 2160000;
+    frames %= 2160000;
+    D_800625A0->time[2] = frames / 216000;
+    frames %= 216000;
+    D_800625A0->time[3] = frames / 36000;
+    frames %= 36000;
+    D_800625A0->time[4] = frames / 3600;
+    frames %= 3600;
+    D_800625A0->time[5] = frames / 600;
+    frames %= 600;
+    D_800625A0->time[6] = frames / 60;
+}
 
 /* Split `value` into nine decimal digits, blanking (ff) the leading zeros. */
 void func_801C80B8(u32 value) {
@@ -727,7 +830,42 @@ u32 func_801C8678(u32 flags, u8 bit) {
     return flags & D_801E96E8[bit];
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8694);
+/* Ask for disc `disc` + 1 until it is in the drive, showing the change-disc
+ * notice (and, for a wrong disc, the wrong-disc message for 29 frames). */
+void func_801C8694(u8 disc) {
+    u8 checking;
+    u8 frames;
+
+    func_801D1E80();
+    checking = 1;
+    while (D_800625A0->viewMotion != 0) {
+        func_801C7BF4();
+    }
+    func_801D22F4(0);
+    while (checking) {
+        if (func_80028530() == disc + 1) {
+            checking = 0;
+        } else {
+            func_801E92CC();
+            func_801D2F4C(disc * 3 - 0x7d);
+            if (func_801E93A0(disc + 1) != 0) {
+                frames = 0x1d;
+                func_801D32B4();
+                func_801D2F4C(0x89);
+                do {
+                    frames--;
+                    func_801C7BF4();
+                } while (frames);
+                func_801D32B4();
+                func_801C7BF4();
+            } else {
+                func_801D32B4();
+                checking = 0;
+            }
+        }
+    }
+    func_801D2484();
+}
 
 /* Discard pending memory-card events. */
 void func_801C87C4(void) {
@@ -737,7 +875,27 @@ void func_801C87C4(void) {
     func_800404C4(0xf4000001, 0x2000);
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C881C);
+/* Wait for a memory-card event; returns 0 done, 1 error, 2 timeout, 3 new card. */
+u8 func_801C881C(void) {
+    for (;;) {
+        if (func_80040494(D_800625A0->card->events[3]) == 1) {
+            func_801C87C4();
+            return 3;
+        }
+        if (func_80040494(D_800625A0->card->events[1]) == 1) {
+            func_801C87C4();
+            return 1;
+        }
+        if (func_80040494(D_800625A0->card->events[0]) == 1) {
+            func_801C87C4();
+            return 0;
+        }
+        if (func_80040494(D_800625A0->card->events[2]) == 1) {
+            func_801C87C4();
+            return 2;
+        }
+    }
+}
 
 /* The D_801E9768 entry for the result of 801c881c, or -1 when 8004e784 fails. */
 s32 func_801C891C(void) {
