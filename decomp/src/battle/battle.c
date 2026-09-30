@@ -6,6 +6,12 @@
 #include "gte.h"
 #include "hud_draw.h"
 #include "battle_command.h"
+#include "window_draw.h"
+#include "formation_route.h"
+#include "gear_menu.h"
+#include "glyph_lists.h"
+#include "item_command.h"
+#include "result_input.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -4802,7 +4808,7 @@ void func_80080C94(u8 member) {
         ep = D_800CCCE8.records[member].pilot.ep;
         if (ep >= cost) {
             D_800CCCE8.records[member].pilot.ep = ep - cost;
-            D_800C3EAC->unk2DF[7] = choice[1];
+            D_800C3EAC->unk2E6 = choice[1];
             pass = 0;
             func_8008ADD0(member);
         }
@@ -5120,16 +5126,16 @@ u8 member;
  * register stays live at the exits). */
 s32 func_80081B58(u8 member) {
     D_800D366C = 0;
-    if (D_800C3EAC->unk2DF[2] != 0) {
+    if (D_800C3EAC->unk2E1[0] != 0) {
         return;
     }
-    D_800C3EAC->unk2DF[0] = 0;
+    D_800C3EAC->unk2DF = 0;
     func_8008189C(member);
     switch (D_800D3014) {
     case 5:
         if (D_800C3EAC->unk2D4[0] != D_800C3EAC->unk2D4[1]) {
             func_80080B64(member);
-            D_800C3EAC->unk2DF[2] = 1;
+            D_800C3EAC->unk2E1[0] = 1;
         } else {
             func_800B8DA4();
             D_800D366C = 1;
@@ -5188,40 +5194,40 @@ s32 func_80081B58(u8 member) {
     switch (D_800D3014) {
     case 4:
         if (func_80085EB4(4, member) && D_800C3EAC->unk2D4[0] - 3 >= 0) {
-            D_800C3EAC->unk2DF[5]++;
+            D_800C3EAC->unk2E1[3]++;
         }
-        D_800C3EAC->unk2DF[0]++;
+        D_800C3EAC->unk2DF++;
     case 7:
-        D_800C3EAC->unk2DF[0]++;
+        D_800C3EAC->unk2DF++;
     case 6:
-        D_800C3EAC->unk2DF[0]++;
-        if (D_800C3EAC->unk2D4[0] - D_800C3EAC->unk2DF[0] >= 0) {
+        D_800C3EAC->unk2DF++;
+        if (D_800C3EAC->unk2D4[0] - D_800C3EAC->unk2DF >= 0) {
             func_8008AA40(0x4D);
             func_800819A4(member);
             if (D_800D2D28->unkCB != 0) {
                 D_800C3EAC->page = 0x64;
-                D_800C3EAC->unk2DF[3] = 0xFF;
-                D_800C3EAC->unk2DF[1] = 1;
+                D_800C3EAC->unk2E1[1] = 0xFF;
+                D_800C3EAC->unk2E0 = 1;
             } else {
                 D_800C3EAC->page = 5;
-                D_800C3EAC->unk2DF[3] = 5;
+                D_800C3EAC->unk2E1[1] = 5;
             }
-            D_800C3EAC->unk2D4[0] -= D_800C3EAC->unk2DF[0];
+            D_800C3EAC->unk2D4[0] -= D_800C3EAC->unk2DF;
             func_80085D34();
             func_800861D0(D_800D3014, member);
-            D_800C3EAC->unk2DF[6] = func_80087AF0(member, D_800C3EAC->unk2DF[0]);
+            D_800C3EAC->unk2E1[4] = func_80087AF0(member, D_800C3EAC->unk2DF);
             D_800D2E06[member] = D_800C31D4[D_800C3EAC->unk2D4[1]][D_800C3EAC->unk2D4[0]] * 100 / 56;
-            D_800C3EAC->unk2DF[4] = 1;
+            D_800C3EAC->unk2E1[2] = 1;
         } else {
             func_8008AA40(0x4F);
         }
         if (D_800C3EAC->unk2D4[0] == 0) {
             func_80080B64(member);
-            D_800C3EAC->unk2DF[2] = 1;
+            D_800C3EAC->unk2E1[0] = 1;
         }
-        if (D_800C3EAC->unk2DF[6] != 0) {
+        if (D_800C3EAC->unk2E1[4] != 0) {
             func_80080B64(member);
-            D_800C3EAC->unk2DF[2] = 1;
+            D_800C3EAC->unk2E1[0] = 1;
         }
         break;
     case 5:
@@ -5244,10 +5250,10 @@ u8 member;
     case 7:
         if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
             if (func_8008C4A8(member)) {
-                D_800C3EAC->unk2DF[2] = 1;
+                D_800C3EAC->unk2E1[0] = 1;
             } else {
                 D_800C3EAC->page = 7;
-                D_800C3EAC->unk2DF[3] = 0xFF;
+                D_800C3EAC->unk2E1[1] = 0xFF;
             }
         } else {
             func_8008AA74(0x4F);
@@ -6003,16 +6009,16 @@ s32 func_80083948(u8 member) {
     s32 cost;
 
     D_800D366C = 0;
-    if (D_800C3EAC->unk2DF[2] != 0) {
+    if (D_800C3EAC->unk2E1[0] != 0) {
         return;
     }
     func_8008189C(member);
     switch (D_800D3014) {
     case 5:
         leave = 1;
-        if (D_800C3EAC->unk2DF[8] != 0 && D_800CCCE8.gearHud.level != 4) {
+        if (D_800C3EAC->unk2E7 != 0 && D_800CCCE8.gearHud.level != 4) {
             func_80080B64(member);
-            D_800C3EAC->unk2DF[2] = leave;
+            D_800C3EAC->unk2E1[0] = leave;
             leave = 0;
         }
         if (leave) {
@@ -6024,7 +6030,7 @@ s32 func_80083948(u8 member) {
             if (D_800CCCE8.gearHud.level != 4) {
                 func_8009413C(member, 1);
             } else {
-                D_800C3EAC->unk2DF[8] = 0;
+                D_800C3EAC->unk2E7 = 0;
                 D_800C3EAC->unk2D6 = 0;
             }
         }
@@ -6069,23 +6075,23 @@ s32 func_80083948(u8 member) {
         }
     }
     D_800D2D28->reaction[member] = 1;
-    if (D_800C3EAC->unk2DF[8] != 0) {
+    if (D_800C3EAC->unk2E7 != 0) {
         if (D_800CCCE8.gearHud.level != 4 &&
             (D_800CCCE8.gearHud.level == 0 || D_800CCCE8.gearHud.level - 1 < D_800C3EAC->unk2CC[0])) {
             func_80080B64(member);
-            D_800C3EAC->unk2DF[2] = 1;
+            D_800C3EAC->unk2E1[0] = 1;
             return;
         }
         if (func_80089C9C(D_800C48E8, D_800C3EAC->slots[member].defaultTarget)) {
             func_80080B64(member);
-            D_800C3EAC->unk2DF[2] = 1;
+            D_800C3EAC->unk2E1[0] = 1;
             return;
         }
     }
     switch (D_800D3014) {
     default:
-        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2DF[8] == 0) {
-            D_800C3EAC->unk2DF[8]++;
+        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2E7 == 0) {
+            D_800C3EAC->unk2E7++;
             func_80086F98(0xFF, member);
         }
         break;
@@ -6097,8 +6103,8 @@ s32 func_80083948(u8 member) {
         steps++;
     case 6:
         steps++;
-        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2DF[8] == 0) {
-            D_800C3EAC->unk2DF[8]++;
+        if (D_800CCCE8.gearHud.level == 4 && D_800C3EAC->unk2E7 == 0) {
+            D_800C3EAC->unk2E7++;
             func_80086F98(0xFF, member);
             break;
         }
@@ -6120,29 +6126,29 @@ s32 func_80083948(u8 member) {
                 D_800C4929 = 1;
                 func_800819A4(member);
                 if (D_800C3EAC->unk2D6 != 0) {
-                    D_800C3EAC->unk2DF[5]++;
+                    D_800C3EAC->unk2E1[3]++;
                 }
                 if (D_800D2D28->unkCB != 0) {
                     D_800C3EAC->page = 0x65;
-                    D_800C3EAC->unk2DF[3] = 0xFF;
-                    D_800C3EAC->unk2DF[1] = 1;
+                    D_800C3EAC->unk2E1[1] = 0xFF;
+                    D_800C3EAC->unk2E0 = 1;
                 } else {
                     D_800C3EAC->page = 0x19;
-                    D_800C3EAC->unk2DF[3] = 0x19;
+                    D_800C3EAC->unk2E1[1] = 0x19;
                 }
-                D_800C3EAC->unk2DF[5] = func_80086F98(steps - 1, member) == 0;
+                D_800C3EAC->unk2E1[3] = func_80086F98(steps - 1, member) == 0;
                 func_80087AF0(member, steps);
                 D_800CCCE8.records[member].gear.fuel -= STEP_FUEL[D_800C3EAC->unk2DC];
                 func_800898F0(member);
-                D_800C3EAC->unk2DF[8]++;
+                D_800C3EAC->unk2E7++;
             } else {
                 D_800D366C = 1;
                 func_8008AA74(0x4F);
                 D_800D366C = 0;
             }
-            if (D_800C3EAC->unk2DF[5] != 0) {
+            if (D_800C3EAC->unk2E1[3] != 0) {
                 func_80080B64(member);
-                D_800C3EAC->unk2DF[2] = 1;
+                D_800C3EAC->unk2E1[0] = 1;
             }
         }
         break;
@@ -6874,7 +6880,11 @@ void func_80085B58(u8 slot) {
 }
 
 /* Commit the targets for an item/effect and run 80098c6c with `param`. */
-void func_80085C48(u8 actor, s16 targets, u16 param) {
+void func_80085C48(actor, targets, param)
+u8 actor;
+s16 targets;
+u16 param;
+{
     D_800C48E8 = 0;
     D_800D2C94.targets = targets;
     D_800D2C94.alive = D_800D39DC;
@@ -6889,7 +6899,7 @@ void func_80085C88(u8 queue) {
 }
 
 /* Commit an action (attacker, target mask, animation) and resolve it. */
-void func_80085CCC(u8 actor, u16 targets, s16 animation) {
+void func_80085CCC(u8 actor, u16 targets, u16 animation) {
     u8 action; /* 1-based */
 
     D_800C48E8 = 0;
@@ -7043,7 +7053,7 @@ void func_800861D0(u8 code, u8 member) {
     }
     D_800C3EAC->unk2CC[D_800C3EAC->unk2D6] = code - 4;
     D_800C3EAC->unk2D6++;
-    if (D_800C3EAC->unk2DF[5] != 0) {
+    if (D_800C3EAC->unk2E1[3] != 0) {
         D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = 0xFF;
     }
     for (combo = 0; combo < 13; combo++) {
@@ -7061,7 +7071,7 @@ void func_800861D0(u8 code, u8 member) {
     }
     /* From here the match flag's variable holds the combo. */
     match = combo;
-    if (D_800C3EAC->unk2DF[5] != 0) {
+    if (D_800C3EAC->unk2E1[3] != 0) {
         D_800C3EAC->unk2CC[D_800C3EAC->unk2D6 - 1] = code - 4;
     }
     D_800D2DB4->counts[12] = 0;
@@ -7111,7 +7121,7 @@ void func_800861D0(u8 code, u8 member) {
     case 12:
         if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask0, D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i]) &&
             D_800C3EAC->slots[member].items[2] == 0) {
-            if (D_800C3EAC->unk2DF[5] == 0) {
+            if (D_800C3EAC->unk2E1[3] == 0) {
                 D_800D2DB4->counts[12] +=
                 func_80076A10(7, &D_800D2DB4->unk5640[D_800D2DB4->counts[12] * 2], 0x50 + combo * 16, 0xD0 - index * 16);
             } else {
@@ -7122,7 +7132,7 @@ void func_800861D0(u8 code, u8 member) {
         }
         break;
     }
-    if (D_800C3EAC->unk2DF[5] != 0 && shown) {
+    if (D_800C3EAC->unk2E1[3] != 0 && shown) {
         D_800D2DB4->buffers[12] = D_800CCB04.buffer;
         D_800C3EAC->unk2DC = D_800C31AC[D_800CCCE8.records[member].pilot.characterId][12 - i] + 8;
         D_800D2DB4->buffers[11] = D_800CCB04.buffer;
@@ -7219,7 +7229,43 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086C88);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086F98);
 
+/* Plan the approach route from `actor` to `target`: the actor's position,
+ * then the route points the formation lists between their groups. Returns
+ * 1 when the actor's character is 4. (Nonmatching: the link address is
+ * formed as formation + from * 0x40 first.) */
+#ifdef NON_MATCHING
+s32 func_800877E0(u8 actor, u8 target) {
+    s32 result = 0;
+    s32 i;
+
+    for (i = 0; i < 9; i++) {
+        D_800C48EC[i].x = 0xFFFF;
+        D_800C48EC[i].z = 0xFFFF;
+    }
+    D_800C48EC[0].x = D_800C3EB4[actor].x;
+    D_800C48EC[0].z = D_800C3EB4[actor].z;
+    D_800C48EC[0].flag = 0;
+    for (i = 1; i < 8; i++) {
+        if (D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] == 0xFF) {
+            break;
+        }
+        D_800C48EC[i].x =
+            D_800D3364->areas[D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 7]
+                .centre.x;
+        D_800C48EC[i].z =
+            D_800D3364->areas[D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 7]
+                .centre.z;
+        D_800C48EC[i].flag =
+            D_800D3364->links[D_800C3EB4[actor].group][D_800C3EB4[target].group].points[i - 1] & 0x80;
+    }
+    if (D_800D2D24[actor] == 4) {
+        result = 1;
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800877E0);
+#endif
 
 /* Reset every event to type 0xff for `actor` against `target`'s bit. */
 void func_800879A8(u8 actor, u8 target) {
@@ -7248,9 +7294,75 @@ void func_80087A38(u8 member) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087AF0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
+/* Move `actor` into `target`'s formation group when it is another group
+ * with room (under four members): leave the old group, take the first free
+ * member place and stand at that place of the group's area. (Nonmatching:
+ * the target's record offset and register allocation.) */
+#ifdef NON_MATCHING
+void func_80087EDC(u8 actor, u8 target) {
+    u8 base;
+    s8 member;
 
+    if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        base = target < 3 ? (actor >= 3) * 8 : 0;
+        if (D_800D301C[D_800C3EB4[target].group + base].count < 4) {
+            func_800883AC(actor);
+            D_800D301C[D_800C3EB4[target].group + base].count++;
+            for (member = 0; member < 4; member++) {
+                if (func_80089C9C(D_800D301C[D_800C3EB4[target].group + base].members, member) == 0) {
+                    break;
+                }
+            }
+            D_800C3EB4[actor].member = member;
+            D_800C3EB4[actor].group = D_800C3EB4[target].group;
+            D_800D301C[D_800C3EB4[actor].group + base].members |= func_80089C08(D_800C3EB4[actor].member);
+            if (actor < 3) {
+                D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].x;
+                D_800C3EB4[actor].z = D_800D3364->areas[D_800C3EB4[actor].group].party[D_800C3EB4[actor].member].z;
+            } else {
+                D_800C3EB4[actor].x = D_800D3364->areas[D_800C3EB4[actor].group].enemies[D_800C3EB4[actor].member].x;
+                D_800C3EB4[actor].z = D_800D3364->areas[D_800C3EB4[actor].group].enemies[D_800C3EB4[actor].member].z;
+            }
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80087EDC);
+#endif
+
+/* Move `actor` alone into `target`'s formation group when that group is
+ * another one and empty (entries from 0x10, or 0x18 for an enemy joining a
+ * party member): it becomes the only member, at the group's position.
+ * (Nonmatching: the base selection branches and store/load order.) */
+#ifdef NON_MATCHING
+void func_800881B8(u8 actor, u8 target) {
+    u8 base;
+
+    if (D_800C3EB4[actor].group != D_800C3EB4[target].group) {
+        if (target < 3 && actor >= 3) {
+            base = 0x18;
+        } else {
+            base = 0x10;
+        }
+        if (D_800D301C[D_800C3EB4[target].group + base].count == 0) {
+            func_800883AC(actor);
+            D_800C3EB4[actor].member = 0;
+            D_800C3EB4[actor].group = D_800C3EB4[target].group;
+            D_800D301C[D_800C3EB4[actor].group + base].count = 1;
+            D_800D301C[D_800C3EB4[actor].group + base].members = 1;
+            if (actor < 3) {
+                D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].x;
+                D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].z;
+            } else {
+                D_800C3EB4[actor].x = D_800D3364->positions[D_800C3EB4[actor].group].enemyX;
+                D_800C3EB4[actor].z = D_800D3364->positions[D_800C3EB4[actor].group].enemyZ;
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800881B8);
+#endif
 
 /* Drop a slot from its formation group (enemy entries from 8, flagged slots
  * add 0x10). */
@@ -7296,7 +7408,35 @@ u8 func_800885D0(u8 slot) {
     return D_800D301C[D_800C3EB4[slot].group + 0x18].count;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008860C);
+/* Build the glyph lists at +0x1720 (glyphs 800c33b0[0..1]), +0 (glyph 0xa8)
+ * and +0x2530 (800c33b0[2..3]) at (0xa0, 0x64) and initialise the current
+ * buffer's quads. The first two keep their count and buffer at +0x5d74 /
+ * +0x5d83 and +0x5d70 / +0x5d92. */
+void func_8008860C(void) {
+    s32 i;
+
+    for (i = 0; i < 2; i++) {
+        D_800D2DB4->unk5D70[4] +=
+            func_80076A10(D_800C33B0[i], &D_800D2DB4->unk1720[D_800D2DB4->unk5D70[4] * 2], 0xA0, 0x64);
+    }
+    D_800D2DB4->counts[14] = D_800CCB04.buffer;
+    D_800D2DB4->unk5D70[0] = func_80076A10(0xA8, &D_800D2DB4->unk0[D_800D2DB4->unk5D70[0] * 2], 0xA0, 0x64);
+    D_800D2DB4->buffers[14] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->unk5D70[4]; i++) {
+        func_80076B68(&D_800D2DB4->unk1720[i * 2 + D_800D2DB4->counts[14]]);
+    }
+    for (i = 0; i < D_800D2DB4->unk5D70[0]; i++) {
+        func_80076B68(&D_800D2DB4->unk0[i * 2 + D_800D2DB4->buffers[14]]);
+    }
+    for (i = 2; i < 4; i++) {
+        D_800D2DB4->counts[9] +=
+            func_80076A10(D_800C33B0[i], &D_800D2DB4->unk2530[D_800D2DB4->counts[9] * 2], 0xA0, 0x64);
+    }
+    D_800D2DB4->buffers[9] = D_800CCB04.buffer;
+    for (i = 0; i < D_800D2DB4->counts[9]; i++) {
+        func_80076BF0(&D_800D2DB4->unk2530[i * 2 + D_800D2DB4->buffers[9]]);
+    }
+}
 
 /* Set up a stepped line from (x0, y0) to (x1, y1): directions, the 8.8 steps
  * of the minor axis and a random speed 1..8. */
@@ -7337,7 +7477,39 @@ void func_8008887C(s32 x0, s32 y0, s32 x1, s32 y1) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088990);
+/* Advance the stepped line by its speed and flag its end (800c207c) once
+ * the major axis passes the end point. */
+void func_80088990(void) {
+    s32 i;
+
+    for (i = 0; i < D_800C3A9C; i++) {
+        if (D_800C3A94) {
+            D_800C2080 -= D_800C3A8C;
+        } else {
+            D_800C2080 += D_800C3A8C;
+        }
+        if (D_800C3A98) {
+            D_800C2084 -= D_800C3A90;
+        } else {
+            D_800C2084 += D_800C3A90;
+        }
+    }
+    if (D_800C3A8C == 0x100) {
+        if (D_800C3A94) {
+            if (D_800C2080 / 256 + D_800C3A7C < D_800C3A84) {
+                D_800C207C = 1;
+            }
+        } else if (D_800C2080 / 256 + D_800C3A7C > D_800C3A84) {
+            D_800C207C = 1;
+        }
+    } else if (D_800C3A98) {
+        if (D_800C2084 / 256 + D_800C3A80 < D_800C3A88) {
+            D_800C207C = 1;
+        }
+    } else if (D_800C2084 / 256 + D_800C3A80 > D_800C3A88) {
+        D_800C207C = 1;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088B80);
 
@@ -7508,7 +7680,43 @@ void func_800897CC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800898F0);
+/* Build the member's gear fuel as glyphs at y 0xcc: the fuel's last four
+ * digits into list 7 (from x 0x20, blanks keep their place) and the maximum
+ * fuel's into list 8 (from x 0x48, packed), then the separator glyph 0x9c
+ * at x 0x41. */
+void func_800898F0(u8 member) {
+    s32 i;
+    s32 x; /* 16.16 */
+    u8 digit;
+
+    i = 0;
+    D_800D2DB4->counts[7] = 0;
+    x = 0x20 << 16;
+    func_8008AAA0(D_800CCCE8.records[member].gear.fuel);
+    for (; i < 4; i++) {
+        digit = D_800C3CF4[i + 5];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[7] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk5280[D_800D2DB4->counts[7] * 2], x >> 16, 0xCC);
+        }
+        x += 8 << 16;
+    }
+    i = 0;
+    D_800D2DB4->buffers[7] = D_800CCB04.buffer;
+    D_800D2DB4->counts[8] = 0;
+    x = 0x48 << 16;
+    func_8008AAA0(D_800CCCE8.records[member].gear.maxFuel);
+    for (; i < 4; i++) {
+        digit = D_800C3CF4[i + 5];
+        if (digit != 0xFF) {
+            D_800D2DB4->counts[8] +=
+                func_80076A10(digit + 0x92, &D_800D2DB4->unk53C0[D_800D2DB4->counts[8] * 2], x >> 16, 0xCC);
+            x += 8 << 16;
+        }
+    }
+    D_800D2DB4->counts[8] += func_80076A10(0x9C, &D_800D2DB4->unk53C0[D_800D2DB4->counts[8] * 2], 0x41, 0xCC);
+    D_800D2DB4->buffers[8] = D_800CCB04.buffer;
+}
 
 /* Run the eight 8008860c..800897cc steps (the member is unused). */
 void func_80089AF8(u8 member) {
@@ -7647,9 +7855,179 @@ void func_8008A274(u8 member) {
     func_8008A144();
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A3EC);
+/* Wait for a controller (pausing the sound and the vsync count while there
+ * is none), run a result-screen tick, count down the active 800d3278 entry
+ * timers, then read the input: an overflowed queue is reset; otherwise
+ * entries are dequeued until one matters. Confirm (0x20) sets input code 4;
+ * start (0x800, while 800ccc58) pauses or resumes the battle, and while
+ * paused holding both 4 and 8 with a disc ends it (outcome 1). Loops while
+ * paused. */
+void func_8008A3EC(u8 member) {
+    u8 waiting = 1;
+    u8 paused = 0;
+    s32 vsyncs;
+    s32 i;
 
+    do {
+        if (func_80035734(0) == 0) {
+            if (paused == 0) {
+                func_8001FAB4(0x88, 0x64);
+                func_8001FAB4(0x88, 0x144);
+                paused++;
+                func_80037EE4();
+                vsyncs = D_80059488;
+            }
+        } else {
+            waiting = 0;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = vsyncs;
+            }
+        }
+    } while (waiting);
+    func_8008A144();
+    if (D_800D2D28->unkCA != 0) {
+        for (i = 0; i < 16; i++) {
+            if (D_800D3278->entries[i].unk28 != 0) {
+                if (--D_800D3278->entries[i].unk26 < 0) {
+                    D_800D3278->entries[i].unk26 = 0;
+                }
+            }
+        }
+    }
+    do {
+        if (D_800D2D28->unkCC[3] == 0) {
+            D_800D3014 = 0xFF;
+        }
+        if (func_80036410()) {
+            func_80035DB0();
+        } else {
+            while (func_80035CDC()) {
+                if (D_800C3444 != 0) {
+                    if (*D_8005917C != -1 && (D_800594A4 & 4) && (D_800594A4 & 8)) {
+                        D_800C48EA = 1;
+                        goto resume;
+                    }
+                } else if (D_8005948C & 0x20) {
+                    D_800D3014 = 4;
+                    break;
+                }
+                if (D_8005948C & 0x800) {
+                    if (D_800CCC58 != 0) {
+                        if (D_800C3444 == 0) {
+                            func_80037EE4();
+                            func_8001FAB4(0x88, 0x64);
+                            func_8001FAB4(0x88, 0x144);
+                            vsyncs = D_80059488;
+                            D_800C3444 = 1;
+                        } else {
+                        resume:
+                            func_80037E8C();
+                            D_80059488 = vsyncs;
+                            D_800C3444 = 0;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+    } while (D_800C3444 != 0);
+}
+
+/* Result screen input: wait for a controller as 8008a3ec does, read the
+ * input (confirm sets input code 4, start pauses or resumes) while paused,
+ * then count each member's two result values one step; while any is still
+ * counting redraw the panels (801df270, 801df4c0), else stop counting.
+ * (Nonmatching: the original addresses the work area's counters from an
+ * aggregate that starts at 0x800c3eb0, so the stores' base differs.) */
+#ifdef NON_MATCHING
+void func_8008A684(u8 member) {
+    u8 done = 1;
+    u8 waiting = 1;
+    u8 paused = 0;
+    s32 vsyncs;
+    s32 i;
+
+    do {
+        if (func_80035734(0) == 0) {
+            if (paused == 0) {
+                func_8001FAB4(0x88, 0x64);
+                func_8001FAB4(0x88, 0x144);
+                paused++;
+                func_80037EE4();
+                vsyncs = D_80059488;
+            }
+        } else {
+            waiting = 0;
+            if (paused) {
+                func_80037E8C();
+                D_80059488 = vsyncs;
+            }
+        }
+    } while (waiting);
+    if (D_800D2D28->unkCC[3] == 0) {
+        D_800D3014 = 0xFF;
+    }
+    do {
+        if (func_80036410()) {
+            func_80035DB0();
+        } else {
+            while (func_80035CDC()) {
+                if (D_8005948C & 0x20) {
+                    D_800D3014 = 4;
+                    break;
+                }
+                if (D_8005948C & 0x800) {
+                    if (D_800C3444 == 0) {
+                        func_80037EE4();
+                        func_8001FAB4(0x88, 0x64);
+                        func_8001FAB4(0x88, 0x144);
+                        vsyncs = D_80059488;
+                        D_800C3444 = 1;
+                    } else {
+                        func_80037E8C();
+                        D_80059488 = vsyncs;
+                        D_800C3444 = 0;
+                    }
+                    break;
+                }
+            }
+        }
+    } while (D_800C3444 != 0);
+    if (D_800D2D28->unkA0 != 0 && D_800D32F8[0]->counting != 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_800D32F8[i]->done[0] == 0) {
+                if (D_800CCCE8.toCount[i][0] == 0) {
+                    D_800D32F8[i]->done[0] = 1;
+                } else {
+                    D_800CCCE8.toCount[i][0]--;
+                    D_800CCCE8.counted[i][0]++;
+                }
+            }
+            if (D_800D32F8[i]->done[1] == 0) {
+                if (D_800CCCE8.toCount[i][1] == 0) {
+                    D_800D32F8[i]->done[1] = 1;
+                } else {
+                    D_800CCCE8.toCount[i][1]--;
+                    D_800CCCE8.counted[i][1]++;
+                }
+            }
+            done &= D_800D32F8[i]->done[0];
+            if (D_800D32F8[0]->unk15F8 != 0) {
+                done &= D_800D32F8[i]->done[1];
+            }
+        }
+        if (!done) {
+            func_801DF270();
+            func_801DF4C0();
+        } else {
+            D_800D32F8[0]->counting = 0;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A684);
+#endif
 
 /* Result-screen step by the battle end state 800c3e4c. */
 void func_8008A9C0(u8 member) {
@@ -7752,7 +8130,55 @@ void func_8008AC88(u16 mask, u8 actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008ADD0);
+/* Execute the chosen technique (turn state +0x2e6) for the member: reset
+ * the events, commit the command (from 23, or the gear's from 22 in a gear;
+ * command bits 0-2 target the candidates, else the chosen target), apply
+ * its results, face the camera, show the member's model, queue its event
+ * with the targeted enemies' reactions and wait for the presentation. */
+void func_8008ADD0(member)
+u8 member;
+{
+    u16 targets;
+    u16 command;
+    s32 i;
+
+    D_800D366C = 0;
+    func_800BCD98(0);
+    for (i = 0; i < 32; i++) {
+        D_800C3FE8[i].type = 0xFF;
+    }
+    if (D_800D32A0[member].unk1 == 0) {
+        D_800C3EAC->unk2DC = D_800C3EAC->unk2E6 + 23;
+        command = D_800CCCE8.partyCommands[member][D_800C3EAC->unk2E6 + 22].state;
+    } else {
+        D_800C3EAC->unk2DC = D_800C3EAC->unk2E6 + 22;
+        command = D_800CCCE8.gearCommands[member][D_800C3EAC->unk2E6 + 21].state;
+    }
+    if (command & 7) {
+        targets = D_800C3D64;
+    } else {
+        targets = func_80089C08(D_800C3E2C);
+    }
+    func_8008AC88(targets, member);
+    func_80085388();
+    func_80085CCC(member, targets, D_800C3EAC->unk2DC - 1);
+    func_80085C88(D_800C3EAC->eventCount);
+    func_800BC404(D_800D2C94.targets | func_80089C08(member));
+    func_800B89FC(1, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2C94.animation;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    for (i = 3; i < 11; i++) {
+        if (func_80089C9C(D_800D2C94.targets, i)) {
+            func_80079840(member, i);
+        }
+    }
+    D_800C3EAC->eventCount++;
+    func_80080B64(member);
+    while (D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+}
 
 /* Hide the command windows (four panels); without `keep` show the
  * +0x641c lists. */
@@ -7775,11 +8201,246 @@ void func_8008B168(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B224);
+/* Confirm the technique in list cell (column, row) for the member: its
+ * command (from 22, or the gear's from 21 when the member is in a gear) needs
+ * the character's permission bit and the EP it costs. Hides the command
+ * windows and commits it, paying the EP; if the commit fails the windows
+ * come back. A refused technique plays the error sound. Returns 1 when
+ * committed. */
+u8 func_8008B224(u8 member, u8 column, u8 row) {
+    u8 committed = 0;
+    u8 refused = 1;
+    u8 allowed = 0;
+    u16 command;
+    u8 cost;
 
+    if (D_800D32A0[member].unk1 == 0) {
+        command = D_800CCCE8.partyCommands[member][row * 2 + column + 22].state;
+        cost = D_800CCCE8.partyCommands[member][row * 2 + column + 22].cost;
+        allowed = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
+    } else {
+        command = D_800CCCE8.gearCommands[member][row * 2 + column + 21].state;
+        cost = D_800CCCE8.gearCommands[member][row * 2 + column + 21].cost;
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2) != 0) {
+            allowed = 1;
+        }
+    }
+    if (D_800CCCE8.records[member].pilot.ep >= cost && allowed) {
+        func_8008B108(1);
+        D_800D2D28->unkC6 = 1;
+        if (func_80085084(command, member, 0)) {
+            D_800CCCE8.records[member].pilot.ep -= cost;
+            committed = 1;
+        } else {
+            D_800D2D28->unkC6 = 0;
+            func_8008B168(member);
+        }
+        refused = 0;
+    }
+    if (refused) {
+        func_8008AA74(0x4F);
+    }
+    return committed;
+}
+
+/* Run the member's technique menu: four windows, a two-column list of
+ * twelve visible cells scrolled by rows (800d3288 in pixels, 800d39d4 the
+ * scroll request), until a technique is committed (1, its index in the
+ * turn state +0x2e6) or the menu is cancelled (0). (Nonmatching: GCC aligns
+ * the jump table to 8 where the original's is at 0x80070314, and the cursor
+ * x multiply is synthesised differently.) */
+#ifdef NON_MATCHING
+u8 func_8008B478(u8 member) {
+    s32 frame;
+    u8 ticks;
+    u8 cell;
+    u8 top;
+    u8 shownCell;
+    u8 shownTop;
+    s32 shownScroll;
+    u8 result;
+    s32 target;
+
+    cell = 0;
+    top = 0;
+    shownCell = 0xFF;
+    shownTop = 0xFF;
+    shownScroll = 0xFFFF;
+    result = 2;
+    frame = 4;
+    ticks = 0;
+    D_800D3288 = 0;
+    D_800D39D4 = 0;
+    D_800D2D28->unkCB = 0;
+    func_8008F8F4(0, 0x1C, 0xA0, 0xAC, 0x38, 0, 1);
+    func_8008F8F4(1, 0x20, 0x2C, 0x118, 0x70, 0, 1);
+    func_8008F8F4(2, 0xD0, 0xA4, 0x50, 0x18, 0, 1);
+    func_8008F8F4(3, 0xE6, 0xC0, 0x4C, 0x18, 0, 1);
+    func_80091064(member);
+    func_80077698();
+    do {
+        if (cell != shownCell || top != shownTop) {
+            func_80091D38(member, cell, top);
+            shownCell = cell;
+            shownTop = top;
+        }
+        if (D_800D3288 != shownScroll) {
+            func_80091604(D_800D3288);
+            func_80091EC4(D_800D3288);
+            shownScroll = D_800D3288;
+        }
+        func_80090B90((cell % 2) * 0x84 + 0x2A, (cell / 2) * 16 + 0x38, &frame, &ticks);
+        func_800716D8();
+        switch (D_800D3014) {
+        case 5:
+            result = 0;
+            break;
+        case 4:
+            if (func_8008B224(member, cell, top)) {
+                result = 1;
+                D_800C3EAC->unk2E6 = cell + top * 2;
+            }
+            break;
+        case 0:
+            if (top * 2 + cell != 15) {
+                if (cell + 1 == 12) {
+                    D_800D39D4 = 1;
+                } else {
+                    cell++;
+                }
+            }
+            break;
+        case 2:
+            if (top * 2 + cell > 0) {
+                if (cell == 0 && top != 0) {
+                    D_800D39D4 = 2;
+                } else {
+                    cell--;
+                }
+            }
+            break;
+        case 1:
+            if (top * 2 + cell < 14) {
+                if (cell + 2 >= 12) {
+                    D_800D39D4 = 3;
+                } else {
+                    cell += 2;
+                }
+            }
+            break;
+        case 3:
+            if (top * 2 + cell >= 2) {
+                if (cell < 2 && top != 0) {
+                    D_800D39D4 = 4;
+                } else {
+                    cell -= 2;
+                }
+            }
+            break;
+        }
+        switch (D_800D39D4) {
+        case 1:
+            target = (top + 1) * 16;
+            if (D_800D3288 >= target) {
+                top++;
+                cell--;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        case 2:
+            target = (top - 1) * 16;
+            if (D_800D3288 < target) {
+                top--;
+                cell++;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        case 3:
+            target = (top + 1) * 16;
+            if (D_800D3288 >= target) {
+                top++;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        case 4:
+            target = (top - 1) * 16;
+            if (D_800D3288 < target) {
+                top--;
+                D_800D3288 = target;
+                D_800D39D4 = 0;
+            }
+            break;
+        }
+    } while (result == 2);
+    func_8008B108(result);
+    func_8007765C();
+    func_80077980();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    func_8008FA60(2);
+    func_8008FA60(3);
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B478);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008B908);
+/* Execute the chosen item (turn state +0x2e6) for the member: reset the
+ * events, show the member's use model, commit the item against its targets
+ * (the target candidates, or the chosen target), use one up unless the
+ * item keeps (0x8000), apply its results as event 0xf5, react the targeted
+ * enemies, and wait for the presentation; targeted party members react. */
+void func_8008B908(member)
+u8 member;
+{
+    u16 targets;
+    s32 i;
+
+    D_800D366C = 0;
+    func_800BCD98(0);
+    for (i = 0; i < 32; i++) {
+        D_800C3FE8[i].type = 0xFF;
+    }
+    func_800B89FC(1, member, D_800C3EAC->slots[member].defaultTarget, func_80080AE4(member));
+    if (D_800D2200[D_800C3EAC->unk2E6].target & 7) {
+        targets = D_800C3D64;
+    } else {
+        targets = func_80089C08(D_800C3E2C);
+    }
+    func_8008AC88(targets, member);
+    func_80085388();
+    func_80085C48(member, targets, D_800C3EAC->unk2E6);
+    if (!(D_800D2C94.held & 0x8000)) {
+        if (--D_800D2C94.itemCounts[D_800C3D00 * 2 + D_800D3670] == 0) {
+            D_800D2C94.itemIds[D_800C3D00 * 2 + D_800D3670] = 0;
+        }
+    }
+    D_800C2050 = 1;
+    func_80085C88(D_800C3EAC->eventCount);
+    D_800C2050 = 0;
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xF5;
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800D2C94.animation;
+    D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    for (i = 3; i < 11; i++) {
+        if (func_80089C9C(D_800D2C94.targets, i)) {
+            func_80079840(member, i);
+        }
+    }
+    D_800C3EAC->eventCount++;
+    func_80080B64(member);
+    while (D_800C3EAC->eventsDone == 0) {
+        func_800716D8();
+    }
+    for (i = 0; i < 3; i++) {
+        if (func_80089C9C(targets, i)) {
+            D_800D2D28->reaction[i] = 1;
+        }
+    }
+}
 
 /* Hide the command windows (two panels); without `keep` show the +0x641c
  * lists. */
@@ -7887,7 +8548,57 @@ void func_8008C3F0(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C4A8);
+/* Run the member's combo: choose the steps (8008c81c); when cancelled
+ * reopen the command windows and return 1. Otherwise enter the attack page
+ * against the chosen target (an event 0xf3 first when it reacts while
+ * down), commit each chosen step (action step + 8) as an event, move into
+ * the target's group and wait for the presentation. Returns 0. */
+u8 func_8008C4A8(member)
+u8 member;
+{
+    u8 cancelled = 1;
+    s32 i;
+
+    if (func_8008C81C(member)) {
+        func_800BAF40(member, 0x100);
+        func_8008C360(1);
+        D_800D2D28->unkCB = 1;
+        cancelled = 0;
+    } else {
+        func_800BAF40(member, 0x80);
+        D_800D2D28->unkAF = 0;
+        func_8008C360(1);
+        D_800D366C = 0;
+        func_800BCD98(0);
+        D_800C3EAC->slots[member].defaultTarget = D_800C3E2C;
+        func_800877E0(member, D_800C3EAC->slots[member].defaultTarget);
+        D_800C4928 = 1;
+        func_80087A38(member);
+        if (D_800CCCE8.records[D_800C3EAC->slots[member].defaultTarget].pilot.flags34 & 0x800) {
+            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+            D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
+            D_800C3FE8[D_800C3EAC->eventCount].parameter = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+            D_800C3EAC->eventCount++;
+        }
+        for (i = 0; i < 7; i++) {
+            if (D_800C3EAC->comboSteps[i] != 0xFF) {
+                D_800C3EAC->unk2DC = D_800C3EAC->comboSteps[i] + 8;
+                func_80085CCC(member, func_80089C08(D_800C3EAC->slots[member].defaultTarget), D_800C3EAC->unk2DC - 1);
+                func_80085C88(D_800C3EAC->eventCount);
+                D_800C3FE8[D_800C3EAC->eventCount].type = D_800C3EAC->unk2DC - 1;
+                D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+                D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+                D_800C3EAC->eventCount++;
+            }
+        }
+        func_80080B64(member);
+        func_80087EDC(member, D_800C3EAC->slots[member].defaultTarget);
+        while (D_800C3EAC->eventsDone == 0) {
+            func_800716D8();
+        }
+    }
+    return cancelled;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008C81C);
 
@@ -7912,25 +8623,282 @@ void func_8008CD28(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CDE4);
+/* Confirm the member's gear command `index` (0-3, the gear's commands from
+ * 37): it needs the fuel it costs, the character's permission bit and no
+ * seal status for it. Hides the command windows and commits the command,
+ * paying the fuel; if the commit fails the windows come back. A refused
+ * command plays the error sound. Returns 1 when committed. */
+u8 func_8008CDE4(u8 member, u8 index) {
+    u16 sealed[4];
+    u8 committed;
+    u16 cost;
+    u16 command;
+    u8 refused;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008CFB8);
+    sealed[0] = D_800C3234[13];
+    sealed[1] = D_800C3234[14];
+    sealed[2] = D_800C3234[15];
+    sealed[3] = D_800C3234[3];
+    committed = 0;
+    cost = D_800CCCE8.gearCommands[member][index + 37].hudState;
+    command = D_800CCCE8.gearCommands[member][index + 37].state;
+    refused = 1;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008D328);
+    if (D_800CCCE8.records[member].gear.fuel >= cost &&
+        func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, index) != 0 &&
+        !(D_800CCCE8.records[member].pilot.status7A & sealed[index])) {
+        func_8008CCCC(1);
+        D_800D2D28->unkC6 = 1;
+        if (func_80085084(command, member, 0)) {
+            D_800CCCE8.records[member].gear.fuel -= cost;
+            committed = 1;
+        } else {
+            D_800D2D28->unkC6 = 0;
+            func_8008CD28(member);
+        }
+        refused = 0;
+    }
+    if (refused) {
+        func_8008AA74(0x4F);
+    }
+    return committed;
+}
+
+/* Run the member's gear command menu: list the gear's commands 37-40 the
+ * character may use and no status seals (id and fuel cost), open its three
+ * windows and move the cursor until a command is committed (1, remembered
+ * + 0x10 in the turn state) or the menu is cancelled (0). */
+u8 func_8008CFB8(member)
+u8 member;
+{
+    u8 ids[4];
+    u16 costs[4];
+    u16 seals[4];
+    s32 frame;
+    u8 ticks;
+    s32 shown;
+    s32 cursor;
+    u8 result;
+    s32 i;
+
+    cursor = 0;
+    shown = 0xFF;
+    result = 2;
+    frame = 4;
+    ticks = 0;
+    seals[0] = D_800C3234[13];
+    seals[1] = D_800C3234[14];
+    seals[2] = D_800C3234[15];
+    seals[3] = D_800C3234[3];
+    for (i = 0; i < 4; i++) {
+        ids[i] = 0xFF;
+        costs[i] = 0;
+    }
+    for (i = 0; i < 4; i++) {
+        if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, i) != 0 &&
+            !(D_800CCCE8.records[member].pilot.status7A & seals[i])) {
+            ids[i] = D_800CCCE8.records[member].pilot.gearId * 4 + i;
+            costs[i] = D_800CCCE8.gearCommands[member][i + 37].hudState;
+        }
+    }
+    D_800D2D28->unkCB = 0;
+    func_8008F8F4(0, 0x74, 0xA0, 0xAC, 0x38, 0, 1);
+    func_8008F8F4(1, 0x84, 0x4C, 0x9C, 0x50, 0, 1);
+    func_8008F8F4(2, 0x1C, 0xA0, 0x50, 0x18, 0, 1);
+    func_800930AC(member, ids, costs);
+    func_80077698();
+    while (result == 2) {
+        if (cursor != shown) {
+            func_800939CC(member, cursor);
+            shown = cursor;
+        }
+        func_80090B90(0x8C, cursor * 16 + 0x58, &frame, &ticks);
+        func_800716D8();
+        switch (D_800D3014) {
+        case 5:
+            result = 0;
+            break;
+        case 4:
+            if (func_8008CDE4(member, cursor)) {
+                result = 1;
+                D_800C3EAC->unk2E6 = cursor + 0x10;
+            }
+            break;
+        case 1:
+            if (++cursor >= 4) {
+                cursor = 3;
+            }
+            break;
+        case 3:
+            if (--cursor < 0) {
+                cursor = 0;
+            }
+            break;
+        }
+    }
+    func_8008CCCC(result);
+    func_8007765C();
+    func_80077980();
+    func_8008FA60(0);
+    func_8008FA60(1);
+    func_8008FA60(2);
+    return result;
+}
+
+/* Fade the list quads of both draw buffers (every other one from 800d2d28
+ * +0xa3): semi-transparent, raw texture, darker by the turn state's step
+ * each frame. When all have faded out, clear the fading flag (+0xcb). */
+void func_8008D328(void) {
+    s32 buffer;
+    s32 i;
+    u8 fading = 0;
+    u8 shade;
+
+    for (buffer = 0; buffer < 2; buffer++) {
+        if (D_800D2D28->unkD0[buffer] != 0) {
+            for (i = 0; i < D_800D2D28->unkD0[buffer] * 2; i += 2) {
+                SetSemiTrans(&D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3], 1);
+                SetShadeTex(&D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3], 0);
+                D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3].tpage |= 0x20;
+                shade = D_800C3EA4->unk641C[buffer][i + D_800D2D28->unkA3].r0;
+                if (shade != 0) {
+                    fading = 1;
+                    (D_800C3EA4->unk641C[buffer] + (i + D_800D2D28->unkA3))->r0 = shade - D_800C3EAC->unk2E0 * 16;
+                    (D_800C3EA4->unk641C[buffer] + (i + D_800D2D28->unkA3))->g0 = shade - D_800C3EAC->unk2E0 * 16;
+                    (D_800C3EA4->unk641C[buffer] + (i + D_800D2D28->unkA3))->b0 = shade - D_800C3EAC->unk2E0 * 16;
+                }
+            }
+        }
+    }
+    if (!fading) {
+        D_800D2D28->unkCB = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008D598);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008DC34);
+/* Place a window's four corner glyphs (the alternate set while the battle
+ * is ending) at its corners in the current draw buffer. */
+void func_8008DC34(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    u8 glyphs[4];
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008DE04);
+    if (D_800C3E4C != 0) {
+        glyphs[0] = 0x4A;
+        glyphs[1] = 0x4C;
+        glyphs[2] = 0x4F;
+        glyphs[3] = 0x51;
+    } else {
+        glyphs[0] = 0xF0;
+        glyphs[1] = 0xF2;
+        glyphs[2] = 0xF5;
+        glyphs[3] = 0xF7;
+    }
+    block->cornerCount = 0;
+    block->cornerCount += func_80076A10(glyphs[0], &block->corners[block->cornerCount * 2], x, y);
+    block->cornerCount += func_80076A10(glyphs[1], &block->corners[block->cornerCount * 2], x + w - 8, y);
+    block->cornerCount += func_80076A10(glyphs[2], &block->corners[block->cornerCount * 2], x, y + h - 8);
+    block->cornerCount += func_80076A10(glyphs[3], &block->corners[block->cornerCount * 2], x + w - 8, y + h - 8);
+    for (i = 0; i < 4; i++) {
+        func_80076B00(&block->corners[i * 2 + D_800CCB04.buffer]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008E430);
+/* Place a window's top edge: two pieces of texture 1 across the top,
+ * each half the inner width, in the current draw buffer. */
+void func_8008DE04(u8 window, u16 x, u16 y, u16 w) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008EA70);
+    setXY4(block->frame[0] + D_800CCB04.buffer, x + 8, y - 8, x + 8 + (w - 16) / 2, y - 8, x + 8, y + 8,
+           x + 8 + (w - 16) / 2, y + 8);
+    setXY4(block->frame[0] + D_800CCB04.buffer + 2, x + 8 + (w - 16) / 2, y - 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y - 8, x + 8 + (w - 16) / 2, y + 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y + 8);
+    setUV4(block->frame[0] + D_800CCB04.buffer, WINDOW_TEX_U(1), WINDOW_TEX_V(1), WINDOW_TEX_U(1) + 7,
+           WINDOW_TEX_V(1), WINDOW_TEX_U(1), WINDOW_TEX_V(1) + 16, WINDOW_TEX_U(1) + 7, WINDOW_TEX_V(1) + 16);
+    setUV4(block->frame[0] + D_800CCB04.buffer + 2, WINDOW_TEX_U(1), WINDOW_TEX_V(1), WINDOW_TEX_U(1) + 7,
+           WINDOW_TEX_V(1), WINDOW_TEX_U(1), WINDOW_TEX_V(1) + 16, WINDOW_TEX_U(1) + 7, WINDOW_TEX_V(1) + 16);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[0][i * 2 + D_800CCB04.buffer]);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F0A8);
+/* Place a window's bottom edge: two pieces of texture 2 across the bottom,
+ * each half the inner width, in the current draw buffer. */
+void func_8008E430(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008F6E4);
+    setXY4(block->frame[1] + D_800CCB04.buffer, x + 8, y + h - 8, x + 8 + (w - 16) / 2, y + h - 8, x + 8,
+           y + h + 8, x + 8 + (w - 16) / 2, y + h + 8);
+    setXY4(block->frame[1] + D_800CCB04.buffer + 2, x + 8 + (w - 16) / 2, y + h - 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y + h - 8, x + 8 + (w - 16) / 2, y + h + 8,
+           x + 8 + (w - 16) / 2 + (w - 16) / 2, y + h + 8);
+    setUV4(block->frame[1] + D_800CCB04.buffer, WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 1,
+           WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2) + 16, WINDOW_TEX_U(2) - 1, WINDOW_TEX_V(2) + 16);
+    setUV4(block->frame[1] + D_800CCB04.buffer + 2, WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 1,
+           WINDOW_TEX_V(2), WINDOW_TEX_U(2) - 8, WINDOW_TEX_V(2) + 16, WINDOW_TEX_U(2) - 1, WINDOW_TEX_V(2) + 16);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[1][i * 2 + D_800CCB04.buffer]);
+    }
+}
+
+/* Place a window's left edge: two pieces of texture 3 down the left side,
+ * each half the inner height, in the current draw buffer. */
+void func_8008EA70(u8 window, u16 x, u16 y, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
+
+    setXY4(block->frame[2] + D_800CCB04.buffer, x - 8, y + 8, x + 8, y + 8, x - 8, y + 8 + (h - 16) / 2, x + 8,
+           y + 8 + (h - 16) / 2);
+    setXY4(block->frame[2] + D_800CCB04.buffer + 2, x - 8, y + 8 + (h - 16) / 2, x + 8, y + 8 + (h - 16) / 2,
+           x - 8, y + 8 + (h - 16) / 2 + (h - 16) / 2, x + 8, y + 8 + (h - 16) / 2 + (h - 16) / 2);
+    setUV4(block->frame[2] + D_800CCB04.buffer, WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 30,
+           WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3) + 7, WINDOW_TEX_U(3) + 30, WINDOW_TEX_V(3) + 7);
+    setUV4(block->frame[2] + D_800CCB04.buffer + 2, WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 30,
+           WINDOW_TEX_V(3), WINDOW_TEX_U(3) + 14, WINDOW_TEX_V(3) + 7, WINDOW_TEX_U(3) + 30, WINDOW_TEX_V(3) + 7);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[2][i * 2 + D_800CCB04.buffer]);
+    }
+}
+
+/* Place a window's right edge: two pieces of texture 4 down the right side,
+ * each half the inner height, in the current draw buffer. */
+void func_8008F0A8(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+    s32 i;
+
+    setXY4(block->frame[3] + D_800CCB04.buffer, x + w - 8, y + 8, x + w + 8, y + 8, x + w - 8,
+           y + 8 + (h - 16) / 2, x + w + 8, y + 8 + (h - 16) / 2);
+    setXY4(block->frame[3] + D_800CCB04.buffer + 2, x + w - 8, y + 8 + (h - 16) / 2, x + w + 8,
+           y + 8 + (h - 16) / 2, x + w - 8, y + 8 + (h - 16) / 2 + (h - 16) / 2, x + w + 8,
+           y + 8 + (h - 16) / 2 + (h - 16) / 2);
+    setUV4(block->frame[3] + D_800CCB04.buffer, WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 30,
+           WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4) + 7, WINDOW_TEX_U(4) + 30, WINDOW_TEX_V(4) + 7);
+    setUV4(block->frame[3] + D_800CCB04.buffer + 2, WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 30,
+           WINDOW_TEX_V(4), WINDOW_TEX_U(4) + 14, WINDOW_TEX_V(4) + 7, WINDOW_TEX_U(4) + 30, WINDOW_TEX_V(4) + 7);
+    for (i = 0; i < 2; i++) {
+        func_80076B00(&block->frame[3][i * 2 + D_800CCB04.buffer]);
+    }
+}
+
+/* Place a window at (x, y, w, h) in the current draw buffer: its
+ * background, corners and edges. The window is hidden while it changes. */
+void func_8008F6E4(u8 window, u16 x, u16 y, u16 w, u16 h) {
+    WindowBlock *block = D_800D2E38[window];
+
+    D_800D2D28->windows[window] = 0;
+    setXY4(block->shade + D_800CCB04.buffer, x, y, x + w, y, x, y + h, x + w, y + h);
+    func_8008DC34(window, x, y, w, h);
+    func_8008DE04(window, x, y, w);
+    func_8008E430(window, x, y, w, h);
+    func_8008EA70(window, x, y, h);
+    func_8008F0A8(window, x, y, w, h);
+    block->buffer = D_800CCB04.buffer;
+    D_800D2D28->windows[window] = 1;
+}
 
 /* Open window `window` at (x, y) of w x h: allocate its blocks when it is not
  * shown; `animate` grows it open, otherwise it is drawn at once (and a frame

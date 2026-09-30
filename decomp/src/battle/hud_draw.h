@@ -75,7 +75,7 @@ typedef struct {
 #define UI_GAUGE_PARTS(m)   (D_800D2D28->unk70[8 + (m)]) /* +0x78 */
 #define UI_PORTRAIT_BUFFER  (D_800D2D28->unk7F[4])       /* +0x83 */
 #define UI_STATUS_BUFFER(i) (D_800D2D28->unk7F[5 + (i)]) /* +0x84, [3] party-wide */
-#define UI_GAUGE_BUFFER     (D_800D2D28->unk9F[3])       /* +0xA2 */
+#define UI_GAUGE_BUFFER     (D_800D2D28->unkA1[1])       /* +0xA2 */
 
 /* The primitive lists of *800d2db4 with their counts and draw buffers; the
  * shared BattleUnk2DB4 layout keeps most of them as padding. */
