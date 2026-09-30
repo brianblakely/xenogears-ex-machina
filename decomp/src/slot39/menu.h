@@ -654,7 +654,7 @@ void func_801CE660(void);
 void func_801CEB5C(void);
 void func_801CEBB4(void);
 void func_801CE464(void);
-void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 index);
+void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first);
 void func_801CE338(void);
 void func_801CE3C8(void);
 void func_801CE860(void);

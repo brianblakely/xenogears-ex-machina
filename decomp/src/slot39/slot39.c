@@ -1328,38 +1328,27 @@ void func_801CE0CC(MenuPanel *panel, u8 a, u8 b, s32 c, s32 d, u8 e) {
 
 /* Project `count` quads: each takes the next four of `verts` into every
  * other quad of `polys` from `index` and is added to the frame. */
-#ifdef NON_MATCHING
-void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 index) {
+void func_801CE198(s32 count, SVECTOR *verts, POLY_FT4 *polys, s32 first) {
     s32 p;
     s32 flag;
     s32 i;
-    POLY_FT4 *poly;
 
     for (i = 0; i < count; i++) {
-        poly = &polys[index];
-        func_8004A73C(&verts[i * 4], &verts[i * 4 + 1], &verts[i * 4 + 2], &verts[i * 4 + 3], (s32 *)&poly->x0,
-                      (s32 *)&poly->x1, (s32 *)&poly->x2, (s32 *)&poly->x3, &p, &flag);
-        index += 2;
-        func_80043B48(&D_800625A0->current->ot[4], poly);
+        func_8004A73C(&verts[i * 4], &verts[i * 4 + 1], &verts[i * 4 + 2], &verts[i * 4 + 3],
+                      (s32 *)&polys[first + i * 2].x0, (s32 *)&polys[first + i * 2].x1,
+                      (s32 *)&polys[first + i * 2].x2, (s32 *)&polys[first + i * 2].x3, &p, &flag);
+        func_80043B48(&D_800625A0->current->ot[4], &polys[first + i * 2]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE198);
-#endif
 
 /* Add `count` quads of `polys` to the frame, every other one from `first`. */
-#ifdef NON_MATCHING
 void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first) {
     s32 i;
 
     for (i = 0; i < count; i++) {
-        func_80043B48(&D_800625A0->current->ot[4], &polys[first]);
-        first += 2;
+        func_80043B48(&D_800625A0->current->ot[4], &polys[first + i * 2]);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE2B4);
-#endif
 
 /* Add the shared mode primitive and, while panel 4 shows, its quad. */
 void func_801CE338(void) {
@@ -1967,11 +1956,9 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D827C);
 
 /* Tint `count` quads of `polys` (every other one from `first`): 0 red,
  * 1 blue, 2 grey. */
-#ifdef NON_MATCHING
 void func_801D83AC(POLY_FT4 *polys, u8 colour, u8 count, u8 first) {
     u8 rgb[3];
     s32 i;
-    s32 index;
     POLY_FT4 *poly;
 
     rgb[1] = 0x40;
@@ -1989,19 +1976,14 @@ void func_801D83AC(POLY_FT4 *polys, u8 colour, u8 count, u8 first) {
         rgb[2] = 0x40;
         break;
     }
-    index = first;
     for (i = 0; i < count; i++) {
-        poly = &polys[index];
+        poly = &polys[first + i * 2];
         func_80043C24(poly, 0);
         poly->r0 = rgb[0];
         poly->g0 = rgb[1];
         poly->b0 = rgb[2];
-        index += 2;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D83AC);
-#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D84B4);
 
