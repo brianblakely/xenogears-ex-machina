@@ -150,7 +150,11 @@ typedef struct FieldSettings {
     u8 clear_color[4];          /* 19c */
     u8 unk1A0[0x1AE - 0x1A0];
     s16 piece_drift[3];  /* 1AE */
-    u8 unk1B4[0x1D0 - 0x1B4];
+    u8 unk1B4[0x1CC - 0x1B4];
+    u8 party_processing_mode;   /* 1cc */
+    u8 camera_floor_fixed;      /* 1cd */
+    u8 preserve_nonplayer_motion; /* 1ce */
+    u8 forced_position;         /* 1cf */
     u8 script_control[2];       /* 1d0 */
     u8 piece_drift_mode; /* 1D2 */
     u8 unk1D3[0x1D6 - 0x1D3];
@@ -172,6 +176,10 @@ typedef struct FieldModes {
     s16 unk34A;                 /* 34a */
     s16 unk34C;                 /* 34c */
     s16 followers_idle;         /* 34e */
+    u8 unk350[0x360 - 0x350];
+    s32 unk360;                 /* 360 */
+    s32 unk364;                 /* 364 */
+    s32 unk368;                 /* 368 */
 } FieldModes;
 
 extern FieldModes D_800B233C;

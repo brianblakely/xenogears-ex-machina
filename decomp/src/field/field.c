@@ -4008,7 +4008,7 @@ void func_8009AA00(void) {
 }
 
 /* Face `angle` relative to the camera. */
-void func_8009AB08(s32 angle) {
+void func_8009AB08(u16 angle) {
     s16 facing;
 
     facing = ((angle - D_800AF930.angle) & 0xFFF) | 0x8000;
@@ -4038,29 +4038,119 @@ void func_8009ABAC(void) {
     func_8009A904(D_800AEA34[(func_8009A8DC() - turn) & 7]);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ABFC);
+void func_8009A958(u16 angle);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AC34);
+/* A selected actor faces direction table entry operand 2. */
+void func_8009ABFC(void) {
+    func_8009A958(D_800AEA34[func_800ACDEC(2)]);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AC7C);
+/* A selected actor faces direction entry operand 2, camera-relative. */
+void func_8009AC34(void) {
+    func_8009A958((D_800AEA34[func_800ACDEC(2)] - D_800AF930.angle) & 0xFFF);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ACB4);
+/* Face direction table entry operand 1. */
+void func_8009AC7C(void) {
+    func_8009A904(D_800AEA34[func_800ACDEC(1)]);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ACEC);
+void func_8009AB08(u16 angle);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AD6C);
+/* Face direction table entry operand 1, camera-relative. */
+void func_8009ACB4(void) {
+    func_8009AB08(D_800AEA34[func_800ACDEC(1)]);
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009ADDC);
+extern s16 D_800AEA44[8];
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AE0C);
+/* Face second-table direction operand byte 1, camera-relative. */
+void func_8009ACEC(void) {
+    s16 facing;
 
+    facing = ((D_800AEA44[EVENT_OPERAND_BYTE(1)] - D_800AF930.angle) & 0xFFF) | 0x8000;
+    D_800B0078->unk104 = facing;
+    D_800B0078->unk106 = facing;
+    if (D_800ADB1C == 0) {
+        D_800B0078->unk108 = facing;
+    }
+    D_800B0078->pc += 2;
+}
+
+extern s16 D_800AEA54[8];
+
+/* Face third-table direction operand byte 1. */
+void func_8009AD6C(void) {
+    s16 facing;
+
+    facing = D_800AEA54[EVENT_OPERAND_BYTE(1)] | 0x8000;
+    D_800B0078->unk104 = facing;
+    D_800B0078->unk106 = facing;
+    if (D_800ADB1C == 0) {
+        D_800B0078->unk108 = facing;
+    }
+    D_800B0078->pc += 2;
+}
+
+/* Set camera flag 0x4000. */
+void func_8009ADDC(void) {
+    D_800AF930.flags |= 0x4000;
+    D_800B0078->pc += 1;
+}
+
+/* Clear camera flag 0x4000 (and the upper half). */
+void func_8009AE0C(void) {
+    D_800AF930.flags &= 0xBFFF;
+    D_800B0078->pc += 1;
+}
+
+#ifdef NON_MATCHING
+/* Blend the camera projection toward `target` over `steps` frames (at
+ * once when zero). */
+void func_8009AE3C(s32 target, s32 steps) {
+    if (steps != 0) {
+        D_800AF930.projection_steps = steps;
+        D_800AF930.flags |= 0x10;
+        D_800AF930.projection_value = D_800AF930.projection << 16;
+        D_800AF930.projection_step = -((D_800AF930.projection - target) << 16) / steps;
+    } else {
+        D_800AF930.projection = target;
+        D_800AF930.projection_steps = 0;
+        D_800B2174.camera_counter += 2;
+    }
+    D_800AF930.flags &= 0xDFFF;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AE3C);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AEE0);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B15C);
+/* Force the party position. */
+void func_8009B15C(void) {
+    D_800B2174.forced_position = 1;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B184);
+void func_80081C54(s32 index);
+
+/* Release forced positioning and resettle the controlled actor. */
+void func_8009B184(void) {
+    s32 i;
+
+    i = 0;
+    D_800B2174.forced_position = 0;
+    D_800B2174.party_processing_mode = 0;
+    D_800B233C.unk368 = 0;
+    D_800B233C.unk364 = 0;
+    D_800B233C.unk360 = 0;
+    D_800B2174.preserve_nonplayer_motion = 0;
+    do {
+        i++;
+        func_80081C54(D_800B226C);
+    } while (i < 32);
+    D_800B0078->pc += 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009B210);
 
