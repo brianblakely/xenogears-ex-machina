@@ -1662,17 +1662,40 @@ void func_8008825C(void) {
     D_800B00C0 = 1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800882B8);
+/* Event: store character op1's slot byte +2c (0xff for none) in variable
+ * op3. */
+void func_800882B8(void) {
+    s32 character = func_8008CF3C(func_800ACDEC(1));
+
+    if (character != 0xFF) {
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, D_8005A39C->slots[character].unk2C);
+    } else {
+        func_800A3074(func_800ACDB8(3) & 0xFFFF, 0xFF);
+    }
+    D_800B0078->pc += 5;
+}
 
 /* Event: set byte +4 of party slot op1 to op3. */
 void func_80088360(void) {
     s32 slot = func_800ACDEC(1);
 
-    D_8005A39C->party[slot].unk04 = func_800ACDEC(3);
+    D_8005A39C->slots[slot].unk2C = func_800ACDEC(3);
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800883D4);
+/* Event: set (selector 0) or clear character op2's bit of the game's +2318. */
+void func_800883D4(void) {
+    s32 character = func_8008CF3C(func_800ACDEC(2));
+
+    if (character != 0xFF) {
+        if (D_800ADC00[D_800B0078->pc + 1] == 0) {
+            D_8005A39C->unk2318 |= 1 << character;
+        } else {
+            D_8005A39C->unk2318 &= ~(1 << character);
+        }
+    }
+    D_800B0078->pc += 4;
+}
 
 #ifdef NON_MATCHING
 /* Event: set 800b236c to the inverse of its byte operand's low bit. */
@@ -1704,9 +1727,33 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800888A4);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800889BC);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088B68);
+/* Event: set flag 0x80 (op1 1) or 0x40 (op1 2) of the current record's +2a,
+ * using four batch steps. */
+void func_80088B68(void) {
+    s32 bits = 0;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80088C1C);
+    switch (func_800ACDEC(1)) {
+    case 1:
+        bits = 0x80;
+        break;
+    case 2:
+        bits = 0x40;
+        break;
+    }
+    D_800B02CC[D_800B218C.unk2384].flags |= bits;
+    D_800AFC7C += 4;
+    D_800B0078->pc += 7;
+}
+
+/* Event: set the current record's +24, high flag byte and +76 from operands
+ * 1, 3 and 5, using four batch steps. */
+void func_80088C1C(void) {
+    D_800B02CC[D_800B218C.unk2384].unk24 = func_800ACDEC(1);
+    D_800B02CC[D_800B218C.unk2384].flags |= func_800ACDEC(3) << 8;
+    D_800B02CC[D_800B218C.unk2384].unk76 = func_800ACDEC(5);
+    D_800AFC7C += 4;
+    D_800B0078->pc += 7;
+}
 
 /* 80088d38 with 0. */
 void func_80088CF8(void) {
@@ -1783,9 +1830,34 @@ void func_80089F54(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089F94);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80089FD0);
+/* Event: set the eight halfwords at 800b0080 from raw operands (+88
+ * cleared; +84 at least 1). */
+void func_80089FD0(void) {
+    s16 value;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A08C);
+    D_800B0080.unk80[0] = func_800ACDB8(1);
+    D_800B0080.unk80[1] = func_800ACDB8(3);
+    value = func_800ACDB8(5);
+    D_800B0080.unk80[2] = value;
+    if (value == 0) {
+        D_800B0080.unk80[2] = value + 1;
+    }
+    D_800B0080.unk80[3] = func_800ACDB8(7);
+    D_800B0080.unk80[4] = 0;
+    D_800B0080.unk80[5] = func_800ACDB8(9);
+    D_800B0080.unk80[6] = func_800ACDB8(11);
+    D_800B0080.unk80[7] = func_800ACDB8(13);
+    D_800B0078->pc += 15;
+}
+
+/* Event: set 800b0090, 800b0098 and 800b0094 from operands 1, 3 and 5
+ * (immediate by flags 0x80/0x40/0x20 of byte 7). */
+void func_8008A08C(void) {
+    D_800B0080.unk90 = func_8009CF78(1, D_800ADC00[D_800B0078->pc + 7]);
+    D_800B0080.unk98 = func_8009CFBC(3, D_800ADC00[D_800B0078->pc + 7]);
+    D_800B0080.unk94 = func_8009D000(5, D_800ADC00[D_800B0078->pc + 7]);
+    D_800B0078->pc += 8;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A148);
 
@@ -1866,7 +1938,20 @@ void func_8008A604(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A640);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A6E0);
+/* Event: store character op3's slot bytes +3 and +4 summed (0 for none) in
+ * variable op1. */
+void func_8008A6E0(void) {
+    s32 character = func_8008CF3C(func_800ACDEC(3));
+    s32 sum;
+
+    if (character != 0xFF) {
+        sum = D_8005A39C->slots[character].unk03 + D_8005A39C->slots[character].unk04;
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, sum);
+    } else {
+        func_800A3074(func_800ACDB8(1) & 0xFFFF, 0);
+    }
+    D_800B0078->pc += 5;
+}
 
 /* Find a free (0xff) slot of the table at 80062590 for `id`; -1 when `id`
  * is already there or no slot is free. */
@@ -1895,7 +1980,18 @@ void func_8008A974(void) {
     D_800B0078->layer_flags &= ~0x10000;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008A9AC);
+/* Event: once the stream is stopped, hand the actor's block to its model
+ * (80021bf0) and continue; otherwise wait. Yields either way. */
+void func_8008A9AC(void) {
+    if (func_8008A558() == 0) {
+        D_800ADB90 = 0;
+        func_80021BF0(D_800AF880.components.descriptors[D_800AFD1C].model, D_800B0078->unk120);
+        D_800B0078->pc++;
+    } else {
+        D_800B0078->pc--;
+    }
+    D_800B00C0 = 1;
+}
 
 /* Event: release the actor's block at +120 once, then yield. */
 void func_8008AA60(void) {

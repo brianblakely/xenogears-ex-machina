@@ -282,11 +282,14 @@ typedef struct {
     u8 unk1C[4];
 } GameRecord;
 
-/* A 0xa4-byte party slot of the game state (+308). */
+/* A 0xa4-byte character slot of the game state (+2e0). */
 typedef struct {
-    u8 unk00[4];
+    u8 unk00[3];
+    u8 unk03;
     u8 unk04;
-    u8 unk05[0xA4 - 5];
+    u8 unk05[0x2C - 5];
+    u8 unk2C;
+    u8 unk2D[0xA4 - 0x2D];
 } GameSlot;
 
 /* A 0xa4-byte character of the game state (+978). */
@@ -302,9 +305,9 @@ typedef struct {
 
 /* Resident persistent game state (*8005a39c). */
 typedef struct GameState {
-    u8 unk0000[0x308];
-    GameSlot party[10];          /* 0308 */
-    u8 unk0970[0x978 - 0x970];
+    u8 unk0000[0x2E0];
+    GameSlot slots[10];          /* 02E0 */
+    u8 unk0948[0x978 - 0x948];
     GameCharacter characters[20]; /* 0978 */
     u8 unk1648[0x16C0 - 0x1648];
     GameRecord records[11]; /* 16C0 */
@@ -324,6 +327,8 @@ typedef struct GameState {
     u16 unk1D32;         /* 1D32: bit per character */
     u8 unk1D34[0x22B6 - 0x1D34];
     u16 unk22B6;         /* 22B6 */
+    u8 unk22B8[0x2318 - 0x22B8];
+    u16 unk2318;         /* 2318: bit per character */
 } GameState;
 
 /* Field work state 800b218c..800b2388, one object: stores to its members do
@@ -386,6 +391,24 @@ typedef struct {
     u16 id;
 } FieldSoundBank;
 
+/* Parameters events set at 800b0080, one object. */
+typedef struct {
+    s16 unk80[8]; /* 800b0080 */
+    s32 unk90;    /* 800b0090 */
+    s32 unk94;    /* 800b0094 */
+    s32 unk98;    /* 800b0098 */
+} FieldEventParams;
+
+/* One 0x78-byte record of the table at 800b02cc. */
+typedef struct {
+    u8 unk00[0x24];
+    s16 unk24;       /* 24 */
+    u8 unk26[4];
+    u16 flags;       /* 2A */
+    u8 unk2C[0x76 - 0x2C];
+    s16 unk76;       /* 76 */
+} Record78;
+
 /* One of the three positional sound-emitter slots (800afe88). */
 typedef struct {
     u16 id;
@@ -401,6 +424,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_80021BF0(FieldModel *model, void *block);
 extern void func_80039EC4(s32 sound, s32 voice);
 extern void func_800273C4(void *object, SVECTOR *eye, SVECTOR *target, MATRIX *world, u32 *ot, s32 buffer);
 extern void func_800320A4(void *block); /* keep a block */
@@ -467,6 +491,7 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern s32 func_8009D000(s32 offset, s32 flags); /* operand, immediate with flag 0x20 */
 extern void func_80086590(VECTOR *target);
 extern s32 func_8009CFBC(s32 offset, s32 flags); /* operand, immediate with flag 0x40 */
 extern void func_80074700(void);
@@ -546,6 +571,8 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern FieldEventParams D_800B0080;
+extern Record78 D_800B02CC[];
 extern u16 D_800AE060[][2]; /* movie sound timeline: time, sound */
 extern u16 D_800C3A2C; /* movie sound time origin */
 extern s32 D_800C3A64; /* movie sound timeline position */
