@@ -22,13 +22,68 @@
 #include "console.h"
 #include "sound.h"
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001C8DC);
+/* Destroy every task of both lists. */
+void func_8001C8DC(void) {
+    Task *task;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001C944);
+    while ((task = D_8005958C) != NULL) {
+        task->destroy(task);
+    }
+    while ((task = D_80059594) != NULL) {
+        task->destroy(task);
+    }
+}
 
+/* Empty both task lists. */
+void func_8001C944(void) {
+    D_8005958C = NULL;
+    D_80059594 = NULL;
+    D_80059188 = 0;
+    D_8005918C = 0;
+    D_80059428[0] = 0;
+}
+
+/* Run the main task list, unless it is paused (count the pause down). */
+/* Nonmatching: the original addresses the pause count absolutely each time; as a
+ * sizeless extern (needed to keep it off $gp here) GCC keeps its address in a register. */
+#ifdef NON_MATCHING
+void func_8001C964(void) {
+    Task *task;
+
+    if (D_80059428[0] != 0) {
+        if (--D_80059428[0] == 0) {
+            D_80059494[0] = 0;
+        }
+        return;
+    }
+    D_80059590 = D_8005958C;
+    while (D_80059590 != NULL) {
+        task = D_80059590;
+        D_800594C0 = task;
+        D_80059590 = task->next;
+        if (task->update != NULL) {
+            task->update(task);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001C964);
+#endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001C9F8);
+/* Run the second task list. */
+void func_8001C9F8(void) {
+    Task *task;
+
+    D_80059590 = D_80059594;
+    while (D_80059590 != NULL) {
+        task = D_80059590;
+        D_800594C0 = task;
+        D_80059590 = task->next;
+        if (task->update != NULL) {
+            task->update(task);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001CA58);
 
@@ -85,9 +140,13 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D19C);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D1D8);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D298);
+void func_8001D298(void) {
+    D_80059190 = 0;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D2A4);
+void func_8001D2A4(void) {
+    D_80059190 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001D2B0);
 
@@ -157,7 +216,16 @@ u8 *func_8001FBA4(Sprite *sprite, u8 *code) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_8001FBE4);
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80021AD8);
+/* `value + delta` clamped to 0-255. */
+s32 func_80021AD8(s32 value, s32 delta) {
+    value += delta;
+    if (value >= 0x100) {
+        value = 0xFF;
+    } else if (value < 0) {
+        value = 0;
+    }
+    return value;
+}
 
 void func_80021B04(SVECTOR *vector, s16 x, s16 y, s16 z) {
     vector->vx = x;

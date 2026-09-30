@@ -9,10 +9,28 @@ typedef struct Task {
     void *data;                          /* +0x4: the task's sprite */
     void (*update)(struct Task *task);  /* +0x8 */
     void (*destroy)(struct Task *task); /* +0xc */
-    u32 serial;                          /* +0x10 */
-    u32 generation;                      /* +0x14: bit 31 active */
+    struct {
+        unsigned serial : 29;            /* +0x10: creation number */
+        unsigned flags : 3;
+    } id;
+    struct {
+        unsigned owner_serial : 29;      /* +0x14: the owner's creation number */
+        unsigned flag29 : 1;
+        unsigned flag30 : 1;
+        unsigned active : 1;
+    } link;
     struct Task *next;                   /* +0x18 */
 } Task;
+
+/* Task lists: the main list runs first each frame, then the second list. */
+extern Task *D_8005958C;   /* main task list */
+extern Task *D_80059594;   /* second task list */
+extern Task *D_80059590;   /* the next task of the running pass */
+extern Task *D_800594C0;   /* the running task */
+extern u32 D_80059184;     /* next task serial */
+extern s32 D_80059188;
+extern s32 D_8005918C;     /* live tasks */
+extern s32 D_80059190;
 
 /* Resident sprite/actor engine (the unit around 0x8001c8dc-0x8002709c).
  * Only the fields the recovered functions use are named. */
@@ -107,6 +125,8 @@ typedef struct {
  * declarations carry no size (incomplete arrays), so they are not small data
  * under -G8. */
 extern u8 D_800591AF[]; /* [0]: allocation mode for sprite tasks */
+extern s32 D_80059428[];  /* [0]: frames the main task list stays paused */
+extern s16 D_80059494[];
 extern s32 D_8005956C[];
 
 /* 0x20 bytes of lighting state copied by 80024ff4. */
