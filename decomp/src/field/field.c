@@ -10268,7 +10268,8 @@ void func_800A77C4(void) {
 
 /* While movie frames 687..18e2 play (when the sequence is enabled),
  * switch to 640-wide draw buffers and draw the file 0xab sequence over
- * the movie each frame, then restore the 320-wide buffers. */
+ * the movie each frame, then restore the 320-wide buffers. Declared int
+ * without a value, as the original's live result register shows. */
 s32 func_800A7948(void) {
     RECT rect;
 
