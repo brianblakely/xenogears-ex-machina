@@ -2799,7 +2799,6 @@ extern u16 D_800C3900;      /* pad buttons held */
 extern u16 D_800C3908;      /* pad buttons pressed */
 extern u16 D_800AFE9C;
 extern s32 D_8004F334;
-extern void *D_8005A4E0;
 extern u8 D_8005954C;
 extern s32 D_800ADBD4;
 extern s32 D_800ADB18;
