@@ -5159,23 +5159,170 @@ void func_8009F5A8(void) {
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F5F4);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FA00);
+/* Party slot of character `id`, or -1. */
+s32 func_8009FA00(s32 id) {
+    s32 i;
 
+    if (id == 0xFF) {
+        return -1;
+    }
+    for (i = 0; i < 3; i++) {
+        if (D_80062590[i] == 0xFF) {
+            return -1;
+        }
+        if (D_80062590[i] == id) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+s16 func_8009E330(s32 offset);
+
+
+#ifdef NON_MATCHING
+/* Place the current actor at entry point `entry` of the bytecode's entry
+ * table (when present): layer, x/z, camera octant and facing (0xFF: from
+ * variables 8 and 6). */
+s32 func_8009FA54(s32 entry) {
+    s32 marker;
+    s32 record;
+    s32 x;
+    s16 heading;
+    s32 facing;
+
+    marker = D_800ADC00[0];
+    if (marker == 0xFF) {
+        record = entry * 7;
+        D_800B0078->layer = D_800ADC00[record + 5];
+        x = func_8009E330(record + 1);
+        func_8009E574(x, func_8009E330(record + 3));
+        heading = ((D_800ADC00[record + 6] + 4) & 7) << 9;
+        if (D_800ADC00[record + 6] == marker) {
+            heading = ((func_800A3018(8) + 4) & 7) << 9;
+        }
+        D_800AF930.heading_half = heading;
+        D_800AF930.heading = heading;
+        D_800AF930.heading_high = heading << 16;
+        facing = (((D_800ADC00[record + 7] - 2) & 7) << 9) | 0x8000;
+        if (D_800ADC00[record + 7] == marker) {
+            facing = (((func_800A3018(6) - 2) & 7) << 9) | 0x8000;
+        }
+        D_800B0078->unk104 = facing;
+        D_800B0078->unk106 = facing;
+        D_800B0078->unk108 = facing;
+    }
+    return 0;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FA54);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FB98);
+extern s32 D_8004F34C;
+extern s32 D_800B2268[]; /* addressed as an aggregate */
+void func_8001AD1C(void);
+void func_8001B044(void);
+void func_8001B3A8(void);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FC10);
+/* Mark the field id (0xC000) and reset the resident services; record
+ * operand byte 1 in D_800B2268. */
+void func_8009FB98(void) {
+    D_8004F34C |= 0xC000;
+    func_8001AD1C();
+    func_8001B044();
+    func_8001B3A8();
+    D_800B2268[0] = EVENT_OPERAND_BYTE(1);
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FC48);
+extern s32 D_8006F990[3];
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FCAC);
+/* Party slot whose field actor is `index`, or 0xFF. */
+s32 func_8009FC10(s32 index) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FD10);
+    for (i = 0; i < 3; i++) {
+        if (D_8006F990[i] == index) {
+            return i;
+        }
+    }
+    return 0xFF;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FDD4);
+void func_8009FD10(s32 slot);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FE4C);
+/* Set party slot flag (unk22B1) for slot operand 1 (max 2). */
+void func_8009FC48(void) {
+    s32 slot;
+
+    slot = func_800ACDEC(1);
+    if (slot >= 3) {
+        slot = 2;
+    }
+    D_8005A39C->unk22B1[slot] = 1;
+    func_8009FD10(slot);
+    D_800B0078->pc += 3;
+}
+
+/* Clear party slot flag (unk22B1) for slot operand 1 (max 2). */
+void func_8009FCAC(void) {
+    s32 slot;
+
+    slot = func_800ACDEC(1);
+    if (slot >= 3) {
+        slot = 2;
+    }
+    D_8005A39C->unk22B1[slot] = 0;
+    func_8009FD10(slot);
+    D_800B0078->pc += 3;
+}
+
+/* Record the field id in the slot's variable triple and clear the rest. */
+void func_8009FD10(s32 slot) {
+    switch (slot) {
+    case 0:
+        func_800A3074(0x2A, D_8004F34C & 0xFFF);
+        func_800A3074(0x2C, 0);
+        func_800A3074(0x2E, 0);
+        break;
+    case 1:
+        func_800A3074(0x30, D_8004F34C & 0xFFF);
+        func_800A3074(0x32, 0);
+        func_800A3074(0x34, 0);
+        break;
+    case 2:
+        func_800A3074(0x36, D_8004F34C & 0xFFF);
+        func_800A3074(0x38, 0);
+        func_800A3074(0x3A, 0);
+        break;
+    }
+}
+
+void func_800AD4D4(s32 slot);
+
+/* Run func_800AD4D4 for the current actor's party slot unless flagged. */
+void func_8009FDD4(void) {
+    s32 slot;
+
+    slot = func_8009FC10(D_800AFD1C);
+    if (slot != 0xFF && D_8005A39C->unk22B1[slot] == 0) {
+        func_800AD4D4(slot);
+    }
+    D_800B0078->pc += 1;
+}
+
+void func_800ACFD0(s32 slot);
+
+/* Run func_800ACFD0 for party slot operand 1 when occupied and flagged. */
+void func_8009FE4C(void) {
+    u8 slot;
+
+    slot = EVENT_OPERAND_BYTE(1);
+    if (D_80062590[slot] != 0xFF && D_8005A39C->unk22B1[slot] != 0) {
+        func_800ACFD0(slot);
+    }
+    D_800B0078->pc += 2;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009FEE4);
 

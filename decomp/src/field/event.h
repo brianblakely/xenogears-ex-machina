@@ -135,7 +135,9 @@ typedef struct GameState {
     u8 id3[100];         /* 2120 */
     u8 count4[150];      /* 2184: inventory list 4 */
     u8 id4[150];         /* 221A */
-    u8 unk22B0[0x2320 - 0x22B0];
+    u8 unk22B0[0x22B1 - 0x22B0];
+    u8 unk22B1[3];       /* 22B1: per party slot */
+    u8 unk22B4[0x2320 - 0x22B4];
     s16 unk2320;         /* 2320 */
     u8 unk2322[0x2324 - 0x2322];
 } GameState;
