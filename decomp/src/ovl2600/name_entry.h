@@ -204,7 +204,7 @@ typedef struct {
     u8 pad_5[0xC - 0x5];
     u8 list_label_shown[8]; /* 0xC */
     u8 row_label_shown[6];  /* 0x14 */
-    u8 pad_1A[0x20 - 0x1A];
+    u8 entry_label_shown[6]; /* 0x1A */
     u8 panel_20[7]; /* 0x20: per panel */
     u8 panel_27[7]; /* 0x27: per panel */
     u8 b_2E;        /* 0x2E: message lines shown */
@@ -220,7 +220,10 @@ typedef struct {
     u8 pad_0[0x6C];
     DrawEnv envs[2];    /* 0x6C */
     DrawEnv *draw_env;  /* 0x1D4: the buffer being built */
-    u8 pad_1D8[0x2DC - 0x1D8];
+    SVECTOR view_rotation;    /* 0x1D8 */
+    VECTOR view_translation;  /* 0x1E0 */
+    MATRIX view_matrix;       /* 0x1F0 */
+    u8 pad_210[0x2DC - 0x210];
     void *sprite_sheet; /* 0x2DC: sprite table for func_8002675C */
     void *label_text;   /* 0x2E0: label text offset table */
     EffectBank *effect_bank; /* 0x2E4 */
@@ -259,8 +262,9 @@ typedef struct {
     MenuLabel labels[4];   /* 0x4E0: the screen's command labels */
     MenuLabel list_labels[8]; /* 0x6E0 */
     MenuLabel row_labels[6];  /* 0xAE0 */
-    u8 pad_DE0[0x1DE0 - 0xDE0];
-    void *message_lines[4]; /* 0x1DE0 */
+    MenuLabel entry_labels[6]; /* 0xDE0 */
+    u8 pad_10E0[0x1DE0 - 0x10E0];
+    MenuLabel *message_lines[4]; /* 0x1DE0 */
     u8 pad_1DF0[0x1E20 - 0x1DF0];
     u8 *entry;             /* 0x1E20: name entry block (0xDEC bytes) */
 } MenuState;

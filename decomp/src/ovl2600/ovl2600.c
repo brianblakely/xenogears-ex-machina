@@ -901,9 +901,40 @@ void func_801C8F58(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C90D0);
+/* Draw the shown name entry labels. */
+void func_801C90D0(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9160);
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->flags->entry_label_shown[i]) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry_labels[i].poly[D_800625A0->entry_labels[i].buffer]);
+        }
+    }
+}
+
+/* Draw the shown message lines, projecting the 3D ones through the GTE. */
+void func_801C9160(void) {
+    s32 depth;
+    s32 flag;
+    s32 i;
+    MenuLabel *line;
+
+    if (D_800625A0->flags->b_2E) {
+        for (i = 0; i < 3; i++) {
+            line = D_800625A0->message_lines[i];
+            if (line->projected) {
+                func_8004A73C(&line->corners[0], &line->corners[1], &line->corners[2],
+                              &line->corners[3], &line->poly[line->buffer].x0,
+                              &line->poly[line->buffer].x1, &line->poly[line->buffer].x2,
+                              &line->poly[line->buffer].x3, &depth, &flag);
+                func_80043B48(&D_800625A0->draw_env->ot[4], &line->poly[line->buffer]);
+            } else {
+                func_80043B48(&D_800625A0->draw_env->ot[4], &line->poly[line->buffer]);
+            }
+        }
+    }
+}
 
 /* Draw this buffer's fade quad and the second draw mode. */
 void func_801C92BC(void) {
@@ -939,7 +970,52 @@ void func_801C989C(u8 sound) {
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C98E8);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9AF4);
+/* Advance the view motion (4/3 start zooming in/out, 2/1 run them) and load
+ * the view rotation and translation into the GTE. */
+void func_801C9AF4(void) {
+    switch (D_800625A0->view_motion) {
+    case 4:
+        D_800625A0->view_translation.vz = 0x200;
+        D_800625A0->view_rotation.vz = 0;
+        D_800625A0->view_rotation.vy = 0;
+        D_800625A0->view_rotation.vx = 0;
+        D_800625A0->view_translation.vy = 0;
+        D_800625A0->view_translation.vx = 0;
+        D_800625A0->view_motion = 2;
+        break;
+    case 3:
+        D_800625A0->view_translation.vz = 0x800;
+        D_800625A0->view_rotation.vz = 0;
+        D_800625A0->view_rotation.vy = 0;
+        D_800625A0->view_rotation.vx = 0;
+        D_800625A0->view_translation.vy = 0;
+        D_800625A0->view_translation.vx = 0;
+        D_800625A0->view_motion = 1;
+        break;
+    case 2:
+        D_800625A0->view_rotation.vy -= 0x60;
+        D_800625A0->view_translation.vz += 0x40;
+        if (D_800625A0->view_translation.vz >= 0xE00) {
+            D_800625A0->view_motion = 0;
+        }
+        break;
+    case 1:
+        D_800625A0->view_rotation.vx += 0x7C;
+        D_800625A0->view_translation.vz -= 0x30;
+        if (D_800625A0->view_translation.vz < 0x200) {
+            D_800625A0->view_translation.vz = 0x200;
+            D_800625A0->view_rotation.vz = 0;
+            D_800625A0->view_rotation.vx = 0;
+            D_800625A0->view_rotation.vy = 0;
+            D_800625A0->view_motion = 0;
+        }
+        break;
+    }
+    func_8003F738(&D_800625A0->view_rotation, &D_800625A0->view_matrix);
+    func_80049D9C(&D_800625A0->view_matrix, &D_800625A0->view_translation);
+    func_80049EFC(&D_800625A0->view_matrix);
+    func_80049F8C(&D_800625A0->view_matrix);
+}
 
 /* Run one menu frame: check the stack guard, read input, check the reset
  * combination, swap to the other draw buffer, draw the screen and present
@@ -1037,7 +1113,35 @@ void func_801CA39C(void) {
     func_801C9C34();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA400);
+/* Leave the screen: run the closing frames until buffer 0 is shown and
+ * release everything (a frame passes around the sound bank release). */
+void func_801CA400(void) {
+    func_801C9C34();
+    func_801C9C34();
+    D_800625A0->active = 0;
+    func_801C9C34();
+    do {
+        func_801C9C34();
+    } while (D_800625A0->buffer_index != 0);
+    func_801C505C(0);
+    func_801C50C0(0);
+    func_801C5124(0);
+    func_801C5188(0);
+    func_801C51EC(0);
+    func_801C5250(0);
+    func_800320E8(D_800625A0->sprite_sheet);
+    func_800320E8(D_800625A0->label_text);
+    func_800320E8(D_800625A0->labels[0].image);
+    if (D_80059178) {
+        func_8003A094(D_800625A0->effect_bank);
+        func_801C9C34();
+        func_8003852C(D_800625A0->effect_bank);
+        func_801C9C34();
+        func_800320E8(D_800625A0->effect_bank);
+    }
+    func_801C52B4(0);
+    func_800320E8(D_800625A0);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CA558);
 
@@ -1088,4 +1192,30 @@ u8 func_801CB2F0(u8 *codes) {
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CB33C);
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801CBDBC);
+/* Overlay entry: allocate and set up the name entry screen, run it and leave. */
+void func_801CBDBC(void) {
+    MenuState *state;
+
+    func_801C505C(1);
+    func_801C50C0(1);
+    func_801C5124(1);
+    func_801C5188(1);
+    func_801C51EC(1);
+    func_801C5250(1);
+    func_801C52B4(1);
+    state = D_800625A0;
+    state->block_350->screen.x = 0x2C0;
+    state->block_350->screen.y = 0x100;
+    state->block_350->screen.w = 0x140;
+    state->block_350->screen.h = 0xE0;
+    state->backdrop->b_15B = 0x40;
+    func_801C58B8();
+    func_801C5A30();
+    func_801C5EAC();
+    func_801C60BC();
+    func_801C5F08();
+    D_800625A0->active = 1;
+    D_800625A0->sounds = 1;
+    func_801CB33C();
+    func_801CA400();
+}
