@@ -515,9 +515,58 @@ void func_8007528C(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_80075460);
+/* Save the world-map state to the resident save area. */
+void func_80075460(void) {
+    WorldmapSave *save;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_8007565C);
+    save = &D_8005A4E4;
+    save->actors = *(ActorSet *)D_8009BE24;
+    save->position.vx = D_8009D55C.target.vx;
+    save->position.vy = D_8009D55C.target.vy;
+    save->position.vz = D_8009D55C.target.vz;
+    save->unk2010 = (s16)D_8009D52C;
+    save->timer_period = D_8009BE40;
+    save->timer_count = D_8009BCC4;
+    save->timer_countdown = D_8009D64C;
+    save->timers = *(TimerSet *)D_8009C854;
+    save->queue = D_8009CEC4;
+    save->queue_count = D_8009D154;
+    save->camera_angle[0] = ((s32 *)&D_8009BD38)[0];
+    save->camera_angle[1] = ((s32 *)&D_8009BD38)[1];
+    save->camera_distance = D_8009D3F0;
+    save->unk22D0 = D_8009BE0C;
+    save->unk22E4[0] = ((s32 *)&D_8009C838)[0];
+    save->unk22E4[1] = ((s32 *)&D_8009C838)[1];
+    save->unk22D4.vx = ((VECTOR *)D_8009BBB4)->vx;
+    save->unk22D4.vy = ((VECTOR *)D_8009BBB4)->vy;
+    save->unk22D4.vz = ((VECTOR *)D_8009BBB4)->vz;
+    save->camera_target.vx = D_8009BE28.target.vx;
+    save->camera_target.vy = D_8009BE28.target.vy;
+    save->camera_target.vz = D_8009BE28.target.vz;
+}
+
+/* Restore the world-map state from the resident save area. */
+void func_8007565C(void) {
+    WorldmapSave *save;
+
+    save = &D_8005A4E4;
+    *(ActorSet *)D_8009BE24 = save->actors;
+    D_8009C5AC = save->position;
+    D_8009D55C.target = save->position;
+    *(TimerSet *)D_8009C854 = save->timers;
+    D_8009D52C = save->unk2010;
+    D_8009BE40 = save->timer_period;
+    D_8009BCC4 = save->timer_count;
+    D_8009D64C = save->timer_countdown;
+    D_8009CEC4 = save->queue;
+    D_8009D154 = save->queue_count;
+    D_8009BD38 = *(SVECTOR *)save->camera_angle;
+    D_8009D3F0 = save->camera_distance;
+    D_8009BE0C = save->unk22D0;
+    *(VECTOR *)D_8009BBB4 = save->unk22D4;
+    D_8009C838 = *(SVECTOR *)save->unk22E4;
+    D_8009BE28.target = save->camera_target;
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80072238", func_800758C0);
 

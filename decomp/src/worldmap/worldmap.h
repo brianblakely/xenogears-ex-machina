@@ -721,4 +721,42 @@ typedef struct {
     PolyFT4 quad[16];
 } QuadSet;
 
+/* Whole-set copies of runtime tables. */
+typedef struct {
+    WorldmapActor actor[64];
+} ActorSet;
+
+typedef struct {
+    s16 timer[16];
+} TimerSet;
+
+typedef struct {
+    s32 words[0xA0]; /* layout not recovered */
+} WorldmapQueue;
+
+extern WorldmapQueue D_8009CEC4;
+extern s16 D_8009D154; /* queue count */
+extern SVECTOR D_8009C838;
+
+/* Resident save of the world-map state across a scene change (0x8005a4e4). */
+typedef struct {
+    ActorSet actors;       /* 0x0000 */
+    VECTOR position;       /* 0x2000 */
+    s32 unk2010;           /* D_8009D52C */
+    s32 timer_period;      /* D_8009BE40 */
+    s32 timer_count;       /* D_8009BCC4 */
+    s32 timer_countdown;   /* D_8009D64C */
+    TimerSet timers;       /* 0x2020 */
+    WorldmapQueue queue;   /* 0x2040 */
+    s32 queue_count;       /* 0x22C0 */
+    s32 camera_angle[2];   /* 0x22C4: SVECTOR D_8009BD38 as words */
+    s32 camera_distance;   /* 0x22CC */
+    s32 unk22D0;           /* D_8009BE0C */
+    VECTOR unk22D4;        /* D_8009BBB4 */
+    s32 unk22E4[2];        /* SVECTOR D_8009C838 as words */
+    VECTOR camera_target;  /* 0x22EC */
+} WorldmapSave;
+
+extern WorldmapSave D_8005A4E4;
+
 #endif
