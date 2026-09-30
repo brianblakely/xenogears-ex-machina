@@ -2347,7 +2347,25 @@ void func_801CFB48(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CFF64);
+/* While the card access indicator is shown, draw its bar (as long as the
+ * progress +7b0), its sprite and the blinking arrows (steady while closing);
+ * while running, advance the progress and wrap it past 100. */
+void func_801CFF64(void) {
+    if (D_800625A0->party->unk50[2] != 0) {
+        setXY4(&MENU_INDICATOR->fills[MENU_INDICATOR->buffer], 0x20, 0x61, MENU_INDICATOR->unk7B0 + 0x20, 0x61,
+               0x20, 0x68, MENU_INDICATOR->unk7B0 + 0x20, 0x68);
+        if ((u32)D_800625A0->frameCounter % 6 >= 4 || D_800625A0->party->unk50[2] == 2) {
+            func_801CE2B4(2, MENU_INDICATOR->spriteB, MENU_INDICATOR->buffer);
+        }
+        func_801CE2B4(12, MENU_INDICATOR->spriteA, MENU_INDICATOR->buffer);
+        AddPrim(&D_800625A0->current->ot[4], &MENU_INDICATOR->fills[MENU_INDICATOR->buffer]);
+        if (D_800625A0->party->unk50[2] == 1) {
+            if ((MENU_INDICATOR->unk7B0 += MENU_INDICATOR->unk7B4) > 0x100) {
+                MENU_INDICATOR->unk7B0 = 0;
+            }
+        }
+    }
+}
 
 /* Animate the file screen: its layers, the 15-frame x 6 blink and the
  * 4-step pulse between 4 and 128. */
