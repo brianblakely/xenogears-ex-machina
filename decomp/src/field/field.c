@@ -10266,7 +10266,65 @@ void func_800A77C4(void) {
     func_800320E8(pixels);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7948);
+/* While movie frames 687..18e2 play (when the sequence is enabled),
+ * switch to 640-wide draw buffers and draw the file 0xab sequence over
+ * the movie each frame, then restore the 320-wide buffers. */
+s32 func_800A7948(void) {
+    RECT rect;
+
+    if (D_8004F300 == 0 || D_800B06A0 < 0x687) {
+        return;
+    }
+    if (D_800B06A0 < 0x18E2) {
+        D_800AFE74 = 1;
+        D_801E89E0 = 0;
+        setRECT(&rect, 0, 0, 0x500, 0x200);
+        ClearImage(&rect, 0, 0, 0);
+        DrawSync(0);
+        VSync(0);
+        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x280, 0xE0);
+        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x280, 0xE0);
+        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x280, 0xE0);
+        D_800B249C[1].disp.isrgb24 = 0;
+        D_800B249C[0].disp.isrgb24 = 0;
+        PutDispEnv(&D_800C426C->disp);
+        PutDrawEnv(&D_800C426C->draw);
+        setRECT(&rect, 0x300, 0, 0x200, 0x100);
+        ClearImage(&rect, 0, 0, 0);
+        func_800ACB90();
+        VSync(0);
+        DrawSync(0);
+        while (D_800B06A0 < 0x18E2) {
+            func_80019CA0();
+            func_80073F50();
+            if (D_800B06A0 < 0x18DE) {
+                func_800AC99C();
+            }
+            DrawSync(0);
+            VSync(2);
+            ClearImage(&D_800C426C->draw.clip, 0, 0, 0);
+            PutDispEnv(&D_800C426C->disp);
+            PutDrawEnv(&D_800C426C->draw);
+            DrawOTag(&D_800C426C->overlay_ot[7]);
+            func_800ACCF4();
+            func_800A732C(5);
+        }
+        D_800AFE74 = 0;
+        D_801E89E0 = 1;
+        DrawSync(0);
+        VSync(0);
+        SetDefDrawEnv(&D_800B249C[0].draw, 0, 0, 0x140, 0xE0);
+        SetDefDrawEnv(&D_800B249C[1].draw, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&D_800B249C[0].disp, 0, 0x100, 0x140, 0xE0);
+        SetDefDispEnv(&D_800B249C[1].disp, 0, 0, 0x140, 0xE0);
+        D_800B249C[1].disp.isrgb24 = 1;
+        D_800B249C[0].disp.isrgb24 = 1;
+        D_800B249C[1].disp.isinter = 0;
+        D_800B249C[0].disp.isinter = 0;
+        func_800ACCB0();
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A7C58);
 

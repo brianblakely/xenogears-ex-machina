@@ -16,6 +16,13 @@ typedef struct {
 extern void *D_8005A41C; /* resident: party sprite block 2 (8005a414[2]), addressed alone */
 extern void *D_80065AFC[3]; /* resident: party character file blocks */
 
+extern s32 D_801E89E0; /* movie library: 1 lets it present frames itself */
+
+void func_800AC99C(void);
+void func_800ACB90(void);
+void func_800ACCB0(void);
+void func_800ACCF4(void);
+
 s32 func_80029AFC(MovieFileRequest *list, s32 mode, s32 a2); /* resident: read a file list */
 
 #endif
