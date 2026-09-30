@@ -3550,13 +3550,240 @@ void func_80080C6C(u8 index) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80080C94);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008115C);
+/* Confirm the selected entry of the member's on-foot window: entries 4, 6
+ * and 7 open the attack page (5) when the member has a target; 1 and 0 open
+ * pages 2 and 7 unless their item is unavailable (buzzer 0x4f); 2 opens page
+ * 3; 3 opens page 4 when available, else on a second press of the repeat
+ * entry (800c3e29 = 3) page 0xa. */
+void func_8008115C(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
+            D_800D366C = 0;
+            func_80087A38(member);
+            func_80084A7C(member);
+            func_80077698();
+            D_800C3EAC->page = 5;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[7] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0xA;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[5] == 0) {
+            D_800C3EAC->page = 7;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081318);
+/* Confirm the selected entry of the member's item command window: entries
+ * 4, 6 and 7 open the item list when the member has one (else page 2); 0
+ * opens page 1 when available, else on a repeat press (800c3e29 = 0) page 7;
+ * 2 opens page 3; 3 opens page 4, else on a repeat press page 0xa; 1 opens
+ * page 8 unless unavailable (buzzer 0x4f). */
+void func_80081318(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (func_8008BED8(member)) {
+            func_8008B908(member);
+        } else {
+            D_800C3EAC->page = 2;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[5] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 7;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[7] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0xA;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 8;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081504);
+/* Confirm the selected entry of the member's charge command window:
+ * entries 4, 6 and 7 charge and end the menu; 0 opens page 1 when available,
+ * else on a repeat press (800c3e29 = 0) page 7; 1 and 2 open pages 2 and 9
+ * unless unavailable (buzzer 0x4f); 3 opens page 4, else on a repeat press
+ * page 0xa. */
+void func_80081504(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8009AA44(member);
+        D_800C3EAC->unk2EA = 0;
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[5] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 7;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[7] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0xA;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 9;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800816F8);
+/* Confirm the selected entry of the member's gear-list command window:
+ * entries 4, 6 and 7 open the gear list when the member has one (else page
+ * 4); 0 opens page 1 when available, else on a repeat press (800c3e29 = 0)
+ * page 7; 1 and 3 open pages 2 and 0xa unless unavailable (buzzer 0x4f); 2
+ * opens page 3. */
+void func_800816F8(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8007FD38(member);
+        if (func_8008B478(member)) {
+            func_8008ADD0(member);
+        } else {
+            D_800C3EAC->page = 4;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 1;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[5] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 7;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[7] == 0) {
+            D_800C3EAC->page = 0xA;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 /* Frame the camera and target cursor on the attack page target, mark the
  * four directions that lead to another target and show its name. */
