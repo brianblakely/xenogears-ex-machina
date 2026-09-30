@@ -700,7 +700,18 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCA8);
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCB4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076438);
+/* Debug: print an actor's queued inputs, oldest first. The name argument of
+ * the leading "%s:" is missing in the original. */
+void func_80076438(Actor *actor) {
+    s32 i;
+    s32 index = actor->input_tail;
+
+    func_800379C8("%s:");
+    for (i = 0; i < actor->input_count; i++) {
+        func_800379C8("%d", actor->inputs[index++ & 0x1F]);
+    }
+    func_800379C8("\n");
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCCC);
 

@@ -417,6 +417,7 @@ extern s32 D_800928AC;
 extern s32 D_80092638;
 extern s32 D_8009263C;
 extern s32 D_80092648;
+void func_800379C8(const char *format, ...); /* debug text print */
 extern u8 D_80092664;
 extern s32 D_80092890;
 extern u8 D_800928B4;
