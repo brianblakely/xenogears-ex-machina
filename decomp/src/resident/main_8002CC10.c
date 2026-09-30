@@ -814,7 +814,28 @@ void func_80030C98(QuadFace *faces, s32 count) {
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030C98);
 #endif
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_80030EE8);
+/* Perspective-transform the three loaded vertices. Nonzero when one of
+ * them has a usable depth and lands inside the screen (8002DFF0). */
+s32 func_80030EE8(void) {
+    s32 sz0, sz1, sz2;
+    u32 sxy;
+
+    gte_rtpt();
+    gte_stsz3(&sz0, &sz1, &sz2);
+    gte_stsxy0(&sxy);
+    if ((u16)(sz0 + 1) >= 2 && sxy < D_800500FC && (sxy & 0xFFFF) < D_800500F8) {
+        return 1;
+    }
+    gte_stsxy1(&sxy);
+    if ((u16)(sz1 + 1) >= 2 && sxy < D_800500FC && (sxy & 0xFFFF) < D_800500F8) {
+        return 1;
+    }
+    gte_stsxy2(&sxy);
+    if ((u16)(sz2 + 1) >= 2 && sxy < D_800500FC && (sxy & 0xFFFF) < D_800500F8) {
+        return 1;
+    }
+    return 0;
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/main_8002CC10", func_8003101C);
 
