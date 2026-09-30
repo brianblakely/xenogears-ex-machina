@@ -386,7 +386,8 @@ typedef struct {
     s16 unk223C[3][3];         /* 223C */
     u8 unk224E[0x225C - 0x224E];
     u8 unk225C[3];             /* 225C */
-    u8 unk225F[0x2268 - 0x225F]; /* 225F: event byte table */
+    u8 unk225F[0x2264 - 0x225F]; /* 225F: event byte table */
+    s32 unk2264;               /* 2264: 801e layer enabled */
     s32 unk2268;               /* 2268 */
     s32 controlled;            /* 226C: controlled descriptor */
     u8 unk2270[0x2298 - 0x2270];
@@ -477,6 +478,7 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern void func_8004A0EC(s32 r, s32 g, s32 b); /* SetBackColor */
 extern void func_800230A8(FieldModel *model);
 extern void func_800345E0(void *text);
 extern void func_80034614(void *text);
@@ -567,6 +569,9 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80086BA8(void);
+extern void func_801E7D14(MATRIX *world, s16 (*table)[3], u32 *ot, s32 buffer, s32);
+extern void func_80281B00(char *name);
 extern void func_800AABD8(void);
 extern void func_800AAC08(void);
 extern void func_800AADC8(s32, s32, s32, s32);
@@ -641,6 +646,7 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F380;
 extern s32 D_80059198;
 extern void *D_8005A4BC; /* field sound-effect bank copy */
 extern u8 D_8005061C[6];

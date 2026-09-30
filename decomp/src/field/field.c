@@ -572,7 +572,20 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074700);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800748E8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007520C);
+/* Draw the 801e module's layer (with the emitters updated and its back
+ * colour set) when enabled, then the debug "GEAR" timer. */
+void func_8007520C(void) {
+    if (D_8004F380 == 0) {
+        if (D_800B2078.unk2264 != 0) {
+            func_80086BA8();
+            func_8004A0EC(D_800B2078.unk225C[0], D_800B2078.unk225C[1], D_800B2078.unk225C[2]);
+            func_801E7D14(&D_800AF880.scaled_world, D_800B2078.unk221C, D_800C426C->ot, D_800ADB08, 1);
+        }
+        if (D_800C268C == 0) {
+            func_80281B00("GEAR      ");
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800752C8);
 
