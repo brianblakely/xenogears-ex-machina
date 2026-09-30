@@ -10,7 +10,164 @@
 
 INCLUDE_RODATA(".local/decomp/movie/asm/nonmatchings/movie", D_8006FAF0);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800704E8);
+/* The menu's CD-ROM monitor: at 640x240, show the read statistics, the
+ * resident's error counters and stream state, a dump of the stream buffer
+ * and the reads per result class, run the monitor's input every frame and
+ * return to the 320-wide menu on Start once no read is running. The unused
+ * locals (mode included) reproduce the original's frame; the original also
+ * reads the menu cursor before the exit test and stores it back after. */
+void func_800704E8(void) {
+    u8 unused[8];
+    char mode[3] = {0, 2, 2};
+    u8 unused2[0x18];
+    s32 button;
+    s32 i;
+    s32 hours;
+    s32 cursor;
+    MovieBuffer *buffer;
+    u32 *ot;
+
+    func_80028A94(NULL);
+    func_80074B58();
+    D_80076EA0 = NULL;
+    D_80076EB8 = 1;
+    for (i = 15; i >= 0; i--) {
+        D_80076F3C[i] = 0;
+    }
+    SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 640, 240);
+    SetDefDispEnv(&D_80077124[0].disp, 0, 240, 640, 240);
+    SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 640, 240);
+    SetDefDispEnv(&D_80077124[1].disp, 0, 0, 640, 240);
+    D_80077124[0].draw.isbg = 1;
+    D_80077124[1].draw.isbg = 1;
+    func_80028470(0xC, 3);
+    for (;;) {
+        if (D_80077120 == &D_80077124[0]) {
+            buffer = &D_80077124[1];
+        } else {
+            buffer = &D_80077124[0];
+        }
+        ot = buffer->ot;
+        D_80077120 = buffer;
+        D_8007744C = 1 - D_8007744C;
+        ClearOTagR(ot, 32);
+        func_800712C4();
+        func_800747AC(0, 0, &button);
+        func_80070DCC();
+        if (D_80076EBC != 0) {
+            func_8003700C("Random Mode\n");
+        }
+        if (D_80076EB8 == 0) {
+            func_8003700C("Stream Pause\n");
+        }
+        func_8003700C("Read %3d Error %3d VSync %8d EC %2d ST %2d ", D_80076E48, D_80076E4C,
+                      D_80076E5C, D_8005A4DC, D_8004FE1C);
+        switch (D_80076E64) {
+        case 0:
+            func_8003700C("Waiting\n");
+            break;
+        case 1:
+            func_8003700C("Reading\n");
+            break;
+        case 2:
+            func_8003700C("Verifing\n");
+            break;
+        }
+        func_8003700C("C1 %3d C2 %3d C3 %3d C4 %3d C5 %3d C6 %3d C7 %3d C8 %3d C9 %3d\n",
+                      D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C,
+                      D_8005A4A4, D_8005A4A8, D_8005A4B4);
+        func_8003700C("RestFile %7d RestSize %7d N1 %4d N2 %4d N3 %4d R%3d D%3d\n",
+                      func_800286CC(), func_800286BC(), D_8004FDE4, D_8004FDE8, D_8004FDEC,
+                      D_8004FE26, D_8004FE28);
+        func_8003700C("ErrorAddress %8x ErrorSize %8x N%3d N%3d N%3d\n", D_80076E68, D_80076E6C,
+                      D_80076E70, D_80076E74, D_80076E78);
+        func_8003700C("FrdPtr1 %8x FrdPtr2 %8x Buf1 %8x Buf2 %8x\n", D_80076E7C, D_80076E80,
+                      D_80076E88, D_80076E8C);
+        if (D_80076E48 >= 11 || D_80076E94 > 0) {
+            func_8003700C("S %8x Adrs %8x Write %8x Rest %8x\n", D_80076E98, D_80076E9C,
+                          D_80076E84, D_80076E94);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i]);
+            }
+            func_8003700C(D_8006FC6C);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i + 7]);
+            }
+            func_8003700C(D_8006FC6C);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i + 14]);
+            }
+            func_8003700C(D_8006FC6C);
+            for (i = 0; i < 7; i++) {
+                func_8003700C("%08x ", D_80076E98[i + 21]);
+            }
+            func_8003700C(D_8006FC6C);
+            if (D_80076E7C != NULL) {
+                func_8003700C(D_8006FC70, D_80076E7C[0].dest, D_80076E7C[1].dest,
+                              D_80076E7C[2].dest, D_80076E7C[3].dest);
+            }
+        }
+        D_80076EA8 = 0;
+        func_8003700C(D_8006FC8C, D_80076EA4);
+        for (i = 0; i < 13; i++) {
+            func_8003700C(D_8006FC98, i, D_80076F3C[i]);
+            D_80076EA8 += D_80076F3C[i];
+            if (D_80076EB0 == i) {
+                func_8003700C(D_8006FCA4);
+            }
+            if (D_80076EAC == i) {
+                func_8003700C(D_8006FCAC);
+            }
+            func_8003700C(D_8006FC6C);
+        }
+        hours = D_80076EC8 / 3600;
+        func_8003700C(D_8006FCB4, D_80076EA8, hours, D_80076EC8 / 60 - hours * 60,
+                      D_80076EC8 % 60);
+        func_8003700C(D_8006FCD8);
+        if (D_80077394 > 0) {
+            func_8003278C(1, 0, 6, 0x808D);
+        }
+        func_80037324(D_80077120->ot);
+        func_80072F98(D_80077120->ot, (POLY_G4 *)D_80077120->box, 8, 12, 624, 216);
+        func_800734B8(D_80077120->ot, (POLY_G4 *)D_80077120->frame, 7, 11, 626, 218);
+        DrawSync(0);
+        VSync(0);
+        PutDrawEnv(&D_80077120->draw);
+        PutDispEnv(&D_80077120->disp);
+        DrawOTag(&D_80077120->ot[31]);
+        cursor = D_80077118;
+        if (!(D_800773B4 & 0x800) && (D_800773AC & 0x800) && D_80076E48 == 0) {
+            D_80077394 = 0;
+            func_8002A498(0);
+            func_80028A60(0);
+            if (D_80076EA0 != NULL) {
+                func_800320E8(D_80076EA0);
+            }
+            D_80076EA0 = NULL;
+            if (D_80076E98 != NULL) {
+                func_800320E8(D_80076E98);
+            }
+            D_80076E98 = NULL;
+            func_80074B58();
+            SetDefDrawEnv(&D_80077124[0].draw, 0, 0, 320, 240);
+            SetDefDispEnv(&D_80077124[0].disp, 0, 240, 320, 240);
+            SetDefDrawEnv(&D_80077124[1].draw, 0, 240, 320, 240);
+            SetDefDispEnv(&D_80077124[1].disp, 0, 0, 320, 240);
+            D_80077124[0].disp.screen.x = 0;
+            D_80077124[0].disp.screen.y = 10;
+            D_80077124[0].disp.screen.w = 256;
+            D_80077124[0].disp.screen.h = 216;
+            D_80077124[1].disp.screen.x = 0;
+            D_80077124[1].disp.screen.y = 10;
+            D_80077124[1].disp.screen.w = 256;
+            D_80077124[1].disp.screen.h = 216;
+            D_80077124[0].draw.isbg = 1;
+            D_80077124[1].draw.isbg = 1;
+            return;
+        }
+        D_80077118 = cursor;
+    }
+}
 
 /* CD-ROM monitor input: newly pressed buttons issue the monitor's CD
  * commands or read steps; R1 toggles the stream copy (1) or host read (2),

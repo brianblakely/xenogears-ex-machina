@@ -145,7 +145,7 @@ extern void *D_80076EA0;        /* FAT check read buffer */
 extern s32 D_80076E4C;
 extern s32 D_80076EAC;
 extern s32 D_80076EB0;
-extern s32 D_80076F3C[13];      /* reads per result class */
+extern s32 D_80076F3C[16];      /* reads per result class */
 extern u8 D_80076F84[8];        /* CD command result */
 extern s32 D_8007700C;
 extern u8 *D_8004FDF0;          /* disc directory records, 7 bytes each */
@@ -281,6 +281,25 @@ s32 func_800747AC(s32 first, s32 last, s32 *button);
 void func_80074B58(void);
 u32 func_80075D4C(s32 index);
 s32 func_80039850(void *sequence); /* load a music sequence */
+
+/* CD-ROM monitor screen. */
+extern s32 D_80076E64;          /* read phase: waiting, reading, verifying */
+extern s32 D_80076E68, D_80076E6C, D_80076E70, D_80076E74, D_80076E78; /* last error */
+extern s32 D_80076E80, D_80076E88, D_80076E8C;
+extern s32 *D_80076E98;         /* stream buffer */
+extern s32 D_80076EA8;          /* reads in total */
+extern s32 D_8005A4DC;          /* resident read error count */
+extern s32 D_8004FE1C;          /* resident read status */
+extern s32 D_8005A488, D_8005A48C, D_8005A490, D_8005A494, D_8005A498, D_8005A49C;
+extern s32 D_8005A4A4, D_8005A4A8, D_8005A4B4; /* resident CD event counters */
+extern s32 D_8004FDE4, D_8004FDE8, D_8004FDEC;
+extern u16 D_8004FE26, D_8004FE28;
+extern char D_8006FC70[], D_8006FC8C[], D_8006FC98[], D_8006FCA4[], D_8006FCAC[];
+extern char D_8006FCB4[], D_8006FCD8[]; /* strings shared with the asm-backed functions */
+void *func_80028A94(void *ring); /* replace the stream ring */
+s32 func_800286CC(void);         /* files left to read */
+s32 func_800286BC(void);         /* bytes left to read */
+void func_800712C4(void);
 
 /* Disc change test. */
 extern char D_8006FC6C[]; /* "\n", first used by the menu (800704E8) */
