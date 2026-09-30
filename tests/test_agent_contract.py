@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 import copy
-import tempfile
 import unittest
-from pathlib import Path
 
 from tools.repository.agent_contract import (
     ROOT,
     ContractSchemas,
     decode_line,
     read,
-    validate,
     validate_parity,
     validate_semantics,
 )

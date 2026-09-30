@@ -1,5 +1,6 @@
 """Build and test public code without generated requirements paperwork."""
 from __future__ import annotations
+
 import argparse
 import subprocess
 import sys

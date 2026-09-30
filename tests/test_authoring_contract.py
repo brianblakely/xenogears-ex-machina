@@ -12,11 +12,10 @@ from unittest.mock import patch
 from tools.authoring.qualify import installed_identities
 from tools.repository.authoring_contract import (
     read,
-    validate,
     validate_dependencies,
-    validate_gates,
     validate_policy,
 )
+from tools.repository.validate import ROOT
 
 
 class AuthoringContractTests(unittest.TestCase):

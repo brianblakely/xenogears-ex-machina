@@ -1,5 +1,6 @@
 .clang-format
 .editorconfig
+.github/workflows/ci.yml
 .gitignore
 AGENTS.md
 CMakeLists.txt

@@ -10,7 +10,14 @@ import unittest
 from pathlib import Path
 
 from tools.repository.source_archive import archive_bytes, validate_path
-from tools.repository.validate import CATEGORIES, STAGES, validate_finding, validate_inventory, validate_observed_entrypoints, validate_subsystem
+from tools.repository.validate import (
+    CATEGORIES,
+    STAGES,
+    validate_finding,
+    validate_inventory,
+    validate_observed_entrypoints,
+    validate_subsystem,
+)
 
 
 class EvidenceWorkflowTests(unittest.TestCase):

@@ -1,0 +1,26 @@
+name: Public build and matching tools
+on:
+  pull_request:
+  push:
+    branches: [master]
+permissions:
+  contents: read
+concurrency:
+  group: public-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  public:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@13d8dd58da0234aa297dedd986986ccb8e7f3e24
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Public build, standalone headers, and regressions
+        run: nix develop path:./nix -c python3 tools/repository/check.py --preset debug
+      - name: Actual matching toolchain and exact synthetic image
+        run: nix develop path:./nix/ghidra#matching -c make -C decomp smoke

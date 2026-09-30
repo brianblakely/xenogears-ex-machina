@@ -1,9 +1,8 @@
 """Small public integrity gate; source and tests, not generated requirement facets."""
 from __future__ import annotations
-import hashlib
+
 import json
 import re
-import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -277,6 +276,112 @@ def validate_observed_entrypoints(
             and row["observed_entrypoint_count"] == len(expected),
             "Inventory observed-entrypoint references or counts are inconsistent",
         )
+
+
+
+def validate_baseline_inventory(
+    root: Path, inventory: dict, findings: dict, observations: dict
+) -> None:
+    """Require original anchors without mistaking a baseline for exhaustive recovery."""
+    require(
+        isinstance(inventory["baseline_inventory_ready"], bool)
+        and bool(inventory["baseline_scope"]),
+        "Baseline inventory needs an explicit status and scope",
+    )
+    sources = {
+        profile["source_profile"]: {
+            record[0]: dict(zip(profile["records_columns"], record, strict=True))
+            for record in profile["records"]
+        }
+        for profile in load(root, "analysis/coverage/source-fingerprints.json")["profiles"]
+    }
+    observed = unique(observations["entries"], "observed entry points")
+    catalog_paths = {
+        "fields": "analysis/coverage/field-pairs.json",
+        "fmvs": "analysis/coverage/media.json",
+        "audio": "analysis/coverage/media.json",
+    }
+    for row in inventory["content"]:
+        anchors = row.get("baseline_anchors", [])
+        if inventory["baseline_inventory_ready"]:
+            require(
+                row["status"] != "unidentified" and bool(anchors),
+                "Baseline inventory cannot pass a taxonomy without original anchors",
+            )
+        if row["status"] == "partially_enumerated":
+            require(
+                bool(row["gap"]) and bool(row["next_evidence"]),
+                "Partial original inventory must retain unknowns and next evidence",
+            )
+        for anchor in anchors:
+            evidence = anchor["evidence"]
+            require(
+                bool(anchor["relationship"])
+                and bool(evidence)
+                and set(evidence) <= set(row["evidence"]),
+                "Baseline anchor needs an explicit category relationship and evidence",
+            )
+            require(
+                all(
+                    key in findings
+                    and row["profile"] in findings[key]["source_profiles"]
+                    and findings[key]["validation"]["result"] == "passed"
+                    for key in evidence
+                ),
+                "Baseline anchor needs passed original evidence for this source",
+            )
+            kind = anchor["kind"]
+            if kind == "observed_entrypoint":
+                entry = observed.get(anchor["entrypoint"])
+                require(
+                    entry is not None
+                    and entry["source_profile"] == row["profile"]
+                    and bool(set(entry["evidence"]) & set(evidence))
+                    and (
+                        entry["category"] == row["category"]
+                        or (entry["category"], row["category"])
+                        == ("minigames", "optional_activities")
+                    ),
+                    "Baseline observation has an unrelated source or category",
+                )
+            elif kind == "source_resource":
+                resource = anchor["source"]
+                require(
+                    resource == sources[row["profile"]].get(resource["slot"]),
+                    "Baseline resource disagrees with the measured original projection",
+                )
+                require(
+                    any(
+                        loc["profile"] == row["profile"]
+                        and isinstance(loc["overlay"], dict)
+                        and loc["overlay"].get("source_slot") == resource["slot"]
+                        and resource["source_lba"]
+                        <= loc["track_lba"]
+                        < resource["source_lba"] + resource["source_sector_count"]
+                        and resource["projection_sha256"] in loc["overlay"].values()
+                        for key in evidence
+                        for loc in findings[key]["locations"]
+                    ),
+                    "Baseline resource lacks its original finding coordinate and hash",
+                )
+            elif kind == "source_catalog":
+                require(
+                    anchor["path"] == catalog_paths.get(row["category"])
+                    and row["catalogued_count"] > 0,
+                    "Baseline catalog needs an attributed content selector/signature inventory",
+                )
+                catalog = load(root, anchor["path"])
+                catalog_evidence = (
+                    catalog["mapping_evidence"]
+                    if row["category"] == "fields"
+                    else catalog["evidence"]
+                )
+                require(
+                    bool(set(evidence) & set(catalog_evidence)),
+                    "Baseline catalog lacks its original mapping evidence",
+                )
+            else:
+                raise ValueError("Unknown baseline inventory anchor kind")
 
 
 def validate(root: Path = ROOT) -> None:

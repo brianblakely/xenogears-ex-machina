@@ -1,5 +1,6 @@
 """Fingerprint the pristine input and compare complete rebuilt bytes, without masks."""
 from __future__ import annotations
+
 import argparse
 import hashlib
 import json
@@ -15,6 +16,8 @@ def compare(original: Path, rebuilt: Path, expected_sha256: str) -> dict:
         raise ValueError('Original and rebuilt must be distinct files')
     expected = original.read_bytes()
     actual = rebuilt.read_bytes()
+    if not expected:
+        raise ValueError('The original executable image must not be empty')
     original_hash = hashlib.sha256(expected).hexdigest()
     if original_hash != expected_sha256.lower():
         raise ValueError('Pristine original fingerprint mismatch; do not update expectations to pass')

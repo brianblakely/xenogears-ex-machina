@@ -1,5 +1,6 @@
 """Exact comparison failures and an authored MIPS-I assemble/link smoke test."""
 from __future__ import annotations
+
 import hashlib
 import shutil
 import struct
@@ -7,6 +8,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+
 from tools.matching import compare, main
 
 
@@ -59,6 +61,20 @@ class MatchingTests(unittest.TestCase):
         self.rebuilt.unlink()
         with self.assertRaises(OSError):
             compare(self.original, self.rebuilt, self.digest)
+
+    def test_empty_image_cannot_pass(self):
+        self.original.write_bytes(b'')
+        self.rebuilt.write_bytes(b'')
+        with self.assertRaisesRegex(ValueError, 'must not be empty'):
+            compare(self.original, self.rebuilt, hashlib.sha256(b'').hexdigest())
+
+    @unittest.skipUnless(shutil.which('make'), 'GNU make is unavailable')
+    def test_unconfigured_game_target_fails(self):
+        root = Path(__file__).resolve().parents[1]
+        result = subprocess.run(['make', '-C', str(root / 'decomp'), 'verify'],
+                                text=True, capture_output=True, check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('qualifying the original toolchain', result.stderr)
 
     def test_cli_exit_codes(self):
         args = [str(self.original), str(self.rebuilt), '--sha256', self.digest]

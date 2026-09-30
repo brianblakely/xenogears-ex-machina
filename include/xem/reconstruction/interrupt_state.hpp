@@ -1,30 +1,7 @@
 #pragma once
 
-#include "xem/reconstruction/battle.hpp"
-#include "xem/reconstruction/disc_stream.hpp"
-#include "xem/reconstruction/field_control.hpp"
-#include "xem/reconstruction/field_gte.hpp"
-#include "xem/reconstruction/field_movie.hpp"
-#include "xem/reconstruction/field_return.hpp"
-#include "xem/reconstruction/field_script.hpp"
-#include "xem/reconstruction/field_sprite_factory.hpp"
-#include "xem/reconstruction/field_sprite_model.hpp"
-#include "xem/reconstruction/gpu.hpp"
-#include "xem/reconstruction/gte.hpp"
-#include "xem/reconstruction/interrupts.hpp"
-#include "xem/reconstruction/menu.hpp"
-#include "xem/reconstruction/menu_save.hpp"
-#include "xem/reconstruction/movie.hpp"
-#include "xem/reconstruction/packed_field.hpp"
-#include "xem/reconstruction/sound_driver.hpp"
-
-#include <deque>
-#include <functional>
-#include <map>
-#include <memory>
-#include <optional>
-#include <string>
-#include "xem/reconstruction/disc_state.hpp"
+#include <array>
+#include <cstdint>
 
 namespace xem::reconstruction {
 
