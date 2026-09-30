@@ -86,7 +86,68 @@ s32 func_800813E8(s32 index) {
     return 1;
 }
 
+/* Scripted zoom-in camera with a random vertical shake (command 1 starts the zoom). */
+#ifdef NON_MATCHING /* the original keeps an empty case 2 test in the command switch */
+s32 func_80081470(s32 index) {
+    WorldmapActor *actor;
+    ActorScratch *scratch;
+    s32 delta;
+    s32 shake;
+
+    actor = &D_8009BE24[index];
+    scratch = (ActorScratch *)0x1F800000;
+    switch (actor->unk4) {
+    case 2:
+        break;
+    case 1:
+        actor->state = 1;
+        actor->unk4 = 0;
+        D_8009BD38.vx = -0x80;
+        D_8009BD38.vy = -0x200;
+        D_8009BD38.vz = 0;
+        actor->u.step = 0x980000;
+        actor->unk54 = actor->unk58 = D_8009BD38.vx << 12;
+        D_8009D3F0 = 0x980000;
+        actor->unk5C = actor->unk60 = D_8009BD38.vy << 12;
+        break;
+    }
+    if (D_8009D144 == 0) {
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    if (actor->state == 1) {
+        if ((actor->u.step -= 0x10000) < 0x630000) {
+            actor->u.step = 0x630000;
+        }
+        delta = actor->u.step - D_8009D3F0;
+        if (delta != 0) {
+            D_8009D3F0 += delta >> 5;
+        }
+        if ((actor->unk54 += 0x1000) > 0x10000) {
+            actor->unk54 = 0x10000;
+        }
+        delta = actor->unk54 - actor->unk58;
+        if (delta != 0) {
+            actor->unk58 += delta >> 4;
+            D_8009BD38.vx = actor->unk58 >> 12;
+        }
+        if ((actor->unk5C += 0x10000) > 0x4B0000) {
+            actor->unk5C = 0x4B0000;
+        }
+        delta = actor->unk5C - actor->unk60;
+        if (delta != 0) {
+            actor->unk60 += delta >> 5;
+            D_8009BD38.vy = actor->unk60 >> 12;
+        }
+    }
+    shake = actor->unk7C;
+    scratch->position.vy = rand() % (shake >> 12) - (shake >> 13);
+    VIEW_VECTORS[0].vy += scratch->position.vy;
+    VIEW_VECTORS[1].vy += scratch->position.vy;
+    return 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_800811C0", func_80081470);
+#endif
 
 /* Build `count` semi-transparent textured quads on page 0x180,0. */
 void func_800816DC(SceneObject *object, PolyFT4 *quads, s32 count, s32 abr) {
