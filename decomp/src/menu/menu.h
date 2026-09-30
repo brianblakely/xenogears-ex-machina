@@ -134,7 +134,8 @@ typedef struct {
 
 /* Header of an actor's loaded model file (Actor 0x8FC). */
 typedef struct {
-    u8 unk0[0xE];
+    u8 unk0[0xC];
+    u16 unkC;
     u8 unkE;
     u8 unkF;
     u8 unk10[3];
@@ -145,7 +146,8 @@ typedef struct {
     s16 unk1A;
     s16 unk1C;
     u16 unk1E;
-    u8 unk20[0x4];
+    u16 unk20;       /* model scale */
+    u8 unk22[0x2];
     s16 unk24;       /* camera values for the victory view */
     s16 unk26;
     s16 unk28;
@@ -206,27 +208,28 @@ typedef struct Actor {
     u8 unk4D;
     u8 unk4E;
     u8 unk4F;
-    u8 unk50[0x2];
+    s16 event_frame;     /* 0x50: last frame whose events ran */
     u8 unk52;
     u8 unk53;
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     Node *node;          /* 0x5C: model set node */
     void *object;        /* 0x60 */
-    u8 unk64[0xC];
-    s32 unk70;
-    u8 unk74[0x8];
+    u8 unk64[0x8];
+    Vector start;        /* 0x6C: position at the round start */
     s32 unk7C;
     struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
     u8 unk88[0x10];
     s32 accel;           /* 0x98 */
     s32 brake;           /* 0x9C */
-    u8 unkA0[0x10];
+    u8 unkA0[0x8];
+    s32 unkA8;
+    u8 unkAC[0x4];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
     s16 charge;          /* 0xB6: 0x1000 = full */
-    u8 unkB8[0x2];
+    s16 unkB8;
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
     s16 unkBE;           /* 0xBE: charge a special move needs */
@@ -236,7 +239,8 @@ typedef struct Actor {
     u8 unkC3;
     u8 unkC4;
     u8 unkC5;
-    u8 unkC6[0x4];
+    u8 unkC6[0x2];
+    s16 unkC8;
     s16 unkCA;
     s16 unkCC;
     s16 unkCE;
@@ -245,9 +249,11 @@ typedef struct Actor {
     struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
-    u8 unkEC[0x6];
+    u8 unkEC[0x4];
+    s16 unkF0;           /* 0xF0: frames since the last hit reaction */
     s16 unkF2;
-    u8 unkF4[0xC];
+    s32 unkF4;
+    u8 unkF8[0x8];
     s32 unk100;
     Trail trails[16];    /* 0x104 */
     s32 unk644;
@@ -263,17 +269,23 @@ typedef struct Actor {
     u8 model_id;         /* 0x909 */
     u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
-    u8 unk90C[0x5];
+    u8 unk90C[0x4];
+    u8 unk910;
     u8 move_count;       /* 0x911: special moves the opponent may pick */
     u8 parts_b;          /* 0x912 */
-    u8 unk913[0x3];
+    u8 unk913;
+    s16 unk914;
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
     u8 unk919[0x13];
-    Vector unk92C;       /* 0x92C: with home, spans the actor's extent */
+    Vector unk92C;       /* 0x92C: a second anchor point; with home, spans the actor */
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
-    u8 unk95C[0x3C];
+    Vector start_home;   /* 0x95C: home at the round start */
+    u8 unk96C[0x4];
+    s32 unk970;
+    Vector hit_from;     /* 0x974: where the last hit came from */
+    u8 unk984[0x14];
     s16 unk998;
     s16 unk99A;
     u8 unk99C[0x2];
@@ -293,20 +305,30 @@ typedef struct Actor {
     s16 unk15EA;
     s16 unk15EC;
     s16 unk15EE;
-    u8 unk15F0[0x2];
+    s16 unk15F0;
     s16 unk15F2;
     s16 unk15F4;
-    u8 unk15F6[0x6];
+    s16 unk15F6;
+    s16 unk15F8;
+    u8 unk15FA[0x2];
     struct Brain *brain; /* 0x15FC: the computer opponent's state */
     struct MoveList *moves; /* 0x1600 */
     PolyFT4 backdrop[2]; /* 0x1604: one per buffer */
     s32 unk1654;
     s32 unk1658;
-    u8 unk165C[0x8];
+    s32 unk165C;
+    s32 unk1660;
     u8 *sounds;          /* 0x1664: command sound table */
     s16 unk1668;
 } Actor;
 
+
+/* A move's frame event: runs its spec (header offset) on frames first..last. */
+typedef struct {
+    u8 first;
+    u8 last;
+    s16 spec;
+} FrameEvent;
 
 /* Where a hit effect goes: model part and vertex of one or two points. */
 typedef struct {
@@ -400,10 +422,18 @@ extern s32 D_80092668;
 extern s32 D_8009266C;
 extern s32 D_80092670;
 extern s32 D_80092674;
+extern s32 D_800911D4; /* debug: camera tuning with the pad */
+void func_80070808(Vector *target, s32 steps);
+void func_800708C4(Vector *target, s32 steps);
+s32 func_800887A4(Vector *from, Vector *to);
 extern s32 D_800928AC;
+extern u8 D_800928C0;
+extern Vector D_80092A34[4]; /* saved positions: both actors, then both homes */
+void func_8007A768(Actor *actor);
 extern s32 D_80092638;
 extern s32 D_8009263C;
 extern s32 D_80092648;
+void func_800379C8(const char *format, ...); /* debug text print */
 extern u8 D_80092664;
 extern s32 D_80092890;
 extern u8 D_800928B4;
@@ -485,14 +515,20 @@ void func_800732AC(void *dst, void *src, s32 size);
 void func_80073064(SVector *dir, SVector *out, s32 scale);
 void func_8008859C(Vector *vector, void *out);
 s32 func_800886FC(Vector *v);
+s32 func_80088754(Vector *v);
 void func_8007E31C(Vector *from, Vector *to, Color *color);
 void func_8008EBD0(Actor *owner, s32 index, Vector *pos, s32 mode);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(Color *color);
 void func_80076424(Actor *actor);
+void func_80090CC0(Actor *actor);
+void func_80087AB0(Actor *actor);
+void func_80078ED4(s16 *params);
+extern u8 D_8009264C[4]; /* default combo state */
+extern char D_8006FC74[]; /* "" */
 s32 func_80077584(Actor *actor, s32 angle, s32 shift, s32 lift);
 void func_8007E894(s32 x, s32 y);
-void func_80074678(Actor *actor, s32 arg1, s32 arg2);
+void func_80074678(Actor *actor, s16 frame, s16 count);
 void func_8007C880(s32 column, Vector *pos, s32 key, s32 size);
 u32 func_8007CD14(s32 flag, s32 top, s32 middle, s32 low);
 void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key);
@@ -505,6 +541,7 @@ void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
 s32 func_80082488(Vector *position, s32 arg);
 void func_80082458(SVector *out);
+void func_8002DB84(SVector *a, SVector *b, SVector *c, SVector *normal); /* plane normal of a triangle */
 void func_800828F8(Vector *position, Vector *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);

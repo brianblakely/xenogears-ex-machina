@@ -24,7 +24,21 @@ void func_800732CC(void) {
     D_80092644 = emitter;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007334C);
+/* Place the glow emitter, launch this frame's sparks and draw them in view. */
+void func_8007334C(u32 *ot, Matrix *view) {
+    Emitter *emitter = D_80092644;
+
+    emitter->base.vx = D_80092A24.vx;
+    emitter->base.vy = D_80092A24.vy;
+    emitter->base.vz = D_80092A24.vz;
+    emitter->angles.vx = 0;
+    emitter->angles.vy = 0;
+    emitter->angles.vz = 0;
+    func_8008D680(emitter, &D_80091C0C, D_80092648);
+    gte_SetTransMatrix(view);
+    gte_SetRotMatrix(view);
+    func_8008DA48(emitter, ot, view);
+}
 
 /* Fire a projectile of the given kind from a point toward the actor's
  * target (or away from origin when given), in the first free slot. */
@@ -191,7 +205,26 @@ s32 func_80073644(Actor *actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80073B7C);
+/* World position of a model part's vertex (1-based; 0 or a non-model part
+ * gives the part's origin), relative to the actor's position. */
+void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out) {
+    Node *node = ((ModelSet *)actor->node->data)->nodes[part];
+
+    if (vertex != 0 && node->type == 1) {
+        gte_SetRotMatrix(&node->unk4C);
+        gte_SetTransMatrix(&node->unk4C);
+        gte_ldv0(&((SVector *)((Mesh *)((Model *)node->data)->file)->data)[vertex - 1]);
+        gte_rt();
+        gte_stlvnl(out);
+        out->vx += actor->pos.vx;
+        out->vy += actor->pos.vy;
+        out->vz += actor->pos.vz;
+    } else {
+        out->vx = node->unk4C.t[0] + actor->pos.vx;
+        out->vy = node->unk4C.t[1] + actor->pos.vy;
+        out->vz = node->unk4C.t[2] + actor->pos.vz;
+    }
+}
 
 /* Age an actor's trail segments: new ones start fading, fading ones are freed. */
 void func_80073CA4(Actor *actor) {
@@ -410,13 +443,97 @@ void func_800740E4(Actor *actor, HitSpec *hit, s32 lands) {
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FC10);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074678);
-
 #ifdef NON_MATCHING
+/* Run the frame events of an actor's current move for count frames from
+ * frame (once per frame): hits (flagged 0x4000000 on their first frame),
+ * one pair of sound effects, trails (each spec once), return home, and
+ * showing or hiding model parts. An unknown event kind stalls the loop, as
+ * in the original.
+ * Does not match: the anim byte, the trail search index and pointer, and the sound-flag store get other registers or slots. */
+void func_80074678(Actor *actor, s16 frame, s16 count) {
+    Vector unused; /* keeps the original's 16-byte frame slot */
+    HitSpec *trails[20];
+    u8 sounded;
+    FrameEvent *events;
+    FrameEvent *event;
+    HitSpec *spec;
+    s32 trail_count;
+    s32 offset;
+    s32 i;
+
+    if (count == 0) {
+        count = 1;
+    }
+    if (actor->event_frame == frame) {
+        return;
+    }
+    actor->event_frame = frame;
+    offset = ((s16 *)actor->unk900)[actor->anim];
+    if (offset != 0) {
+        sounded = 0;
+        D_80092650 = 0;
+        events = (FrameEvent *)((u8 *)actor->header + offset);
+        while (--count != -1) {
+            event = events;
+            while (event->first != 0xFF) {
+                if (frame < event->first || event->last < frame) {
+                    goto next;
+                }
+                spec = (HitSpec *)((u8 *)actor->header + event->spec);
+                switch (spec->unk0) {
+                case 0:
+                    if (frame == event->first) {
+                        actor->flags |= 0x4000000;
+                    }
+                    func_800740E4(actor, spec, (actor->flags >> 26) & 1);
+                    if (frame == event->last) {
+                        actor->flags &= ~0x4000000;
+                    }
+                    break;
+                case 1:
+                    if (!sounded) {
+                        sounded = 1;
+                        func_8008EB88(actor, spec->part_a, &actor->pos, 2);
+                        func_8008EB88(actor, spec->part_b, &actor->pos, 2);
+                    }
+                    break;
+                case 2:
+                    for (i = 0; i < trail_count; i++) {
+                        if (trails[i] == spec) {
+                            goto next;
+                        }
+                    }
+                    if (trail_count < 20) {
+                        trails[trail_count++] = spec;
+                        func_80073F34(actor, spec);
+                    }
+                    break;
+                case 3:
+                    func_80078154(actor);
+                    break;
+                case 4:
+                    ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags |= 1;
+                    break;
+                case 5:
+                    ((Model *)((ModelSet *)actor->node->data)->nodes[spec->type]->data)->flags &= ~1;
+                    break;
+                default:
+                    continue;
+                }
+            next:
+                event++;
+            }
+            frame++;
+        }
+    }
+    func_80073CA4(actor);
+}
+#else
+INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074678);
+#endif
+
 /* Show the model objects of the current move: unhide every kind-1 object,
- * then hide the listed ones (and object 13 in mode 0xD). Does not match:
- * the original leaf keeps an empty 16-byte frame (likely from a call that
- * was optimised away). */
+ * then hide the listed ones (and object 13 in mode 0xD). */
 void func_80074998(Actor *actor) {
     Node **nodes = ((ModelSet *)actor->node->data)->nodes;
     s32 i;
@@ -433,9 +550,6 @@ void func_80074998(Actor *actor) {
         ((Model *)nodes[13]->data)->flags |= 1;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074998);
-#endif
 
 /* Apply an actor's pose and start its move's animation. */
 void func_80074AB4(Actor *actor) {
@@ -673,7 +787,18 @@ INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCA8);
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCB4);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80076438);
+/* Debug: print an actor's queued inputs, oldest first. The name argument of
+ * the leading "%s:" is missing in the original. */
+void func_80076438(Actor *actor) {
+    s32 i;
+    s32 index = actor->input_tail;
+
+    func_800379C8("%s:");
+    for (i = 0; i < actor->input_count; i++) {
+        func_800379C8("%d", actor->inputs[index++ & 0x1F]);
+    }
+    func_800379C8("\n");
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu3", D_8006FCCC);
 
@@ -700,7 +825,35 @@ void func_800764CC(Actor *actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007661C);
+/* Debug: print an actor side's pending move name (dimmed unless it is the
+ * current one), its strength and its frame range at the side's corner. */
+void func_8007661C(Actor *actor) {
+    char text[16];
+    s32 x;
+    s32 y = 0xA;
+
+    if (actor->flags & 0x8000000) {
+        x = 0xB4;
+    } else {
+        x = 0x14;
+    }
+    if (D_800928C8 != 4) {
+        y = 0xB2;
+    }
+    func_8007E894(x, y);
+    sprintf(text, "%s", D_80096FB8[ACTOR_SIDE(actor)].unk0);
+    func_8007E954(D_80096FB8[ACTOR_SIDE(actor)].unk0 == D_8009112C ? 0xE7 : 0x100);
+    func_8007EBE0(text);
+    func_8007E954(0x100);
+    func_8007E894(x + 0x34, y);
+    sprintf(text, "STR:%d", D_80096FB8[ACTOR_SIDE(actor)].unk4);
+    func_8007EBE0(text);
+    y += 0x14;
+    func_8007E894(x, y);
+    sprintf(text, "FRAME:%d-%d", D_80096FB8[ACTOR_SIDE(actor)].unkC >> 4,
+            D_80096FB8[ACTOR_SIDE(actor)].unk10 >> 4);
+    func_8007EBE0(text);
+}
 
 /* Queue input 5 for an actor when both actors are in the 0x40000 state
  * near the ground, unless it is blocked (bit 24, move 4, or the 0x20000000
@@ -767,7 +920,77 @@ s32 func_800776A8(Actor *actor, s32 arg) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80077770);
+/* Start a reaction pose: animation, restart it, pose change pending. */
+#define SET_POSE(actor, pose) ((actor)->anim = (pose), (actor)->unk4E = 0xFF, (actor)->flags |= 0x1000)
+
+/* React to a hit: pick the flinch pose (alternating by the hit height
+ * between the two anchor heights), then knock the actor away from where the
+ * hit came from according to the hit's step, and vibrate the pad. */
+void func_80077770(Actor *actor) {
+    s32 strength = 4;
+    s32 angle;
+    s32 lift;
+    u32 flags;
+
+    actor->unkF0++;
+    if (actor->unkCA != 0) {
+        if (actor->anim == 9) {
+            SET_POSE(actor, 0xC);
+            goto done;
+        }
+    } else {
+        flags = actor->flags;
+        if (flags & 4) {
+            strength = 2;
+            goto done;
+        }
+        if (actor->hit_from.vy < (actor->unk92C.vy - actor->home.vy) * 2 / 3 + actor->home.vy) {
+            if ((flags & 0x700000) == 0x100000) {
+                SET_POSE(actor, 7);
+                actor->flags &= ~0x700000;
+            } else {
+                SET_POSE(actor, 6);
+                actor->flags = (actor->flags & ~0x700000) | 0x100000;
+            }
+        } else {
+            if ((flags & 0x700000) == 0x200000) {
+                SET_POSE(actor, 7);
+                actor->flags &= ~0x700000;
+            } else {
+                SET_POSE(actor, 5);
+                actor->flags = (actor->flags & ~0x700000) | 0x200000;
+            }
+        }
+    }
+    angle = ratan2(actor->pos.vx - actor->hit_from.vx, actor->pos.vz - actor->hit_from.vz);
+    if (func_80088838(&actor->pos, &actor->opponent->pos) < func_80088838(&actor->hit_from, &actor->opponent->pos)) {
+        angle += 0x800;
+    }
+    lift = 1;
+    switch ((actor->unk100 - 1) & 7) {
+    case 2:
+        SET_POSE(actor, 6);
+        func_80077584(actor, angle, 0xC, 0x64);
+        break;
+    case 3:
+        func_8007762C(actor, angle, 0xB, 0x80);
+        break;
+    case 1:
+        lift = 0;
+    default:
+        if (actor->unk916 >= 0x26 || actor->unkF0 >= 4) {
+            func_8007762C(actor, angle, 0xA, 0xA0);
+            strength = 0xF;
+            actor->unkE8 = 0;
+            actor->unk916 = 0;
+        } else {
+            func_80077584(actor, angle, 0xA, -lift & 0x1E);
+        }
+        break;
+    }
+done:
+    func_800776A8(actor, strength);
+}
 
 /* Advance an actor's combo with a button and return the new combo's
  * entry. */
@@ -800,11 +1023,106 @@ void func_80078154(Actor *actor) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078194);
 
+#ifdef NON_MATCHING
+/* Which of an actor's two anchor points (0x92c and home) lie on the other
+ * side of the line from `a` to `b` than its round start position: 0 both
+ * (choosing 0x92c when home is nearer to `a`), 1 or 2 only that one, 3
+ * neither (choosing the nearer); the choice goes to *anchor. Does not
+ * match: the actor and the home pointer swap $s0/$s1 around the second
+ * distance call. */
+s32 func_80078704(Vector *a, Vector *b, Actor *actor, Vector **anchor) {
+    s32 dz = a->vz - b->vz;
+    s32 dx = b->vx - a->vx;
+    s32 start = dz * actor->start.vx + dx * actor->start.vz + a->vx * b->vz - b->vx * a->vz;
+    s32 first = dz * actor->unk92C.vx + dx * actor->unk92C.vz + a->vx * b->vz - b->vx * a->vz;
+    s32 second = dz * actor->home.vx + dx * actor->home.vz + a->vx * b->vz - b->vx * a->vz;
+    s32 d1;
+    s32 d2;
+    Vector *p1;
+    Vector *p2;
+
+    if (start < 0) {
+        start = -1;
+    } else if (start > 0) {
+        start = 1;
+    }
+    if (first < 0) {
+        first = -1;
+    } else if (first > 0) {
+        first = 1;
+    }
+    if (second < 0) {
+        second = -1;
+    } else if (second > 0) {
+        second = 1;
+    }
+    first *= start;
+    second *= start;
+    if (first < 0) {
+        if (second < 0) {
+            p1 = &actor->unk92C;
+            d1 = func_80088838(p1, a);
+            p2 = &actor->home;
+            d2 = func_80088838(p2, a);
+            *anchor = d2 < d1 ? p1 : p2;
+            return 0;
+        }
+        *anchor = &actor->unk92C;
+        return 1;
+    }
+    if (second < 0) {
+        *anchor = &actor->home;
+        return 2;
+    }
+    p1 = &actor->unk92C;
+    d1 = func_80088838(p1, a);
+    p2 = &actor->home;
+    d2 = func_80088838(p2, a);
+    *anchor = d1 < d2 ? p1 : p2;
+    return 3;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078704);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078920);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078D20);
+/* Move an actor by its velocity: take the floor height and cell kind (bits
+ * 29-30; both set also sets 0x90b), keep it in the arena, and land it on
+ * the floor (a mode-4 landing bounces once, with a sound and effect). */
+void func_80078D20(Actor *actor) {
+    Vector unused; /* keeps the original's 16-byte frame slot */
+
+    actor->floor_y = func_80082488(&actor->pos, 1);
+    actor->flags = (actor->flags & ~0x60000000) |
+                   ((((u32)func_800828C4(&actor->pos) >> 24) & 3) << 29);
+    if ((actor->flags & 0x60000000) == 0x60000000) {
+        actor->unk90B = 0xF;
+    }
+    func_800828F8(&actor->pos, &actor->velocity, 0x3E80);
+    actor->flags &= ~0x40000;
+    if (actor->floor_y < actor->pos.vy + actor->velocity.vy) {
+        actor->flags |= 0x40000;
+        if (actor->unkC4 == 4) {
+            if (!(actor->unkD4 & 0x10)) {
+                func_8008EBD0(actor, 0xD, &actor->pos, 2);
+                func_800776A8(actor, 6);
+            }
+            actor->unkD4 |= 0x10;
+            if (actor->velocity.vy >= 0x40) {
+                actor->velocity.vy = -actor->velocity.vy / 3;
+            } else {
+                actor->velocity.vy = 0;
+            }
+        } else {
+            actor->velocity.vy = 0;
+        }
+        actor->pos.vy = actor->floor_y;
+    }
+    actor->pos.vx += actor->velocity.vx;
+    actor->pos.vy += actor->velocity.vy;
+    actor->pos.vz += actor->velocity.vz;
+}
 
 /* Place an actor's model at the actor's position and facing. */
 void func_80078E94(Actor *actor) {
@@ -825,7 +1143,88 @@ void func_80078ED4(s16 *params) {
     params[6] = 0x30;
 }
 
+#ifdef NON_MATCHING
+/* Reset an actor for a new round: position and motion, model scale,
+ * movement and health values, shots, trails, pose and flags, its side's hit
+ * record and the combo, brain and effect state.
+ * Does not match: the original keeps flag word 0xd4 in a register across the pose flag updates but reloads the flag word 0xd0 after each group, and schedules the header copies earlier. */
+void func_80078F00(Actor *actor) {
+    SceneHeader *header = actor->header;
+    s32 i;
+
+    actor->pos.vx = actor->pos.vy = actor->pos.vz = 0;
+    actor->velocity.vx = actor->velocity.vy = actor->velocity.vz = 0;
+    actor->push.vx = actor->push.vy = actor->push.vz = 0;
+    ((ModelSet *)actor->node->data)->scale[0] = ((ModelSet *)actor->node->data)->scale[1] =
+        ((ModelSet *)actor->node->data)->scale[2] = header->unk20;
+    actor->brake = actor->accel = 0x10;
+    actor->unkA8 = 0x60;
+    actor->max_hp = actor->unkB8 = actor->hp = 0x12C;
+    actor->unkBE = 0x480;
+    actor->level = 0xF0;
+    actor->angle = 0;
+    actor->unkC4 = 0;
+    actor->unkC5 = 0;
+    actor->charge = 0;
+    actor->unkBA = 0;
+    actor->unk910 = 0;
+    actor->unkC0 = 0x7F;
+    actor->unkC1 = 0x7F;
+    actor->unk970 = 0;
+    actor->unk9C3 = 0;
+    actor->unkE8 = 0;
+    actor->unk916 = 0;
+    actor->unkC8 = 0;
+    actor->unkCA = 0;
+    for (i = 0; i < 8; i++) {
+        actor->shots[i].active = 0;
+        actor->shots[i].life = 0;
+    }
+    for (i = 0; i < 16; i++) {
+        actor->trails[i].state = 0;
+    }
+    actor->unkF4 = 1;
+    func_80076424(actor);
+    actor->unk4E = 0xFF;
+    actor->anim = 0;
+    actor->unkC3 = 0;
+    actor->unkD4 &= ~0xC;
+    actor->unkD4 &= ~3;
+    actor->flags &= ~0x1000;
+    actor->flags |= 0x2000000;
+    actor->flags |= 0x20000;
+    actor->unkCE = actor->unkCC + 0x800;
+    actor->flags &= ~0x800000;
+    actor->unk15F0 = header->unkF;
+    actor->unk15F6 = 0x100;
+    actor->unk15F8 = 0;
+    actor->unk1654 = 0;
+    actor->unk1658 = 0;
+    actor->unk165C = 0;
+    actor->unk1660 = 0;
+    actor->unk90B = 0;
+    actor->flags &= ~4;
+    actor->flags &= ~2;
+    actor->flags &= ~0x38;
+    actor->unk15F2 = actor->unk15F4 = header->unkC;
+    actor->unkD4 &= ~0x10;
+    actor->unk84 = D_8009264C;
+    D_8009264C[2] = 1;
+    D_80096FB8[ACTOR_SIDE(actor)].unk0 = (s32)D_8006FC74;
+    D_80096FB8[ACTOR_SIDE(actor)].unk8 = 0;
+    D_80096FB8[ACTOR_SIDE(actor)].unk4 = 0;
+    D_80096FB8[ACTOR_SIDE(actor)].unkC = 0;
+    D_80096FB8[ACTOR_SIDE(actor)].unk10 = 0;
+    func_80090CC0(actor);
+    func_80078ED4((s16 *)actor->unk15D8);
+    func_80087AB0(actor);
+    actor->unk914 = 0;
+    actor->unk1668 = 0;
+    actor->unkD4 &= ~0x40;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
+#endif
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
 
@@ -932,7 +1331,21 @@ void func_80079DE0(void) {
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80079DF0);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A21C);
+/* Save both actors' positions and homes (at height 0x100) and set the
+ * countdown from the given frame count. */
+void func_8007A21C(s32 frames) {
+    if (frames < 0xFF) {
+        D_800928AC = frames - 2;
+        D_800928C0 -= frames;
+    } else {
+        D_800928AC = 0xFF;
+    }
+    D_80092A34[0] = D_8009872C.pos;
+    D_80092A34[1] = D_80097010.pos;
+    D_80092A34[2] = D_8009872C.home;
+    D_80092A34[3] = D_80097010.home;
+    D_80092A34[0].vy = D_80092A34[1].vy = D_80092A34[2].vy = D_80092A34[3].vy = 0x100;
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A344);
 
@@ -1013,13 +1426,82 @@ void func_8007A884(void) {
     }
     D_8009872C.pos.vy = 0x100;
     D_80097010.pos.vy = 0x100;
-    D_8009872C.unk70 = 0x100;
-    D_80097010.unk70 = 0x100;
+    D_8009872C.start.vy = 0x100;
+    D_80097010.start.vy = 0x100;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007A958);
+/* Follow an actor with the camera: look at its core at the reference
+ * height, place the eye behind it by the camera angle, height and length
+ * (tunable with the pad in debug), and back the look-at point off until it
+ * is at least 0x200 away. */
+void func_8007A958(Actor *actor) {
+    Vector target;
+    u16 held;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007AC3C);
+    if (D_800911D4 != 0) {
+        held = D_80059570;
+        if (held & 0x1000) {
+            D_8009266C += 4;
+        }
+        if (held & 0x4000) {
+            D_8009266C -= 4;
+        }
+        if (held & 0x10) {
+            D_80092670 += 4;
+        }
+        if (held & 0x40) {
+            D_80092670 -= 4;
+        }
+        if (held & 0x2000) {
+            D_80092668 -= 0x20;
+        }
+        if (held & 0x8000) {
+            D_80092668 += 0x20;
+        }
+        if (held & 8) {
+            D_80092674 -= 0x10;
+        }
+        if (held & 2) {
+            D_80092674 += 0x10;
+        }
+        func_800379C8("ANG %x\n", D_80092668 & 0xFFF);
+        func_800379C8("REF %x\n", D_8009266C);
+        func_800379C8("CAM %x\n", D_80092670);
+        func_800379C8("LEN %x\n", D_80092674);
+    }
+    target = actor->core;
+    target.vy = actor->pos.vy - D_8009266C;
+    func_80070808(&target, 8);
+    target.vy = actor->pos.vy - D_80092670;
+    target.vx = actor->pos.vx + ((func_8003F8B0(actor->angle + D_80092668) * D_80092674) >> 12);
+    target.vz = actor->pos.vz + ((func_8003F8CC(actor->angle + D_80092668) * D_80092674) >> 12);
+    func_800708C4(&target, 0x10);
+    while (func_800887A4(&D_8009871C, &actor->pos) < 0x200) {
+        D_8009871C.vy -= 2;
+        D_8009871C.vx -= 2;
+    }
+}
+
+/* Restore the saved positions and homes, make them the round start and
+ * set up the camera on the leading actor. */
+void func_8007AC3C(void) {
+    D_800928AC = 0x96;
+    D_8009292C = 0x100;
+    SetGeomScreen(0x200);
+    D_8009872C.pos = D_80092A34[0];
+    D_80097010.pos = D_80092A34[1];
+    D_8009872C.home = D_80092A34[2];
+    D_80097010.home = D_80092A34[3];
+    D_8009872C.start_home = D_8009872C.home;
+    D_80097010.start_home = D_80097010.home;
+    D_8009872C.start = D_8009872C.pos;
+    D_80097010.start = D_80097010.pos;
+    if (D_80092890 != 0) {
+        func_8007A768(&D_80097010);
+    } else {
+        func_8007A768(&D_8009872C);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007AE10);
 
@@ -1213,7 +1695,59 @@ void func_8007C880(s32 column, Vector *pos, s32 key, s32 size) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007C880);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CAA4);
+/* Link a projected primitive of the given length tag into the ordering
+ * table at the depth left in the scratchpad. */
+#define LINK_PRIM(ot, scratch, prim, len)                                      \
+    prev = (ot)[(scratch)->depth >> 4];                                        \
+    addr = (u32)(prim) & 0xFFFFFF;                                             \
+    (ot)[(scratch)->depth >> 4] = addr;                                        \
+    prev |= (len);                                                             \
+    *(u32 *)addr = prev
+
+/* Draw the line sparkles that continue last frame's segment as quads
+ * joining both segments, fading with their age. */
+void func_8007CAA4(Matrix *view, Matrix *unused, u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    Sparkle *sparkle;
+    PolyFT4 *prim;
+    s32 i;
+    u32 prev;
+    u32 addr;
+
+    gte_SetRotMatrix(view);
+    gte_SetTransMatrix(view);
+    for (sparkle = D_80092AD8, i = 0; i < SPARKLE_COUNT; i++, sparkle++) {
+        if (!sparkle->active || sparkle->type != 2 || sparkle->u.line.prev == NULL) {
+            continue;
+        }
+        prim = &sparkle->prim[D_800928A0];
+        scratch->point.vx = sparkle->x - scratch->camera.vx;
+        scratch->point.vy = sparkle->y - scratch->camera.vy;
+        scratch->point.vz = sparkle->z - scratch->camera.vz;
+        scratch->from.vx = sparkle->u.line.x - scratch->camera.vx;
+        scratch->from.vy = sparkle->u.line.y - scratch->camera.vy;
+        scratch->from.vz = sparkle->u.line.z - scratch->camera.vz;
+        scratch->to.vx = sparkle->u.line.prev->x - scratch->camera.vx;
+        scratch->to.vy = sparkle->u.line.prev->y - scratch->camera.vy;
+        scratch->to.vz = sparkle->u.line.prev->z - scratch->camera.vz;
+        scratch->extra.vx = sparkle->u.line.prev->u.line.x - scratch->camera.vx;
+        scratch->extra.vy = sparkle->u.line.prev->u.line.y - scratch->camera.vy;
+        scratch->extra.vz = sparkle->u.line.prev->u.line.z - scratch->camera.vz;
+        gte_ldv3(&scratch->point, &scratch->from, &scratch->to);
+        gte_rtpt();
+        gte_stsxy3(&prim->x0, &prim->x1, &prim->x2);
+        gte_stsz3(&scratch->depth);
+        gte_ldv0(&scratch->extra);
+        gte_rtps();
+        gte_stsxy(&prim->x3);
+        /* the shade shares its register with the link address */
+        addr = 0x40 - sparkle->frame * 8;
+        prim->r0 = addr;
+        prim->g0 = addr;
+        prim->b0 = addr;
+        LINK_PRIM(ot, scratch, prim, 0x09000000);
+    }
+}
 
 /* Pack four fields into one word: top byte, 16-bit middle, flag bit 7 and
  * a 7-bit low field. */
@@ -1278,7 +1812,22 @@ void func_8007CD44(s32 column, Vector *from, Vector *to, s32 key) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CD44);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007CF78);
+/* Draw the scene effects: the passes that need the view and its derived
+ * matrix, then the screen-space passes under the view matrix. */
+void func_8007CF78(Matrix *view, u32 *ot) {
+    Matrix local;
+
+    SCENE_SCRATCH->camera = D_80096FA8;
+    func_8004A8EC(view, &local);
+    func_8007BBA0(view, &local, ot);
+    func_8007C280(view, &local, ot);
+    func_8007CAA4(view, NULL, ot);
+    gte_SetRotMatrix(view);
+    gte_SetTransMatrix(view);
+    func_8007D918(ot);
+    func_8007E020(ot);
+    func_8007E3CC(ot);
+}
 
 /* Copy the camera position to the scratchpad and run the scene pass. */
 void func_8007D068(void *arg) {
@@ -1429,31 +1978,25 @@ void func_8007D65C(Vector *from, Vector *to, s32 code) {
     }
 }
 
-#ifdef NON_MATCHING
-/* Allocate the scene cell table and both buffers' point primitives.
- * Does not match: the primitive pointer loads are hoisted over the
- * stores (the original keeps every access in order). */
+/* Allocate the scene cell table and both buffers' point primitives. */
 void func_8007D6B8(void) {
     SceneCell10 *cell;
     s32 i;
 
     D_800926BC = func_80031BDC(0x9F6, 0);
-    D_800926C0 = func_80031BDC(0xBF4, 0);
-    D_800926C4 = func_80031BDC(0xBF4, 0);
+    D_800926C0[0] = func_80031BDC(0xBF4, 0);
+    D_800926C0[1] = func_80031BDC(0xBF4, 0);
     cell = D_800926BC;
     for (i = 0; i < 0xFF; i++) {
-        D_800926C0[i].len = 2;
-        D_800926C0[i].rgbc = 0x6880B0F0;
-        D_800926C4[i].len = 2;
-        D_800926C4[i].rgbc = 0x6880B0F0;
+        D_800926C0[0][i].len = 2;
+        D_800926C0[0][i].rgbc = 0x6880B0F0;
+        D_800926C0[1][i].len = 2;
+        D_800926C0[1][i].rgbc = 0x6880B0F0;
         cell->unk0 = cell->unk2 = cell->unk4 = 0;
         cell->unk0 = cell->unk4 = cell->unk6 = 0;
         cell++;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D6B8);
-#endif
 
 #ifdef NON_MATCHING
 /* Spawn up to count ground particles in free cells around a position: on
@@ -1485,7 +2028,54 @@ void func_8007D7A8(Vector *pos, s32 count) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D7A8);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007D918);
+/* Draw and advance this buffer's half of the ground particles: project
+ * them three at a time into point tiles, then let each fall (accelerating)
+ * until it reaches its ground height. */
+void func_8007D918(u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    Tile1 *tile = D_800926C0[D_800928A0];
+    SceneCell10 *cell = &D_800926BC[D_800928A0];
+    s32 cx = scratch->camera.vx;
+    s32 cy = scratch->camera.vy;
+    s32 cz = scratch->camera.vz;
+    s32 loaded = 0;
+    s32 i;
+    u32 prev;
+    u32 addr;
+
+    for (i = D_800928A0; i < 0xFC; i += 2, cell += 2) {
+        if (cell->unk6 == 0) {
+            continue;
+        }
+        scratch->point.vx = cell->unk0 - cx;
+        scratch->point.vy = cell->unk2 - cy;
+        scratch->point.vz = cell->unk4 - cz;
+        if (loaded == 0) {
+            gte_ldv0(&scratch->point);
+            loaded = 1;
+        } else if (loaded == 1) {
+            gte_ldv1(&scratch->point);
+            loaded = 2;
+        } else {
+            gte_ldv2(&scratch->point);
+            gte_rtpt();
+            loaded = 0;
+            gte_stsxy3(&tile[0].x0, &tile[1].x0, &tile[2].x0);
+            gte_stsz1(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[0], 0x02000000);
+            gte_stsz2(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[1], 0x02000000);
+            gte_stsz3(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[2], 0x02000000);
+            tile += 3;
+        }
+        cell->unk2 += cell->unk7;
+        if (cell->unk2 >= cell->unk8) {
+            cell->unk6 = 0;
+        }
+        cell->unk7 += 2;
+    }
+}
 
 /* Allocate the 540 scene cells and their small tiles (2..4 pixels square,
  * pale blue), with a copy of the tiles for the other draw buffer. */
@@ -1496,8 +2086,8 @@ void func_8007DB28(void) {
 
     D_800926C8 = func_80031BDC(0x1950, 0);
     tile = func_80031BDC(0x21C0, 0);
-    D_800926CC = tile;
-    D_800926D0 = func_80031BDC(0x21C0, 0);
+    D_800926CC[0] = tile;
+    D_800926CC[1] = func_80031BDC(0x21C0, 0);
     cell = D_800926C8;
     for (i = 0; i < 540; i++, cell++, tile++) {
         tile->len = 3;
@@ -1507,12 +2097,138 @@ void func_8007DB28(void) {
         cell->unk0 = cell->unk2 = cell->unk4 = 0;
         cell->unk8 = cell->unkA = cell->unk9 = cell->unk6 = 0;
     }
-    func_800732AC(D_800926D0, D_800926CC, 0x21C0);
+    func_800732AC(D_800926CC[1], D_800926CC[0], 0x21C0);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007DC74);
+/* Throw up scene cells along a segment that reaches above height 0x80: one
+ * per six units of its length, starting around `from` below the floor and
+ * drifting across the segment (randomly to either side) or at random, with
+ * a rise and life that grow with its height difference. */
+void func_8007DC74(Vector *from, Vector *to) {
+    Vector across;
+    s32 nx;
+    s32 nz;
+    s32 life;
+    s32 speed;
+    s32 count;
+    s32 drift;
+    s32 height;
+    s32 i;
+    s32 r;
+    SceneCell12 *cell;
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007E020);
+    if (from->vy <= 0x80 && to->vy <= 0x80) {
+        return;
+    }
+    across.vz = to->vx - from->vx;
+    across.vx = from->vz - to->vz;
+    across.vy = from->vy - to->vy;
+    cell = D_800926C8;
+    count = func_800886FC(&across) / 6;
+    if (count <= 0) {
+        count = 1;
+    }
+    across.vy = 0x1000;
+    drift = func_80088754(&across);
+    if (drift < 0x10) {
+        drift = 0;
+    }
+    if (across.vz != 0 || across.vx != 0) {
+        func_80048D7C(&across, &across);
+        nx = across.vx;
+        nz = across.vz;
+    }
+    height = abs(from->vy - to->vy);
+    life = height / 3 + 1;
+    if ((u32)life > 0x78) {
+        life = 0x78;
+    }
+    for (i = 0; i < 0x218; i++, cell++) {
+        if (count == 0) {
+            return;
+        }
+        if (cell->unk6 != 0) {
+            continue;
+        }
+        if (drift != 0) {
+            r = rand() % 4096;
+            speed = drift / 7;
+            if (rand() & 1) {
+                cell->unk8 = ((nx * r) >> 14) + speed;
+                cell->unk9 = ((nz * r) >> 14) + speed;
+            } else {
+                cell->unk8 = -((nx * r) >> 14) - speed;
+                cell->unk9 = -((nz * r) >> 14) - speed;
+            }
+        } else {
+            cell->unk8 = (rand() & 0xF) - 8;
+            cell->unk9 = (rand() & 0xF) - 8;
+        }
+        if (height >= 9) {
+            cell->unkA = -(rand() % (height / 2)) + 1;
+            cell->unk6 = life;
+        } else {
+            cell->unkA = -4;
+            cell->unk6 = 0x14;
+        }
+        cell->unk0 = from->vx + (rand() % 32 - 0x10) + cell->unk8 * 2;
+        cell->unk4 = from->vz + (rand() % 32 - 0x10) + cell->unk9 * 2;
+        cell->unk2 = -0x10;
+        count--;
+    }
+}
+
+/* Draw and advance the scene cells: project the live ones three at a time
+ * into their tiles, drift them sideways and let them rise or fall (capped
+ * at height 0x10) until their life runs out. */
+void func_8007E020(u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    s32 loaded = 0;
+    s32 i;
+    s32 cx = scratch->camera.vx;
+    s32 cy = scratch->camera.vy;
+    s32 cz = scratch->camera.vz;
+    SceneCell12 *cell = D_800926C8;
+    TileWords *tile = D_800926CC[D_800928A0];
+    u32 prev;
+    u32 addr;
+
+    for (i = 0; i < 0x218; i++, cell++) {
+        if (cell->unk6 == 0) {
+            continue;
+        }
+        cell->unk0 += cell->unk8;
+        cell->unk4 += cell->unk9;
+        scratch->point.vx = cell->unk0 - cx;
+        scratch->point.vy = cell->unk2 - cy;
+        scratch->point.vz = cell->unk4 - cz;
+        if (loaded == 0) {
+            gte_ldv0(&scratch->point);
+            loaded = 1;
+        } else if (loaded == 1) {
+            gte_ldv1(&scratch->point);
+            loaded = 2;
+        } else {
+            gte_ldv2(&scratch->point);
+            gte_rtpt();
+            loaded = 0;
+            gte_stsxy3(&tile[0].x0, &tile[1].x0, &tile[2].x0);
+            gte_stsz1(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[0], 0x03000000);
+            gte_stsz2(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[1], 0x03000000);
+            gte_stsz3(&scratch->depth);
+            LINK_PRIM(ot, scratch, &tile[2], 0x03000000);
+            tile += 3;
+        }
+        cell->unk2 += cell->unkA;
+        cell->unkA += 2;
+        if (cell->unk2 > 0x10) {
+            cell->unk2 = 0x10;
+        }
+        cell->unk6--;
+    }
+}
 
 /* Clear both scene cell tables and the actors' 0x90b bytes. */
 void func_8007E24C(void) {
@@ -1567,7 +2283,38 @@ void func_8007E31C(Vector *from, Vector *to, Color *color) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007E3CC);
+/* Project this frame's queued 3D line segments (relative to the camera in
+ * the scratchpad) and link each into the ordering table by depth. */
+void func_8007E3CC(u32 *ot) {
+    SceneScratch *scratch = SCENE_SCRATCH;
+    SceneLine *line = D_80094818;
+    s32 cx = scratch->camera.vx;
+    s32 cy = scratch->camera.vy;
+    s32 cz = scratch->camera.vz;
+    s32 i;
+    s32 z;
+    u32 prev;
+    u32 addr;
+
+    for (i = 0; i < D_800926B4; i++, line++) {
+        scratch->from = line->from;
+        scratch->to = line->to;
+        scratch->from.vx -= cx;
+        scratch->from.vy -= cy;
+        scratch->from.vz -= cz;
+        scratch->to.vx -= cx;
+        scratch->to.vy -= cy;
+        scratch->to.vz -= cz;
+        gte_ldv01(&scratch->from, &scratch->to);
+        gte_rtpt();
+        gte_stsxy01(&line->line.x0, &line->line.x1);
+        gte_stsz2(&z);
+        prev = ot[z >> 4];
+        addr = (u32)line & 0xFFFFFF;
+        ot[z >> 4] = addr;
+        *(u32 *)addr = prev | 0x03000000;
+    }
+}
 
 /* Set the scene state, playing sound 0x24 when state 10 starts from 0. */
 void func_8007E528(s32 state) {

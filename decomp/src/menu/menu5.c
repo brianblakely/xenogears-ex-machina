@@ -1112,7 +1112,7 @@ void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
             gte_nclip();
             gte_stopz(&otz);
             if (otz >= 0) {
-                gte_stsz3(&z0, &z1, &z2);
+                gte_stsz3v(&z0, &z1, &z2);
                 gte_stsxy3_ft4(quad);
                 gte_ldv0(&corners[3]);
                 gte_rtps();

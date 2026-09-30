@@ -259,7 +259,7 @@ extern SVector D_80092768; /* stored map position */
 
 void func_80080AE8(void);
 void func_80036420(void);
-s32 func_80081A44(void);
+void func_80081A44(void);
 void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1); /* draw a line */
 void ClearImage(Rect *rect, s32 r, s32 g, s32 b); /* clear a VRAM area */
 void DrawSync(s32 mode); /* wait for drawing */

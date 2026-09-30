@@ -6,6 +6,12 @@
 /* Scratchpad work area of the scene drawing. */
 typedef struct {
     Vector camera; /* 0x00: camera position of this frame */
+    SVector point; /* 0x10: particle position relative to the camera */
+    SVector from;  /* 0x18: line end points relative to the camera */
+    SVector to;    /* 0x20 */
+    SVector extra; /* 0x28: fourth corner of a projected quad */
+    u8 unk30[0x80];
+    s32 depth;     /* 0xB0: projected depth */
 } SceneScratch;
 
 #define SCENE_SCRATCH ((SceneScratch *)0x1F800000)
@@ -46,10 +52,11 @@ typedef struct {
 extern SceneSprite D_800954D8[2];
 
 typedef struct {
-    s16 unk0, unk2, unk4, unk6;
-    u8 unk8;
-    u8 unk9;
-    s16 unkA;
+    s16 unk0, unk2, unk4; /* position */
+    s16 unk6;             /* remaining life */
+    s8 unk8;              /* x speed */
+    s8 unk9;              /* z speed */
+    s16 unkA;             /* vertical speed */
 } SceneCell12;
 
 /* TILE with its colour and code as one word (16 bytes). */
@@ -61,8 +68,7 @@ typedef struct {
     s16 w, h;
 } TileWords;
 
-extern TileWords *D_800926CC;
-extern TileWords *D_800926D0;
+extern TileWords *D_800926CC[2]; /* scene cell tiles per draw buffer */
 void func_800732AC(void *dst, void *src, s32 size); /* copy memory */
 
 /* A ground particle of the scene (10 bytes; table at D_800926BC). */
@@ -94,8 +100,7 @@ typedef struct {
     s16 x0, y0;
 } Tile1;
 
-extern Tile1 *D_800926C0;
-extern Tile1 *D_800926C4;
+extern Tile1 *D_800926C0[2]; /* ground particle tiles per draw buffer */
 extern SceneCell12 *D_800926C8;
 extern SceneCell10 *D_800926BC;
 extern u8 D_80092708;
@@ -233,7 +238,8 @@ void func_80085134(s32 side);
 void *func_800289D0(s32 index);
 void func_8002954C(void *entry, void *dst, s32 size, s32 a3, s32 a4);
 
-void func_8007E3CC(void *arg);
+void func_8007E3CC(u32 *ot);
+extern Glyph D_80091230[]; /* menu font glyphs: digits, capitals, punctuation */
 Glyph *func_8007E8AC(s32 ch);
 s32 func_8007E964(s32 ch);
 s32 func_8007EB6C(u8 *text);
@@ -241,6 +247,12 @@ void func_8007EE08(s32 highlight);
 s32 func_8007FF70(s32 value, s32 max, s32 flags);
 void func_80080C48(s32 arg);
 void func_8007D334(Vector *from, Vector *to, s32 kind);
+void func_8004A8EC(Matrix *m, Matrix *out);
+void func_8007BBA0(Matrix *view, Matrix *local, u32 *ot);
+void func_8007C280(Matrix *view, Matrix *local, u32 *ot);
+void func_8007CAA4(Matrix *view, Matrix *local, u32 *ot);
+void func_8007D918(u32 *ot);
+void func_8007E020(u32 *ot);
 
 /* Menu overlay drawing. */
 extern DrTpage D_800954C8[2];
