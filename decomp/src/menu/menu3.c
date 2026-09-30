@@ -1228,7 +1228,67 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_800796B8);
+/* Frame both actors with the camera: look at their midpoint, choose the
+ * side (left or right of the line between them) whose eye point is nearer
+ * the current one (the comparison reads the heights uninitialised, as the
+ * original does), and ease the eye there, above the ground. */
+void func_800796B8(Actor *first, Actor *second) {
+    Vector eye;
+    Vector step;
+    s32 angle;
+    s32 dist;
+    s32 radius;
+    s32 floor;
+
+    if (D_8009293C != 0) {
+        return;
+    }
+    angle = ratan2(first->pos.vx - second->pos.vx, first->pos.vz - second->pos.vz);
+    dist = func_80088838(&first->pos, &second->pos);
+    D_80092934 = angle;
+    D_8009284C = dist;
+    dist = func_800887A4(&first->pos, &second->pos);
+    radius = dist * 2 / 3 + 0xC0;
+    D_8009867C.vx = (first->pos.vx + second->pos.vx) / 2;
+    D_8009867C.vy = (first->pos.vy + second->pos.vy) / 2 - 0xA0;
+    D_8009867C.vz = (first->pos.vz + second->pos.vz) / 2;
+    eye.vx = D_8009867C.vx + ((func_8003F8B0(angle - 0x400) * radius) >> 12);
+    eye.vz = D_8009867C.vz + ((func_8003F8CC(angle - 0x400) * radius) >> 12);
+    step.vx = D_8009867C.vx + ((func_8003F8B0(angle + 0x400) * radius) >> 12);
+    step.vz = D_8009867C.vz + ((func_8003F8CC(angle + 0x400) * radius) >> 12);
+    eye.vx -= D_8009871C.vx;
+    eye.vy -= D_8009871C.vy;
+    eye.vz -= D_8009871C.vz;
+    step.vx -= D_8009871C.vx;
+    step.vy -= D_8009871C.vy;
+    step.vz -= D_8009871C.vz;
+    floor = func_80088754(&eye);
+    if (func_80088754(&step) < floor) {
+        D_8009290C = 0x400;
+        D_800928F4 = 0;
+    } else {
+        D_8009290C = -0x400;
+        D_800928F4 = 1;
+    }
+    dist /= 4;
+    if (dist > 0x300) {
+        dist = 0x300;
+    }
+    eye.vy = D_8009867C.vy - 0x40 - dist;
+    eye.vx = D_8009867C.vx + ((func_8003F8B0(angle + D_8009290C) * radius) >> 12);
+    eye.vz = D_8009867C.vz + ((func_8003F8CC(angle + D_8009290C) * radius) >> 12);
+    step.vx = (eye.vx - D_8009871C.vx) / D_8009287C;
+    step.vz = (eye.vz - D_8009871C.vz) / D_8009287C;
+    func_800828F8(&D_8009871C, &step, 0x3A00);
+    D_8009871C.vx += step.vx;
+    D_8009871C.vz += step.vz;
+    floor = func_80082488(&D_8009871C, 0) - 0x100;
+    if (floor < eye.vy) {
+        eye.vy = floor;
+    }
+    D_8009871C.vy += (eye.vy - D_8009871C.vy) / D_8009287C;
+    D_8009287C = 0x64;
+}
 
 /* Reset the bout: effects, glow and the round settings. */
 void func_80079A8C(void) {
