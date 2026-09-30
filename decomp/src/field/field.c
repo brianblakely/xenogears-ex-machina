@@ -11561,9 +11561,72 @@ void func_800ACE90(void) {
     func_800AD978(1);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
+#include "field_party.h"
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AD4D4);
+#define DESCRIPTOR(index) (&D_800AF880.components.descriptors[index])
+
+#ifdef NON_MATCHING
+/* Return party slot `slot` to its member: swap the models back, hand the
+ * stand-in's heading over, and restart both animations. Differs in when
+ * the address of 8006f990 is formed. */
+void func_800ACFD0(s32 slot) {
+    FieldModel *model;
+
+    D_8005A39C->unk22B1[slot] = 0;
+    model = DESCRIPTOR(D_8005A444[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = DESCRIPTOR(D_8006F990[slot])->model;
+    DESCRIPTOR(D_8006F990[slot])->model = model;
+    DESCRIPTOR(D_8006F990[slot])->flags = (DESCRIPTOR(D_8006F990[slot])->flags & 0xF07F) | 0x200;
+    DESCRIPTOR(D_8006F990[slot])->flags &= 0xFFDF;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~1;
+    func_800A0524(D_8006F990[slot], D_8005A444[slot]);
+    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x400;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x300;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8006F990[slot])->actor->unk108 = DESCRIPTOR(D_8005A444[slot])->actor->unk108;
+    DESCRIPTOR(D_8006F990[slot])->actor->heading_goal = DESCRIPTOR(D_8005A444[slot])->actor->heading_goal;
+    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
+    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, 6, DESCRIPTOR(D_8006F990[slot]));
+    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8005A444[slot]));
+    func_8009FEE4(slot);
+    func_800A98E8(D_8006F990[slot], 0);
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800ACFD0);
+#endif
+
+/* Put the current actor in for party slot `slot`: swap its model with the
+ * member's, mark the slot taken, and restart both animations. */
+void func_800AD4D4(s32 slot) {
+    FieldModel *model;
+
+    model = DESCRIPTOR(D_800AFD1C)->model;
+    DESCRIPTOR(D_800AFD1C)->model = DESCRIPTOR(D_8005A444[slot])->model;
+    DESCRIPTOR(D_8005A444[slot])->model = model;
+    DESCRIPTOR(D_8005A444[slot])->model->position[0] = DESCRIPTOR(D_8005A444[slot])->actor->position[0];
+    DESCRIPTOR(D_8005A444[slot])->model->position[1] = DESCRIPTOR(D_8005A444[slot])->actor->position[1];
+    DESCRIPTOR(D_8005A444[slot])->model->position[2] = DESCRIPTOR(D_8005A444[slot])->actor->position[2];
+    DESCRIPTOR(D_800AFD1C)->flags |= 0x20;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags |= 0x200;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x500;
+    D_8005A39C->unk22B1[slot] = 1;
+    DESCRIPTOR(D_8006F990[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8005A444[slot])->actor->flags &= ~0x1800;
+    DESCRIPTOR(D_8006F990[slot])->actor->unkE8 = DESCRIPTOR(D_8006F990[slot])->actor->unkE6;
+    DESCRIPTOR(D_8005A444[slot])->actor->unkE8 = DESCRIPTOR(D_8005A444[slot])->actor->unkE6;
+    func_800821F4(DESCRIPTOR(D_8006F990[slot])->model, DESCRIPTOR(D_8006F990[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8006F990[slot]));
+    func_800821F4(DESCRIPTOR(D_8005A444[slot])->model, DESCRIPTOR(D_8005A444[slot])->actor->unkE6,
+                  DESCRIPTOR(D_8005A444[slot]));
+    func_800A98E8(D_8006F990[slot], 0);
+    func_8009FEE4(slot);
+}
 
 /* For party members in slot state 1, set actor flag 0x200 and clear
  * 0x500. */

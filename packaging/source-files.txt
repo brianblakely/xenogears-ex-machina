@@ -140,6 +140,7 @@ decomp/src/field/field_effect.h
 decomp/src/field/field_glyph.h
 decomp/src/field/field_movie.h
 decomp/src/field/field_panel.h
+decomp/src/field/field_party.h
 decomp/src/field/field_screen.h
 decomp/src/mdec/mdec.c
 decomp/src/mdec/movie.h
