@@ -2224,7 +2224,29 @@ void func_8008ECEC(u8 tag) {
     }
 }
 
+/* Stop the sounds a character's command sound entry started. Does not
+ * match, like the play counterpart func_8008EBD0: the original frame has
+ * an 8-byte local slot and keeps the table base in $s1 for the second id. */
+#ifdef NON_MATCHING
+void func_8008ED6C(Actor *owner, s32 index) {
+    s32 entry;
+    s32 id;
+
+    entry = owner->sounds[index];
+    if (entry != 0xFF) {
+        id = D_80091EE0[entry].first;
+        if (id != 0) {
+            func_8008ECEC((id & 0x7F) | ((owner->flags >> 20) & 0x80));
+        }
+        id = D_80091EE0[entry].second;
+        if (id != 0) {
+            func_8008ECEC((id & 0x7F) | ((owner->flags >> 20) & 0x80));
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu7", func_8008ED6C);
+#endif
 
 /* Accelerate an actor toward the speed limit (or brake to a stop, harder
  * when not guarding) for two ticks, and turn it toward a heading. */
