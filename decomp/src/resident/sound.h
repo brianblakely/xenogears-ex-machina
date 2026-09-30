@@ -83,6 +83,18 @@ typedef struct {
     u16 flags;         /* bit 0: on */
 } SoundModulator;
 
+/* A voice envelope in parts (SPU ADSR fields). */
+typedef struct {
+    u8 attack_mode;
+    u8 sustain_mode;
+    u8 release_mode;
+    u8 attack_rate;
+    u8 decay_rate;
+    u8 sustain_rate;
+    u8 release_rate;
+    u8 sustain_level;
+} SoundEnvelope;
+
 /* A repeat of a channel's sequence data. */
 typedef struct {
     u8 count;          /* repeats left */
@@ -120,8 +132,10 @@ typedef struct {
     u8 unk38[4];
     u16 unk3C;
     u16 unk3E;
-    u8 unk40[0x14];
-    u8 envelope[8];    /* ADSR parameters (state.flags 0x10-0x100 update them) */
+    u8 unk40[0xC];
+    u32 sample_start;  /* SPU address */
+    u32 sample_loop;
+    SoundEnvelope envelope; /* state.flags 0x10-0x100 update it */
     s16 unk5C;
     u8 unk5E[2];
     u8 unk60;
@@ -260,6 +274,16 @@ typedef struct {
     s16 minutes;
 } SoundTime;
 
+/* An instrument of a wave bank (16 bytes). */
+typedef struct {
+    u32 start;         /* sample start, 8-byte units from the bank */
+    u16 loop;          /* loop start, 8-byte units from the sample */
+    s16 note;          /* note offset */
+    u32 envelope;      /* rates and sustain level */
+    u16 modes;         /* envelope modes */
+    u8 unkE[2];
+} SoundInstrument;
+
 /* A playing sequence (list through `next`). */
 typedef struct SoundSequence {
     u8 unk0[0x14];
@@ -268,8 +292,9 @@ typedef struct SoundSequence {
     u16 volume;
     u16 key;
     u8 unk22[6];
-    s32 fade;
+    s32 address;       /* SPU address of the samples (in 8-byte units) */
     struct SoundSequence *next;
+    SoundInstrument instrument[1];
 } SoundSequence;
 
 /* PsyQ libspu common attributes. */

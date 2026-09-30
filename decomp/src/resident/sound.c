@@ -831,7 +831,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003B370);
 #endif
 
 extern SoundSequence *func_800383EC(s32 key);
-extern void func_8003E5BC(s32 unused, SoundSeqChannel *channel);
+extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
 extern void func_8003E724(SoundChannel *state, u32 voice);
 
 /* Start the channels of a sequence at the data offsets listed in its
@@ -1302,7 +1302,7 @@ INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C4C4);
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003C6E8);
 
-extern void func_8003E5BC(s32 instrument, SoundSeqChannel *channel);
+extern void func_8003E5BC(s16 index, SoundSeqChannel *channel);
 
 /* Apply entry `index` of the sequence's table to a channel: instrument,
  * note offset and pan. */
@@ -1646,8 +1646,6 @@ u8 *func_8003D3A4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data;
 }
 
-extern void SpuSetNoiseClock(s32 clock);
-
 /* Noise on at clock `n`.
  * Nonmatching: the original allocates `data` before `channel`
  * and sets the result before the flag updates. */
@@ -1743,11 +1741,11 @@ u8 *func_8003D5D4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 u8 *func_8003D60C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
-    channel->envelope[0] = data[0];
-    channel->envelope[1] = data[1];
+    channel->envelope.attack_mode = data[0];
+    channel->envelope.sustain_mode = data[1];
     value = data[2];
     channel->state.flags |= 0x1F0;
-    channel->envelope[2] = value;
+    channel->envelope.release_mode = value;
     return data + 3;
 }
 
@@ -1756,7 +1754,7 @@ u8 *func_8003D640(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x10;
-    channel->envelope[3] = value;
+    channel->envelope.attack_rate = value;
     return data;
 }
 
@@ -1764,7 +1762,7 @@ u8 *func_8003D65C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x20;
-    channel->envelope[4] = value;
+    channel->envelope.decay_rate = value;
     return data;
 }
 
@@ -1772,7 +1770,7 @@ u8 *func_8003D678(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x40;
-    channel->envelope[5] = value;
+    channel->envelope.sustain_rate = value;
     return data;
 }
 
@@ -1781,7 +1779,7 @@ u8 *func_8003D694(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 
     channel->state.flags |= 0x80;
     channel->unk28 = value;
-    channel->envelope[6] = value;
+    channel->envelope.release_rate = value;
     return data + 1;
 }
 
@@ -1789,17 +1787,17 @@ u8 *func_8003D6B4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x100;
-    channel->envelope[7] = value;
+    channel->envelope.sustain_level = value;
     return data;
 }
 
 u8 *func_8003D6D0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value;
 
-    channel->envelope[4] = data[0];
+    channel->envelope.decay_rate = data[0];
     value = data[1];
     channel->state.flags |= 0x120;
-    channel->envelope[7] = value;
+    channel->envelope.sustain_level = value;
     return data + 2;
 }
 
@@ -1807,7 +1805,7 @@ u8 *func_8003D6F8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x10;
-    channel->envelope[0] = value;
+    channel->envelope.attack_mode = value;
     return data;
 }
 
@@ -1815,7 +1813,7 @@ u8 *func_8003D714(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x40;
-    channel->envelope[1] = value;
+    channel->envelope.sustain_mode = value;
     return data;
 }
 
@@ -1823,7 +1821,7 @@ u8 *func_8003D730(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     u8 value = *data++;
 
     channel->state.flags |= 0x80;
-    channel->envelope[2] = value;
+    channel->envelope.release_mode = value;
     return data;
 }
 
@@ -2345,29 +2343,195 @@ u8 *func_8003E40C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 1;
 }
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E44C);
+/* Select a wave bank (the default when it is not loaded) and an
+ * instrument of it. */
+u8 *func_8003E44C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 key = data[0];
+    u8 instrument = data[1];
+    SoundSequence *bank;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E4BC);
+    channel->unk25 = key;
+    bank = func_800383EC(key);
+    if (bank == NULL) {
+        bank = D_80059558;
+    }
+    channel->instruments = bank;
+    func_8003E5BC(instrument, channel);
+    return data + 2;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E4F0);
+/* Set the tempo (0 keeps it). */
+u8 *func_8003E4BC(u8 *data, SoundSeq *seq) {
+    s32 tempo = *data++;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E54C);
+    if (tempo != 0) {
+        seq->tempo.value = tempo << 24;
+        seq->tick_step = seq->rate.part.whole * (tempo << 8);
+    }
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E5BC);
+/* Select a wave bank (the default when it is not loaded). */
+u8 *func_8003E4F0(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    u8 key = *data++;
+    SoundSequence *bank;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E680);
+    channel->unk25 = key;
+    bank = func_800383EC(key);
+    if (bank == NULL) {
+        bank = D_80059558;
+    }
+    channel->instruments = bank;
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E6C0);
+/* Stop the channel once its voice's envelope has decayed to silence. */
+u8 *func_8003E54C(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
+    long status;
+    short level;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E700);
+    SpuGetVoiceEnvelopeAttr(channel->voice, &status, &level);
+    if (level == 0) {
+        channel->flags2 &= ~3;
+        func_8003E83C(&channel->state, channel->voice);
+        channel->flags = 0;
+    }
+    return data;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E724);
+/* Select instrument `index` of the channel's wave bank: sample and loop
+ * addresses, envelope and note offset. */
+void func_8003E5BC(s16 index, SoundSeqChannel *channel) {
+    SoundSequence *bank;
+    SoundInstrument *instrument;
+    u32 start;
+    u32 bits;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E7E0);
+    channel->instrument = index;
+    bank = channel->instruments;
+    instrument = &bank->instrument[index];
+    start = instrument->start * 8;
+    channel->sample_start = start + bank->address;
+    channel->sample_loop = start + instrument->loop * 8;
+    bits = instrument->modes;
+    channel->envelope.attack_mode = bits & 7;
+    channel->envelope.sustain_mode = (bits >> 4) & 7;
+    channel->envelope.release_mode = (bits >> 8) & 7;
+    bits = instrument->envelope;
+    channel->envelope.attack_rate = bits & 0x7F;
+    channel->envelope.decay_rate = (bits >> 8) & 0xF;
+    channel->envelope.sustain_rate = (bits >> 16) & 0x7F;
+    channel->envelope.sustain_level = (bits >> 12) & 0xF;
+    channel->envelope.release_rate = channel->unk28 = (bits >> 24) & 0x1F;
+    channel->unk6C = instrument->note;
+    channel->flags |= 0x8000;
+}
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E83C);
+/* Set `bits` in flags2 of every active channel of a sequence. */
+void func_8003E680(s32 bits, SoundSeq *seq) {
+    SoundSeqChannel *channel = seq->channel;
+    s32 count = seq->channels;
 
-INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E8A4);
+    do {
+        if (channel->flags != 0) {
+            channel->flags2 = bits | channel->flags2;
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Request an update of the `bits` voice registers of every active
+ * channel of a sequence. */
+void func_8003E6C0(SoundSeq *seq, s32 bits) {
+    SoundSeqChannel *channel = seq->channel;
+    s32 count = seq->channels;
+
+    do {
+        if (channel->flags != 0) {
+            channel->state.flags = channel->state.flags | bits;
+        }
+        channel++;
+        count--;
+    } while (count != 0);
+}
+
+/* Free every hardware voice (the original steps a byte offset). */
+void func_8003E700(void) {
+    s32 offset;
+
+    for (offset = 23 * 4; offset >= 0; offset -= 4) {
+        *(SoundChannel **)((u8 *)D_8006252C + offset) = NULL;
+    }
+}
+
+extern u32 D_80059554;           /* voices whose registers changed */
+extern u32 D_800594FC;           /* voices held (keyed on) */
+
+/* Claim hardware voice `voice` for a channel unless its holder has a
+ * higher priority. */
+void func_8003E724(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &D_8006252C[voice];
+    SoundChannel *holder;
+    u32 bit;
+
+    if (voice >= 24) {
+        return;
+    }
+    holder = *owner;
+    if (holder == state) {
+        D_80059554 |= 1 << voice;
+        return;
+    }
+    if (holder == NULL || holder->priority <= state->priority) {
+        state->flags = 0xFFFF;
+        bit = 1 << voice;
+        state->voice = voice;
+        D_8006252C[voice] = state;
+        D_80059554 |= bit;
+        D_800594FC &= ~bit;
+    }
+}
+
+/* Claim hardware voice `voice` without requesting a register update. */
+void func_8003E7E0(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &D_8006252C[voice];
+    SoundChannel *holder;
+
+    if (voice >= 24) {
+        return;
+    }
+    holder = *owner;
+    if (holder != state && (holder == NULL || holder->priority <= state->priority)) {
+        state->voice = voice;
+        *owner = state;
+    }
+}
+
+/* Release hardware voice `voice` if the channel holds it. */
+void func_8003E83C(SoundChannel *state, u32 voice) {
+    SoundChannel **owner = &D_8006252C[voice];
+    u32 bit;
+
+    if (voice < 24 && *owner == state) {
+        *owner = NULL;
+        bit = 1 << voice;
+        D_80059554 |= bit;
+        D_800594FC &= ~bit;
+    }
+}
+
+/* Request a register update (and key-on) of hardware voice `voice` if the
+ * channel holds it. */
+void func_8003E8A4(SoundChannel *state, u32 voice) {
+    u32 bit;
+
+    if (voice < 24 && D_8006252C[voice] == state) {
+        bit = 1 << voice;
+        D_80059554 |= bit;
+        D_800594FC &= ~bit;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003E900);
 

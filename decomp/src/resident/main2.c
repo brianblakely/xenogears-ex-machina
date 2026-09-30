@@ -1102,7 +1102,7 @@ extern void func_800395B8(s32 voice, s32 fade, u16 volume);
  * none). */
 void func_800381F4(SoundSequence *sequence, s32 fade) {
     if (fade == 0) {
-        fade = sequence->fade;
+        fade = sequence->address;
     } else if (fade == -1) {
         fade = 0;
     }
@@ -1110,7 +1110,7 @@ void func_800381F4(SoundSequence *sequence, s32 fade) {
         func_800393B8(sequence->voice, sequence->volume);
         return;
     }
-    func_800395B8(sequence->voice, sequence->fade, sequence->volume);
+    func_800395B8(sequence->voice, sequence->address, sequence->volume);
 }
 
 extern s32 D_80059584;
