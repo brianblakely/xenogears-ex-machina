@@ -78,16 +78,20 @@ typedef struct MenuCardFile {
 /* Memory-card state (*(state + 32c)). */
 typedef struct MenuCard {
     MenuCardFile files[32]; /* 0 */
-    u8 padB80[0x4408];
+    u8 padB80[0x43F4];
+    s32 result[2]; /* 4F74: per port: last card check result */
+    u8 pad4F7C[0xC];
     u8 scanned[2]; /* 4F88: per port */
     u8 unk4F8A[2]; /* 4F8A */
     u8 unk4F8C[2]; /* 4F8C */
-    u8 pad4F8E[0x20];
+    u8 unk4F8E[32]; /* 4F8E */
     u8 fileSlots[32]; /* 4FAE */
     u8 pad4FCE[0x16];
     u8 present[2]; /* 4FE4: per port: card present */
     u8 mode; /* 4FE6 */
-    u8 pad4FE7[0x5];
+    u8 pad4FE7[0x1];
+    u8 presentShown[2]; /* 4FE8 */
+    u8 pad4FEA[0x2];
     s32 events[4]; /* 4FEC: card event descriptors */
     u8 title[30]; /* 4FFC: save title line of the text file */
     u8 unk501A; /* 501A */
@@ -109,9 +113,25 @@ typedef struct MenuSoundBank {
     u16 id; /* 14 */
 } MenuSoundBank;
 
+/* A point moving along a line (801c81e0, 801c8324). */
+typedef struct MenuMover {
+    s32 x0; /* 0 */
+    s32 x1; /* 4 */
+    s32 y0; /* 8 */
+    s32 y1; /* C */
+    s32 stepX; /* 10: 8.8 per step */
+    s32 stepY; /* 14 */
+    s32 accX; /* 18: 8.8 distance moved */
+    s32 accY; /* 1C */
+    u8 negX; /* 20: moving towards smaller x */
+    u8 negY; /* 21 */
+    u8 speed; /* 22: steps per frame */
+    u8 done; /* 23 */
+} MenuMover;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
-    u8 pad0[0x6C];
+    MenuMover movers[3]; /* 0 */
     MenuBuffer buffers[2]; /* 6C */
     MenuBuffer *current; /* 1D4: the buffer being built */
     u8 pad1D8[0x100];
@@ -204,6 +224,8 @@ extern u8 D_801EA528[];  /* field menu command labels */
 extern u8 D_801EA524[];  /* label image layout */
 extern u8 D_801EA530[];  /* title file screen command labels */
 extern u8 D_801EA8FC;
+extern s32 D_801EA900[2];
+extern u8 D_801E9779;    /* frames between card checks */
 
 /* Resident services. */
 void *func_80031BDC(s32 size, s32 flags); /* allocate */
@@ -237,7 +259,7 @@ void func_80044BD0(u32 *ot);             /* DrawOTag */
 void func_80044C44(void *env);           /* PutDrawEnv */
 void func_80044E9C(void *env);           /* PutDispEnv */
 void func_8004B54C(s32 mode);            /* VSync */
-s32 func_8004E784(void);
+s32 func_8004E784(s32 channel); /* start a card check */
 void func_800445D0(s32 mode);                /* DrawSync */
 void func_80044894(RECT *rect, void *pixels); /* LoadImage */
 void func_8003852C(void *bank);
@@ -263,6 +285,8 @@ void func_801C7BF4(void);
 void func_801C7D78(void);
 void func_801C7F34(u32 frames);
 u8 func_801C881C(void);
+s32 func_801C891C(s32 channel);
+u8 func_801C8A10(u8 port);
 void func_801C8BEC(void);
 void func_801C8EE8(void);
 void func_801C8574(s32 sound);

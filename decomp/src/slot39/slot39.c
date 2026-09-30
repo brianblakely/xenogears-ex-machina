@@ -768,9 +768,83 @@ void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b) {
     poly->b3 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C81E0);
+/* Start mover `slot` along the line (x0, y0)-(x1, y1) at `speed` steps per
+ * frame: the major axis steps one unit (8.8 fixed point), the minor axis its
+ * slope. */
+void func_801C81E0(s32 x0, s32 y0, s32 x1, s32 y1, u8 speed, u8 slot) {
+    s32 dx;
+    s32 dy;
 
+    D_800625A0->movers[slot].x0 = x0;
+    D_800625A0->movers[slot].y0 = y0;
+    D_800625A0->movers[slot].x1 = x1;
+    D_800625A0->movers[slot].y1 = y1;
+    if (x1 < x0) {
+        dx = x0 - x1;
+        D_800625A0->movers[slot].negX = 1;
+    } else {
+        dx = x1 - x0;
+        D_800625A0->movers[slot].negX = 0;
+    }
+    if (y1 < y0) {
+        dy = y0 - y1;
+        D_800625A0->movers[slot].negY = 1;
+    } else {
+        dy = y1 - y0;
+        D_800625A0->movers[slot].negY = 0;
+    }
+    if (dx >= dy) {
+        D_800625A0->movers[slot].stepX = 0x100;
+        D_800625A0->movers[slot].stepY = (dy << 8) / dx;
+    } else {
+        D_800625A0->movers[slot].stepY = 0x100;
+        D_800625A0->movers[slot].stepX = (dx << 8) / dy;
+    }
+    D_800625A0->movers[slot].speed = speed;
+    D_800625A0->movers[slot].accX = 0;
+    D_800625A0->movers[slot].accY = 0;
+    D_800625A0->movers[slot].done = 0;
+}
+
+/* Advance mover `slot` by its speed and mark it done once the major axis
+ * passes the end point. */
+#ifdef NON_MATCHING
+void func_801C8324(u8 slot) {
+    MenuMover *mover;
+    s32 i;
+
+    mover = &D_800625A0->movers[slot];
+    for (i = 0; i < D_800625A0->movers[slot].speed; i++) {
+        if (D_800625A0->movers[slot].negX) {
+            D_800625A0->movers[slot].accX -= D_800625A0->movers[slot].stepX;
+        } else {
+            D_800625A0->movers[slot].accX += D_800625A0->movers[slot].stepX;
+        }
+        if (mover->negY) {
+            mover->accY -= mover->stepY;
+        } else {
+            mover->accY += mover->stepY;
+        }
+    }
+    if (D_800625A0->movers[slot].stepX == 0x100) {
+        if (D_800625A0->movers[slot].negX) {
+            if (D_800625A0->movers[slot].accX / 256 + D_800625A0->movers[slot].x0 < D_800625A0->movers[slot].x1) {
+                D_800625A0->movers[slot].done = 1;
+            }
+        } else if (D_800625A0->movers[slot].x1 < D_800625A0->movers[slot].accX / 256 + D_800625A0->movers[slot].x0) {
+            D_800625A0->movers[slot].done = 1;
+        }
+    } else if (D_800625A0->movers[slot].negY) {
+        if (D_800625A0->movers[slot].accY / 256 + D_800625A0->movers[slot].y0 < D_800625A0->movers[slot].y1) {
+            D_800625A0->movers[slot].done = 1;
+        }
+    } else if (D_800625A0->movers[slot].y1 < D_800625A0->movers[slot].accY / 256 + D_800625A0->movers[slot].y0) {
+        D_800625A0->movers[slot].done = 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8324);
+#endif
 
 /* Set the four corners of a screen rectangle as vertices centred on (a0, 70). */
 void func_801C851C(SVECTOR *v, u16 x, u16 y, s32 w, s32 h) {
@@ -897,9 +971,10 @@ u8 func_801C881C(void) {
     }
 }
 
-/* The D_801E9768 entry for the result of 801c881c, or -1 when 8004e784 fails. */
-s32 func_801C891C(void) {
-    if (func_8004E784() == 0) {
+/* Start a card check on `channel` and wait for its event: the D_801E9768
+ * result for it, or -1 when the check cannot start. */
+s32 func_801C891C(s32 channel) {
+    if (func_8004E784(channel) == 0) {
         return -1;
     }
     return D_801E9768[func_801C881C()];
@@ -916,9 +991,55 @@ void func_801C8960(void) {
     func_800404E4();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8A10);
+/* Check the card in `port`; a removed card clears its file listing. Returns 0
+ * when the check could not run (-2). */
+u8 func_801C8A10(u8 port) {
+    u8 ok;
+    s32 result;
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8BEC);
+    ok = 1;
+    D_800625A0->card->present[port] = 1;
+    result = func_801C891C(port ? 0x10 : 0);
+    if (result == 0 && D_800625A0->card->result[port] == -1) {
+        result = 1;
+        D_800625A0->card->result[port] = 0;
+    } else {
+        D_800625A0->card->result[port] = result;
+    }
+    if (result == -1) {
+        D_800625A0->card->unk4F8A[port] = 0;
+        D_800625A0->card->present[port] = 0;
+        D_801EA900[port] = 0;
+        for (i = 0; i < 16; i++) {
+            D_800625A0->card->fileSlots[port * 16 + i] = 0xff;
+            D_800625A0->card->unk4F8E[port * 16 + i] = 0;
+            D_800625A0->card->files[port * 16 + i].state = 0;
+        }
+    }
+    if (result == -2) {
+        ok = 0;
+    }
+    if (D_800625A0->card->presentShown[port] != D_800625A0->card->present[port]) {
+        D_800625A0->card->scanned[port] = 0;
+        D_800625A0->card->presentShown[port] = D_800625A0->card->present[port];
+    }
+    return ok;
+}
+
+/* While the card screen is up, recheck both ports every D_801E9779 frames. */
+void func_801C8BEC(void) {
+    if (D_800625A0->card->mode != 0) {
+        if (++D_800625A0->cardPollTimer > D_801E9779) {
+            func_801C8A10(0);
+            func_801C8A10(1);
+            if (D_800625A0->card->result[0] == -1 && D_800625A0->card->result[1] == -1) {
+                D_800625A0->cardsPresent = 0;
+            }
+            D_800625A0->cardPollTimer = 0;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801C8CA4);
 
