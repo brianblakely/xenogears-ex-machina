@@ -6417,9 +6417,115 @@ void func_80093FC0(void) {
     func_80072254(D_800AFD1C);
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80094158);
+/* Event 0xe8: shake the actor for op3 frames (0x100000 set once done): op5
+ * 0x1000/0x1001 moves the target down/up by op1 * 16, other values move it
+ * op1 along direction op5 relative to the actor's heading. */
+void func_80094158(void) {
+    s32 angle;
+    s32 sine;
+    s32 cosine;
+    FieldActor *actor;
 
+    if (!(D_800B0078->flags & 0x100000)) {
+        if (!(D_800B0078->state.word & 0x20)) {
+            D_800B0078->state.word |= 0x20;
+            D_800B0078->unkE2 = 0;
+            func_80085634(8, 3);
+            D_800B0078->target[0] = D_800B0078->position[0];
+            D_800B0078->target[1] = D_800B0078->position[1];
+            D_800B0078->target[2] = D_800B0078->position[2];
+        } else {
+            D_800B0078->unkE2++;
+            if (D_800B0078->unkE2 < func_800ACDEC(3)) {
+                switch (func_800ACDEC(5)) {
+                case 0x1000:
+                    D_800B0078->target[1] -= func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                case 0x1001:
+                    D_800B0078->target[1] += func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                default:
+                    angle = D_800B06B8->rotation.vy + func_800ACDEC(5) - 0x400;
+                    sine = func_8003F8CC(angle);
+                    D_800B0078->target[0] += sine * func_800ACDEC(1);
+                    cosine = func_8003F8B0(angle);
+                    D_800B0078->target[2] -= cosine * func_800ACDEC(1);
+                    D_800B06B8->matrix.t[0] = WHOLE(D_800B0078->target[0]);
+                    D_800B06B8->matrix.t[2] = WHOLE(D_800B0078->target[2]);
+                    break;
+                }
+            } else {
+                actor = D_800B0078;
+                actor->unkE2 = 0;
+                actor->flags |= 0x100000;
+                actor->state.word &= ~0x20;
+                D_800B0078->pc += 7;
+            }
+        }
+    } else {
+        D_800B0078->pc += 7;
+    }
+    func_80072254(D_800AFD1C);
+}
+
+#ifdef NON_MATCHING
+/* Event 0xe9: the reverse shake of 0xe8, run while flag 0x100000 is set
+ * (cleared once op3 frames have passed); the direction offsets are negated
+ * and the target is not reset first. */
+void func_800943AC(void) {
+    FieldActor *actor;
+    FieldActor *done;
+    s32 angle;
+    s32 sine;
+    s32 cosine;
+
+    actor = D_800B0078;
+    if (actor->flags & 0x100000) {
+        if (!(actor->state.word & 0x20)) {
+            actor->state.word |= 0x20;
+            actor->unkE2 = 0;
+            func_80085634(8, 3);
+        } else {
+            actor->unkE2++;
+            if (D_800B0078->unkE2 < func_800ACDEC(3)) {
+                switch (func_800ACDEC(5)) {
+                case 0x1000:
+                    D_800B0078->target[1] -= func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                case 0x1001:
+                    D_800B0078->target[1] += func_800ACDEC(1) * 16;
+                    D_800B06B8->matrix.t[1] = WHOLE(D_800B0078->target[2]);
+                    break;
+                default:
+                    angle = D_800B06B8->rotation.vy + func_800ACDEC(5) - 0x400;
+                    sine = func_8003F8CC(angle);
+                    D_800B0078->target[0] -= sine * func_800ACDEC(1);
+                    cosine = func_8003F8B0(angle);
+                    D_800B0078->target[2] += cosine * func_800ACDEC(1);
+                    D_800B06B8->matrix.t[0] = WHOLE(D_800B0078->target[0]);
+                    D_800B06B8->matrix.t[2] = WHOLE(D_800B0078->target[2]);
+                    break;
+                }
+            } else {
+                done = D_800B0078;
+                done->unkE2 = 0;
+                done->flags &= ~0x100000;
+                done->state.word &= ~0x20;
+                actor = D_800B0078;
+                actor->pc += 7;
+            }
+        }
+    } else {
+        actor->pc += 7;
+    }
+    func_80072254(D_800AFD1C);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800943AC);
+#endif
 
 extern s32 D_8004F318;
 extern s32 D_8004F328;
