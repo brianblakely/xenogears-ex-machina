@@ -131,7 +131,9 @@ extern TurnState *D_800C3EAC;
 
 /* Battle UI state: the heap block at *800d2d28. */
 typedef struct {
-    u8 unk0[0x7B];
+    u8 unk0[0x30];
+    u32 unk30;         /* CLUT cycle position */
+    u8 unk34[0x7B - 0x34];
     u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
     u8 unk7F[0x8E - 0x7F];
@@ -152,7 +154,10 @@ typedef struct {
     u8 unkA6;
     u8 unkA7;
     u8 unkA8;
-    u8 unkA9[0xAD - 0xA9];
+    u8 unkA9;
+    u8 unkAA;          /* frame counter */
+    u8 unkAB;
+    u8 unkAC;
     u8 unkAD;
     u8 unkAE;          /* menu module block loaded */
     u8 unkAF;
@@ -217,13 +222,15 @@ typedef struct {
     u8 unk27F0[0x63C8 - 0x27F0];
     POLY_F4 unk63C8[2];
     DR_MODE unk63F8[2];
-    u8 unk6410;
-    u8 unk6411[3];
+    s32 unk6410;       /* shade */
     u8 unk6414;
     u8 unk6415;
-    u8 unk6416[6];
+    u8 unk6416;        /* fading down */
+    u8 unk6417[5];
     POLY_FT4 unk641C[2][100];
-    u8 unk835C[0xA230 - 0x835C];
+    u8 unk835C[0x8950 - 0x835C];
+    RECT unk8950[4];
+    u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
     u8 unkA234[4];
     GraphicsTexture textures[1]; /* +0xA238 */
@@ -491,6 +498,9 @@ extern u16 D_800C3D64;
 extern u8 D_800C3E2C;
 extern u16 D_800D2C30;
 extern u8 D_800D2C38;
+extern u8 D_800CCC58;
+extern s32 D_800D3288;
+extern u8 D_800D39D4;
 extern u16 D_800D2C2A;
 extern u8 D_800D2C35;
 extern u8 D_800D2C36;
@@ -708,6 +718,9 @@ u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
 void func_8008AAA0(u32 value);
 void func_80076BF0(POLY_FT4 *prim);
+void func_80089CCC(s32 mode);
+void func_8008A144(void);
+void func_8007171C(void);
 void func_80076B68(POLY_FT4 *prim);
 void func_8008FC1C(s32 x, s32 y, s32 w, s32 h, s32 style);
 void func_8008F6E4(u8 style, u16 x, u16 y, u16 w, u16 h);

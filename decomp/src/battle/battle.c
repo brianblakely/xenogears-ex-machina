@@ -3488,9 +3488,60 @@ u16 func_80089C9C(u16 mask, u8 slot) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80089CCC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A144);
+/* Every other frame upload the next step of the four cycling CLUT strips. */
+void func_8008A144(void) {
+    D_800D2D28->unkAA++;
+    if (D_800D2D28->unkAA & 1) {
+        func_80044894(&D_800C3EA4->unk8950[0], &D_800C3EA4->unk8970[0][D_800D2D28->unk30]);
+        func_80044894(&D_800C3EA4->unk8950[1], &D_800C3EA4->unk8970[1][D_800D2D28->unk30]);
+        func_80044894(&D_800C3EA4->unk8950[2], &D_800C3EA4->unk8970[2][D_800D2D28->unk30]);
+        func_80044894(&D_800C3EA4->unk8950[3], &D_800C3EA4->unk8970[3][D_800D2D28->unk30]);
+        D_800D2D28->unk30 += 4;
+        if (D_800D2D28->unk30 >= 0xC7) {
+            D_800D2D28->unk30 = 0;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A274);
+/* Result-screen tick of end state 1: the ATB while 800ccc58, input for the
+ * member, counters, the pulsing shade, the scroll by 800d39d4 and the CLUT
+ * cycle. */
+void func_8008A274(u8 member) {
+    if (D_800CCC58 != 0) {
+        func_8007171C();
+    }
+    if (member == 0) {
+        func_80089CCC(0);
+    }
+    D_800D2D28->unkA9 += 6;
+    D_800D2D28->unkAB++;
+    if (D_800C3EA4->unk6415 != 0) {
+        if (D_800C3EA4->unk6416 == 0) {
+            D_800C3EA4->unk6410 += 4;
+            if (D_800C3EA4->unk6410 > 0x80) {
+                D_800C3EA4->unk6410 = 0x7C;
+                D_800C3EA4->unk6416 = 1;
+            }
+        } else {
+            D_800C3EA4->unk6410 -= 4;
+            if (D_800C3EA4->unk6410 < 0) {
+                D_800C3EA4->unk6410 = 4;
+                D_800C3EA4->unk6416 = 0;
+            }
+        }
+    }
+    switch (D_800D39D4) {
+    case 1:
+    case 3:
+        D_800D3288++;
+        break;
+    case 2:
+    case 4:
+        D_800D3288--;
+        break;
+    }
+    func_8008A144();
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008A3EC);
 
