@@ -9,24 +9,17 @@
  * screen broken into triangles (func_801FC2C0 starts it; no caller is known
  * from the overlays, so it is reached by address).
  *
- * The module was built by a compiler that schedules the %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and splits offsets above 0x7fff from a base register (ori 0x8000), with
- * positive li kept as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34 do
- * neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3381.mk). */
 #include "tiles.h"
 
 /* Count the effect's frames; the battle's flag 0x100 ends it. */
-#ifdef NON_MATCHING
 void func_801FC000(TaskNode *node) {
     ((TileTask *)node->object)->frame++;
     if (D_800C3EB0.flags & 0x100) {
         node->destroy(node);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC000);
-#endif
 
 /* Queue every triangle of the current display buffer at a fixed 64,64
  * offset. */
@@ -75,16 +68,12 @@ INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC064);
 #endif
 
 /* Unlink the effect's nodes, release it and restore the depth shift. */
-#ifdef NON_MATCHING
 void func_801FC278(TaskNode *node) {
     func_8001CB48((TaskNode *)((u8 *)node + 0x1C));
     func_8001CD94(node);
     func_80025180(node);
     D_80050100 = 4;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3381/asm/nonmatchings/ovl3381", func_801FC278);
-#endif
 
 /* Start the effect: build both triangle halves of every 8x8 cell of the
  * 128x128 area around the screen centre, textured from the displayed buffer,

@@ -1,8 +1,8 @@
 /* The battle load modes the battle overlay dispatches (800b8098 modes
  * 1-4: 801e8588, 801e91e8, 801e9594, 801e893c) and their helpers: screen
  * transitions run in their own frame loop while the battle setup phases
- * load. A separate unit built by a later compiler (see ovl2615.mk): the C
- * below is semantically faithful but NON_MATCHING. */
+ * load. A separate unit built by the Cygnus CDK GCC 2.7.2
+ * (see ovl2615.mk). */
 #include "battle_setup.h"
 
 /* Shatter update: fade every cell and (variant 0) push it away. */
@@ -34,14 +34,10 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E7F4C);
 #endif
 
 /* Shatter drawing callback: into the current ordering table. */
-#ifdef NON_MATCHING
 void func_801E8088(TaskNode *node) {
     D_801E96B8 = D_8005956C;
     func_801E80B4(node);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8088);
-#endif
 
 /* Shatter drawing: each cell still in front (z >= 0x40) as its triangle,
  * rotated and moved by the cell, projected with a 512 screen distance
@@ -102,7 +98,6 @@ void func_801E82B0(TaskNode *node) {
 }
 
 /* Allocate and set up the shatter. */
-#ifdef NON_MATCHING
 ShatterTask *func_801E82EC(void) {
     ShatterTask *task = func_80031BDC(sizeof(ShatterTask), 1);
 
@@ -110,9 +105,6 @@ ShatterTask *func_801E82EC(void) {
     task->draw.object = task;
     return func_801E8320(task);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E82EC);
-#endif
 
 /* Set up the shatter: the screen as two triangles per 32x32 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each cell 0x2000
@@ -290,14 +282,10 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8588);
 #endif
 
 /* Load mode: the shatter's variant 1 (cells fade in place). */
-#ifdef NON_MATCHING
 void func_801E893C(void) {
     D_801E963C = 1;
     func_801E8588();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E893C);
-#endif
 
 /* Burst update: variant 1 turns faster and faster, rising and fading after
  * 67 frames; variant 0 twists and rises, fading after 25 frames. The empty
@@ -419,7 +407,6 @@ void func_801E8D7C(TaskNode *node) {
 }
 
 /* Allocate and set up the burst. */
-#ifdef NON_MATCHING
 BurstTask *func_801E8DB8(void) {
     BurstTask *task = func_80031BDC(sizeof(BurstTask), 1);
 
@@ -427,9 +414,6 @@ BurstTask *func_801E8DB8(void) {
     task->draw.object = task;
     return func_801E8DF0(task);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E8DB8);
-#endif
 
 /* Set up the burst: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
@@ -635,11 +619,7 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E91E8);
 #endif
 
 /* Load mode: the burst's variant 1. */
-#ifdef NON_MATCHING
 void func_801E9594(void) {
     D_801E9680 = 1;
     func_801E91E8();
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/load_modes", func_801E9594);
-#endif

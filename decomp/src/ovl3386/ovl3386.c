@@ -8,10 +8,8 @@
  * the opcode handler 800b3f04, which holds an actor in place and draws its
  * sprite as a scrolling row.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3386.mk). */
 #include "scroll.h"
 
 extern MATRIX D_8004FBB8; /* sprite camera */
@@ -215,7 +213,6 @@ INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC5C4);
 #endif
 
 /* Opcode entry: hold `actor` where it is under the scrolling effect. */
-#ifdef NON_MATCHING
 void func_801FC6FC(Actor *actor) {
     ScrollTask *scroll;
 
@@ -229,6 +226,3 @@ void func_801FC6FC(Actor *actor) {
     scroll->position[1] = actor->position[1];
     scroll->position[2] = actor->position[2];
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC6FC);
-#endif

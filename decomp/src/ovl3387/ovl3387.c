@@ -8,10 +8,8 @@
  * the opcode handler 800b3f04, which plays a full-screen effect in its own
  * frame loop on a private stack.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3387.mk). */
 #include "burst.h"
 
 /* Advance the effect one frame (two variants), fading it out after 100 or 24

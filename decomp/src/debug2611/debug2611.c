@@ -3,18 +3,13 @@
  * CPU/GPU load meter, a heap monitor, a camera tool and an actor tool driven
  * by the pad.
  *
- * This unit was built like the 0x801fc000 battle modules: its compiler
- * schedules %hi/%lo halves of addresses separately and materialises a global's
- * base for member accesses (lui a0; lhu %lo(sym)(a0); addiu a2, a0, %lo(sym)),
- * fills the jr delay slot in 802818C4, and positive li assemble as addiu. The
- * qualified GCC 2.6.3/2.7.2 do none of the first two, so functions addressing
- * globals stay NON_MATCHING. */
+ * This unit was built like the 0x801fc000 battle modules, by the Cygnus CDK
+ * GCC 2.7.2 with a later ASPSX (see debug2611.mk). */
 #include "battle_debug.h"
 
 /* Move the camera position with the pad: the directional buttons move it in
  * the camera's frame, R1/L1 (bits 0 and 2) raise and lower it; bit 1 slows
  * and bit 3 speeds the step. */
-#ifdef NON_MATCHING
 void func_80280844(s32 buttons) {
     VECTOR moved;
     SVECTOR step;
@@ -55,9 +50,6 @@ void func_80280844(s32 buttons) {
         D_800D3354.vy -= speed;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80280844);
-#endif
 
 /* Move the look-at point like the camera position, in the frame of the
  * camera's heading only. */
@@ -343,7 +335,6 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281330)
 #endif
 
 /* Draw a flat triangle through the current matrices. */
-#ifdef NON_MATCHING
 void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     SVECTOR xy0, xy1, xy2;
     s32 flag;
@@ -365,9 +356,6 @@ void func_802813F4(SVECTOR *v, u8 r, u8 g, u8 b) {
     prim->y2 = xy2.vy;
     AddPrim(D_8005956C, prim);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802813F4);
-#endif
 
 /* Draw a dial tick (30 to 35 along the rotated x axis). */
 #ifdef NON_MATCHING
@@ -430,7 +418,6 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802815E8)
 
 /* Load meter drawing: the GPU (blue) and CPU (red) needles with their peak
  * marks, and a tick every 0x100 up to each needle. */
-#ifdef NON_MATCHING
 void func_802816AC(TaskNode *node) {
     MATRIX m;
     SVECTOR rot;
@@ -487,12 +474,8 @@ void func_802816AC(TaskNode *node) {
         func_802814F8(0, 0, 0xFF);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802816AC);
-#endif
 
 /* Start the load meter task. */
-#ifdef NON_MATCHING
 void func_802818C4(void) {
     LoadMeter *meter = func_8001D1D8(sizeof(LoadMeter), 0, func_80281330, func_802816AC, 0);
 
@@ -505,9 +488,6 @@ void func_802818C4(void) {
     meter->gpu_avg = 0;
     meter->cpu_avg = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_802818C4);
-#endif
 
 /* List the playing sound sequences on the debug console. */
 #ifdef NON_MATCHING
@@ -642,15 +622,11 @@ INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281980)
 #endif
 
 /* Dump main memory to the next numbered host file (mem_0, mem_1, ...). */
-#ifdef NON_MATCHING
 void func_80281F98(void) {
     D_802820D4++;
     D_802820D8[15] = D_802820D4 + '0';
     func_80032E04(D_802820D8);
 }
-#else
-INCLUDE_ASM(".local/decomp/debug2611/asm/nonmatchings/debug2611", func_80281F98);
-#endif
 
 /* Run the memory dump on a private 16 KB stack. */
 void func_80281FD8(void) {

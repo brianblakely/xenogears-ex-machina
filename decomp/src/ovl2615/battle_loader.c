@@ -1,20 +1,16 @@
 /* The setup module's task (801e62e0 creates it, 801e7098 runs it) and the
  * enemy set loader (801e6314: sprite rows and image lists of the enemy set
- * file). A separate unit built by a later compiler (see ovl2615.mk): the C
- * below is semantically faithful but NON_MATCHING. */
+ * file). A separate unit built by the Cygnus CDK GCC 2.7.2
+ * (see ovl2615.mk). */
 #include "battle_setup.h"
 
 /* Start the loading task for the enemy set file `data` while flagging the
  * battle setup as running. */
-#ifdef NON_MATCHING
 void func_801E62E0(u8 *data) {
     D_800591AF = 1;
     func_801E7098(data);
     D_800591AF = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E62E0);
-#endif
 
 /* The enemy set file's sprite rows (slots 3..): its table is a count, a
  * first image column, then 12-byte entries. The data after the table is
@@ -282,20 +278,15 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6C8
 #endif
 
 /* Loading state: once the members stop moving, wait 16 frames and settle. */
-#ifdef NON_MATCHING
 void func_801E6D34(TaskNode *node) {
     if (D_800C35D8 == 0) {
         ((LoaderTask *)node)->timer = 0x10;
         func_8001CD6C(node, func_801E6C80);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6D34);
-#endif
 
 /* Loading state: once the sound transfer is done, release the battle images
  * file and set up the members with models. */
-#ifdef NON_MATCHING
 void func_801E6D6C(TaskNode *node) {
     if (func_8003BDFC(0) == 0) {
         func_800320E8(((LoaderTask *)node)->images);
@@ -303,12 +294,8 @@ void func_801E6D6C(TaskNode *node) {
         func_8001CD6C(node, func_801E6D34);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6D6C);
-#endif
 
 /* Upload the battle images (D_801E96B4) on a private 8 KB stack. */
-#ifdef NON_MATCHING
 void func_801E6DC8(void) {
     u8 *stack = func_80031BDC(0x2000, 1);
 
@@ -322,14 +309,10 @@ void func_801E6DC8(void) {
     __asm__ volatile("addiu $29, $29, 4\n\tlw $29, 0($29)" : : : "memory");
     func_800320E8(stack);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6DC8);
-#endif
 
 /* Loading state: once the disc is idle, upload the battle images, bind the
  * shared battle file (image 380,0, palette row 1d1) and link the effect
  * bank. */
-#ifdef NON_MATCHING
 void func_801E6E48(TaskNode *node) {
     LoaderTask *task = (LoaderTask *)node;
     Point image;
@@ -349,9 +332,6 @@ void func_801E6E48(TaskNode *node) {
         func_800B14B8();
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6E48);
-#endif
 
 /* Loading state: once the member files are read, create the member sprites
  * and read battle files 1-3 (images, shared data, effects). */
@@ -409,13 +389,9 @@ INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E6FE
 #endif
 
 /* Create the loading task for the enemy set file `data`. */
-#ifdef NON_MATCHING
 void func_801E7098(u8 *data) {
     LoaderTask *task = func_8001CD08(0, 0x78);
 
     func_8001CD6C(&task->task, func_801E6FEC);
     task->data = data;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2615/asm/nonmatchings/battle_loader", func_801E7098);
-#endif

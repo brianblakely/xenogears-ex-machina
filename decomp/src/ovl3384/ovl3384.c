@@ -7,10 +7,8 @@
  * entry addresses in the loaded module: this one provides 801fc4c4, called by
  * the opcode handler 800b6a7c, which breaks a model into flying pieces.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3384.mk). */
 #include "debris.h"
 
 /* Release the pieces, their primitives and the task. */

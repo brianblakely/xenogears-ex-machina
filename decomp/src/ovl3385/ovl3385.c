@@ -7,10 +7,8 @@
  * entry addresses in the loaded module: this one provides 801fc7b0, called by
  * the opcode handler 800b3f04, which makes an effect hold an actor in place.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3385.mk). */
 #include "hold.h"
 
 /* The bounds of a sprite frame's cells; returns the cell count and stores
@@ -236,7 +234,6 @@ INCLUDE_ASM(".local/decomp/ovl3385/asm/nonmatchings/ovl3385", func_801FC508);
 #endif
 
 /* Opcode entry: hold `actor` in place under the effect. */
-#ifdef NON_MATCHING
 void func_801FC7B0(Actor *actor) {
     HoldTask *hold;
 
@@ -247,6 +244,3 @@ void func_801FC7B0(Actor *actor) {
     hold->moved[1] = 0;
     hold->moved[2] = 0;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3385/asm/nonmatchings/ovl3385", func_801FC7B0);
-#endif

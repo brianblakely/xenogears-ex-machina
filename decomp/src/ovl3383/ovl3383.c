@@ -7,10 +7,8 @@
  * entry addresses in the loaded module: this one provides 801fc53c, called by
  * the opcode handler 800b6b98, which starts an effect circling an actor.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3383.mk). */
 #include "spin.h"
 
 /* Advance the effect's angle by its step. */
@@ -146,7 +144,6 @@ INCLUDE_ASM(".local/decomp/ovl3383/asm/nonmatchings/ovl3383", func_801FC020);
 
 /* Opcode entry: start the effect circling `actor` from `angle`, advancing by
  * `step` each frame (operands from the battle script, see 800b6b98). */
-#ifdef NON_MATCHING
 void func_801FC53C(Actor *actor, s32 angle, s32 radius, s32 arg3, s32 arg4, s32 arg5, s32 step) {
     SpinTask *spin;
 
@@ -159,6 +156,3 @@ void func_801FC53C(Actor *actor, s32 angle, s32 radius, s32 arg3, s32 arg4, s32 
     spin->angle = angle;
     spin->step = step;
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3383/asm/nonmatchings/ovl3383", func_801FC53C);
-#endif
