@@ -501,7 +501,55 @@ void func_800B9258(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9284);
+/* Run a control event (type 0xF3-0xFA) of the current event for sprite:
+ * the event's parameter shows or hides a message window, delays the next
+ * event, runs a command (with motion 0x11, for 0xF5 also pose 0x13 and
+ * D_800C3623), frames its targets, or adds slots that count while down. */
+void func_800B9284(BattleSprite *sprite, s32 type) {
+    s32 parameter;
+
+    switch (type) {
+    case 0xFA:
+        D_800C3610->field48 = 1;
+        func_80021BF8(sprite, NULL);
+        func_80079E18(BATTLE_AREA.events[D_800C360C].parameter);
+        break;
+    case 0xF8:
+        D_800C3610->field48 = 1;
+        func_80021BF8(sprite, NULL);
+        func_80079E4C(BATTLE_AREA.events[D_800C360C].parameter);
+        break;
+    case 0xF7:
+        D_800C3610->field48 = 1;
+        func_80021BF8(sprite, NULL);
+        D_800C3614 = BATTLE_AREA.events[D_800C360C].parameter;
+        break;
+    case 0xF5:
+        func_800B8048(sprite);
+        parameter = BATTLE_AREA.events[D_800C360C].parameter;
+        D_800C3DF0 = (parameter >> 9) & 0x3F;
+        sprite->motion.bytes[3] = 0x11;
+        func_800BF600(parameter & 0x1FF, sprite);
+        func_800BF730((s32)sprite);
+        func_800245D8(sprite, 0x13);
+        D_800C3623 = 1;
+        break;
+    case 0xF4:
+        func_800B8048(sprite);
+        parameter = BATTLE_AREA.events[D_800C360C].parameter;
+        D_800C3DF0 = (parameter >> 9) & 0x3F;
+        sprite->motion.bytes[3] = 0x11;
+        func_800BF600(parameter & 0x1FF, sprite);
+        break;
+    case 0xF6:
+        func_800BC404(BATTLE_AREA.events[D_800C360C].targetMask);
+        break;
+    case 0xF3:
+        D_800C3610->field48 = 1;
+        D_800C3608 |= BATTLE_AREA.events[D_800C360C].parameter;
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800B9508);
 

@@ -44,11 +44,16 @@ extern s16 D_800C3DF0;
 #define AREA_PARTNER_ACTION (((u8 *)&BATTLE_AREA)[0xA78])
 
 extern u8 D_800C35D4; /* a sound to fade at the turn's end */
+extern s16 D_800C3614; /* frames before the next event */
+extern u8 D_800C3623;
 
 void func_80080BD0(void);
 void func_800B9508(BattleSprite *sprite);
 void func_800B9B30(void);
 void func_800BA8F4(BattleSprite *sprite);
+void func_800B8048(BattleSprite *sprite);
+void func_800BF600(s32 command, BattleSprite *sprite);
+void func_800BF730(s32 value);
 void func_800BEDE8(void);
 void func_800BFA9C(void);
 void func_800C0314(void);
