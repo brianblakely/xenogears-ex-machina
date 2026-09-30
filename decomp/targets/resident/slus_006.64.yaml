@@ -70,6 +70,10 @@ segments:
       # before it (8001C76C) stay at the end of main.c; which object held
       # them is not established.
       - [0xD0DC, c, sprite]
+      # Texture-scroll and disc unit (GCC 2.6.3, inline division checks):
+      # 80027D64/80027EAC/80028808/80029AFC match only so. It ends after
+      # 80029EB0 and before 8002DB84 (a register division without checks);
+      # 8002A260, where the rodata continues at 0x800188F4, is chosen.
       - [0x1789C, c, main_8002709C]
       - [0x1AA60, c, main_8002A260]
       - [0x22094, c, heap]
