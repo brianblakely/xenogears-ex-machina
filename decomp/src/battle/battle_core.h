@@ -2,101 +2,10 @@
 #define BATTLE_CORE_H
 
 #include "common.h"
+#include "psyq.h"
+#include "combatant.h"
+#include "scene.h"
 
-/* PsyQ GPU types. */
-typedef struct {
-    s16 x, y, w, h;
-} RECT;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    s16 x3, y3;
-} POLY_F4;
-
-typedef struct {
-    u32 tag;
-    u32 code[2];
-} DR_MODE;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-} LINE_F2;
-
-/* Combatant record: 11 slots (0-2 party, 3-10 enemies) of 0x170 bytes,
- * addressed absolutely from 800ccce8. */
-typedef struct {
-    u16 unk0;
-    u8 unk2;
-    u8 unk3;
-    u8 unk4[0x34 - 4];
-    u16 unk34;         /* 0x800 reacts while down */
-    u8 unk36[0x4C - 0x36];
-    u16 hp;           /* +0x4C */
-    u16 unk4E;
-    u8 unk50[0x56 - 0x50];
-    u8 unk56;
-    u8 unk57[0x5A - 0x57];
-    u8 speed;          /* +0x5A */
-    u8 unk5B;
-    u8 unk5C[0x7A - 0x5C];
-    u16 unk7A;
-    u16 flags7C;  /* 0x80 inactive, 0x1000 slow (ticks every other frame),
-                   * 0x2000 delay counter +0x15C active */
-    u16 unk7E;
-    u16 flags80;  /* 0x1000 timer held */
-    u16 unk82;
-    u16 status84; /* 0x8000 (with +0x86) haste */
-    u16 status86;
-    u16 unk88;
-    u16 unk8A;
-    u16 unk8C;
-    u16 unk8E;
-    u8 unk90[0xA4 - 0x90];
-    u8 unkA4[0xDC - 0xA4]; /* the slot's attacker block */
-    u16 unkDC;
-    u8 unkDE[0x104 - 0xDE];
-    u32 unk104;
-    s32 unk108;
-    u8 unk10C[0x120 - 0x10C];
-    u16 unk120;
-    u8 unk122[0x13C - 0x122];
-    u8 gearSpeed;      /* +0x13C */
-    u8 unk13D[0x14C - 0x13D];
-    s32 unk14C;
-    u8 unk150[6];
-    u16 unk156;
-    u8 unk158[2];
-    u8 unk15A;
-    u8 unk15B;
-    u8 delay15C;
-    u8 unk15D[0x170 - 0x15D];
-} BattleRecord;
-
-extern BattleRecord D_800CCCE8[11];
 
 /* Per-slot block of the turn state (0x40 bytes). */
 typedef struct {
@@ -135,12 +44,28 @@ extern TurnState *D_800C3EAC;
 typedef struct {
     u8 unk0[0x30];
     u32 unk30;         /* CLUT cycle position */
-    u8 unk34[0x7B - 0x34];
+    s32 unk34;         /* +0x34 panel cursor window: x */
+    s32 unk38;
+    s32 unk3C;         /* y */
+    s32 unk40;
+    s32 unk44;         /* width */
+    s32 unk48;
+    s32 unk4C;         /* height */
+    s32 unk50;
+    u32 unk54;         /* x step (8.8) */
+    s32 unk58;
+    u32 unk5C;         /* step count */
+    s32 unk60;
+    s32 unk64;
+    s32 unk68;
+    s32 unk6C;
+    u8 unk70[0x7B - 0x70];
     u8 unk7B;          /* AP text part count */
     u8 reaction[3];    /* +0x7C */
     u8 unk7F[0x8E - 0x7F];
     u8 unk8E;
-    u8 unk8F[0x93 - 0x8F];
+    u8 unk8F;
+    u8 unk90[3];       /* per party member */
     u8 unk93[3];
     u8 unk96;          /* file 3 block loaded */
     u8 unk97;          /* selected list row */
@@ -181,6 +106,9 @@ typedef struct {
     s32 unkF8;
     s32 unkFC;
     s32 unk100;
+    u16 unk104;
+    u16 unk106;
+    u8 unk108[4];
 } BattleUi;
 
 extern BattleUi *D_800D2D28;
@@ -191,7 +119,8 @@ typedef struct {
     POLY_FT4 unk50[2];
     POLY_FT4 unkA0[2];
     POLY_FT4 unkF0[2];
-    u8 unk140[0x280 - 0x140];
+    POLY_FT4 unk140[2]; /* page title quads */
+    POLY_FT4 unk190[6]; /* second title quad, or up to three cost digits */
     POLY_FT4 unk280[2];
     POLY_FT4 unk2D0[2];
     POLY_FT4 unk320[2];
@@ -203,7 +132,8 @@ typedef struct {
     u8 unk66B;
     u8 unk66C;
     u8 unk66D;
-    u8 unk66E[2];
+    u8 unk66E;         /* cost digits shown */
+    u8 unk66F;
 } GraphicsBlock;
 
 /* Party status panel state of the graphics block (0x1e4 bytes). */
@@ -248,7 +178,7 @@ typedef struct {
     u32 unk8970[4][0x630 / 4]; /* four CLUT strips, cycled */
     GraphicsBlock *unkA230;
     u8 unkA234[4];
-    GraphicsTexture textures[1]; /* +0xA238 */
+    GraphicsTexture textures[5]; /* +0xA238 */
 } BattleGraphics;
 
 extern BattleGraphics *D_800C3EA4;
@@ -275,19 +205,13 @@ typedef struct {
 
 extern MessageImage D_800D39B8;
 extern void *D_800D39F0;   /* battle message table */
-extern u8 D_800D2CAF;      /* pending battle message id */
-extern s16 D_800D2C94;     /* committed target mask */
-extern u16 D_800D2C96;     /* alive mask at commit */
-extern s16 D_800D2C98;     /* committed animation */
-extern u8 D_800D2CA9;      /* committing actor */
-extern u8 D_800D2CAA;      /* committed action index */
-extern s16 D_800C48E8;
-extern u16 D_800D2C9E;     /* party members whose timers are held */
+extern u16 D_800C48E8;
 
 /* Eight 0x60-byte message entries from 800d36c8. */
 typedef struct {
     POLY_FT4 prims[2];
-    u8 unk50[0x5C - 0x50];
+    RECT rect;         /* +0x50 text image upload rectangle */
+    u32 *pixels;       /* +0x58 */
     u8 alternate;      /* +0x5C odd texture row */
     u8 shown;          /* +0x5D */
     u8 width;          /* +0x5E */
@@ -302,26 +226,21 @@ typedef struct {
     u8 unk1[7];
 } GroupLink;
 
+/* A formation group's position (8 bytes). */
 typedef struct {
-    u8 unk0[0x140];
-    GroupLink links[8][8]; /* +0x140 per formation-group pair */
+    s16 x;
+    s16 z;
+    u8 pad4[4];
+} GroupPosition;
+
+typedef struct {
+    u8 unk0[0x100];
+    GroupPosition positions[8]; /* +0x100 */
+    GroupLink links[8][8];      /* +0x140 per formation-group pair */
 } Formation;
 
 extern Formation *D_800D3364;
 
-/* Presentation event queue entry (0x48 bytes, 32 from 800c3fe8). */
-typedef struct {
-    u16 amounts[11];
-    u16 targets;       /* +0x16 */
-    u8 codes[11];      /* +0x18 */
-    u8 actor;          /* +0x23 */
-    u16 totals[11];    /* +0x24 */
-    u16 param;         /* +0x3A */
-    u8 totalCodes[11]; /* +0x3C */
-    u8 type;           /* +0x47 */
-} BattleEvent;
-
-extern BattleEvent D_800C3FE8[32];
 
 /* Action list entry (8 bytes, 32 from 800d2e5c). */
 typedef struct {
@@ -353,6 +272,8 @@ typedef struct {
     s16 unk394[(0x7A4 - 0x394) / 2];
     POLY_FT4 unk7A4[2];
     u8 unk7F4;
+    u8 unk7F5[0x800 - 0x7F5];
+    u8 unk800;
 } BattleUnk3278;
 
 extern BattleUnk3278 *D_800D3278;
@@ -407,11 +328,25 @@ typedef struct {
 extern EnemyReaction D_800C3D18[8];
 extern u8 D_800C3E8C;      /* pending battle message + 1 */
 extern u8 D_800D366C;      /* menu effects enabled */
-extern u8 D_800D2CA4[5];
+/* The committed action (800d2c94). */
+typedef struct {
+    u16 targets;      /* +0x00 target mask */
+    u16 alive;        /* +0x02 alive mask at commit */
+    s16 animation;    /* +0x04 */
+    u8 pad6[0xA - 0x6];
+    u16 held;         /* +0x0A party members whose timers are held */
+    u8 padC[0x10 - 0xC];
+    u8 enemyBytes[5]; /* +0x10 copied to an enemy's AI bytes 9-13 */
+    u8 actor;         /* +0x15 committing actor */
+    u8 action;        /* +0x16 committed action index */
+    u8 pad17[0x1B - 0x17];
+    u8 message;       /* +0x1B pending battle message id */
+} ActionCommit;
+
+extern ActionCommit D_800D2C94;
 extern u8 D_800C204C;
 extern u8 D_800C3E18;
 extern u8 D_800C3D70[0x30];
-extern u8 D_800D2D24[3];   /* party character ids */
 extern void *D_800D367C;   /* menu module block */
 extern void *D_800C3DE8;   /* file 3 block */
 extern u8 D_800C3CF4[9];   /* decimal digits */
@@ -433,56 +368,29 @@ typedef struct {
     u8 style;          /* +0xC */
 } WindowRect;
 
-extern void *D_800D2E38[7]; /* window blocks */
+/* A window's primitives (0x5a8-byte heap block). */
+typedef struct {
+    u8 unk0[0x140];
+    POLY_FT4 frame[4][4]; /* +0x140 edge pieces, textures 1-4 */
+    POLY_G4 shade[2];     /* +0x3C0 background, one per draw buffer */
+    DR_MODE mode[2];      /* +0x408 */
+    u8 unk420[0x5A8 - 0x420];
+} WindowBlock;
+
+extern WindowBlock *D_800D2E38[7];
+extern u8 D_800594D4[3]; /* window colour */
 extern WindowRect *D_800D2D90[7];
 
-/* Command descriptor (0x28 bytes). */
-typedef struct {
-    u8 unk0[0xA];
-    u16 unkA;
-    u8 unkC[0x11 - 0xC];
-    u8 unk11;
-    u8 unk12[2];
-    u8 unk14;
-    u8 unk15[0x1C - 0x15];
-    u8 unk1C;
-    u8 unk1D;
-    u16 unk1E;
-    u8 unk20[7];
-    s8 weight;         /* +0x27 turn timer penalty */
-} CommandDescriptor;
 
-/* Battle state (800ccce8): the records and per-action arrays. */
+/* Item effect table (0x10 bytes from 800d2200). */
 typedef struct {
-    BattleRecord records[11];
-    u8 unkFD0[0x1058 - 0xFD0];
-    CommandDescriptor partyCommands[3][38]; /* +0x1058 */
-    CommandDescriptor gearCommands[3][42];  /* +0x2228 */
-    u8 unk35D8[0x5F54 - 0x35D8];
-    s32 unk5F54[3];
-    s32 unk5F60[3];
-    s32 damage[12];    /* +0x5F6C */
-    u8 unk5F9C[4];
-    u8 resultCodes[12]; /* +0x5FA0 */
-    u16 unk5FAC;       /* effect target mask */
-    u8 unk5FAE[2];
-    u16 unk5FB0;
-    u8 unk5FB2[0x5FC2 - 0x5FB2];
-    u8 command;        /* +0x5FC2 current command index */
-    u8 unk5FC3[0x5FC7 - 0x5FC3];
-    u8 unk5FC7;
-} BattleState;
+    u8 unk0[4];
+    u16 target;    /* +0x4 target selection */
+    u8 unk6[0xE - 0x6];
+    u16 animation; /* +0xE */
+} ItemEffect;
 
-/* Effect table (0x10 bytes from 800d2200). */
-typedef struct {
-    u8 unk0[0xE];
-    u16 unkE;
-} EffectEntry;
-
-extern EffectEntry D_800D2200[];
-extern u8 D_800D2DC4;
-extern u8 *D_800D2D6C;     /* attacker block */
-extern BattleRecord *D_800C3E34; /* target record */
+extern ItemEffect D_800D2200[];
 extern s32 D_800D2C54[12]; /* per-slot damage */
 extern u8 D_800D2C88[12];  /* per-slot result code */
 extern void *D_800D329C;   /* item name table */
@@ -501,13 +409,9 @@ extern s8 D_800C207C;
 extern s32 D_800C2080;
 extern s32 D_800C2084;
 
-extern BattleState *D_800C34B0;
 
 /* Resolver globals. */
 
-extern BattleRecord *D_800C3E00; /* attacker record */
-extern CommandDescriptor *D_800C3DFC;
-extern u8 D_800C3E50;      /* target slot */
 extern u8 D_800C3E90[12];  /* default-target candidates */
 extern u8 D_800D3274;      /* candidate count */
 extern u16 D_800C3D64;
@@ -519,21 +423,24 @@ extern s32 D_800D3288;
 extern u8 D_800D39D4;
 extern u16 D_800C3608;     /* slots that still count while down */
 extern u8 D_800D3280;      /* party panel layout */
-extern s16 D_800C3254[][3]; /* party panel x per layout */
-extern s16 D_800C3076[3][24]; /* party panel name glyph x */
+extern u16 D_800C3254[]; /* party panel x: [layout * 3 + member] */
+extern s16 D_800C3068[]; /* party panel glyph x: [member * 24 + glyph] */
+extern s16 D_800C3076[]; /* party panel name glyph x: [member * 24 + glyph] */
 extern u8 D_800D2D88[5];   /* name glyph codes */
 extern u16 D_800D2C2A;
 extern u8 D_800D2C35;
 extern u8 D_800D2C36;
 extern u16 D_800D2C3A;
-extern u8 D_800C3200[][6]; /* list separator rows by row count */
-extern u8 D_800D2C34;
+extern u8 D_800C3200[]; /* list separator rows: [count * 6 + row] */
 extern u8 D_800C34CC[];    /* combo step flags */
 
 /* Direction arrow block (*800c3e24, 0xec bytes). */
 typedef struct {
-    u8 unk0[0xE6];
-    u8 arrows[4];      /* +0xE6 a target lies that way */
+    POLY_G3 prims[8]; /* per direction, one per draw buffer */
+    s32 shade;           /* +0xE0 pulsing red level */
+    u8 buffer;           /* +0xE4 */
+    u8 fading;           /* +0xE5 the shade is going down */
+    u8 arrows[4];        /* +0xE6 a target lies that way */
     u8 unkEA[2];
 } DirectionArrows;
 
@@ -547,19 +454,6 @@ typedef struct {
 
 extern CharacterCombos D_8006ECF8[];
 
-/* Per-slot formation information (0x1c bytes from 800c3eb4). */
-typedef struct {
-    u8 group;          /* +0x0 formation group */
-    u8 member;         /* +0x1 */
-    u8 unk2;           /* 0x7f: none */
-    u8 hidden;         /* +0x3 */
-    u8 gear;           /* +0x4 fights in gear */
-    u8 unk5[5];
-    u16 unkA;
-    u8 unkC[0x1C - 0xC];
-} SlotInfo;
-
-extern SlotInfo D_800C3EB4[11];
 
 /* Per-slot flags (8 bytes from 800d32a0). */
 typedef struct {
@@ -613,30 +507,123 @@ extern u16 D_800595D4;
 extern s16 D_8005A3A0[];
 extern s32 D_8006EF58;     /* party gold */
 
+/* Command menu. */
+void func_8008BC40(u8 keep);
+void func_8008BC98(u8 member);
+u8 func_80085084(u16 target, u8 member, s32 mode);
+s32 func_8009A7E4(u8 index);
+void func_8009A854(u8 index, u8 k);
+extern u8 D_800D3688[0x30]; /* gear part counts */
+void func_8007FD38(u8 member);
+void func_8008AA74(u8 id);   /* play a menu sound */
+void func_8008ADD0(u8 member);
+u8 func_8008B478(u8 member); /* the member has a gear list */
+u8 func_8008BED8(u8 member);
+void func_8008B908(u8 member);
+void func_8009AA44(u8 member);
+void func_80087A38(u8 member);
+void func_80084A7C(u8 member);
+void func_80077698(void);
+void func_800826CC(u8 member);
+s32 func_8009A9D0(void); /* the escape succeeds */
+extern u16 D_800D2C32; /* fuel gained by charging */
+
+/* Gear boarding (800826cc). */
+extern u8 D_80059179;
+extern u8 D_8006F368[3]; /* the party's character ids */
+extern u8 D_8006F8E5[3]; /* per party member: entered a gear */
+void func_80088490(s32 slot);
+void func_8009AEFC(u8 slot);
+void func_800BAF48(u8 slot);
+
+/* Turn start (80071b94). */
+extern u8 D_800C4922;      /* acting slot */
+extern void *D_800C3DDC;   /* enemy name table */
+extern u8 D_800C3E3D[];    /* enemy name per slot */
+extern u16 D_8005941C;     /* count of turns taken with 2ea set */
+extern u8 D_800D36C0;      /* the party member whose menu is open */
+void func_80079778(u8 actor);
+void func_800799C8(u8 slot, u16 attacking);
+void func_80079C24(void);
+void func_80080160(u8 member);
+void func_80080C94(u8 member);
+void func_80085B58(u8 slot);
+s32 func_80085310(u8 slot, u8 target);
+void func_800BA4E0(s32 value);
+void func_800BFE48(void);
+void func_80071964(void);
+void func_80071AE0(void);
+void func_80071A38(void);
+void func_80071A08(void);
+void func_80072270(void);
+void func_800718BC(void);
+u16 func_80099890(u8 slot);
+
+/* Battle setup (80070f40). */
+extern u8 D_80059180;      /* battle music playing */
+extern u8 D_8005947C;      /* pending scene + 1 */
+extern void *D_80059480;
+extern Formation *D_8005949C; /* the formation data */
+extern void *D_800594AC;
+extern u8 D_800594D0;      /* battle result: 0 won, 1, 2, 3 */
+extern u8 D_800594F8;      /* the 801e0000 module runs first */
+extern u8 D_80059508;      /* scene index */
+extern u8 D_8005954C;      /* battle kind */
+extern u8 *D_800595D0;     /* scene texture block */
+extern s32 D_80062528;     /* battle music */
+extern u8 D_80062648[];
+extern u8 D_800658DC[][0x20]; /* scene settings */
+extern u8 D_8006F9DC[0x20];   /* the current scene settings */
+extern u8 D_800C3D44;
+extern u8 D_800C3D5C;
+extern s32 D_800C3DEC;
+extern u8 D_800C3E28;
+extern u8 D_800C3E29;
+extern Formation *D_800C3EB0;
+extern s32 D_800D2D3C;     /* 801de000 module blocks */
+extern s32 D_800D2F60;
+extern u8 D_800D2D50;
+extern u8 D_800D2FC4;      /* battle exit requested */
+
+/* Party members' battle masks (from the character battle data). */
+typedef struct {
+    u16 mask0;
+    u16 mask2;
+} MemberMasks;
+
+extern MemberMasks D_800C3E0C[3];
+
+void func_80070EB0(s32 value);
+void func_80070EDC(void);
+void func_800723E0(void);
+void func_8007252C(void);
+void func_8007819C(void);
+void func_8008F8F4(u8 window, u16 x, u16 y, u16 w, u16 h, u8 animate, u8 wait);
+void func_800780A8(BattleMessage *message, u32 row);
+void func_80077990(void);
+void func_8009892C(void);
+void func_800B39C0(s32 a, s32 b, s32 c, s32 d, s32 e);
+void func_800B8098(u8 kind);
+void func_800B81BC(s32 a);
+void func_800B853C(u8 mode);
+void func_800B8D7C(void);
+void func_800C0F70(void);
+void func_801E0A34(void);
+void func_801E252C(void);
+
 /* Resident services. */
+void func_8003700C(char *format, ...); /* debug print */
+void func_80028A60(s32 a);
+s32 func_800397FC(u8 *a, s32 b, s32 c);
+void func_8003A094(u8 *texture);
+void *memmove(void *to, const void *from, u32 size);
 void func_80039DB8(s32 effect);
-void func_80028470(s32 a, s32 b);
-void func_80032498(s32 owner, s32 b);
-s32 func_80031BDC(s32 size, s32 mode);
-s32 func_800286CC(void);
 u8 func_8001BD40(u8 low, u8 high);
-s32 rand(void);
-void AddPrim(u32 *ot, void *prim);
-void SetShadeTex(void *prim, s32 abe);
-void SetSemiTrans(void *prim, s32 tge);
-void SetPolyFT4(void *prim);
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
-u16 GetClut(s32 x, s32 y);
-void DrawSync(s32 mode);
-void bzero(void *block, s32 size);
-void func_800320E8(void *block);
-s32 func_800288EC(s32 file);
 void func_80034888(s32 arg0, u32 *ot, s32 buffer);
 s32 func_8002675C(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 y, s32 scale);
 s32 func_800263E4(void *table, s32 id, POLY_FT4 *prims, s32 buffer, s32 x, s32 w, s32 scale, s32 a, s32 b);
 void *func_80033728(void *table, s32 index);
 s32 func_80034EAC(void *text, u32 *pixels, s32 width, s32 mode);
-void LoadImage(RECT *rect, u32 *pixels);
 void func_800295D8(s32, s32, s32, s32);
 void func_8003A89C(s32, s32, s32);
 
@@ -670,6 +657,8 @@ void func_80078658(u8 index, u8 actor);
 void func_800787E0(u8 value, u8 actor);
 void func_8007887C(u8 actor);
 void func_8007893C(u8 index, u8 actor);
+void func_80085C88(u8 queue);
+void func_80085CCC(u8 actor, u16 targets, s16 animation);
 void func_80085350(void);
 void func_80085388(void);
 void func_800B89FC(s32 mode, u8 actor, s32 arg2, s32 arg3);
@@ -682,11 +671,33 @@ u8 func_8007EF6C(u8 **pc, u8 enemy, u8 count);
 void func_80079934(u8 **pc);
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 first);
 void func_80073380(s32 member);
-u8 func_80072F38(s32 member, u8 flag);
+u8 func_80072F38(s32 member, u8 inGear);
+extern s16 D_800D3330;     /* panel member maximum HP */
+extern s16 D_800D2FE0;     /* its digits' remainder */
+extern s16 D_800D2E58;     /* panel member HP */
+extern s16 D_800D2D38;     /* its digits' remainder */
+extern s32 D_800D333C;     /* panel gear HP */
+extern s32 D_800D3018;     /* its digits' remainder */
+extern s32 D_800D3668;     /* panel gear maximum HP */
 void func_80072DA8(s32 member, s32 mode);
-void func_80072A9C(s32 member, u8 value);
+void func_80072A9C(s32 member, s32 mode);
+extern u8 D_800C3E08[3]; /* panel value digits */
+extern u8 D_800D2D54[7]; /* panel maximum digits */
 void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode);
-void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w);
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w);
+void func_80076CE8(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, s32 w, s32 h);
+void func_80076D58(POLY_FT4 *prims, u8 alternate, u8 page);
+void *func_80033784(u8 character, u8 id); /* a character text */
+
+/* A menu icon cell of the icon image (4 bytes, 800d2f68). */
+typedef struct {
+    u8 w;
+    u8 alternate; /* uses the alternate CLUT */
+    u8 u;
+    u8 v;
+} IconCell;
+
+extern IconCell D_800D2F68[];
 s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(u8 index);
 void func_80079E4C(u8 index);
@@ -712,6 +723,7 @@ void func_8008963C(void);
 void func_800897CC(void);
 void func_8007FCE8(void);
 void func_8007FDEC(void);
+void func_8009413C(u8 member, u8 release);
 void func_800800E8(u8 member);
 void func_8007FB70(u8 member);
 s32 func_8009ADA0(u8 slot, s32 *amounts);
@@ -731,7 +743,6 @@ void func_800BCD98(u16 mask);
 void func_80077980(void);
 u8 func_80083FF4(u8 member, u8 slot);
 void func_80098D2C(u8 slot, u8 param);
-void func_8009AC48(u8 slot, s32 mode);
 u8 func_80084854(u8 origin, u8 direction);
 void func_80093B08(u8 member);
 s32 func_8008AC00(s32 count);
@@ -740,7 +751,14 @@ void func_80097D08(void);
 void func_80094D24(void);
 u8 func_800841E0(u8 member);
 u16 func_80089C6C(u16 mask, u8 bit);
+void func_80093578(u8 member, u8 kind);
+void func_8009382C(u8 member, u8 kind);
+void func_800916D4(u8 column, u8 row, u8 member);
+void func_8009187C(u8 member, u8 column, u8 row);
+void func_80091B38(u8 member, u8 column, u8 row);
+extern u16 D_800C3234[16]; /* single-bit masks: 0x80 down to 1, then 0x8000 down to 0x100 */
 void func_8008AAA0(u32 value);
+u8 func_8009A258(u8 member, u8 command);
 void func_80076BF0(POLY_FT4 *prim);
 void func_80089CCC(s32 mode);
 void func_8008A144(void);
@@ -753,17 +771,16 @@ void func_80090310(u8 column, u8 row);
 void func_8009070C(u8 column, u8 row);
 void func_800904A0(u8 column, u8 row);
 s8 func_80097964(u8 a, u8 b, u16 c);
-void func_800995A0(u8 slot, u8 a, u16 b, s32 mode);
 void func_80078508(u8 *order);
 void func_80087EDC(u8 actor, u8 target);
+void func_800881B8(u8 actor, u8 target);
 void func_800883AC(u8 slot);
 u16 func_80089B50(u16 low, u16 high);
 u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
 u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
-void func_80071B94(s32 mode);
-void func_800BE790(void);
+void func_80071B94(u8 mode);
 
 /* The 801e5000 module and the 80280000 module. */
 void func_801E5160(void);

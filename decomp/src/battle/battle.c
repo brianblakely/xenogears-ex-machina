@@ -1,5 +1,9 @@
 #include "common.h"
 #include "battle_core.h"
+#include "combatant.h"
+#include "model.h"
+#include "scene.h"
+#include "gte.h"
 
 /* Start the 801e5000 module: reserve its heap span and load it. */
 void func_80070E2C(void) {
@@ -36,7 +40,170 @@ void func_80070EDC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80070F40);
+/* The battle: allocate the battle state, load the modules and the scene,
+ * run turns until an outcome or an exit is set, then settle the outcome
+ * (result code in D_800594D0) and hand over to the 801de000 module. */
+void func_80070F40(void) {
+    s32 span;
+    s32 block;
+    u8 result;
+    u8 mode = 1;
+    u8 *state;
+    s32 i;
+    u8 outcome;
+
+    D_800C3EA4 = (BattleGraphics *)func_8008ABB8(0xA2B4, 0);
+    D_800D2D28 = (BattleUi *)func_8008ABB8(0x10C, 0);
+    D_800C3EAC = (TurnState *)func_8008ABB8(0x2F8, 0);
+    bzero(D_800C3EA4, 0xA2B4);
+    bzero(D_800D2D28, 0x10C);
+    bzero(D_800C3EAC, 0x2F8);
+    D_8005959C = 0;
+    D_800C3E29 = 0xFF;
+    D_800C3E28 = 0xFF;
+    D_800D366C = 0;
+    D_800C3E54 = D_80062528;
+    if (D_8005947C != 0) {
+        D_80059508 = D_8005947C - 1;
+        if (D_80059180 != 0) {
+            D_80059180 = 0;
+            func_8003A89C(D_80062528, 0x7F, 0x3C);
+        }
+        if (D_800594F8 == 0) {
+            D_8005947C = 0;
+        }
+    }
+    if (D_800594F8 != 0) {
+        func_80028470(0x10, 2);
+        block = func_8008ABB8(4, 1);
+        span = func_8008ABB8(block - 0x801E0000, 1);
+        func_800295D8(1, 0x801E0000, 0, 0x80);
+        func_80028A60(0);
+        func_800320E8((void *)block);
+        func_800320E8((void *)span);
+        if (D_8005947C == 0) {
+            func_801E0A34();
+        } else {
+            D_80059508 = D_8005947C - 1;
+            D_8005947C = 0;
+        }
+    }
+    if (*D_8005917C != -1) {
+        func_80028470(0x10, 2);
+        func_800295D8(6, 0x80280000, 0, 0x80);
+        func_80028A60(0);
+    }
+    memmove(D_8006F9DC, D_800658DC[D_80059508], 0x20);
+    func_800B8098(D_8005954C);
+    func_8007252C();
+    D_800C3E4C = 2;
+    func_800B81BC(D_800C3DEC);
+    func_800B39C0(0, 2, 0xFF, 0xFF, 0xFF);
+    if (D_800C3D48 == 0) {
+        func_800B39C0(0x14, 2, 0, 0, 0);
+    }
+    if (D_800594F8 != 0) {
+        D_800C3E54 = func_800397FC(D_80062648, 0x7F, 0);
+    }
+    D_800D3364 = D_8005949C;
+    D_800C3EB0 = D_8005949C;
+    func_80077990();
+    D_800D3298 = 1;
+    func_800BC404(D_800D39DC);
+    func_800716D8();
+    func_8007819C();
+    while (D_800CCC58 == 0) {
+        func_800716D8();
+    }
+    func_800320E8(D_800595D0);
+    if (D_8005954C != 4) {
+        func_8003A094(D_800595D0);
+    }
+    func_8003852C(D_800595D0);
+    func_800320E8(D_80059480);
+    func_800320E8(D_800594AC);
+    func_80070E2C();
+    func_80070EB0(1);
+    if (D_800D2FC4 == 0) {
+        D_800C3E4C = 1;
+    }
+    func_8009892C();
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[i] != 0x7F) {
+            D_800C3E0C[i].mask0 = D_8006ECF4[D_800D2D24[i]].mask0;
+            D_800C3E0C[i].mask2 = D_8006ECF4[D_800D2D24[i]].mask2;
+        }
+    }
+    while (D_800C48EA == 0 && D_800D2FC4 == 0) {
+        if (D_800CCC58 != 0) {
+            func_800723E0();
+        }
+        func_800716D8();
+    }
+    state = &D_800C48EA;
+    if (!(*state & 0xC0)) {
+        result = 0;
+    } else if (*state & 0x40) {
+        result = 1;
+    } else if (D_800C3D48 == 0) {
+        result = 2;
+    } else if (D_800C3D5C != 0) {
+        result = 3;
+        D_800594D0 = result;
+        *state = 1;
+    }
+    switch (result) {
+    case 0:
+        D_800594D0 = 0;
+        mode = 0;
+    case 3:
+        if (D_800C3D48 != 0) {
+            D_800D3278->unk394[0] = 0xFF;
+            if (D_800C3D44 != 0 || D_800D2FC4 == 0) {
+                u8 *battleOutcome = &D_800C48EA;
+
+                D_800D3278->unk800 = 0;
+                outcome = *battleOutcome;
+                *battleOutcome = 0;
+                for (i = 0; i < 3; i++) {
+                    D_800D3278->unk394[0x10 + i] = D_800CCCE8.records[i].pilot.status7C & 0x8000;
+                    D_800D3278->unk394[0x10 + i] |= D_800CCCE8.records[i].gear.status7C & 0x8000;
+                }
+                func_800C0F70();
+                func_80070EB0(1);
+                D_800C48EA = outcome;
+            }
+        }
+        break;
+    case 1:
+        D_800594D0 = 2;
+        mode = 2;
+        break;
+    case 2:
+        D_800594D0 = 1;
+        mode = 1;
+        break;
+    }
+    func_800B8D7C();
+    if (D_800D2D50 != 0) {
+        mode = 1;
+    }
+    func_80028470(0x10, 0);
+    D_800D2D3C = func_8008ABB8(4, 1);
+    D_800D2F60 = func_8008ABB8(D_800D2D3C - 0x801DE000, 1);
+    func_800295D8(4, 0x801DE000, 0, 0x80);
+    func_800B853C(mode);
+    while (D_800CCC58 != 0) {
+        func_800716D8();
+    }
+    if (D_800C3D48 == 0 && !(D_800C48EA & 0x40) && !(D_8006F9DC[1] & 8)) {
+        func_800B39C0(0x40, 2, 0x40, 0x40, 0x40);
+    }
+    func_80070EDC();
+    func_801E252C();
+    func_800320E8((void *)D_800D2D3C);
+    func_800320E8((void *)D_800D2F60);
+}
 
 /* One battle frame: the 80280000 module's hook when present, then the task
  * runner. */
@@ -66,25 +233,25 @@ void func_8007171C(void) {
                 continue;
             }
             step = 1;
-            if ((D_800CCCE8[slot].status84 | D_800CCCE8[slot].status86) & 0x8000) {
+            if ((D_800CCCE8.records[slot].pilot.status84.half.active | D_800CCCE8.records[slot].pilot.status84.half.permanent) & 0x8000) {
                 step = 2;
             }
-            if (D_800CCCE8[slot].flags7C & 0x1000) {
+            if (D_800CCCE8.records[slot].pilot.status7C & 0x1000) {
                 toggle = &D_800D2DCC.timers[2][slot];
                 if ((*toggle ^= 1) != 0) {
                     continue;
                 }
             }
-            flags = D_800CCCE8[slot].flags7C;
+            flags = D_800CCCE8.records[slot].pilot.status7C;
             if (flags & 0x2000) {
-                delay = D_800CCCE8[slot].delay15C -= step;
+                delay = D_800CCCE8.records[slot].statusTimers[0] -= step;
                 if (delay == 0) {
-                    D_800CCCE8[slot].delay15C = 0;
-                    D_800CCCE8[slot].flags7C &= 0xDFFF;
+                    D_800CCCE8.records[slot].statusTimers[0] = 0;
+                    D_800CCCE8.records[slot].pilot.status7C &= 0xDFFF;
                 }
                 continue;
             }
-            if ((flags & 0x80) || (D_800CCCE8[slot].flags80 & 0x1000)) {
+            if ((flags & 0x80) || (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
                 continue;
             }
             timer = &D_800D2DCC.timers[1][slot];
@@ -112,9 +279,9 @@ void func_800718BC(void) {
 void func_80071964(void) {
     s32 frames;
 
-    if (D_800D2CAF != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+    if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
         frames = 3;
-        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2CAF),
+        D_800D39B8.width = func_80034EAC(func_80033728(D_800D39F0, D_800D2C94.message),
                                          D_800D39B8.pixels, 0x39, 1);
         LoadImage(&D_800D39B8.rect, D_800D39B8.pixels);
         do {
@@ -145,27 +312,26 @@ void func_80071A38(void) {
 
 /* Hide the eight battle messages and clear two UI bytes, then wait a
  * frame. */
-#ifdef NON_MATCHING
+/* Hide the eight battle messages and close windows 4 and 5, then run a
+ * frame. */
 void func_80071A8C(void) {
-    s32 i;
+    s32 offset;
 
-    for (i = 7; i >= 0; i--) {
-        D_800D36C8[i].shown = 0;
+    /* The loop steps a byte offset through the entries. */
+    for (offset = 7 * sizeof(BattleMessage); offset >= 0; offset -= sizeof(BattleMessage)) {
+        ((BattleMessage *)((u8 *)D_800D36C8 + offset))->shown = 0;
     }
     D_800D2D28->windows[5] = 0;
     D_800D2D28->windows[4] = 0;
     func_800716D8();
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071A8C);
-#endif
 
 /* Show the pending battle message (window 7) until a button is pressed or
  * 59 frames pass. */
 void func_80071AE0(void) {
     s32 frames;
 
-    if (D_800D2CAF != 0 && (D_800D2C94 & D_800C48E8) == 0) {
+    if (D_800D2C94.message != 0 && (D_800D2C94.targets & D_800C48E8) == 0) {
         func_80079E18(7);
         frames = 0x3B;
         D_800C3EAC->eventsDone = 0;
@@ -178,23 +344,142 @@ void func_80071AE0(void) {
     }
 }
 
+/* Start the turn of the acting slot (turn state actor + 1; none when 0). An
+ * enemy runs its AI script (unless mode is set) and shows its name; a party
+ * member gets its panel highlight and its command menu. Then each slot's
+ * default target is chosen and the turn's actions play out. */
+#ifdef NON_MATCHING
+void func_80071B94(u8 mode) {
+    s32 i;
+    s32 offset;
+    u8 actor;
+    u16 flags;
+    s32 layout;
+    u8 *message;
+    u8 *bytes;
+
+    D_800C3E8C = 1;
+    message = &D_800D2C94.message;
+    *message = 0;
+    if (D_800C3EAC->actor == 0) {
+        return;
+    }
+    func_80085350();
+    func_80071A08();
+    D_800D3298 = 0;
+    D_800C3EAC->actor--;
+    D_800C4922 = D_800C3EAC->actor;
+    D_800C3EAC->eventCount = 0;
+    D_800C3EAC->eventsDone = 0;
+    for (i = 4, bytes = message - 7; i >= 0; i--) {
+        *bytes-- = 0;
+    }
+    D_800D2C94.targets = 0;
+    func_80099890(D_800C3EAC->actor);
+    if (D_800C3EAC->actor >= 3) {
+        if (mode == 0) {
+            func_800799C8(D_800C3EAC->actor, D_800CCCE8.records[D_800C3EAC->actor].pilot.status80 & 0x2000);
+            actor = D_800C3EAC->actor;
+            if (!(D_800C3EB4[actor].hidden & 0x80) && !(D_800CCCE8.records[actor].pilot.flags34 & 0x400)) {
+                D_800D2D28->windows[5] = 1;
+                D_800D36C8[0].width = func_80034EAC(func_80033728(D_800C3DDC, D_800C3E3D[D_800C3EAC->actor]),
+                                                    D_800D36C8[0].pixels, 0x39, 0);
+                func_800769E8(&D_800D36C8[0].rect, D_800D36C8[0].pixels);
+                D_800D36C8[0].shown = 1;
+            }
+        }
+        actor = D_800C3EAC->actor;
+        if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080) &&
+            !(D_800CCCE8.records[actor].pilot.status80 & 0x1000)) {
+            func_80079778(actor);
+            func_80071A8C();
+            func_80071964();
+            func_80071AE0();
+        }
+        func_80071A8C();
+        func_80070EB0(0);
+    } else {
+        /* The loop steps a byte offset through the entries. */
+        for (offset = 7 * sizeof(EnemyReaction); offset >= 0; offset -= sizeof(EnemyReaction)) {
+            ((EnemyReaction *)((u8 *)D_800C3D18 + offset))->unk1[1] = 0;
+        }
+        layout = D_800D3280 * 3;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x0 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y0 = 8;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x1 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y1 = 8;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x2 = D_800C3254[layout + D_800C3EAC->actor] + 0x10 + D_800C3EAC->actor * 0x60;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y2 = 0x20;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].x3 = D_800C3254[layout + D_800C3EAC->actor] + D_800C3EAC->actor * 0x60 + 0x28;
+        D_800C3EA4->unk63C8[D_800CCB04.buffer].y3 = 0x20;
+        D_800C3EA4->unk6414 = D_800CCB04.buffer;
+        D_800C3EA4->unk6415 = 1;
+        actor = D_800C3EAC->actor;
+        if (!(D_800CCCE8.records[actor].pilot.status7C & 0x2080)) {
+            flags = D_800CCCE8.records[actor].pilot.status80;
+            if (!(flags & 0x1000)) {
+                if (!(flags & 0x2000)) {
+                    func_80080160(actor);
+                } else {
+                    func_80080C94(actor);
+                }
+                if (D_800C3EAC->unk2EA != 0) {
+                    D_8005941C++;
+                }
+                D_800D36C0 = D_800C3EAC->actor;
+                D_800D2D28->unk97 = 0;
+                func_800BCD98(0);
+            }
+        }
+        func_80071964();
+        func_80071AE0();
+        func_80071A8C();
+        func_80070EB0(0);
+        for (i = 0; i < 8; i++) {
+            if (func_80089C9C(D_800D2C94.targets, i + 3)) {
+                D_800C3D18[i].unk1[1] = 1;
+            }
+        }
+        func_80079C24();
+    }
+    func_80071A38();
+    func_80072270();
+    D_800C3EA4->unk6415 = 0;
+    for (i = 0; i < 11; i++) {
+        D_800C3EAC->slots[i].defaultTarget = func_800841E0(i);
+        D_800C3EB4[i].targetCode = func_80085310(i, D_800C3EAC->slots[i].defaultTarget);
+    }
+    func_800BA4E0(func_80080AE4(D_800C3EAC->actor));
+    func_80071A08();
+    func_8007252C();
+    if (D_800C48EA == 0) {
+        func_80085B58(D_800C3EAC->actor);
+    }
+    func_8007252C();
+    func_80071A38();
+    func_800BFE48();
+    func_800718BC();
+    D_800D3298 = 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80071B94);
+#endif
 
 /* Party members held by the mask 800d2c9e lose their ready flag, restart
  * their turn timer from its reload value and show the held marker. */
 void func_80072270(void) {
     s32 member;
 
-    if (D_800D2C9E & 7) {
+    if (D_800D2C94.held & 7) {
         for (member = 0; member < 3; member++) {
-            if (func_80089C9C(D_800D2C9E, member)) {
+            if (func_80089C9C(D_800D2C94.held, member)) {
                 D_800D2DCC.ready[member] = 0;
                 D_800D2DCC.timers[1][member] = D_800D2DCC.timers[0][member];
                 D_800D2D28->reaction[member] = 1;
             }
         }
     }
-    D_800D2C9E = 0;
+    D_800D2C94.held = 0;
 }
 
 /* Give every enemy in the act-together mask its turn: clear the event types,
@@ -203,18 +488,20 @@ void func_80072270(void) {
 #ifdef NON_MATCHING
 void func_80072324(void) {
     s32 slot;
-    s32 i;
+    s32 offset;
     u8 *p;
+    u8 *end;
     u8 *actions;
 
     for (slot = 3; slot < 11; slot++) {
         if (func_80089C9C(D_800D39E0, slot)) {
             p = actions;
+            end = p + 0x100;
             do {
                 *p++ = 0;
-            } while (p < actions + 0x100);
-            for (i = 31; i >= 0; i--) {
-                D_800C3FE8[i].type = 0xFF;
+            } while (p < end);
+            for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+                ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
             }
             D_800D2E5C[0].type = 4;
             D_800D2E5C[0].param = 0x17;
@@ -284,9 +571,9 @@ void func_8007252C(void) {
     D_800D39DC = 0;
     for (slot = 0; slot < 3; slot++) {
         if (D_800D2DCC.present[slot] != 0) {
-            if (D_800CCCE8[slot].flags7C & 0xC000) {
-                if (D_800CCCE8[slot].flags7C & 0x8000) {
-                    D_800CCCE8[slot].hp = 0;
+            if (D_800CCCE8.records[slot].pilot.status7C & 0xC000) {
+                if (D_800CCCE8.records[slot].pilot.status7C & 0x8000) {
+                    D_800CCCE8.records[slot].pilot.hp = 0;
                 }
                 D_800D2DCC.ready[slot] = 0xFF;
             } else if (D_800C3EB4[slot].hidden == 0) {
@@ -297,18 +584,18 @@ void func_8007252C(void) {
     for (slot = 3; slot < 11; slot++) {
         if (D_800D2DCC.present[slot] != 0) {
             if (D_800C3EB4[slot].gear == 0) {
-                if (D_800CCCE8[slot].flags7C & 0xC000) {
+                if (D_800CCCE8.records[slot].pilot.status7C & 0xC000) {
                     if (!func_80089C9C(D_800C3608, slot)) {
-                        D_800CCCE8[slot].hp = 0;
+                        D_800CCCE8.records[slot].pilot.hp = 0;
                         D_800D2DCC.ready[slot] = 0xFF;
                         continue;
                     }
                     D_800D39DC |= func_80089C08(slot);
                     continue;
                 }
-            } else if (D_800CCCE8[slot].unk120 & 0xC000) {
+            } else if (D_800CCCE8.records[slot].gear.status7C & 0xC000) {
                 if (!func_80089C9C(D_800C3608, slot)) {
-                    D_800CCCE8[slot].unk104 = 0;
+                    D_800CCCE8.records[slot].gear.hp = 0;
                     D_800D2DCC.ready[slot] = 0xFF;
                     continue;
                 }
@@ -329,14 +616,14 @@ void func_8007252C(void) {
     if (D_800C48EA == 0) {
         waiting = D_800D39DC;
         for (slot = 0; slot < 11; slot++) {
-            if (func_80089C9C(waiting, slot) && (D_800CCCE8[slot].flags80 & 0x1000)) {
+            if (func_80089C9C(waiting, slot) && (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
                 waiting &= func_80089C48(slot);
             }
         }
         if (waiting == 0) {
             for (slot = 0; slot < 11; slot++) {
-                if (func_80089C9C(D_800D39DC, slot) && (D_800CCCE8[slot].flags80 & 0x1000)) {
-                    D_800CCCE8[slot].flags80 &= 0xEFFF;
+                if (func_80089C9C(D_800D39DC, slot) && (D_800CCCE8.records[slot].pilot.status80 & 0x1000)) {
+                    D_800CCCE8.records[slot].pilot.status80 &= 0xEFFF;
                     return;
                 }
             }
@@ -378,10 +665,42 @@ void func_80072938(POLY_FT4 *prims, s32 first, s32 last, u8 mode) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072938);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072A9C);
+/* Build the member's panel HP glyphs: the current value's digits (800c3e08),
+ * a '/', and the maximum's digits (800d2d54 from index 4), and tint them by
+ * `mode`. */
+void func_80072A9C(member, mode)
+s32 member;
+u8 mode;
+{
+    s32 i;
+    s32 column;
+    s32 first;
+
+    first = D_800D2D28->unkE0[member];
+    for (i = 0; i < 3; i++) {
+        if (D_800C3E08[i] != 0xFF) {
+            D_800D2D28->unkE0[member] +=
+                func_80076A10(D_800C3E08[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                              D_800C3068[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+        }
+    }
+    D_800D2D28->unkE0[member] +=
+        func_80076A10(0x71, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                      D_800C3068[member * 24 + 3] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+    for (i = 4, column = 4; i < 7; i++) {
+        if (D_800D2D54[i] != 0xFF) {
+            D_800D2D28->unkE0[member] +=
+                func_80076A10(D_800D2D54[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
+                              D_800C3068[member * 24 + column] + D_800C3254[D_800D3280 * 3 + member], 0x10);
+            column++;
+        }
+    }
+    if (mode != 0) {
+        func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
+    }
+}
 
 /* Build the member's panel name glyphs (800d2d88) and tint them by `mode`. */
-#ifdef NON_MATCHING
 void func_80072DA8(member, mode)
 s32 member;
 u8 mode;
@@ -395,18 +714,99 @@ u8 mode;
         if (D_800D2D88[i] != 0xFF) {
             D_800D2D28->unkE0[member] +=
                 func_80076A10(D_800D2D88[i] + 0x67, &D_800C3EA4->unk3A88[member][D_800D2D28->unkE0[member] * 2],
-                              D_800C3076[member][i] + D_800C3254[D_800D3280][member], 0x10);
+                              D_800C3076[member * 24 + i] + D_800C3254[D_800D3280 * 3 + member], 0x10);
         }
     }
     if (mode != 0) {
         func_80072938(D_800C3EA4->unk3A88[member], first, D_800D2D28->unkE0[member], mode);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072DA8);
-#endif
 
+/* Split the member's panel values into digit glyph codes: HP (3 digits) and
+ * maximum HP (3), or in a gear its HP (5); leading zeros become blanks (0xff).
+ * Returns the warning level: 2 at an eighth of the maximum or less, 1 at a
+ * quarter or less, else 0. */
+#ifdef NON_MATCHING
+u8 func_80072F38(s32 member, u8 inGear) {
+    u8 warning;
+    u8 *digit;
+    s16 hp100;
+    s16 hp10;
+    s16 max100;
+    s16 max10;
+    s32 gear10000;
+    s32 gear1000;
+    s32 gear100;
+    s32 gear10;
+
+    D_800D2FE0 = D_800D3330 = D_800CCCE8.records[member].pilot.maxHp;
+    D_800D2D38 = D_800D2E58 = D_800CCCE8.records[member].pilot.hp;
+    D_800D3018 = D_800D333C = D_800CCCE8.records[member].gear.hp;
+    D_800D3668 = D_800CCCE8.records[member].gear.maxHp;
+    warning = 0;
+    if (inGear) {
+        if (D_800D3668 / 8 >= D_800D333C) {
+            warning = 2;
+        } else if (D_800D3668 / 4 >= D_800D333C) {
+            warning = 1;
+        }
+    } else {
+        if (D_800D3330 / 8 >= D_800D2E58) {
+            warning = 2;
+        } else if (D_800D3330 / 4 >= D_800D2E58) {
+            warning = 1;
+        }
+    }
+    hp100 = D_800D2D38 / 100;
+    D_800D2D38 %= 100;
+    hp10 = D_800D2D38 / 10;
+    D_800D2D38 %= 10;
+    max100 = D_800D2FE0 / 100;
+    D_800D2FE0 %= 100;
+    max10 = D_800D2FE0 / 10;
+    D_800D2FE0 %= 10;
+    gear10000 = D_800D3018 / 10000;
+    D_800D3018 -= gear10000 * 10000;
+    gear1000 = D_800D3018 / 1000;
+    D_800D3018 -= gear1000 * 1000;
+    gear100 = D_800D3018 / 100;
+    D_800D3018 -= gear100 * 100;
+    gear10 = D_800D3018 / 10;
+    D_800D3018 -= gear10 * 10;
+    D_800C3E08[0] = hp100;
+    D_800C3E08[1] = hp10;
+    D_800D2D54[4] = max100;
+    D_800D2D54[5] = max10;
+    D_800D2D88[0] = gear10000;
+    D_800D2D88[1] = gear1000;
+    D_800D2D88[2] = gear100;
+    D_800D2D88[3] = gear10;
+    D_800C3E08[2] = D_800D2D38;
+    D_800D2D54[6] = D_800D2FE0;
+    D_800D2D88[4] = D_800D3018;
+    for (digit = D_800C3E08; digit < D_800C3E08 + 2; digit++) {
+        if (*digit != 0) {
+            break;
+        }
+        *digit = 0xFF;
+    }
+    for (digit = &D_800D2D54[4]; digit < &D_800D2D54[6]; digit++) {
+        if (*digit != 0) {
+            break;
+        }
+        *digit = 0xFF;
+    }
+    for (digit = D_800D2D88; digit < D_800D2D88 + 4; digit++) {
+        if (*digit != 0) {
+            break;
+        }
+        *digit = 0xFF;
+    }
+    return warning;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80072F38);
+#endif
 
 /* Build the member's four-digit panel value (the 800d32a0 value or record
  * +0xdc) as glyphs. */
@@ -420,7 +820,7 @@ void func_80073380(s32 member) {
     if (D_800C3EA4->panels[member].unk1E1 == 1) {
         value = D_800D32A0[member].unk0;
     } else {
-        value = D_800CCCE8[member].unkDC;
+        value = D_800CCCE8.records[member].gear.fuel;
     }
     func_8008AAA0(value);
     i = 0;
@@ -430,7 +830,7 @@ void func_80073380(s32 member) {
         if (digit != 0xFF) {
             D_800D2D28->unkEC[member] +=
                 func_80076A10(digit + 0x83, &D_800C3EA4->unk6008[member][D_800D2D28->unkEC[member] * 2],
-                              member * 0x60 + (D_800C3254[D_800D3280][member] + 0x4A) + x, 0x25);
+                              member * 0x60 + (D_800C3254[D_800D3280 * 3 + member] + 0x4A) + x, 0x25);
         }
         x += 6;
     }
@@ -495,7 +895,7 @@ void func_800742A0(void) {
         if (D_800D2D28->reaction[member] != 0) {
             D_800D2D28->unkE0[member] = 0;
             D_800D2D28->unkEC[member] = 0;
-            if (D_800C3EB4[member].unk2 != 0x7F) {
+            if (D_800C3EB4[member].field2 != 0x7F) {
                 func_80073380(member);
                 value = func_80072F38(member, D_800D32A0[member].unk1);
                 if (D_800D32A0[member].unk1 != 0) {
@@ -541,7 +941,36 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800745EC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074AB8);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80074D4C);
+/* While a target is being chosen, pulse the direction arrows (red between
+ * 0x40 and 0xfc) and draw the ones pointing at targets. The block is
+ * addressed as its leading primitive array. */
+void func_80074D4C(void) {
+    s32 i;
+
+    if (D_800D2D28->unkC6 != 0) {
+        if (D_800C3E24->fading) {
+            D_800C3E24->shade -= 4;
+            if (D_800C3E24->shade < 0x40) {
+                D_800C3E24->fading = 0;
+                D_800C3E24->shade = 0x40;
+            }
+        } else {
+            D_800C3E24->shade += 4;
+            if (D_800C3E24->shade >= 0x100) {
+                D_800C3E24->fading = 1;
+                D_800C3E24->shade = 0xFC;
+            }
+        }
+        for (i = 0; i < 4; i++) {
+            if (D_800C3E24->arrows[i]) {
+                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].r0 = D_800C3E24->shade;
+                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].g0 = 0;
+                ((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer].b0 = 0;
+                AddPrim(D_800CCB04.ot + 1, &((POLY_G3 *)D_800C3E24)[i * 2 + D_800C3E24->buffer]);
+            }
+        }
+    }
+}
 
 /* Draw the three primitive lists of *800d2db4 when UI +0xa8 is set. */
 void func_80074EEC(void) {
@@ -649,7 +1078,35 @@ void func_80076544(void) {
     }
 }
 
+/* Start the panel cursor window's opening over the member's panel (wider
+ * for a member with the 800d32a0 flag unless it is character 7). */
+#ifdef NON_MATCHING
+void func_800765C4(s32 member) {
+    u16 *panelX = &D_800C3254[D_800D3280 * 3 + member];
+
+    D_800D2D28->unk44 = 0x1C;
+    D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x48);
+    if (D_800D32A0[member].unk1 != 0 && D_800D2D24[member] != 7) {
+        D_800D2D28->unk44 = 0x24;
+        D_800D2D28->unk34 = member * 0x60 + (*panelX + 0x44);
+    }
+    D_800D2D28->unk3C = 0x10;
+    D_800D2D28->unk4C = 0x98;
+    D_800D2D28->unk54 = D_800D2D28->unk34 - (D_800D2D28->unk3C + 5);
+    D_800D2D28->unk5C = D_800D2D28->unk4C - (D_800D2D28->unk44 + 5);
+    D_800D2D28->unk54 = (D_800D2D28->unk54 << 8) / D_800D2D28->unk5C;
+    D_800D2D28->unk104 = 0x800;
+    D_800D2D28->unkA9 = 6;
+    D_800D2D28->unk5C = 0x100;
+    D_800D2D28->unk64 = 0;
+    D_800D2D28->unk6C = 0;
+    D_800D2D28->unk106 = 0;
+    D_800D2D28->unkAB = 1;
+    D_800D2D28->unk90[member]--;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800765C4);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80076710);
 
@@ -726,7 +1183,7 @@ void func_80076C34(POLY_FT4 *prim) {
 }
 
 /* Place a quad of width `w` and height 13 at (x, y) with texture (u, v). */
-void func_80076C78(POLY_FT4 *prim, s16 x, s16 y, u8 u, u8 v, u8 w) {
+void func_80076C78(POLY_FT4 *prim, u16 x, u16 y, u8 u, u8 v, u8 w) {
     prim->x0 = x;
     prim->y0 = y;
     prim->y1 = y;
@@ -825,7 +1282,39 @@ void func_80077364(POLY_FT4 *prims, u8 index) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80077454);
+/* Initialise a window's primitives: its semi-transparent background in the
+ * window colour (one per draw buffer, with its draw mode) and its four edge
+ * piece sets (textures 1-4). The draw mode's texture window argument is the
+ * UI block pointer. */
+void func_80077454(u8 window) {
+    WindowBlock *block;
+    u8 i;
+
+    block = D_800D2E38[window];
+    for (i = 0; i < 2; i++) {
+        SetPolyG4(&block->shade[i]);
+        (block->shade + i)->r0 = D_800594D4[0];
+        (block->shade + i)->g0 = D_800594D4[1];
+        (block->shade + i)->b0 = D_800594D4[2];
+        (block->shade + i)->r1 = D_800594D4[0];
+        (block->shade + i)->g1 = D_800594D4[1];
+        (block->shade + i)->b1 = D_800594D4[2];
+        (block->shade + i)->r2 = D_800594D4[0];
+        (block->shade + i)->g2 = D_800594D4[1];
+        (block->shade + i)->b2 = D_800594D4[2];
+        (block->shade + i)->r3 = D_800594D4[0];
+        (block->shade + i)->g3 = D_800594D4[1];
+        (block->shade + i)->b3 = D_800594D4[2];
+        SetSemiTrans(&block->shade[i], 1);
+        SetDrawMode(&block->mode[i], 0, 0,
+                    GetTPage(0, D_800595A0, D_800C3EA4->textures[1].x, D_800C3EA4->textures[1].y),
+                    (RECT *)D_800D2D28);
+    }
+    func_80077364(block->frame[0], 1);
+    func_80077364(block->frame[1], 2);
+    func_80077364(block->frame[2], 3);
+    func_80077364(block->frame[3], 4);
+}
 
 /* Allocate and clear the 0x670-byte graphics block, then initialise it. */
 void func_80077610(void) {
@@ -870,7 +1359,31 @@ void func_800780A8(BattleMessage *message, u32 row) {
     message->shown = 0;
 }
 
+/* Set up windows 5 and 4 (closed) and the eight battle messages: each pair
+ * shares a text image block and a VRAM rectangle row. */
+#ifdef NON_MATCHING
+void func_8007819C(void) {
+    s32 i;
+
+    func_8008F8F4(5, 8, 0x2A, 0x70, 0x12, 0, 0);
+    D_800D2D28->windows[5] = 0;
+    func_8008F8F4(4, 0x20, 0xC8, 0xF4, 0x12, 0, 0);
+    D_800D2D28->windows[4] = 0;
+    for (i = 0; i < 8; i += 2) {
+        D_800D36C8[i].pixels = (u32 *)func_8008AC00(0x39);
+        D_800D36C8[i + 1].pixels = D_800D36C8[i].pixels;
+        D_800D36C8[i].rect.x = 0x3C0;
+        D_800D36C8[i].rect.y = (i / 2) * 13;
+        D_800D36C8[i].rect.w = 0x3C;
+        D_800D36C8[i].rect.h = 13;
+        D_800D36C8[i + 1].rect = D_800D36C8[i].rect;
+        func_800780A8(&D_800D36C8[i], i);
+        func_800780A8(&D_800D36C8[i + 1], i + 1);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007819C);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078310);
 
@@ -896,20 +1409,33 @@ void func_80078508(u8 *order) {
 #ifdef NON_MATCHING
 void func_800785D4(u8 actor, u8 index) {
     D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
-    D_800C3FE8[D_800C3EAC->eventCount].param = D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8);
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800D2E5C[index].param | (D_800D2E5C[index].unk5 << 8);
     D_800C3EAC->eventCount++;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800785D4);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078658);
+/* Show the name of action `index` in the next battle message (up to eight)
+ * and queue its event (0xfa) for `actor`. */
+void func_80078658(u8 index, u8 actor) {
+    if (D_800C3E8C < 9) {
+        D_800D36C8[D_800C3E8C].width =
+            func_80034EAC(func_80033728(D_800C3DDC, D_800D2E5C[index].named), D_800D36C8[D_800C3E8C].pixels, 0x39,
+                          D_800C3E8C & 1);
+        func_800769E8(&D_800D36C8[D_800C3E8C].rect, D_800D36C8[D_800C3E8C].pixels);
+        D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
+        D_800C3FE8[D_800C3EAC->eventCount].type = 0xFA;
+        D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800C3E8C++;
+        D_800C3EAC->eventCount++;
+    }
+}
 
 /* Queue event type 0xf7 for `actor` with parameter `value`. */
 void func_800787E0(u8 value, u8 actor) {
     D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF7;
-    D_800C3FE8[D_800C3EAC->eventCount].param = value;
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = value;
     D_800C3EAC->eventCount++;
 }
 
@@ -918,7 +1444,7 @@ void func_8007887C(u8 actor) {
     if (D_800C3E8C != 0) {
         D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
         D_800C3FE8[D_800C3EAC->eventCount].type = 0xF8;
-        D_800C3FE8[D_800C3EAC->eventCount].param = D_800C3E8C - 1;
+        D_800C3FE8[D_800C3EAC->eventCount].parameter = D_800C3E8C - 1;
         D_800C3EAC->eventCount++;
     }
 }
@@ -933,9 +1459,47 @@ void func_8007893C(u8 index, u8 actor) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078998);
+/* Execute the actor's action `index`: commit it, queue its animation event
+ * with the committed targets and, when those differ from the action's own,
+ * retarget the queued move event (0xfd). */
+void func_80078998(u8 actor, u8 index) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078B34);
+    func_8007893C(index, actor);
+    D_800C3EAC->unk2DC = D_800D2E5C[index].arg1 + 1;
+    func_80085CCC(actor, D_800D2E5C[index].targets, D_800D2E5C[index].animation);
+    func_80085C88(D_800C3EAC->eventCount);
+    D_800C3FE8[D_800C3EAC->eventCount].type = D_800D2E5C[index].animation;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2C94.targets;
+    func_800785D4(actor, index);
+    if (D_800D2E5C[index].targets != D_800D2C94.targets) {
+        for (i = 0; i < D_800C3EAC->eventCount; i++) {
+            if (D_800C3FE8[i].type == 0xFD) {
+                D_800C3FE8[i].targetMask = D_800D2C94.targets;
+                return;
+            }
+        }
+    }
+}
+
+/* Queue a move event (0xfd) for the actor's action `index` toward target:
+ * compute the move, then (unless the action's parameter is 1) choose the
+ * on-foot or gear approach, and redraw the slots involved. */
+void func_80078B34(u8 actor, u8 index, u8 target) {
+    D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
+    D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
+    func_800877E0(actor, target);
+    if (D_800D2E5C[index].param != 1) {
+        if (D_800D32A0[actor].unk1 == 0) {
+            func_80087EDC(actor, target);
+        } else {
+            func_800881B8(actor, target);
+        }
+    }
+    func_800BC404(D_800D2E5C[index].targets | func_80089C08(actor));
+    func_800785D4(actor, index);
+}
 
 /* Queue event type 0xfc for the actor. */
 void func_80078C9C(u8 actor, u8 index) {
@@ -961,7 +1525,7 @@ void func_80078D6C(u8 actor, u8 index) {
     func_800785D4(actor, index);
     D_800D2DCC.ready[actor] = 0xFF;
     D_800C3D18[actor - 3].unk3 = 1;
-    D_800CCCE8[actor].flags7C &= 0x8000;
+    D_800CCCE8.records[actor].pilot.status7C &= 0x8000;
 }
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80078E24);
@@ -1000,11 +1564,50 @@ void func_800791FC(u8 actor, u8 index) {
 /* Event 0xf6 for the actor with the entry's targets. */
 void func_80079270(u8 actor, u8 index) {
     D_800C3FE8[D_800C3EAC->eventCount].type = 0xF6;
-    D_800C3FE8[D_800C3EAC->eventCount].targets = D_800D2E5C[index].targets;
+    D_800C3FE8[D_800C3EAC->eventCount].targetMask = D_800D2E5C[index].targets;
     func_800785D4(actor, index);
 }
 
+/* Script error screen: clear the event types and, on a debug build (the
+ * 8005917c flag), print "Language Error" with the actor and script number
+ * forever, the text shifted one column every three frames. */
+#ifdef NON_MATCHING
+void func_800792F8(actor, number)
+u8 actor;
+u8 number;
+{
+    s32 offset;
+    s32 i;
+    s32 column;
+    s32 frames;
+
+    for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
+    }
+    frames = 0;
+    column = 0;
+    if (*D_8005917C != -1) {
+        while (1) {
+            for (i = 0; i < column; i++) {
+                func_8003700C(" ");
+            }
+            frames++;
+            func_8003700C("\n\n\n\n\n\nLanguage Error\n");
+            func_8003700C("\t\t\tActor%X\t\tNo%x\n\n", actor, number);
+            func_800716D8();
+            if (frames >= 3) {
+                column++;
+                frames = 0;
+                if (column >= 21) {
+                    column = 0;
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800793F0);
 
@@ -1048,7 +1651,7 @@ void func_80079840(u8 actor, u8 target) {
         enemy = target - 3;
         D_800D3400[enemy].vars[7] = func_80089C08(actor);
         for (i = 0; i < 5; i++) {
-            D_800D3400[enemy].bytes[9 + i] = D_800D2CA4[i];
+            D_800D3400[enemy].bytes[9 + i] = D_800D2C94.enemyBytes[i];
         }
         if ((u16)D_800C48E8 & func_80089C08(D_800C3EAC->slots[actor].defaultTarget)) {
             D_800D3400[enemy].bytes[14] = 1;
@@ -1076,22 +1679,22 @@ void func_80079948(u8 **pc) {
 
 /* Run enemy `slot`'s AI script: clear the action list and event types, then
  * evaluate conditions and actions until 0xfd or 0xff. */
-#ifdef NON_MATCHING
-void func_800799C8(u8 slot) {
+void func_800799C8(u8 slot, u16 attacking) {
     u8 *pc;
     u8 count;
     u8 enemy;
     u8 *p;
-    s32 i;
+    s32 offset;
 
     count = 0;
     enemy = slot - 3;
     pc = D_800D3400[enemy].script;
-    for (p = (u8 *)D_800D2E5C; p < (u8 *)D_800D2E5C + 0x100; p++) {
-        *p = 0;
-    }
-    for (i = 31; i >= 0; i--) {
-        D_800C3FE8[i].type = 0xFF;
+    p = (u8 *)D_800D2E5C;
+    do {
+        *p++ = 0;
+    } while (p < (u8 *)D_800D2E5C + 0x100);
+    for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
     }
     while (*pc != 0xFD && *pc != 0xFF) {
         if (*pc >= 0x80) {
@@ -1103,9 +1706,6 @@ void func_800799C8(u8 slot) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800799C8);
-#endif
 
 /* Run enemy `slot`'s reaction script when armed (and the enemy is not down,
  * unless +0x34 bit 0x800 lets it react), then execute its action list.
@@ -1117,7 +1717,7 @@ s32 func_80079AB0(u8 slot) {
     u8 count = 0;
     u8 *p;
 
-    if (!(D_800CCCE8[enemy + 3].flags7C & 0x8000) || (D_800CCCE8[enemy + 3].unk34 & 0x800)) {
+    if (!(D_800CCCE8.records[enemy + 3].pilot.status7C & 0x8000) || (D_800CCCE8.records[enemy + 3].pilot.flags34 & 0x800)) {
         D_800D2E5C[0].type = 0;
         if (D_800C3D18[enemy].armed != 0) {
             pc = D_800D3400[enemy].reaction;
@@ -1182,10 +1782,10 @@ u8 func_8007A628(u8 slot, u8 any) {
     u8 result = 0;
     u16 status;
 
-    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
+    if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC002)) {
         result = 1;
         if (any == 0) {
-            status = D_800CCCE8[slot].status84 & 0x20;
+            status = D_800CCCE8.records[slot].pilot.status84.half.active & 0x20;
             result = status == 0;
         }
     }
@@ -1200,10 +1800,10 @@ u8 func_8007A6C8(u8 slot, u8 any) {
     u8 result = 0;
     u16 status;
 
-    if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC002)) {
+    if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC002)) {
         result = 1;
         if (any == 0) {
-            status = D_800CCCE8[slot].status84 & 0x20;
+            status = D_800CCCE8.records[slot].pilot.status84.half.active & 0x20;
             result = status == 0;
         }
     }
@@ -1215,7 +1815,7 @@ u8 func_8007A744(u8 slot) {
     u8 result = 0;
 
     if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
-        result = (D_800CCCE8[slot].flags7C & 0xC000) == 0;
+        result = (D_800CCCE8.records[slot].pilot.status7C & 0xC000) == 0;
     }
     return result;
 }
@@ -1651,7 +2251,7 @@ void func_8007B6C0(u8 **pc, u8 enemy) {
     switch (op[2]) {
     case 1:
         D_800D3400[enemy].longs[(*pc)[1]] =
-            D_800CCCE8[func_80079E7C(D_800D3400[enemy].vars[op[3]])].unk104;
+            D_800CCCE8.records[func_80079E7C(D_800D3400[enemy].vars[op[3]])].gear.hp;
         break;
     case 2:
         D_800D3400[enemy].longs[op[1]] = D_8006EF58;
@@ -1668,9 +2268,9 @@ u8 func_8007B7B0(u8 **pc, u8 enemy, u8 count) {
         D_800D2E5C[0].type = 0x20;
         count++;
     } else if ((*pc)[2] == 0) {
-        D_800CCCE8[slot].unk108 = D_800D3400[enemy].longs[(*pc)[1]];
+        D_800CCCE8.records[slot].gear.maxHp = D_800D3400[enemy].longs[(*pc)[1]];
     } else {
-        D_800CCCE8[slot].unk104 = D_800D3400[enemy].longs[(*pc)[1]];
+        D_800CCCE8.records[slot].gear.hp = D_800D3400[enemy].longs[(*pc)[1]];
     }
     return count;
 }
@@ -1748,7 +2348,7 @@ void func_8007BAB8(u8 enemy) {
 void func_8007BAE8(u8 **pc, u8 enemy) {
     s32 value = (*pc)[1] | ((*pc)[2] << 8);
 
-    D_800CCCE8[enemy + 3].unk14C = value;
+    D_800CCCE8.records[enemy + 3].field14C = value;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007BAE8);
@@ -1758,21 +2358,21 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007BAE8);
 void func_8007BB2C(u8 **pc, u8 enemy) {
     u16 value = (*pc)[1] | ((*pc)[2] << 8);
 
-    D_800CCCE8[enemy + 3].unk156 = value;
+    D_800CCCE8.records[enemy + 3].field156 = value;
 }
 
 /* AI action 3b: the enemy record's bytes +0x155, +0x153, +0x151 = b1, b2, b3. */
 void func_8007BB70(u8 **pc, u8 enemy) {
-    D_800CCCE8[enemy + 3].unk150[5] = (*pc)[1];
-    D_800CCCE8[enemy + 3].unk150[3] = (*pc)[2];
-    D_800CCCE8[enemy + 3].unk150[1] = (*pc)[3];
+    D_800CCCE8.records[enemy + 3].field150[5] = (*pc)[1];
+    D_800CCCE8.records[enemy + 3].field150[3] = (*pc)[2];
+    D_800CCCE8.records[enemy + 3].field150[1] = (*pc)[3];
 }
 
 /* AI action 3c: the enemy record's bytes +0x154, +0x152, +0x150 = b1, b2, b3. */
 void func_8007BBD8(u8 **pc, u8 enemy) {
-    D_800CCCE8[enemy + 3].unk150[4] = (*pc)[1];
-    D_800CCCE8[enemy + 3].unk150[2] = (*pc)[2];
-    D_800CCCE8[enemy + 3].unk150[0] = (*pc)[3];
+    D_800CCCE8.records[enemy + 3].field150[4] = (*pc)[1];
+    D_800CCCE8.records[enemy + 3].field150[2] = (*pc)[2];
+    D_800CCCE8.records[enemy + 3].field150[0] = (*pc)[3];
 }
 
 /* AI action 3d: list entry halfword at b1 = b2 | b3 << 8 (two byte stores). */
@@ -1944,8 +2544,8 @@ void func_8007C678(u8 **pc, u8 enemy) {
     s32 target = 0;
 
     for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8[slot].hp) {
-            lowest = D_800CCCE8[slot].hp;
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8.records[slot].pilot.hp) {
+            lowest = D_800CCCE8.records[slot].pilot.hp;
             target = slot;
         }
     }
@@ -1960,8 +2560,8 @@ void func_8007C75C(u8 **pc, u8 enemy) {
     s32 target = 0;
 
     for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8[slot].hp) {
-            lowest = D_800CCCE8[slot].hp;
+        if (func_8007A628(slot, (*pc)[2]) && lowest >= D_800CCCE8.records[slot].pilot.hp) {
+            lowest = D_800CCCE8.records[slot].pilot.hp;
             target = slot;
         }
     }
@@ -2148,7 +2748,7 @@ void func_8007D1DC(u8 **pc, u8 enemy) {
     count = 0;
     D_800D3400[enemy].vars[(*pc)[1]] = 0;
     for (; slot < 11; slot++) {
-        if (func_8007A744(slot) && D_800CCCE8[slot].unk56 == (*pc)[2]) {
+        if (func_8007A744(slot) && D_800CCCE8.records[slot].pilot.characterId == (*pc)[2]) {
             *next++ = slot;
             count++;
         }
@@ -2207,7 +2807,7 @@ void func_8007D478(u8 **pc, u8 enemy) {
     while (!(tried[2] & (tried[0] & tried[1]))) {
         slot = func_8001BD40(0, 2);
         if (tried[slot] == 0) {
-            flags = D_800CCCE8[slot].flags7C;
+            flags = D_800CCCE8.records[slot].pilot.status7C;
             if ((flags & 0x8000) && !(flags & 0x4002)) {
                 D_800D3400[enemy].vars[(*pc)[1]] = func_80089C08(slot);
                 return;
@@ -2224,7 +2824,7 @@ void func_8007D5B0(u8 **pc, u8 enemy) {
     u8 count = 0;
 
     for (slot = 0; slot < 3; slot++) {
-        if (!(D_800CCCE8[slot].flags7C & 0xC000)) {
+        if (!(D_800CCCE8.records[slot].pilot.status7C & 0xC000)) {
             count++;
         }
     }
@@ -2238,7 +2838,7 @@ void func_8007D610(u8 **pc, u8 enemy) {
     u8 count = 0;
 
     for (slot = 3; slot < 11; slot++) {
-        if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8[slot].flags7C & 0xC000) && D_800C3EB4[slot].hidden == 0) {
+        if (D_800D2DCC.present[slot] != 0 && !(D_800CCCE8.records[slot].pilot.status7C & 0xC000) && D_800C3EB4[slot].hidden == 0) {
             count++;
         }
     }
@@ -2253,8 +2853,8 @@ void func_8007D6A8(u8 **pc, u8 enemy) {
     s32 target = 0;
 
     for (slot = 0; slot < 3; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8[slot].unk104) {
-            lowest = D_800CCCE8[slot].unk104;
+        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8.records[slot].gear.hp) {
+            lowest = D_800CCCE8.records[slot].gear.hp;
             target = slot;
         }
     }
@@ -2269,8 +2869,8 @@ void func_8007D7B4(u8 **pc, u8 enemy) {
     s32 target = 0;
 
     for (slot = 3; slot < 11; slot++) {
-        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8[slot].hp) {
-            lowest = D_800CCCE8[slot].hp;
+        if (func_8007A628(slot, (*pc)[2]) && D_800D32A0[slot].unk1 != 0 && lowest >= D_800CCCE8.records[slot].pilot.hp) {
+            lowest = D_800CCCE8.records[slot].pilot.hp;
             target = slot;
         }
     }
@@ -2556,17 +3156,17 @@ void func_8007E7C0(u8 **pc) {
  * +0x7a. */
 #ifdef NON_MATCHING
 void func_8007E7E4(u8 **pc) {
-    BattleRecord *record = D_800CCCE8;
+    Combatant *record = D_800CCCE8.records;
     u8 set = (*pc)[2] != 0;
 
     do {
         if (set) {
-            record->unk7A |= func_80089BEC((*pc)[1] + 7);
+            record->pilot.status7A |= func_80089BEC((*pc)[1] + 7);
         } else {
-            record->unk7A &= ~func_80089BEC((*pc)[1] + 7);
+            record->pilot.status7A &= ~func_80089BEC((*pc)[1] + 7);
         }
         record++;
-    } while (record < &D_800CCCE8[3]);
+    } while (record < &D_800CCCE8.records[3]);
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8007E7E4);
@@ -2763,7 +3363,7 @@ s32 func_8007EE28(u8 **pc, u8 enemy) {
 
 /* AI condition 95: slot b1's record +0x7c bit 0x8000. */
 s32 func_8007EE70(u8 **pc) {
-    return D_800CCCE8[(*pc)[1]].flags7C >> 15;
+    return D_800CCCE8.records[(*pc)[1]].pilot.status7C >> 15;
 }
 
 /* AI condition 96: formation group b1 is empty. */
@@ -2814,18 +3414,16 @@ void func_8007FB70(u8 member) {
  * table) and remember the selected row (clamped below `count`). */
 #ifdef NON_MATCHING
 void func_8007FBE0(u8 count, u8 selected) {
-    BattleGraphics *gfx;
     s32 i;
 
     if (count == selected) {
         selected--;
     }
     for (i = 0; i < count - 1; i++) {
-        gfx = D_800C3EA4;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count][i + 2] + 0x5E;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
-        gfx->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count][i + 2] + 0x5E;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x0 = 0xC;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y0 = D_800C3200[count * 6 + i + 2] + 0x5E;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].x1 = 0x12;
+        D_800C3EA4->unk908[i * 2 + D_800CCB04.buffer].y1 = D_800C3200[count * 6 + i + 2] + 0x5E;
     }
     D_800D2D28->unk97 = selected;
     D_800D2D28->unk98 = D_800CCB04.buffer;
@@ -2981,27 +3579,483 @@ void func_8008189C(u8 member) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800819A4);
+/* Confirm the attack page's target (once): make it the member's default
+ * target, close the page, highlight member and target and (except for
+ * character 4) queue a move event toward it. */
+void func_800819A4(member)
+u8 member;
+{
+    if (D_800C3EAC->unk2E9 == 0) {
+        D_800C3EAC->unk2E9 = 1;
+        func_800BCD98(0);
+        D_800C3EAC->slots[member].defaultTarget = D_800C3EAC->unk2E8;
+        func_8007FCE8();
+        func_8007FDEC();
+        func_80077980();
+        func_800BC404(func_80089C08(member) | func_80089C08(D_800C3EAC->slots[member].defaultTarget));
+        if (D_800D2D24[member] != 4) {
+            D_800C3FE8[D_800C3EAC->eventCount].actor = member;
+            D_800C3FE8[D_800C3EAC->eventCount].type = 0xFD;
+            D_800C3FE8[D_800C3EAC->eventCount].parameter = 0;
+            D_800C3FE8[D_800C3EAC->eventCount].targetMask = func_80089C08(D_800C3EAC->slots[member].defaultTarget);
+            D_800C3EAC->eventCount++;
+        }
+        func_8009413C(member, 0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80081B58);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800820A4);
 
+/* Confirm the selected entry of the member's item window: entries 4, 6 and 7
+ * open the item list when the member has one (else page 8); 0 opens page 7,
+ * else on a repeat press (800c3e29 = 0) page 1; 2 opens page 9, else on a
+ * repeat press (= 2) page 3; 3 opens page 0xa, else on a repeat press (= 3)
+ * page 4; 1 opens page 2 unless unavailable (buzzer 0x4f). */
+#ifdef NON_MATCHING
+void func_800822C4(member)
+u8 member;
+{
+    TurnSlot *slot;
+
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (func_8008BED8(member)) {
+            func_8008B908(member);
+        } else {
+            D_800C3EAC->page = 8;
+        }
+        break;
+    case 0:
+        slot = &D_800C3EAC->slots[member];
+        if (slot->items[5] == 0) {
+            D_800C3EAC->page = 7;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (slot->items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 1;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 9;
+        } else if (D_800C3EAC->repeatArmed == 0 || D_800C3E29 != 2) {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        } else {
+            D_800C3EAC->page = 3;
+            D_800C3EAC->repeatArmed = 0;
+        }
+        break;
+    case 3:
+        slot = &D_800C3EAC->slots[member];
+        if (slot->items[7] == 0) {
+            D_800C3EAC->page = 0xA;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (slot->items[10] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 4;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 2;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800822C4);
+#endif
 
+/* Confirm the selected entry of the escape command window: entries 4, 6 and
+ * 7 try to flee (outcome 0x40 on success) and end the menu; 0 opens page 7
+ * when available, else on a repeat press (800c3e29 = 0) page 1; 3 opens page
+ * 0xa, else on a repeat press (800c3e29 = 3) page 4; 1 opens page 8 unless
+ * unavailable (buzzer 0x4f); 2 opens page 3. */
+#ifdef NON_MATCHING
+void func_80082504(member)
+u8 member;
+{
+    TurnSlot *slot;
+
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        /* 8009a9d0 takes no arguments; the call passes the actor. */
+        if (((s32 (*)())func_8009A9D0)(D_800C3EAC->actor)) {
+            D_800C48EA = 0x40;
+        }
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        slot = &D_800C3EAC->slots[member];
+        if (slot->items[5] != 0) {
+            if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+                if (slot->items[9] != 0) {
+                    func_8008AA74(0x4F);
+                } else {
+                    D_800C3EAC->page = 1;
+                }
+                D_800C3EAC->repeatArmed = 0;
+            } else {
+                D_800C3EAC->repeatArmed = 1;
+                func_8008AA74(0x4F);
+            }
+        } else {
+            D_800C3EAC->page = 7;
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] != 0) {
+            func_8008AA74(0x4F);
+        } else {
+            D_800C3EAC->page = 8;
+        }
+        break;
+    case 3:
+        slot = &D_800C3EAC->slots[member];
+        if (slot->items[7] == 0) {
+            D_800C3EAC->page = 0xA;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (slot->items[10] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 4;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 3;
+        break;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082504);
+#endif
 
+/* The member boards its gear: it takes a formation group of its own, its
+ * records and panel switch to the gear, and the game data notes that the
+ * party member (8006f368) entered a gear unless 80059179 is set. */
+#ifdef NON_MATCHING
+void func_800826CC(u8 member) {
+    s32 i;
+
+    func_80088490(member);
+    func_8009AEFC(member);
+    func_800BAF48(member);
+    D_800CCCE8.records[member].flags15A |= 0x80;
+    func_800883AC(member);
+    D_800D32A0[member].unk1 = 2;
+    if (D_800D2D24[member] != 7) {
+        D_800C3EA4->panels[member].unk1E1 = 2;
+    }
+    D_800C3EB4[member].gear = 1;
+    D_800C3EAC->reaction[member] = 1;
+    for (i = 0; i < 3; i++) {
+        if (D_800D2D24[member] == D_8006F368[i] && D_80059179 == 0) {
+            D_8006F8E5[i] = 1;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800826CC);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082820);
+/* Confirm the selected entry of the member's main command window: entries
+ * 4, 6 and 7 board the gear and end the menu; 0 opens page 7 when available,
+ * else on a second press of the repeat entry (800c3e29 = 0) page 1; 2 opens
+ * page 9, else on a repeat press (800c3e29 = 2) page 3; 1 and 3 open pages 8
+ * and 4 unless their item is unavailable (buzzer 0x4f). */
+void func_80082820(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_800826CC(member);
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[5] == 0) {
+            D_800C3EAC->page = 7;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 0) {
+            if (D_800C3EAC->slots[member].items[9] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 1;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[11] == 0) {
+            D_800C3EAC->page = 8;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 9;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 2) {
+            D_800C3EAC->page = 3;
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[10] == 0) {
+            D_800C3EAC->page = 4;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800829F4);
+/* Confirm the selected entry of the member's on-foot command window: entries
+ * 4, 6 and 7 open the attack page (0x19) when the member has a target; 0 and
+ * 1 open pages 0x15 and 0x11 unless their item is unavailable (buzzer 0x4f);
+ * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
+ * press of the repeat entry page 0x18. */
+void func_800829F4(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (D_800C3EAC->slots[member].defaultTarget != 0xFF) {
+            func_80087A38(member);
+            func_80084A7C(member);
+            D_800C3EAC->page = 0x19;
+            func_80077698();
+            D_800D366C = 0;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 0x12;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[6] == 0) {
+            D_800C3EAC->page = 0x13;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[4] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x18;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[13] == 0) {
+            D_800C3EAC->page = 0x15;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082BB0);
+/* Confirm the selected entry of the member's gear command window: entries 4,
+ * 6 and 7 open the part list when the gear has one (else page 0x11); 0 and 1
+ * open pages 0x10 and 0x16 unless their item is unavailable (buzzer 0x4f);
+ * 2 opens page 0x12; 3 opens page 0x13 when available, else on a second
+ * press of the repeat entry (800c3e29 = 3) page 0x18. */
+void func_80082BB0(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        if (func_8008BED8(member)) {
+            func_8008B908(member);
+        } else {
+            D_800C3EAC->page = 0x11;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 0x12;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[6] == 0) {
+            D_800C3EAC->page = 0x13;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[4] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x18;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x16;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082D4C);
+/* Confirm the selected entry of the member's gear window with charge:
+ * entries 4, 6 and 7 charge the gear's fuel (by 800d2c32, capped) and end
+ * the member's turn; 0, 1 and 2 open pages 0x10, 0x11 and 0x17 unless their
+ * item is unavailable (buzzer 0x4f); 3 opens page 0x13 when available, else
+ * on a second press of the repeat entry page 0x18. */
+void func_80082D4C(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8009AA44(member);
+        D_800CCCE8.records[member].gear.fuel += D_800D2C32;
+        if (D_800CCCE8.records[member].gear.fuel > D_800CCCE8.records[member].gear.maxFuel) {
+            D_800CCCE8.records[member].gear.fuel = D_800CCCE8.records[member].gear.maxFuel;
+        }
+        D_800C3EAC->reaction[member] = 1;
+        D_800C3EAC->unk2EA = 0;
+        D_800C3EAC->menuDone = 1;
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[6] == 0) {
+            D_800C3EAC->page = 0x13;
+        } else if (D_800C3EAC->repeatArmed != 0 && D_800C3E29 == 3) {
+            if (D_800C3EAC->slots[member].items[4] != 0) {
+                func_8008AA74(0x4F);
+            } else {
+                D_800C3EAC->page = 0x18;
+            }
+            D_800C3EAC->repeatArmed = 0;
+        } else {
+            D_800C3EAC->repeatArmed = 1;
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        if (D_800C3EAC->slots[member].items[8] == 0) {
+            D_800C3EAC->page = 0x17;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80082F7C);
+/* Confirm the selected entry of the member's command window (800d3014):
+ * entries 4, 6 and 7 open the gear list when the member has one (else page
+ * 0x13); 0, 1 and 3 open pages 0x10, 0x11 and 0x18 unless their item is
+ * unavailable (buzzer 0x4f); 2 opens page 0x12. */
+void func_80082F7C(member)
+u8 member;
+{
+    switch (D_800D3014) {
+    case 4:
+    case 6:
+    case 7:
+        func_8007FD38(member);
+        if (func_8008B478(member)) {
+            func_8008ADD0(member);
+        } else {
+            D_800C3EAC->page = 0x13;
+        }
+        break;
+    case 0:
+        if (D_800C3EAC->slots[member].items[9] == 0) {
+            D_800C3EAC->page = 0x10;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 1:
+        if (D_800C3EAC->slots[member].items[12] == 0) {
+            D_800C3EAC->page = 0x11;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    case 2:
+        D_800C3EAC->page = 0x12;
+        break;
+    case 3:
+        if (D_800C3EAC->slots[member].items[4] == 0) {
+            D_800C3EAC->page = 0x18;
+        } else {
+            func_8008AA74(0x4F);
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800830A8);
 
@@ -3022,9 +4076,9 @@ u8 func_80083FF4(u8 member, u8 slot) {
     if (D_800D2DCC.present[slot] != 0 && D_800C3EB4[slot].hidden == 0) {
         if (D_800D32A0[slot].unk1 == 0) {
             if (D_800D3364->links[D_800C3EB4[member].group][D_800C3EB4[slot].group].distance == 0) {
-                result = (D_800CCCE8[slot].flags7C & 0xC001) == 0;
+                result = (D_800CCCE8.records[slot].pilot.status7C & 0xC001) == 0;
             }
-        } else if (!(D_800CCCE8[slot].unk120 & 0xC001)) {
+        } else if (!(D_800CCCE8.records[slot].gear.status7C & 0xC001)) {
             result = 1;
         }
     }
@@ -3041,9 +4095,9 @@ u8 func_80084108(u8 slot, u8 any) {
         if (D_800D32A0[slot].unk1 == 0) {
             result = 1;
             if (any == 0) {
-                result = (D_800CCCE8[slot].flags7C & 0xC001) == 0;
+                result = (D_800CCCE8.records[slot].pilot.status7C & 0xC001) == 0;
             }
-        } else if (any != 0 || !(D_800CCCE8[slot].unk120 & 0xC001)) {
+        } else if (any != 0 || !(D_800CCCE8.records[slot].gear.status7C & 0xC001)) {
             result = 1;
         }
     }
@@ -3103,7 +4157,7 @@ u8 func_800841E0(u8 member) {
     }
     if (grouped[0] != 0) {
         for (i = 1; i < count; i++) {
-            if (grouped[i] != 0 && D_800CCCE8[D_800C3E90[i]].hp < D_800CCCE8[D_800C3E90[0]].hp) {
+            if (grouped[i] != 0 && D_800CCCE8.records[D_800C3E90[i]].pilot.hp < D_800CCCE8.records[D_800C3E90[0]].pilot.hp) {
                 swap = D_800C3E90[0];
                 D_800C3E90[0] = D_800C3E90[i];
                 D_800C3E90[i] = swap;
@@ -3111,7 +4165,7 @@ u8 func_800841E0(u8 member) {
         }
     } else {
         for (i = 1; i < count; i++) {
-            if (D_800CCCE8[D_800C3E90[i]].hp < D_800CCCE8[D_800C3E90[0]].hp) {
+            if (D_800CCCE8.records[D_800C3E90[i]].pilot.hp < D_800CCCE8.records[D_800C3E90[0]].pilot.hp) {
                 swap = D_800C3E90[0];
                 D_800C3E90[0] = D_800C3E90[i];
                 D_800C3E90[i] = swap;
@@ -3199,7 +4253,7 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085084);
 
 /* Whether slot b's slot-info +0xa is below slot a's. */
 s32 func_80085310(u8 a, u8 b) {
-    return D_800C3EB4[a].unkA > D_800C3EB4[b].unkA;
+    return (u16)D_800C3EB4[a].x > (u16)D_800C3EB4[b].x;
 }
 
 /* Reset the running result accumulation of every slot. */
@@ -3220,8 +4274,8 @@ void func_80085388(void) {
     for (slot = 0; slot < 11; slot++) {
         D_800C3FE8[D_800C3EAC->eventCount].amounts[slot] = 0;
         D_800C3FE8[D_800C3EAC->eventCount].codes[slot] = 0xFF;
-        D_800C3FE8[D_800C3EAC->eventCount].totals[slot] = 0;
-        D_800C3FE8[D_800C3EAC->eventCount].totalCodes[slot] = 0xFF;
+        D_800C3FE8[D_800C3EAC->eventCount].accumulated[slot] = 0;
+        D_800C3FE8[D_800C3EAC->eventCount].accumulatedCodes[slot] = 0xFF;
     }
 }
 
@@ -3229,7 +4283,28 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085454);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
 
+/* Revive slot at full HP and clear its timed statuses (the active halves of
+ * the status words 0x7c-0x80 and 0x84-0x8c). */
+#ifdef NON_MATCHING
+void func_80085AC4(slot)
+u8 slot;
+{
+    s32 i;
+    u16 *status;
+
+    status = &D_800CCCE8.records[slot].pilot.status7C;
+    D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
+    for (i = 2; i >= 0; i -= 2) {
+        status[i] = 0;
+    }
+    status = &D_800CCCE8.records[slot].pilot.status84.half.active;
+    for (i = 4; i >= 0; i -= 2) {
+        status[i] = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085AC4);
+#endif
 
 /* Apply up to three recovery amounts from 8009ada0 to `slot` as separate
  * events (codes 8..10) and show them. */
@@ -3257,8 +4332,8 @@ void func_80085B58(u8 slot) {
 /* Commit the targets for an item/effect and run 80098c6c with `param`. */
 void func_80085C48(u8 actor, s16 targets, u16 param) {
     D_800C48E8 = 0;
-    D_800D2C94 = targets;
-    D_800D2C96 = D_800D39DC;
+    D_800D2C94.targets = targets;
+    D_800D2C94.alive = D_800D39DC;
     func_80098C6C(param);
 }
 
@@ -3270,16 +4345,16 @@ void func_80085C88(u8 queue) {
 }
 
 /* Commit an action (attacker, target mask, animation) and resolve it. */
-void func_80085CCC(u8 actor, s16 targets, s16 animation) {
+void func_80085CCC(u8 actor, u16 targets, s16 animation) {
     u8 action; /* 1-based */
 
     D_800C48E8 = 0;
-    D_800D2CA9 = actor;
+    D_800D2C94.actor = actor;
     action = D_800C3EAC->unk2DC;
-    D_800D2C94 = targets;
-    D_800D2C98 = animation;
-    D_800D2C96 = D_800D39DC;
-    D_800D2CAA = action - 1;
+    D_800D2C94.targets = targets;
+    D_800D2C94.animation = animation;
+    D_800D2C94.alive = D_800D39DC;
+    D_800D2C94.action = action - 1;
     func_800941A4();
 }
 
@@ -3307,7 +4382,41 @@ void func_80085E78(void) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085EB4);
 
+/* Add entry `index` to list 11 (the combo chain display): render the
+ * member's text `id` into the shared image (two entries per image cell),
+ * upload it and place its quad after `column` + `offset` + 1 steps.
+ * Returns the next index. */
+#ifdef NON_MATCHING
+s32 func_80086028(member, index, column, id, pixels, offset)
+u8 member;
+s32 index;
+s32 column;
+u8 id;
+u32 **pixels;
+u8 offset;
+{
+    s32 cell;
+    s32 odd;
+    RECT rect;
+    s32 width;
+
+    cell = index / 2;
+    odd = index % 2;
+    func_80076D58(&D_800D2DB4->unk5550[index * 2], odd, 3);
+    width = func_80034EAC(func_80033784(D_800D2D24[member], id), *pixels, 0x1B, odd);
+    rect.x = cell * 30 + 0x3C0;
+    rect.y = 0x1A;
+    rect.w = 0x1E;
+    rect.h = 13;
+    LoadImage(&rect, *pixels);
+    func_80076C78(&D_800D2DB4->unk5550[index * 2 + D_800CCB04.buffer], (column + (offset + 1)) * 16 + 0x50 + index * 4,
+                  0xC8 - index * 16, cell * 0x78, 0x1A, width);
+    D_800D2DB4->counts[11]++;
+    return index + 1;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80086028);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800861D0);
 
@@ -3348,7 +4457,7 @@ void func_800879A8(u8 actor, u8 target) {
     for (i = 0; i < 32; i++) {
         D_800C3FE8[i].type = 0xFF;
         D_800C3FE8[i].actor = actor;
-        D_800C3FE8[i].targets = func_80089C08(target);
+        D_800C3FE8[i].targetMask = func_80089C08(target);
     }
 }
 
@@ -3384,7 +4493,32 @@ void func_800883AC(u8 slot) {
     D_800D301C[D_800C3EB4[slot].group + base].members &= func_80089C48(D_800C3EB4[slot].member);
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80088490);
+/* Give slot a formation group of its own: keep its group when that is empty,
+ * else take the first empty one; it becomes the group's only member and is
+ * placed at the group's position. */
+void func_80088490(slot)
+u8 slot;
+{
+    u8 group;
+    s32 i;
+
+    if (D_800D301C[D_800C3EB4[slot].group + 16].count == 0) {
+        group = D_800C3EB4[slot].group;
+    } else {
+        for (i = 0; i < 8; i++) {
+            if (D_800D301C[16 + i].count == 0) {
+                group = i;
+                break;
+            }
+        }
+    }
+    D_800C3EB4[slot].group = group;
+    D_800C3EB4[slot].member = 0;
+    D_800D301C[D_800C3EB4[slot].group + 16].members = 1;
+    D_800D301C[D_800C3EB4[slot].group + 16].count = 1;
+    D_800C3EB4[slot].x = D_800D3364->positions[D_800C3EB4[slot].group].x;
+    D_800C3EB4[slot].z = D_800D3364->positions[D_800C3EB4[slot].group].z;
+}
 
 /* The member count of the slot's group among the flagged enemy groups. */
 u8 func_800885D0(u8 slot) {
@@ -3812,13 +4946,13 @@ void func_8008AB94(void) {
 /* Allocate a battle heap block (owner tag 2). */
 s32 func_8008ABB8(s32 size, s32 mode) {
     func_80032498(2, 0);
-    return func_80031BDC(size, mode);
+    return (s32)func_80031BDC(size, mode);
 }
 
 /* Allocate a text image block for `count` characters. */
 s32 func_8008AC00(s32 count) {
     func_80032498(2, 0);
-    return func_80031BDC((count + 3) * 26, 0);
+    return (s32)func_80031BDC((count + 3) * 26, 0);
 }
 
 /* Wait frames until the disc reads finish. */
@@ -3835,14 +4969,14 @@ void func_8008AC88(u16 mask, u8 actor) {
     s32 i;
 
     for (i = 0; i < 8; i++) {
-        if (func_80089C9C(targets, i + 3) && !(D_800CCCE8[i + 3].unk34 & 0x800)) {
+        if (func_80089C9C(targets, i + 3) && !(D_800CCCE8.records[i + 3].pilot.flags34 & 0x800)) {
             targets &= func_80089C48(i + 3);
         }
     }
     if (targets) {
         D_800C3FE8[D_800C3EAC->eventCount].actor = actor;
         D_800C3FE8[D_800C3EAC->eventCount].type = 0xF3;
-        D_800C3FE8[D_800C3EAC->eventCount].param = targets;
+        D_800C3FE8[D_800C3EAC->eventCount].parameter = targets;
         D_800C3EAC->eventCount++;
     }
 }
@@ -3897,7 +5031,61 @@ void func_8008BC98(u8 member) {
     func_800BCD98(func_80089C08(D_800C3EAC->slots[member].defaultTarget));
 }
 
+/* Use the list item at (column, row) for `member`: an item (from the
+ * character list) starts its effect with target selection, 1 when started;
+ * a gear part (from the gear list, inGear) is applied and its count taken,
+ * 2 when applied. An empty entry buzzes (0x4f). */
+#ifdef NON_MATCHING
+u8 func_8008BD50(member, column, row, inGear)
+u8 member;
+u8 column;
+u8 row;
+u8 inGear;
+{
+    u8 *id;
+    s32 index;
+    u16 effect;
+    u8 item;
+    u8 result;
+
+    id = D_800D2CE0;
+    index = row * 2 + column;
+    id += index;
+    effect = D_800D2200[*id].target;
+    result = 0;
+    if (!inGear) {
+        item = *id;
+    } else {
+        item = D_800C3D70[index];
+    }
+    if (item != 0) {
+        if (!inGear) {
+            func_8008BC40(1);
+            D_800D2D28->unkC6 = 1;
+            if (func_80085084(effect, member, 0)) {
+                result = 1;
+            } else {
+                D_800D2D28->unkC6 = 0;
+                func_8008BC98(member);
+            }
+        } else if (((s32 (*)())func_8009A7E4)(item - 50)) {
+            /* Both calls are unprototyped in the original: the part index
+             * is passed unnarrowed and 8009a854's entry argument is left
+             * undefined (it then uses whatever the register holds). */
+            ((void (*)())func_8009A854)(item);
+            if (--D_800D3688[row * 2 + column] == 0) {
+                D_800C3D70[row * 2 + column] = 0;
+            }
+            result = 2;
+        }
+    } else {
+        func_8008AA74(0x4F);
+    }
+    return result;
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BD50);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8008BED8);
 
@@ -4096,7 +5284,27 @@ void func_8009023C(s32 y) {
     D_800D2D28->unk9C = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80090310);
+/* Point the page title quads at list entry (column, row): the entry's image
+ * cell (two per image row, 13 lines each; entries past 16 on the second
+ * image page with the alternate CLUT). */
+void func_80090310(u8 column, u8 row) {
+    s32 index;
+    s32 page;
+
+    index = row * 2 + column;
+    page = 0;
+    if (index > 16) {
+        index -= 16;
+        D_800C3EA4->unkA230->unk140[D_800CCB04.buffer].clut = D_80059414;
+        page = 0x10;
+    } else {
+        D_800C3EA4->unkA230->unk140[D_800CCB04.buffer].clut = D_800595D4;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk140[D_800CCB04.buffer], 0x18, 0x33, (index % 2) * 0x78, (index / 2) * 13,
+                  0x60);
+    func_80076C78(&D_800C3EA4->unkA230->unk190[D_800CCB04.buffer], 0x84, 0x33, (index % 2) << 6 | page,
+                  (index / 2) * 13, 0x10);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800904A0);
 
@@ -4179,13 +5387,67 @@ void func_80091604(s32 y) {
     D_800D2D28->unk9C = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800916D4);
+/* Point the page title quad at entry (column, row) of the technique image
+ * and, for character 1 (Fei), show the entry's cost (8009a258) as up to three
+ * digit glyphs. */
+void func_800916D4(u8 column, u8 row, u8 member) {
+    u32 index;
+    u32 cellX;
+    u32 cellY;
+    s32 i;
+    s32 x;
+    u8 digit;
+
+    index = row * 2 + column;
+    cellY = index / 2;
+    cellX = index - cellY * 2;
+    func_80076CE8(&D_800C3EA4->unkA230->unk140[D_800CCB04.buffer], 0x20, 0xA4, cellX * 0x78, cellY * 16, 0x60, 0x10);
+    D_800C3EA4->unkA230->unk66E = 0;
+    if (D_800D2D24[member] == 1) {
+        /* 8009a258 is called unprototyped: the command is passed and its
+         * result returned unnarrowed. */
+        func_8008AAA0(((s32 (*)())func_8009A258)(member, index + 0x16));
+        for (i = 0, x = 0x8C; i < 3; i++) {
+            digit = D_800C3CF4[i + 6];
+            if (digit != 0xFF) {
+                func_80076C78(&D_800C3EA4->unkA230->unk190[D_800C3EA4->unkA230->unk66E * 2 + D_800CCB04.buffer], x,
+                              0xA6, digit * 8 + 0x78, 0, 8);
+                D_800C3EA4->unkA230->unk66E++;
+            }
+            x += 8;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009187C);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091B38);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091D38);
+/* Open the combo/technique entry (column, row) of the member's page when its
+ * character knows it (mask +2 on foot, +6 in a gear): build its graphics for
+ * the current draw buffer; otherwise mark the page closed. */
+void func_80091D38(member, column, row)
+u8 member;
+u8 column;
+u8 row;
+{
+    u8 known = 0;
+
+    if (D_800D32A0[member].unk1 == 0) {
+        known = func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask2, column + row * 2) != 0;
+    } else if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].mask6, column + row * 2)) {
+        known = 1;
+    }
+    if (known) {
+        func_800916D4(column, row, member);
+        func_8009187C(member, column, row);
+        func_80091B38(member, column, row);
+        D_800C3EA4->unkA230->buffer = D_800CCB04.buffer;
+        D_800C3EA4->unkA230->unk66B = 1;
+    } else {
+        D_800C3EA4->unkA230->unk66B = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091EC4);
 
@@ -4199,11 +5461,90 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092B74);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800930AC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093578);
+/* Point the gear page `kind` quads at their images: the page title cell, the
+ * command's state icon (9 sealed, 7 flag 0x1000, else 8) and its level frame
+ * (13 for level 1, 21 for level 2, else 12), each with its CLUT. */
+void func_80093578(u8 member, u8 kind) {
+    u16 state;
+    s32 icon;
+    s32 frame;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009382C);
+    func_80076CE8(&D_800C3EA4->unkA230->unk140[D_800CCB04.buffer], 0x7C, 0xA4, 0, kind * 16, 0x60, 0x10);
+    state = D_800CCCE8.gearCommands[member][kind + 37].state;
+    if (state & 0x4000) {
+        icon = 9;
+    } else {
+        icon = 8;
+        if (state & 0x1000) {
+            icon = 7;
+        }
+    }
+    switch (state & 0xF) {
+    case 0:
+        frame = 12;
+        break;
+    case 1:
+        frame = 13;
+        break;
+    case 2:
+        frame = 21;
+        break;
+    default:
+        frame = 12;
+        break;
+    }
+    func_80076C78(&D_800C3EA4->unkA230->unk320[D_800CCB04.buffer], 0x24, 0xA6, D_800D2F68[icon].u, D_800D2F68[icon].v,
+                  D_800D2F68[icon].w);
+    D_800C3EA4->unkA230->unk320[D_800CCB04.buffer].clut = D_800D2F68[icon].alternate ? D_80059414 : D_800595D4;
+    func_80076C78(&D_800C3EA4->unkA230->unk370[D_800CCB04.buffer], 0x48, 0xA6, D_800D2F68[frame].u,
+                  D_800D2F68[frame].v, D_800D2F68[frame].w);
+    D_800C3EA4->unkA230->unk370[D_800CCB04.buffer].clut = D_800D2F68[frame].alternate ? D_80059414 : D_800595D4;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800939CC);
+/* Build the name of the member's gear page `kind` (two text lines from the
+ * file 3 block) into VRAM and point the page's two title quads at them. */
+void func_8009382C(u8 member, u8 kind) {
+    RECT rect;
+    u32 *pixels;
+    s32 text;
+    s32 width0;
+    s32 width1;
+
+    text = (D_800CCCE8.records[member].pilot.gearId * 4 + kind) * 2;
+    pixels = (u32 *)func_8008AC00(0x39);
+    bzero(pixels, 0x618);
+    width0 = func_80034EAC(func_80033728(D_800C3DE8, text & 0xFFFF), pixels, 0x39, 0);
+    width1 = func_80034EAC(func_80033728(D_800C3DE8, (text & 0xFFFF) | 1), pixels, 0x39, 1);
+    rect.x = 0x3C0;
+    rect.y = 0;
+    rect.w = 0x3C;
+    rect.h = 13;
+    func_800769E8(&rect, pixels);
+    func_80076C78(&D_800C3EA4->unkA230->unk280[D_800CCB04.buffer], 0x88, 0xB6, 0, 0, width0);
+    func_80076C78(&D_800C3EA4->unkA230->unk2D0[D_800CCB04.buffer], 0x88, 0xC6, 0, 0, width1);
+    func_800320E8(pixels);
+}
+
+/* Open the member's `kind` page (0-2 the special pages, 3 the item page)
+ * when its character has it and no status seals it; the page's graphics
+ * are built for the current draw buffer. Otherwise mark the page closed. */
+void func_800939CC(u8 member, u8 kind) {
+    u16 seals[4];
+
+    seals[0] = D_800C3234[13];
+    seals[1] = D_800C3234[14];
+    seals[2] = D_800C3234[15];
+    seals[3] = D_800C3234[3];
+    if (func_80089C6C(D_8006ECF4[D_800D2D24[member]].flags1A, kind) &&
+        !(D_800CCCE8.records[member].pilot.status7A & seals[kind])) {
+        func_80093578(member, kind);
+        func_8009382C(member, kind);
+        D_800C3EA4->unkA230->buffer = D_800CCB04.buffer;
+        D_800C3EA4->unkA230->unk66B = 1;
+    } else {
+        D_800C3EA4->unkA230->unk66B = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80093B08);
 
@@ -4229,11 +5570,11 @@ void func_80094C78(void) {
     u8 member;
 
     for (member = 0; member < 3; member++) {
-        if (D_800C34B0->resultCodes[member] == 0) {
-            if (D_800C34B0->records[member].unk15A & 0x80) {
-                D_800C34B0->unk5F60[member] += D_800C34B0->damage[D_800C3E50];
+        if (D_800C34B0->resultCode[member] == 0) {
+            if (D_800C34B0->records[member].flags15A & 0x80) {
+                D_800C34B0->field5F60[member] += D_800C34B0->damage[D_800C3E50];
             } else {
-                D_800C34B0->unk5F54[member] += D_800C34B0->damage[D_800C3E50];
+                D_800C34B0->field5F54[member] += D_800C34B0->damage[D_800C3E50];
             }
         }
     }
@@ -4247,23 +5588,23 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80094EE4);
  * with attacker +0x8a bit 0x2000), scaled 0.7 / 1.3 by the target's
  * +0x8c|+0x8e bits 0x100 / 0x200, none for a +0x15a 0x80 target; code 2. */
 void func_80095690(void) {
-    s16 amount = D_800C3E00->unk5B * D_800C3DFC->unk11;
+    s16 amount = D_800C3E00->pilot.accuracy * D_800C3DFC->power;
     u16 status;
 
-    if (D_800C3E00->unk8A & 0x2000) {
+    if (D_800C3E00->pilot.status88.half.permanent & 0x2000) {
         amount *= 2;
     }
-    status = D_800C3E34->unk8C | D_800C3E34->unk8E;
+    status = D_800C3E34->pilot.status8C.half.active | D_800C3E34->pilot.status8C.half.permanent;
     if (status & 0x100) {
         amount = amount * 7 / 10;
     }
     if (status & 0x200) {
         amount = amount * 13 / 10;
     }
-    if (D_800CCCE8[D_800C3E50].unk15A & 0x80) {
+    if (D_800CCCE8.records[D_800C3E50].flags15A & 0x80) {
         amount = 0;
     }
-    D_800C34B0->resultCodes[D_800C3E50] = 2;
+    D_800C34B0->resultCode[D_800C3E50] = 2;
     D_800C34B0->damage[D_800C3E50] = amount;
 }
 
@@ -4272,31 +5613,56 @@ void func_80095690(void) {
  * descriptor's +0x11 as the amount; its timer is held. */
 #ifdef NON_MATCHING
 void func_800957D8(void) {
-    if (D_800CCCE8[D_800C3E50].unk56 == 2) {
+    if (D_800CCCE8.records[D_800C3E50].pilot.characterId == 2) {
         func_8009AC48(D_800C3E50, 1);
     }
-    D_800C3E34->unk8C = D_800C3E34->unk88 = D_800C3E34->status84 = D_800C3E34->flags80 = D_800C3E34->flags7C = 0;
+    D_800C3E34->pilot.status8C.half.active = D_800C3E34->pilot.status88.half.active = D_800C3E34->pilot.status84.half.active = D_800C3E34->pilot.status80 = D_800C3E34->pilot.status7C = 0;
     D_800D2C88[D_800C3E50] = 2;
-    D_800D2C54[D_800C3E50] = (D_800C3E34->unk4E * D_800C3DFC->unk11) / 10;
-    D_800D2C9E |= 1 << D_800C3E50;
+    D_800D2C54[D_800C3E50] = (D_800C3E34->pilot.maxHp * D_800C3DFC->power) / 10;
+    D_800D2C94.held |= 1 << D_800C3E50;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800957D8);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800958D8);
+/* With the command's chance (+0x1c in percent) and kind 0x6e, clear the
+ * target's status words named by the command's bits 0x8000-0x400 (message
+ * 0x3a). */
+void func_800958D8(void) {
+    if (rand() % 100 <= D_800C3DFC->field1C && D_800C3DFC->field1D == 0x6E) {
+        if (D_800C3DFC->field1E & 0x8000) {
+            D_800C3E34->pilot.status84.half.active = 0;
+        }
+        if (D_800C3DFC->field1E & 0x4000) {
+            D_800C3E34->pilot.status84.half.permanent = 0;
+        }
+        if (D_800C3DFC->field1E & 0x2000) {
+            D_800C3E34->pilot.status88.half.active = 0;
+        }
+        if (D_800C3DFC->field1E & 0x1000) {
+            D_800C3E34->pilot.status88.half.permanent = 0;
+        }
+        if (D_800C3DFC->field1E & 0x800) {
+            D_800C3E34->pilot.status8C.half.active = 0;
+        }
+        if (D_800C3DFC->field1E & 0x400) {
+            D_800C3E34->pilot.status8C.half.permanent = 0;
+        }
+        D_800C34B0->message = 0x3A;
+    }
+}
 
 /* Status effect of the descriptor on the target (mode +0x11, or 5 with
  * +0xa bit 0x4000); a refused status marks the target's result 6. */
 void func_80095A78(void) {
-    s8 accepted = func_80097964(D_800C3DFC->unk1C, D_800C3DFC->unk1D, D_800C3DFC->unk1E);
+    s8 accepted = func_80097964(D_800C3DFC->field1C, D_800C3DFC->field1D, D_800C3DFC->field1E);
 
-    if (D_800C3DFC->unkA & 0x4000) {
-        func_800995A0(D_800C3E50, D_800C3DFC->unk1D, D_800C3DFC->unk1E, 5);
+    if (D_800C3DFC->flagsA & 0x4000) {
+        func_800995A0(D_800C3E50, D_800C3DFC->field1D, D_800C3DFC->field1E, 5);
     } else {
-        func_800995A0(D_800C3E50, D_800C3DFC->unk1D, D_800C3DFC->unk1E, D_800C3DFC->unk11);
+        func_800995A0(D_800C3E50, D_800C3DFC->field1D, D_800C3DFC->field1E, D_800C3DFC->power);
         if (accepted != 1) {
-            D_800C34B0->resultCodes[D_800C3E50] = 6;
+            D_800C34B0->resultCode[D_800C3E50] = 6;
         }
     }
 }
@@ -4304,12 +5670,37 @@ void func_80095A78(void) {
 /* When 80097964 accepts the attacker's +2/+3/+0 values, run 800995a0 on the
  * target with the descriptor's +0x1d/+0x1e and mode 5. */
 void func_80095B44(void) {
-    if (func_80097964(D_800C3E00->unk2, D_800C3E00->unk3, D_800C3E00->unk0) == 1) {
-        func_800995A0(D_800C3E50, D_800C3DFC->unk1D, D_800C3DFC->unk1E, 5);
+    if (func_80097964(D_800C3E00->pilot.entries[0].value2, D_800C3E00->pilot.entries[0].value3, D_800C3E00->pilot.entries[0].field0) == 1) {
+        func_800995A0(D_800C3E50, D_800C3DFC->field1D, D_800C3DFC->field1E, 5);
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095BAC);
+/* With the command's chance (+0x1c in percent) clear the target's statuses
+ * named by the command's bits (+0x1d: 0x80 the state word except KO/down,
+ * 0x40 the timer holds and 0x20 of 7a, 0x20-0x08 the active status words);
+ * otherwise it misses (result 6). */
+void func_80095BAC(void) {
+    if (D_800C3DFC->field1C < rand() % 100) {
+        D_800C34B0->resultCode[D_800C3E50] = 6;
+        return;
+    }
+    if (D_800C3DFC->field1D & 0x80) {
+        D_800C3E34->pilot.status7C &= 0xC000;
+    }
+    if (D_800C3DFC->field1D & 0x40) {
+        D_800C3E34->pilot.status80 = 0;
+        D_800C3E34->pilot.status7A &= ~0x20;
+    }
+    if (D_800C3DFC->field1D & 0x20) {
+        D_800C3E34->pilot.status84.half.active = 0;
+    }
+    if (D_800C3DFC->field1D & 0x10) {
+        D_800C3E34->pilot.status88.half.active = 0;
+    }
+    if (D_800C3DFC->field1D & 8) {
+        D_800C3E34->pilot.status8C.half.active = 0;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80095D4C);
 
@@ -4320,10 +5711,10 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80096494);
 /* Ether check: unless rand % 100 falls below the attacker's +0x5b plus the
  * descriptor's +0x14, the action fails (code 0x38 at +0x5fc7). */
 void func_80096824(void) {
-    s32 chance = D_800C3E00->unk5B + D_800C3DFC->unk14;
+    s32 chance = D_800C3E00->pilot.accuracy + D_800C3DFC->accuracy;
 
     if (rand() % 100 >= chance) {
-        D_800C34B0->unk5FC7 = 0x38;
+        D_800C34B0->message = 0x38;
         D_800D2DC4 = 1;
     }
 }
@@ -4346,7 +5737,7 @@ void func_80097D08(void) {
     s16 slot = 11;
 
     do {
-        D_800C34B0->resultCodes[slot] = 0xFF;
+        D_800C34B0->resultCode[slot] = 0xFF;
         D_800C34B0->damage[slot] = 0;
     } while (--slot != -1);
 }
@@ -4363,29 +5754,29 @@ s32 func_80098AF8(slot, mode)
 u8 slot;
 s32 mode;
 {
-    BattleRecord *record = &D_800C34B0->records[slot];
+    Combatant *record = &D_800C34B0->records[slot];
     u16 speed;
 
-    D_800D2D6C = record->unkA4;
+    D_800D2D6C = &record->gear;
     D_800C3E00 = record;
     if (slot < 3) {
-        if (!(record->unk15A & 0x80)) {
-            D_800C3DFC = &D_800C34B0->partyCommands[slot][D_800C34B0->command];
-            if (record->speed > D_800C3DFC->weight) {
-                speed = (record->speed - D_800C3DFC->weight) * 9;
+        if (!(record->flags15A & 0x80)) {
+            D_800C3DFC = &D_800C34B0->partyCommands[slot][D_800C34B0->commandIndex];
+            if (record->pilot.speed > D_800C3DFC->weight) {
+                speed = (record->pilot.speed - D_800C3DFC->weight) * 9;
             } else {
                 speed = 9;
             }
         } else {
-            D_800C3DFC = &D_800C34B0->gearCommands[slot][D_800C34B0->command];
-            if (record->gearSpeed > D_800C3DFC->weight) {
-                speed = (record->gearSpeed - D_800C3DFC->weight) * 9;
+            D_800C3DFC = &D_800C34B0->gearCommands[slot][D_800C34B0->commandIndex];
+            if (record->gear.speed > D_800C3DFC->weight) {
+                speed = (record->gear.speed - D_800C3DFC->weight) * 9;
             } else {
                 speed = 9;
             }
         }
     } else {
-        speed = record->speed * 9;
+        speed = record->pilot.speed * 9;
     }
     if (speed >= 0xA6) {
         speed = 0xA0;
@@ -4398,7 +5789,6 @@ s32 mode;
 
 /* Resolve an item/effect `param` on every slot in the +0x5fac mask, then
  * set its animation from the effect table. */
-#ifdef NON_MATCHING
 void func_80098C6C(u16 param) {
     s32 slot;
     s32 bit;
@@ -4406,850 +5796,1597 @@ void func_80098C6C(u16 param) {
     func_80097D08();
     bit = 1;
     for (slot = 0; (u8)slot < 11; slot++) {
-        if (bit & D_800C34B0->unk5FAC) {
+        if (bit & D_800C34B0->targetMask) {
             func_80098D2C(slot, param);
         }
         bit <<= 1;
     }
-    D_800C34B0->unk5FB0 = D_800D2200[param & 0xFF].unkE;
-    if (D_800D2C9E & 0x8000) {
-        D_800D2C98 = 0xC2;
+    D_800C34B0->shownCommand = D_800D2200[param & 0xFF].animation;
+    if (D_800D2C94.held & 0x8000) {
+        D_800D2C94.animation = 0xC2;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098C6C);
-#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80098D2C);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099498);
+/* Party gate on the formation mode: 1 when mode 2 has no member with status
+ * bits 0xC002, or mode 3 does not have exactly two; otherwise 0. */
+s32 func_80099498(void) {
+    s32 result = 0;
+    u8 i;
+    u8 count;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800995A0);
+    switch (D_800C34AD) {
+    case 2:
+        count = 0;
+        for (i = 0; i < 3; i++) {
+            if (D_800C34B0->records[i].pilot.status7C & 0xC002) {
+                count++;
+            }
+        }
+        if (count == 0) {
+            result = 1;
+        }
+        break;
+    case 3:
+        count = 0;
+        for (i = 0; i < 3; i++) {
+            if (D_800C34B0->records[i].pilot.status7C & 0xC002) {
+                count++;
+            }
+        }
+        if (count != 2) {
+            result = 1;
+        }
+        break;
+    case 1:
+        break;
+    }
+    return result;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099890);
+/* Store a timed status's duration in slot's timer table. The status is named by
+ * its kind and flag bit; the attacker's flag 0x2000 doubles the amount, and for
+ * kinds 5, 7 and 9 the target's status bits 0x5 double and 0xA halve it, while
+ * the slot's flag 0x40 doubles it again. Unknown statuses are ignored. */
+void func_800995A0(u8 slot, u8 kind, u16 flag, u8 amount) {
+    Combatant *record;
+    u8 index = 0xF;
+    u16 state;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099CF0);
+    if (D_800CCCE8.records[D_800C3E04].pilot.status88.half.permanent & 0x2000) {
+        amount *= 2;
+    }
+    record = &D_800CCCE8.records[slot];
+    if (kind == 0) {
+        index = (flag == 0x1000) ? 1 : (flag == 0x2000) ? 0 : 0xF;
+    }
+    if (kind == 2) {
+        switch (flag) {
+        case 0x1000:
+            index = 2;
+            break;
+        case 0x800:
+            index = 3;
+            break;
+        }
+    }
+    if (kind == 5) {
+        switch (flag) {
+        case 0x8000:
+            index = 4;
+            break;
+        case 0x4000:
+            index = 5;
+            break;
+        }
+    }
+    if (kind == 7) {
+        switch (flag) {
+        case 0x8000:
+            index = 9;
+            break;
+        case 0x4000:
+            index = 0xA;
+            break;
+        case 0x1000:
+            index = 0xB;
+            break;
+        }
+    }
+    if (kind == 9) {
+        switch (flag) {
+        case 0x1000:
+        case 0x2000:
+        case 0x4000:
+        case 0x8000:
+            index = 0xC;
+            break;
+        case 0x100:
+        case 0x200:
+        case 0x400:
+        case 0x800:
+            index = 0xD;
+            break;
+        }
+    }
+    if (index == 0xF) {
+        return;
+    }
+    switch (kind) {
+    case 5:
+    case 7:
+    case 9:
+        state = D_800C3E34->pilot.status88.half.active | D_800C3E34->pilot.status88.half.permanent;
+        if (state & 5) {
+            amount *= 2;
+        }
+        if (state & 0xA) {
+            amount /= 2;
+        }
+        break;
+    }
+    if (record->pilot.flags32 & 0x40) {
+        switch (kind) {
+        case 5:
+        case 7:
+        case 9:
+            amount *= 2;
+            break;
+        }
+    }
+    D_800CCCE8.records[slot].statusTimers[index] = amount;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80099FB0);
+/* Count down slot's timed statuses at the start of its turn, clearing each one
+ * whose timer runs out; a slot in a gear counts down its gear's statuses
+ * instead (80099CF0). Returns a mask of the statuses that ended. */
+u16 func_80099890(u8 slot) {
+    Combatant *record = &D_800CCCE8.records[slot];
+    GearRecord *gear = &D_800CCCE8.records[slot].gear;
+    volatile u8 *timers = D_800CCCE8.records[slot].statusTimers;
+    u16 ended;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A074);
+    if (D_800CCCE8.records[slot].flags15A & 0x80) {
+        func_80099CF0(gear, record, timers);
+        return 0;
+    }
+    ended = 0;
+    if (record->pilot.status7C & 0x1000) {
+        timers[1] += -1;
+        if (timers[1] == 0) {
+            ended = 0x4000;
+            record->pilot.status7C &= ~0x1000;
+        }
+    }
+    if (record->pilot.status80 & 0x1000) {
+        timers[2] += -1;
+        if (timers[2] == 0) {
+            ended |= 0x2000;
+            record->pilot.status80 &= ~0x1000;
+        }
+    }
+    if (record->pilot.status80 & 0x800) {
+        timers[3] += -1;
+        if (timers[3] == 0) {
+            ended |= 0x1000;
+            record->pilot.status80 &= ~0x800;
+            record->pilot.status7A &= ~0x20;
+        }
+    }
+    if ((record->pilot.status84.word & 0x80008000) == 0x8000) {
+        timers[4] += -1;
+        if (timers[4] == 0) {
+            ended |= 0x800;
+            record->pilot.status84.half.active &= ~0x8000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x40004000) == 0x4000) {
+        timers[5] += -1;
+        if (timers[5] == 0) {
+            ended |= 0x400;
+            record->pilot.status84.half.active &= ~0x4000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x20002000) == 0x2000) {
+        timers[6] += -1;
+        if (timers[6] == 0) {
+            ended |= 0x200;
+            record->pilot.status84.half.active &= ~0x2000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x10001000) == 0x1000) {
+        timers[7] += -1;
+        if (timers[7] == 0) {
+            ended |= 0x100;
+            record->pilot.status84.half.active &= ~0x1000;
+        }
+    }
+    if ((record->pilot.status84.word & 0x08000800) == 0x800) {
+        timers[8] += -1;
+        if (timers[8] == 0) {
+            ended |= 0x80;
+            record->pilot.status84.half.active &= ~0x800;
+        }
+    }
+    if ((record->pilot.status88.word & 0x80008000) == 0x8000) {
+        timers[9] += -1;
+        if (timers[9] == 0) {
+            ended |= 0x40;
+            record->pilot.status88.half.active &= ~0x8000;
+        }
+    }
+    if ((record->pilot.status88.word & 0x40004000) == 0x4000) {
+        timers[10] += -1;
+        if (timers[10] == 0) {
+            ended |= 0x20;
+            record->pilot.status88.half.active &= ~0x4000;
+        }
+    }
+    if ((record->pilot.status88.word & 0x10001000) == 0x1000) {
+        timers[11] += -1;
+        if (timers[11] == 0) {
+            ended |= 0x10;
+            record->pilot.status88.half.active &= ~0x1000;
+        }
+    }
+    if ((record->pilot.status8C.half.active & 0xF000) && !(record->pilot.status8C.half.permanent & 0xF000)) {
+        timers[12] += -1;
+        if (timers[12] == 0) {
+            ended |= 8;
+            record->pilot.status8C.half.active &= ~0xF000;
+        }
+    }
+    if ((record->pilot.status8C.half.active & 0xF00) && !(record->pilot.status8C.half.permanent & 0xF00)) {
+        timers[13] += -1;
+        if (timers[13] == 0) {
+            ended |= 4;
+            record->pilot.status8C.half.active &= ~0xF00;
+        }
+    }
+    return ended;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A0DC);
+/* Count down the timed statuses of a gear, clearing each one whose timer runs
+ * out; the end of gear status 0x20 also ends the pilot's status 0x1000. */
+void func_80099CF0(GearRecord *gear, Combatant *record, volatile u8 *timers) {
+    if (gear->status7C & 0x200) {
+        timers[1] += -1;
+        if (timers[1] == 0) {
+            gear->status7C &= ~0x200;
+        }
+    }
+    if (gear->status7C & 0x100) {
+        timers[2] += -1;
+        if (timers[2] == 0) {
+            gear->status7C &= ~0x100;
+        }
+    }
+    if (gear->status7C & 0x80) {
+        timers[3] += -1;
+        if (timers[3] == 0) {
+            gear->status7C &= ~0x80;
+        }
+    }
+    if (gear->status7C & 0x20) {
+        timers[4] += -1;
+        if (timers[4] == 0) {
+            gear->status7C &= ~0x20;
+            record->pilot.status7C &= ~0x1000;
+        }
+    }
+    if (gear->status7C & 0x10) {
+        timers[5] += -1;
+        if (timers[5] == 0) {
+            gear->status7C &= ~0x10;
+        }
+    }
+    if (gear->status7C & 0xF000) {
+        timers[7] += -1;
+        if (timers[7] == 0) {
+            gear->status7C &= ~0xF000;
+        }
+    }
+    if (gear->status7C & 0xF00) {
+        timers[8] += -1;
+        if (timers[8] == 0) {
+            gear->status7C &= ~0xF00;
+        }
+    }
+    if (gear->status80 & 0x1000) {
+        timers[10] += -1;
+        if (timers[10] == 0) {
+            gear->status80 &= ~0x1000;
+        }
+    }
+    if (gear->status80 & 0x40) {
+        timers[11] += -1;
+        if (timers[11] == 0) {
+            gear->status80 &= ~0x40;
+        }
+    }
+    if (gear->status80 & 0x20) {
+        timers[12] += -1;
+        if (timers[12] == 0) {
+            gear->status80 &= ~0x20;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A1AC);
+/* Make the current command descriptor the battle's current command: copy its
+ * attribute bytes and index, and give a command without an element the
+ * attacker's element statuses. */
+void func_80099FB0(void) {
+    u16 elements = (D_800C3E00->pilot.status8C.half.active | D_800C3E00->pilot.status8C.half.permanent) >> 12;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A258);
+    D_800C34B0->commandAttributes[0] = D_800C3DFC->attributes[0];
+    D_800C34B0->commandAttributes[1] = D_800C3DFC->attributes[1];
+    D_800C34B0->commandAttributes[2] = D_800C3DFC->attributes[2];
+    D_800C34B0->commandAttributes[3] = D_800C3DFC->attributes[3];
+    D_800C34B0->commandIndexCopy = D_800C34B0->commandIndex;
+    if ((D_800C34B0->commandAttributes[2] & 0x3F) == 0) {
+        D_800C34B0->commandAttributes[2] |= elements;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A2D4);
+/* Restrict the target mask to the allowed targets of its side: the low three
+ * bits (party) and bits 3-10 (enemies). */
+void func_8009A074(void) {
+    if (D_800C34B0->targetMask & 7) {
+        D_800C34B0->targetMask = D_800C34B0->targetMask2 & 7;
+    }
+    if (D_800C34B0->targetMask & 0x7F8) {
+        D_800C34B0->targetMask = D_800C34B0->targetMask2 & 0x7F8;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A7B8);
+/* The condition shown for slot, by priority: 8, 1, 2 for status bits 0x4000,
+ * 0x8000, 0x2000; 3 and 4 for the second word's 0x1000 and 0x2000; 5, 6, 3 for
+ * 0x800, 0x1000, 2; 7 for status pair 0x84 bit 0x8000; 5 below an eighth of
+ * the maximum HP; otherwise 0. */
+s32 func_8009A0DC(u8 slot) {
+    Combatant *record = &D_800C34B0->records[slot];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A7E4);
+    if (record->pilot.status7C & 0x4000) {
+        return 8;
+    }
+    if (record->pilot.status7C & 0x8000) {
+        return 1;
+    }
+    if (record->pilot.status7C & 0x2000) {
+        return 2;
+    }
+    if (record->pilot.status80 & 0x1000) {
+        return 3;
+    }
+    if (record->pilot.status80 & 0x2000) {
+        return 4;
+    }
+    if (record->pilot.status7C & 0x800) {
+        return 5;
+    }
+    if (record->pilot.status7C & 0x1000) {
+        return 6;
+    }
+    if (record->pilot.status7C & 2) {
+        return 3;
+    }
+    if ((record->pilot.status84.half.active | record->pilot.status84.half.permanent) & 0x8000) {
+        return 7;
+    }
+    if (record->pilot.hp < record->pilot.maxHp >> 3) {
+        return 5;
+    }
+    return 0;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A854);
+/* Mask of slot's timed conditions for display (0 once status bit 0x8000 is
+ * set): 0x8000, 0x4000 and 0x2000 for three statuses, plus the element
+ * statuses (pair 0x8C bits 8-15) shifted down by three. */
+u16 func_8009A1AC(u8 slot) {
+    Combatant *record = &D_800C34B0->records[slot];
+    u16 mask = 0;
+    u16 elements;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009A9D0);
+    if (record->pilot.status7C & 0x8000) {
+        return 0;
+    }
+    if (record->pilot.status80 & 0x1000) {
+        mask = 0x8000;
+    }
+    if (record->pilot.status80 & 0x2000) {
+        mask |= 0x4000;
+    }
+    if (record->pilot.status7C & 0x800) {
+        mask |= 0x2000;
+    }
+    elements = record->pilot.status8C.half.active | record->pilot.status8C.half.permanent;
+    if (elements & 0xF00) {
+        mask |= (elements & 0xF00) >> 3;
+    }
+    if (elements & 0xF000) {
+        mask |= (elements & 0xF000) >> 3;
+    }
+    return mask;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AA44);
+/* Accuracy of member's command: the descriptor's accuracy plus the member's
+ * bonus, capped at 100. */
+u8 func_8009A258(u8 member, u8 command) {
+    CommandDescriptor *descriptor = &D_800C34B0->partyCommands[member][command];
+    u8 accuracy = descriptor->accuracy + (D_800C34B0->records + member)->pilot.accuracy;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AB00);
+    if (accuracy > 100) {
+        accuracy = 100;
+    }
+    return accuracy;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AB38);
+/* Fill the gear HUD for member: its first commands' states, charge rate,
+ * attack, defense, the chance of a boost (from the gear's damage, when the
+ * boost flag of D_8006F8EA is on), warning bits and overheat; count down an
+ * active boost (level 4) or, at level 3, try to start one. */
+void func_8009A2D4(u8 member) {
+    Combatant *record = &D_800CCCE8.records[member];
+    GearRecord *gear = &D_800CCCE8.records[member].gear;
+    u8 *level = &D_800CCCE8.records[member].field148;
+    CommandDescriptor *commands = D_800CCCE8.gearCommands[member];
+    GearHud *hud = &D_800CCCE8.gearHud;
+    u8 i;
+    u8 chance;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AC48);
+    for (i = 0; i < 15; i++) {
+        hud->commands[i] = commands->hudState;
+        commands++;
+    }
+    if (gear->chargeRate != 0) {
+        hud->charge = gear->chargeRate * hud->commands[0];
+    } else {
+        hud->charge = 30;
+    }
+    switch (*level) {
+    case 1:
+    case 2:
+    case 3:
+        hud->charge += *level * 20;
+        break;
+    case 4:
+        hud->charge *= 10;
+        break;
+    }
+    hud->attack = gear->attack * gear->attackScale;
+    hud->attack = gear->entries[0].valueE + hud->attack;
+    if (record->pilot.characterId == 4) {
+        hud->attack = gear->entries[2].valueE + hud->attack;
+    }
+    hud->field29 = gear->speed;
+    hud->defense = gear->defense;
+    if (gear->maxHp != gear->hp) {
+        chance = (gear->maxHp - gear->hp) / (gear->maxHp / 10);
+        if (chance == 0) {
+            chance++;
+        }
+    } else {
+        chance++; /* uninitialised in the original */
+    }
+    chance *= record->pilot.field54 + 5;
+    if (!(*(u16 *)D_8006F8EA & 0x4000)) {
+        chance = 0;
+    }
+    if (record->pilot.field62 < 50) {
+        chance = 0;
+    }
+    if (record->pilot.gearId == 3) {
+        chance = 0;
+    }
+    if (record->pilot.gearId == 15) {
+        chance = 99;
+    }
+    if (chance >= 100) {
+        chance = 99;
+    }
+    hud->boostChance = chance;
+    hud->status = 0;
+    if (gear->status7C & 0x100) {
+        hud->status = 0x8000;
+    }
+    if (gear->status7C & 0x200) {
+        hud->status |= 0x4000;
+    }
+    if (gear->status7C & 0x80) {
+        hud->status |= 0x2000;
+    }
+    if (gear->status7C & 0x10) {
+        hud->status |= 0x1000;
+    }
+    if (gear->fuel < gear->maxFuel >> 3) {
+        hud->status |= 0x800;
+    } else {
+        hud->status &= ~0x800;
+    }
+    if (gear->fuel == 0) {
+        gear->status80 &= ~0x8000;
+        record->pilot.status84.half.active &= ~0x8000;
+    }
+    if (gear->status80 & 0x8000) {
+        hud->overheat = 1;
+    } else {
+        hud->overheat = 0;
+    }
+    if (*level == 4) {
+        hud->level = 4;
+        if (--D_800CCCE8.records[member].statusTimers[6] == 0) {
+            gear->status80 &= ~0x4000;
+            *level = 0;
+            record->pilot.field54 = 0;
+        }
+    } else {
+        hud->level = *level;
+        if (*level == 3 && (*(u16 *)D_8006F8EA & 0x4000) && rand() % 100 < chance) {
+            gear->status80 |= 0x4000;
+            D_800CCCE8.records[member].statusTimers[6] = 3;
+            if (D_800CCCE8.records[member].pilot.flags32 & 0x40) {
+                D_800CCCE8.records[member].statusTimers[6] = 6;
+            }
+            (*level)++;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009ADA0);
+/* Byte 5 of game-data unit record id. */
+u8 func_8009A7B8(u8 id) {
+    return D_8006D8A0.characters[id].entries[0].pad5;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AEFC);
+/* Whether gear item index is one of character 4's four entries. */
+s32 func_8009A7E4(u8 index) {
+    BattleItem *item = &D_800C34B0->lists.items.members[index];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009AFD8);
+    if (D_8006D8A0.characters[4].entries[0].id == item->id
+        || D_8006D8A0.characters[4].entries[1].id == item->id
+        || D_8006D8A0.characters[4].entries[2].id == item->id) {
+        return 1;
+    }
+    return D_8006D8A0.characters[4].entries[3].id == item->id;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B098);
+/* Put battle item index into character 4's entry holding its id (entry k when
+ * none does): copy its values, record the item slot and durability, and update
+ * the battle copies of character 4. */
+void func_8009A854(u8 index, u8 k) {
+    BattleItem *item = &D_800C34B0->lists.items.list[index];
+    u8 i;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B104);
+    if (D_8006D8A0.characters[4].entries[0].id == item->id) {
+        k = 0;
+    }
+    if (D_8006D8A0.characters[4].entries[1].id == item->id) {
+        k = 1;
+    }
+    if (D_8006D8A0.characters[4].entries[2].id == item->id) {
+        k = 2;
+    }
+    if (D_8006D8A0.characters[4].entries[3].id == item->id) {
+        k = 3;
+    }
+    D_8006D8A0.characters[4].entries[k].value4 = item->valueC;
+    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
+    D_8006D8A0.characters[4].entries[k].value2 = item->valueA;
+    D_8006D8A0.characters[4].entries[k].value3 = item->valueB;
+    D_8006D8A0.characters[4].entryItems[k] = index;
+    D_8006F8BA[index] = item->durability;
+    D_8006D8A0.characters[4].entryItems[k] = index;
+    for (i = 0; i < 3; i++) {
+        Combatant *record = &D_800C34B0->records[i];
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B1E4);
+        if (record->pilot.characterId == 4) {
+            record->pilot.entries[k].value4 = item->valueC;
+            record->pilot.entries[k].value3 = item->valueB;
+            record->pilot.entries[k].value2 = item->valueA;
+            record->pilot.entries[k].value3 = item->valueB;
+            record->pilot.entryItems[k] = index;
+        }
+    }
+}
 
+/* The Escape command: succeeds on half of the rolls, writing the party back
+ * to the game data (8009BE0C). */
+s32 func_8009A9D0(void) {
+    D_800C34B0->commandIndex = 0;
+    if (rand() % 100 < 50) {
+        func_8009BE0C();
+        return 1;
+    }
+    return 0;
+}
+
+/* The Defense command for member: mark it defending; a gear with status 0x10
+ * in its second word drops its gear statuses 0x1B0 and the pilot's 0x1000. */
+void func_8009AA44(u8 member) {
+    D_800C34B0->commandIndex = 0;
+    D_800C34B0->records[member].flags15A |= 1;
+    if ((D_800C34B0->records[member].flags15A & 0x80) && (D_800C34B0->records[member].gear.status82 & 0x10)) {
+        D_800C34B0->records[member].gear.status7C &= 0xFE4F;
+        D_800C34B0->records[member].pilot.status7C &= ~0x1000;
+    }
+    if (D_800D2C34 == 4) {
+        D_800C34B0->message = 0x3D;
+    }
+}
+
+/* End member's defending. */
+void func_8009AB00(u8 member) {
+    D_800C34B0->records[member].flags15A &= ~1;
+}
+
+/* Enable member's Deathblow commands (descriptors 22 and 24-32; in a gear, gear
+ * descriptors 21 and 23-28) when its command flag is set. */
+void func_8009AB38(u8 member) {
+    s32 flag;
+
+    if (D_800C34B0->records[member].flags15A & 0x80) {
+        flag = D_800C34B0->records[member].gear.status80 & 0x2000;
+    } else {
+        flag = D_800C34B0->records[member].pilot.status88.half.active & 0x400;
+    }
+    if (flag) {
+        if (D_800C34B0->records[member].flags15A & 0x80) {
+            CommandDescriptor *commands = D_800C34B0->gearCommands[member];
+
+            commands[21].state = 1;
+            commands[23].state = 1;
+            commands[24].state = 1;
+            commands[25].state = 1;
+            commands[26].state = 1;
+            commands[27].state = 1;
+            commands[28].state = 1;
+        } else {
+            CommandDescriptor *commands = D_800C34B0->partyCommands[member];
+
+            commands[22].state = 1;
+            commands[24].state = 1;
+            commands[25].state = 1;
+            commands[26].state = 1;
+            commands[27].state = 1;
+            commands[28].state = 1;
+            commands[29].state = 1;
+            commands[30].state = 1;
+            commands[31].state = 1;
+            commands[32].state = 1;
+        }
+    }
+}
+
+/* Seal the same commands again and clear member's command flag; unless
+ * checked is 0, only for a current command with flag 0x100. */
+void func_8009AC48(u8 member, u8 checked) {
+    s32 flag;
+
+    if (checked == 0 || (D_800C3DFC->flagsA & 0x100)) {
+        if (D_800C34B0->records[member].flags15A & 0x80) {
+            flag = D_800C34B0->records[member].gear.status80 & 0x2000;
+        } else {
+            flag = D_800C34B0->records[member].pilot.status88.half.active & 0x400;
+        }
+        if (flag) {
+            if (D_800C34B0->records[member].flags15A & 0x80) {
+                CommandDescriptor *commands = D_800C34B0->gearCommands[member];
+
+                commands[21].state = 0x2000;
+                commands[23].state = 0x2000;
+                commands[24].state = 0x2000;
+                commands[25].state = 0x2000;
+                commands[26].state = 0x2000;
+                commands[27].state = 0x2000;
+                commands[28].state = 0x2000;
+                D_800C34B0->records[member].gear.status80 &= ~0x2000;
+            } else {
+                CommandDescriptor *commands = D_800C34B0->partyCommands[member];
+
+                commands[22].state = 0x2000;
+                commands[24].state = 0x2000;
+                commands[25].state = 0x2000;
+                commands[26].state = 0x2000;
+                commands[27].state = 0x2000;
+                commands[28].state = 0x2000;
+                commands[29].state = 0x2000;
+                commands[30].state = 0x2000;
+                commands[31].state = 0x2000;
+                commands[32].state = 0x2000;
+                D_800C34B0->records[member].pilot.status88.half.active &= ~0x400;
+            }
+        }
+    }
+}
+
+/* Regeneration amounts of slot for its turn: HP (maxHp / 20), EP (maxEp / 20,
+ * from the pilot's or the gear's status) and fuel (maxFuel / 50 for each of
+ * two gear statuses). Returns whether any applies; nothing once KO'd. */
+s32 func_8009ADA0(u8 slot, s32 *amounts) {
+    Combatant *record = &D_800C34B0->records[slot];
+    s32 any = 0;
+
+    if (record->pilot.status7C & 0x8000) {
+        return 0;
+    }
+    if (record->pilot.status7C & 0x800) {
+        any = 1;
+        *amounts = (u16)(record->pilot.maxHp / 20);
+    }
+    amounts++;
+    if (record->pilot.status80 & 0x200) {
+        any = 1;
+        *amounts = (u16)(record->pilot.maxEp / 20);
+    }
+    if (record->gear.status7C & 0x200) {
+        any = 1;
+        *amounts = (u16)(record->pilot.maxEp / 20);
+    }
+    amounts++;
+    *amounts = 0;
+    if (record->gear.status7C & 0x80) {
+        any = 1;
+        *amounts = (u16)(record->gear.maxFuel / 50);
+    }
+    if (record->gear.status80 & 0x8000) {
+        any = 1;
+        *amounts += (u16)(record->gear.maxFuel / 50);
+    }
+    return any;
+}
+
+/* Revive slot's record: clear its statuses (keeping status 0x2000 of the
+ * second word), size Chu-Chu's gear HP (8009B104), and when character 3 is
+ * revived clear status 0x20 of every enemy. */
+void func_8009AEFC(u8 slot) {
+    Combatant *record;
+    u8 i;
+
+    D_800C34B0->commandIndex = 0;
+    record = &D_800C34B0->records[slot];
+    record->pilot.status7C = 0;
+    record->pilot.status84.half.active = 0;
+    record->pilot.status88.half.active = 0;
+    record->pilot.status8C.half.active = 0;
+    record->pilot.status80 &= 0x2000;
+    if (record->pilot.characterId == 7) {
+        func_8009B104(slot, record);
+    }
+    if (record->pilot.characterId == 3) {
+        for (i = 3; i < 11; i++) {
+            D_800CCCE8.records[i].pilot.status80 &= ~0x20;
+        }
+    }
+}
+
+/* Wear the attacker's weapon items for the current command: commands 0-3 the
+ * first entry's, 6 the fourth's, 7-19 both. */
+void func_8009AFD8(void) {
+    switch (D_800C34B0->commandIndex) {
+    case 0:
+    case 1:
+    case 2:
+    case 3:
+        if (D_8006F8BA[D_800C3E00->pilot.entryItems[0]] != 0) {
+            D_8006F8BA[D_800C3E00->pilot.entryItems[0]] += -1;
+        }
+        break;
+    case 7:
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+    case 18:
+    case 19:
+        if (D_8006F8BA[D_800C3E00->pilot.entryItems[0]] != 0) {
+            D_8006F8BA[D_800C3E00->pilot.entryItems[0]] += -1;
+        }
+        /* fallthrough */
+    case 6:
+        if (D_8006F8BA[D_800C3E00->pilot.entryItems[3]] != 0) {
+            D_8006F8BA[D_800C3E00->pilot.entryItems[3]] += -1;
+        }
+        break;
+    }
+}
+
+/* Debug party: members 1 and 2 get 100/100 HP and fixed stats. */
+void func_8009B098(void) {
+    u8 i;
+
+    for (i = 1; i < 3; i++) {
+        Combatant *record = &D_800C34B0->records[i];
+
+        record->pilot.hp = 100;
+        record->pilot.maxHp = 100;
+        record->pilot.field5E = 20;
+        record->pilot.field5F = 15;
+        record->pilot.status7A = 0x1FBF;
+        record->field149 = 0;
+    }
+}
+
+/* Chu-Chu's gear HP: fifty times her HP and maximum HP, capped at 99999. */
+void func_8009B104(u8 slot, Combatant *chuchu) {
+    Combatant *record = &D_800C34B0->records[slot];
+    GearRecord *gear = &record->gear;
+
+    if (chuchu->pilot.maxHp * 50 > 99999) {
+        if (chuchu->pilot.hp * 50 > 99999) {
+            record->gear.hp = 99999;
+        } else {
+            record->gear.hp = chuchu->pilot.hp * 50;
+        }
+        gear->maxHp = 99999;
+    } else {
+        record->gear.hp = chuchu->pilot.hp * 50;
+        record->gear.maxHp = chuchu->pilot.maxHp * 50;
+    }
+}
+
+/* Debug setup: 99 of every item 1-47, and fixed skill masks for all eleven
+ * characters. */
+void func_8009B1E4(void) {
+    u8 i;
+
+    for (i = 1; i < 48; i++) {
+        D_8006F65A[i] = i;
+        D_8006F5C4[i] = 99;
+    }
+    D_8006ECF4[0].mask0 = 0xFFF8;
+    D_8006ECF4[0].mask2 = 0xFF00;
+    D_8006ECF4[0].mask4 = 0xFFFF;
+    D_8006ECF4[0].mask6 = 0xFE00;
+    D_8006ECF4[0].flags1A = 0xF000;
+    D_8006ECF4[0].field17 = 7;
+    D_8006ECF4[1].mask0 = 0xFFE0;
+    D_8006ECF4[1].mask2 = 0xFFF0;
+    D_8006ECF4[1].mask4 = 0xFFFF;
+    D_8006ECF4[1].mask6 = 0xFFF0;
+    D_8006ECF4[1].flags1A = 0xC000;
+    D_8006ECF4[1].field17 = 7;
+    D_8006ECF4[2].mask0 = 0xFFE0;
+    D_8006ECF4[2].mask2 = 0xFFE0;
+    D_8006ECF4[2].mask4 = 0xFFFF;
+    D_8006ECF4[2].mask6 = 0xFF00;
+    D_8006ECF4[2].flags1A = 0x8000;
+    D_8006ECF4[2].field17 = 7;
+    D_8006ECF4[3].mask0 = 0xFFE0;
+    D_8006ECF4[3].mask2 = 0xFFC0;
+    D_8006ECF4[3].mask4 = 0xFFFF;
+    D_8006ECF4[3].mask6 = 0xFF00;
+    D_8006ECF4[3].flags1A = 0xF000;
+    D_8006ECF4[3].field17 = 7;
+    D_8006ECF4[4].mask0 = 0xFFC0;
+    D_8006ECF4[4].mask2 = 0xFFC0;
+    D_8006ECF4[4].mask4 = 0xFFFF;
+    D_8006ECF4[4].mask6 = 0xFC00;
+    D_8006ECF4[4].flags1A = 0xE000;
+    D_8006ECF4[4].field17 = 7;
+    D_8006ECF4[5].mask0 = 0xFFC0;
+    D_8006ECF4[5].mask2 = 0xF000;
+    D_8006ECF4[5].mask4 = 0xFFFF;
+    D_8006ECF4[5].mask6 = 0xF000;
+    D_8006ECF4[5].flags1A = 0x8000;
+    D_8006ECF4[5].field17 = 7;
+    D_8006ECF4[6].mask0 = 0xFFC0;
+    D_8006ECF4[6].mask2 = 0xFF00;
+    D_8006ECF4[6].mask4 = 0xFFFF;
+    D_8006ECF4[6].mask6 = 0xFF00;
+    D_8006ECF4[6].flags1A = 0x8000;
+    D_8006ECF4[6].field17 = 7;
+    D_8006ECF4[7].mask0 = 0;
+    D_8006ECF4[7].mask2 = 0xFF00;
+    D_8006ECF4[7].mask4 = 0;
+    D_8006ECF4[7].mask6 = 0xFF00;
+    D_8006ECF4[7].flags1A = 0;
+    D_8006ECF4[7].field17 = 7;
+    D_8006ECF4[8].mask0 = 0;
+    D_8006ECF4[8].mask2 = 0xF800;
+    D_8006ECF4[8].mask4 = 0xFFFF;
+    D_8006ECF4[8].mask6 = 0;
+    D_8006ECF4[8].flags1A = 0xE000;
+    D_8006ECF4[8].field17 = 7;
+    D_8006ECF4[9].mask0 = 0xFFE0;
+    D_8006ECF4[9].mask2 = 0xFFE0;
+    D_8006ECF4[9].mask4 = 0xFFFF;
+    D_8006ECF4[9].mask6 = 0xFFE0;
+    D_8006ECF4[9].flags1A = 0x8000;
+    D_8006ECF4[9].field17 = 7;
+    D_8006ECF4[10].mask0 = 0xFFC0;
+    D_8006ECF4[10].mask2 = 0xFF00;
+    D_8006ECF4[10].mask4 = 0xFFFF;
+    D_8006ECF4[10].mask6 = 0xFF00;
+    D_8006ECF4[10].flags1A = 0xC000;
+    D_8006ECF4[10].field17 = 7;
+}
+
+#ifdef NON_MATCHING
+/* Raise an attack's damage: by half for each of characters 0 and 3 in the
+ * party below half HP (gear HP in a gear) and again below a quarter; then a
+ * critical chance (10%, 60% with attacker flag 0x200) multiplies it by 1.5
+ * (2 with attacker flag 0x400). */
+void func_8009B46C(u16 *damage) {
+    u8 count = 0;
+    u8 i;
+    u32 hp;
+    u32 maxHp;
+    s32 chance;
+    s32 scale;
+
+    for (i = 0; i < 3; i++) {
+        Combatant *record = &D_800C34B0->records[i];
+        GearRecord *gear = &record->gear;
+
+        if (record->pilot.characterId == 0) {
+            if (D_800CCCE8.records[i].flags15A & 0x80) {
+                maxHp = record->gear.maxHp;
+                hp = record->gear.hp;
+            } else {
+                maxHp = record->pilot.maxHp;
+                hp = record->pilot.hp;
+            }
+            if (hp < maxHp >> 1) {
+                count++;
+            }
+            if (hp < maxHp >> 2) {
+                count++;
+            }
+        }
+        if (record->pilot.characterId == 3) {
+            if (D_800CCCE8.records[i].flags15A & 0x80) {
+                maxHp = gear->maxHp;
+                hp = gear->hp;
+            } else {
+                maxHp = record->pilot.maxHp;
+                hp = record->pilot.hp;
+            }
+            if (hp < maxHp >> 1) {
+                count++;
+            }
+            if (hp < maxHp >> 2) {
+                count++;
+            }
+        }
+    }
+    chance = 10;
+    if (count) {
+        *damage += count * (*damage >> 1);
+    }
+    scale = 3;
+    if (D_800C3E00->pilot.flags32 & 0x400) {
+        scale = 4;
+    }
+    if (D_800C3E00->pilot.flags32 & 0x200) {
+        chance = 60;
+    }
+    if (rand() % 100 < chance) {
+        *damage = scale * *damage >> 1;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B46C);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009B684);
+/* Show the message for an applied status, named by its kind and flag bit. */
+void func_8009B684(u8 kind, u16 flag) {
+    switch (kind) {
+    case 0:
+        switch (flag) {
+        case 0x2000:
+            D_800C34B0->message = 0x1;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x2;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x3;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0x4;
+            break;
+        case 0x200:
+            D_800C34B0->message = 0x5;
+            break;
+        case 0x1:
+            D_800C34B0->message = 0x8;
+            break;
+        }
+        break;
+    case 2:
+        switch (flag) {
+        case 0x2000:
+            D_800C34B0->message = 0x9;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0xA;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0xB;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0xC;
+            break;
+        case 0x1:
+            D_800C34B0->message = 0xD;
+            break;
+        case 0x20:
+            D_800C34B0->message = 0x7;
+            break;
+        }
+        break;
+    case 5:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0xE;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0xF;
+            break;
+        case 0x2000:
+            D_800C34B0->message = 0x10;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x11;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x12;
+            break;
+        case 0x1800:
+            D_800C34B0->message = 0x13;
+            break;
+        }
+        break;
+    case 7:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0x15;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0x16;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x18;
+            break;
+        case 0x2:
+        case 0x8:
+            D_800C34B0->message = 0x19;
+            break;
+        case 0x1:
+        case 0x4:
+            D_800C34B0->message = 0x1A;
+            break;
+        }
+        break;
+    case 9:
+        switch (flag) {
+        case 0x8000:
+            D_800C34B0->message = 0x1B;
+            break;
+        case 0x4000:
+            D_800C34B0->message = 0x1C;
+            break;
+        case 0x2000:
+            D_800C34B0->message = 0x1D;
+            break;
+        case 0x1000:
+            D_800C34B0->message = 0x1E;
+            break;
+        case 0x400:
+            D_800C34B0->message = 0x1F;
+            break;
+        case 0x800:
+            D_800C34B0->message = 0x20;
+            break;
+        case 0x100:
+            D_800C34B0->message = 0x21;
+            break;
+        case 0x200:
+            D_800C34B0->message = 0x22;
+            break;
+        }
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BAC4);
+/* Choose an automatic action for slot (confusion or auto-battle): choice[0]
+ * is the kind (4 defend, 2 a skill with choice[1] its index among the
+ * character's usable skills, 0/1 an attack with choice[1] its strength). Out of
+ * a gear: defend on 10% unless flagged, a known skill on 25%, then Chu-Chu's
+ * basic attack; otherwise attack weak 48%, medium 32%, strong 20%. */
+void func_8009BAC4(u8 slot, u8 *choice, s16 *busy) {
+    Combatant *record = &D_800CCCE8.records[slot];
+    u16 skills;
+    u8 count;
+    u8 skill;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BD94);
+    if (!(D_800CCCE8.records[slot].flags15A & 0x80)) {
+        if (rand() % 100 < 10 && !(record->pilot.status7A & 0x100) && *busy == 0) {
+            choice[0] = 4;
+            return;
+        }
+        switch (record->pilot.characterId) {
+        case 3:
+            skills = 0xC3C0;
+            count = 10;
+            break;
+        case 4:
+            skills = 0xDF80;
+            count = 10;
+            break;
+        case 5:
+            skills = 0x1000;
+            count = 4;
+            break;
+        case 7:
+            skills = 0xE000;
+            count = 3;
+            break;
+        case 0:
+        case 8:
+            skills = 0xC000;
+            count = 2;
+            break;
+        case 2:
+        case 9:
+            skills = 0xBFE0;
+            count = 11;
+            break;
+        case 1:
+        case 6:
+        case 10:
+            skills = 0xF000;
+            count = 4;
+            break;
+        }
+        if (rand() % 100 < 25 && !(record->pilot.status7A & 0x20)) {
+            choice[0] = 2;
+            skill = rand() % count;
+            if (D_8006ECF4[record->pilot.characterId].mask2 & ((0x8000 >> skill) & skills)) {
+                choice[1] = skill;
+                return;
+            }
+        }
+        if (record->pilot.characterId == 8) {
+            choice[0] = 0;
+            choice[1] = 0;
+            return;
+        }
+    }
+    choice[0] = 1;
+    if (rand() % 100 < 80) {
+        if (rand() % 100 >= 60) {
+            choice[1] = 1;
+        } else {
+            choice[1] = 0;
+        }
+    } else {
+        choice[1] = 2;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009BE0C);
+/* Damage the target by the command's power in twentieths of its gear's
+ * maximum HP. */
+void func_8009BD94(void) {
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = D_800C3DFC->power * D_800D2DC8->maxHp / 20;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C050);
+/* Write the party back to the game data: each present member's HP (Chu-Chu in
+ * a gear takes hers from the gear's HP), EP, use counts and field 0x3A, with
+ * HP 1 when KO'd, and the HP and fuel of its gear (ids 0-6 and 8-16), a tenth
+ * of the maximum when the gear is wrecked. */
+void func_8009BE0C(void) {
+    u8 i;
+    u8 j;
+    s32 unused[2]; /* never used; it gives the original its 8-byte frame */
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C0E0);
+    for (i = 0; i < 3; i++) {
+        Combatant *record;
+        CharacterRecord *character;
+        GearRecord *gearRecord;
+        GearRecord *gear;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C134);
+        if (D_800D2D24[i] == 0x7F) {
+            continue;
+        }
+        record = &D_800CCCE8.records[i];
+        character = &D_8006D8A0.characters[record->pilot.characterId];
+        gear = &D_800CCCE8.records[i].gear;
+        gearRecord = &D_8006D8A0.gears[record->pilot.gearId];
+        if (record->pilot.characterId == 7 && (D_800CCCE8.records[i].flags15A & 0x80)) {
+            record->pilot.hp = (gear->hp + 1) / 50;
+            if (record->pilot.hp == 0) {
+                record->pilot.hp = 1;
+            }
+        }
+        character->hp = record->pilot.hp;
+        character->ep = record->pilot.ep;
+        if (character->hp > character->maxHp) {
+            character->hp = character->maxHp;
+        }
+        if (character->ep > character->maxEp) {
+            character->ep = character->maxEp;
+        }
+        for (j = 0; j < 7; j++) {
+            character->useCounts[j] = record->pilot.useCounts[j];
+        }
+        character->field3A = record->pilot.field3A;
+        if (record->pilot.status7C & 0xC000) {
+            character->hp = 1;
+        }
+        switch (record->pilot.gearId) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+            gearRecord->hp = gear->hp;
+            gearRecord->fuel = gear->fuel;
+            if (gearRecord->hp > gearRecord->maxHp) {
+                gearRecord->hp = gearRecord->maxHp;
+            }
+            if (gearRecord->fuel > gearRecord->maxFuel) {
+                gearRecord->fuel = gearRecord->maxFuel;
+            }
+            if (gear->status7C & 0x8000) {
+                gearRecord->hp = gearRecord->maxHp / 10;
+            }
+            break;
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C198);
+/* Gear warning flags of slot: 1 gear status 0x400, 2 gear HP below an eighth
+ * (unless the pilot's flag 1 at +0x36), 4 when field 0x148 is 4. */
+s32 func_8009C050(u8 slot) {
+    Combatant *record = &D_800CCCE8.records[slot];
+    GearRecord *gear = &D_800CCCE8.records[slot].gear;
+    u8 *state = &D_800CCCE8.records[slot].field148;
+    u8 flags = 0;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C4B4);
+    if (gear->status7C & 0x400) {
+        flags = 1;
+    }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009C9C4);
+    if (gear->hp < gear->maxHp >> 3 && !(record->pilot.flags36 & 1)) {
+        flags |= 2;
+    }
+    if (*state == 4) {
+        flags |= 4;
+    }
+    return flags;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CA90);
+/* Put slot into state 4 with timer 6 at three turns, and set flag 0x4000 of
+ * character 0. */
+void func_8009C0E0(u8 slot) {
+    D_800CCCE8.records[slot].field148 = 4;
+    D_800CCCE8.records[slot].statusTimers[6] = 3;
+    D_8006ECF4[0].flags1A |= 0x4000;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CB68);
+/* Target the party member that is character 3. */
+void func_8009C134(void) {
+    u8 i;
+
+    for (i = 0; i < 3; i++) {
+        if (D_800CCCE8.records[i].pilot.characterId == 3) {
+            D_800CCCE8.targetMask = 1 << i;
+        }
+    }
+}
+
+/* Resolve a gear's action against every target in the target mask: select the
+ * current command descriptor, run its gear formula (table D_800C34DC) per
+ * target with the status step it asks for (8009DBFC), then the per-target
+ * follow-ups and the command's wear and element. */
+void func_8009C198(void) {
+    s32 bit;
+
+    if (D_800C3E04 < 3) {
+        D_800C3DFC = &D_800C34B0->gearCommands[D_800C34B0->attackerIndex][D_800C34B0->commandIndex];
+    } else {
+        D_800C3DFC = &D_800C34B0->enemyCommands[D_800C34B0->commandIndex];
+    }
+    /* Called without its second argument (an unprototyped call). */
+    ((void (*)())func_8009AC48)(D_800C3E04);
+    D_800C3D3C = &D_800C34B0->records[D_800C34B0->attackerIndex].field148;
+    D_800D2DC4 = 0;
+    if ((D_800C3DFC->flagsA & 0x100) && D_800C3E00->pilot.characterId == 1) {
+        func_80096824();
+    }
+    if ((D_800C3E00->pilot.gearId == 5 || D_800C3E00->pilot.gearId == 13) && D_800C34B0->commandIndex == 1) {
+        D_800C3DFC->attributes[2] = D_800D2D6C->entries[1].valueE;
+    }
+    bit = 1;
+    for (D_800C3E50 = 0; D_800C3E50 < 11; D_800C3E50++, bit <<= 1) {
+        if (bit & D_800C34B0->targetMask) {
+            D_800C3E34 = &D_800C34B0->records[D_800C3E50];
+            D_800D2DC8 = &D_800C34B0->records[D_800C3E50].gear;
+            D_800C3D60 = &D_800C34B0->records[D_800C3E50].field148;
+            func_8009CA90();
+            D_800C34DC[D_800C3DFC->formula]();
+            if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+                if (D_800C3DFC->flagsA & 0x800) {
+                    func_8009DBFC(1);
+                } else if (D_800C3DFC->flagsA & 0x4000) {
+                    func_8009DBFC(0);
+                }
+            }
+            D_800C34B0->shownCommand = D_800C3DFC->name;
+            func_8009C4B4();
+            func_8009CB68(D_800C3E50);
+        }
+    }
+    if (D_800C3E00->pilot.characterId == 4) {
+        func_8009E788();
+    }
+    func_8009C9C4();
+}
+
+/* Per-target follow-up of a gear action: a party gear's attack level (up by
+ * one with commands 0-2, set below D_800D2C34 by the level-3/6/9 command
+ * groups, which also raise the pilot's field 0x54), then the target's
+ * reactions: breaking status 0x2000 on 80%, fuel-drain immunity, halving or
+ * raising damage by its flag 0x80, reflecting it with flag 0x20, and nullifying
+ * with status 0x200. */
+void func_8009C4B4(void) {
+    s32 chance;
+
+    if (D_800C3E04 < 3) {
+        if (D_800C34B0->commandIndex < 3) {
+            if (++D_800C3D3C[0] > D_800C3D3C[1]) {
+                D_800C3D3C[0]--;
+            }
+        }
+        if ((u32)(D_800C34B0->commandIndex - 3) < 3) {
+            D_800C3D3C[0] = D_800D2C34 - 1;
+        }
+        if ((u32)(D_800C34B0->commandIndex - 6) < 3) {
+            D_800C3D3C[0] = D_800D2C34 - 2;
+        }
+        if ((u32)(D_800C34B0->commandIndex - 9) < 3) {
+            D_800C3D3C[0] = D_800D2C34 - 3;
+        }
+        if (D_800C34B0->commandIndex >= 3 && D_800C34B0->commandIndex < 12) {
+            D_800C3E00->pilot.field54 += D_800C34B0->commandIndex / 3;
+        }
+        if (D_800C34B0->commandIndex == 5) {
+            D_800C3E00->pilot.field54 += 1;
+        }
+        if (D_800C34B0->commandIndex == 8) {
+            D_800C3E00->pilot.field54 += 2;
+        }
+        if (D_800C34B0->commandIndex == 11) {
+            D_800C3E00->pilot.field54 += 3;
+        }
+    }
+    if (D_800C34B0->resultCode[D_800C3E50] == 0 && (D_800C3E34->pilot.status80 & 0x2000)
+        && rand() % 100 < 80) {
+        D_800C3E34->pilot.status80 &= ~0x2000;
+        D_800D2DC8->status7C &= ~0x1000;
+    }
+    if (D_800C34B0->resultCode[D_800C3E50] == 10 && (D_800D2DC8->field7E & 0x80)) {
+        D_800C34B0->damage[D_800C3E50] = 0;
+    }
+    if (D_800C34B0->resultCode[D_800C3E50] == 0) {
+        if (D_800C3E34->pilot.flags32 & 0x80) {
+            chance = 60;
+            if (D_800C3E34->pilot.characterId == 0) {
+                chance = 80;
+            }
+            if (rand() % 100 < chance) {
+                D_800C34B0->damage[D_800C3E50] >>= 1;
+            } else {
+                D_800C34B0->damage[D_800C3E50] += D_800C34B0->damage[D_800C3E50] >> 1;
+            }
+        }
+        if (D_800C3E34->pilot.flags32 & 0x20) {
+            D_800C34B0->resultCode[D_800C3E04] = 0;
+            D_800C34B0->damage[D_800C3E04] = D_800C34B0->damage[D_800C3E50];
+        }
+    }
+    if ((D_800C3E34->pilot.status88.half.permanent & 0x200) && D_800C34B0->resultCode[D_800C3E50] == 1) {
+        D_800C34B0->damage[D_800C3E50] = 0;
+    }
+}
+
+/* The gear version of 80099FB0: make the current command descriptor the
+ * battle's current command, a command without an element taking the gear's
+ * element statuses. */
+void func_8009C9C4(void) {
+    u16 elements = (D_800D2D6C->status84.half.active | D_800C3E00->pilot.status88.half.permanent) >> 12;
+
+    D_800C34B0->commandAttributes[0] = D_800C3DFC->attributes[0];
+    D_800C34B0->commandAttributes[1] = D_800C3DFC->attributes[1];
+    D_800C34B0->commandAttributes[2] = D_800C3DFC->attributes[2];
+    D_800C34B0->commandAttributes[3] = D_800C3DFC->attributes[3];
+    D_800C34B0->commandIndexCopy = D_800C34B0->commandIndex;
+    if ((D_800C34B0->commandAttributes[2] & 0x3F) == 0) {
+        D_800C34B0->commandAttributes[2] |= elements;
+    }
+}
+
+/* Against a target on foot, switch the current descriptor to its on-foot
+ * variant: commands 12-14 three descriptors on, commands 0-2 fifteen. */
+void func_8009CA90(void) {
+    if ((u32)(D_800C34B0->commandIndex - 12) < 3 && !(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        D_800C3DFC += 3;
+    } else if (D_800C34B0->commandIndex < 3 && !(D_800C34B0->records[D_800C3E50].flags15A & 0x80)) {
+        D_800C3DFC += 15;
+    }
+}
+
+/* Mirror the gear's status 0x200 (second word) as the pilot's status 0x20. */
+void func_8009CB68(u8 slot) {
+    GearRecord *gear = &D_800CCCE8.records[slot].gear;
+    Combatant *record = &D_800CCCE8.records[slot];
+
+    if (gear->status80 & 0x200) {
+        record->pilot.status84.half.active |= 0x20;
+    } else {
+        record->pilot.status84.half.active &= ~0x20;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009CBC4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D354);
+/* Mark the target missed (result 6) when 8009DBFC finds no hit. */
+void func_8009D354(void) {
+    if (func_8009DBFC(0) == 0) {
+        D_800C34B0->resultCode[D_800C3E50] = 6;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D3A0);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009D948);
+/* Damage of a gear attack (80096FBC); a command with flag 0x100 scales it by
+ * the gear's frame factor in quarters (4 when unset or with status 0x100), and
+ * status 0x40 adds half again. */
+u16 func_8009D948(void) {
+    u16 damage = func_80096FBC();
+    u8 factor;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DA04);
+    if (D_800C3DFC->flagsA & 0x100) {
+        factor = D_800D2D6C->frameFactor;
+        if ((D_800D2D6C->status7C & 0x100) || factor == 0) {
+            factor = 4;
+        }
+        damage = factor * damage / 4;
+        if ((D_800D2D6C->status80 | D_800D2D6C->status82) & 0x40) {
+            damage += damage >> 1;
+        }
+    }
+    return damage;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DB54);
+/* Damage of an attack on a gear (80097610): a command with flag 0x100 adds
+ * the target gear's armor (reduced by its defense percentage) when the target
+ * is in a gear, and half again with status 0x20; otherwise the damage itself
+ * is reduced by the defense percentage. */
+u16 func_8009DA04(void) {
+    u16 damage = func_80097610();
+    u16 armor;
+    u8 defense;
+
+    if (D_800C3DFC->flagsA & 0x100) {
+        defense = D_800D2DC8->defense;
+        armor = D_800D2DC8->armor;
+        if (defense != 0 && armor != 0) {
+            armor = armor * (100 - defense) / 100;
+        }
+        if (D_800C34B0->records[D_800C3E50].flags15A & 0x80) {
+            damage += armor;
+        }
+        if ((D_800D2DC8->status80 | D_800D2DC8->status82) & 0x20) {
+            damage += damage >> 1;
+        }
+    } else if (D_800D2DC8->defense != 0) {
+        damage = damage * (100 - D_800D2DC8->defense) / 100;
+    }
+    return damage;
+}
+
+/* Scale damage by the target gear's resistance (in twentieths, 20 or more
+ * nullifies) to the command's first element. */
+s32 func_8009DB54(s32 damage) {
+    u8 i;
+    u8 element;
+    u8 resistance;
+
+    for (i = 0; i < 16; i++) {
+        if (D_800C3DFC->elements & (0x8000 >> i)) {
+            element = i;
+            break;
+        }
+    }
+    resistance = D_800D2DC8->resistances[element];
+    if (resistance != 0) {
+        if (resistance < 20) {
+            damage = damage * (20 - resistance) / 20;
+        } else {
+            damage = 0;
+        }
+    }
+    return damage;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009DBFC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E268);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E278);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E2EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E364);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E3C8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E410);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E48C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E508);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E53C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E5C8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E788);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009E868);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EBA8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EC4C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009EF3C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F1C4);
-
-void func_8009F5B0(void) {
+/* Clear the target gear's defense percentage. */
+void func_8009E268(void) {
+    D_800D2DC8->defense = 0;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F5B8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F708);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F794);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009F844);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A0838);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A1B50);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A1CF4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A216C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2234);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A22A8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A22E8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2330);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A23E8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2434);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2704);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2ACC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2BB8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2CA4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2D1C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2D5C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2E88);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2F94);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A2FD8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A32D8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3484);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3490);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3514);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3578);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A35C8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3640);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A3E98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A429C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4348);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A43F8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A44C0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4654);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4820);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A48EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4B3C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4CF8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A4DB8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A577C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A578C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A579C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5870);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5914);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5A48);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5BE8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5D54);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5E9C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A5EB4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A6444);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A64E4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A6884);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A6AE8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A6F98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A7064);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A7948);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8A88);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8B0C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A8BF0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9540);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A96B4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A979C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9A50);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9F94);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800A9FF0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA320);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA384);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA454);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA514);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA564);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA600);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA650);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA6E0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA760);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA788);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA79C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA7DC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA820);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA898);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AA934);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAA20);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAB34);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AAD54);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800ADF1C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE098);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE1BC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE220);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AE2A4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEEEC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEEF8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AEF68);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF180);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF270);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF2C4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF400);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF438);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF518);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AF678);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFA98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFB4C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFC68);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFD98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800AFF9C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0060);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B00D0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B00F4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0164);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B026C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0AB4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0B14);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0D70);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B0FF4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B10EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B12D0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B136C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B14B8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B14CC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B15D8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B168C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B16A4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B16F0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B1720);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B1EA0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B1F0C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B1F6C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B2AEC);
-
-void func_800B3348(void) {
+/* Damage the target gear by field 0x4F tenths of its maximum HP. */
+void func_8009E278(void) {
+    u32 damage = D_800D2DC8->field4F * D_800D2DC8->maxHp / 10;
+
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-void func_800B3350(void) {
+/* Damage the target gear by the command's power in twentieths of its maximum
+ * HP. */
+void func_8009E2EC(void) {
+    u32 damage = D_800C3DFC->power * D_800D2DC8->maxHp / 20;
+
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3358);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3588);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B35C0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3658);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B36BC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B383C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3878);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B397C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B39C0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3B6C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3B94);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3C2C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3C74);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3CD4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3E04);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B3F04);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B4EDC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B4F88);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B50D4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B51B0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5588);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B56E4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B572C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B57E4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5854);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5924);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B59BC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5AC4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5B3C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5C18);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5CC0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5DC4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5DF4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B5FBC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6004);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B61B0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B61F8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B626C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B62C8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B639C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B63F0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6438);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6464);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B64D4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6518);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B65B0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6808);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6930);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6990);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B69E4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6A50);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6A7C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6B98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6BFC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6C44);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6C98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6CEC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6DC0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6E84);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B6F0C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7134);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7160);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7330);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7364);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B73A0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B73EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7424);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7870);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7C28);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7C34);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B7E94);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8048);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8054);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8068);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8098);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B81BC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8284);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8354);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B838C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B853C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8774);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8840);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B88C4);
-
-void func_800B89F4(void) {
+/* Damage the target by the attacker's accuracy times the command's power. */
+void func_8009E364(void) {
+    u32 damage = D_800C3E00->pilot.accuracy * D_800C3DFC->power;
+
+    D_800C34B0->resultCode[D_800C3E50] = 2;
+    D_800C34B0->damage[D_800C3E50] = damage;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B89FC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8D04);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8D7C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8DA4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B8EBC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9020);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B905C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9258);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9284);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9508);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9B30);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9B54);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9C00);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9C78);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B9F78);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BA4E0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BA59C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BA614);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BA768);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BA8F4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BA984);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BAB0C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BABDC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BAC50);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BACBC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BADD4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BAEB8);
-
-void func_800BAF40(void) {
+/* Put the target into state 4 with timer 6 at three turns. */
+void func_8009E3C8(void) {
+    *D_800C3D60 = 4;
+    D_800CCCE8.records[D_800C3E50].statusTimers[6] = 3;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BAF48);
+/* Drain the target gear's fuel (result 10) by the command's power in
+ * twentieths of its maximum fuel. */
+void func_8009E410(void) {
+    s32 amount = D_800D2DC8->maxFuel * D_800C3DFC->power / 20;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB080);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB13C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB248);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB314);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB350);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB540);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB620);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB690);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB6E0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB760);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB7F8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB844);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BB9D4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BBAB8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BBEE0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC018);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC158);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC2F0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC3F8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC404);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC454);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BC460);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCAA4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCAD0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCAFC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCB54);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCBB4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCC60);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCD8C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCD98);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCEAC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BCFAC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD024);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD098);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD1FC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD2E4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD3AC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD7A0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD810);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BD974);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDA1C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDB08);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDB74);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDC14);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDC78);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDCF8);
-
-void func_800BDD34(void) {
+    D_800C34B0->resultCode[D_800C3E50] = 10;
+    D_800C34B0->damage[D_800C3E50] = amount;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDD3C);
+/* Restore the target gear's fuel (result 11) by the command's power in
+ * twentieths of its maximum fuel. */
+void func_8009E48C(void) {
+    s32 amount = D_800D2DC8->maxFuel * D_800C3DFC->power / 20;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDE58);
+    D_800C34B0->resultCode[D_800C3E50] = 11;
+    D_800C34B0->damage[D_800C3E50] = amount;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BDF1C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE0DC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE108);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE11C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE1C4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE330);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE538);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE6A0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE6E8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BE790);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEB04);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEBC4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEC18);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BED30);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BED4C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEDE8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEE2C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEEB4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEF24);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEF8C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BEFF4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF0B4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF0C4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF1EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF2B8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF354);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF3A4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF3E8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF4F0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF5E8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF600);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF6CC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF6F8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF720);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF730);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF73C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF7C8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF85C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF8CC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF954);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF998);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BF9EC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BFA9C);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BFBA0);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BFC80);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BFD88);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BFDA8);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800BFE48);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0314);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0564);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C06E4);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0758);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C07CC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0828);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C08CC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0D18);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0F70);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C0FAC);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C1140);
-
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800C11CC);
+/* Clear the target gear's statuses 0x7F4 and the target's status 0x20. */
+void func_8009E508(void) {
+    D_800D2DC8->status7C &= 0xF80B;
+    D_800C3E34->pilot.status7A &= ~0x20;
+}

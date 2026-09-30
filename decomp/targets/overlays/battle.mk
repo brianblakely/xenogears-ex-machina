@@ -8,5 +8,7 @@ IMAGE := .local/decomp/build/battle.bin
 LINKER_SCRIPT := .local/decomp/battle/battle.ld
 LINKER_EXTRA := .local/decomp/battle/undefined_syms_auto.txt .local/decomp/battle/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/battle
+# Unit 8009E53C-800B16F0 divides with ASPSX's checked division.
+MASPSX_battle_8009E53C := --aspsx-version=2.34 --expand-div
 # Packed containers of this image (tools/packed_container.py).
 CONTAINERS := 1:38 2:33
