@@ -1457,7 +1457,6 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800841E0);
  * downed ones) as candidates with their mask: side 0 the enemies, 1 the
  * party, 2 both (the party first unless `partyFirst` is clear). Returns the
  * first candidate. */
-#ifdef NON_MATCHING
 u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     s32 i;
     s32 count;
@@ -1498,31 +1497,31 @@ u8 func_80084548(u8 side, u8 any, u8 partyFirst) {
     D_800C3D64 = 0;
     i = first1;
     while (--n1 >= 0) {
-        slot = i++;
+        slot = i;
         if (func_80084108(slot, any)) {
-            D_800C3E90[count++] = slot;
+            D_800C3E90[count] = slot;
             D_800C3D64 |= func_80089C08(slot);
             D_800D3274++;
+            count++;
         }
+        i++;
     }
     i = first2;
     while (--n2 >= 0) {
-        slot = i++;
+        slot = i;
         if (func_80084108(slot, any)) {
-            D_800C3E90[count++] = slot;
+            D_800C3E90[count] = slot;
             D_800C3D64 |= func_80089C08(slot);
             D_800D3274++;
+            count++;
         }
+        i++;
     }
     return D_800C3E90[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084548);
-#endif
 
 /* Collect the enemy slots the member can target (80083ff4) as candidates
  * and their mask; returns the first candidate. */
-#ifdef NON_MATCHING
 u8 func_80084750(u8 member) {
     s32 i;
     s32 n;
@@ -1538,18 +1537,17 @@ u8 func_80084750(u8 member) {
     D_800C3D64 = 0;
     i = 3;
     while (--n >= 0) {
-        slot = i++;
+        slot = i;
         if (func_80083FF4(member, slot)) {
-            D_800C3E90[count++] = slot;
+            D_800C3E90[count] = slot;
             D_800C3D64 |= func_80089C08(slot);
             D_800D3274++;
+            count++;
         }
+        i++;
     }
     return D_800C3E90[0];
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80084750);
-#endif
 
 /* The candidate nearest to `origin` that lies in screen direction
  * `direction` (0-3, each a quarter turn around it); `origin` when none. */
@@ -2416,10 +2414,10 @@ s32 func_80086B88(s32 step, u8 member) {
  * render the gear's text for combo step `step` into the shared image (two
  * entries per image cell) and place its quad after `column` + 1 steps, then
  * upload the step's fuel cost digits and place their quad. Returns the next
- * index. Nonmatching: the original reads the fuel cost through the draw
- * buffer index's address (800ccb34 + 0x60d8, the gear HUD of the battle
- * work area), so the draw state and the work area form one aggregate there;
- * the digit loop's registers differ too. */
+ * index. The fuel cost is read through the draw state (800ccb34 + 0x60d8):
+ * the draw state and the work area form one aggregate. Nonmatching: the
+ * original stores the digit rectangles from the frame base (not from the
+ * call's rectangle address) and swaps $s7/$fp (index, digit pointer). */
 #ifdef NON_MATCHING
 s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     RECT rect;
@@ -2429,8 +2427,11 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     s32 width;
     s32 count;
     s32 i;
+    u8 *fuel;
+    s32 x;
 
     count = 0;
+    fuel = &D_800C3CF4[5];
     cell = index / 2;
     odd = index % 2;
     func_80076D58(&D_800D2DB4->list11[index * 2], odd, 3);
@@ -2443,14 +2444,16 @@ s32 func_80086C88(u8 member, s32 index, s32 column, u8 step, u32 **pixels) {
     func_80076C78(&D_800D2DB4->list11[index * 2 + D_800CCB04.buffer], index * 4 + (column + 1) * 16 + 0x86,
                   0xC8 - index * 16, cell * 0x78, 0x1A, width);
     func_80076D58(&D_800D2DB4->list13[index * 2], 0, 3);
-    func_8008AAA0(D_800CCCE8.gearHud.commands[step]);
+    func_8008AAA0(D_800CCB04.work.gearHud.commands[step]);
+    x = index * 8 + 0x3DE;
     for (i = 0; i < 4; i++) {
-        if (D_800C3CF4[i + 5] != 0xFF) {
-            digits[count].x = index * 8 + i * 2 + 0x3DE;
+        if (fuel[i] != 0xFF) {
+            digits[count].x = x;
             digits[count].y = 0;
             digits[count].w = 6;
             digits[count].h = 0xD;
-            func_800769E8(&digits[count], D_800C3E5C[D_800C3CF4[i + 5]].pixels);
+            func_800769E8(&digits[count], D_800C3E5C[fuel[i]].pixels);
+            x += 2;
             count++;
         }
     }
@@ -3030,9 +3033,12 @@ void func_80089110(void) {
 #ifdef NON_MATCHING
 void func_800891E4(void) {
     s32 i;
-    u8 second = D_800D2C34 - 0x25;
+    u8 first;
+    u8 second;
 
-    D_800D2DB4->counts[2] = func_80076A10((u8)(D_800D2C34 - 0x5D), D_800D2DB4->list2, 0xA0, 0x64);
+    first = D_800D2C34 - 0x5D;
+    second = D_800D2C34 - 0x25;
+    D_800D2DB4->counts[2] = func_80076A10(first, D_800D2DB4->list2, 0xA0, 0x64);
     D_800D2DB4->buffers[2] = D_800CCB04.buffer;
     D_800D2DB4->counts[10] = func_80076A10(second, D_800D2DB4->list10, 0xA0, 0x64);
     D_800D2DB4->buffers[10] = D_800CCB04.buffer;

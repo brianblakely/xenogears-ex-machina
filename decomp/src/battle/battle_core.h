@@ -216,11 +216,14 @@ typedef struct {
 extern BattleGraphics *D_800C3EA4;
 extern u8 D_800C492A;
 
-/* Battle drawing state (800ccb04). */
+/* Battle drawing state (800ccb04). The battle work area (800ccce8) follows
+ * it within one aggregate: some code addresses the work area from here. */
 typedef struct {
     u32 *ot;           /* current ordering table */
     u8 unk4[0x2C];
     s32 buffer;        /* +0x30 draw buffer index */
+    u8 unk34[0x1E4 - 0x34];
+    BattleWork work;   /* +0x1E4 (D_800CCCE8) */
 } BattleDraw;
 
 extern BattleDraw D_800CCB04;
