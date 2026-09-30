@@ -2046,17 +2046,18 @@ SoundSeq *func_800397FC(SoundSeqHeader *header, s32 fade, s32 frames) {
 /* Create a sequence for valid sequence data in driver memory (with room
  * for a snapshot when the data has a table). Returns it, or NULL (the
  * data's error, or 0x1E without memory).
- * Nonmatching: the original moves the data pointer to another register and
- * keeps a separate error call for a failed allocation. */
+ * Nonmatching: the original sign-extends the error again for the report
+ * call, so that call is not shared with the allocation failure's. */
 #ifdef NON_MATCHING
 SoundSeq *func_80039850(SoundSeqHeader *header) {
+    SoundSeqHeader *data = header;
     s16 error = func_8003F67C(header);
     s32 size;
     SoundSeq *seq;
 
     if (error == 0) {
-        size = func_8003BB40(header->channels);
-        if (header->entries != 0) {
+        size = func_8003BB40(data->channels);
+        if (data->entries != 0) {
             size += 0x180;
         }
         seq = func_80038F18(size);
@@ -2064,9 +2065,9 @@ SoundSeq *func_80039850(SoundSeqHeader *header) {
             func_8003F6B0(0x1E);
             return NULL;
         }
-        seq->header = header;
-        if (header->entries != 0) {
-            func_8003B0AC(seq, header);
+        seq->header = data;
+        if (data->entries != 0) {
+            func_8003B0AC(seq, data);
         }
         func_8003B22C(seq);
         func_8003B424(seq);
