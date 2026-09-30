@@ -32,6 +32,8 @@ typedef struct {
     s32 flags;           /* 0xD0 */
     u8 unkD4[0x1E];
     s16 unkF2;
+    u8 unkF4[0x815];
+    u8 model_id;         /* 0x909 */
 } Actor;
 
 /* Menu camera: eye position (D_8009867C) and look-at point (D_8009871C). */
@@ -75,5 +77,26 @@ void func_80083310(s32 arg);
 void func_8007A21C(s32 arg);
 void func_8007AC3C(void);
 void func_800725B0(Actor *actor);
+
+/* Scene actor models. */
+typedef struct {
+    u16 file;
+    void *data;
+} Resource;
+
+extern void *D_800927B4[2]; /* loaded model of each actor slot */
+extern u8 D_80092920;
+extern u8 D_80099D9D;
+extern u8 D_80099D9E;
+extern s32 D_800928C8; /* menu screen state */
+extern s32 D_80059488; /* resident pad buttons */
+
+void func_800320E8(void *block); /* free */
+void func_80028470(s32 arg0, s32 arg1);
+void func_80028A60(s32 arg);
+void *func_800891C0(s32 id);
+s32 func_800288EC(s32 file);
+void *func_80031BDC(s32 file, s32 arg);
+void func_80083BB4(s32 both);
 
 #endif

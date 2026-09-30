@@ -1171,17 +1171,60 @@ INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084BEC);
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084C88);
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80084FD0);
+/* While the overlay fade runs, redraw it when button bit 0 is down. */
+void func_80084FD0(void) {
+    if (D_80092784 != 0 && (D_80059488 & 1)) {
+        func_8008E120();
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085014);
+/* Leave the menu screen for scene mode 5. */
+void func_80085014(void) {
+    D_80092920 &= ~1;
+    func_80083BB4(0);
+    func_80083C0C(5);
+    D_80099D9E = 1;
+    D_80099D9D = 1;
+    D_800928C8 = 6;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085070);
+/* Return from scene mode 5 to the menu screen. */
+void func_80085070(void) {
+    D_80099D9E = 0;
+    D_80099D9D = 0;
+    D_80092920 |= 1;
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008509C);
+/* Give actor slot `which` (1 = D_80097010, 0 = D_8009872C) a new model
+ * id and load its model, replacing the previous one. */
+void func_8008509C(s32 which, s32 id) {
+    if (which != 0) {
+        D_80097010.model_id = id;
+    } else {
+        D_8009872C.model_id = id;
+    }
+    if (D_800927B4[which] != NULL) {
+        func_800320E8(D_800927B4[which]);
+        D_800927B4[which] = NULL;
+    }
+    func_80028470(0x30, 1);
+    D_800927B4[which] = func_800891C0(id + 2);
+    func_80028470(0x30, 0);
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80085134);
+/* Release actor slot `which`'s model. */
+void func_80085134(s32 which) {
+    func_80028A60(0);
+    if (D_800927B4[which] != NULL) {
+        func_800320E8(D_800927B4[which]);
+        D_800927B4[which] = NULL;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008518C);
+/* Load a resource by its file number. */
+void func_8008518C(Resource *resource, s32 arg) {
+    resource->data = func_80031BDC(func_800288EC(resource->file), arg);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_800851D4);
 
