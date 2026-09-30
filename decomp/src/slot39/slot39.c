@@ -3120,10 +3120,7 @@ void func_801DB340(u8 index) {
 /* Shade the item screen's texts by `mode` (801e8eac): windows 3 and 4, the
  * window quad, each built entry name and count, the two cursors, the
  * selected entry, the description and the eight help labels. */
-#ifdef NON_MATCHING
-/* One instruction differs: the original copies the converted mode for the
- * first loop from $a1 instead of converting it again. */
-void func_801DB39C(s32 mode) {
+void func_801DB39C(u8 mode) {
     s32 i;
 
     func_801E8F60(3, mode);
@@ -3147,9 +3144,6 @@ void func_801DB39C(s32 mode) {
         func_801E8EAC(&D_800625A0->labels10E0[i].polys[D_800625A0->labels10E0[i].count], mode);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB39C);
-#endif
 
 /* Build the target selection's party panels: allocate the three panel
  * blocks once, clear them and build each occupied slot's panel (layout 1
@@ -3568,10 +3562,7 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DCE60);
 /* Shade the file list screen's texts by `mode` (801e8eac): windows 5 and 6,
  * each built name and value of the first twelve rows, the cursor, the
  * heading and the two extra labels. */
-#ifdef NON_MATCHING
-/* One instruction differs, as in 801db39c: the original copies the converted
- * mode for the first loop from the earlier conversion. */
-void func_801DD5E8(s32 mode) {
+void func_801DD5E8(u8 mode) {
     s32 i;
 
     func_801E8F60(5, mode);
@@ -3588,9 +3579,6 @@ void func_801DD5E8(s32 mode) {
         func_801E8EAC(&D_800625A0->block430->extra[i].polys[D_800625A0->block430->extra[i].count], mode);
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD5E8);
-#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DD790);
 

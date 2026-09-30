@@ -998,7 +998,7 @@ u8 func_801C93A8(void);
 u16 func_801C865C(u16 flags, u8 bit);
 void func_801DA5BC(s32 row);
 void func_801DA9A8(s32 entry, s32 row);
-void func_801DB39C(s32 mode);
+void func_801DB39C(u8 mode);
 u8 func_801DB920(s32 row, s32 entry);
 void func_801DB5E4(u8 mode);
 void func_801D9E3C(void);
