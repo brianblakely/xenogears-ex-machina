@@ -1445,7 +1445,127 @@ void func_80089580(void) {
     }
 }
 
+/* Run the emitters: count down their timers and every interval spawn one
+ * particle into a free effect slot, starting at a random point around the
+ * emitter and flying towards a random point around its target. */
+#ifdef NON_MATCHING /* slot pointer and counter registers swapped in the free-slot search */
+void func_80089748(void) {
+    s32 j;
+    AreaObject *object;
+    EffectSlot *slot;
+    EmitScratch *scratch;
+    s32 i;
+    s32 flags;
+    s32 delay;
+    s32 repeats;
+    s32 distance;
+
+    object = D_8009BCC0;
+    scratch = EMIT_SCRATCH;
+    for (i = 0; i < 0x200; i++, object++) {
+        flags = object->flags;
+        if (!(flags & 0x80)) {
+            continue;
+        }
+        if (flags & 0x10) {
+            delay = object->unk4;
+            repeats = delay >> 16;
+            delay = (s16)delay;
+            if (delay != 0) {
+                delay--;
+                goto store;
+            }
+            if (repeats == 0) {
+                goto expire;
+            }
+            repeats--;
+        }
+        if (object->unk12 != 0) {
+            object->unk12--;
+            goto store;
+        }
+        object->unk12 = object->unk10;
+        if ((((s16 *)&object->life)[1] != 0) & (object->unk8 > 0) & (object->unkA < object->unk8)) {
+            slot = D_8009BDF4;
+            for (j = 0xFF; j != -1; j--) {
+                if (EFFECT_ENABLED(slot) == 0) {
+                    slot->id = i;
+                    slot->timer = object->life;
+                    func_8004A92C(&object->angle, &scratch->m);
+                    ApplyMatrix(&scratch->m, &object->unk24, &scratch->offset);
+                    if (!(flags & 0x20)) {
+                        scratch->random.vy = (rand() & 0xFFF) - 0x800;
+                    } else {
+                        scratch->random.vy = 0;
+                    }
+                    scratch->random.vx = (rand() & 0xFFF) - 0x800;
+                    scratch->random.vz = (rand() & 0xFFF) - 0x800;
+                    func_80048D7C(&scratch->random, &scratch->normal);
+                    if (flags & 4) {
+                        distance = object->spread[0];
+                    } else {
+                        distance = rand() % object->spread[0];
+                    }
+                    slot->position.vx = (scratch->offset.vx << 12) + scratch->normal.vx * distance +
+                                        (object->position.vx << 12);
+                    slot->position.vy = (scratch->offset.vy << 12) + scratch->normal.vy * distance +
+                                        (object->position.vy << 12);
+                    slot->position.vz = (scratch->offset.vz << 12) + scratch->normal.vz * distance +
+                                        (object->position.vz << 12);
+                    ApplyMatrix(&scratch->m, &object->direction, &scratch->offset);
+                    if (!(flags & 0x40)) {
+                        scratch->random.vy = (rand() & 0xFFF) - 0x800;
+                    } else {
+                        scratch->random.vy = 0;
+                    }
+                    scratch->random.vx = (rand() & 0xFFF) - 0x800;
+                    scratch->random.vz = (rand() & 0xFFF) - 0x800;
+                    func_80048D7C(&scratch->random, &scratch->normal);
+                    if (flags & 8) {
+                        distance = object->spread[1];
+                    } else {
+                        distance = rand() % object->spread[1];
+                    }
+                    scratch->normal.vx = (scratch->offset.vx << 12) + scratch->normal.vx * distance +
+                                         (object->position.vx << 12);
+                    scratch->normal.vy = (scratch->offset.vy << 12) + scratch->normal.vy * distance +
+                                         (object->position.vy << 12);
+                    scratch->normal.vz = (scratch->offset.vz << 12) + scratch->normal.vz * distance +
+                                         (object->position.vz << 12);
+                    scratch->normal.vx = (scratch->normal.vx - slot->position.vx) >> 12;
+                    scratch->normal.vy = (scratch->normal.vy - slot->position.vy) >> 12;
+                    scratch->normal.vz = (scratch->normal.vz - slot->position.vz) >> 12;
+                    func_80048D7C(&scratch->normal, &scratch->random);
+                    slot->velocity.vx = (scratch->random.vx * object->speed) >> 12;
+                    slot->velocity.vy = (scratch->random.vy * object->speed) >> 12;
+                    slot->velocity.vz = (scratch->random.vz * object->speed) >> 12;
+                    flags &= 3; /* only the blend mode is used from here */
+                    slot->unk2 = ratan2(scratch->random.vy, scratch->random.vx);
+                    slot->accel.vx = object->accel[0];
+                    slot->accel.vy = object->accel[1];
+                    slot->accel.vz = object->accel[2];
+                    slot->colour = *(s32 *)object->rgb;
+                    slot->fade = object->fade;
+                    *(s32 *)slot->rot = object->rot;
+                    *(s32 *)slot->spin = object->spin;
+                    slot->code = (flags << 5) | 0x9D;
+                    object->unkA++;
+                    goto store;
+                }
+                slot++;
+            }
+        }
+        goto store;
+    expire:
+        object->flags ^= 0x80;
+    store:
+        object->unk4 = (repeats << 16) | delay;
+    }
+    func_80089580();
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089748);
+#endif
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089C78);
 

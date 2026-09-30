@@ -567,19 +567,24 @@ void func_80034614(void *window);
 typedef struct {
     s32 unk0;         /* emit timer reload */
     s32 unk4;         /* packed emit timer: low delay, high repeats */
-    s16 unk8;
+    s16 unk8;         /* most live particles */
     s16 unkA;         /* live particles */
-    s16 unkC;
-    s16 unkE;
-    s16 unk10;
-    s16 unk12;
+    s32 life;         /* 0x0C: particle life word (see EFFECT_COUNT) */
+    s16 unk10;        /* emit interval */
+    s16 unk12;        /* frames to the next emission */
     SVECTOR position; /* 0x14 */
     SVECTOR angle;    /* 0x1C */
-    SVECTOR unk24;
-    SVECTOR direction; /* 0x2C */
-    u8 pad34[0x1B];
-    u8 flags;         /* 0x4F: 0x80 active */
-    u8 pad50[4];
+    SVECTOR unk24;    /* 0x24: emission offset */
+    SVECTOR direction; /* 0x2C: target offset */
+    s32 speed;        /* 0x34 */
+    s16 accel[3];     /* 0x38 */
+    s16 pad3E;
+    u16 spread[2];    /* 0x40: offset and target distance range */
+    s32 rot;          /* 0x44: packed particle rotation */
+    s32 spin;         /* 0x48: packed rotation step */
+    u8 rgb[3];        /* 0x4C: particle colour ... */
+    u8 flags;         /* 0x4F: ... whose code byte holds the flags, 0x80 active */
+    s32 fade;         /* 0x50: packed colour step */
 } AreaObject;
 
 /* Short vectors handled as a word (vx, vy) plus vz. */
@@ -606,7 +611,8 @@ typedef struct {
     s16 spin[2];       /* 0x3C */
     s32 colour;        /* 0x40: packed r, g, b and the primitive code */
     s32 fade;          /* 0x44: packed signed r, g, b steps */
-    u8 pad48[4];
+    s16 code;          /* 0x48: primitive code and semi-transparency */
+    s16 pad4A;
 } EffectSlot;
 
 /* Drifting position (0x10 bytes) and its velocity (8 bytes). */
@@ -1557,5 +1563,16 @@ extern u16 D_8006EE58[];  /* per party slot: saved heading */
 void func_800941C4(VECTOR *from, VECTOR *to, VECTOR *direction, s16 *heading);
 void func_80074794(s16 id, VECTOR *position);
 void func_8008C1DC(s32 effect, WorldmapActor *actor, ActorScratch *scratch);
+
+/* Scratchpad work area of the emitters. */
+typedef struct {
+    VECTOR normal;  /* 0x00 */
+    VECTOR random;  /* 0x10 */
+    VECTOR offset;  /* 0x20 */
+    u8 pad30[0xC0];
+    MATRIX m;       /* 0xF0 */
+} EmitScratch;
+
+#define EMIT_SCRATCH ((EmitScratch *)0x1F800000)
 
 #endif
