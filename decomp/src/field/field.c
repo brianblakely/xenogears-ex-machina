@@ -936,7 +936,41 @@ s32 func_8007469C(void) {
     return 0;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80074700);
+/* Drain the pad queue into this frame's held, pressed and repeated buttons
+ * of both ports; port 1's are masked by the event input mask and the
+ * position mask, and all are cleared while the camera cuts. */
+void func_80074700(void) {
+    D_800AFE9C = 0;
+    D_800AFEA0 = 0;
+    D_800C2694 = 0;
+    D_800C38F8 = 0;
+    D_800C3900 = 0;
+    D_800C3908 = 0;
+    while (func_80035CDC() != 0) {
+        D_800AFE9C |= D_80059570 & D_800B2078.input_mask;
+        D_800AFEA0 |= D_80059574;
+        D_800C2694 |= D_8005948C & D_800B2078.input_mask;
+        D_800C38F8 |= D_80059490;
+        D_800C3900 |= D_800594A4 & D_800B2078.input_mask;
+        D_800C3908 |= D_800594A8;
+    }
+    D_800AFE9C &= D_800ADB00;
+    D_800C2694 &= D_800ADB00;
+    D_800C3900 &= D_800ADB00;
+    func_80035DB0();
+    func_8007AE78(1, D_80065848);
+    if (D_800ADC18 != 0) {
+        D_800AFE9C = 0;
+        D_800AFEA0 = 0;
+        D_800C2694 = 0;
+        D_800C38F8 = 0;
+        D_800C3900 = 0;
+        D_800C3908 = 0;
+    }
+    if (D_800ADBDC == 0) {
+        D_800C2694 &= ~0x80;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800748E8);
 

@@ -990,15 +990,25 @@ extern s32 D_800ADBEC;
 extern s32 D_800AFD04;
 extern s32 D_800AFD14;
 extern u16 D_800AFE9C;
-extern s16 D_800AFEA0;
+extern u16 D_800AFEA0;
 extern s32 D_800B0048;
 extern s32 D_800B0064;
 extern u8 D_800B02C8;
 extern s32 D_800B14A4;
-extern s16 D_800C2694;
-extern s16 D_800C38F8;
-extern s16 D_800C3900;
-extern s16 D_800C3908;
+extern u16 D_800C2694;
+extern u16 D_800C38F8;
+extern u16 D_800C3900;
+extern u16 D_800C3908;
+/* Resident pad state: held, pressed and repeated buttons per port. */
+extern u16 D_80059570;
+extern u16 D_80059574;
+extern u16 D_8005948C;
+extern u16 D_80059490;
+extern u16 D_800594A4;
+extern u16 D_800594A8;
+extern s32 D_80065848[5]; /* port 2 pointer record */
+extern u32 func_80035CDC(void); /* next queued pad entry, 0 when none */
+extern s32 func_8007AE78(s32 port, s32 *out);
 extern s32 D_800C3A5C;
 extern s32 D_800C3A60;
 extern s32 D_8004F30C;
