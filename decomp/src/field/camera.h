@@ -9,11 +9,11 @@
  * separate scalars; the shake vectors are arrays. */
 
 typedef struct {
-    s32 x;
-    s32 y;
-    s32 z;
+    s32 vx;
+    s32 vy;
+    s32 vz;
     s32 pad;
-} CameraVector;
+} VECTOR;
 
 typedef struct FieldCamera {
     s32 scripted_zoom;              /* 930 */
@@ -23,12 +23,12 @@ typedef struct FieldCamera {
     s16 scripted_scale;             /* 93a */
     s16 scripted;                   /* 93c */
     s16 target_steps;               /* 93e */
-    CameraVector scripted_target;   /* 940 */
-    CameraVector target_step;       /* 950 */
+    VECTOR scripted_target;   /* 940 */
+    VECTOR target_step;       /* 950 */
     s16 eye_steps;                  /* 960 */
     s16 unk962;                     /* 962 */
-    CameraVector scripted_eye;      /* 964 */
-    CameraVector eye_step;          /* 974 */
+    VECTOR scripted_eye;      /* 964 */
+    VECTOR eye_step;          /* 974 */
     s32 target_a;                   /* 984 */
     s32 target_b;                   /* 988 */
     s16 angle;                      /* 98c */
@@ -64,6 +64,12 @@ typedef struct FieldCamera {
     s32 step;                       /* a24 */
 } FieldCamera;
 
+extern VECTOR D_800AF8B0;   /* eye goal */
+extern VECTOR D_800AF8C0;   /* target goal */
+extern VECTOR D_800AF8F0;   /* saved target */
+extern VECTOR D_800AF900;   /* actor point a */
+extern VECTOR D_800AF910;   /* saved eye */
+extern VECTOR D_800AF920;   /* actor point b */
 extern FieldCamera D_800AF930;
 
 extern s16 D_800AFA28;      /* shake active */

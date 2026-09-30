@@ -11,7 +11,9 @@
 typedef struct FieldActor {
     u32 flags;          /* 000 */
     u32 layer_flags;    /* 004 */
-    u8 unk008[0xCC - 0x008];
+    u8 unk008[0x20 - 0x008];
+    s32 position[3];    /* 020: 16.16 x, y, z */
+    u8 unk02C[0xCC - 0x02C];
     u16 pc;             /* 0CC: working PC, relative to the bytecode */
     u8 slot;            /* 0CE: selected script slot */
     u8 unk0CF[0xFC - 0x0CF];
@@ -39,8 +41,18 @@ extern s32 D_800B00C0;              /* yield: stop this actor's batch */
 s32 func_800ACD7C(s32 offset);  /* signed halfword */
 s32 func_800ACDB8(s32 offset);  /* raw halfword */
 s32 func_800ACDEC(s32 offset);  /* bit 15: 15-bit immediate, else variable */
+s32 func_8009CD7C(s32 offset);  /* actor selector */
 s32 func_8009CDB4(s32 offset);  /* actor selector; 0xFF when none */
 s32 func_800A3018(u16 reference); /* read a variable */
+
+/* Selected operands: when the given bit of `flags` is set the operand is a
+ * signed immediate halfword, otherwise a variable reference. */
+s32 func_8009CF78(s32 offset, s32 flags); /* bit 0x80 */
+s32 func_8009CFBC(s32 offset, s32 flags); /* bit 0x40 */
+s32 func_8009D000(s32 offset, s32 flags); /* bit 0x20 */
+s32 func_8009D044(s32 offset, s32 flags); /* bit 0x10 */
+
+extern s32 D_800AFC7C;              /* batch limit */
 
 #define EVENT_OPERAND_BYTE(offset) (D_800ADC00[D_800B0078->pc + (offset)])
 

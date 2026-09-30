@@ -1051,8 +1051,6 @@ void func_8008FA38(void) {
     }
 }
 
-s32 func_8009CF78(s32 offset, s32 flags);
-
 /* Set the camera heading from a selected operand. */
 void func_8008FABC(void) {
     s16 heading;
@@ -1072,8 +1070,6 @@ void func_8008FB28(void) {
     D_800B0078->pc += 1;
 }
 
-extern s32 D_800AFC7C;
-
 /* Switch to the scripted camera now, from the working parameters. */
 void func_8008FB98(void) {
     D_800AF930.mode = 1;
@@ -1088,27 +1084,147 @@ void func_8008FB98(void) {
     D_800AF930.scripted_zoom = (D_800AF930.projection * D_800AF930.distance) >> 12;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FC4C);
+extern s32 D_800B21D8[]; /* camera counter */
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FD40);
+/* Leave the scripted camera: mode 0 just clears the hold flag; mode 1 either
+ * ends at once (operand 0, also skipping the next opcode) or blends back over
+ * the operand's frame count (mode 2). */
+void func_8008FC4C(void) {
+    s32 frames;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FDD0);
+    switch (D_800AF930.mode) {
+    case 0:
+        D_800AF930.flags &= 0x7FFF;
+        D_800B0078->pc += 3;
+        break;
+    case 1:
+        frames = func_800ACDEC(1);
+        if (frames == 0) {
+            D_800AF930.mode = 0;
+            D_800AF930.flags &= 0x7FFF;
+            D_800B0078->pc += 3;
+            D_800B21D8[0] = 2;
+        } else {
+            D_800AF930.mode = 2;
+            D_800AF930.target_a = frames;
+            D_800AF930.target_b = frames;
+        }
+        D_800B0078->pc += 3;
+        break;
+    case 2:
+        break;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FE2C);
+/* Set the scripted camera's two blend frame counts (at least 1). */
+void func_8008FD40(void) {
+    s32 frames;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FF04);
+    D_800AF930.target_a = func_800ACDEC(1);
+    frames = func_800ACDEC(3);
+    D_800AF930.target_b = frames;
+    if (D_800AF930.target_a == 0) {
+        D_800AF930.target_a = 1;
+    }
+    if (frames == 0) {
+        D_800AF930.target_b = 1;
+    }
+    D_800AFC7C += 1;
+    D_800B0078->pc += 5;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008FF90);
+/* Save the target goal. */
+void func_8008FDD0(void) {
+    D_800AF8F0.vx = D_800AF8C0.vx;
+    D_800AF8F0.vy = D_800AF8C0.vy;
+    D_800AF8F0.vz = D_800AF8C0.vz;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 1;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090068);
+/* Set the saved target from three selected operands (whole units). */
+void func_8008FE2C(void) {
+    D_800AF8F0.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF8F0.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF8F0.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800900C4);
+/* Point A follows a selected actor's position. */
+void func_8008FF04(void) {
+    FieldActor *actor;
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009019C);
+    actor = D_800AFB10[func_8009CD7C(1)].actor;
+    D_800AF900.vx = actor->position[0];
+    D_800AF900.vy = actor->position[1];
+    D_800AF900.vz = actor->position[2];
+    D_800AFC7C += 1;
+    D_800B0078->pc += 2;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090228);
+/* Set point A from three selected operands (whole units). */
+void func_8008FF90(void) {
+    D_800AF900.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF900.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF900.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 8;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80090300);
+/* Save the eye goal. */
+void func_80090068(void) {
+    D_800AF910.vx = D_800AF8B0.vx;
+    D_800AF910.vy = D_800AF8B0.vy;
+    D_800AF910.vz = D_800AF8B0.vz;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 1;
+}
+
+/* Set the saved eye from three selected operands (whole units). */
+void func_800900C4(void) {
+    D_800AF910.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF910.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF910.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 8;
+}
+
+/* Point B follows a selected actor's position. */
+void func_8009019C(void) {
+    FieldActor *actor;
+
+    actor = D_800AFB10[func_8009CD7C(1)].actor;
+    D_800AF920.vx = actor->position[0];
+    D_800AF920.vy = actor->position[1];
+    D_800AF920.vz = actor->position[2];
+    D_800AFC7C += 1;
+    D_800B0078->pc += 2;
+}
+
+/* Set point B from three selected operands (whole units). */
+void func_80090228(void) {
+    D_800AF920.vx = func_8009CF78(1, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF920.vz = func_8009CFBC(3, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AF920.vy = func_8009D000(5, EVENT_OPERAND_BYTE(7)) << 16;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 8;
+}
+
+/* Reset the saved/point targets to the target goal and eyes to the eye goal. */
+void func_80090300(void) {
+    D_800AF900.vx = D_800AF8F0.vx = D_800AF8C0.vx;
+    D_800AF900.vy = D_800AF8F0.vy = D_800AF8C0.vy;
+    D_800AF900.vz = D_800AF8F0.vz = D_800AF8C0.vz;
+    D_800AF910.vx = D_800AF8B0.vx;
+    D_800AF910.vy = D_800AF8B0.vy;
+    D_800AF910.vz = D_800AF8B0.vz;
+    D_800AF920.vx = D_800AF8B0.vx;
+    D_800AF920.vy = D_800AF8B0.vy;
+    D_800AF920.vz = D_800AF8B0.vz;
+    D_800AFC7C += 1;
+    D_800B0078->pc += 1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800903BC);
 
