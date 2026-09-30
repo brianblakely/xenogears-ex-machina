@@ -14,43 +14,43 @@
 #include "hold.h"
 
 /* The bounds of a sprite frame's cells; returns the cell count and stores
- * the height and width. */
+ * the width and height. */
 #ifdef NON_MATCHING
-/* Same operations; the original's loop steps a pointer to the cell's x and
- * keeps the width load before the y load. */
-s32 func_801FC000(Sprite *sprite, s32 *height, s32 *width, Bounds *bounds) {
+/* Same operations; the original's loop steps a second pointer to the cell's
+ * y and loads the height before the x. */
+s32 func_801FC000(Actor *actor, s32 *width, s32 *height, Bounds *bounds) {
     SpriteCell *cell;
     s32 count;
     s32 i;
     s32 x, y;
     s32 right, bottom;
 
-    bounds->x0 = 0x400;
-    bounds->x1 = -0x400;
     bounds->y0 = 0x400;
     bounds->y1 = -0x400;
-    count = sprite->cell_bytes >> 2;
-    cell = sprite->frame->cells;
+    bounds->x0 = 0x400;
+    bounds->x1 = -0x400;
+    count = actor->cell_bytes >> 2;
+    cell = actor->sprite->cells;
     for (i = 0; i != count; i++, cell++) {
-        x = cell->x;
-        right = x + cell->width;
         y = cell->y;
         bottom = y + cell->height;
-        if (y < bounds->y0) {
-            bounds->y0 = y;
-        }
+        x = cell->x;
+        right = x + cell->width;
         if (x < bounds->x0) {
             bounds->x0 = x;
         }
-        if (bounds->y1 < bottom) {
-            bounds->y1 = bottom;
+        if (y < bounds->y0) {
+            bounds->y0 = y;
         }
         if (bounds->x1 < right) {
             bounds->x1 = right;
         }
+        if (bounds->y1 < bottom) {
+            bounds->y1 = bottom;
+        }
     }
-    *height = bounds->y1 - bounds->y0;
     *width = bounds->x1 - bounds->x0;
+    *height = bounds->y1 - bounds->y0;
     return count;
 }
 #else
