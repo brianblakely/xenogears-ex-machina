@@ -388,10 +388,10 @@ void func_800720D4(void) {
         D_8009872C.unkE8 = 0;
     }
 }
-/* Per-frame scene effects of the victory/defeat sequence (step
- * D_80092900): the three sparking embers on the first actor's body, then
- * the knock-down flash fading out and back in; then the camera view and
- * any changed caption. */
+/* Per-frame scene effects of the bout-end sequence (step D_80092900):
+ * three sparking embers on the first actor's body, or the first actor
+ * knocked down while a flash fades out and back in (which ends the bout);
+ * then the caption when its text changed and the camera view. */
 void func_80072170(void) {
     Actor *actor;
     MenuWindow *window;
