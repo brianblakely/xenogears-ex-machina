@@ -62,6 +62,43 @@ typedef struct {
     u8 flag15F9;          /* 0x15F9 */
 } MemberCard;
 
+/* The result summary windows' primitives (pointer 800d334c). */
+typedef struct {
+    Glyph title[4];           /* 0x0000, runs[0] */
+    Glyph text[67];           /* 0x0140, runs[1] */
+    Glyph glyphs1630[3];      /* 0x1630, runs[2] */
+    Glyph glyphs1720[2];      /* 0x1720, runs[4] */
+    Glyph glyphs17C0[4];      /* 0x17C0, runs[3] */
+    Glyph glyphs1900[3];      /* 0x1900, runs[5] */
+    Glyph rowA[7][3];         /* 0x19F0 */
+    Glyph rowB[7][4];         /* 0x2080 */
+    POLY_G4 barA[7][2];       /* 0x2940 */
+    POLY_G4 barB[7][2];       /* 0x2B38 */
+    Glyph glyphs2D30[7];      /* 0x2D30 */
+    Glyph glyphs2F60[6];      /* 0x2F60 */
+    Glyph glyphs3140[9];      /* 0x3140 */
+    Glyph glyphs3410[2];      /* 0x3410 */
+    Glyph glyphs34B0[2];      /* 0x34B0 */
+    Glyph listA[8];           /* 0x3550 */
+    Glyph listB[8];           /* 0x37D0 */
+    GlyphRun runs[6];         /* 0x3A50 */
+    u8 rowACount[7];          /* 0x3A5C */
+    u8 rowABuffer[7];         /* 0x3A63 */
+    u8 rowBCount[7];          /* 0x3A6A */
+    u8 rowBBuffer[7];         /* 0x3A71 */
+    u8 barBuffer[7];          /* 0x3A78 */
+    u8 pad3A7F;               /* 0x3A7F */
+    u8 buffer2D30;            /* 0x3A80 */
+    GlyphRun run2F60;         /* 0x3A81 */
+    GlyphRun run3140;         /* 0x3A83 */
+    u8 listCount;             /* 0x3A85 */
+    u8 listBuffer;            /* 0x3A86 */
+    u8 buffer3410;            /* 0x3A87 */
+    u8 buffer34B0[2];         /* 0x3A88 */
+} ResultSummary;
+
+extern ResultSummary *D_800D334C;
+
 /* The battle UI state block (pointer 800d2d28). */
 typedef struct {
     u8 pad0[0x8F];
@@ -83,8 +120,15 @@ typedef struct {
 extern BattleUi *D_800D2D28;
 extern MemberCard *D_800D32F8[3];
 extern SlotInfo D_800C3EB6[];
-extern u8 D_800CCB34;       /* current draw buffer */
-extern u32 *D_800CCB04;     /* current ordering table */
+/* The battle draw state (800ccb00). */
+typedef struct {
+    void *frame;          /* 0x00: the frame being built */
+    u32 *ot;              /* 0x04: its ordering table */
+    u8 pad8[0x2C];
+    u8 buffer;            /* 0x34: current draw buffer */
+} DrawState;
+
+extern DrawState D_800CCB00;
 
 void func_80043B48(void *ot, void *prim);                   /* AddPrim */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);

@@ -22,9 +22,50 @@ void func_801DE048(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DE1C4);
+/* Queue the summary window's glyphs and bars, and the 8F panel. */
+void func_801DE1C4(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DE408);
+    if (D_800D2D28->showSummary != 0) {
+        func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
+        func_800728B8(D_800D334C->text[0], D_800D334C->runs[1].count, D_800D334C->runs[1].buffer);
+        func_800728B8(D_800D334C->glyphs1630[0], D_800D334C->runs[2].count, D_800D334C->runs[2].buffer);
+        func_800728B8(D_800D334C->glyphs1720[0], D_800D334C->runs[4].count, D_800D334C->runs[4].buffer);
+        func_800728B8(D_800D334C->glyphs17C0[0], D_800D334C->runs[3].count, D_800D334C->runs[3].buffer);
+        func_800728B8(D_800D334C->glyphs1900[0], D_800D334C->runs[5].count, D_800D334C->runs[5].buffer);
+        for (i = 0; i < 7; i++) {
+            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
+            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
+            func_800728B8(D_800D334C->rowA[i][0], D_800D334C->rowACount[i], D_800D334C->rowABuffer[i]);
+            func_800728B8(D_800D334C->rowB[i][0], D_800D334C->rowBCount[i], D_800D334C->rowBBuffer[i]);
+        }
+    }
+    i = 0;
+    if (D_800D2D28->show8F != 0) {
+        func_800728B8(D_800D334C->title[0], D_800D334C->runs[0].count, D_800D334C->runs[0].buffer);
+        for (; i < 2; i++) {
+            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->glyphs34B0[i][D_800D334C->buffer34B0[i]]);
+        }
+    }
+}
+
+/* Queue the spoils window's glyphs and item list. */
+void func_801DE408(void) {
+    s32 i;
+
+    if (D_800D2D28->showSpoils != 0) {
+        func_800728B8(D_800D334C->glyphs2D30[0], 7, D_800D334C->buffer2D30);
+        func_800728B8(D_800D334C->glyphs2F60[0], D_800D334C->run2F60.count, D_800D334C->run2F60.buffer);
+        func_800728B8(D_800D334C->glyphs3140[0], D_800D334C->run3140.count, D_800D334C->run3140.buffer);
+        for (i = 0; i < D_800D334C->listCount; i++) {
+            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->listA[i][D_800D334C->listBuffer]);
+            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->listB[i][D_800D334C->listBuffer]);
+        }
+        for (i = 0; i < 2; i++) {
+            func_80043B48(D_800CCB00.ot + 1, &D_800D334C->glyphs3410[i][D_800D334C->buffer3410]);
+        }
+    }
+}
 
 /* Queue the result screens' primitives. */
 void func_801DE594(void) {
@@ -34,21 +75,17 @@ void func_801DE594(void) {
 }
 
 /* Build each present member's portrait glyphs. */
-#ifdef NON_MATCHING
 void func_801DE5C4(void) {
     s32 i;
 
     for (i = 0; i < 3; i++) {
         D_800D32F8[i]->runs[0].count = 0;
         if (D_800C3EB6[i].id != 0x7F) {
-            D_800D32F8[i]->runs[0].count += func_80076A10(i + 0xFC, D_800D32F8[i]->portrait[D_800D32F8[i]->runs[0].count], 0x20, (i + 1) * 0x20 + 4);
+            D_800D32F8[i]->runs[0].count += func_80076A10(i + 0xFC, D_800D32F8[i]->portrait[D_800D32F8[i]->runs[0].count], 0x20, i * 0x20 + 0x24);
         }
-        D_800D32F8[i]->runs[0].buffer = D_800CCB34;
+        D_800D32F8[i]->runs[0].buffer = D_800CCB00.buffer;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DE5C4);
-#endif
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801DE69C);
 
