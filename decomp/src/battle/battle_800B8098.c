@@ -1323,45 +1323,282 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD0
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD098);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD1FC);
+#ifdef NON_MATCHING
+/* Show the current event's result on slot's sprite (800BD3AC), with the
+ * running total and colour kind, once. */
+void func_800BD1FC(s32 slot) {
+    BattleSprite *sprite;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD2E4);
+    if (BATTLE_AREA.events[D_800C360C - 1].codes[slot] != 0xFF && BATTLE_AREA.events[D_800C360C - 1].amounts[slot] != 0xFFFF) {
+        sprite = BATTLE_AREA.sprites[slot];
+        if (sprite != NULL) {
+            D_800C3D38 = BATTLE_AREA.events[D_800C360C - 1].accumulated[slot];
+            D_800D3630 = BATTLE_AREA.events[D_800C360C - 1].accumulatedCodes[slot];
+            func_800BD3AC(sprite, BATTLE_AREA.events[D_800C360C - 1].amounts[slot], BATTLE_AREA.events[D_800C360C - 1].codes[slot]);
+            BATTLE_AREA.events[D_800C360C - 1].amounts[slot] = 0xFFFF;
+        }
+    }
+}
+#else
+INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD1FC);
+#endif
+
+/* Show the current event's results on every slot (800BD1FC); once a slot
+ * has code 7, not on the acting sprite. */
+void func_800BD2E4(void) {
+    u8 skipActor = 0;
+    s32 slot;
+    BattleSprite *sprite;
+
+    for (slot = 0; slot != 11; slot++) {
+        if (BATTLE_AREA.events[D_800C360C - 1].codes[slot] == 7) {
+            skipActor = 1;
+        }
+        sprite = BATTLE_AREA.sprites[slot];
+        if (sprite != NULL && (D_800C3E1C != sprite || !skipActor)) {
+            func_800BD1FC(slot);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD3AC);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD7A0);
+/* Damage popup destroy: unlink it from D_800C3750 and end it. */
+void func_800BD7A0(BattleTask *task) {
+    DamagePopup *popup = (DamagePopup *)task;
+    DamagePopup *entry = D_800C3750;
+    DamagePopup *previous = NULL;
+
+    for (; entry != NULL; entry = entry->next) {
+        if (entry == popup) {
+            if (previous != NULL) {
+                previous->next = entry->next;
+            } else {
+                D_800C3750 = entry->next;
+            }
+            break;
+        }
+        previous = entry;
+    }
+    func_8001D19C(task);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD810);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BD974);
+/* The camera-space offset of point's projection from the geometry offset
+ * (doubled), at the screen distance. */
+void func_800BD974(SVECTOR *point, VECTOR *out) {
+    SVECTOR unused; /* allocated in the original frame */
+    s16 screen[2];
+    long p;
+    long flag;
+    long offsetX;
+    long offsetY;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDA1C);
+    SetRotMatrix(&D_800D30BC);
+    SetTransMatrix(&D_800D30BC);
+    RotTransPers(point, (long *)screen, &p, &flag);
+    ReadGeomOffset(&offsetX, &offsetY);
+    out->vx = (screen[0] - offsetX) * 2;
+    out->vy = (screen[1] - offsetY) * 2;
+    out->vz = ReadGeomScreen();
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDB08);
+/* Damage popup draw: its glyphs turned, scaled and placed over its
+ * point. */
+void func_800BDA1C(BattleTask *draw) {
+    MATRIX m;
+    SVECTOR point;
+    VECTOR offset;
+    DamagePopup *popup = draw->data;
+    s32 i;
+    PopupGlyph *glyph;
 
+    D_800C3760.t[2] = ReadGeomScreen();
+    point.vx = popup->x.fixed >> 16;
+    point.vy = popup->y.fixed >> 16;
+    point.vz = popup->z.fixed >> 16;
+    func_800BD974(&point, &offset);
+    func_8003F738(&popup->angles, &m);
+    TransMatrix(&m, &offset);
+    CompMatrix(&D_800C3760, &m, &m);
+    ScaleMatrix(&m, &popup->scale);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    for (i = 0, glyph = popup->glyphs; i != popup->glyphCount; i++, glyph++) {
+        func_800BD810(glyph, popup->colour.word);
+    }
+}
+
+/* Damage popup fade: darken by 2 a frame until its time is up. */
+void func_800BDB08(DamagePopup *popup) {
+    func_800BDF1C();
+    popup->colour.rgbc[0] -= 2;
+    popup->colour.rgbc[1] -= 2;
+    popup->colour.rgbc[2] -= 2;
+    if (--popup->timer < 0) {
+        popup->task.destroy(&popup->task);
+    }
+}
+
+#ifdef NON_MATCHING
+/* Damage popup fade out: darken by 8 a frame (green and blue follow red)
+ * until black or its time is up. */
+void func_800BDB74(BattleTask *task) {
+    DamagePopup *popup = (DamagePopup *)task;
+
+    func_800BDF1C();
+    popup->colour.rgbc[0] = func_80021AD8(popup->colour.rgbc[0], -8);
+    popup->colour.rgbc[1] = func_80021AD8(popup->colour.rgbc[0], -8);
+    popup->colour.rgbc[2] = func_80021AD8(popup->colour.rgbc[0], -8);
+    if (--popup->timer < 0 || (popup->colour.rgbc[0] | popup->colour.rgbc[1] | popup->colour.rgbc[2]) == 0) {
+        task->destroy(task);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDB74);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDC14);
+/* Damage popup hold: after 16 frames switch to the fade out (800BDB74). */
+void func_800BDC14(DamagePopup *popup) {
+    func_800BDF1C();
+    if (--popup->timer < 0) {
+        popup->timer = 16;
+        popup->colour.rgbc[3] = (popup->colour.rgbc[3] | 2) & ~1;
+        func_8001CD6C(popup, func_800BDB74);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDC78);
+/* Damage popup drift: move 12 a frame to its side, then hold (800BDC14)
+ * for 16 frames. */
+void func_800BDC78(DamagePopup *popup) {
+    func_800BDF1C();
+    if (popup->right) {
+        popup->x.fixed += 0xC0000;
+    } else {
+        popup->x.fixed -= 0xC0000;
+    }
+    if (--popup->timer < 0) {
+        popup->timer = 16;
+        func_8001CD6C(popup, func_800BDC14);
+    }
+}
 
-/* End the effect task D_800D2D68 (task): its draw task and itself. */
-void func_800BDCF8(ActorTask *task) {
+/* Running total destroy: end its draw task and itself. */
+void func_800BDCF8(TotalPopup *total) {
     D_800D2D68 = NULL;
-    func_8001CB48(&task->draw);
-    func_8001CD94(task);
+    func_8001CB48(&total->draw);
+    func_8001CD94(total);
 }
 
 void func_800BDD34(void) {
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDD3C);
+/* Running total draw: its label glyph, then its digits turned, scaled and
+ * centred on the screen. */
+void func_800BDD3C(BattleTask *draw) {
+    TotalPopup *total = draw->data;
+    MATRIX m;
+    SVECTOR unused; /* allocated in the original frame */
+    VECTOR offset;
+    long x;
+    long y;
+    s32 i;
+    PopupGlyph *glyph;
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDE58);
+    ReadGeomOffset(&x, &y);
+    func_80026BA4(D_800D2F5C, 0x81, total->x, total->y, D_8005956C);
+    offset.vx = (0xA0 - x) * 2;
+    offset.vy = (0x46 - y) * 2;
+    offset.vz = ReadGeomScreen();
+    D_800C3760.t[2] = ReadGeomScreen();
+    func_8003F738(&total->angles, &m);
+    TransMatrix(&m, &offset);
+    CompMatrix(&D_800C3760, &m, &m);
+    ScaleMatrix(&m, &total->scale);
+    SetRotMatrix(&m);
+    SetTransMatrix(&m);
+    for (i = 0, glyph = total->glyphs; i != total->glyphCount; i++, glyph++) {
+        func_800BD810(glyph, total->colour.word);
+    }
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B8098", func_800BDF1C);
+/* Show the running total (D_800D30EC at (0x90, 0x2A)), unless shown or
+ * sprite commands run. */
+void func_800BDE58(void) {
+    if (D_800D2D68 == NULL && D_800C3780 == 0) {
+        D_800D2D68 = &D_800D30EC;
+        func_8001CC18(0, &D_800D30EC);
+        func_8001CA58(&D_800D30EC, &D_800D30EC.draw);
+        func_8001CD6C(&D_800D30EC, func_800BDD34);
+        func_8001CD64(&D_800D30EC.draw, func_800BDD3C);
+        func_8001CD74(&D_800D30EC, func_800BDCF8);
+        D_800D30EC.x = 0x90;
+        D_800D30EC.y = 0x2A;
+        D_800D30EC.task.data = &D_800D30EC;
+        D_800D30EC.draw.data = &D_800D30EC;
+        D_800D30EC.glyphCount = 0;
+        D_800D3680 = -1;
+    }
+}
 
-/* End the effect task D_800D2D68 (800BDCF8), if any. */
+/* Update the running total when D_800C3D38 changed: pop the value
+ * (800BE330) and show it coloured by the popup kind (2 green, 3 magenta,
+ * 11 blue, else white). */
+void func_800BDF1C(void) {
+    s32 value = D_800C3D38;
+    TotalPopup *total;
+    u8 text[8];
+    s32 i;
+    s32 x;
+
+    if (D_800D2D68 != NULL && D_800C3780 == 0) {
+        total = D_800D2D68;
+        if (value != D_800D3680) {
+            D_800D3680 = value;
+            func_800BE330(value);
+            total->colour.rgbc[3] = 0x2D;
+            total->scale.vx = 0x2000;
+            total->scale.vy = 0x2000;
+            total->scale.vz = 0x2000;
+            total->colour.rgbc[3] &= ~1;
+            total->angles.vx = 0;
+            total->angles.vy = 0;
+            total->angles.vz = 0;
+            switch (D_800D3630) {
+            case 11:
+                total->colour.rgbc[0] = 0;
+                total->colour.rgbc[1] = 0;
+                total->colour.rgbc[2] = 0x80;
+                break;
+            case 3:
+                total->colour.rgbc[0] = 0x80;
+                total->colour.rgbc[1] = 0;
+                total->colour.rgbc[2] = 0x80;
+                break;
+            case 2:
+                total->colour.rgbc[0] = 0;
+                total->colour.rgbc[1] = 0x80;
+                total->colour.rgbc[2] = 0;
+                break;
+            default:
+                total->colour.rgbc[0] = 0x80;
+                total->colour.rgbc[1] = 0x80;
+                total->colour.rgbc[2] = 0x80;
+                break;
+            }
+            func_800BE6E8(value, text, 5, 0, 0);
+            x = D_800C3752[text[0]];
+            total->glyphCount = 0;
+            for (i = 0; i != text[0]; x += 10) {
+                total->glyphCount += func_80026DCC(D_800D2F5C, text[i + 1] + 0x72, &total->glyphs[total->glyphCount], x, -8);
+                i++;
+            }
+        }
+    }
+}
+
+/* Hide the running total (800BDCF8), if shown. */
 void func_800BE0DC(void) {
     if (D_800D2D68 != NULL) {
         func_800BDCF8(D_800D2D68);
