@@ -8685,7 +8685,23 @@ void func_8009E83C(void) {
     D_800B0078->pc += 5;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009E91C);
+/* Event: give the current actor a boundary quadrilateral (+114, allocated
+ * once and marked by state bit 12) of four selected x/z corners. */
+void func_8009E91C(void) {
+    if (!(D_800B0078->state.word & 0x1000)) {
+        D_800B0078->unk114 = func_80031BDC(0x10, 0);
+    }
+    D_800B0078->state.word |= 0x1000;
+    ((ActorBoundary *)D_800B0078->unk114)->corners[0].x = func_8009CF78(1, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[0].z = func_8009CFBC(3, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[1].x = func_8009D000(5, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[1].z = func_8009D044(7, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[2].x = func_8009D088(9, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[2].z = func_8009D0CC(11, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[3].x = func_8009D110(13, EVENT_OPERAND_BYTE(17));
+    ((ActorBoundary *)D_800B0078->unk114)->corners[3].z = func_8009D154(15, EVENT_OPERAND_BYTE(17));
+    D_800B0078->pc += 18;
+}
 
 /* -1 when one of the actor's slots carries event tag `tag`, else 0. */
 s32 func_8009EB48(FieldActor *actor, s32 tag) {
@@ -8885,7 +8901,83 @@ void func_8009F5A8(void) {
     D_800B0078->pc = pc;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009F5F4);
+/* Event a7: player control. With dialogue closed and encounters allowed,
+ * poll the pad, count frames stuck against terrain, start a jump (0x800)
+ * on the jump button or after 32 stuck frames, and face the d-pad
+ * direction relative to the camera (0x8000 when none). Non-player actors
+ * are marked 0x1000000 instead. */
+void func_8009F5F4(void) {
+    u8 unused[0x48]; /* the original frame holds 0x48 unused bytes */
+    s32 i;
+    s32 idle;
+    s32 direction = 0;
+
+    if (D_800B0078->flags & 0x4000) {
+        for (i = 0; i < 4; i++) {
+            if (D_800C2698[i].status == 0) {
+                break;
+            }
+        }
+        idle = (i == 4) ? -1 : 0;
+        if (idle == -1 && D_800B2078.encounter_inhibition == 0) {
+            if (D_800AFE9C >> 12) {
+                func_80079288();
+            }
+            D_800ADB68 = 1;
+            if (D_800B0078->unk014 & 0x400000) {
+                if (ACTOR_CACHED_POSITION(D_800B0078)[0] == WHOLE(D_800B0078->position[0])
+                    && ACTOR_CACHED_POSITION(D_800B0078)[1] == WHOLE(D_800B0078->position[1])
+                    && ACTOR_CACHED_POSITION(D_800B0078)[2] == WHOLE(D_800B0078->position[2])) {
+                    D_800ADB02++;
+                }
+            } else {
+                D_800ADB02 = 0;
+            }
+            if (D_800ADB02 > 32 && (D_800ADB02 = 32, D_800AFE9C & 0x80) && !(D_800B0078->flags & 0x1800) && D_800ADB64 == 0xFF) {
+                goto jump;
+            }
+            if (D_800B2078.jump_mode == 0) {
+                if ((D_800C2694 & 0x80) && !(D_800B0078->flags & 0x1800) && !(D_800B0078->unk014 & 0x400000) && D_800ADB64 == 0xFF) {
+                jump:
+                    if (func_80081F5C(D_800B0078) == 0) {
+                        D_800B0078->flags |= 0x800;
+                        D_800ADB28 = D_800B2078.unk2360;
+                    }
+                }
+            } else {
+                if (D_800C2694 & 0x80) {
+                    if (D_800B2078.repeat_remaining != 0) {
+                        goto count;
+                    }
+                    if (D_800ADB64 == 0xFF && func_80081F5C(D_800B0078) == 0) {
+                        D_800B0078->flags |= 0x800;
+                        D_800ADB28 = D_800B2078.unk2360;
+                        D_800B0078->unkE8 = 0xFF;
+                        D_800B2078.repeat_remaining = D_800B2078.repeat_delay;
+                    }
+                }
+                if (D_800B2078.repeat_remaining != 0) {
+                count:
+                    D_800B2078.repeat_remaining--;
+                }
+            }
+            if (D_800B2078.unk2354 == 0) {
+                direction = D_800ADF68[(D_800AFE9C >> 12) ^ 0xF];
+            } else {
+                direction = D_800ADF88[(D_800AFE9C >> 12) ^ 0xF];
+            }
+            if (!(direction & 0x8000)) {
+                direction = (direction - D_800AF880.angle) & 0xFFF;
+            }
+            D_800B0078->heading = direction;
+        } else {
+            D_800B0078->heading = direction | 0x8000;
+        }
+    } else if (D_800B2078.preserve_nonplayer_motion == 0) {
+        D_800B0078->flags |= 0x1000000;
+    }
+    D_800B0078->pc += 1;
+}
 
 /* Party slot of character `id`, or -1. */
 s32 func_8009FA00(s32 id) {
