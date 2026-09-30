@@ -1813,18 +1813,19 @@ void func_80092768(void) {
 
 extern FieldDescriptor *D_800B06B8;
 
-#ifdef NON_MATCHING
 /* Give the current actor a step along the published descriptor's facing
  * and set its layer flag 0x800. */
 void func_80092808(void) {
+    FieldActor *actor;
+    s32 step;
+
     D_800B0078->unk60 = (func_8003F8CC(D_800B06B8->rotation.vy) * 36) >> 12;
-    D_800B0078->unk64 = (func_8003F8B0(D_800B06B8->rotation.vy) * -36) >> 12;
-    D_800B0078->layer_flags |= 0x800;
-    D_800B0078->pc += 1;
+    step = -(func_8003F8B0(D_800B06B8->rotation.vy) * 36) >> 12;
+    actor = D_800B0078;
+    actor->unk64 = step;
+    actor->layer_flags |= 0x800;
+    actor->pc++;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092808);
-#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80092894);
 
@@ -4332,13 +4333,14 @@ s32 func_8009BE58(void) {
 s32 func_8009CD18(s32 *window);
 
 
-#ifdef NON_MATCHING
 /* Close this actor's dialogue window (operand 1 zero) or reset its
  * speech state; yields. */
 void func_8009BE9C(void) {
+    FieldActor *actor;
     s32 window;
 
-    if (EVENT_OPERAND_BYTE(1) == 0) {
+    actor = D_800B0078;
+    if (D_800ADC00[actor->pc + 1] == 0) {
         if (func_8009CD18(&window) == 0) {
             D_800C26B0[window].cleared = 0;
             D_800B0078->pc += 2;
@@ -4346,18 +4348,15 @@ void func_8009BE9C(void) {
             D_800B0078->pc += 2;
         }
     } else {
-        D_800B0078->unk82 = 0;
-        D_800B0078->unk88 = 0;
-        D_800B0078->unk8A = 0;
+        actor->unk82 = 0;
+        actor->unk88 = 0;
+        actor->unk8A = 0;
         D_800B0078->unk83 = 0;
         D_800B0078->unk84 = 0;
         D_800B0078->pc += 2;
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009BE9C);
-#endif
 
 void func_8009C01C(void);
 
