@@ -1901,7 +1901,7 @@ u8 *func_8003D884(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
 /* Declared without a prototype: callers pass the rate as an int. */
 extern s32 func_8003E290();
 extern void func_8003E3E0(SoundModulator *modulator);
-extern void func_8003F2A0(void *modulator);
+extern s32 func_8003F2A0(void *modulator);
 
 /* Vibrato: start the pitch modulator with a signed depth (squared), a rate
  * (with a quadratic boost), a delay and the triangle shape. */
@@ -1932,7 +1932,7 @@ u8 *func_8003D8B8(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-extern void (*D_800508A4[])(void *modulator); /* modulator waves by shape */
+extern s32 (*D_800508A4[])(void *modulator); /* modulator waves by shape */
 
 /* Vibrato with an explicit shape (low nibble of the third operand; bit 4
  * selects a one-sided wave).
@@ -2043,7 +2043,7 @@ u8 *func_8003DBE4(u8 *data, SoundSeq *seq, SoundSeqChannel *channel) {
     return data + 3;
 }
 
-extern void func_8003F240(void *modulator);
+extern s32 func_8003F240(void *modulator);
 
 /* Tremolo: start the volume modulator with a signed depth, a rate (with a
  * quadratic boost), a delay and the sawtooth shape. */
@@ -2794,7 +2794,66 @@ void func_8003EFA0(SoundChannel *state, u32 voice) {
     }
 }
 
+/* Run the modulators of `count` channels: after its delay each running
+ * modulator adds its wave (faded in over its period) to the pitch, level
+ * or pan offset of its channel and flags the update.
+ * Nonmatching: the period copy lands in the other register. */
+#ifdef NON_MATCHING
+void func_8003EFE4(SoundSeq *seq, SoundSeqChannel *channel, s16 count) {
+    SoundModulator *modulator;
+    u16 changes;
+    s32 value;
+    s16 period;
+    s32 i;
+
+    do {
+        if (channel->flags != 0) {
+            channel->pan_mod = 0;
+            channel->level_mod = 0;
+            channel->pitch_mod = 0;
+            if (channel->modulators != 0) {
+                i = 4;
+                modulator = channel->modulator;
+                changes = channel->flags2;
+                do {
+                    if (modulator->flags & 1) {
+                        if (modulator->delay_count != 0) {
+                            modulator->delay_count--;
+                        } else {
+                            value = modulator->wave(modulator);
+                            period = modulator->period_count;
+                            if (period < 0x400) {
+                                modulator->period_count = period + modulator->period;
+                                value = (value >> 10) * period;
+                            }
+                            value >>= 16;
+                            switch (modulator->target) {
+                            case 0:
+                                changes |= 0x200;
+                                channel->pitch_mod += value;
+                                break;
+                            case 1:
+                                changes |= 0x100;
+                                channel->level_mod += value;
+                                break;
+                            case 2:
+                                changes |= 0x100;
+                                channel->pan_mod += value;
+                                break;
+                            }
+                        }
+                    }
+                    modulator++;
+                } while (--i != 0);
+                channel->flags2 = changes;
+            }
+        }
+        channel++;
+    } while (--count != 0);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003EFE4);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sound", func_8003F190);
 

@@ -104,13 +104,13 @@ typedef union {
 /* A per-channel low-frequency modulator (four per channel; the first
  * modulates the pitch). */
 typedef struct {
-    void (*wave)(void *modulator);
+    s32 (*wave)(void *modulator);
     s32 phase;
     u8 unk8[4];
     s32 step;
     u16 unk10;
     s16 rate;
-    s16 delay_count;
+    u16 delay_count;
     s16 delay;
     s16 period_count;
     s16 period;
