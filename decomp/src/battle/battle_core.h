@@ -14,7 +14,11 @@ typedef struct {
     u16 unk82;
     u16 status84; /* 0x8000 (with +0x86) haste */
     u16 status86;
-    u8 unk88[0x15C - 0x88];
+    u8 unk88[0x14C - 0x88];
+    s32 unk14C;
+    u8 unk150[0x156 - 0x150];
+    u16 unk156;
+    u8 unk158[0x15C - 0x158];
     u8 delay15C;
     u8 unk15D[0x170 - 0x15D];
 } BattleRecord;
@@ -181,8 +185,9 @@ s32 func_80098AF8(s32 slot, s32 mode);
 void func_80079E18(s32);
 void func_80079E4C(s32);
 s32 func_800716D8(void);
-void func_80079ED8(u8 slot, u8 arg1, u8 arg2, s32 arg3);
-void func_8007A280(u8 slot, u8 arg1, u16 arg2, s32 arg3);
+u8 func_80079E7C(u16 mask);
+u8 func_80079ED8(u8 slot, u8 attribute, u8 value, u8 write);
+u16 func_8007A280(u8 slot, u8 attribute, u16 value, u8 write);
 u16 func_80089C9C(u16 mask, u8 slot);
 void func_80085AC4(u8 slot);
 void func_80071B94(s32 mode);
