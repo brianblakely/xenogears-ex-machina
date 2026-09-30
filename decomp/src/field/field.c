@@ -1,5 +1,6 @@
 #include "common.h"
 #include "field.h"
+#include "field_gte.h"
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8006FDEC);
 
@@ -1675,7 +1676,80 @@ void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *norma
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B07C);
 #endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007B1C4);
+void func_8007B07C(SVECTOR *a, SVECTOR *b, SVECTOR *c, SVECTOR *p, VECTOR *normal);
+
+/* Find the collision triangle of `layer` under the X/Z point: the index of
+ * the first triangle whose three edges wind around it (normal clip on the
+ * X/Z plane), with the point's height on it in `point` and the plane normal
+ * in `normal`; 0 with both cleared when none does. */
+s32 func_8007B1C4(s32 x, s32 z, s32 layer, SVECTOR *point, VECTOR *normal) {
+    u8 unused[0x30]; /* never used; the original frame reserves it */
+    SVECTOR a;
+    SVECTOR b;
+    SVECTOR c;
+    SVECTOR p;
+    s32 winding[3];
+    CollisionTriangle *triangles;
+    SVECTOR *vertices;
+    s32 count;
+    s32 sxy0;
+    s32 sxy1;
+    s32 sxy2;
+    s32 sxy;
+    s32 i;
+
+    p.vx = x;
+    p.vy = 0;
+    p.vz = z;
+    triangles = D_800AF880.components.collision_triangles[layer];
+    count = D_800AF880.components.triangle_counts[layer];
+    vertices = D_800AF880.components.collision_vertices[layer];
+    sxy = (x << 16) + z;
+    for (i = 0; i < count; i++) {
+        sxy0 = (vertices[triangles[i].unk00[0]].vx << 16) + vertices[triangles[i].unk00[0]].vz;
+        sxy1 = (vertices[triangles[i].unk00[1]].vx << 16) + vertices[triangles[i].unk00[1]].vz;
+        sxy2 = (vertices[triangles[i].unk00[2]].vx << 16) + vertices[triangles[i].unk00[2]].vz;
+        gte_ldsxy3(sxy0, sxy1, sxy);
+        gte_nclip();
+        gte_stopz(&winding[0]);
+        if (winding[0] < 0) {
+            continue;
+        }
+        gte_ldsxy3(sxy1, sxy2, sxy);
+        gte_nclip();
+        gte_stopz(&winding[1]);
+        if (winding[1] < 0) {
+            continue;
+        }
+        gte_ldsxy3(sxy2, sxy0, sxy);
+        gte_nclip();
+        gte_stopz(&winding[2]);
+        if (winding[2] < 0) {
+            continue;
+        }
+        a.vx = vertices[triangles[i].unk00[0]].vx;
+        a.vy = vertices[triangles[i].unk00[0]].vy;
+        a.vz = vertices[triangles[i].unk00[0]].vz;
+        b.vx = vertices[triangles[i].unk00[1]].vx;
+        b.vy = vertices[triangles[i].unk00[1]].vy;
+        b.vz = vertices[triangles[i].unk00[1]].vz;
+        c.vx = vertices[triangles[i].unk00[2]].vx;
+        c.vy = vertices[triangles[i].unk00[2]].vy;
+        c.vz = vertices[triangles[i].unk00[2]].vz;
+        func_8007B07C(&a, &b, &c, &p, normal);
+        point->vx = p.vx;
+        point->vy = p.vy;
+        point->vz = p.vz;
+        return i;
+    }
+    point->vx = 0;
+    point->vy = 0;
+    point->vz = 0;
+    normal->vx = 0;
+    normal->vy = 0;
+    normal->vz = 0;
+    return 0;
+}
 
 /* -1 when `p` lies outside triangle a, b, c on the X/Z plane (to the
  * negative side of an edge), else 0. */
