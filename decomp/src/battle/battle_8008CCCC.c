@@ -467,17 +467,13 @@ void func_8008FAD8(void) {
 
 /* Build a message frame from glyphs into the +0x1e68 list: `rows` side
  * glyphs down from `top`, the corner at (x, y) and a stretched edge of
- * width `w`. Nonmatching: prologue scheduling (the original reads `rows`
- * after clearing the count). */
-#ifdef NON_MATCHING
+ * width `w`. */
 void func_8008FC1C(s16 x, s16 y, s16 w, s16 top, u8 rows) {
     s32 i;
-    s32 row;
 
     D_800D2D28->unkFC = 0;
-    for (i = 0, row = top; i < rows; i++) {
-        D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, row);
-        row += 8;
+    for (i = 0; i < rows; i++) {
+        D_800D2D28->unkFC += func_80076A10(0x65, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, top + i * 8);
     }
     D_800D2D28->unkFC = func_80076A10(0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2], x, y) + D_800D2D28->unkFC;
     D_800D2D28->unkFC += func_800263E4(D_800D2F5C, 0x64, &D_800C3EA4->unk1E68[D_800D2D28->unkFC * 2],
@@ -485,9 +481,6 @@ void func_8008FC1C(s16 x, s16 y, s16 w, s16 top, u8 rows) {
     D_800D2D28->unkA6 = D_800CCB04.buffer;
     D_800D2D28->unk9D = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8008CCCC", func_8008FC1C);
-#endif
 
 /* Open the standard message window (0x20, 0x5c, 0xcc x 0x60, style 0xe). */
 void func_8008FDE4(void) {
