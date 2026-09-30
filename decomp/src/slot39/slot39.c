@@ -60,7 +60,7 @@ u8 func_801C531C(u8 offset) {
         if (D_80059460 == 0) {
             func_801D29A8(1, 0);
         } else if (D_80059460 == 2) {
-            func_801E8018(8, D_800625A0->labelSlots, D_801EA530, D_800625A0->party->labels);
+            func_801E8018(8, D_800625A0->commandLabels, D_801EA530, D_800625A0->party->labels);
             D_800625A0->primitives->shade = 0x4c;
         }
     }
@@ -117,7 +117,7 @@ void func_801C55A0(void) {
         }
         if (D_800625A0->cursor != D_800625A0->cursorShown) {
             func_801E8978(7, D_800625A0->cursor, D_801EA19C);
-            func_801E8070(8, D_800625A0->labelSlots, D_801EA528, D_801E9E64, D_800625A0->party->labels,
+            func_801E8070(8, D_800625A0->commandLabels, D_801EA528, D_801E9E64, D_800625A0->party->labels,
                           D_800625A0->cursor, 0, 0);
             D_800625A0->cursorShown = D_800625A0->cursor;
         }
@@ -162,7 +162,7 @@ void func_801C58EC(void) {
 
     stay = 1;
     func_801E8474(4, D_801EA1D4);
-    func_801E8018(8, D_800625A0->labelSlots, D_801EA530, D_800625A0->party->labels);
+    func_801E8018(8, D_800625A0->commandLabels, D_801EA530, D_800625A0->party->labels);
     D_800625A0->frameCounter = 0;
     do {
         func_801C7BF4();
@@ -193,7 +193,7 @@ void func_801C58EC(void) {
         }
         if (D_800625A0->cursor != D_800625A0->cursorShown) {
             func_801E8978(3, D_800625A0->cursor, D_801EA1D4);
-            func_801E8070(8, D_800625A0->labelSlots, D_801EA530, D_801E9E84, D_800625A0->party->labels,
+            func_801E8070(8, D_800625A0->commandLabels, D_801EA530, D_801E9E84, D_800625A0->party->labels,
                           D_800625A0->cursor, 0, 0);
             D_800625A0->cursorShown = D_800625A0->cursor;
         }
@@ -1204,7 +1204,18 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAE08);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB184);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB28C);
+/* Apply a loaded save: its derived tables, play time and the 16 resident
+ * words copied from the game data, then finish (801cb184). */
+void func_801CB28C(s32 *save) {
+    s32 i;
+
+    func_801E4D10(save, D_800625A0->tables);
+    D_80059488 = *save;
+    for (i = 0; i < 16; i++) {
+        D_8005A3A0[i] = D_8006F958[i];
+    }
+    func_801CB184();
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB304);
 
@@ -1256,7 +1267,19 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE0CC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE198);
 
+/* Add `count` quads of `polys` to the frame, every other one from `first`. */
+#ifdef NON_MATCHING
+void func_801CE2B4(s32 count, POLY_FT4 *polys, s32 first) {
+    s32 i;
+
+    for (i = 0; i < count; i++) {
+        func_80043B48(&D_800625A0->current->ot[4], &polys[first]);
+        first += 2;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE2B4);
+#endif
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CE338);
 
@@ -1288,10 +1311,10 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CEC40);
 /* While party flag +a is set, draw the two sprite lists of the block at +354. */
 void func_801CF308(void) {
     if (D_800625A0->party->redrawA != 0) {
-        func_801CE2B4(D_800625A0->spriteLists->secondKind, D_800625A0->spriteLists->second,
-                      D_800625A0->spriteLists->secondCount);
-        func_801CE2B4(D_800625A0->spriteLists->firstKind, D_800625A0->spriteLists->first,
-                      D_800625A0->spriteLists->firstCount);
+        func_801CE2B4(D_800625A0->spriteLists->secondCount, D_800625A0->spriteLists->second,
+                      D_800625A0->spriteLists->secondStart);
+        func_801CE2B4(D_800625A0->spriteLists->firstCount, D_800625A0->spriteLists->first,
+                      D_800625A0->spriteLists->firstStart);
     }
 }
 
@@ -1325,7 +1348,17 @@ void func_801D0E20(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0E38);
+/* Draw the sprites of labels 8-13 whose party flags (+14) and own flags are set. */
+void func_801D0E38(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->party->unk14[i] != 0 && D_800625A0->partyLabels[i].visible != 0) {
+            func_801CE198(1, D_800625A0->partyLabels[i].sprites, (u8 *)&D_800625A0->partyLabels[i],
+                          D_800625A0->partyLabels[i].count);
+        }
+    }
+}
 
 /* A short busy delay (six iterations). */
 void func_801D0EBC(void) {
@@ -1335,15 +1368,35 @@ void func_801D0EBC(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0ED4);
+/* Draw the sprites of labels 20-27 whose party flags (+38) are set. */
+void func_801D0ED4(void) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D0F54);
+    for (i = 0; i < 8; i++) {
+        if (D_800625A0->party->unk38[i] != 0) {
+            func_801CE198(1, D_800625A0->labels10E0[i].sprites, (u8 *)&D_800625A0->labels10E0[i],
+                          D_800625A0->labels10E0[i].count);
+        }
+    }
+}
 
-/* While party flag +4e is set, add label slot 17's current quad to the frame. */
+/* Draw the sprites of labels 28-33 whose party flags (+40) are set. */
+void func_801D0F54(void) {
+    s32 i;
+
+    for (i = 0; i < 6; i++) {
+        if (D_800625A0->party->unk40[i] != 0) {
+            func_801CE198(1, D_800625A0->labels14E0[i].sprites, (u8 *)&D_800625A0->labels14E0[i],
+                          D_800625A0->labels14E0[i].count);
+        }
+    }
+}
+
+/* While party flag +4e is set, add label 17e0's current quad to the frame. */
 void func_801D0FD4(void) {
     if (D_800625A0->party->unk4E != 0) {
         func_80043B48(&D_800625A0->current->ot[4],
-                      &D_800625A0->labelSlots[0x11].polys[D_800625A0->labelSlots[0x11].current]);
+                      &D_800625A0->labels17E0[0].polys[D_800625A0->labels17E0[0].count]);
     }
 }
 
@@ -1367,7 +1420,11 @@ void func_801D11F0(void) {
     func_801D1030();
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1258);
+/* Add this buffer's fill and mode primitives to the frame. */
+void func_801D1258(void) {
+    func_80043B48(&D_800625A0->current->ot[8], D_800625A0->primitives->fills[D_800625A0->bufferIndex]);
+    func_80043B48(&D_800625A0->current->ot[8], D_800625A0->primitives->modes[D_800625A0->bufferIndex]);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D12D4);
 
@@ -1413,12 +1470,12 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D1914);
 /* Draw the sprites of the two image blocks (+444) whose party flags are set. */
 void func_801D1AAC(void) {
     s32 i;
-    u8 *block;
+    MenuImageBlock *block;
 
     for (i = 0; i < 2; i++) {
         if (D_800625A0->party->unk50[i] != 0) {
             block = D_800625A0->blocks444[i];
-            func_801CE198(1, block + 0x50, block, block[0x75]);
+            func_801CE198(1, block->sprites, (u8 *)block, block->count);
         }
     }
 }
@@ -1655,9 +1712,9 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D9E3C);
 /* Lay out the six file screen command labels (save or title variant). */
 void func_801D9F34(void) {
     if (D_80059460 != 2) {
-        func_801E8018(6, &D_800625A0->labelSlots[7], D_801EA53C, D_800625A0->party->unk1A);
+        func_801E8018(6, D_800625A0->fileLabels, D_801EA53C, D_800625A0->party->unk1A);
     } else {
-        func_801E8018(6, &D_800625A0->labelSlots[7], D_801EA542, D_800625A0->party->unk1A);
+        func_801E8018(6, D_800625A0->fileLabels, D_801EA542, D_800625A0->party->unk1A);
     }
 }
 
@@ -1668,7 +1725,7 @@ void func_801DA4A8(void) {
     void *block;
 
     func_801D22F4(2);
-    func_801E8018(8, &D_800625A0->labelSlots[10], D_801EA548, D_800625A0->party->unk38);
+    func_801E8018(8, D_800625A0->labels10E0, D_801EA548, D_800625A0->party->unk38);
     block = func_80031BDC(0x1198, 0);
     D_800625A0->block42C = block;
     func_8003F8E8(block, 0x1198);
@@ -1681,7 +1738,16 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA5BC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DA9A8);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB02C);
+/* Allocate image block `index` (+444). */
+void func_801DB02C(u8 index) {
+    void *block;
+
+    block = func_80031BDC(0x78, 0);
+    D_800625A0->blocks444[index] = block;
+    func_8003F8E8(block, 0x78);
+    D_800625A0->blocks444[index]->unk70 = 4;
+    D_800625A0->blocks444[index]->unk74 = 0;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DB0A8);
 
@@ -1770,7 +1836,16 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E0F78);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1014);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1398);
+/* Close the 801e1544 screen: its sprites, labels and block (+438); view 14. */
+void func_801E1398(void) {
+    func_801D3674();
+    D_800625A0->party->unk4D = 0;
+    func_801D4EA0(2);
+    func_801C7BF4();
+    func_801E8044(2, &D_800625A0->party->unk4E);
+    func_801C72BC(0x14);
+    func_800320E8(D_800625A0->block438);
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E1418);
 
@@ -1782,9 +1857,9 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E20C8);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E2250);
 
-/* Lay out the six labels of page `page` (D_801EA568) in label slot 18. */
+/* Lay out the six labels of page `page` (D_801EA568) at +18e0. */
 void func_801E2324(u8 page) {
-    func_801E8018(6, &D_800625A0->labelSlots[0x12], D_801EA568 + page, &D_800625A0->party->unk54);
+    func_801E8018(6, D_800625A0->labels18E0, D_801EA568 + page, &D_800625A0->party->unk54);
 }
 
 /* Free the three screen blocks (+358, +35c, +360) and restore the view (13). */
