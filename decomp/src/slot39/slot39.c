@@ -2152,7 +2152,74 @@ void func_801D2968(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D29A8);
+/* Slide the three party panels in (`open`) or out along their movers,
+ * drawing each frame until one arrives; opening then pins them in place,
+ * plays the open sound and (unless `keep`) redraws the status. */
+void func_801D29A8(u8 open, u8 keep) {
+    MenuParty *party;
+    s32 i;
+
+    if (open) {
+        func_801E8018(8, D_800625A0->commandLabels, D_801EA528, D_800625A0->party->labels);
+        func_801C81E0(0x100, 0x86, 0x60, 6, 8, 0);
+        func_801C81E0(0x108, 0x3e, 0x68, 0x3e, 8, 1);
+        func_801C81E0(0x110, -10, 0x70, 0x76, 8, 2);
+    } else {
+        func_801E8044(8, D_800625A0->party->labels);
+        func_801C81E0(0x60, 6, 0x100, 0x86, 8, 0);
+        func_801C81E0(0x68, 0x3e, 0x108, 0x3e, 8, 1);
+        func_801C81E0(0x70, 0x76, 0x110, -10, 8, 2);
+    }
+    while (D_800625A0->movers[0].done == 0 && D_800625A0->movers[1].done == 0 &&
+           D_800625A0->movers[2].done == 0) {
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801D5A50(i, D_800625A0->party->ids[i]);
+            }
+        }
+        func_801C7BF4();
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801C8324(i);
+            }
+        }
+    }
+    if (open) {
+        D_800625A0->movers[0].x0 = 0x60;
+        D_800625A0->movers[0].y0 = 6;
+        D_800625A0->movers[1].x0 = 0x68;
+        D_800625A0->movers[1].y0 = 0x3e;
+        D_800625A0->movers[2].x0 = 0x70;
+        D_800625A0->movers[2].y0 = 0x76;
+        D_800625A0->movers[0].accY = 0;
+        D_800625A0->movers[0].accX = 0;
+        D_800625A0->movers[1].accY = 0;
+        D_800625A0->movers[1].accX = 0;
+        D_800625A0->movers[2].accY = 0;
+        D_800625A0->movers[2].accX = 0;
+        for (i = 0; i < 3; i++) {
+            if (D_800625A0->party->ids[i] != 0xff) {
+                func_801D5A50(i, D_800625A0->party->ids[i]);
+            }
+        }
+        func_801C8574(0x5d);
+        if (!keep) {
+            func_801D28A8();
+        }
+        D_800625A0->party->unk20[1] = 1;
+        D_800625A0->party->redraw6 = 1;
+    } else {
+        party = D_800625A0->party;
+        party->fieldShown[2] = 0;
+        party->fieldShown[1] = 0;
+        party->fieldShown[0] = 0;
+        if (!keep) {
+            D_800625A0->party->unk20[0] = 0;
+            D_800625A0->party->redraw5 = 0;
+        }
+    }
+    func_801C7BF4();
+}
 
 /* Open the field menu: the two top portraits, then each party member's and
  * gear's name image, the command cursor, panels and money window. */

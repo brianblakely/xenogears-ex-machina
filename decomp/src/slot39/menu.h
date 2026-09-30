@@ -942,6 +942,7 @@ void func_801D51EC(u8 index, u8 mode, s32 x, s32 y);
 void func_801D53D0(u8 index, u8 mode, s32 x, s32 y);
 void func_801D55B4(u8 index, u8 mode, s32 x, s32 y);
 void func_801D5794(u8 index, u8 mode, s32 x, s32 y);
+void func_801D5A50(u8 index, u8 mode);
 void func_801D5ED4(u8 slot, u8 mode);
 void func_801D6194(u8 mode);
 void func_801D6338(u8 slot, u8 mode);
