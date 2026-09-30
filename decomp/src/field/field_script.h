@@ -44,4 +44,8 @@ extern void func_800379C8(char *format, ...); /* resident debug print */
 extern s32 func_80033CD0(TextBox *box); /* chosen answer, 0 while open */
 extern void func_80034800(TextBox *box, s32 r, s32 g, s32 b);
 
+/* Party gathering (8009aee0). */
+extern s16 D_800AEA34[8]; /* heading per direction */
+extern void func_8009E574(s32 x, s32 z);
+
 #endif

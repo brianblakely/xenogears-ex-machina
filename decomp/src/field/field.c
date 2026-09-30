@@ -8449,7 +8449,88 @@ void func_8009AE3C(s32 target, s32 steps) {
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AE3C);
 #endif
 
+#ifdef NON_MATCHING
+/* Walk party slot `slot`'s member one gather step toward (x, z). Returns 0
+ * when the member is absent, disabled or has arrived (it is then placed at
+ * (x, z) facing `facing`, or its own heading for 0xff) and -1 while it is
+ * still walking; a member stuck for 0x40 steps or an override warps. */
+s32 func_8009AEE0(s32 slot, s32 x, s32 z, s32 facing) {
+    FieldDescriptor *descriptor;
+    FieldModel *model;
+    FieldActor *actor;
+    FieldActor *saved;
+    s32 saved_index;
+    s32 member;
+    s32 step;
+    s32 dx;
+    s32 distance;
+    s32 dz;
+    VECTOR delta;
+    u16 heading;
+
+    member = D_8005A444[slot];
+    if (member == 0xFF) {
+        return 0;
+    }
+    descriptor = &D_800AF880.components.descriptors[member];
+    if (descriptor->flags & 0x20) {
+        return 0;
+    }
+    model = descriptor->model;
+    actor = descriptor->actor;
+    if (model->unk18 == 0) {
+        model->unk18 = 0x4000000 / (u16)actor->unk76;
+    }
+    step = func_80099A8C(model->unk18 >> 15) + 1;
+    dx = x - WHOLE(actor->position[0]);
+    dz = z - WHOLE(actor->position[2]);
+    delta.vx = dx;
+    delta.vy = 0;
+    delta.vz = dz;
+    distance = func_80099A4C(dx, dz);
+    actor->flags |= 0x400000;
+    if (step >= distance) {
+    arrive:
+        if (!(actor->flags & 0x8000)) {
+            if (facing == 0xFF) {
+                heading = actor->heading_goal | 0x8000;
+            } else {
+                heading = D_800AEA34[facing] | 0x8000;
+            }
+        } else {
+            heading = actor->unk11C | 0x8000;
+        }
+        actor->heading = heading;
+        actor->heading_goal = heading;
+        actor->position[0] = x << 16;
+        actor->position[2] = z << 16;
+        actor->stuck = 0;
+        actor->flags &= 0xFDDFF7FF;
+        return 0;
+    }
+    if (actor->last_position[0] == WHOLE(actor->position[0]) &&
+        actor->last_position[1] == WHOLE(actor->position[1]) &&
+        actor->last_position[2] == WHOLE(actor->position[2])) {
+        actor->stuck++;
+    } else {
+        actor->stuck = 0;
+    }
+    actor->heading_goal = actor->heading = func_8007B694(&delta);
+    if ((s16)actor->stuck > 0x40 || (s16)D_800B2078.unk2348 != 0) {
+        saved = D_800B0078;
+        saved_index = D_800AFD1C;
+        D_800B0078 = actor;
+        D_800AFD1C = D_8005A444[slot];
+        func_8009E574(x, z);
+        D_800B0078 = saved;
+        D_800AFD1C = saved_index;
+        goto arrive;
+    }
+    return -1;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8009AEE0);
+#endif
 
 /* Force the party position. */
 void func_8009B15C(void) {

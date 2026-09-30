@@ -92,7 +92,9 @@ typedef struct FieldActor {
     s16 unk60;           /* 060 */
     u8 unk062[2];
     s16 unk64;           /* 064 */
-    u8 unk066[0x70 - 0x66];
+    u8 unk066[2];
+    s16 last_position[3]; /* 068: whole x, y, z at the last gather step */
+    u16 stuck;           /* 06E: gather steps without moving */
     s16 unk70;           /* 070 */
     s16 unk72;           /* 072 */
     u8 unk074;           /* 074 */
