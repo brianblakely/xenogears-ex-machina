@@ -992,7 +992,349 @@ void func_80086700(void) {
     }
 }
 
+/* Scratchpad work area of the drifting sprites (clouds). */
+typedef struct {
+    SVECTOR far[12];      /* 0x000: far sprite corners (D_8009AD50) */
+    SVECTOR near[48];     /* 0x060: near sprite quads, 4 corners each (D_8009ADB0) */
+    u16 uv[8];            /* 0x1E0: texture origins (D_8009AD40) */
+    SVECTOR corner[4];    /* 0x1F0: built quad corners */
+    VECTOR origin;        /* 0x210: camera target on the 0x2000-unit world */
+    VECTOR cell;          /* 0x220 */
+    s32 edge[2];          /* 0x230: packed view-cone edges */
+    s32 pad238[2];
+    VECTOR view;          /* 0x240: view point relative to the eye */
+    MATRIX local;         /* 0x250 */
+    MATRIX screen;        /* 0x270 */
+    MATRIX turn;          /* 0x290 */
+    MATRIX work;          /* 0x2B0 */
+    s32 uv_index;         /* 0x2D0 */
+    s32 flag;             /* 0x2D4 */
+    s32 z;                /* 0x2D8 */
+    s32 sz[4];            /* 0x2DC */
+    SVECTOR *vertices;    /* 0x2EC */
+    s32 count;            /* 0x2F0: quads added this frame */
+    s32 quads;            /* 0x2F4: quads considered */
+} DriftScratch;
+
+#define DRIFT_SCRATCH ((DriftScratch *)0x1F800000)
+
+extern SVECTOR D_8009AD50[12], D_8009ADB0[48];
+extern u16 D_8009AD40[8];
+
+#define gte_ldsxy3(r0, r1, r2) \
+    __asm__ volatile("mtc2 %0, $12;" \
+                     "mtc2 %2, $14;" \
+                     "mtc2 %1, $13" \
+                     : \
+                     : "r"(r0), "r"(r1), "r"(r2))
+#define gte_ldv3c(r0) \
+    __asm__ volatile("lwc2 $0, 0(%0);" \
+                     "lwc2 $1, 4(%0);" \
+                     "lwc2 $2, 8(%0);" \
+                     "lwc2 $3, 12(%0);" \
+                     "lwc2 $4, 16(%0);" \
+                     "lwc2 $5, 20(%0)" \
+                     : \
+                     : "r"(r0))
+#define gte_stsz4c(r0) \
+    __asm__ volatile("swc2 $16, 0(%0);" \
+                     "swc2 $17, 4(%0);" \
+                     "swc2 $18, 8(%0);" \
+                     "swc2 $19, 12(%0)" \
+                     : \
+                     : "r"(r0) \
+                     : "memory")
+#define gte_getsxy3(r0, r1, r2) \
+    __asm__ volatile("mfc2 %0, $12;" \
+                     "mfc2 %1, $13;" \
+                     "mfc2 %2, $14;" \
+                     "nop" \
+                     : "=r"(r0), "=r"(r1), "=r"(r2))
+#define gte_getsxy2(r0) __asm__ volatile("mfc2 %0, $14; nop" : "=r"(r0))
+/* Link a 9-word primitive into an ordering-table entry. */
+#define addPrimLen9(ot, p) \
+    __asm__ volatile("lw $12, 0(%0);" \
+                     "lui $13, 0x0900;" \
+                     "or $12, $12, $13;" \
+                     "lui $13, 0x00FF;" \
+                     "ori $13, $13, 0xFFFF;" \
+                     "and $13, %1, $13;" \
+                     "sw $13, 0(%0);" \
+                     "sw $12, 0(%1)" \
+                     : \
+                     : "r"(ot), "r"(p) \
+                     : "$12", "$13", "memory")
+
+/* The projected quad lies partly on the 320x216 screen. */
+#define ON_SCREEN(a, b, c, d)                                                                 \
+    (((u16)(a) < 0x140 || (u16)(b) < 0x140 || (u16)(c) < 0x140 || (u16)(d) < 0x140) &&         \
+     ((u32)(a) >> 16 < 0xD8 || (u32)(b) >> 16 < 0xD8 || (u32)(c) >> 16 < 0xD8 || (u32)(d) >> 16 < 0xD8))
+
+/* Draw the 80 drifting cloud sprites around the camera. Each is culled against
+ * the view cone, then drawn by distance: far as one to three 64-texel quads,
+ * middle as three 4-quad layers of 32 texels, near as three layers of 4x4
+ * generated 16-texel quads. At most 0xF1 quads are added per frame. */
+#ifdef NON_MATCHING /* register allocation: the original spills more (0x50-byte frame) and keeps the
+                    * screen matrix, corner and flag-mask addresses in other saved registers */
+void func_80086798(void) {
+    DriftScratch *scratch;
+    PolyFT4 *quad;
+    Drift *drift;
+    s32 i;
+    s32 layer;
+    s32 row;
+    s32 column;
+    s32 dx;
+    s32 dz;
+    s32 packed;
+    s32 zero;
+    s32 row_offset;
+    s32 column_offset;
+    u16 uv;
+    s32 sxy0;
+    s32 sxy1;
+    s32 sxy2;
+    s32 sxy3;
+
+    (*D_8009CD40)();
+    scratch = DRIFT_SCRATCH;
+    for (i = 0; i < 0x30; i++) {
+        scratch->near[i] = D_8009ADB0[i];
+    }
+    for (i = 0; i < 0xC; i++) {
+        scratch->far[i] = D_8009AD50[i];
+    }
+    for (i = 0; i < 8; i++) {
+        scratch->uv[i] = D_8009AD40[i];
+    }
+    scratch->origin.vx = D_8009BE28.target.vx & 0x1FFFFFF;
+    scratch->origin.vz = D_8009BE28.target.vz & 0x1FFFFFF;
+    scratch->cell.vx = (D_8009BE28.target.vx >> 12) & 0x7FF;
+    scratch->cell.vz = (D_8009BE28.target.vz >> 12) & 0x7FF;
+    scratch->local = D_8009A180;
+    scratch->screen = scratch->local;
+    scratch->turn = scratch->local;
+    func_8004AE4C((D_8009BD38.vx + 0x400) / 8, &scratch->local);
+    func_8004AFEC(-D_8009BD38.vy, &scratch->screen);
+    func_8004AFEC(D_8009BD38.vy, &scratch->turn);
+    MulMatrix0(&scratch->local, &scratch->screen, &scratch->work);
+    MulMatrix0(&scratch->turn, &scratch->work, &scratch->local);
+    scratch->edge[0] = (func_8003F8CC(D_8009BD38.vy - 0x169) << 16) | (func_8003F8B0(D_8009BD38.vy - 0x169) & 0xFFFF);
+    scratch->edge[1] = (func_8003F8CC(D_8009BD38.vy + 0x169) << 16) | (func_8003F8B0(D_8009BD38.vy + 0x169) & 0xFFFF);
+    scratch->view.vx = VIEW_VECTORS[0].vx * 2 + (-func_8003F8B0(D_8009BD38.vy) >> 1);
+    scratch->view.vz = VIEW_VECTORS[0].vz * 2 + (-func_8003F8CC(D_8009BD38.vy) >> 1);
+    quad = D_8009D7F8[D_8009D7F0];
+    scratch->quads = 0;
+    scratch->count = 0;
+    for (i = 0; i < 0x50; i++) {
+        if (scratch->count > 0xF0) {
+            break;
+        }
+        drift = &D_8009D150[i];
+        dx = (drift->x - scratch->origin.vx) >> 12;
+        dz = (drift->z - scratch->origin.vz) >> 12;
+        if (dx < -0x1000) {
+            dx += 0x2000;
+        } else if (dx >= 0x1000) {
+            dx -= 0x2000;
+        }
+        if (dz < -0x1000) {
+            dz += 0x2000;
+        } else if (dz >= 0x1000) {
+            dz -= 0x2000;
+        }
+        dz = -dz;
+        zero = 0;
+        packed = ((dz - scratch->view.vz) << 16) | ((dx - scratch->view.vx) & 0xFFFF);
+        gte_ldsxy3(packed, scratch->edge[1], zero);
+        gte_nclip();
+        gte_stopz(&scratch->flag);
+        if (scratch->flag > 0) {
+            continue;
+        }
+        packed = ((dz - scratch->view.vz) << 16) | ((dx - scratch->view.vx) & 0xFFFF);
+        gte_ldsxy3(zero, scratch->edge[0], packed);
+        gte_nclip();
+        gte_stopz(&scratch->flag);
+        if (scratch->flag > 0) {
+            continue;
+        }
+        scratch->local.t[0] = dx;
+        scratch->local.t[2] = dz;
+        scratch->local.t[1] = D_8009D150[i].unk4 >> 12;
+        gte_CompMatrix(&D_8009C808, &scratch->local, &scratch->screen);
+        gte_SetRotMatrix(&scratch->screen);
+        gte_SetTransMatrix(&scratch->screen);
+        scratch->corner[0].vx = scratch->corner[0].vy = scratch->corner[0].vz = 0;
+        gte_ldv0(&scratch->corner[0]);
+        gte_rtps();
+        scratch->uv_index = D_8009CEB4[i].unk2 * 4;
+        gte_stflg(&scratch->flag);
+        if (scratch->flag & 0x7F85E000) {
+            continue;
+        }
+        gte_stsz(&scratch->sz[0]);
+        if (scratch->sz[0] > 0x580) {
+            /* far: up to three 64-texel quads, fewer as the depth grows */
+            scratch->vertices = scratch->far;
+            for (layer = 0; layer < 3; layer++) {
+                gte_ldv3c(scratch->vertices);
+                gte_rtpt();
+                uv = scratch->uv[scratch->uv_index++];
+                gte_stflg(&scratch->flag);
+                if (!(scratch->flag & 0x80000000)) {
+                    gte_getsxy3(sxy0, sxy1, sxy2);
+                    gte_ldv0(&scratch->vertices[3]);
+                    gte_rtps();
+                    gte_stflg(&scratch->flag);
+                    if (!(scratch->flag & 0x80000000)) {
+                        gte_getsxy2(sxy3);
+                        if (ON_SCREEN(sxy0, sxy1, sxy2, sxy3)) {
+                            gte_stsz4c(scratch->sz);
+                            scratch->z = scratch->sz[1] < scratch->sz[0] ? scratch->sz[0] : scratch->sz[1];
+                            if (scratch->z < scratch->sz[2]) {
+                                scratch->z = scratch->sz[2];
+                            } else if (scratch->z < scratch->sz[3]) {
+                                scratch->z = scratch->sz[3];
+                            }
+                            if (scratch->z > 0xD00) {
+                                break;
+                            }
+                            addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
+                            *(u16 *)&quad->u1 = uv | 0x3F;
+                            *(u16 *)&quad->u2 = uv | 0x3F00;
+                            *(s32 *)&quad->x0 = sxy0;
+                            *(s32 *)&quad->x1 = sxy1;
+                            *(s32 *)&quad->x2 = sxy2;
+                            *(s32 *)&quad->x3 = sxy3;
+                            *(u16 *)&quad->u0 = uv;
+                            *(u16 *)&quad->u3 = uv | 0x3F3F;
+                            quad++;
+                            scratch->count++;
+                            if (scratch->z > 0xB00) {
+                                break;
+                            }
+                        }
+                    }
+                }
+                scratch->vertices += 4;
+                scratch->quads++;
+            }
+        } else if (scratch->sz[0] > 0x400) {
+            /* middle: three layers of four 32-texel quads */
+            scratch->vertices = scratch->near;
+            for (layer = 0; layer < 3; layer++) {
+                for (row = 0; row < 4; row++) {
+                    gte_ldv3c(scratch->vertices);
+                    gte_rtpt();
+                    uv = scratch->uv[layer + scratch->uv_index] + ((row & 2) << 12) + ((row & 1) << 5);
+                    gte_stflg(&scratch->flag);
+                    if (!(scratch->flag & 0x80000000)) {
+                        gte_getsxy3(sxy0, sxy1, sxy2);
+                        gte_ldv0(&scratch->vertices[3]);
+                        gte_rtps();
+                        gte_stflg(&scratch->flag);
+                        if (!(scratch->flag & 0x80000000)) {
+                            gte_getsxy2(sxy3);
+                            if (ON_SCREEN(sxy0, sxy1, sxy2, sxy3)) {
+                                gte_stsz4c(scratch->sz);
+                                scratch->z = scratch->sz[1] < scratch->sz[0] ? scratch->sz[0] : scratch->sz[1];
+                                if (scratch->z < scratch->sz[2]) {
+                                    scratch->z = scratch->sz[2];
+                                } else if (scratch->z < scratch->sz[3]) {
+                                    scratch->z = scratch->sz[3];
+                                }
+                                addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
+                                *(u16 *)&quad->u1 = uv | 0x1F;
+                                *(u16 *)&quad->u2 = uv | 0x1F00;
+                                *(s32 *)&quad->x0 = sxy0;
+                                *(s32 *)&quad->x1 = sxy1;
+                                *(s32 *)&quad->x2 = sxy2;
+                                *(s32 *)&quad->x3 = sxy3;
+                                *(u16 *)&quad->u0 = uv;
+                                *(u16 *)&quad->u3 = uv | 0x1F1F;
+                                quad++;
+                                scratch->count++;
+                            }
+                        }
+                    }
+                    scratch->vertices += 4;
+                    scratch->quads++;
+                }
+            }
+        } else {
+            /* near: three layers of 4x4 16-texel quads over a 0x180 square */
+            for (layer = 0; layer < 3; layer++) {
+                scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx;
+                scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz;
+                scratch->corner[1].vx = scratch->corner[3].vx = scratch->far[0].vx + 0x180;
+                scratch->corner[2].vz = scratch->corner[3].vz = scratch->far[0].vz - 0x180;
+                scratch->corner[0].vy = scratch->corner[1].vy = scratch->corner[2].vy = scratch->corner[3].vy =
+                    scratch->far[0].vy - layer * 8;
+                gte_ldv0(&scratch->corner[0]);
+                gte_rtps();
+                gte_stflg(&scratch->flag);
+                if (scratch->flag & 0x7F85E000) {
+                    continue;
+                }
+                gte_ldv3c(&scratch->corner[1]);
+                gte_rtpt();
+                gte_stflg(&scratch->flag);
+                if (scratch->flag & 0x7F85E000) {
+                    continue;
+                }
+                for (row = 0, row_offset = 0; row < 4; row++, row_offset += 0x60) {
+                    for (column = 0, column_offset = 0; column < 4; column++, column_offset += 0x60) {
+                        scratch->corner[0].vx = scratch->corner[2].vx = scratch->far[0].vx + column_offset;
+                        scratch->corner[0].vz = scratch->corner[1].vz = scratch->far[0].vz - row_offset;
+                        scratch->corner[1].vx = scratch->corner[3].vx =
+                            (s16)(scratch->far[0].vx + column_offset) + 0x60;
+                        scratch->corner[2].vz = scratch->corner[3].vz =
+                            (s16)(scratch->far[0].vz - row_offset) - 0x60;
+                        gte_ldv3c(&scratch->corner[0]);
+                        gte_rtpt();
+                        uv = scratch->uv[layer + scratch->uv_index] + ((row << 12) + (column << 4));
+                        gte_stflg(&scratch->flag);
+                        if (!(scratch->flag & 0x7F85E000)) {
+                            gte_getsxy3(sxy0, sxy1, sxy2);
+                            gte_ldv0(&scratch->corner[3]);
+                            gte_rtps();
+                            gte_stflg(&scratch->flag);
+                            if (!(scratch->flag & 0x7F85E000)) {
+                                gte_getsxy2(sxy3);
+                                if (ON_SCREEN(sxy0, sxy1, sxy2, sxy3)) {
+                                    gte_stsz4c(scratch->sz);
+                                    scratch->z =
+                                        scratch->sz[1] < scratch->sz[0] ? scratch->sz[0] : scratch->sz[1];
+                                    if (scratch->z < scratch->sz[2]) {
+                                        scratch->z = scratch->sz[2];
+                                    } else if (scratch->z < scratch->sz[3]) {
+                                        scratch->z = scratch->sz[3];
+                                    }
+                                    addPrimLen9(D_8009BE3C->ot + (scratch->z >> 4), quad);
+                                    *(u16 *)&quad->u1 = uv | 0xF;
+                                    *(u16 *)&quad->u2 = uv | 0xF00;
+                                    *(s32 *)&quad->x0 = sxy0;
+                                    *(s32 *)&quad->x1 = sxy1;
+                                    *(s32 *)&quad->x2 = sxy2;
+                                    *(s32 *)&quad->x3 = sxy3;
+                                    *(u16 *)&quad->u0 = uv;
+                                    *(u16 *)&quad->u3 = uv | 0xF0F;
+                                    quad++;
+                                    scratch->count++;
+                                }
+                            }
+                        }
+                        scratch->quads++;
+                    }
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80086798);
+#endif
 
 /* Reset an actor to step 0 with parameter 8. */
 s32 func_80087710(s32 index) {
