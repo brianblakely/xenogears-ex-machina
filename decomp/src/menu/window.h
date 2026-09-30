@@ -64,6 +64,9 @@ typedef struct {
     Panel *panel;        /* 0x284 */
 } View3D;
 
+extern s32 D_800911D4; /* second actor also posed by func_8007661C */
+extern s32 D_800928B0; /* selects the look-at marker (func_80082300 or func_80082178) */
+
 /* libgpu DR_TPAGE. */
 typedef struct {
     u32 tag;

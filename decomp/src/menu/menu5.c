@@ -71,14 +71,76 @@ void func_80083DCC(View3D *set, Actor *actor, s32 index) {
     func_80030A30(2, ref->data);
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_800840CC);
+/* Draw the 3D arena: aim the camera, pose the actors, then draw the floor,
+ * the actors and their shadows, the look-at marker and the sky. */
+s32 func_800840CC(View3D *view) {
+    Matrix floor;
+    Matrix camera;
+    Vector unused; /* the original frame has 16 unused bytes here */
+    Panel *panel = view->panel;
+    LightData *light;
+
+    func_8008AC0C(panel);
+    func_80089A98(view, &D_8009871C, &D_8009867C);
+    if (D_80092790 != 4 && D_800928C8 != 4 && D_80092790 != 8) {
+        func_80087068(&D_8009872C, &D_80097010);
+    } else if (D_800928C8 == 4) {
+        func_8007661C(&D_8009872C);
+        if (D_800911D4 != 0) {
+            func_8007661C(&D_80097010);
+        }
+    }
+    func_8007E574(D_80092938);
+    func_80080D20(D_80092938);
+    camera = view->camera->view;
+    ((Node *)D_8009872C.object)->view = ((Node *)D_80097010.object)->view = camera;
+    light = view->lights[0]->data;
+    light->r = light->g = light->b = 0x800;
+    func_80030A30(0, view->lights[0]->data);
+    gte_SetBackColor(D_8009291C, D_80092910, D_80092908);
+    func_80083DCC(view, &D_8009872C, 1);
+    func_8008A7E0(D_8009872C.node);
+    func_80083DCC(view, &D_80097010, 1);
+    func_8008A7E0(D_80097010.node);
+    gte_SetRotMatrix(&camera);
+    gte_SetTransMatrix(&camera);
+    func_8008E8B0();
+    func_8007CF78(&camera, panel->buffers[D_800928A0]);
+    gte_SetRotMatrix(&camera);
+    gte_SetTransMatrix(&camera);
+    func_8007334C(panel->buffers[D_800928A0], &view->camera->view);
+    floor = D_80091C0C;
+    floor.t[1] = -D_80096FA8.vy;
+    CompMatrix(&camera, &floor, &floor);
+    gte_SetRotMatrix(&floor);
+    gte_SetTransMatrix(&floor);
+    func_80082A70();
+    func_80082E60(panel->buffers[D_800928A0], &D_8009871C);
+    func_80087B74(&D_8009872C, panel->buffers[D_800928A0], &floor);
+    func_80087B74(&D_80097010, panel->buffers[D_800928A0], &floor);
+    gte_SetRotMatrix(&floor);
+    gte_SetTransMatrix(&floor);
+    func_80087650();
+    if (D_800928B0 != 0) {
+        func_80082300(D_8009871C.vx, D_8009871C.vz,
+                      ratan2(D_8009871C.vx - D_8009867C.vx, D_8009871C.vz - D_8009867C.vz));
+    } else {
+        func_80082178(D_8009871C.vx, D_8009871C.vz,
+                      ratan2(D_8009871C.vx - D_8009867C.vx, D_8009871C.vz - D_8009867C.vz));
+    }
+    func_8008779C(panel->buffers[D_800928A0], D_8009867C.vx, D_8009867C.vz);
+    func_8008AE1C(panel);
+    func_80086E24();
+    func_80031678(D_80092938, &D_80095580[D_800928A0]);
+    return 0;
+}
 
 /* Draw the 3D scene: aim the camera, give both actors the camera matrix,
  * light and draw them, then the panel and the backdrop sprites. */
 s32 func_800846A0(View3D *view) {
-    Matrix unused; /* the original frame has 32 unused bytes below the */
+    Matrix floor;   /* unused: the frame matches the arena draw's */
     Matrix camera;
-    Vector unused2; /* camera copy and 16 above it */
+    Vector unused;
     Panel *panel = view->panel;
     LightData *light;
 
