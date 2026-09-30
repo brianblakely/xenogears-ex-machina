@@ -858,9 +858,74 @@ void func_801E1690(void) {
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1690);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E196C);
+/* Show the member cards over six frames, then wait for Cross. */
+void func_801E196C(void) {
+    u32 step;
+    u8 building;
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1AA4);
+    step = 0;
+    building = 1;
+    do {
+        func_800716D8();
+        switch (step) {
+        case 0:
+            func_801DE5C4();
+            D_800D2D28->showCards = 1;
+            D_800C3EAC->unk2DB = 0;
+            break;
+        case 1:
+            func_801DE69C();
+            break;
+        case 2:
+            func_801DEA18();
+            break;
+        case 3:
+            func_801DEDC0(0);
+            break;
+        case 4:
+            func_801DF270();
+            break;
+        case 5:
+            func_801DF4C0();
+            building = 0;
+            break;
+        }
+        step++;
+    } while (building);
+    D_800D2D28->waitingCross = 1;
+    while (D_800D3014 != 4) {
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+}
+
+/* Wait for Cross on the first member card (repeating the prompt sound),
+ * then take each member's two values from the game data and rebuild the
+ * summary rows. */
+void func_801E1AA4(void) {
+    s32 i;
+
+    func_800716D8();
+    D_800D2D28->waitingCross = 1;
+    D_800D32F8[0]->flag15F9 = 1;
+    while (D_800D32F8[0]->flag15F9 != 0) {
+        if (D_800D3014 == 4) {
+            break;
+        }
+        func_801E09C0(0x5B);
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+    D_800D32F8[0]->flag15F9 = 0;
+    for (i = 0; i < 3; i++) {
+        D_800CDCB8[i].value = D_8006D8A0[D_800D2D24[i]].value3C;
+        D_800CDCB8[i].value2 = D_8006D8A0[D_800D2D24[i]].value40;
+        D_800CDCD0[i].value = 0;
+        D_800CDCD0[i].value2 = 0;
+    }
+    func_801DF270();
+    func_801DF4C0();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1C10);
 

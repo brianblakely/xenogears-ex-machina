@@ -162,7 +162,9 @@ extern SlotLevels D_800D32A5[3];
 typedef struct {
     u8 pad0[0x3A];
     u16 value_3A;         /* 0x3A */
-    u8 pad3C[0x10];
+    u32 value3C;          /* 0x3C */
+    u32 value40;          /* 0x40 */
+    u8 pad44[8];
     u16 hp;               /* 0x4C */
     u16 maxHp;            /* 0x4E */
     u16 ep;               /* 0x50 */
@@ -386,5 +388,12 @@ void func_801DF910(u8 from, u8 to, s32 max);
 u8 func_801DFA38(u8 slot);
 void func_801E0184(u8 member);
 void func_801E1690(void);
+
+/* The battle state (pointer 800c3eac), only the field this module uses. */
+typedef struct {
+    u8 pad0[0x2DB];
+    u8 unk2DB;
+} BattleState;
+extern BattleState *D_800C3EAC;
 
 #endif
