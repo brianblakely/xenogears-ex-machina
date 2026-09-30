@@ -1,3 +1,15 @@
+/* ovl2143 (Disc 1 slot 2143 / Disc 2 slot 2138), loaded at 0x801dc000.
+ * A 3D scene module: up to ten actors (D_801E8670), each a model hierarchy
+ * (0x7c-byte nodes built from a relocated model group, 8002c3e8/8002cb54/
+ * 8002c8cc) with rotation/movement tweens from a 0x14-byte slot pool, a
+ * 16-particle pool of textured quads, and actor scripts. It drives the GTE
+ * directly (RotMatrix/CompMatrix/MulMatrix0, RTPS/RTPT in 801dcec8 and
+ * 801e0398) and uses the resident heap (80031bdc/800320e8, tag 4), libgpu
+ * and sound effect banks (8003852c). It has no strings. The coverage census
+ * runs it only on the title -> New Game routes (sound-mode scenarios), so it
+ * is presumably part of the opening scene; no resident or overlay code in
+ * the split images names 0x801dc000 directly (loaded as a file). Built with
+ * GCC 2.6.3 (see func_801DF7A8) and ASPSX-style checked divisions. */
 #include "ovl2143.h"
 
 /* Relocate a model group and list its model records (0x38 bytes each after the
