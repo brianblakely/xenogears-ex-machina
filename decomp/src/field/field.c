@@ -11318,7 +11318,95 @@ void func_800AC308(void) {
     func_80028A60(0);
 }
 
+#ifdef NON_MATCHING
+/* Set up the text roll: the white top and bottom fades (640 wide, 24
+ * tall at 0 and c8) and the 16 lines of sprites. Differs only in when
+ * the scheduler loads the constants 0x280 and 0x80. */
+void func_800AC3AC(void) {
+    SPRT *sprite;
+    s32 i;
+    s32 k;
+
+    SetPolyGT4(&D_800AF788[0][0]);
+    SetPolyGT4(&D_800AF788[1][0]);
+    D_800AF788[0][0].r0 = D_800AF788[0][0].g0 = D_800AF788[0][0].b0 = 0xFF;
+    D_800AF788[0][0].r1 = D_800AF788[0][0].g1 = D_800AF788[0][0].b1 = 0xFF;
+    D_800AF788[1][0].r2 = D_800AF788[1][0].g2 = D_800AF788[1][0].b2 = 0xFF;
+    D_800AF788[1][0].r3 = D_800AF788[1][0].g3 = D_800AF788[1][0].b3 = 0xFF;
+    D_800AF788[0][0].y3 = D_800AF788[0][0].y2 = 0x18;
+    D_800AF788[0][0].r2 = D_800AF788[0][0].g2 = D_800AF788[0][0].b2 = 0;
+    D_800AF788[0][0].r3 = D_800AF788[0][0].g3 = D_800AF788[0][0].b3 = 0;
+    D_800AF788[1][0].r0 = D_800AF788[1][0].g0 = D_800AF788[1][0].b0 = 0;
+    D_800AF788[1][0].r1 = D_800AF788[1][0].g1 = D_800AF788[1][0].b1 = 0;
+    D_800AF788[0][0].x0 = 0;
+    D_800AF788[0][0].y0 = 0;
+    D_800AF788[0][0].x1 = 0x280;
+    D_800AF788[0][0].y1 = 0;
+    D_800AF788[0][0].x2 = 0;
+    D_800AF788[0][0].x3 = 0x280;
+    D_800AF788[1][0].x0 = 0;
+    D_800AF788[1][0].y0 = 0xC8;
+    D_800AF788[1][0].y1 = 0xC8;
+    D_800AF788[1][0].y2 = 0xE0;
+    D_800AF788[1][0].y3 = 0xE0;
+    D_800AF788[1][0].x1 = 0x280;
+    D_800AF788[1][0].x2 = 0;
+    D_800AF788[1][0].x3 = 0x280;
+    D_800AF788[0][0].u0 = 0;
+    D_800AF788[0][0].v0 = 0;
+    D_800AF788[0][0].u1 = 2;
+    D_800AF788[0][0].v1 = 0;
+    D_800AF788[0][0].u2 = 0;
+    D_800AF788[0][0].v2 = 2;
+    D_800AF788[0][0].u3 = 2;
+    D_800AF788[0][0].v3 = 2;
+    D_800AF788[1][0].u0 = 0;
+    D_800AF788[1][0].v0 = 0;
+    D_800AF788[1][0].u1 = 2;
+    D_800AF788[1][0].v1 = 0;
+    D_800AF788[1][0].u2 = 0;
+    D_800AF788[1][0].v2 = 2;
+    D_800AF788[1][0].u3 = 2;
+    D_800AF788[1][0].v3 = 2;
+    D_800AF788[0][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
+    D_800AF788[1][0].tpage = GetTPage(1, 2, 0x3C0, 0x100);
+    D_800AF788[0][0].clut = GetClut(0, 0x1FF);
+    D_800AF788[1][0].clut = GetClut(0, 0x1FF);
+    SetSemiTrans(&D_800AF788[0][0], 1);
+    SetSemiTrans(&D_800AF788[1][0], 1);
+    D_800AF788[0][1] = D_800AF788[0][0];
+    D_800AF788[1][1] = D_800AF788[1][0];
+    D_800AF770 = func_80031BDC(16 * sizeof(TextRollLine), 1);
+    for (i = 0; i < 16; i++) {
+        sprite = &D_800AF770[i].sprites[0][0];
+        SetSprt(sprite);
+        setRGB0(sprite, 0x80, 0x80, 0x80);
+        SetSemiTrans(sprite, 0);
+        sprite->clut = GetClut(0, 0x1FF);
+        sprite->h = 0x10;
+        sprite->u0 = 0;
+        sprite->v0 = i * 16;
+        sprite->w = 0x80;
+        sprite->x0 = 0x40;
+        sprite->y0 = i * 16;
+        sprite[4] = *sprite;
+        sprite[1] = *sprite;
+        sprite[5] = *sprite;
+        sprite[2] = *sprite;
+        sprite[6] = *sprite;
+        sprite[3] = *sprite;
+        sprite[7] = *sprite;
+        for (k = 0; k < 4; k++) {
+            D_800AF770[i].sprites[0][k].x0 = 0x40 + k * 0x80;
+            D_800AF770[i].sprites[1][k].x0 = 0x40 + k * 0x80;
+            SetDrawMode(&D_800AF770[i].modes[0][k], 0, 0, GetTPage(1, 0, 0x300 + k * 0x40, 0), NULL);
+            SetDrawMode(&D_800AF770[i].modes[1][k], 0, 0, GetTPage(1, 0, 0x300 + k * 0x40, 0), NULL);
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AC3AC);
+#endif
 
 /* Draw the text roll: its two fades, then each line scrolled up a pixel
  * from the other buffer's position. */
