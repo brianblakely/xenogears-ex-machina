@@ -4023,14 +4023,92 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B10EC);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B12D0);
 
+#ifdef NON_MATCHING
+/* Wait frames (800BE790) until no stage object is busy (field38) and 800BF6F8
+ * reports nothing pending; then, when an object holds packets, stop the
+ * resident transfer (8002A498) and free their packets once it is idle. */
+void func_800B136C(void) {
+    s32 i;
+    s32 busy = 0;
+    s32 loaded = 0;
+    s32 pending;
+
+    for (;;) {
+        for (i = 0; i < 11; i++) {
+            if (D_800D3368[i] != NULL) {
+                if (D_800D3368[i]->field38) {
+                    busy = 1;
+                }
+                if (D_800D3368[i]->packets != NULL) {
+                    loaded = 1;
+                }
+            }
+        }
+        if (func_800BF6F8() != 0) {
+            busy = 1;
+        }
+        if (!busy) {
+            break;
+        }
+        busy = 0;
+        func_800BE790();
+    }
+    if (loaded) {
+        func_8002A498(0);
+        pending = 1;
+        for (;;) {
+            if (func_800286CC() == 0) {
+                for (i = 0; i < 11; i++) {
+                    if (D_800D3368[i] != NULL && D_800D3368[i]->packets != NULL) {
+                        func_800B0060(D_800D3368[i]);
+                    }
+                }
+                pending = 0;
+            }
+            if (!pending) {
+                break;
+            }
+            func_800BE790();
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B136C);
+#endif
 
 /* Set the flag D_800C3D6C. */
 void func_800B14B8(void) {
     D_800C3D6C = 1;
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B14CC);
+/* End the party members' stage objects other than keep: start their exit
+ * effect (5), wait frames (800BE790) until none is active or busy and one more,
+ * then free them. */
+void func_800B14CC(s32 keep) {
+    s32 i;
+    s32 busy;
+
+    for (i = 0; i < 3; i++) {
+        if (i != keep) {
+            func_800AA934(D_800D3368[i], D_800D3368[i], &D_800C3D0C, 5);
+        }
+    }
+    do {
+        busy = 0;
+        for (i = 0; i < 3; i++) {
+            if (i != keep && D_800D3368[i] != NULL && (D_800D3368[i]->active || D_800D3368[i]->field38)) {
+                busy = 1;
+            }
+        }
+        func_800BE790();
+    } while (busy);
+    func_800BE790();
+    for (i = 0; i < 3; i++) {
+        if (i != keep) {
+            func_800A9FF0(i);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800B15D8);
 

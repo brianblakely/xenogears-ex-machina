@@ -195,6 +195,11 @@ extern s32 D_800C360C;
 extern u8 D_800C4000[];                 /* per slot */
 
 void func_800BF85C(s32 index, s32 slot);
+void func_800BE790(void);
+s32 func_800BF6F8(void);
+void func_8002A498(s32 a);
+s32 func_800286CC(void);
+void func_800B0060(BattleObject *object);
 
 /* Resident services. */
 void func_80027D40(void *handle);
