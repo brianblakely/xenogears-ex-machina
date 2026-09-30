@@ -1411,4 +1411,68 @@ extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 extern DR_TPAGE D_8009D310;       /* fade blend mode */
 extern PolyG4v D_8009CE6C[2];    /* full-screen fade, per display buffer */
 
+/* worldmap_8007DE98 (round 2) */
+
+/* Scratchpad work area of the exhaust-flame actors. */
+typedef struct {
+    VECTOR scale;      /* 0x00 */
+    u8 pad10[0x90];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+} FlameScratch;
+
+extern u16 D_8009A684[]; /* flame sizes per actor */
+
+extern u16 D_8009A5A0[][3]; /* per area: three ambient sounds */
+
+/* Scratchpad work area of the flight-track actor. */
+typedef struct {
+    VECTOR axis[3];    /* 0x00: forward (or scale), up, side */
+    u8 pad30[0x70];
+    SVECTOR position;  /* 0xA0 */
+    SVECTOR angle;     /* 0xA8 */
+    u8 padB0[0x40];
+    MATRIX base;       /* 0xF0 */
+    MATRIX rotation;   /* 0x110 */
+    u8 pad130[0x20];
+    MATRIX frame;      /* 0x150 */
+} TrackScratch;
+
+/* POLY_FT4 with its texture coordinates as (v << 8 | u) words. */
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u16 uv0;
+    u16 clut;
+    s16 x1, y1;
+    u16 uv1;
+    u16 tpage;
+    s16 x2, y2;
+    u16 uv2;
+    u16 pad1;
+    s16 x3, y3;
+    u16 uv3;
+    u16 pad2;
+} PolyFT4uv;
+
+#define HORIZON_QUADS ((PolyFT4uv *)D_8009C744)
+
+extern SVECTOR D_8009A300[2][4]; /* horizon quad corners */
+
+/* Scratchpad work area of the horizon renderer. */
+typedef struct {
+    SVECTOR angle;    /* 0x00 */
+    u8 pad8[0x10];
+    MATRIX view;      /* 0x18 */
+    MATRIX rotation;  /* 0x38 */
+    s32 p;            /* 0x58 */
+    s32 flag;         /* 0x5C */
+} HorizonScratch;
+
+#define HORIZON_SCRATCH ((HorizonScratch *)0x1F800000)
+
 #endif
