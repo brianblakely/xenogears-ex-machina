@@ -1523,7 +1523,29 @@ void func_80080D20(void *ot) {
     D_800912F0 = 0;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80080F04);
+/* Set up the two semi-transparent sprite strips (at y 180 and 195) sharing
+ * one pixel buffer, and their texture page. */
+void func_80080F04(void) {
+    u8 *pixels = func_80031BDC(0x6B4, 0);
+
+    D_80095510[0].pixels = D_80095510[1].pixels = pixels;
+    D_80095510[0].sprite[0].xy0 = 0xB40000;
+    D_80095510[0].sprite[0].uv0 = 0x3000;
+    func_80043D14(&D_80095510[0].sprite[0]);
+    func_80043C24(&D_80095510[0].sprite[0], 1);
+    D_80095510[0].sprite[0].h = 0xD;
+    D_80095510[0].sprite[0].clut = D_800595D4;
+    D_80095510[0].sprite[1] = D_80095510[0].sprite[0];
+    D_80095510[1].sprite[0].xy0 = 0xC30000;
+    D_80095510[1].sprite[0].uv0 = 0x3000;
+    func_80043D14(&D_80095510[1].sprite[0]);
+    func_80043C24(&D_80095510[1].sprite[0], 1);
+    D_80095510[1].sprite[0].h = 0xD;
+    D_80095510[1].sprite[0].clut = D_80059414;
+    D_80095510[1].sprite[1] = D_80095510[1].sprite[0];
+    func_80043E20(&D_80095570[0], 0, 0, func_80043A1C(0, 0, 0x140, 0x30));
+    D_80095570[1] = D_80095570[0];
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80081094);
 
