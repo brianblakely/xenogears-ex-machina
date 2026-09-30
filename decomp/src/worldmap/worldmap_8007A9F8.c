@@ -1,6 +1,82 @@
 #include "worldmap.h"
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_8007A9F8", func_8007A9F8);
+/* Scene director: state 1 steps the timed sequence at D_8009A450/D_8009A46C;
+ * the other states start effects, sounds and actor commands and return to 1. */
+s32 func_8007A9F8(s32 index) {
+    WorldmapActor *actor;
+
+    actor = &D_8009BE24[index];
+    switch (actor->state) {
+    case 0:
+        break;
+    case 1:
+        if (--actor->wait < 0) {
+            actor->state = (&D_8009A450)[actor->u.step];
+            actor->wait = D_8009A46C[actor->u.step];
+            actor->u.step++;
+        }
+        break;
+    case 2:
+        func_80089160(0x11, NULL, NULL);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 1);
+        break;
+    case 3:
+        func_80097770(2, 2);
+        actor->state = 1;
+        func_80089160(0xF, NULL, NULL);
+        func_80089160(0x10, NULL, NULL);
+        func_80039E60((D_8006259C->id << 16) | 4);
+        func_80039E60((D_8006259C->id << 16) | 5);
+        func_80039E60((D_8006259C->id << 16) | 6);
+        break;
+    case 4:
+        func_80097770(2, 3);
+        func_80097770(3, 1);
+        actor->state = 1;
+        break;
+    case 5:
+        func_80097770(2, 6);
+        func_80097770(4, 1);
+        func_80097770(5, 1);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 7);
+        func_80039E60((D_8006259C->id << 16) | 8);
+        func_80039E60((D_8006259C->id << 16) | 9);
+        break;
+    case 6:
+        func_80097770(2, 4);
+        actor->state = 1;
+        func_80039E60((D_8006259C->id << 16) | 0xA);
+        func_80039E18((D_8006259C->id << 16) | 0xB);
+        func_80039E18((D_8006259C->id << 16) | 0xC);
+        break;
+    case 7:
+        func_80097770(2, 5);
+        actor->state = 1;
+        break;
+    case 8:
+        func_80097770(2, 1);
+        actor->state = 1;
+        break;
+    case 9:
+        func_80097770(6, 1);
+        func_80097770(2, 7);
+        actor->state = 1;
+        break;
+    case 10:
+        func_80097770(0, 0xD);
+        D_8009D3CC = 4;
+        actor->state = 1;
+        break;
+    case 11:
+        D_8009D554 = 0;
+        D_8009D7CC = 0;
+        actor->state = 1;
+        break;
+    }
+    return 1;
+}
 
 /* Start a scripted camera looking at the player from yaw 0x480. */
 #ifdef NON_MATCHING /* return value loaded before the stores */

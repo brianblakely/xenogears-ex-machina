@@ -1536,4 +1536,6 @@ extern u8 D_80059460, D_80059178, D_80059171, D_8005954C;
  * (fields flags and unk76 of D_8006EE54). */
 extern u16 D_8006EE68, D_8006EE76;
 
+void func_80039E18(s32 sound);
+
 #endif
