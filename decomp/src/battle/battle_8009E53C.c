@@ -1921,10 +1921,10 @@ ImageAnim *func_800A3640(ImageAnim *anim, ImageAnim *target, u16 mode, u16 flags
 /* Advance an image animation by `ticks` + 1: when its curve selects another
  * frame, rebuild the image (resident decoders or fades) and copy the
  * overlap into its target image. Returns the frame, or a negative value
- * once the animation ended. The curve's result is used as a halfword and,
- * as the frame, sign-extended. Differs only in the unchanged-frame branch,
- * which the original sends straight to the epilogue (and in computing the
- * frame from the saved result). */
+ * once the animation ended. With FrameCurve returning s16 (as the curves
+ * 800A3490-800A35C8 do) this differs only in the operand order of the frame
+ * compare; written frame != anim->frame, GCC no longer returns the loaded
+ * frame straight from the compare. */
 s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
     RECT src;
     RECT dst;
@@ -1940,13 +1940,12 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
         return -1;
     }
     anim->time += anim->speed * (ticks + 1);
-    result = anim->curve(anim->time, anim->divisor, anim->base);
-    frame = result;
+    frame = result = anim->curve(anim->time, anim->divisor, anim->base);
     if (frame < 0) {
         func_800A429C(anim);
         return frame;
     }
-    if (frame != anim->frame) {
+    if (anim->frame != frame) {
         anim->frame = result;
         switch (anim->mode) {
         case 0:
@@ -2009,8 +2008,9 @@ s16 func_800A3E98(ImageAnim *anim, s32 ticks) {
                 }
             }
         }
+        return result;
     }
-    return result;
+    return frame;
 }
 #else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A3E98);
@@ -2179,10 +2179,10 @@ void func_800A48EC(ModelList *models, ModelPart *root, MATRIX *view, s32 arg3, s
     s32 i;
     s32 mode;
 
-    m = (MATRIX *)0x1F800040;
     part = root;
-    shift = D_80050100;
+    m = (MATRIX *)0x1F800040;
     count = part++->index - 1;
+    shift = D_80050100;
     for (i = 0; i < count; i++, part++) {
         if (part->modelId != 0xFFFF && part->flag7) {
             CompMatrix(view, &part->world, m);
@@ -3337,13 +3337,10 @@ void func_800A8A88(Surface *surface) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Reset the battle scene: its flags, the effect and sprite pools sized by the
  * scene data, and the object and slot tables. */
 void func_800A8B0C(void) {
     s32 i;
-    s32 j;
-    s32 k;
 
     D_800C3E88 = 0;
     D_800C3CF0 = 0;
@@ -3354,19 +3351,16 @@ void func_800A8B0C(void) {
     func_800A2234(&D_800C3D0C, D_800658C8->effectCount);
     func_800A2CA4(&D_800C3D04, D_800658C8->spriteCount);
     func_800B00D0();
-    for (i = 31; i >= 0; i--) {
+    for (i = 0; i < 32; i++) {
         D_800D3368[i] = NULL;
     }
-    for (j = 19; j >= 0; j--) {
-        D_800C3ACC[j].value = 0;
+    for (i = 0; i < 20; i++) {
+        D_800C3ACC[i].value = 0;
     }
-    for (k = 1; k >= 0; k--) {
-        D_800D3304[k].active = 0;
+    for (i = 0; i < 2; i++) {
+        D_800D3304[i].active = 0;
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A8B0C);
-#endif
 
 #ifdef NON_MATCHING
 /* Create stage object index (unless it exists) from its script and model
@@ -4668,34 +4662,31 @@ void func_800AEF68(BattleObject *object) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Detach part index of a hierarchy and its descendants: move their marks to
- * the same parts of another hierarchy and release their effects. */
+ * the same parts of another hierarchy and release their effects (the root
+ * entry's index is the part count). */
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to) {
-    ModelPart *part = from + index;
-    s32 count = from->index;
     ModelPart *child;
+    s32 count;
     s32 i;
 
-    part->flag7 = 0;
-    to[index].flag7 = 1;
-    func_800A23E8(pool, part->effects[0]);
-    part->effects[0] = NULL;
-    func_800A23E8(pool, part->effects[1]);
-    part->effects[1] = NULL;
-    func_800A23E8(pool, part->effects[2]);
-    part->effects[2] = NULL;
     child = from;
+    count = child->index;
+    from[index].flag7 = 0;
+    to[index].flag7 = 1;
+    func_800A23E8(pool, from[index].effects[0]);
+    from[index].effects[0] = NULL;
+    func_800A23E8(pool, from[index].effects[1]);
+    from[index].effects[1] = NULL;
+    func_800A23E8(pool, from[index].effects[2]);
+    from[index].effects[2] = NULL;
     for (i = 1; i < count; i++) {
         child++;
-        if (child->parent == part) {
+        if (child->parent == &from[index]) {
             func_800AF180(pool, child->index, from, to);
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800AF180);
-#endif
 
 /* Move the parts' marks (flag7) of a hierarchy to another of the same
  * shape. */
