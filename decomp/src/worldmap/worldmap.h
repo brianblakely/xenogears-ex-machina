@@ -707,4 +707,31 @@ void func_800983A0(Camera *);
 void func_80098CC0(void);
 void func_8009932C(u32 *ot, s32, Camera *);
 
+/* worldmap_80094A5C, 8008C364, 8008E190 */
+
+/* Stream reader: disc read requests (sector, bytes, destination) and
+ * host-file requests (name, offset, bytes, destination), sorted by position. */
+
+extern EffectCommand3 *volatile D_8009D3BC; /* next disc request (shared with the CD callbacks) */
+extern s32 D_8009BE48, D_8009CCB0, D_8009CCA8, D_8009CCA0;
+extern s32 D_8009D7F4, D_8009D614, D_8009CEB8, D_8009C590;
+extern u32 D_8009D56C; /* sectors left */
+extern s32 D_8009BCD4, D_8009BCD0, D_8009BCCC;
+
+#include "psyq/libcd.h"
+extern CdlLOC D_8009CEBC; /* request position */
+
+void func_80096A6C(s32 status, u8 *result);
+void func_80096C0C(s32 status, u8 *result);
+void func_8009699C(EffectCommand3 *request);
+void func_800966CC(EffectCommand4 *request);
+s32 func_800968E0(void);
+
+void CdSyncCallback(void (*func)(s32 status, u8 *result));
+void CdReadyCallback(void (*func)(s32 status, u8 *result));
+s32 CdControlF(u8 com, u8 *param);
+s32 PCopen(char *name, s32 flags, s32 perms);
+s32 PCclose(s32 fd);
+s32 func_8004C398(s32 fd, void *buffer, s32 size); /* PCread */
+
 #endif

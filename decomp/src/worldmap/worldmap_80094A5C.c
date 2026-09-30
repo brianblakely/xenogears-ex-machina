@@ -1,4 +1,5 @@
 #include "worldmap.h"
+#include "psyq/libsn.h"
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80094A5C);
 
@@ -100,9 +101,64 @@ s32 func_80096328(void) {
     return -1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800963E4);
+/* Sort a disc request list by sector (insertion sort in place). */
+void func_800963E4(s32 *list) {
+    EffectCommand3 *first;
+    EffectCommand3 *p;
+    EffectCommand3 swap;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800964B0);
+    p = (EffectCommand3 *)list;
+    first = p;
+    while (p[1].a != 0) {
+        if ((u32)p[0].a > (u32)p[1].a) {
+            swap.a = p[0].a;
+            swap.b = p[0].b;
+            swap.c = p[0].c;
+            p[0].a = p[1].a;
+            p[0].b = p[1].b;
+            p[0].c = p[1].c;
+            p[1].a = swap.a;
+            p[1].b = swap.b;
+            p[1].c = swap.c;
+            if (first < p) {
+                p--;
+            }
+        } else {
+            p++;
+        }
+    }
+}
+
+/* Sort a host-file request list by offset (insertion sort in place). */
+void func_800964B0(s32 *list) {
+    EffectCommand4 *first;
+    EffectCommand4 *p;
+    EffectCommand4 swap;
+
+    p = (EffectCommand4 *)list;
+    first = p;
+    while (p[1].a != 0) {
+        if ((u32)p[0].b > (u32)p[1].b) {
+            swap.a = p[0].a;
+            swap.b = p[0].b;
+            swap.c = p[0].c;
+            swap.d = p[0].d;
+            p[0].a = p[1].a;
+            p[0].b = p[1].b;
+            p[0].c = p[1].c;
+            p[0].d = p[1].d;
+            p[1].a = swap.a;
+            p[1].b = swap.b;
+            p[1].c = swap.c;
+            p[1].d = swap.d;
+            if (first < p) {
+                p--;
+            }
+        } else {
+            p++;
+        }
+    }
+}
 
 /* Submit the current four-word command list; -1 when there is nothing to
  * send or its ring slot is still busy. */
@@ -140,7 +196,38 @@ void func_80096694(void) {
     } while (func_80096668() != 0);
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800966CC);
+/* Read a host-file request list, retrying each call up to eight times. */
+void func_800966CC(EffectCommand4 *request) {
+    s32 fd;
+    s32 i;
+
+    D_8009BE48 = 0;
+    D_8009CCB0 = 0;
+    D_8009CCA8 = 0;
+    D_8009CCA0 = 0;
+    for (; request->a != 0; request++) {
+        for (i = 0; i < 8; i++) {
+            fd = PCopen((char *)request->a, 0, 0);
+            if (fd != -1) {
+                break;
+            }
+        }
+        if (fd == -1) {
+            continue;
+        }
+        PClseek(fd, request->b, 0);
+        for (i = 0; i < 8; i++) {
+            if (func_8004C398(fd, (void *)request->d, request->c) != 0) {
+                break;
+            }
+        }
+        for (i = 0; i < 8; i++) {
+            if (PCclose(fd) == 0) {
+                break;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_800967E4);
 
@@ -167,9 +254,75 @@ s32 func_800968E0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_8009699C);
+/* Start reading a disc request list: seek to its first sector. */
+void func_8009699C(EffectCommand3 *request) {
+    s32 sector;
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096A6C);
+    sector = request->a;
+    D_8009CD44 = 1;
+    D_8009D3BC = request;
+    D_8009D3BC = request + 1;
+    D_8009BE48 = 0;
+    D_8009CCB0 = 0;
+    D_8009CCA8 = 0;
+    D_8009CCA0 = 0;
+    D_8009D7F4 = sector;
+    D_8009D614 = sector;
+    D_8009D56C = (u32)(request->b + 0x7FF) >> 11;
+    D_8009CEB8 = request->b;
+    D_8009C590 = request->c;
+    CdIntToPos(sector, &D_8009CEBC);
+    CdSyncCallback(func_80096A6C);
+    CdControlF(CdlSetloc, (u8 *)&D_8009CEBC);
+}
+
+/* CD command-complete callback of the stream reader: after the seek start
+ * reading, and recover from errors by pausing and seeking again. */
+void func_80096A6C(s32 status, u8 *result) {
+    if (status == 2) {
+        switch (D_8009CD44) {
+        case 1:
+            D_8009CD44 = 2;
+            D_8009BCD4 = 0;
+            D_8009BCD0 = 0;
+            D_8009BCCC = 0;
+            CdReadyCallback(func_80096C0C);
+            CdControlF(0x1B, NULL);
+            break;
+        case 3:
+            if (D_8009D614 == 0) {
+                D_8009CD44 = 4;
+                D_8009BD2C = 1;
+                CdSyncCallback(NULL);
+            }
+            break;
+        case 10:
+            if (result[0] & 0x10) {
+                CdControlF(1, NULL);
+            } else {
+                CdControlF(0x13, NULL);
+                D_8009CD44 = 0xB;
+            }
+            break;
+        case 11:
+            D_8009CD44 = 0xC;
+            CdControlF(CdlPause, NULL);
+            break;
+        case 12:
+            D_8009CD44 = 1;
+            CdIntToPos(D_8009D7F4, &D_8009CEBC);
+            CdControlF(CdlSetloc, (u8 *)&D_8009CEBC);
+            break;
+        }
+    } else if (result[0] & 0x10) {
+        D_8009CD44 = 0xA;
+        D_8009CCA8++;
+        CdControlF(1, NULL);
+    } else {
+        D_8009CD44 = 0xB;
+        CdControlF(0x13, NULL);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80094A5C", func_80096C0C);
 
