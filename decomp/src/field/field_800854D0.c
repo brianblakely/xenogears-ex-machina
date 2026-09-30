@@ -383,7 +383,6 @@ void func_800860F0(s32 unused0, s32 volume, s32 unused2, s32 distance, s32 id) {
     }
 }
 
-#ifdef NON_MATCHING
 /* The screen position of descriptor `index`. */
 void func_80086200(s32 index, s32 *x, s32 *y) {
     SVECTOR point;
@@ -392,8 +391,9 @@ void func_80086200(s32 index, s32 *x, s32 *y) {
     s32 depth;
     s32 flag;
 
-    func_8009CDB4(1);
-    CompMatrix(&D_800AF880.scaled_world, &D_800AF880.components.descriptors[index].matrix, &m);
+    /* The selector call (result unused) sits inside the argument list. */
+    CompMatrix(&D_800AF880.scaled_world, (func_8009CDB4(1), &D_800AF880.components.descriptors[index].matrix),
+               &m);
     point.vx = 0;
     point.vy = 0;
     point.vz = 0;
@@ -403,9 +403,6 @@ void func_80086200(s32 index, s32 *x, s32 *y) {
     *y = screen >> 16;
     *x = (s16)screen;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_80086200);
-#endif
 
 /* Start `sound` on the first free emitter, following descriptor `actor`,
  * with volume by distance and pan by screen X. */
@@ -5882,27 +5879,25 @@ s32 func_800951B8(s32 item);
 
 
 #ifdef NON_MATCHING
-/* Add one of `item` (list in the high byte) up to 99, or take a free slot. */
+/* Add one of `item` (list in the high byte) up to 99, or take a free slot.
+ * NON_MATCHING: the original shares the final count store of both paths. */
 void func_8009635C(s32 item) {
     s32 slot;
     u8 *counts;
     u8 *ids;
-    u8 *count;
 
     slot = func_80095124(item);
     counts = func_800950A0(item);
     ids = func_8009501C(item);
     if (slot != -1) {
-        count = &counts[slot];
-        if (*count < 99) {
-            *count += 1;
+        if (counts[slot] < 99) {
+            counts[slot]++;
         }
     } else {
         slot = func_800951B8(item);
-        count = &counts[slot];
         if (slot != -1) {
             ids[slot] = item;
-            *count = 1;
+            counts[slot] = 1;
         }
     }
 }
@@ -7723,11 +7718,10 @@ void func_8009BA0C(void) {
 
 
 
-#ifdef NON_MATCHING
 /* Set the camera elevation, octant and projection at once. */
 void func_8009BA7C(void) {
     s16 heading;
-    s32 angle;
+    s16 angle;
 
     D_800AF880.elevation = func_800ACDEC(3);
     heading = (func_800ACDEC(1) + 4) & 7;
@@ -7739,9 +7733,6 @@ void func_8009BA7C(void) {
     SetGeomScreen(D_800AF880.projection);
     D_800B0078->pc += 7;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009BA7C);
-#endif
 
 /* Wait on the actor's dialogue window: with none, store the actor's +81
  * byte in variable 14 and continue; otherwise once its speaker has layer
@@ -8716,18 +8707,18 @@ void func_8009E10C(void) {
 
 #include "field_actor_events.h"
 
-#ifdef NON_MATCHING
+/* Set the actor layer bits 0-2 from operand bits 0-2 and 3-5 from operand bits 4-6. */
 void func_8009E1A0(void) {
     FieldActor *actor = D_800B0078;
     u8 *code = D_800ADC00;
+    s32 bits;
 
-    actor->layer_flags = (actor->layer_flags & ~7) | (code[actor->pc + 1] & 7);
-    actor->layer_flags = (actor->layer_flags & ~0x38) | ((code[actor->pc + 1] >> 1) & 0x38);
+    bits = code[actor->pc + 1] & 7;
+    actor->layer_flags = (actor->layer_flags & ~7) | bits;
+    bits = (code[actor->pc + 1] >> 1) & 0x38;
+    actor->layer_flags = (actor->layer_flags & ~0x38) | bits;
     actor->pc += 2;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field_800854D0", func_8009E1A0);
-#endif
 
 /* Enter mode 0x400000 (clearing 0x40000) from the current height. */
 void func_8009E208(void) {
@@ -10497,6 +10488,7 @@ void func_800A3C8C(void) {
     s32 i;
     u8 *record;
     FieldDescriptor *descriptor;
+    FieldActor *actor;
 
     D_800AFC50 = D_8005A4E4;
     D_800AF880.components.descriptor_count = *D_800AFC50;
