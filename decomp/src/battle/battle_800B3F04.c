@@ -1007,12 +1007,12 @@ void func_800B73A0(void) {
 }
 
 /* Set up a shattered screen in a heap block (not run as a task). */
-void func_800B73EC(void) {
+ScreenShatter *func_800B73EC(void) {
     ScreenShatter *shatter = func_80031BDC(sizeof(ScreenShatter), 1);
 
     shatter->task.data = shatter;
     shatter->draw.data = shatter;
-    func_800B7424(shatter);
+    return func_800B7424(shatter);
 }
 
 /* Cut the screen copied to VRAM (0x2C0, 0x100) into shards: per 16 x 16

@@ -19,6 +19,10 @@ void func_800BB080(s32 keep);
 s32 func_8001EE68(u8 *frame); /* the frame takes its image from the sequencer (a byte) */
 void func_80021BF0(BattleSprite *sprite, void *resource);
 void *func_8002A260(s32 blocks, s32 mode);        /* allocate a stream ring */
+void func_8001BB0C(void);                        /* load the scene files */
+void func_801E5840(u8 phase);                    /* the battle module's set-up phase */
+ScreenShatter *func_800B73EC(void);
+void func_800B7330(void *block);
 void func_80029EB0(s32 file, void *ring, s32 a2, s32 a3, s32 a4, s32 a5, s32 a6, s32 a7, s32 a8, s32 a9);
 
 #endif

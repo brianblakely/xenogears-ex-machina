@@ -19,7 +19,124 @@
 #include "stage.h"
 #include "action_file.h"
 
+#ifdef NON_MATCHING
+/* The battle's intro swirl: the screen shatters (800B73EC) while the
+ * battle module's set-up phases 0-2 and the scene files load, one step per
+ * frame once the disc is idle, for at least 86 frames; then phase 3. The
+ * screen copied to VRAM (0x2C0, 0x100) with its pixels made opaque feeds
+ * the shards, and the background fades from white. Nonmatching: the
+ * original copies the first buffer's address to a saved register before
+ * the compare (filling the load delay) where this copies it in the branch
+ * delay slot. */
+void func_800B7870(void) {
+    RECT rect;
+    u16 *pixels;
+    u16 *pixel;
+    s32 i;
+    s32 frames;
+    s32 step;
+    s32 phase;
+    FrameBuffer *buffer;
+    BattleArea *area;
+    BattleArea *frame;
+    FrameBuffer *first;
+    ScreenShatter *shatter;
+
+    frames = 86;
+    func_8001C944();
+    step = 1;
+    phase = 0;
+    pixels = func_80031BDC(0x30000, 1);
+    pixel = pixels;
+    rect.x = 0;
+    rect.y = 0;
+    rect.w = 320;
+    rect.h = 224;
+    StoreImage(&rect, (u_long *)pixels);
+    DrawSync(0);
+    for (i = 0; i != 320 * 256; i++) {
+        *pixel++ |= 0x8000;
+    }
+    rect.x = 0x2C0;
+    rect.y = 0x100;
+    rect.w = 320;
+    rect.h = 224;
+    LoadImage(&rect, (u_long *)pixels);
+    DrawSync(0);
+    func_800320E8(pixels);
+    area = &BATTLE_AREA;
+    buffer = &area->buffers[0];
+    first = buffer;
+    if (area->current == first) {
+        buffer = &area->buffers[1];
+    }
+    area->current = buffer;
+    area->ot = buffer->ot;
+    ClearOTagR(buffer->ot, 0x1000);
+    area->buffer = 0;
+    area->current = first;
+    area->buffers[0].drawEnv.isbg = 1;
+    area->buffers[1].drawEnv.isbg = 1;
+    area->buffers[0].drawEnv.r0 = 0xFF;
+    area->buffers[1].drawEnv.r0 = 0xFF;
+    area->buffers[0].drawEnv.g0 = 0xFF;
+    area->buffers[1].drawEnv.g0 = 0xFF;
+    area->buffers[0].drawEnv.b0 = 0xFF;
+    area->buffers[1].drawEnv.b0 = 0xFF;
+    shatter = func_800B73EC();
+    while (frames != 0 || step != 5) {
+        if (frames > 0) {
+            frames--;
+        }
+        frame = &BATTLE_AREA;
+        buffer = &frame->buffers[0];
+        if (frame->current == buffer) {
+            buffer = &frame->buffers[1];
+        }
+        frame->current = buffer;
+        frame->ot = buffer->ot;
+        ClearOTagR(buffer->ot, 0x1000);
+        frame->buffer = 1 - frame->buffer;
+        D_800C3CB4 = frame->ot;
+        if (func_800286CC() == 0) {
+            switch (step) {
+            case 0:
+                break;
+            case 2:
+                func_8001BB0C();
+                step++;
+                break;
+            case 1:
+            case 3:
+            case 4:
+                func_801E5840(phase);
+                phase++;
+                step++;
+                break;
+            }
+        }
+        func_80019CA0();
+        SPAD_STACK_ENTER();
+        func_800B6F0C(&shatter->task);
+        func_800B7160(&shatter->task);
+        SPAD_STACK_LEAVE();
+        DrawSync(0);
+        VSync(2);
+        BATTLE_AREA.buffers[BATTLE_AREA.buffer].drawEnv.r0 = func_80021AD8(BATTLE_AREA.buffers[BATTLE_AREA.buffer].drawEnv.r0, -12);
+        BATTLE_AREA.buffers[BATTLE_AREA.buffer].drawEnv.g0 = func_80021AD8(BATTLE_AREA.buffers[BATTLE_AREA.buffer].drawEnv.g0, -12);
+        BATTLE_AREA.buffers[BATTLE_AREA.buffer].drawEnv.b0 = func_80021AD8(BATTLE_AREA.buffers[BATTLE_AREA.buffer].drawEnv.b0, -12);
+        PutDispEnv(&BATTLE_AREA.current->dispEnv);
+        PutDrawEnv(&BATTLE_AREA.current->drawEnv);
+        DrawOTag((u_long *)&BATTLE_AREA.current->ot[0xFFF]);
+    }
+    func_800B7330(shatter);
+    SetDispMask(0);
+    func_80028A60(0);
+    func_801E5840(3);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B7870", func_800B7870);
+#endif
 
 /* Clear D_800D2FDC. */
 void func_800B7C28(void) {
