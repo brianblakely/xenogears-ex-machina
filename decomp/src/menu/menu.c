@@ -2506,9 +2506,24 @@ void func_8008F094(Actor *actor, Brain *brain) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F17C);
+/* Opponent circling: while very close keep deciding every frame; otherwise
+ * pick a new random turn and duration when the timer runs out. */
+void func_8008F17C(Actor *actor, Brain *brain) {
+    if (D_8009284C < 0x100) {
+        brain->timer = 1;
+        brain->unkC = 0;
+    } else if (--brain->timer == -1) {
+        brain->unkA = func_8003FA38() % 0x600 - 0x300;
+        brain->timer = func_8003FA38() % 120 + 10;
+        brain->unkC = 0xFF;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F260);
+/* Opponent command: store its argument, then run the mode's step. */
+void func_8008F260(Actor *actor, Brain *brain, u8 arg) {
+    brain->unkF = arg;
+    func_80090E10(actor);
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008F280);
 
