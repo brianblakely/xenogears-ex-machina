@@ -23,8 +23,15 @@ extern s32 D_800C3914;
 extern s32 D_800C3A18;
 extern s32 D_800AFE78;
 extern s32 D_800AFE7C;
-extern void *D_800C3A3C;
-extern void *D_800B1DF0;
+/* The picture's marker sprites (800b1df0), each with a draw mode per
+ * draw buffer; only the first (the controlled actor's spot) is drawn. */
+typedef struct {
+    DR_MODE modes[16][2]; /* 000 */
+    SPRT sprites[16][2];  /* 180 */
+} PictureMarks;
+
+extern ScreenPieces *D_800C3A3C; /* the picture's three pieces */
+extern PictureMarks *D_800B1DF0;
 
 void func_800AAF80(void);
 void func_800AB378(s32 level);

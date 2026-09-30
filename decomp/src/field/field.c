@@ -11494,7 +11494,38 @@ s32 func_800AB328(s32 item) {
     return -1;
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800AB378);
+/* Draw the picture at brightness `level`: the marker at the controlled
+ * actor's scaled map position, then the three picture pieces. */
+void func_800AB378(s32 level) {
+    FieldActor *actor;
+    s32 x;
+    s32 y;
+    s32 i;
+
+    actor = D_800AF880.components.descriptors[D_800B2078.controlled].actor;
+    x = WHOLE(actor->position[0]) * D_800C3914 >> 16;
+    y = -(WHOLE(actor->position[2]) * D_800C3A18) >> 16;
+    for (i = 0; i < 1; i++) {
+        if (i == 0) {
+            y -= 12;
+            x -= 4;
+        }
+        D_800B1DF0->sprites[i][D_800ADB08].x0 = x + D_800AFE78;
+        D_800B1DF0->sprites[i][D_800ADB08].y0 = y + D_800AFE7C;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->r0 = level;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->g0 = level;
+        (D_800B1DF0->sprites[i] + (D_800ADB08 & 1))->b0 = level;
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF0->sprites[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800B1DF0->modes[i][D_800ADB08]);
+    }
+    for (i = 0; i < 3; i++) {
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->r0 = level;
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->g0 = level;
+        (D_800C3A3C->quads[i] + (D_800ADB08 & 1))->b0 = level;
+        addPrim(&D_800C426C->overlay_ot[0], &D_800C3A3C->quads[i][D_800ADB08]);
+        addPrim(&D_800C426C->overlay_ot[0], &D_800C3A3C->modes[i][D_800ADB08]);
+    }
+}
 
 /* 0 when game flag `which` (bits 3-6 of +1a16) is set; for 4, when bit 7
  * is clear; else -1. */
