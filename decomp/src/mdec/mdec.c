@@ -3,7 +3,67 @@
 #include "psyq/libsn.h"
 #include "movie.h"
 
-INCLUDE_ASM(".local/decomp/mdec/asm/nonmatchings/mdec", movie_slice_decoded);
+/* The MDEC output DMA's completion callback: load the slice just decoded into
+ * VRAM (column by column for a split display), then start the MDEC on the
+ * next slice or, past the frame's last column, report the loaded frame. */
+void movie_slice_decoded(void) {
+    MovieRect column;
+    s16 rows;
+    s32 i;
+    s32 k;
+
+    if (movie_host_stream == 0 && (movie_color_mode & 1) && movie_stream_deferred != 0) {
+        StCdInterrupt();
+        movie_stream_deferred = 0;
+    }
+    rows = movie_decoder.slice[movie_decoder.load_display].h;
+    if (movie_row_limit >= 0 && movie_row_limit < rows) {
+        movie_decoder.slice[movie_decoder.load_display].h = movie_row_limit;
+    }
+    if (movie_split_display != 0) {
+        column.y = movie_decoder.slice[movie_decoder.load_display].y;
+        column.w = movie_slice_width;
+        column.h = movie_decoder.slice[movie_decoder.load_display].h;
+        for (i = 0; i < movie_decoder.slice[movie_decoder.load_display].w / (s16)movie_slice_width; i++) {
+            column.x = movie_decoder.slice[movie_decoder.load_display].x;
+            movie_decoder.slice[movie_decoder.load_display].x += movie_slice_width;
+            if (movie_load_enabled != 0) {
+                LoadImage(&column,
+                          (u32 *)((u16 *)movie_decoder.slice_buffers[movie_decoder.slice_index] +
+                                  i * rows * (s16)movie_slice_width));
+            }
+        }
+    } else {
+        if (movie_load_enabled != 0) {
+            LoadImage(&movie_decoder.slice[movie_decoder.load_display],
+                      movie_decoder.slice_buffers[movie_decoder.slice_index]);
+        }
+        movie_decoder.slice[movie_decoder.load_display].x +=
+            movie_decoder.slice[movie_decoder.load_display].w;
+    }
+    movie_decoder.slice[movie_decoder.load_display].h = rows;
+    movie_decoder.slice_index = 1 - movie_decoder.slice_index;
+    k = movie_decoder.load_display;
+    if (movie_decoder.slice[k].x >= movie_decoder.display[k].right) {
+        if (movie_frame_callback != NULL) {
+            if (movie_color_mode & 1) {
+                /* Back from VRAM units to pixels: two thirds. */
+                movie_frame_callback(movie_loaded_frame, (movie_decoder.display[k].x * 2) / 3,
+                                     movie_decoder.display[k].y);
+            } else {
+                movie_frame_callback(movie_loaded_frame, movie_decoder.display[k].x,
+                                     movie_decoder.display[k].y);
+            }
+        }
+        movie_mdec_idle = 1;
+        movie_load_enabled = movie_load_restart;
+        movie_shown_frame = movie_loaded_frame;
+        movie_decoder.load_display = 1 - movie_decoder.load_display;
+    } else {
+        DecDCTout(movie_decoder.slice_buffers[movie_decoder.slice_index],
+                  (movie_decoder.slice[k].w * movie_decoder.slice[k].h) / 2);
+    }
+}
 
 /* Open the library for a `width` x `height` movie (16-bit VRAM units).
  * `scale` sizes the two run-level buffers (width * height * scale / 128

@@ -51,6 +51,7 @@ s32 DecDCTvlcSize(s32 size);
 s32 DecDCTvlc(u32 *bitstream, void *buffer);
 s32 StGetNext(u32 **data, void *header);
 void StFreeRing(void *data);
+void StCdInterrupt(void);
 u32 *movie_next_bitstream(u32 end_frame, MovieSectorHeader **header);
 void movie_restart(s32 file, s32 sector, s32 channel, s32 mode, CdlLOC *location);
 
@@ -81,6 +82,7 @@ typedef struct MovieDecoder {
 /* Player statics (movie library image). The u8 flags at 801e8958..801e8968
  * sit four bytes apart, so they are separate variables. */
 extern MovieDecoder movie_decoder;
+void LoadImage(MovieRect *rect, u32 *data); /* libgpu */
 extern s32 movie_split_display;    /* frames span both display buffers */
 extern u16 movie_image_width;      /* 16-bit VRAM units */
 extern u16 movie_image_height;
@@ -98,7 +100,8 @@ extern s16 movie_row_limit;        /* rows a slice loads at most */
 extern s32 movie_first_frame;
 extern s32 movie_shown_frame;      /* last frame fully loaded */
 extern s32 movie_end_frame;
-extern void (*movie_frame_callback)(); /* (frame, x, y) when loaded */
+extern void (*movie_frame_callback)(u16 frame, u16 x, u16 y); /* a frame is loaded */
+extern s32 movie_stream_deferred;  /* a ring interrupt waits for the MDEC DMA */
 extern s32 movie_load_enabled;     /* slices go to VRAM */
 extern s32 movie_load_restart;
 extern u16 movie_frame_width;      /* last frame header width */

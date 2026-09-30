@@ -9,3 +9,5 @@ LINKER_SCRIPT := .local/decomp/mdec/mdec.ld
 LINKER_EXTRA := .local/decomp/mdec/undefined_syms_auto.txt .local/decomp/mdec/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/mdec
 CLASSIFICATION := decomp/targets/overlays/mdec.classification.txt
+# Division checks (break 7 / break 6) are inline in movie_slice_decoded.
+MASPSX_FLAGS := --aspsx-version=2.34 --expand-div
