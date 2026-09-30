@@ -334,7 +334,7 @@ INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_80
 /* Camera yaw and target follower: turn by the shoulder buttons in 0x200
  * steps, ease towards requested yaws (commands 9, 10, 15-17), and move the
  * target towards the saved camera, scrolling the terrain origin with it. */
-#ifdef NON_MATCHING /* eased yaw: the new angle is shifted before the yaw store (v0/v1 swapped); the target step loads differ */
+#ifdef NON_MATCHING /* eased yaw in states 2 and 0x10: the new angle is shifted before the yaw store (v0/v1 swapped) */
 s32 func_800914D0(s32 index) {
     WorldmapActor *actor;
     s32 angle;
