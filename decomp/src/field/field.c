@@ -3430,12 +3430,11 @@ void func_8008AACC(void) {
     }
 }
 
-#ifdef NON_MATCHING
 /* Event: load file op1 + 0x77a as the actor's block (+120), once the
  * stream and disc are idle; yields. */
 void func_8008ACE8(void) {
     s32 number;
-    s16 file;
+    s32 file;
     s32 size;
 
     if (D_800ADB90 == 0 && D_800ADB2C == 0) {
@@ -3465,9 +3464,6 @@ void func_8008ACE8(void) {
     }
     D_800B00C0 = 1;
 }
-#else
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008ACE8);
-#endif
 
 /* Event: set (selector 0) or clear the actor's layer bit 17. */
 void func_8008AE5C(void) {
