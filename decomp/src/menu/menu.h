@@ -277,7 +277,9 @@ typedef struct Actor {
     u8 model_id;         /* 0x909 */
     u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
-    u8 unk90C[0x4];
+    u8 unk90C[0x2];
+    u8 hold_anim;        /* 0x90E: move held by a kind-2 animation */
+    u8 unk90F;
     u8 unk910;
     u8 move_count;       /* 0x911: special moves the opponent may pick */
     u8 parts_b;          /* 0x912 */
@@ -297,7 +299,7 @@ typedef struct Actor {
     u8 unk984[0x14];
     s16 unk998;
     s16 unk99A;
-    u8 unk99C[0x2];
+    s16 anim_speed;      /* 0x99C: frames per animation step */
     s16 unk99E;
     u8 inputs[32];       /* 0x9A0: queued pad inputs (ring) */
     u8 input_head;
@@ -552,6 +554,12 @@ void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
 s32 func_80082488(Vector *position, s32 arg);
+/* Per animation: how it ends (0 stop, 1 chain, 2 hold, 3 loop) and the next one. */
+typedef struct {
+    u8 kind;
+    s8 next;
+} AnimRule;
+extern AnimRule D_80091130[];
 void func_80082458(SVector *out);
 void func_8002DB84(SVector *a, SVector *b, SVector *c, SVector *normal); /* plane normal of a triangle */
 void func_800828F8(Vector *position, Vector *step, s32 limit);

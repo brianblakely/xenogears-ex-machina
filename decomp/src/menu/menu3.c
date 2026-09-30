@@ -573,7 +573,127 @@ void func_80074AB4(Actor *actor) {
     }
 }
 
+/* Step an actor's animation player by the elapsed animation steps and
+ * record the frame; stepped/done go to the pose record. */
+#define ANIM_ADVANCE(actor, player, steps)                                     \
+    stepped = (steps);                                                         \
+    actor->flags = (actor->flags & ~0x800) |                                   \
+                   ((func_8008B730(player, steps, actor->anim_speed) & 1) << 11); \
+    speed = actor->anim_speed
+
+#ifdef NON_MATCHING
+/* Record an actor's pose for this frame and run its animation: a new move
+ * (or a forced restart) resets the player, speed and parts; then advance
+ * by the accumulated speed and apply the move's end rule (stop, chain to
+ * the next move, hold, or loop).
+ * Does not match: the original keeps the step count in a saved register ($s1, one more saved register and a larger frame), which shifts the register choice throughout. */
+void func_80074BA4(Actor *actor) {
+    s32 steps;
+    Pose *pose = actor->pose;
+    AnimRule *rule;
+    Player *player;
+    s32 speed = 0;
+    s32 stepped = 0;
+    s32 i;
+
+    pose->flags = (pose->flags & 0xF000) | (actor->angle & 0xFFF);
+    pose->x = actor->pos.vx;
+    pose->y = actor->pos.vy;
+    pose->z = actor->pos.vz;
+    ((Move *)pose)->anim = actor->anim;
+    rule = &D_80091130[actor->anim];
+    player = &((ModelSet *)actor->node->data)->players[actor->anim];
+    pose->flags &= ~0x1000;
+    if (actor->anim != actor->unk4E || (actor->flags & 0x10000000)) {
+        rule = &D_80091130[actor->anim];
+        actor->unk4E = actor->anim;
+        actor->flags = (actor->flags | 0x1000) & ~0x800;
+        if (!(actor->flags & 0x10000000)) {
+            actor->anim_speed = ((u8 *)actor->unk7C)[actor->anim * 2];
+        }
+        if (actor->flags & 0x2000000) {
+            actor->anim_speed = 1;
+            actor->flags &= ~0x2000000;
+        }
+        actor->unk4F = ((u8 *)actor->unk7C)[actor->anim * 2 + 1] * actor->unk15F2 / 256;
+        func_80074998(actor);
+        player = &((ModelSet *)actor->node->data)->players[actor->anim];
+        func_8008B0D8(player);
+        actor->unk99E = 0;
+        actor->event_frame = -1;
+        actor->flags &= ~0x10000000;
+        pose->flags |= 0x1000;
+        if (rule->kind == 2) {
+            actor->hold_anim = actor->anim;
+        } else {
+            actor->hold_anim = 0;
+        }
+    }
+    {
+        s16 before = actor->unk99E;
+
+        actor->unk99E += actor->unk4F + actor->unk52;
+        steps = (actor->unk99E >> 4) - (before >> 4);
+    }
+    actor->unk99A = steps;
+    actor->unk998 = player->frame;
+    for (i = 0; i < steps; i++) {
+        if (actor->anim_speed != 1) {
+            if (--actor->anim_speed <= 0) {
+                actor->anim_speed = 1;
+            }
+        }
+    }
+    switch (rule->kind) {
+    case 0:
+        if (!(actor->flags & 0x800)) {
+            ANIM_ADVANCE(actor, player, steps);
+            if (actor->flags & 0x800) {
+                if (rule->next == -1) {
+                    actor->flags &= ~0x1000;
+                } else {
+                    actor->anim = rule->next;
+                }
+            }
+        }
+        break;
+    case 1:
+        stepped = steps;
+        actor->flags &= ~0x1000;
+        ANIM_ADVANCE(actor, player, steps);
+        if (actor->flags & 0x800) {
+            actor->flags |= 0x10000000;
+            if (rule->next != -1) {
+                actor->anim = rule->next;
+            }
+        }
+        break;
+    case 2:
+        actor->flags &= ~0x1000;
+        if (!(actor->flags & 0x800)) {
+            ANIM_ADVANCE(actor, player, steps);
+        }
+        if (actor->flags & 0x400) {
+            if (rule->next == -1) {
+                actor->flags &= ~0x1000;
+            } else {
+                actor->anim = rule->next;
+            }
+            actor->flags &= ~0x400;
+        }
+        break;
+    case 3:
+        if (!(actor->flags & 0x800)) {
+            ANIM_ADVANCE(actor, player, steps);
+        }
+        break;
+    }
+    ((Move *)pose)->unk9 = stepped;
+    ((Move *)pose)->unkA = speed;
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80074BA4);
+#endif
 
 /* Record the outcome of a bout from the player's side: how it was lost,
  * or which limit the win stayed within and how the opponent ended. */
