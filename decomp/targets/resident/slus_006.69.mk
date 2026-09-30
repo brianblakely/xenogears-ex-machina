@@ -13,3 +13,5 @@ SOURCE_DIRS := decomp/src/resident
 CLASSIFICATION := decomp/targets/resident/classification.txt
 # The heap unit addresses its small globals through $gp.
 GP_heap := 8
+# The sound driver unit is compiled by GCC 2.6.3.
+CC_sound := 2.6.3
