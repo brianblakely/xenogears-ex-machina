@@ -65,6 +65,13 @@ typedef struct {
 } SVECTOR;
 
 typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    s16 x1, y1;
+} LINE_F2;
+
+typedef struct {
     s32 vx, vy, vz, pad;
 } VECTOR;
 
@@ -234,19 +241,21 @@ typedef struct {
     POLY_FT4 back[2];        /* 0x50: sprite 0xFC */
     POLY_FT4 frame[4];       /* 0xA0: sprite 0xF0 */
     POLY_FT4 cursor[2];      /* 0x140: sprite 0x14B */
-    u8 pad_190[0xD20 - 0x190];
+    POLY_FT4 chars[72];      /* 0x190: the 36 grid characters */
+    POLY_FT4 name[2];        /* 0xCD0: the name being entered */
     LINE_F3 line_a[2];       /* 0xD20 */
     LINE_F3 line_b[2];       /* 0xD50 */
-    u8 pad_D80[0xDA0 - 0xD80];
+    LINE_F2 caret[2];        /* 0xD80 */
     SVECTOR cursor_at[4];    /* 0xDA0 */
-    u8 pad_DC0[0xDE0 - 0xDC0];
+    SVECTOR name_at[4];      /* 0xDC0 */
     u8 parts_buffer;         /* 0xDE0 */
     u8 cursor_buffer;        /* 0xDE1 */
-    u8 pad_DE2[2];
-    u8 b_DE4;      /* 0xDE4 */
-    u8 shown;      /* 0xDE5 */
-    u8 b_DE6;      /* 0xDE6 */
-    u8 pad_DE7;
+    u8 chars_buffer;         /* 0xDE2 */
+    u8 name_buffer;          /* 0xDE3 */
+    u8 lines_buffer;         /* 0xDE4 */
+    u8 shown;                /* 0xDE5 */
+    u8 grid_shown;           /* 0xDE6 */
+    u8 blink;                /* 0xDE7 */
     u8 length;     /* 0xDE8: codes entered */
     u8 max_length; /* 0xDE9 */
     u8 frame_count; /* 0xDEA */

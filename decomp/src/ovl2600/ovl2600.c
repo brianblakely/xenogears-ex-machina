@@ -1030,7 +1030,68 @@ void func_801C92BC(void) {
                   &D_800625A0->backdrop->mode_b[D_800625A0->buffer_index]);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C9338);
+/* Draw the name entry: the projected cursor and name quads, the confirm,
+ * back and frame sprites, the grid lines, the blinking caret after the name
+ * and the 36 grid characters. */
+void func_801C9338(void) {
+    s32 depth;
+    s32 flag;
+    s32 i;
+
+    if (D_800625A0->flags->entry_on) {
+        if (D_800625A0->entry->shown) {
+            func_8004A73C(&D_800625A0->entry->cursor_at[0], &D_800625A0->entry->cursor_at[1],
+                          &D_800625A0->entry->cursor_at[2], &D_800625A0->entry->cursor_at[3],
+                          &(D_800625A0->entry->cursor + D_800625A0->entry->cursor_buffer)->x0,
+                          &(D_800625A0->entry->cursor + D_800625A0->entry->cursor_buffer)->x1,
+                          &(D_800625A0->entry->cursor + D_800625A0->entry->cursor_buffer)->x2,
+                          &(D_800625A0->entry->cursor + D_800625A0->entry->cursor_buffer)->x3,
+                          &depth, &flag);
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry->cursor[D_800625A0->entry->cursor_buffer]);
+            func_8004A73C(&D_800625A0->entry->name_at[0], &D_800625A0->entry->name_at[1],
+                          &D_800625A0->entry->name_at[2], &D_800625A0->entry->name_at[3],
+                          &(D_800625A0->entry->name + D_800625A0->entry->name_buffer)->x0,
+                          &(D_800625A0->entry->name + D_800625A0->entry->name_buffer)->x1,
+                          &(D_800625A0->entry->name + D_800625A0->entry->name_buffer)->x2,
+                          &(D_800625A0->entry->name + D_800625A0->entry->name_buffer)->x3,
+                          &depth, &flag);
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry->name[D_800625A0->entry->name_buffer]);
+        }
+        if (D_800625A0->entry->grid_shown) {
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry->confirm[D_800625A0->entry->parts_buffer]);
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry->back[D_800625A0->entry->parts_buffer]);
+            for (i = 0; i < D_800625A0->entry->frame_count; i++) {
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &D_800625A0->entry->frame[i * 2 + D_800625A0->entry->parts_buffer]);
+            }
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry->line_a[D_800625A0->entry->lines_buffer]);
+            func_80043B48(&D_800625A0->draw_env->ot[4],
+                          &D_800625A0->entry->line_b[D_800625A0->entry->lines_buffer]);
+            if (++D_800625A0->entry->blink >= 61) {
+                D_800625A0->entry->blink = 0;
+            }
+            if (D_800625A0->entry->blink < 30) {
+                (D_800625A0->entry->caret + D_800625A0->buffer_index)->x0 =
+                    D_800625A0->entry->length * 8 + 0x50;
+                (D_800625A0->entry->caret + D_800625A0->buffer_index)->y0 = 0xC6;
+                (D_800625A0->entry->caret + D_800625A0->buffer_index)->x1 =
+                    D_800625A0->entry->length * 8 + 0x58;
+                (D_800625A0->entry->caret + D_800625A0->buffer_index)->y1 = 0xC6;
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &D_800625A0->entry->caret[D_800625A0->buffer_index]);
+            }
+            for (i = 0; i < 36; i++) {
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &D_800625A0->entry->chars[i * 2 + D_800625A0->entry->chars_buffer]);
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2600/asm/nonmatchings/ovl2600", func_801C97FC);
 
