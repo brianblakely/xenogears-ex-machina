@@ -3860,7 +3860,47 @@ void func_8008BF38(s32 slot) {
     D_8005A444[slot + 1] = 0xFF;
 }
 
+#ifdef NON_MATCHING
+/* Take party slot `slot`'s member out of the party: its actor gets the
+ * lead's sprite and is hidden, and the slot's ids are cleared. */
+void func_8008C180(s32 slot) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    FieldActor *member;
+    s32 current;
+    u16 pc;
+    s32 index;
+
+    if (D_8005A444[slot] != 0xFF) {
+        descriptor = D_800B06B8;
+        actor = D_800B0078;
+        current = D_800AFD1C;
+        pc = actor->pc;
+        D_800B06B8 = &D_800AF880.components.descriptors[D_8005A444[slot]];
+        D_800B0078 = D_800B06B8->actor;
+        func_80080A74(D_8005A444[slot]);
+        index = D_8005A444[slot];
+        D_800AFD1C = index;
+        D_800AF880.components.descriptors[index].flags = (D_800AF880.components.descriptors[index].flags & 0xF07F) | 0x200;
+        func_80076AC0(index, 0, D_8005A414[0], 1, 0, 0, 1);
+        member = D_800B0078;
+        member->flags |= 1;
+        member->layer_flags |= 0x100000;
+        D_800B00C0 = 0;
+        D_800B0078 = actor;
+        D_800B06B8 = descriptor;
+        D_800AFD1C = current;
+        member->pc = pc;
+        member->flags |= 0x20000;
+        member->layer_flags |= 0x400;
+        D_8005A444[slot] = 0xFF;
+    }
+    D_80062590[slot] = 0xFF;
+    D_8006FABC[slot] = 0xFF;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C180);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008C334);
 
