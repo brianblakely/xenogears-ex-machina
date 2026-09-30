@@ -1,6 +1,6 @@
 #include "common.h"
 
-INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC0DC);
+INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC000);
 
 INCLUDE_ASM(".local/decomp/ovl3386/asm/nonmatchings/ovl3386", func_801FC0EC);
 

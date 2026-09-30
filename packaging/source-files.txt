@@ -136,8 +136,11 @@ decomp/src/ovl2615/ovl2615.c
 decomp/src/ovl3087/ovl3087.c
 decomp/src/ovl3087/ovl3087.h
 decomp/src/ovl3381/ovl3381.c
+decomp/src/ovl3381/tiles.h
 decomp/src/ovl3383/ovl3383.c
+decomp/src/ovl3383/spin.h
 decomp/src/ovl3384/ovl3384.c
+decomp/src/ovl3385/hold.h
 decomp/src/ovl3385/ovl3385.c
 decomp/src/ovl3386/ovl3386.c
 decomp/src/ovl3387/ovl3387.c
