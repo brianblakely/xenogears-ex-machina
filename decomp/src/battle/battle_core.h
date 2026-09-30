@@ -665,6 +665,7 @@ void func_80074EEC(void);
 void func_800745EC(void);
 void func_80074D4C(void);
 void func_80077074(void);
+void func_80077610(void);
 void func_800785D4(u8 actor, u8 index);
 void func_80078658(u8 index, u8 actor);
 void func_800787E0(u8 value, u8 actor);
