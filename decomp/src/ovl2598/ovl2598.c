@@ -905,15 +905,91 @@ void func_801C846C(void) {
     func_801C7EC8();
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C849C);
+/* Project panel `index`'s two top edge pieces through the GTE and draw them. */
+void func_801C849C(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8670);
+    func_8004A73C(&panel->edge_at[0][0][0], &panel->edge_at[0][0][1], &panel->edge_at[0][0][2],
+                  &panel->edge_at[0][0][3], &(panel->edge[0] + panel->buffer)->x0,
+                  &(panel->edge[0] + panel->buffer)->x1, &(panel->edge[0] + panel->buffer)->x2,
+                  &(panel->edge[0] + panel->buffer)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[0][panel->buffer]);
+    func_8004A73C(&panel->edge_at[0][1][0], &panel->edge_at[0][1][1], &panel->edge_at[0][1][2],
+                  &panel->edge_at[0][1][3], &(panel->edge[0] + panel->buffer + 2)->x0,
+                  &(panel->edge[0] + panel->buffer + 2)->x1, &(panel->edge[0] + panel->buffer + 2)->x2,
+                  &(panel->edge[0] + panel->buffer + 2)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[0][panel->buffer + 2]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8844);
+/* Project panel `index`'s two bottom edge pieces through the GTE and draw them. */
+void func_801C8670(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8A18);
+    func_8004A73C(&panel->edge_at[1][0][0], &panel->edge_at[1][0][1], &panel->edge_at[1][0][2],
+                  &panel->edge_at[1][0][3], &(panel->edge[1] + panel->buffer)->x0,
+                  &(panel->edge[1] + panel->buffer)->x1, &(panel->edge[1] + panel->buffer)->x2,
+                  &(panel->edge[1] + panel->buffer)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[1][panel->buffer]);
+    func_8004A73C(&panel->edge_at[1][1][0], &panel->edge_at[1][1][1], &panel->edge_at[1][1][2],
+                  &panel->edge_at[1][1][3], &(panel->edge[1] + panel->buffer + 2)->x0,
+                  &(panel->edge[1] + panel->buffer + 2)->x1, &(panel->edge[1] + panel->buffer + 2)->x2,
+                  &(panel->edge[1] + panel->buffer + 2)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[1][panel->buffer + 2]);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8BEC);
+/* Project panel `index`'s two left edge pieces through the GTE and draw them. */
+void func_801C8844(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+
+    func_8004A73C(&panel->edge_at[2][0][0], &panel->edge_at[2][0][1], &panel->edge_at[2][0][2],
+                  &panel->edge_at[2][0][3], &(panel->edge[2] + panel->buffer)->x0,
+                  &(panel->edge[2] + panel->buffer)->x1, &(panel->edge[2] + panel->buffer)->x2,
+                  &(panel->edge[2] + panel->buffer)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[2][panel->buffer]);
+    func_8004A73C(&panel->edge_at[2][1][0], &panel->edge_at[2][1][1], &panel->edge_at[2][1][2],
+                  &panel->edge_at[2][1][3], &(panel->edge[2] + panel->buffer + 2)->x0,
+                  &(panel->edge[2] + panel->buffer + 2)->x1, &(panel->edge[2] + panel->buffer + 2)->x2,
+                  &(panel->edge[2] + panel->buffer + 2)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[2][panel->buffer + 2]);
+}
+
+/* Project panel `index`'s two right edge pieces through the GTE and draw them. */
+void func_801C8A18(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+
+    func_8004A73C(&panel->edge_at[3][0][0], &panel->edge_at[3][0][1], &panel->edge_at[3][0][2],
+                  &panel->edge_at[3][0][3], &(panel->edge[3] + panel->buffer)->x0,
+                  &(panel->edge[3] + panel->buffer)->x1, &(panel->edge[3] + panel->buffer)->x2,
+                  &(panel->edge[3] + panel->buffer)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[3][panel->buffer]);
+    func_8004A73C(&panel->edge_at[3][1][0], &panel->edge_at[3][1][1], &panel->edge_at[3][1][2],
+                  &panel->edge_at[3][1][3], &(panel->edge[3] + panel->buffer + 2)->x0,
+                  &(panel->edge[3] + panel->buffer + 2)->x1, &(panel->edge[3] + panel->buffer + 2)->x2,
+                  &(panel->edge[3] + panel->buffer + 2)->x3, &depth, &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->edge[3][panel->buffer + 2]);
+}
+
+/* Project panel `index`'s fill through the GTE and draw it with its mode. */
+void func_801C8BEC(s32 index) {
+    Panel *panel = D_800625A0->panels[index];
+    s32 depth;
+    s32 flag;
+
+    func_8004A73C(&panel->fill_at[0], &panel->fill_at[1], &panel->fill_at[2], &panel->fill_at[3],
+                  &(panel->fill + panel->buffer)->x0, &(panel->fill + panel->buffer)->x1,
+                  &(panel->fill + panel->buffer)->x2, &(panel->fill + panel->buffer)->x3, &depth,
+                  &flag);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->fill[panel->buffer]);
+    func_80043B48(D_800625A0->draw_env->ot + panel->param, &panel->fill_mode[panel->buffer]);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C8D28);
 
