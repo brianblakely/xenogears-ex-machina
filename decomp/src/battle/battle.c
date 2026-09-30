@@ -1404,7 +1404,46 @@ void func_80079270(u8 actor, u8 index) {
     func_800785D4(actor, index);
 }
 
+/* Script error screen: clear the event types and, on a debug build (the
+ * 8005917c flag), print "Language Error" with the actor and script number
+ * forever, the text shifted one column every three frames. */
+#ifdef NON_MATCHING
+void func_800792F8(actor, number)
+u8 actor;
+u8 number;
+{
+    s32 offset;
+    s32 i;
+    s32 column;
+    s32 frames;
+
+    for (offset = 31 * sizeof(BattleEvent); offset >= 0; offset -= sizeof(BattleEvent)) {
+        ((BattleEvent *)((u8 *)D_800C3FE8 + offset))->type = 0xFF;
+    }
+    frames = 0;
+    column = 0;
+    if (*D_8005917C != -1) {
+        while (1) {
+            for (i = 0; i < column; i++) {
+                func_8003700C(" ");
+            }
+            frames++;
+            func_8003700C("\n\n\n\n\n\nLanguage Error\n");
+            func_8003700C("\t\t\tActor%X\t\tNo%x\n\n", actor, number);
+            func_800716D8();
+            if (frames >= 3) {
+                column++;
+                frames = 0;
+                if (column >= 21) {
+                    column = 0;
+                }
+            }
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800792F8);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_800793F0);
 
@@ -3624,7 +3663,28 @@ INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085454);
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085618);
 
+/* Revive slot at full HP and clear its timed statuses (the active halves of
+ * the status words 0x7c-0x80 and 0x84-0x8c). */
+#ifdef NON_MATCHING
+void func_80085AC4(slot)
+u8 slot;
+{
+    s32 i;
+    u16 *status;
+
+    status = &D_800CCCE8.records[slot].pilot.status7C;
+    D_800CCCE8.records[slot].pilot.hp = D_800CCCE8.records[slot].pilot.maxHp;
+    for (i = 2; i >= 0; i -= 2) {
+        status[i] = 0;
+    }
+    status = &D_800CCCE8.records[slot].pilot.status84.half.active;
+    for (i = 4; i >= 0; i -= 2) {
+        status[i] = 0;
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80085AC4);
+#endif
 
 /* Apply up to three recovery amounts from 8009ada0 to `slot` as separate
  * events (codes 8..10) and show them. */

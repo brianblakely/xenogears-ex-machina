@@ -535,6 +535,7 @@ void func_801E0A34(void);
 void func_801E252C(void);
 
 /* Resident services. */
+void func_8003700C(char *format, ...); /* debug print */
 void func_80028A60(s32 a);
 s32 func_800397FC(u8 *a, s32 b, s32 c);
 void func_8003A094(u8 *texture);
