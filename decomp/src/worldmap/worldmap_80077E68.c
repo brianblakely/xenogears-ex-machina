@@ -235,7 +235,132 @@ s32 func_80078E2C(s32 index) {
     return 1;
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80077E68", func_80078EA4);
+/* Scene script: start the effects in turn, shake the view while the engines
+ * run, then fade out; states 16-18 are the scene's opening. */
+s32 func_80078EA4(s32 index) {
+    CameraScratch *scratch;
+    WorldmapActor *actor;
+    s16 trigger;
+
+    actor = &D_8009BE24[index];
+    scratch = (CameraScratch *)0x1F800000;
+    switch (actor->state) {
+    case 0:
+        if (--actor->wait <= 0) {
+            actor->wait = 0x20;
+            actor->state++;
+            func_80097770(5, 1);
+            func_80039E60((D_8006259C->id << 16) | 0x62);
+            func_80039E60((D_8006259C->id << 16) | 0x63);
+        }
+        break;
+    case 1:
+        if (--actor->wait <= 0) {
+            actor->wait = 0x20;
+            actor->state++;
+            func_80097770(3, 1);
+        }
+        break;
+    case 2:
+        if (--actor->wait <= 0) {
+            actor->wait = 0x30;
+            actor->state++;
+            func_80097770(4, 1);
+            func_80097770(2, 1);
+            func_80097770(6, 1);
+        }
+        break;
+    case 3:
+        if (--actor->wait <= 0) {
+            actor->wait = 0x28;
+            actor->state++;
+        }
+        break;
+    case 4:
+        actor->wait--;
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        scratch->view.vx = rand() % 12 - 6;
+        scratch->view.vy = rand() % 12 - 6;
+        VIEW_VECTORS[0].vx += scratch->view.vx;
+        VIEW_VECTORS[1].vx += scratch->view.vx;
+        VIEW_VECTORS[0].vy += scratch->view.vy;
+        VIEW_VECTORS[1].vy += scratch->view.vy;
+        if (actor->wait <= 0) {
+            actor->wait = 0x78;
+            actor->state++;
+            func_80039E60((D_8006259C->id << 16) | 0x79);
+            func_8003A3B8((D_8006259C->id << 16) | 0x62, 0, 0x100);
+            func_8003A3B8((D_8006259C->id << 16) | 0x63, 0, 0x100);
+        }
+        break;
+    case 5:
+        actor->wait--;
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+        scratch->view.vx = rand() % 4 - 2;
+        scratch->view.vy = rand() % 4 - 2;
+        VIEW_VECTORS[0].vx += scratch->view.vx;
+        VIEW_VECTORS[0].vy += scratch->view.vy;
+        VIEW_VECTORS[1].vx += scratch->view.vx;
+        VIEW_VECTORS[1].vy += scratch->view.vy;
+        if (actor->wait <= 0) {
+            actor->wait = 0x5A;
+            actor->state++;
+        }
+        break;
+    case 6:
+        if (--actor->wait <= 0) {
+            actor->wait = 0x50;
+            actor->state++;
+            func_80097770(0, 0xD);
+            func_8003A3B8((D_8006259C->id << 16) | 0x79, 0, 0x100);
+            D_8009CCA4 = 2;
+            D_8009D3CC = 4;
+        }
+        break;
+    case 7:
+        if (--actor->wait <= 0) {
+            actor->wait = 0;
+            D_8009D554 = 0;
+            D_8009D7CC = 0;
+        }
+        break;
+    case 16:
+        trigger = actor->unk4;
+        if (trigger == 1) {
+            func_8003A3B8((D_8006259C->id << 16) | 0x36, 0, 8);
+            func_80097770(0, 0xD);
+            D_8009D3CC = 0x20;
+            D_8009CCA4 = trigger;
+            actor->wait = 8;
+            actor->unk4 = 0;
+            actor->state++;
+        }
+        break;
+    case 17:
+        if (--actor->wait <= 0) {
+            D_8009D3F0 = 0x960000;
+            D_8009BD38.vx = -0x30;
+            D_8009BD38.vy = 0x40;
+            D_8009BD38.vz = 0;
+            actor->wait = 0x10;
+            actor->state++;
+        }
+        break;
+    case 18:
+        if (--actor->wait <= 0) {
+            func_80097770(0, 0xC);
+            D_8009CCA4 = 1;
+            D_8009D3CC = 0x80;
+            actor->state = 0;
+            actor->wait = 1;
+        }
+        break;
+    }
+    if (actor->state != 4 && actor->state != 5) {
+        func_80096F18(D_8009BD40, &D_8009BE28, D_8009D3F0, &D_8009BD38);
+    }
+    return 1;
+}
 
 /* Place the scene camera target and set the scene yaw. */
 s32 func_800794D8(s32 index) {
