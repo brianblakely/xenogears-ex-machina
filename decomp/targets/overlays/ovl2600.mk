@@ -7,8 +7,3 @@ IMAGE := .local/decomp/build/ovl2600.bin
 LINKER_SCRIPT := .local/decomp/ovl2600/ovl2600.ld
 LINKER_EXTRA := .local/decomp/ovl2600/undefined_syms_auto.txt .local/decomp/ovl2600/undefined_funcs_auto.txt
 SOURCE_DIRS := decomp/src/ovl2600
-# Every small constant load is `ori rt, $zero, imm` (309 in this image, no
-# `addiu rt, $zero, imm`): the assembler expanded `li` itself, which maspsx
-# models for ASPSX before 2.50. 2.30 selects that behaviour; nothing in this
-# image yet distinguishes the versions within it.
-override MASPSXFLAGS := --aspsx-version=2.30

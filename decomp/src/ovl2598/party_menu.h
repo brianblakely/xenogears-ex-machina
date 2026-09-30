@@ -3,6 +3,68 @@
 
 #include "common.h"
 
+/* PsyQ libgpu primitives and rectangles. */
+typedef struct {
+    s16 x, y, w, h;
+} RECT;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 u0, v0;
+    u16 clut;
+    s16 x1, y1;
+    u8 u1, v1;
+    u16 tpage;
+    s16 x2, y2;
+    u8 u2, v2;
+    u16 pad1;
+    s16 x3, y3;
+    u8 u3, v3;
+    u16 pad2;
+} POLY_FT4;
+
+typedef struct {
+    u32 tag;
+    u8 r0, g0, b0, code;
+    s16 x0, y0;
+    u8 r1, g1, b1, pad1;
+    s16 x1, y1;
+    u8 r2, g2, b2, pad2;
+    s16 x2, y2;
+    u8 r3, g3, b3, pad3;
+    s16 x3, y3;
+} POLY_G4;
+
+/* A menu text label: two textured quads (one per draw buffer) showing a
+ * line rendered into VRAM at `rect`. */
+typedef struct {
+    POLY_FT4 poly[2];
+    u8 pad_50[0x20];
+    RECT rect;     /* 0x70: VRAM area of the rendered text */
+    u8 *image;     /* 0x78: text render buffer */
+    u8 highlight;  /* 0x7C: selects the highlighted CLUT */
+    u8 pad_7D;
+    u8 width;      /* 0x7E: rendered text width */
+    u8 shown;      /* 0x7F */
+} MenuLabel;
+
+/* The six outputs of func_80026338 for one sprite. */
+typedef struct {
+    s32 value[6];
+} SpriteInfo;
+
+/* The party list block (0x6C bytes). */
+typedef struct {
+    u8 pad_0[3];
+    u8 flag_3; /* 0x3 */
+    u8 flag_4; /* 0x4 */
+    u8 pad_5[0x30 - 0x5];
+    u8 ids[3]; /* 0x30: party members, 0xFF empty */
+    u8 pad_33[0x6C - 0x33];
+} PartyList;
+
 /* The shared menu state (*D_800625A0), as far as this overlay uses it. */
 typedef struct {
     u8 pad_0[0x2DC];
@@ -10,8 +72,7 @@ typedef struct {
     void *label_text;   /* 0x2E0: label text offset table */
     void *effect_bank;  /* 0x2E4 */
     u8 pad_2E8[0x308 - 0x2E8];
-    u8 buffer_index;     /* 0x308: draw buffer being built (0/1) */
-    u8 pad_309[3];
+    s32 buffer_index;    /* 0x308: draw buffer being built (0/1) */
     u8 available[16];    /* 0x30C: character may join the party */
     u8 pad_31C[0x325 - 0x31C];
     u8 input_code;       /* 0x325: decoded input of this frame */
@@ -25,21 +86,63 @@ typedef struct {
     u8 top_cursor;       /* 0x336 */
     u8 b_337;            /* 0x337 */
     u8 pad_338[0x33C - 0x338];
-    u8 *party;           /* 0x33C: party list (0x6C bytes; +0x30 three ids) */
+    PartyList *party;    /* 0x33C */
     u8 pad_340[0x348 - 0x340];
     u8 *block_348;       /* 0x348: 0x15C bytes */
     u8 pad_34C[0x350 - 0x34C];
     u8 *block_350;       /* 0x350: 0x1194 bytes */
     u8 *block_354;       /* 0x354: 0x140C bytes */
-    u8 pad_358[0x1DF0 - 0x358];
+    u8 pad_358[0x46C - 0x358];
+    SpriteInfo sprites[4]; /* 0x46C: sprites 0xFE, 0x103, 0x100, 0x101 */
+    u8 pad_4CC[0x4E0 - 0x4CC];
+    MenuLabel labels[4];   /* 0x4E0: the screen's command labels */
+    u8 pad_6E0[0x1DF0 - 0x6E0];
     u8 *member_panels[6]; /* 0x1DF0: 0xBEC bytes each */
     u8 *party_panels[3];  /* 0x1E08: 0xBEC bytes each */
 } MenuState;
 
 extern MenuState *D_800625A0;
 
+/* The loaded menu resource archive: entries are packed data. */
+typedef struct {
+    s32 count;
+    void *entry[7];
+} MenuArchive;
+
+extern MenuArchive *D_8005945C;
+extern void *D_8006259C; /* effect bank */
+extern u8 D_80059178;    /* sound effects enabled */
+extern u16 D_80059414;   /* highlighted text CLUT */
+extern u16 D_800595D4;   /* normal text CLUT */
+extern u16 D_8006F364;   /* characters that may join */
+extern u16 D_8006F366;
+extern u8 D_8006F368[3]; /* current party (0xFF empty) */
+
 extern void *func_80031BDC(s32 size, s32 mode); /* allocate */
 extern void func_800320E8(void *block);         /* release */
 extern void func_8003F8E8(void *dst, s32 size); /* bzero */
+extern void func_8003F99C(void *dst, void *src, s32 size); /* memmove */
+extern void *func_80032E88(void *packed, s32 mode);       /* unpack */
+extern void func_8003342C(void *archive);
+extern void func_8002DD20(void *data);
+extern void func_80028470(s32 a, s32 b);
+extern s32 func_800288EC(s32 id);
+extern void func_800295D8(s32 id, void *buffer, s32 a, s32 b);
+extern void func_80028A60(s32 a);
+extern void func_80038428(void *bank);
+extern void func_800471B4(void *tim);          /* OpenTIM */
+extern void func_800471C4(void *image);        /* ReadTIM */
+extern void func_80044894(RECT *rect, void *data); /* LoadImage */
+extern void func_800445D0(s32 mode);           /* DrawSync */
+extern void func_80043CB0(POLY_FT4 *p);        /* SetPolyFT4 */
+extern void func_80043CC4(POLY_G4 *p);         /* SetPolyG4 */
+extern void func_80043BFC(void *p, s32 abe);   /* SetSemiTrans */
+extern void func_80043C24(void *p, s32 tge);   /* SetShadeTex */
+extern u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+extern void *func_80033728(void *table, s32 index);      /* message address */
+extern u8 func_80034EAC(void *text, u8 *image, s32 a, s32 b); /* render text */
+extern void func_80033698(s32 a, s32 b);
+extern void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d,
+                          s32 *e, s32 *f);
 
 #endif
