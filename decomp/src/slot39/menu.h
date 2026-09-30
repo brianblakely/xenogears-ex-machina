@@ -235,7 +235,17 @@ typedef struct MenuTables {
     u8 pad14[0x8];
     u8 *items; /* 1C */
     MenuEffect *effects[11]; /* 20: per character */
-    u8 pad4C[0x80];
+    u8 pad4C[0x58];
+    u16 unkA4; /* A4 */
+    u16 unkA6; /* A6 */
+    u8 padA8[0x8];
+    u16 unkB0; /* B0 */
+    u8 unkB2; /* B2 */
+    u8 unkB3; /* B3 */
+    u8 unkB4; /* B4 */
+    u8 padB5[0x3];
+    u16 shown[6]; /* B8: stats shown on the equipment screen */
+    u8 padC4[0x8];
 } MenuTables;
 
 /* A gear record of the game data (D_8006DFAC). */
@@ -597,6 +607,16 @@ extern u8 D_801EA8F4[];
 extern u8 D_801EA8FC;
 extern u8 D_801EA8C0;    /* the last printed character was two-byte */
 extern u16 D_801EA5D0[0x80]; /* ASCII to two-byte character codes */
+extern s32 D_801EA6FC;   /* gauge: from, to, difference and lengths */
+extern s32 D_801EA700;
+extern s32 D_801EA704;
+extern s32 D_801EA708;
+extern s32 D_801EA70C;
+extern u8 D_801EA710;
+extern u8 D_801EA714;
+extern s32 D_801EA34C[20]; /* field block part images, ffff none */
+extern s32 D_801E9A78[20];
+extern s32 D_801E9AC8[20];
 extern s16 D_801EA724;   /* item list scroll bar */
 extern s32 D_801EA728;
 extern s16 D_801EA72C;
@@ -625,7 +645,7 @@ void func_8002A498(s32 arg0);
 s32 func_8002C3D8(void);                                /* wait for the read */
 void func_80019CA0(void);
 void func_8001BD40(s32 arg0, s32 arg1);
-void func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
+s32 func_8002675C(void *sheet, s32 image, void *dst, s32 buffer, s32 x, s32 y, s32 scale);
 void func_80033698(s32 x, s32 y);
 s32 func_80035734(s32 port);  /* pad connected */
 s32 func_80035CDC(void);      /* dequeue pad input */
@@ -798,6 +818,8 @@ u8 func_801E0F78(u8 slot, u8 arg1);
 u8 func_801E23CC(void);
 u8 func_801E2BE4(void);
 void func_801E3088(u8 command);
+void func_801E3C2C(MenuTables *tables, u8 gear);
+void func_801E3ECC(MenuTables *tables, u8 gear);
 void func_801E41C0(MenuTables *tables, u8 gear);
 void func_801E42AC(MenuTables *tables, u8 gear);
 void func_801E4258(MenuTables *tables, u8 gear);

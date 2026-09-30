@@ -1938,7 +1938,22 @@ void func_801D4EA0(u8 slot) {
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D4F2C);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D50EC);
+/* Lay out the parts of field block `index` at (x, y) from the D_801EA34C
+ * sheet images (ffff none). */
+void func_801D50EC(u8 index, s32 x, s32 y) {
+    MenuFieldBlock *block;
+    s32 i;
+
+    block = D_800625A0->fieldBlocks[index];
+    block->count0 = 0;
+    for (i = 0; i < 20; i++) {
+        if (D_801EA34C[i] != 0xffff) {
+            block->count0 += func_8002675C(D_800625A0->sheet, D_801EA34C[i], &block->list0[block->count0 * 2],
+                                           D_800625A0->bufferIndex, x + D_801E9A78[i], y + D_801E9AC8[i],
+                                           0x1000);
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D51EC);
 
@@ -1988,7 +2003,50 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7CFC);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7F50);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D827C);
+/* Initialise the two gradient quads of a gauge in colour `colour` (0 pink,
+ * 1 green, 2 red, 3 blue), fading to black. */
+void func_801D827C(POLY_G4 *polys, u8 colour) {
+    u8 rgb[3];
+    s32 i;
+
+    switch (colour) {
+    case 0:
+        rgb[0] = 0xff;
+        rgb[1] = 0x80;
+        rgb[2] = 0x80;
+        break;
+    case 1:
+        rgb[0] = 0x80;
+        rgb[1] = 0xff;
+        rgb[2] = 0x80;
+        break;
+    case 2:
+        rgb[0] = 0xff;
+        rgb[1] = 0;
+        rgb[2] = 0;
+        break;
+    case 3:
+        rgb[0] = 0;
+        rgb[1] = 0;
+        rgb[2] = 0xff;
+        break;
+    }
+    for (i = 0; i < 2; i++) {
+        func_80043CC4(&polys[i]);
+        polys[i].r0 = rgb[0];
+        polys[i].g0 = rgb[1];
+        polys[i].b0 = rgb[2];
+        polys[i].r1 = rgb[0];
+        polys[i].g1 = rgb[1];
+        polys[i].b1 = rgb[2];
+        polys[i].r2 = 0;
+        polys[i].g2 = 0;
+        polys[i].b2 = 0;
+        polys[i].r3 = 0;
+        polys[i].g3 = 0;
+        polys[i].b3 = 0;
+    }
+}
 
 /* Tint `count` quads of `polys` (every other one from `first`): 0 red,
  * 1 blue, 2 grey. */
@@ -2021,7 +2079,26 @@ void func_801D83AC(POLY_FT4 *polys, u8 colour, u8 count, u8 first) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D84B4);
+/* Set up a gauge moving from `from` to `to` of `max`: its two lengths (of
+ * 64) and the rising or falling look. */
+void func_801D84B4(u16 from, u16 to, s32 max) {
+    s32 diff;
+
+    D_801EA6FC = from;
+    D_801EA700 = to;
+    diff = to - from;
+    D_801EA704 = diff;
+    D_801EA708 = from * 100 / max * 0x1900 / 10000;
+    if (diff >= 0) {
+        D_801EA710 = 2;
+        D_801EA714 = 0xe3;
+    } else {
+        D_801EA710 = 3;
+        D_801EA714 = 0xe5;
+        D_801EA704 = from - to;
+    }
+    D_801EA70C = D_801EA704 * 100 / max * 0x1900 / 10000;
+}
 
 /* The largest of the seven values in each of `a` and `b`. */
 u16 func_801D85DC(s32 unused, u16 *a, u16 *b) {
@@ -2323,7 +2400,17 @@ INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DF890);
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFB68);
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFE2C);
+/* Compute party slot `slot`'s gear stats and copy them to the shown values. */
+void func_801DFE2C(u8 slot) {
+    func_801E3ECC(D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[slot]].gear);
+    func_801E3C2C(D_800625A0->tables, D_8006D8A0[D_800625A0->party->ids[slot]].gear);
+    D_800625A0->tables->shown[0] = D_800625A0->tables->unkB0;
+    D_800625A0->tables->shown[1] = D_800625A0->tables->unkA4;
+    D_800625A0->tables->shown[2] = D_800625A0->tables->unkA6;
+    D_800625A0->tables->shown[3] = D_800625A0->tables->unkB2;
+    D_800625A0->tables->shown[4] = D_800625A0->tables->unkB3;
+    D_800625A0->tables->shown[5] = D_800625A0->tables->unkB4;
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801DFF5C);
 
