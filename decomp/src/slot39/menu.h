@@ -481,7 +481,7 @@ typedef struct MenuBlock34C {
     POLY_FT4 colon0[4]; /* 240C: play time separators */
     POLY_FT4 colon1[4]; /* 24AC */
     POLY_FT4 timeDigits[7][2]; /* 254C: play time digits, per buffer */
-    u8 pad277C[0x500];
+    POLY_FT4 title[32]; /* 277C: save title characters, pairs per buffer */
     POLY_FT4 discLabel[2]; /* 2C7C */
     POLY_FT4 discMark[2]; /* 2CCC */
     POLY_FT4 discDigits[2][2]; /* 2D1C: two digits */
@@ -905,6 +905,8 @@ extern s32 D_801EA010[];
 extern s32 D_801E9FE0[9];     /* play time: x of the two separators and seven digits */
 extern s32 D_801EA01C;         /* view digit row x */
 extern s32 D_801EA020;         /* view digit row y */
+extern u16 D_801EA04C;         /* save title x, y */
+extern u16 D_801EA050;
 extern s32 D_801EA02C;         /* value A digits x, y */
 extern s32 D_801EA030;
 extern s32 D_801EA034;         /* value B digits x, y */
@@ -963,6 +965,7 @@ void SetPolyG4(POLY_G4 *poly);       /* SetPolyG4 */
 void SetLineF3(LINE_F3 *line);       /* SetLineF3 */
 void SetPolyF4(POLY_F4 *poly);       /* SetPolyF4 */
 u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
+u16 GetClut(s32 x, s32 y);          /* GetClut */
 void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E927C(POLY_FT4 *poly);
