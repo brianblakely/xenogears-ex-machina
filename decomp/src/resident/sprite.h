@@ -125,7 +125,8 @@ typedef struct Sprite {
     s16 countdown;           /* +0x9e: frames to the next command */
     u8 unknowna0[8];
     struct {
-        unsigned unknown0 : 11;
+        unsigned sequencer_owned : 1; /* the sequencer buffer is allocated */
+        unsigned unknown1 : 10;
         unsigned frame : 6;      /* frame table index */
         unsigned step : 3;
         unsigned phase : 2;
@@ -165,6 +166,15 @@ typedef struct {
 } SpriteImage;
 
 
+/* A resource block resolved by 80022224: words 1-3 of the data are offsets
+ * of its sections. */
+typedef struct {
+    u8 *section2;          /* +0x0 */
+    SVECTOR origin;        /* +0x4 */
+    u8 *section3;          /* +0xc */
+    u16 *section1;         /* +0x10 */
+} SpriteResource;
+
 /* A sprite with its two task nodes, as 800233a4 allocates it. */
 typedef struct {
     Task task;
@@ -183,6 +193,8 @@ extern s32 D_80059464[];  /* [0]: active main-list tasks */
 extern s32 D_800591A8[];
 extern u8 D_800591AD[];
 extern u8 D_800591AE[];
+extern u8 D_800591B0[];
+extern u8 D_800591B3[];
 extern u8 D_8005A474[];
 extern u8 *D_800594B8[];  /* [0]: end of the queue entry block */
 extern s32 D_800591B8;    /* extra argument of 80024524/8002435c for one call */

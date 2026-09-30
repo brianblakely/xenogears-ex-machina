@@ -824,7 +824,29 @@ void func_80022038(Sprite *sprite) {
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022090);
 
+/* Resolve a resource block's section offsets into `resource`; with flag
+ * 800591ad set, a nonzero field of the first section's first halfword (bits
+ * 6-11) goes to 800591b3. */
+/* Nonmatching: the original schedules the flag load before the stores and copies the origin through one register. */
+#ifdef NON_MATCHING
+void func_80022224(SpriteResource *resource, u8 *data, SVECTOR origin) {
+    s32 value;
+
+    resource->origin = origin;
+    resource->section3 = data + ((s32 *)data)[3];
+    resource->section2 = data + ((s32 *)data)[2];
+    D_800591B0[0] = 0;
+    resource->section1 = (u16 *)(data + ((s32 *)data)[1]);
+    if (D_800591AD[0] != 0) {
+        value = (*resource->section1 >> 6) & 0x3F;
+        if (value != 0) {
+            D_800591B3[0] = value;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_80022224);
+#endif
 
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800222BC);
 
@@ -932,7 +954,21 @@ void func_8002303C(Sprite *sprite, s32 count, s32 mode) {
     ((SpriteSequencer *)sprite->sequencer)->buffer[0] = ((SpriteImage *)sprite->image)->size.width;
 }
 
+/* Destroy a sprite: release its sequencer buffer (frame bit 0), leave the
+ * pending list and release its part list and itself. */
+/* Nonmatching: the original compares the bit with 1 (li/bne); GCC tests it against zero. */
+#ifdef NON_MATCHING
+void func_800230A8(Sprite *sprite) {
+    if (sprite->frame_bits.sequencer_owned == 1 && ((SpriteSequencer *)sprite->sequencer)->buffer != NULL) {
+        func_800320E8(((SpriteSequencer *)sprite->sequencer)->buffer);
+    }
+    func_8001D3F4(sprite);
+    func_800320E8(sprite->renderer->parts);
+    func_800320E8(sprite);
+}
+#else
 INCLUDE_ASM(".local/decomp/resident/asm/nonmatchings/sprite", func_800230A8);
+#endif
 
 /* The direction (0-0xfff) from one ground point to another. */
 s32 func_80023124(DVECTOR from, DVECTOR to) {
