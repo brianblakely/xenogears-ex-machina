@@ -390,15 +390,22 @@ typedef struct MenuTables {
     GearWeapon *weapons18; /* 18: gear weapons */
     MenuItem *items; /* 1C */
     MenuEffect *effects[11]; /* 20: per character */
-    u8 pad4C[0x58];
+    u8 pad4C[0x50];
+    u32 unk9C; /* 9C: gear stats (801e3c2c) */
+    u32 unkA0; /* A0 */
     u16 unkA4; /* A4 */
     u16 unkA6; /* A6 */
-    u8 padA8[0x8];
+    u16 unkA8; /* A8 */
+    u16 unkAA; /* AA */
+    u16 unkAC; /* AC */
+    u16 unkAE; /* AE */
     u16 unkB0; /* B0 */
     u8 unkB2; /* B2 */
     u8 unkB3; /* B3 */
     u8 unkB4; /* B4 */
-    u8 padB5[0x3];
+    u8 unkB5; /* B5 */
+    u8 unkB6; /* B6 */
+    u8 padB7[0x1];
     u16 shown[6]; /* B8: stats shown on the equipment screen */
     u16 unkC4; /* C4 */
     u8 padC6[0x6];
@@ -426,22 +433,34 @@ typedef struct GearRecord {
     u8 unk3D; /* 3D */
     u8 unk3E; /* 3E */
     u8 unk3F; /* 3F */
-    u8 pad40[0x4];
+    u16 unk40; /* 40 */
+    u16 unk42; /* 42 */
     u16 unk44; /* 44 */
-    u8 pad46[0x16];
+    u8 pad46[0x4];
+    u8 unk4A; /* 4A */
+    u8 pad4B[0x2];
+    u8 unk4D; /* 4D */
+    u8 pad4E[0x6];
+    u8 unk54; /* 54 */
+    u8 pad55[0x1];
+    u8 unk56; /* 56 */
+    u8 pad57[0x5];
     u8 attrs[4]; /* 5C */
     u32 unk60; /* 60 */
     u32 unk64; /* 64 */
-    u8 pad68[0x8];
+    u16 unk68; /* 68 */
+    u16 unk6A; /* 6A */
+    u8 pad6C[0x4];
     u16 unk70; /* 70 */
     u16 unk72; /* 72 */
-    u8 pad74[0x1];
+    u8 unk74; /* 74 */
     u8 unk75; /* 75 */
     u8 pad76[0x10];
     u16 unk86; /* 86 */
     u8 pad88[0x10];
     u8 unk98; /* 98 */
-    u8 pad99[0x4];
+    u8 pad99[0x3];
+    u8 unk9C; /* 9C */
     u8 unk9D; /* 9D */
     u8 unk9E; /* 9E */
     u8 unk9F; /* 9F */
@@ -801,6 +820,21 @@ typedef struct GameRecordECF4 {
     u8 pad1C[0x4];
 } GameRecordECF4;
 
+/* The game data from 8006d634 to the flags at 8006f8ea: the code addresses
+ * its tables relative to one another, so they are one object. */
+typedef struct GameData {
+    u8 names[5][2][0x14]; /* 0 (8006d634): name line pairs */
+    u8 names10[0x14]; /* C8 */
+    u8 unkDC[0x190]; /* DC (8006d710) */
+    CharRecord chars[11]; /* 26C (8006d8a0, D_8006D8A0) */
+    GearRecord gears[20]; /* 978 (8006dfac, D_8006DFAC) */
+    u8 unk1648[0x78]; /* 1648 (8006ec7c) */
+    GameRecordECF4 records[11]; /* 16C0 (8006ecf4, D_8006ECF4) */
+    u8 unk1820[0x100]; /* 1820 (8006ee54) */
+    u8 unk1920[0x996]; /* 1920 (8006ef54) */
+    u16 flags; /* 22B6 (8006f8ea, D_8006F8EA) */
+} GameData;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -896,6 +930,7 @@ extern u16 D_8005A3A0[16];
 extern u8 D_8006F8E5[];       /* game data */
 extern GameRecordECF4 D_8006ECF4[11];
 extern u16 D_8006F364;
+extern GameData D_8006D634;    /* game data (also named at its tables below) */
 extern u16 D_8006F8EA;        /* game data: flags */
 extern u8 D_8006F36C[];       /* game data inventory lists (counts, ids) */
 extern u8 D_8006F3D0[];
@@ -962,7 +997,6 @@ extern s32 D_801EA708;
 extern s32 D_801EA70C;
 extern u8 D_801EA710;
 extern u8 D_801EA714;
-extern u8 D_8006D634[][2][0x14]; /* game data: name line pairs */
 extern s32 D_801EA578[];         /* label image x per row pair */
 extern s32 D_801EA5C4[];         /* label image y per row pair */
 extern s32 D_801EA590[];         /* view name image x (D_801EA578 from row 6) */
@@ -999,6 +1033,7 @@ extern u8 D_801E97AC[];       /* 801e1544 screen: five sheet images per row, ff 
 extern s32 D_801E9F48[];      /* status command label x offsets (page 0 and 6) */
 extern u8 D_801EA56E[];       /* status command extra labels */
 extern u8 D_80059179;         /* forbids the status command toggle */
+extern u8 D_801E9808[20];      /* pilot character of each gear */
 extern s32 D_801EA494[9];     /* view frame images, ffff none */
 extern s32 D_801E9F98[9];     /* view frame x (first view) */
 extern s32 D_801E9FBC[9];     /* view frame y */

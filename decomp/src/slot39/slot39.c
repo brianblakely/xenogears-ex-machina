@@ -3869,7 +3869,53 @@ void func_801E3A80(MenuTables *tables, u8 id) {
     }
 }
 
+/* Compute gear `gear`'s shown stats from its record and its pilot (flag 1000
+ * makes gear 9's pilot character 10); gear 7 first takes its values from
+ * character 7 (HP x50, stats plus bonuses). */
+#ifdef NON_MATCHING
+void func_801E3C2C(MenuTables *tables, u8 gear) {
+    GearRecord *record;
+    CharRecord *pilot;
+    s16 value;
+    s32 bonus;
+
+    if (D_8006D634.flags & 0x1000) {
+        D_801E9808[9] = 10;
+    }
+    if (gear == 7) {
+        D_8006D634.gears[7].unk60 = D_8006D634.chars[7].hp * 50;
+        D_8006D634.gears[7].unk64 = D_8006D634.chars[7].hpMax * 50;
+        D_8006D634.gears[7].unk3C = D_8006D634.chars[7].unk58 + D_8006D634.chars[7].bonus[0];
+        D_8006D634.gears[7].unk70 = (D_8006D634.chars[7].unk59 + D_8006D634.chars[7].bonus[1]) * 12;
+        D_8006D634.gears[7].unk72 = (D_8006D634.chars[7].unk5C + D_8006D634.chars[7].bonus[4]) * 6;
+        D_8006D634.gears[7].unk98 = D_8006D634.chars[7].unk5A + D_8006D634.chars[7].bonus[2];
+    }
+    record = &D_8006D634.gears[gear];
+    pilot = &D_8006D634.chars[D_801E9808[gear]];
+    tables->unk9C = record->unk60;
+    tables->unkA0 = record->unk64;
+    tables->unkA4 = record->unk70 + record->unk40;
+    tables->unkA6 = pilot->unk5C + pilot->bonus[4] + record->unk42 + record->unk72;
+    tables->unkA8 = record->unk68 + record->unk44;
+    tables->unkAA = record->unk6A;
+    tables->unkAC = record->unk38;
+    tables->unkAE = record->unk3A;
+    bonus = record->unk3C * (record->unk74 + record->unk56);
+    if (gear == 5 || gear == 13) {
+        value = (record->slots[0].unk2 + record->slots[2].unk2) * 6 / 10;
+    } else {
+        value = record->slots[0].unk2;
+    }
+    tables->unkB0 = value + bonus;
+    tables->unkB2 = record->unk9F + record->unk4D;
+    tables->unkB3 = record->unk98 - record->unk4A;
+    tables->unkB4 = record->unk9E + record->unk54;
+    tables->unkB5 = record->unk9D;
+    tables->unkB6 = record->unk9C;
+}
+#else
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801E3C2C);
+#endif
 
 /* Compute gear `gear`'s part and weapon values, then mirror its +9 values
  * (and for gears 4, 5 its weapons) into its other form (gears 1, 15, 10-14)
@@ -5197,8 +5243,8 @@ void func_801E8DA8(u8 image, u8 row) {
     pixels = func_80031BDC(0x3f6, 0);
     bzero(pixels, 0x3f6);
     if (image != 0xff) {
-        func_80034EAC(D_8006D634[image >> 1][0], pixels, 0x24, 0);
-        func_80034EAC(D_8006D634[image >> 1][1], pixels, 0x24, 1);
+        func_80034EAC(D_8006D634.names[image >> 1][0], pixels, 0x24, 0);
+        func_80034EAC(D_8006D634.names[image >> 1][1], pixels, 0x24, 1);
     }
     rect.x = D_801EA578[row >> 1] + 0x180;
     rect.y = D_801EA5C4[row >> 1];
