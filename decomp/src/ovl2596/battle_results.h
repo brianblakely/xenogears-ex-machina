@@ -111,6 +111,8 @@ typedef struct {
     u8 showSummary;       /* 0xA1 */
     u8 padA2[0xA];
     u8 showSpoils;        /* 0xAC */
+    u8 padAD[0x22];
+    u8 waitingCross;      /* 0xCF: the prompt waits for Cross */
 } BattleUi;
 
 /* Battle slot info (800c3eb4, 0x1c per slot); the symbol names its
@@ -233,7 +235,22 @@ void func_80043CC4(POLY_G4 *prim);                          /* SetPolyG4 */
 void func_800728B8(POLY_FT4 *prims, s32 count, s32 buffer);
 s32 func_80076A10(s32 id, POLY_FT4 *prims, s16 x, s16 y);   /* glyph sprite */
 
+/* Sound and input. */
+typedef struct {
+    u8 pad[0x14];
+    u16 id;               /* 0x14 */
+} SoundBank;
+
+extern SoundBank *D_8005919C;   /* the system effect bank */
+extern u8 D_80059180;
+extern u8 D_801E44C0;           /* the result fanfare has started */
+extern u8 D_800D3014;           /* decoded input command, 4 = Cross */
+void func_80039E60(s32 code);   /* start a sound effect */
+void func_800716D8(void);       /* run one battle frame */
+
 void func_801DE1C4(void);
 void func_801DE408(void);
+void func_801DFF50(u8 member);
+void func_801E0184(u8 member);
 
 #endif

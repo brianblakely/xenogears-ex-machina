@@ -557,15 +557,42 @@ void func_801E0184(u8 member) {
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0184);
 #endif
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E03B8);
+/* Build the summary's member numbers and their changes. */
+void func_801E03B8(u8 member) {
+    func_801DFD58(member);
+    func_801DFE6C(member);
+    func_801DFF50(member);
+    func_801E0184(member);
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E03FC);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E09C0);
+/* Play effect id of the system effect bank. */
+void func_801E09C0(u8 id) {
+    func_80039E60((D_8005919C->id << 16) | id);
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E09F4);
+/* Start the result fanfare's three effects once. */
+void func_801E09F4(void) {
+    if (D_801E44C0 == 0) {
+        D_80059180 = 1;
+        func_801E09C0(0x5C);
+        func_801E09C0(0x5D);
+        func_801E09C0(0x5E);
+        D_801E44C0 = 1;
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0A4C);
+/* Start the fanfare and run battle frames until Cross is pressed. */
+void func_801E0A4C(void) {
+    func_801E09F4();
+    func_800716D8();
+    D_800D2D28->waitingCross = 1;
+    while (D_800D3014 != 4) {
+        func_800716D8();
+    }
+    D_800D2D28->waitingCross = 0;
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E0ACC);
 
