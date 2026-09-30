@@ -672,7 +672,32 @@ INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E10F8);
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E126C);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1370);
+/* Add count of item id to an inventory list of size entries (ids and
+ * counts): stack onto the item (at most 99) or take the first free entry;
+ * a full list drops the item. */
+void func_801E1370(u8 id, u8 count, u8 *ids, u8 *counts, u8 size) {
+    s32 i;
+
+    for (i = 0; i < size; i++) {
+        if (ids[i] == id) {
+            if (counts[i] + count >= 100) {
+                counts[i] = 99;
+            } else {
+                counts[i] = count + counts[i];
+            }
+            break;
+        }
+    }
+    if (i == size) {
+        for (i = 0; i < size; i++) {
+            if (ids[i] == 0) {
+                ids[i] = id;
+                counts[i] = count;
+                break;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E1444);
 
@@ -832,6 +857,23 @@ void func_801E3FB0(void) {
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E403C);
 
-INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E41B4);
+/* Levels 50, 60 and 70 set unlock bits 8, 4 and 2 of each party member. */
+void func_801E41B4(void) {
+    u8 slot;
+    u8 id;
+
+    for (slot = 0; slot < 3; slot++) {
+        id = D_800CCCE8[slot].id;
+        if (D_8006D8A0[id].level >= 50) {
+            D_8006D634.skills[id].unlocksA |= 8;
+        }
+        if (D_8006D8A0[id].level >= 60) {
+            D_8006D634.skills[id].unlocksA |= 4;
+        }
+        if (D_8006D8A0[id].level >= 70) {
+            D_8006D634.skills[id].unlocksA |= 2;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E42C4);

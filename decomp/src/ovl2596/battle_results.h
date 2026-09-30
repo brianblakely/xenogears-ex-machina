@@ -289,6 +289,8 @@ typedef struct {
     u8 pad9E[0x170 - 0x9E];
 } Combatant;
 
+extern GameData D_8006D634;
+extern Combatant D_800CCCE8[];
 extern GameData *D_801E44C4;    /* 8006d634 */
 extern Combatant *D_801E44C8;   /* 800ccce8 */
 extern Growth *D_801E44E8;      /* the growth data file */
