@@ -5823,9 +5823,30 @@ u8 row;
     }
 }
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80091EC4);
+/* Point the four art page quads at the art list image from row `v`. */
+void func_80091EC4(u8 v) {
+    D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_800595D4;
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x34, 0x34, 0, v, 0x60, 0x60);
+    func_80076CE8(&D_800C3EA4->unkA230->unk50[D_800CCB04.buffer], 0xB8, 0x34, 0x78, v, 0x60, 0x60);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x9C, 0x34, 0, v, 0x10, 0x60);
+    func_80076CE8(&D_800C3EA4->unkA230->unkF0[D_800CCB04.buffer], 0x120, 0x34, 0x40, v, 0x10, 0x60);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_8009209C);
+/* Show the gear page list image on the four page quads and mark the page
+ * (command window page 3) open. */
+void func_8009209C(void) {
+    D_800C3EA4->unkA230->unk0[D_800CCB04.buffer].clut = D_800595D4;
+    D_800C3EA4->unkA230->unk50[D_800CCB04.buffer].clut = D_800595D4;
+    func_80076CE8(&D_800C3EA4->unkA230->unk0[D_800CCB04.buffer], 0x36, 0x62, 0, 0, 0x60, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unk50[D_800CCB04.buffer], 0xC2, 0x62, 0x78, 0, 0x60, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unkA0[D_800CCB04.buffer], 0x96, 0x62, 0, 0, 0x10, 0x40);
+    func_80076CE8(&D_800C3EA4->unkA230->unkF0[D_800CCB04.buffer], 0x122, 0x62, 0x40, 0, 0x10, 0x40);
+    D_800C3EA4->unkA230->unk668 = D_800CCB04.buffer;
+    D_800C3EA4->unkA230->unk669 = 1;
+    D_800D2D28->unkB7 = 3;
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle", func_80092298);
 
