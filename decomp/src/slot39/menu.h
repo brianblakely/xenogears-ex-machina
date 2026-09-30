@@ -131,7 +131,7 @@ typedef struct MenuParty {
     u8 unk4D; /* 4D */
     u8 unk4E; /* 4E */
     u8 pad4F[0x1];
-    u8 unk50[3]; /* 50 */
+    u8 unk50[3]; /* 50: per image block (+444): shown; block 2 (the card access indicator): 1 shown, 2 closing */
     u8 unk53; /* 53 */
     u8 unk54[6]; /* 54 */
     u8 pad5A[0x2];
@@ -627,6 +627,17 @@ typedef struct MenuPortrait {
     u8 unk71D; /* 71D */
 } MenuPortrait;
 
+/* The card access indicator (*(state + 44c), 7bc bytes). */
+typedef struct MenuIndicator {
+    POLY_F4 fills[2]; /* 0: per buffer */
+    POLY_FT4 spriteA[24]; /* 30: sprite 160 */
+    POLY_FT4 spriteB[24]; /* 3F0: sprite 161 */
+    s32 unk7B0; /* 7B0 */
+    s32 unk7B4; /* 7B4 */
+    u8 buffer; /* 7B8: buffer it was built for */
+    u8 pad7B9[0x3];
+} MenuIndicator;
+
 /* The menu mode's state (*D_800625A0). */
 typedef struct MenuState {
     MenuMover movers[3]; /* 0 */
@@ -945,6 +956,9 @@ void func_801CA1D4(s32 mode, s32 slot);
 void func_801CA480(s32 mode, s32 slot);
 void func_801CA5F0(s32 mode, s32 slot);
 void func_801E781C(s32 index, u8 rebuild);
+void func_80039E60(s32 sound);
+/* Block 2 of state + 444 holds the card access indicator. */
+#define MENU_INDICATOR ((MenuIndicator *)D_800625A0->blocks444[2])
 void func_801E78C8(s32 file);
 void func_801C9270(s32 port);
 extern u8 D_801EA6F8;

@@ -1851,7 +1851,41 @@ void func_801CADB0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CAE08);
+/* The card access indicator: 0 removes it (after a frame its block is
+ * released), 1 builds it (a flat quad and sprites 160/161 at (a0, 64)) and
+ * starts its effects, 2 closes it. */
+void func_801CAE08(u8 mode) {
+    switch (mode) {
+    case 0:
+        if (D_800625A0->party->unk50[2]) {
+            D_800625A0->party->unk50[2] = 0;
+            func_801C7BF4();
+            func_800320E8(MENU_INDICATOR);
+        }
+        break;
+    case 1:
+        D_800625A0->blocks444[2] = func_80031BDC(sizeof(MenuIndicator), 0);
+        bzero(MENU_INDICATOR, sizeof(MenuIndicator));
+        SetPolyF4(&MENU_INDICATOR->fills[D_800625A0->bufferIndex]);
+        setRGB0(&MENU_INDICATOR->fills[D_800625A0->bufferIndex], 0xa0, 0xa0, 0);
+        func_8002675C(D_800625A0->sheet, 0x160, MENU_INDICATOR->spriteA, D_800625A0->bufferIndex, 0xa0, 0x64, 0x1000);
+        func_8002675C(D_800625A0->sheet, 0x161, MENU_INDICATOR->spriteB, D_800625A0->bufferIndex, 0xa0, 0x64, 0x1000);
+        MENU_INDICATOR->buffer = D_800625A0->bufferIndex;
+        D_800625A0->party->unk50[2] = 1;
+        MENU_INDICATOR->unk7B4 = 8;
+        func_80039E60((D_800625A0->effectBank->id << 16) | 0xe0);
+        func_80039E60((D_800625A0->effectBank->id << 16) | 0xe1);
+        func_80039E60((D_800625A0->effectBank->id << 16) | 0x8f);
+        break;
+    case 2:
+        if (D_800625A0->party->unk50[2]) {
+            MENU_INDICATOR->unk7B0 = 0x100;
+            setRGB0(&MENU_INDICATOR->fills[MENU_INDICATOR->buffer], 0, 0xa0, 0);
+            D_800625A0->party->unk50[2] = 2;
+        }
+        break;
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801CB184);
 
