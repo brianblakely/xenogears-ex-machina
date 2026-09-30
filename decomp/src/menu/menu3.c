@@ -1226,7 +1226,97 @@ void func_80078F00(Actor *actor) {
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_80078F00);
 #endif
 
+#ifdef NON_MATCHING
+/* Per-frame anchors of an actor: home between its feet, dust when landing
+ * or skidding, cells thrown up while it stands in deep ground, the upper
+ * anchor and core, the charged glow and its effect, and the stance effects
+ * (7 and 9) when the stance changes.
+ * Does not match: the stance word and the flag word swap v0/v1 in the stance-1 branch, and the final flag update uses a0/a1 instead of v1/a0. */
+void func_8007920C(Actor *actor) {
+    Vector foot_a;
+    Vector foot_b;
+    Vector unused; /* keeps the original's 16-byte frame slot */
+    SceneHeader *header = actor->header;
+    s32 state;
+
+    func_80073B7C(actor, header->foot_a_part, header->foot_a_vertex, &foot_a);
+    func_80073B7C(actor, header->foot_b_part, header->foot_b_vertex, &foot_b);
+    actor->home.vx = (foot_a.vx + foot_b.vx) / 2;
+    actor->home.vy = (foot_a.vy + foot_b.vy) / 2;
+    actor->home.vz = (foot_a.vz + foot_b.vz) / 2;
+    if ((actor->flags & 0x80000) && (actor->flags & 0x60000000) != 0x20000000 && !(actor->kind & 1)) {
+        func_8007D190(&foot_a, 9);
+        func_8007D190(&foot_b, 9);
+    }
+    if (actor->unk90B != 0) {
+        if (foot_a.vy + 0x40 > actor->floor_y - 0x20 && actor->foot_a_y + 6 < foot_a.vy) {
+            func_8007D7A8(&foot_a, 0x20);
+        }
+        if (foot_b.vy + 0x40 > actor->floor_y - 0x20 && actor->foot_b_y + 6 < foot_b.vy) {
+            func_8007D7A8(&foot_b, 0x20);
+        }
+        actor->unk90B--;
+    }
+    if ((actor->flags & 0x60000000) == 0x20000000) {
+        func_8007DC74(&actor->home, &actor->start_home);
+    }
+    if (func_80083CD8() != 7 && (actor->flags & 0x60000000) == 0x20000000 && actor->home.vy > 0x80 &&
+        actor->start_home.vy < 0x80) {
+        func_8008EB88(actor, 0x3A, &actor->home, 2);
+    }
+    actor->foot_a_y = foot_a.vy;
+    actor->foot_b_y = foot_b.vy;
+    func_80073B7C(actor, header->core_part, header->core_vertex, &actor->unk92C);
+    actor->unk92C.vy -= 0x38;
+    actor->core.vx = (actor->home.vx + actor->unk92C.vx) / 2;
+    actor->core.vz = (actor->home.vz + actor->unk92C.vz) / 2;
+    actor->core.vy = (actor->home.vy + actor->unk92C.vy) / 2;
+    if ((actor->flags & 0x8000) && actor->unkC5 == 0 && (actor->unkC4 & 1)) {
+        func_8007C100(&actor->colour);
+        func_8007CD44(ACTOR_SIDE(actor), &actor->unk92C, &actor->home, ACTOR_SIDE(actor));
+        if (!(actor->flags & 0x10000)) {
+            func_8008ED6C(actor, 8);
+            func_8008EBD0(actor, 8, &actor->home, 2);
+        }
+    }
+    if (actor->unkC5 != 4) {
+        if (actor->unkC4 != 1) {
+            actor->unkD4 &= ~3;
+        } else {
+            actor->unkD4 = (actor->unkD4 & ~3) | 1;
+            if (actor->flags & 0x8000) {
+                actor->unkD4 = (actor->unkD4 & ~3) | 2;
+            }
+        }
+        if (actor->unkC5 == 2) {
+            actor->unkD4 |= 3;
+        }
+    }
+    state = actor->unkD4 & 3;
+    if (state != ((actor->unkD4 >> 2) & 3)) {
+        switch (state) {
+        case 0:
+        case 3:
+            func_8008ED6C(actor, 7);
+            func_8008ED6C(actor, 9);
+            break;
+        case 1:
+            func_8008EBD0(actor, 7, &actor->pos, 2);
+            func_8008ED6C(actor, 9);
+            break;
+        case 2:
+            func_8008EBD0(actor, 9, &actor->home, 2);
+            func_8008ED6C(actor, 7);
+            break;
+        }
+    }
+    actor->unkC6 = actor->unkC4;
+    actor->flags = (actor->flags & ~0x10000) | (((actor->flags >> 15) & 1) << 16);
+    actor->unkD4 = (actor->unkD4 & ~0xC) | ((actor->unkD4 & 3) << 2);
+}
+#else
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu3", func_8007920C);
+#endif
 
 /* Frame both actors with the camera: look at their midpoint, choose the
  * side (left or right of the line between them) whose eye point is nearer
