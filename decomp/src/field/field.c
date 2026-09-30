@@ -763,7 +763,47 @@ void func_80073734(VECTOR *v) {
     v->vz = ((s16 *)&v->vz)[1];
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80073750);
+/* Build a look-at view matrix from 16.16 eye, target and up vectors: the
+ * rows are the side, up and forward axes, the translation the rotated
+ * eye (scaled by 3) negated. */
+void func_80073750(MATRIX *view, VECTOR *eye, VECTOR *target, VECTOR *up) {
+    VECTOR v;
+    VECTOR forward;
+    VECTOR side;
+    VECTOR y;
+    SVECTOR position;
+
+    v.vx = (target->vx - eye->vx) >> 16;
+    v.vy = (target->vy - eye->vy) >> 16;
+    v.vz = (target->vz - eye->vz) >> 16;
+    y.vx = up->vx;
+    y.vy = up->vy;
+    y.vz = up->vz;
+    y.vx >>= 16;
+    y.vy >>= 16;
+    y.vz >>= 16;
+    func_80048D7C(&v, &forward);
+    func_8004A480(&y, &forward, &v);
+    func_80048D7C(&v, &side);
+    func_8004A480(&forward, &side, &v);
+    func_80048D7C(&v, &y);
+    view->m[0][0] = side.vx;
+    view->m[0][1] = side.vy;
+    view->m[0][2] = side.vz;
+    view->m[1][0] = y.vx;
+    view->m[1][1] = y.vy;
+    view->m[1][2] = y.vz;
+    view->m[2][0] = forward.vx;
+    view->m[2][1] = forward.vy;
+    view->m[2][2] = forward.vz;
+    position.vx = WHOLE(eye->vx) * 3;
+    position.vy = WHOLE(eye->vy) * 3;
+    position.vz = WHOLE(eye->vz) * 3;
+    ApplyMatrix(view, &position, &v);
+    view->t[0] = -v.vx;
+    view->t[1] = -v.vy;
+    view->t[2] = -v.vz;
+}
 
 /* Turn angle `angle` towards `goal` by `step` the short way round, stopping
  * at the goal; 12-bit angles. */
