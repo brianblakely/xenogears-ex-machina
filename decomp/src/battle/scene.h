@@ -3,7 +3,6 @@
 
 #include "common.h"
 #include "model.h"
-#include "mesh.h"
 
 /* Presentation event queue slot (0x48 bytes, from D_800C3FE8). */
 typedef struct {
@@ -16,28 +15,6 @@ typedef struct {
     u8 accumulatedCodes[11]; /* 0x3C */
     u8 type;                 /* 0x47: 0xF7 continues, 0xFF ends */
 } BattleEvent;
-
-/* An image animation of a battle object (0x30 bytes): the VRAM area it
- * changes is restored when freed (800A429C). */
-typedef struct ImageAnim {
-    u8 pad0[4];
-    void *pixels; /* 0x04: the saved area */
-    void *field8; /* 0x08 */
-    void *fieldC; /* 0x0C */
-    u8 field10;   /* 0x10: restored below 4 */
-    u8 pad11[0x1A - 0x11];
-    s16 active;   /* 0x1A */
-    u8 pad1C[0x28 - 0x1C];
-    RECT rect;    /* 0x28 */
-} ImageAnim;
-
-/* A channel of a battle object's animation script effects (0x70 bytes). */
-typedef struct {
-    s16 id; /* -1 idle */
-    u8 pad2[6];
-    void *data; /* 0x08 */
-    u8 padC[0x70 - 0xC];
-} ObjectChannel;
 
 /* A battle object's extra file: more effect scripts and animations. */
 typedef struct {
@@ -111,13 +88,13 @@ typedef struct {
     POLY_FT4 shadow[2]; /* 0xB8: one per frame buffer */
     u8 pad108[2];
     u16 slotMask; /* 0x10A */
-    u8 channelCount;  /* 0x10C */
-    u8 meshCount;     /* 0x10D */
-    u8 imageAnimCount; /* 0x10E */
+    u8 channelCount;          /* 0x10C */
+    u8 surfaceCount;          /* 0x10D */
+    u8 imageCount;            /* 0x10E: image animations at 0x118 */
     u8 pad10F;
-    ObjectChannel *channels; /* 0x110 */
-    StageMesh *meshes; /* 0x114 */
-    struct ImageAnim *imageAnims; /* 0x118 */
+    struct ColorFade *channels; /* 0x110: colour fades */
+    struct Surface *surfaces; /* 0x114 */
+    struct ImageAnim *images; /* 0x118 */
 } BattleObject;
 
 /* Layout check (a negative array size fails the build). */
@@ -298,7 +275,7 @@ void func_8003852C(void *bank); /* free a sound bank */
 void func_800AA934(BattleObject *object, BattleObject *target, EffectPool *pool, s32 arg3);
 void func_800B00D0(void);
 void func_800AFF9C(BattleObject *object);
-s32 func_800A0838(ModelList *models, ModelPart *root, u16 animation, s16 scale);
+s32 func_800A0838(EffectPool *pool, ModelPart *root, u16 tag, s16 scale);
 void func_800AE2A4(BattleObject *object, EffectPool *pool, s32 arg2);
 void func_800AAD54(BattleObject *object, EffectPool *pool, s32 flags, s32 steps, s32 arg4);
 void func_800AF180(EffectPool *pool, s32 index, ModelPart *from, ModelPart *to);
@@ -309,7 +286,7 @@ void func_800A22A8(EffectPool *pool);
 void func_800A2D1C(SpritePool *pool);
 s32 func_800AF400(void);
 void func_800AFA98(BattleObject *object, ModelPart *part, s32 flags);
-void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, void *out);
+void func_800A5BE8(SVector *a, SVector *b, SVector *c, SVector *point, Vector *normal);
 s32 func_800A5870(SVector *point, s32 index, void *out);
 s32 func_800A579C(SVector *point);
 s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);
@@ -318,9 +295,9 @@ s32 func_800A5D54(SVector *point, s32 triangle, s32 depth);
 s32 func_800AA650(s32 index);
 void func_800B10EC(s32 index, s32 x, s32 z, s32 distance);
 void func_800A2D5C(SpritePool *pool);
-void func_800A3490(void);
-void func_800A3514(void);
-void func_800A3578(void);
-void func_800A35C8(void);
+s16 func_800A3490(s16 angle, s16 divisor, s32 base);
+s16 func_800A3514(s16 value, s16 divisor, s16 base);
+s16 func_800A3578(s16 value, s16 divisor, s32 base);
+s16 func_800A35C8(s16 value, s16 divisor, s16 minimum);
 
 #endif

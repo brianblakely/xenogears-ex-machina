@@ -8,26 +8,24 @@
  * the opcode handler 800b3f04, which plays a full-screen effect in its own
  * frame loop on a private stack.
  *
- * The module was built by a compiler that schedules %hi/%lo halves of
- * addresses separately (lui far from its lw/sw/addiu, even in delay slots)
- * and keeps positive li as addiu; the qualified GCC 2.6.3/2.7.2 + ASPSX 2.34
- * do neither, so functions addressing symbols stay NON_MATCHING. */
+ * The module was built by the Cygnus CDK GCC 2.7.2 with a later ASPSX
+ * (see ovl3387.mk). */
 #include "burst.h"
 
 /* Advance the effect one frame (two variants), fading it out after 100 or 24
  * frames. The empty loops over a 2x14x20 grid are left from removed work. */
-#ifdef NON_MATCHING
 void func_801FC000(TaskNode *node) {
     Burst *burst = node->object;
+    SVECTOR unused; /* allocated but never used (the removed work's) */
     s32 i, j, k;
 
     if (D_801FCE14 != 0) {
         burst->speed++;
-        burst->frame++;
         burst->angle += 0x80;
-        burst->twist += 0x40;
-        burst->trans.vz -= 0x1E;
         burst->angle += burst->speed >> 2;
+        burst->twist += 0x40;
+        burst->frame++;
+        burst->trans.vz -= 0x1E;
         if (burst->frame > 100) {
             burst->brightness -= 4;
         }
@@ -48,26 +46,25 @@ void func_801FC000(TaskNode *node) {
         }
     }
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC000);
-#endif
 
 /* Draw the captured screen's cells: each corner rises by the sine (variant
  * 1: of the angle plus its distance; otherwise the cosine of its distance)
  * scaled by the twist, and lights up with it; projected with a 512 screen
  * distance about the screen centre. */
-#ifdef NON_MATCHING
 void func_801FC11C(TaskNode *node) {
     Burst *burst = node->object;
-    BurstCell *cell;
-    POLY_GT3 *prim;
+    s32 ofs[2];
     MATRIX m;
-    s32 ofx, ofy, screen;
+    BurstCell *cell;
+    SVECTOR *corner;
+    POLY_GT3 *prim;
+    s32 twist;
+    s32 screen;
     s32 p, flag;
-    s32 half, row, col, k;
     s32 wave, light, otz;
+    s32 row, half, col, k;
 
-    ReadGeomOffset(&ofx, &ofy);
+    ReadGeomOffset(&ofs[0], &ofs[1]);
     screen = ReadGeomScreen();
     SetGeomOffset(0xA0, 0x70);
     SetGeomScreen(0x200);
@@ -79,15 +76,20 @@ void func_801FC11C(TaskNode *node) {
         for (row = 0; row != 14; row++) {
             for (col = 0; col != 20; col++) {
                 cell = &burst->cells[half][row][col];
+                corner = cell->corner;
                 prim = &cell->prim[D_800C3EB0.buffer];
                 for (k = 0; k != 3; k++) {
                     if (D_801FCE14 != 0) {
-                        wave = func_8003F8B0(burst->angle + cell->distance[k]) * burst->twist / 4096;
+                        twist = burst->twist;
+                        wave = func_8003F8B0(burst->angle + cell->distance[k]);
                     } else {
-                        wave = func_8003F8CC(cell->distance[k]) * burst->twist / 4096;
+                        twist = burst->twist;
+                        wave = func_8003F8CC(cell->distance[k]);
                     }
-                    cell->corner[k].vz = wave >> 2;
-                    light = (wave >> 7) + burst->brightness;
+                    wave = wave * twist / 4096;
+                    corner[k].vz = wave >> 2;
+                    light = wave >> 7;
+                    light += burst->brightness;
                     if (light < 0) {
                         light = 0;
                     }
@@ -106,20 +108,18 @@ void func_801FC11C(TaskNode *node) {
                         break;
                     }
                 }
-                otz = RotTransPers3(&cell->corner[0], &cell->corner[1], &cell->corner[2],
-                                    (s32 *)&prim->x0, (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz = RotTransPers3(&corner[0], &corner[1], &corner[2], (s32 *)&prim->x0,
+                                    (s32 *)&prim->x1, (s32 *)&prim->x2, &p, &flag);
+                otz >>= 6;
                 if (!(flag & 0x8000)) {
-                    AddPrim(D_801FCE48 + (otz >> 6), prim);
+                    AddPrim(D_801FCE48 + otz, prim);
                 }
             }
         }
     }
-    SetGeomOffset(ofx, ofy);
+    SetGeomOffset(ofs[0], ofs[1]);
     SetGeomScreen(screen);
 }
-#else
-INCLUDE_ASM(".local/decomp/ovl3387/asm/nonmatchings/ovl3387", func_801FC11C);
-#endif
 
 /* Wait for drawing to finish and release the effect. */
 void func_801FC400(Burst *burst) {
@@ -145,8 +145,13 @@ Burst *func_801FC470(void) {
 
 /* Set up the effect: the screen as two triangles per 16x16 cell over a
  * 320x224 grid (textured from the copy at 0x2c0,0x100), each corner's
- * distance from the centre (variant 1: twice it; otherwise 3/10 of it). */
+ * distance from the centre (variant 1: twice it; otherwise 3/5 of it). */
 #ifdef NON_MATCHING
+/* Same operations; the original keeps v (row * 16) apart and computes the
+ * second triangle's (v - 101) * 16 per column, steps both column x offsets
+ * (col * 256 - 0x9b0 / - 0x950) as spilled induction variables and needs a
+ * 0x78-byte frame; here GCC folds (v - 101) * 16 into a row induction
+ * variable and allocates a 0x68-byte frame. */
 Burst *func_801FC4A8(Burst *burst) {
     BurstCell *cell;
     SVECTOR *triangle;
@@ -198,7 +203,7 @@ Burst *func_801FC4A8(Burst *burst) {
                     if (D_801FCE14 != 0) {
                         cell->distance[k] = SquareRoot0(square.vx + square.vy) * 2;
                     } else {
-                        cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 10;
+                        cell->distance[k] = SquareRoot0(square.vx + square.vy) * 3 / 5;
                     }
                 }
                 for (k = 0; k != 2; k++) {
@@ -257,6 +262,11 @@ void func_801FC898(void) {
  * background colour fades, then restore the pages, clear the screen and the
  * background colour. */
 #ifdef NON_MATCHING
+/* Same operations; the original's 0x58-byte frame keeps the saved background
+ * colour bytes at sp+0x10 and the page copies at sp+0x1c/0x20 below the RECT
+ * at sp+0x28 (no fp) and walks the screen copy with a pointer beside the
+ * counter; here they live in registers or spill slots above the RECT
+ * (0x48-byte frame). */
 void func_801FC8F4(void) {
     RECT rect;
     u8 *pages0, *pages1;

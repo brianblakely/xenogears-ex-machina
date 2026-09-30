@@ -9,7 +9,11 @@ typedef struct {
     s32 t[3];
 } MATRIX;
 
-void TransMatrix(MATRIX *m, s32 *v);
+typedef struct {
+    s32 vx, vy, vz, pad;
+} VECTOR;
+
+MATRIX *TransMatrix(MATRIX *m, VECTOR *v);
 MATRIX *CompMatrix(MATRIX *m0, MATRIX *m1, MATRIX *m2);
 void SetRotMatrix(MATRIX *m);
 void SetTransMatrix(MATRIX *m);

@@ -42,10 +42,24 @@ segments:
     start: 0x0
     vram: 0x8006faf0
     subsegments:
-      - [0x0, .rodata, battle]
+      # The overlay's number (6) ahead of the units' rodata, as in field (4),
+      # worldmap (5), menu (7) and movie (8); the first unit's rodata starts
+      # at 0x4, where its jump tables sit (4 mod 8, docs/matching.md).
+      - [0x0, rodata, battle_prefix]
+      # Units change where the jump tables change phase mod 8 (GCC's .align 3
+      # is relative to the unit's rodata, placed at 4-byte boundaries; see
+      # docs/matching.md). battle.c keeps 8008115C-8009E53C, which still
+      # spans the phase changes at 80070314 and 80070370.
+      - [0x4, .rodata, battle_80070E2C]
+      - [0x18, .rodata, battle_800792F8]
+      - [0x8C, .rodata, battle_80079ED8]
+      - [0x520, .rodata, battle]
       - [0x9DC, .rodata, battle_8009E53C]
       - [0xCEC, .rodata, battle_800B15D8]
-      - [0x133c, c, battle]
+      - [0x133c, c, battle_80070E2C]
+      - [0x9808, c, battle_800792F8]
+      - [0xA3E8, c, battle_80079ED8]
+      - [0x1166C, c, battle]
       - [0x2EA4C, c, battle_8009E53C]
       - [0x41AE8, c, battle_800B15D8]
       - [0x52558, data, battle_data]

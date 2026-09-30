@@ -15,7 +15,8 @@
 #include "model.h"
 #include "scene.h"
 #include "gte.h"
-#include "stage.h"
+#include "effect.h"
+#include "objects.h"
 
 #ifdef NON_MATCHING
 /* Select script index of an effect script file: copy its entry into
