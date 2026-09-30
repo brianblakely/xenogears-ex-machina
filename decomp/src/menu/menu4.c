@@ -352,7 +352,79 @@ void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fad
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F05C);
 #endif
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu4", func_8007F258);
+/* Draw the two-player selection: each side's pick, sliding in from its
+ * previous one (the long way round wraps), with its neighbours when the
+ * side is available, then "VS" and both names. The arguments are unused. */
+void func_8007F258(void *packets, s32 arg) {
+    Vector unused[2]; /* the original frame has 32 unused bytes */
+    PolyFT4Words *quad = D_80099DA8[D_800928A0];
+    s32 step;
+    s32 row;
+
+    step = D_80092714 - D_80092700;
+    if (step != 0) {
+        if (abs(step) >= 4) {
+            step = -step;
+        }
+        D_80092718 = step > 0 ? -0x24 : 0x24;
+        D_8009271C = D_80092718 = D_80092718; /* the original rereads it */
+    }
+    step = D_80092720 - D_80092704;
+    if (step != 0) {
+        if (abs(step) >= 4) {
+            step = -step;
+        }
+        D_80092724 = step > 0 ? -0x24 : 0x24;
+        D_80092728 = D_80092724 = D_80092724;
+    }
+    if (D_80092718 != 0) {
+        D_80092718 = D_80092718 > 0 ? D_80092718 - 2 : D_80092718 + 2;
+    }
+    if (D_8009271C != 0) {
+        D_8009271C = D_8009271C > 0 ? D_8009271C - 4 : D_8009271C + 4;
+    }
+    if (D_80092724 != 0) {
+        D_80092724 = D_80092724 > 0 ? D_80092724 - 2 : D_80092724 + 2;
+    }
+    if (D_80092728 != 0) {
+        D_80092728 = D_80092728 > 0 ? D_80092728 - 4 : D_80092728 + 4;
+    }
+    D_80092714 = D_80092700;
+    D_80092720 = D_80092704;
+    row = D_80092718 >= 0;
+    func_8007F05C(D_80092700, quad++, 0, D_8009271C, ((0x24 - abs(D_8009271C)) << 6) / 36);
+    if (!(D_80092710 & 1)) {
+        func_8007F05C(D_80092700 + D_800912E0[row][0], quad++, 0, D_800912E0[row][3] + D_80092718,
+                      (abs(D_80092718) << 6) / 36);
+        func_8007F05C(D_80092700 + D_800912E0[row][1], quad++, 0, -0x24, 0);
+        func_8007F05C(D_80092700 + D_800912E0[row][2], quad++, 0, 0x24, 0);
+    }
+    row = D_80092724 >= 0;
+    func_8007F05C(D_80092704, quad++, 1, D_80092728, ((0x24 - abs(D_80092728)) << 6) / 36);
+    if (!(D_80092710 & 2)) {
+        func_8007F05C(D_80092704 + D_800912E0[row][0], quad++, 1, D_800912E0[row][3] + D_80092724,
+                      (abs(D_80092724) << 6) / 36);
+        func_8007F05C(D_80092704 + D_800912E0[row][1], quad++, 1, -0x24, 0);
+        func_8007F05C(D_80092704 + D_800912E0[row][2], quad, 1, 0x24, 0);
+    }
+    func_8007E894(0xA0, 0x78);
+    func_8007EC54("VS");
+    func_8007E894(0x50, 0x78);
+    if (func_800888E4(D_800928EC[D_80092700]->id)) {
+        func_8007EE68(D_8009272C);
+    } else {
+        func_8007EE08(D_8009272C);
+    }
+    func_8007EC54(D_800928EC[D_80092700]->name);
+    func_8007E894(0xF0, 0x78);
+    if (func_800888E4(D_800928EC[D_80092704]->id)) {
+        func_8007EE68(D_80092730);
+    } else {
+        func_8007EE08(D_80092730);
+    }
+    func_8007EC54(D_800928EC[D_80092704]->name);
+    func_8007EE08(0);
+}
 
 INCLUDE_RODATA(".local/decomp/menu/asm/nonmatchings/menu4", D_8006FE8C);
 

@@ -197,7 +197,8 @@ void func_8007313C(void *src, void *dst);
 
 typedef struct {
     s32 id;
-    u8 unk4[8];
+    u8 unk4[4];
+    u8 *name;    /* 0x08 */
 } ListEntry;
 
 /* VRAM areas of one of the 49 portrait slots (20 bytes; D_8009270C):
@@ -304,6 +305,14 @@ typedef struct {
     u16 uv3;
     u16 pad2;
 } PolyFT4Words;
+
+/* Two-player selection wheels: each side's portraits per buffer, and the
+ * neighbour offsets and slide of the portraits beside the pick (row 1
+ * while sliding right or still). */
+extern PolyFT4Words D_80099DA8[2][10];
+extern s16 D_800912E0[2][4];
+void func_8007F05C(s32 index, PolyFT4Words *quad, s32 right_side, s32 x, s32 fade);
+void func_8007EE68(s32 highlight);
 
 extern u16 D_800926E0; /* text texture page */
 extern u16 D_800926E4; /* text CLUT */
