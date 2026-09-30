@@ -190,8 +190,35 @@ typedef struct {
     u8 party[3]; /* 0x30: party members, 0xFF empty */
     u8 pad_33;
     u8 label_shown[4]; /* 0x34 */
-    u8 pad_38[0x6C - 0x38];
+    u8 pad_38[0x46 - 0x38];
+    u8 status_on;      /* 0x46: status panels drawn */
+    u8 pad_47[0x6C - 0x47];
 } MenuFlags;
+
+/* A character status panel (0xBEC bytes): sprite quads, two per sprite
+ * (one per draw buffer). */
+typedef struct {
+    POLY_FT4 layout[18];  /* 0x0 */
+    POLY_FT4 extra[10];   /* 0x2D0 */
+    POLY_FT4 face[2];     /* 0x460 */
+    POLY_FT4 label[2];    /* 0x4B0 */
+    POLY_FT4 level[12];   /* 0x500 */
+    POLY_FT4 hp[10];      /* 0x6E0 */
+    POLY_FT4 hp_max[10];  /* 0x870 */
+    POLY_FT4 ep[6];       /* 0xA00 */
+    POLY_FT4 ep_max[6];   /* 0xAF0 */
+    u8 level_count;       /* 0xBE0 */
+    u8 pad_BE1;
+    u8 hp_count;          /* 0xBE2 */
+    u8 hp_max_count;      /* 0xBE3 */
+    u8 ep_count;          /* 0xBE4 */
+    u8 ep_max_count;      /* 0xBE5 */
+    u8 buffer;            /* 0xBE6: buffer it was built for */
+    u8 shown;             /* 0xBE7 */
+    u8 layout_count;      /* 0xBE8 */
+    u8 extra_count;       /* 0xBE9 */
+    u8 pad_BEA[2];
+} StatusPanel;
 
 /* The shared menu state (*D_800625A0), as far as this overlay uses it. */
 typedef struct {
@@ -234,8 +261,8 @@ typedef struct {
     MenuLabel list_labels[8]; /* 0x6E0 */
     MenuLabel row_labels[6];  /* 0xAE0 */
     u8 pad_DE0[0x1DF0 - 0xDE0];
-    u8 *member_panels[6]; /* 0x1DF0: 0xBEC bytes each */
-    u8 *party_panels[3];  /* 0x1E08: 0xBEC bytes each */
+    StatusPanel *member_panels[6]; /* 0x1DF0 */
+    StatusPanel *party_panels[3];  /* 0x1E08 */
 } MenuState;
 
 extern MenuState *D_800625A0;

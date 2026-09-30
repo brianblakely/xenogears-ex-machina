@@ -849,11 +849,61 @@ void func_801C8040(void) {
                   &D_800625A0->backdrop->mode_b[D_800625A0->buffer_index]);
 }
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C80BC);
+/* Draw a shown status panel for this buffer: face, label, layout sprites and
+ * the level/HP/EP digits, plus the extra sprites when `extra` is set. */
+void func_801C80BC(StatusPanel *panel, u8 extra) {
+    s32 i;
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C83D0);
+    if (panel->shown) {
+        func_80043B48(&D_800625A0->draw_env->ot[4], &panel->face[panel->buffer]);
+        func_80043B48(&D_800625A0->draw_env->ot[4], &panel->label[panel->buffer]);
+        for (i = 0; i < panel->layout_count; i++) {
+            func_80043B48(&D_800625A0->draw_env->ot[4], &panel->layout[i * 2 + panel->buffer]);
+        }
+        for (i = 0; i < panel->level_count; i++) {
+            func_80043B48(&D_800625A0->draw_env->ot[4], &panel->level[i * 2 + panel->buffer]);
+        }
+        for (i = 0; i < panel->hp_count; i++) {
+            func_80043B48(&D_800625A0->draw_env->ot[4], &panel->hp[i * 2 + panel->buffer]);
+        }
+        for (i = 0; i < panel->hp_max_count; i++) {
+            func_80043B48(&D_800625A0->draw_env->ot[4], &panel->hp_max[i * 2 + panel->buffer]);
+        }
+        for (i = 0; i < panel->ep_count; i++) {
+            func_80043B48(&D_800625A0->draw_env->ot[4], &panel->ep[i * 2 + panel->buffer]);
+        }
+        for (i = 0; i < panel->ep_max_count; i++) {
+            func_80043B48(&D_800625A0->draw_env->ot[4], &panel->ep_max[i * 2 + panel->buffer]);
+        }
+        if (extra) {
+            for (i = 0; i < panel->extra_count; i++) {
+                func_80043B48(&D_800625A0->draw_env->ot[4],
+                              &panel->extra[i * 2 + panel->buffer]);
+            }
+        }
+    }
+}
 
-INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C846C);
+/* Draw the six member panels and the three party panels (with extras). */
+void func_801C83D0(void) {
+    s32 i;
+
+    if (D_800625A0->flags->status_on) {
+        for (i = 0; i < 6; i++) {
+            func_801C80BC(D_800625A0->member_panels[i], 0);
+        }
+        for (i = 0; i < 3; i++) {
+            func_801C80BC(D_800625A0->party_panels[i], 1);
+        }
+    }
+}
+
+/* Draw all labels. */
+void func_801C846C(void) {
+    func_801C7DA8();
+    func_801C7E38();
+    func_801C7EC8();
+}
 
 INCLUDE_ASM(".local/decomp/ovl2598/asm/nonmatchings/ovl2598", func_801C849C);
 
