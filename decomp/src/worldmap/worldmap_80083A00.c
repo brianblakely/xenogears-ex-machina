@@ -763,7 +763,74 @@ s32 func_8008A5B8(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008A72C);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B2BC);
+/* Create party member 2's model sprite (if present) at the saved world-map
+ * position; in movement modes 1-7 follow the player or start hidden. */
+s32 func_8008B2BC(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    if (D_8006F368[1] != 0xFF) {
+        actor->handle = func_80024524(D_8009CD34[1], 0x110, 0x1E0, 0x150, 0x100, 0x40);
+        func_800245D8(actor->handle, 0);
+        func_80022000(actor->handle, 0x1800);
+        ((s32 *)actor->handle)[15] &= ~4;
+        actor->unk24 = 0;
+    } else {
+        actor->unk24 = 1;
+        result = 3;
+    }
+    actor->position.vx = D_8006EE54.x << 12;
+    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->unk48 = D_8006EE54.heading;
+    actor->unk4A = 8;
+    actor->unk58 = 0xF;
+    actor->unk5C = actor->unk48;
+    switch (D_8009BE10) {
+    case 1:
+    case 2:
+    case 3:
+        if (D_8006F8E6 == 0) {
+            actor->position.vx = D_8009C5AC.vx;
+            actor->position.vz = D_8009C5AC.vz;
+            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+            actor->unk48 = D_8009C584;
+        } else {
+            actor->state = 1;
+            actor->unk24 = 1;
+        }
+        break;
+    case 4:
+    case 5:
+    case 6:
+        actor->state = 3;
+        actor->unk24 = 1;
+        if (D_8006F368[1] != 0xFF) {
+            D_8006F8E6 = 1;
+        }
+        break;
+    case 7:
+        actor->state = 2;
+        actor->unk24 = 1;
+        if (D_8006F368[1] != 0xFF) {
+            D_8006F8E6 = 1;
+        }
+        break;
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+        break;
+    }
+    return result;
+}
 
 /* Create the second party member's model sprite, if present. */
 s32 func_8008B498(s32 index) {
@@ -810,7 +877,74 @@ s32 func_8008B54C(s32 index) {
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008B644);
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_8008BB40);
+/* Create party member 3's model sprite (if present) at the saved world-map
+ * position; in movement modes 1-7 follow the player or start hidden. */
+s32 func_8008BB40(s32 index) {
+    WorldmapActor *actor;
+    s32 result;
+
+    actor = &D_8009BE24[index];
+    result = 1;
+    if (D_8006F368[2] != 0xFF) {
+        actor->handle = func_80024524(D_8009CD34[2], 0x120, 0x1E0, 0x160, 0x100, 0x40);
+        func_800245D8(actor->handle, 0);
+        func_80022000(actor->handle, 0x1800);
+        ((s32 *)actor->handle)[15] &= ~4;
+        actor->unk24 = 0;
+    } else {
+        actor->unk24 = 1;
+        result = 3;
+    }
+    actor->position.vx = D_8006EE54.x << 12;
+    actor->position.vz = D_8006EE54.z << 12;
+    actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+    actor->motion.vz = 0;
+    actor->motion.vy = 0;
+    actor->motion.vx = 0;
+    actor->unk48 = D_8006EE54.heading;
+    actor->unk4A = 8;
+    actor->unk58 = 0x1E;
+    actor->unk5C = actor->unk48;
+    switch (D_8009BE10) {
+    case 1:
+    case 2:
+    case 3:
+        if (D_8006F8E7 == 0) {
+            actor->position.vx = D_8009C5AC.vx;
+            actor->position.vz = D_8009C5AC.vz;
+            actor->position.vy = func_80093978(actor->position.vx, actor->position.vz);
+            actor->unk48 = D_8009C584;
+        } else {
+            actor->state = 1;
+            actor->unk24 = 1;
+        }
+        break;
+    case 4:
+    case 5:
+    case 6:
+        actor->state = 3;
+        actor->unk24 = 1;
+        if (D_8006F368[2] != 0xFF) {
+            D_8006F8E7 = 1;
+        }
+        break;
+    case 7:
+        actor->state = 2;
+        actor->unk24 = 1;
+        if (D_8006F368[2] != 0xFF) {
+            D_8006F8E7 = 1;
+        }
+        break;
+    case 8:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+    case 13:
+        break;
+    }
+    return result;
+}
 
 /* Create the third party member's model sprite, if present. */
 s32 func_8008BD1C(s32 index) {
