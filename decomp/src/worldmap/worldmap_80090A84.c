@@ -830,9 +830,7 @@ s32 func_800923A8(s32 index) {
 /* Screen fade actor: command 12 fades in (to clear), 13 fades out (to
  * black), stepping the fade quad's brightness by D_8009D3CC; returns 3 when
  * the fade-in has finished. */
-#ifdef NON_MATCHING /* the fade quad base, view pointer and tag masks get different registers */
 s32 func_800925A0(s32 index) {
-    u8 unused[0xC0]; /* unreferenced local: the original frame reserves it */
     WorldmapActor *actor;
     s32 result;
 
@@ -854,18 +852,10 @@ s32 func_800925A0(s32 index) {
     }
     switch (actor->state) {
     case 0:
-        D_8009CE6C[D_8009D7F0].r0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
+        setRGB0(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB1(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB2(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB3(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
         addPrim(D_8009BE3C->ot, &D_8009CE6C[D_8009D7F0]);
         addPrim(D_8009BE3C->ot, &D_8009D310);
         actor->u.step -= D_8009D3CC;
@@ -876,18 +866,10 @@ s32 func_800925A0(s32 index) {
         }
         break;
     case 1:
-        D_8009CE6C[D_8009D7F0].r0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b0 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b1 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b2 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].r3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].g3 = actor->u.step;
-        D_8009CE6C[D_8009D7F0].b3 = actor->u.step;
+        setRGB0(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB1(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB2(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
+        setRGB3(&D_8009CE6C[D_8009D7F0], actor->u.step, actor->u.step, actor->u.step);
         addPrim(D_8009BE3C->ot, &D_8009CE6C[D_8009D7F0]);
         addPrim(D_8009BE3C->ot, &D_8009D310);
         actor->u.step += D_8009D3CC;
@@ -897,14 +879,12 @@ s32 func_800925A0(s32 index) {
         }
         break;
     default:
-        return result;
+        goto end;
     }
     actor->wait++;
+end:
     return result;
 }
-#else
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80090A84", func_800925A0);
-#endif
 
 /* Open the text window. */
 s32 func_80092BE4(void) {
