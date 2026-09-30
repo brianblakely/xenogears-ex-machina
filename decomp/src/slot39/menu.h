@@ -842,6 +842,14 @@ extern s32 D_801E9CE0;   /* detail panel number positions (x, y): level */
 extern s32 D_801E9CE4;
 extern s32 D_801E9CE8;   /* +63 */
 extern s32 D_801E9CEC;
+extern s32 D_801E9D10;   /* detail panel +3c */
+extern s32 D_801E9D14;
+extern s32 D_801E9D18;   /* detail panel +40 */
+extern s32 D_801E9D1C;
+extern s32 D_801E9D20;   /* detail panel exp */
+extern s32 D_801E9D24;
+extern s32 D_801E9D28;   /* detail panel exp to next level */
+extern s32 D_801E9D2C;
 extern s32 D_801E9CF0;   /* hp */
 extern s32 D_801E9CF4;
 extern s32 D_801E9CF8;   /* hp max */

@@ -3153,9 +3153,102 @@ void func_801D6CF4(u8 slot, u8 gear) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7154);
+/* Lay out the detail panel's +3c and +40 values (eight digits each, by
+ * digit position) of party slot `slot`; `gear` shifts them left. */
+void func_801D7154(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
 
-INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D74EC);
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk3C);
+    D_800625A0->block358->value3CCount = 0;
+    for (i = 0; i < 8; i++) {
+        digit = D_800625A0->digits[1 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->value3CCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->value3C[D_800625A0->block358->value3CCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D10 - gear * 0x18, D_801E9D14, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->value3CCount; i++) {
+        func_801C851C(D_800625A0->block358->value3CAt[i],
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->value3C[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].unk40);
+    D_800625A0->block358->value40Count = 0;
+    for (i = 0; i < 8; i++) {
+        digit = D_800625A0->digits[1 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->value40Count +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->value40[D_800625A0->block358->value40Count * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D18 - gear * 0x18, D_801E9D1C, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->value40Count; i++) {
+        func_801C851C(D_800625A0->block358->value40At[i],
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->value40[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
+
+/* Lay out the detail panel's experience and experience to the next level
+ * (seven digits each, by digit position) of party slot `slot`; `gear` shifts
+ * them left. */
+void func_801D74EC(u8 slot, u8 gear) {
+    s32 i;
+    u8 digit;
+
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].exp);
+    D_800625A0->block358->expCount = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->expCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->exp[D_800625A0->block358->expCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D20 - gear * 0x18, D_801E9D24, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->expCount; i++) {
+        func_801C851C(D_800625A0->block358->expAt[i],
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->exp[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+    func_801C80B8(D_8006D8A0[D_800625A0->party->ids[slot]].expNext);
+    D_800625A0->block358->expNextCount = 0;
+    for (i = 0; i < 7; i++) {
+        digit = D_800625A0->digits[2 + i];
+        if (digit != 0xff) {
+            D_800625A0->block358->expNextCount +=
+                func_8002675C(D_800625A0->sheet, digit,
+                              &D_800625A0->block358->expNext[D_800625A0->block358->expNextCount * 2],
+                              D_800625A0->bufferIndex, i * 8 + D_801E9D28 - gear * 0x18, D_801E9D2C, 0x1000);
+        }
+    }
+    for (i = 0; i < D_800625A0->block358->expNextCount; i++) {
+        func_801C851C(D_800625A0->block358->expNextAt[i],
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x1 -
+                          D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].x0,
+                      D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y3 -
+                          D_800625A0->block358->expNext[i * 2 + D_800625A0->bufferIndex].y0);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/slot39/asm/nonmatchings/slot39", func_801D7884);
 
