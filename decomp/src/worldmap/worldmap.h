@@ -583,13 +583,27 @@ typedef struct {
     u8 pad50[4];
 } AreaObject;
 
-/* Effect slot (0x4C bytes, 256 of them). */
 typedef struct {
-    s16 id;
+    u8 r, g, b, cd;
+} CVECTOR;
+
+/* Particle life word: low half frames left, high half nonzero while live. */
+#define EFFECT_COUNT(slot) (((s16 *)&(slot)->timer)[0])
+#define EFFECT_ENABLED(slot) (((s16 *)&(slot)->timer)[1])
+
+/* Effect slot (0x4C bytes, 256 of them): one particle. */
+typedef struct {
+    s16 id;            /* emitting area object */
     s16 unk2;
-    s16 active;
-    s16 unk6;
-    u8 pad8[0x44];
+    s32 timer;         /* 0x04: see EFFECT_COUNT, EFFECT_ENABLED */
+    VECTOR position;   /* 0x08 */
+    VECTOR velocity;   /* 0x18 */
+    VECTOR accel;      /* 0x28 */
+    s16 rot[2];        /* 0x38 */
+    s16 spin[2];       /* 0x3C */
+    s32 colour;        /* 0x40: packed r, g, b and the primitive code */
+    s32 fade;          /* 0x44: packed signed r, g, b steps */
+    u8 pad48[4];
 } EffectSlot;
 
 /* Drifting position (0x10 bytes) and its velocity (8 bytes). */
@@ -1239,10 +1253,6 @@ typedef struct {
 
 extern FlightSave D_8006EE80;
 s32 func_8008868C(void);
-
-typedef struct {
-    u8 r, g, b, cd;
-} CVECTOR;
 
 extern u16 D_8009BCE0[16]; /* faded CLUT ids */
 void func_8002DD20(void *image);                            /* unpack an image to VRAM */

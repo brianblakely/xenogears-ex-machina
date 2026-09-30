@@ -1198,8 +1198,8 @@ void func_80088F64(void) {
     }
     D_8009BDF4 = slot = func_80031BDC(0x4C00, 0);
     for (i = 0xFF; i != -1; i--) {
-        slot->unk6 = 0;
-        slot->active = 0;
+        EFFECT_ENABLED(slot) = 0;
+        EFFECT_COUNT(slot) = 0;
         slot++;
     }
 }
@@ -1259,8 +1259,8 @@ void func_80089514(s32 group) {
     slot = D_8009BDF4;
     for (i = 0xFF; i != -1; i--) {
         for (j = 0; j < 8; j++) {
-            if (slot->id == group * 8 + j && slot->unk6 != 0) {
-                slot->active = 0;
+            if (slot->id == group * 8 + j && EFFECT_ENABLED(slot) != 0) {
+                EFFECT_COUNT(slot) = 0;
                 break;
             }
         }
@@ -1268,7 +1268,79 @@ void func_80089514(s32 group) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089580);
+/* Age the particles: move, accelerate, spin and fade the live ones; when a
+ * particle's life runs out, release it from its emitter. */
+void func_80089580(void) {
+    EffectSlot *slot;
+    s32 step;   /* life word, then the colour step */
+    s32 colour; /* live flag, then the colour */
+    s32 i;
+    s32 r;
+    s32 g;
+    s32 b;
+    s32 px, py, pz;
+    s32 vx, vy, vz;
+
+    slot = D_8009BDF4;
+    for (i = 0xFF; i != -1; slot++, i--) {
+        step = slot->timer;
+        colour = step >> 16;
+        step = (s16)step;
+        if (colour != 0) {
+            if (step > 0) {
+                px = slot->position.vx;
+                py = slot->position.vy;
+                pz = slot->position.vz;
+                vx = slot->velocity.vx;
+                vy = slot->velocity.vy;
+                vz = slot->velocity.vz;
+                colour = slot->colour;
+                EFFECT_COUNT(slot)--;
+                step = slot->fade;
+                px += vx;
+                py += vy;
+                pz += vz;
+                vx += slot->accel.vx;
+                vy += slot->accel.vy;
+                vz += slot->accel.vz;
+                r = (colour & 0xFF) + (s8)step;
+                g = ((colour >> 8) & 0xFF) + (s8)(step >> 8);
+                b = ((colour >> 16) & 0xFF) + (s8)(step >> 16);
+                slot->rot[0] += slot->spin[0];
+                slot->rot[1] += slot->spin[1];
+                if (r < 0) {
+                    r = 0;
+                }
+                if (r > 0xFF) {
+                    r = 0xFF;
+                }
+                if (g < 0) {
+                    g = 0;
+                }
+                if (g > 0xFF) {
+                    g = 0xFF;
+                }
+                if (b < 0) {
+                    b = 0;
+                }
+                if (b > 0xFF) {
+                    b = 0xFF;
+                }
+                slot->colour = (colour & 0xFF000000) | (b << 16) | (g << 8) | r;
+                slot->position.vx = px;
+                slot->position.vy = py;
+                slot->position.vz = pz;
+                slot->velocity.vx = vx;
+                slot->velocity.vy = vy;
+                slot->velocity.vz = vz;
+            } else {
+                D_8009BCC0[slot->id].unkA--;
+                slot->id = 0;
+                slot->timer = 0;
+            }
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/worldmap/asm/nonmatchings/worldmap_80083A00", func_80089748);
 
