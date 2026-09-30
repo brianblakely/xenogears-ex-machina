@@ -45,8 +45,8 @@ void func_801DE1C4(void) {
         for (i = 0; i < 7; i++) {
             func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barB[i][D_800D334C->barBuffer[i]]);
             func_80043B48(D_800CCB00.ot + 1, &D_800D334C->barA[i][D_800D334C->barBuffer[i]]);
-            func_800728B8(D_800D334C->rowA[i][0], D_800D334C->rowACount[i], D_800D334C->rowABuffer[i]);
-            func_800728B8(D_800D334C->rowB[i][0], D_800D334C->rowBCount[i], D_800D334C->rowBBuffer[i]);
+            func_800728B8(D_800D334C->rowA[i], D_800D334C->rowACount[i], D_800D334C->rowABuffer[i]);
+            func_800728B8(D_800D334C->rowB[i], D_800D334C->rowBCount[i], D_800D334C->rowBBuffer[i]);
         }
     }
     i = 0;
@@ -565,7 +565,77 @@ void func_801E03B8(u8 member) {
     func_801E0184(member);
 }
 
+/* Build the member's seven gauge rows: for each, the value before and after
+ * the battle out of the highest (801dfa38) as a bar and its change bar, the
+ * value, and when it changed an arrow and the change shaded by direction. */
+#ifdef NON_MATCHING
+void func_801E03FC(u8 member) {
+    s32 max;
+    s32 i;
+    s32 j;
+    s32 digit;
+    s16 x;
+    s16 top;
+    s16 bottom;
+
+    max = func_801DFA38(member);
+    for (i = 0; i < 7; i++) {
+        top = i * 8 + 0x92;
+        bottom = i * 8 + 0x98;
+        D_800D334C->rowACount[i] = 0;
+        D_800D334C->rowBCount[i] = 0;
+        func_801DF910(D_800CDD10[member][i], D_800CDD10[member + 3][i], max);
+        func_801DF710(D_800D334C->barA[i], 0);
+        func_801DF710(D_800D334C->barB[i], D_801E44E0);
+        D_800D334C->barA[i][D_800CCB34].x0 = 0x78;
+        D_800D334C->barA[i][D_800CCB34].y0 = top;
+        D_800D334C->barA[i][D_800CCB34].x1 = D_801E44D8 + 0x78;
+        D_800D334C->barA[i][D_800CCB34].y1 = top;
+        D_800D334C->barA[i][D_800CCB34].x2 = 0x78;
+        D_800D334C->barA[i][D_800CCB34].y2 = bottom;
+        D_800D334C->barA[i][D_800CCB34].x3 = D_801E44D8 + 0x78;
+        D_800D334C->barA[i][D_800CCB34].y3 = bottom;
+        if (D_801E44E0 == 2) {
+            x = D_801E44D8 + 0x78;
+        } else {
+            x = D_801E44D8 - (D_801E44DC - 0x78);
+        }
+        D_800D334C->barB[i][D_800CCB34].x0 = x;
+        D_800D334C->barB[i][D_800CCB34].y0 = top;
+        D_800D334C->barB[i][D_800CCB34].x1 = x + D_801E44DC;
+        D_800D334C->barB[i][D_800CCB34].y1 = top;
+        D_800D334C->barB[i][D_800CCB34].x2 = x;
+        D_800D334C->barB[i][D_800CCB34].y2 = bottom;
+        D_800D334C->barB[i][D_800CCB34].x3 = x + D_801E44DC;
+        D_800D334C->barB[i][D_800CCB34].y3 = bottom;
+        D_800D334C->barBuffer[i] = D_800CCB34;
+        func_8008AAA0(D_801E44CC);
+        for (j = 0; j < 3; j++) {
+            digit = D_800C3CE3[j + 23];
+            if (digit != 0xFF) {
+                D_800D334C->rowACount[i] += func_80076A10(digit, &D_800D334C->rowA[i][D_800D334C->rowACount[i] * 2], j * 8 + 0xB8, i * 8 + 0x90);
+            }
+        }
+        D_800D334C->rowABuffer[i] = D_800CCB34;
+        if (D_801E44D4 != 0) {
+            D_800D334C->rowBCount[i] = func_80076A10(D_801E44E4, D_800D334C->rowB[i], 0xD8, i * 8 + 0x90);
+            func_8008AAA0(D_801E44D4);
+            x = 0xE0;
+            for (j = 0; j < 3; j++) {
+                digit = D_800C3CFA[j];
+                if (digit != 0xFF) {
+                    D_800D334C->rowBCount[i] += func_80076A10(digit, &D_800D334C->rowB[i][D_800D334C->rowBCount[i] * 2], x, i * 8 + 0x90);
+                    x += 8;
+                }
+            }
+            func_801DF840(D_800D334C->rowB[i], D_801E44E0 - 2, D_800D334C->rowBCount[i], D_800CCB34);
+            D_800D334C->rowBBuffer[i] = D_800CCB34;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/ovl2596/asm/nonmatchings/ovl2596", func_801E03FC);
+#endif
 
 /* Play effect id of the system effect bank. */
 void func_801E09C0(u8 id) {

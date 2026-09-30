@@ -73,8 +73,8 @@ typedef struct {
     POLY_FT4 glyphs1720[4];   /* 0x1720, runs[4] */
     POLY_FT4 glyphs17C0[8];   /* 0x17C0, runs[3] */
     POLY_FT4 glyphs1900[6];   /* 0x1900, runs[5] */
-    Glyph rowA[7][3];         /* 0x19F0 */
-    Glyph rowB[7][4];         /* 0x2080 */
+    POLY_FT4 rowA[7][6];      /* 0x19F0 */
+    POLY_FT4 rowB[7][8];      /* 0x2080 */
     POLY_G4 barA[7][2];       /* 0x2940 */
     POLY_G4 barB[7][2];       /* 0x2B38 */
     Glyph glyphs2D30[7];      /* 0x2D30 */
@@ -251,6 +251,10 @@ void func_800716D8(void);       /* run one battle frame */
 void func_801DE1C4(void);
 void func_801DE408(void);
 void func_801DFF50(u8 member);
+void func_801DF710(POLY_G4 *bar, u8 colour);
+void func_801DF840(POLY_FT4 *prims, u8 blue, u8 count, u8 buffer);
+void func_801DF910(u8 from, u8 to, s32 max);
+u8 func_801DFA38(u8 slot);
 void func_801E0184(u8 member);
 
 #endif
