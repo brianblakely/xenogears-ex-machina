@@ -1399,4 +1399,21 @@ void func_800935DC(VECTOR *point, VECTOR *origin, VECTOR *normal);
 #define gte_stsz(r0) __asm__ volatile("swc2 $19, 0(%0)" : : "r"(r0) : "memory")
 extern u16 D_8009B624[][2]; /* per area: two spinning scene objects */
 
+/* Scratchpad work area of the cell-crossing probe: step[0] result,
+ * step[1] target, step[2..4] corner test; cells crossed from and to. */
+typedef struct {
+    VECTOR step[5];
+    u8 pad50[0x50];
+    SVECTOR cell[2]; /* 0xA0 */
+} CellProbe;
+
+#define CELL_PROBE ((CellProbe *)0x1F800000)
+
+s32 func_8004A70C(s32 sxy0, s32 sxy1, s32 sxy2); /* NormalClip */
+s32 func_8009443C(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s32 func_800945C8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s32 func_80094750(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s32 func_800948D8(VECTOR *origin, VECTOR *direction, VECTOR *step, s16 row);
+s16 func_80094060(s16 row, s16 column);
+
 #endif
