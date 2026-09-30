@@ -188,6 +188,10 @@ extern u8 D_800927E0;  /* backdrop texel v */
 
 void func_800732AC(void *dst, void *src, s32 size); /* copy bytes */
 
+extern u32 D_80059598; /* resident map colour (r, g, b, code) */
+extern u8 D_80091934[0x30];
+void func_80072D18(s32 arg0, s32 arg1, s32 arg2);
+
 /* Fading overlay. */
 extern s16 D_80092780; /* fade level */
 extern s32 D_80092784;

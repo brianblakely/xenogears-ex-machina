@@ -1381,7 +1381,15 @@ void func_80087698(s32 x0, s32 y0, s32 x1, s32 y1) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_8008779C);
+/* Draw the map triangles: load the map colour (as a textured-triangle
+ * code) into the GTE, copy the 0x30-byte map table into the scratchpad and
+ * run the triangle loop. */
+void func_8008779C(s32 arg0, s32 arg1, s32 arg2) {
+    D_80059598 = (D_80059598 & 0xFFFFFF) | 0x24000000;
+    gte_ldrgb(&D_80059598);
+    func_800732AC((void *)0x1F800120, D_80091934, 0x30);
+    func_80072D18(arg0, arg1, arg2);
+}
 
 /* Set up the map row spans in the scratchpad and the two textured
  * triangle packet pools (0x708 triangles each). */

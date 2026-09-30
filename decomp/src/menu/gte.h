@@ -11,6 +11,9 @@
                      :                                                         \
                      : "r"(r0))
 
+/* Load a colour (CVECTOR) into RGBC. */
+#define gte_ldrgb(r0) __asm__ volatile("lwc2 $6, 0(%0)" : : "r"(r0))
+
 /* Square IR1-IR3 into MAC1-MAC3 (sf = 0). */
 #define gte_sqr0() __asm__ volatile("nop;nop;.word 0x4AA00428")
 
