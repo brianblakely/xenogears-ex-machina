@@ -1194,10 +1194,10 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8007DECC);
 
 /* Set a dialogue window's rectangle. */
 void func_8007E114(s32 window, s32 x, s32 y, s32 w, s32 h) {
-    D_800C2698[window].rect.x = x;
-    D_800C2698[window].rect.y = y;
-    D_800C2698[window].rect.w = w;
-    D_800C2698[window].rect.h = h;
+    D_800C2698[window].text.rect.x = x;
+    D_800C2698[window].text.rect.y = y;
+    D_800C2698[window].text.rect.w = w;
+    D_800C2698[window].text.rect.h = h;
 }
 
 /* Place a quad's corners at (x, y) with size (w, h), optionally mirrored. */
@@ -1286,7 +1286,7 @@ void func_800805F4(void) {
 
     for (window = 0; window < 4; window++) {
         if (D_800C2698[window].busy == 0) {
-            if (D_800C2698[window].timer == 0 && !(D_800C2698[window].flags & 4)) {
+            if (D_800C2698[window].timer == 0 && !(D_800C2698[window].text.flags & 4)) {
                 func_8007F6F8(window);
             }
             if (D_800C2698[window].cleared == 0) {

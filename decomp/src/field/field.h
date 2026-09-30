@@ -157,16 +157,28 @@ typedef struct {
     u8 unk0D;
 } CollisionTriangle;
 
+/* A resident text box (80034614/800345e0/800346d4/80033cd0/80034800). */
+typedef struct {
+    u8 unk00[0x10];
+    u16 flags;       /* 10: bit 2 keeps the window open */
+    u8 unk12[0x6C - 0x12];
+    u8 unk6C;        /* 6C */
+    u8 unk6D[0x84 - 0x6D];
+    s16 unk84;       /* 84 */
+    u8 unk86[0x94 - 0x86];
+    RECT rect;       /* 94 */
+} TextBox;
+
 /* One of the four 0x498-byte dialogue windows at 800c2698. */
 typedef struct {
     u8 unk000[0x18];
-    u8 text[0x10];   /* 018: text state (80034614/800345e0/800346d4) */
-    u16 flags;       /* 028: bit 2 keeps the window open */
-    u8 unk02A[0xAC - 0x2A];
-    RECT rect;       /* 0AC */
+    TextBox text;    /* 018 */
     u8 unk0B4[0x37C - 0xB4];
     s16 status;      /* 37C: zero while displayed */
-    u8 unk37E[0x408 - 0x37E];
+    s16 unk37E;      /* 37E: first line */
+    s16 unk380;      /* 380: line count */
+    s16 unk382;      /* 382 */
+    u8 unk384[0x408 - 0x384];
     s16 timer;       /* 408 */
     u8 unk40A[0x40E - 0x40A];
     s16 busy;        /* 40E */
