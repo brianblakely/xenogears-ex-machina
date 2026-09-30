@@ -774,7 +774,52 @@ void func_800771F8(u32 *tim) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077268);
+/* Declared without a prototype: 80084a40 also reads a fifth, stack
+ * argument that this caller never passes. */
+void func_80084A40();
+
+/* Place the party at the controlled actor: run its position pass (80084a40),
+ * then give each other party member (slots 1 and 2) the leader's model
+ * position and descriptor origin after its own pass, and fill the 32
+ * history records. */
+void func_80077268(void) {
+    FieldDescriptor *descriptor;
+    FieldActor *actor;
+    FieldModel *model;
+    s32 slot;
+    s32 i;
+
+    func_80084A40(D_800B2078.controlled,
+                  WHOLE(D_800AF880.components.descriptors[D_800B2078.controlled].actor->position[1]),
+                  &D_800AF880.components.descriptors[D_800B2078.controlled],
+                  D_800AF880.components.descriptors[D_800B2078.controlled].actor);
+    for (i = 0; i < D_800ADBFC; i++) {
+        descriptor = &D_800AF880.components.descriptors[i];
+        actor = descriptor->actor;
+        if ((descriptor->flags & 0xF80) == 0x200) {
+            slot = func_8009FA00(actor->unkE4);
+            if (slot != -1) {
+                model = D_800AF880.components.descriptors[i].model;
+                if (slot != 0) {
+                    func_80084A40(i, WHOLE(D_800AF880.components.descriptors[i].actor->position[1]),
+                                  descriptor, actor);
+                    model->position[0] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[0];
+                    model->position[1] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[1];
+                    model->position[2] = D_800AF880.components.descriptors[D_800B2078.controlled].model->position[2];
+                    descriptor->matrix.t[0] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[0];
+                    descriptor->matrix.t[1] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[1];
+                    descriptor->matrix.t[2] = D_800AF880.components.descriptors[D_800B2078.controlled].matrix.t[2];
+                }
+            }
+        }
+    }
+    D_800B2078.unk2368 = 0;
+    D_800B2078.unk2364 = 0;
+    D_800B2078.unk2360 = 0;
+    for (i = 0; i < 0x20; i++) {
+        func_80081C54(D_800B2078.controlled);
+    }
+}
 
 /* Load the text palette, with the debug font first when enabled. */
 void func_80077544(void) {
@@ -857,7 +902,25 @@ void func_80077D2C(void) {
     func_800320E8(D_8005A414[2]);
 }
 
+extern s32 D_800ADB9C;
+
+#ifdef NON_MATCHING
+/* Field pre-frame work: record the VSync counter, clear the order table,
+ * run 80074700, start the debug "Clear OTAG" timer and 800a31e8.
+ * The instructions match; the original rodata has a non-zero padding byte
+ * (0x6b) after "Clear OTAG" that a C literal cannot reproduce. */
+void func_80077DAC(void) {
+    D_800ADB9C = VSync(1);
+    func_80073FE0();
+    func_80074700();
+    if (D_800C268C == 0) {
+        func_80281B00("Clear OTAG");
+    }
+    func_800A31E8();
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80077DAC);
+#endif
 
 #ifdef NON_MATCHING
 /* -1 when the field may leave (800adbd0 is 1, 800b2344 clear, and the
