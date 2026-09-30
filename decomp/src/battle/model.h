@@ -46,7 +46,7 @@ typedef struct {
 /* A model's header (fields as far as the battle uses them). */
 typedef struct {
     u8 pad0[0x34];
-    u32 packetSize;         /* 0x34: bytes of one buffer's packets */
+    u32 packetSize; /* 0x34: bytes of one buffer's packets */
 } Model;
 
 /* A table of the models of a relocated model group (0x38 bytes each, from
@@ -61,8 +61,8 @@ typedef struct {
     u8 used;
     u8 field1;
     u8 field2;
-    u8 kind;                /* +3: 0xFF persistent */
-    u16 params[6];          /* +4 */
+    u8 kind;       /* +3: 0xFF persistent */
+    u16 params[6]; /* +4 */
     u16 field10;
     u16 field12;
 } EffectEntry;
@@ -82,22 +82,22 @@ typedef struct ModelPart {
     u8 flag5;
     u8 flag6;
     u8 flag7;
-    u16 modelId;            /* 0x08: 0xFFFF none */
-    u16 index;              /* 0x0A: the root holds the part count */
-    Matrix transform;       /* 0x0C: rotation and translation (the root's scaled) */
-    Matrix world;           /* 0x2C: composed with the parents' */
-    s16 scale[3];           /* 0x4C: 4.12 */
+    u16 modelId;      /* 0x08: 0xFFFF none */
+    u16 index;        /* 0x0A: the root holds the part count */
+    Matrix transform; /* 0x0C: rotation and translation (the root's scaled) */
+    Matrix world;     /* 0x2C: composed with the parents' */
+    s16 scale[3];     /* 0x4C: 4.12 */
     u16 field52;
-    SVector rotation;       /* 0x54: angles */
-    s32 translation[3];     /* 0x5C */
-    void *packets[2];       /* 0x68: one buffer per frame */
+    SVector rotation;        /* 0x54: angles */
+    s32 translation[3];      /* 0x5C */
+    void *packets[2];        /* 0x68: one buffer per frame */
     EffectEntry *effects[3]; /* 0x70: attached effects */
 } ModelPart;
 
 /* Resident services. */
-void func_80032498(s32 tag, s32 quiet);       /* select the heap owner tag */
-void *func_80031BDC(u32 size, s32 mode);      /* allocate */
-u32 func_8002C3E8(u8 *group);                 /* relocate a model group; its count */
+void func_80032498(s32 tag, s32 quiet);  /* select the heap owner tag */
+void *func_80031BDC(u32 size, s32 mode); /* allocate */
+u32 func_8002C3E8(u8 *group);            /* relocate a model group; its count */
 void func_8002CB54(Model *model, void **packets0, void **packets1); /* allocate packets */
 void func_8002CC10(s16 x, s16 y);
 void func_8002CC74(s16 x, s16 y);
@@ -114,20 +114,20 @@ s32 func_800A23E8(EffectPool *pool, EffectEntry *entry);
 EffectEntry *func_800A2330(EffectPool *pool);
 
 /* Graphics library. */
-void func_80043CB0(PolyFT4 *p);                              /* SetPolyFT4 */
-void func_80043BFC(void *p, s32 abe);                        /* SetSemiTrans */
-u16 func_80043A58(s32 x, s32 y);                             /* GetClut */
-u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y);            /* GetTPage */
+void func_80043CB0(PolyFT4 *p);                   /* SetPolyFT4 */
+void func_80043BFC(void *p, s32 abe);             /* SetSemiTrans */
+u16 func_80043A58(s32 x, s32 y);                  /* GetClut */
+u16 func_80043A1C(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
 
 /* GTE library. */
-void func_8003F738(SVector *angles, Matrix *m);              /* RotMatrix */
-void func_8004A92C(SVector *angles, Matrix *m);              /* RotMatrixYXZ */
-void func_8004920C(Matrix *m0, Matrix *m1, Matrix *out);     /* MulMatrix0 */
-void func_8004931C(Matrix *m0, Matrix *m1, Matrix *out);     /* CompMatrix */
-void func_80049EFC(Matrix *m);                               /* SetRotMatrix */
-void func_8004A4D8(Vector *v0, Vector *v1, Vector *out);     /* OuterProduct0 */
-void func_80049F2C(Matrix *m);                               /* SetLightMatrix */
-void func_80049F8C(Matrix *m);                               /* SetTransMatrix */
+void func_8003F738(SVector *angles, Matrix *m);                      /* RotMatrix */
+void func_8004A92C(SVector *angles, Matrix *m);                      /* RotMatrixYXZ */
+void func_8004920C(Matrix *m0, Matrix *m1, Matrix *out);             /* MulMatrix0 */
+void func_8004931C(Matrix *m0, Matrix *m1, Matrix *out);             /* CompMatrix */
+void func_80049EFC(Matrix *m);                                       /* SetRotMatrix */
+void func_8004A4D8(Vector *v0, Vector *v1, Vector *out);             /* OuterProduct0 */
+void func_80049F2C(Matrix *m);                                       /* SetLightMatrix */
+void func_80049F8C(Matrix *m);                                       /* SetTransMatrix */
 void func_8002C700(Model *model, void *packets, s32 arg2, s32 arg3); /* draw a model */
 
 #endif
