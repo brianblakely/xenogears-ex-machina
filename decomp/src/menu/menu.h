@@ -57,13 +57,13 @@ typedef struct {
     SVector dir;     /* 0x28: unit direction */
     u8 active;       /* 0x30 */
     u8 speed;
-    u8 unk32;
-    u8 unk33;
-    u8 unk34[0x4];
+    u8 look;         /* 0x32: trail/impact style */
+    u8 steer;        /* 0x33: how speed and homing change */
+    s32 dist;        /* 0x34: distance to the opponent's core */
     s32 unk38;
     s16 unk3C;
-    s16 unk3E;
-    s16 unk40;
+    s16 homing;      /* 0x3E: 0x1000 = turn fully toward the target */
+    s16 life;        /* 0x40: frames left */
     u8 unk42[0x2];
 } Shot;
 
@@ -79,7 +79,7 @@ typedef struct {
 } ShotKind;
 
 /* A character moved in the menu scene. */
-typedef struct {
+typedef struct Actor {
     Vector pos;          /* 0x00 */
     u8 unk10[0x38];
     s32 state;           /* 0x48 */
@@ -99,14 +99,19 @@ typedef struct {
     s16 unkCE;
     u32 flags;           /* 0xD0: bit 27 = side */
     u8 unkD4[0x4];
-    Vector *target;      /* 0xD8 */
+    struct Actor *opponent; /* 0xD8 */
     u8 unkDC[0xC];
     s32 unkE8;
     u8 unkEC[0x558];
     s32 unk644;
     u8 unk648[0x4];
     Shot shots[9];       /* 0x64C */
-    u8 unk8B0[0xD24];
+    u8 unk8B0[0x44];
+    s32 nearest_dist;    /* 0x8F4: distance of the closest shot */
+    Shot *nearest_shot;  /* 0x8F8 */
+    u8 unk8FC[0x50];
+    Vector core;         /* 0x94C: where shots home in */
+    u8 unk95C[0xC78];
     u8 unk15D4[0x80];
     s32 unk1654;
     s32 unk1658;
@@ -291,6 +296,9 @@ void func_800471B4(u32 *tim);                               /* OpenTIM */
 TimImage *func_800471C4(TimImage *image);                   /* ReadTIM */
 s32 func_8004B32C(s32 x, s32 z);                            /* ratan2 */
 Matrix *func_8004931C(Matrix *m0, Matrix *m1, Matrix *m2);  /* CompMatrix */
+s32 func_8003FA38(void);                                    /* rand */
+void func_80048D68(Vector *v, SVector *unit);               /* VectorNormalS */
+void func_8004901C(SVector *a, SVector *b, s32 pa, s32 pb, SVector *out); /* LoadAverageShort12 */
 void func_8004A14C(s32 h);                                  /* SetGeomScreen */
 
 /* Resident game code. */
@@ -317,6 +325,8 @@ void func_8007107C(void);
 void func_80071724(u32 *ot);
 void func_80073064(SVector *dir, SVector *out, s32 scale);
 void func_8008859C(Vector *v, SVector *unit);
+s32 func_800886FC(Vector *v);
+void func_8007E31C(Vector *from, Vector *to, u8 *colour);
 void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
 void func_80073B7C(Actor *actor, s32 part, s32 vertex, Vector *out);
 void func_8007C100(u8 *arg);

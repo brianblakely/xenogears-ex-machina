@@ -539,7 +539,7 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     Vector toward;
     Vector aim;
     SVector unused; /* the original frame reserves 8 more bytes */
-    Vector *target;
+    Actor *opponent;
     ShotKind *info;
     Shot *shot;
     s32 i;
@@ -553,10 +553,10 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     if (i == 8) {
         return;
     }
-    target = actor->target;
-    aim.vx = target->vx - from->vx;
-    aim.vy = target->vy - from->vy - 0x90;
-    aim.vz = target->vz - from->vz;
+    opponent = actor->opponent;
+    aim.vx = opponent->pos.vx - from->vx;
+    aim.vy = opponent->pos.vy - from->vy - 0x90;
+    aim.vz = opponent->pos.vz - from->vz;
     info = &D_800910F4[kind];
     if (origin != NULL) {
         toward.vx = from->vx - origin->vx;
@@ -566,11 +566,11 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
         toward = aim;
     }
     func_8008859C(&toward, &shot->dir);
-    shot->unk3E = info->unk0;
+    shot->homing = info->unk0;
     shot->speed = info->speed;
-    shot->unk40 = info->unk3;
-    shot->unk32 = info->unk2;
-    shot->unk33 = info->unk5;
+    shot->life = info->unk3;
+    shot->look = info->unk2;
+    shot->steer = info->unk5;
     shot->unk38 = arg5;
     shot->unk3C = arg4;
     if (info->sound != 0) {
@@ -582,7 +582,121 @@ void func_80073424(Vector *from, Vector *origin, Actor *actor, s32 kind, s32 arg
     shot->active = 1;
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073644);
+/* Move an actor's shots: expire, hit the floor, home in on the opponent's
+ * core, draw the trail for their look and update speed and homing. */
+s32 func_80073644(Actor *actor) {
+    SVector half;
+    Vector toward;
+    SVector dir;
+    u8 colour[3];
+    Actor *opponent;
+    Shot *shot;
+    s32 dist;
+    s32 i;
+
+    opponent = actor->opponent;
+    actor->nearest_dist = 0x10000;
+    func_8007C100(actor->unk15D4);
+    for (i = 0; i < 8; i++) {
+        shot = &actor->shots[i];
+        if (shot->active == 0) {
+            continue;
+        }
+        if (--shot->life == -1) {
+            shot->active = 0;
+            continue;
+        }
+        if (func_80082488(&shot->pos, 0) < shot->pos.vy) {
+            shot->active = 0;
+            func_8007D190(&shot->pos, 1);
+            continue;
+        }
+        shot->prev = shot->pos;
+        toward.vx = opponent->core.vx - shot->pos.vx;
+        toward.vy = opponent->core.vy - shot->pos.vy;
+        toward.vz = opponent->core.vz - shot->pos.vz;
+        dist = func_800886FC(&toward);
+        shot->dist = dist;
+        if (dist < actor->nearest_dist) {
+            actor->nearest_dist = dist;
+            actor->nearest_shot = shot;
+        }
+        func_80048D68(&toward, &dir);
+        func_8004901C(&dir, &shot->dir, shot->homing, 0x1000 - shot->homing, &shot->dir);
+        func_80073064(&shot->dir, &shot->velocity, shot->speed);
+        switch (shot->look) {
+        case 0:
+            half.vx = shot->velocity.vx;
+            half.vy = shot->velocity.vy;
+            half.vz = shot->velocity.vz;
+            half.vx /= 2;
+            half.vy /= 2;
+            half.vz /= 2;
+            shot->pos.vx += half.vx;
+            shot->pos.vy += half.vy;
+            shot->pos.vz += half.vz;
+            func_8007D190(&shot->pos, 0xA);
+            shot->pos.vx += half.vx;
+            shot->pos.vy += half.vy;
+            shot->pos.vz += half.vz;
+            func_8007D190(&shot->pos, 0xA);
+            break;
+        case 1:
+            shot->pos.vx += shot->velocity.vx;
+            shot->pos.vy += shot->velocity.vy;
+            shot->pos.vz += shot->velocity.vz;
+            func_8007D190(&shot->pos, 2);
+            break;
+        case 2:
+            colour[0] = 0xFF;
+            colour[2] = 0x40;
+            colour[1] = ((D_800928E8 + i) << 6) - 1;
+            shot->pos.vx += shot->velocity.vx;
+            shot->pos.vy += shot->velocity.vy;
+            shot->pos.vz += shot->velocity.vz;
+            func_8007E31C(&shot->prev, &shot->pos, colour);
+            break;
+        case 3:
+            shot->pos.vx += shot->velocity.vx;
+            shot->pos.vy += shot->velocity.vy;
+            shot->pos.vz += shot->velocity.vz;
+            func_8007C880((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
+            break;
+        case 4:
+            colour[0] = colour[1] = func_8003FA38() % 191 + 0x40;
+            colour[2] = 0xFF;
+            shot->pos.vx += shot->velocity.vx;
+            shot->pos.vy += shot->velocity.vy;
+            shot->pos.vz += shot->velocity.vz;
+            func_8007E31C(&shot->prev, &shot->pos, colour);
+            break;
+        case 5:
+            colour[0] = colour[1] = func_8003FA38() % 191 + 0x40;
+            colour[2] = 0xFF;
+            shot->pos.vx += shot->velocity.vx;
+            shot->pos.vy += shot->velocity.vy;
+            shot->pos.vz += shot->velocity.vz;
+            func_8007E31C(&shot->prev, &shot->pos, colour);
+            func_8007C880((actor->flags >> 27) & 1, &shot->pos, shot->unk38, 2);
+            break;
+        }
+        switch (shot->steer) {
+        case 0:
+            break;
+        case 1:
+            if (shot->speed < 0x70) {
+                shot->speed += 0x10;
+            }
+            break;
+        case 2:
+            shot->homing = 0x600 - shot->life * 0x30;
+            break;
+        case 3:
+            shot->homing = 0;
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu", func_80073B7C);
 
