@@ -10615,9 +10615,121 @@ void func_800A84C0(void) {
     }
 }
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8BA4);
+#ifdef NON_MATCHING
+/* Build the status panel: load its image, allocate the quads of both
+ * buffers and texture each piece from its frame (flip in flags bits 0-3,
+ * 4- or 8-bit page by bits 4-7). The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8BA4(void) {
+    POLY_FT4 *quad;
+    POLY_FT4 *copy;
+    PanelFrame *frame;
+    s32 mode;
+    s32 i;
 
+    func_800A8314();
+    mode = 0;
+    D_800AEB64 = 0;
+    func_80032498(8, 0);
+    D_800AFC60[0] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    D_800AFC60[1] = func_80031BDC(PANEL_PIECES * sizeof(POLY_FT4), 0);
+    for (i = 0; i < PANEL_PIECES; i++) {
+        quad = &D_800AFC60[0][i];
+        copy = &D_800AFC60[1][i];
+        SetPolyFT4(quad);
+        setRGB0(quad, 0x80, 0x80, 0x80);
+        quad->clut = GetClut(0, 0xE8);
+        switch ((D_800AEF10[i].flags >> 4) & 0xF) {
+        case 0:
+            mode = 1;
+            break;
+        case 1:
+            mode = 2;
+            break;
+        }
+        quad->tpage = GetTPage(0, mode, 0x380, 0);
+        SetSemiTrans(quad, 1);
+        frame = &D_800AEB68[D_800AEF10[i].frame];
+        quad->x0 = D_800AEF10[i].x;
+        quad->y0 = D_800AEF10[i].y;
+        quad->y1 = D_800AEF10[i].y;
+        quad->x2 = D_800AEF10[i].x;
+        quad->x1 = D_800AEF10[i].x + frame->w;
+        quad->y2 = D_800AEF10[i].y + frame->h;
+        quad->x3 = D_800AEF10[i].x + frame->w;
+        quad->y3 = D_800AEF10[i].y + frame->h;
+        switch (D_800AEF10[i].flags & 0xF) {
+        case 0:
+            func_8007A44C(quad, frame->u, frame->v, frame->u + frame->w, frame->v, frame->u,
+                          frame->v + frame->h, frame->u + frame->w, frame->v + frame->h);
+            break;
+        case 1:
+            func_8007A44C(quad, frame->u + frame->w - 1, frame->v, frame->u - 1, frame->v,
+                          frame->u + frame->w - 1, frame->v + frame->h, frame->u - 1, frame->v + frame->h);
+            break;
+        case 2:
+            func_8007A44C(quad, frame->u, frame->v + frame->h - 1, frame->u + frame->w, frame->v + frame->h - 1,
+                          frame->u, frame->v - 1, frame->u + frame->w, frame->v - 1);
+            break;
+        case 3:
+            func_8007A44C(quad, frame->u + frame->w - 1, frame->v + frame->h - 1, frame->u - 1,
+                          frame->v + frame->h - 1, frame->u + frame->w - 1, frame->v - 1, frame->u - 1,
+                          frame->v - 1);
+            break;
+        }
+        *copy = *quad;
+    }
+    D_800AF278 = 1;
+}
+#else
+INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8BA4);
+#endif
+
+/* A particle sprite (800af27c): half size, centre, and the four texture
+ * corners (u, v) within the sprite page. */
+typedef struct {
+    s16 half_w;
+    s16 half_h;
+    s16 x;
+    s16 y;
+    s16 uv[4][2];
+} ParticleSprite;
+extern ParticleSprite D_800AF27C[];
+
+#ifdef NON_MATCHING
+/* Set up a particle's quad in both buffers from sprite `sprite` with
+ * semi-transparency rate `abr`. The original passes the coordinates to
+ * 8007a44c unconverted (no s16 prototype in scope: a separate unit). */
+void func_800A8EAC(Particle *particle, s32 sprite, s32 abr) {
+    POLY_FT4 *quad;
+    ParticleSprite *entry;
+
+    quad = &particle->quads[0];
+    SetPolyFT4(quad);
+    entry = &D_800AF27C[sprite];
+    particle->corners[0].vz = 0;
+    particle->corners[1].vz = 0;
+    particle->corners[2].vz = 0;
+    particle->corners[3].vz = 0;
+    setRGB0(quad, 0x80, 0x80, 0x80);
+    particle->corners[0].vx = entry->x * 16 - entry->half_w * 16;
+    particle->corners[0].vy = entry->y * 16 - entry->half_h * 16;
+    particle->corners[1].vx = entry->half_w * 16 + entry->x * 16;
+    particle->corners[1].vy = particle->corners[0].vy;
+    particle->corners[2].vx = particle->corners[0].vx;
+    particle->corners[2].vy = entry->half_h * 16 + entry->y * 16;
+    particle->corners[3].vx = particle->corners[1].vx;
+    particle->corners[3].vy = particle->corners[2].vy;
+    func_8007A44C(quad, entry->uv[0][0], entry->uv[0][1] + 0x40, entry->uv[1][0] - 1, entry->uv[1][1] + 0x40,
+                  entry->uv[2][0], entry->uv[2][1] + 0x3F, entry->uv[3][0] - 1, entry->uv[3][1] + 0x3F);
+    SetSemiTrans(quad, 1);
+    quad->tpage = GetTPage(0, abr, 0x3C0, 0x140);
+    quad->clut = GetClut(0x100, 0xF7);
+    particle->quads[1] = *quad;
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800A8EAC);
+#endif
 
 extern RECT D_800AFC28;
 typedef struct {
