@@ -33,6 +33,7 @@ typedef struct {
     u8 byte8, byte9;
     u16 tpage; /* 0x0A */
     u16 clut;  /* 0x0C */
+    u8 pad0E[0x18 - 0x0E];
 } SpriteImagePart;
 
 /* A sprite's renderer (resident SpriteRenderer). */
@@ -62,7 +63,8 @@ typedef struct BattleSprite {
         u32 word;
         u8 bytes[4];
     } render;              /* 0x3C: bits 0-1 sides, bits 5-7 blend */
-    u8 pad40[0x64 - 0x40];
+    u8 partBits;           /* 0x40: bits 2-7 the part count */
+    u8 pad41[0x64 - 0x41];
     s32 framesLeft;        /* 0x64 */
     u8 pad68[0x6C - 0x68];
     struct BattleTask *task; /* 0x6C: its task (and draw task after it) */
@@ -140,5 +142,17 @@ void func_800B5854(SpriteApproach *approach);
 void func_800B5588(BattleTask *task);
 
 void func_8004A414(Vector *v, Vector *out); /* Square0 */
+s16 func_80023124(Point2 to, Point2 from); /* direction from from to to */
+void func_80025A88();                      /* the resident sprite drawer */
+
+/* Sprite script commands (800B3F04). */
+extern BattleSprite *D_800C3E1C;
+extern u16 D_800D3634;
+extern s16 D_800D36BC;
+void func_800A96B4(s32 set);
+void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle);
+void func_800B3CD4(); /* unprototyped (to, frames, red, blue, field4C, field4E) */
+void func_800BEE2C(s32 index, s32 mask, s32 mode);
+void func_800B6004();
 
 #endif

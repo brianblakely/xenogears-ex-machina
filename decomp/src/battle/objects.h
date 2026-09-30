@@ -300,8 +300,8 @@ extern ScriptEntry D_800C3BD0; /* the selected script */
 
 /* Resident sprites. */
 EffectSprite *func_80023FD8(s32 kind, void *resource, SVector *position, s32 size);
-void func_80021FE0(s32 *body, s32 direction);
-void func_800223B0(s32 *body, s32 direction);
+void func_80021FE0(void *body, s32 direction);
+void func_800223B0(void *body, s32 direction);
 void func_80022000(s32 *body, s32 scale);
 void *func_8001CD7C(void *task); /* a task's update */
 void func_8001CD6C(void *task, void (*update)()); /* set it */

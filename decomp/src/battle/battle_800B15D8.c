@@ -321,8 +321,16 @@ void func_800B3C74(BattleTask *draw) {
 
 /* Fade light slot 0 (800B3B94) to level to over frames * 2 frames with the
  * given red, blue and parameters, first saving the stage lights (800A5EB4,
- * on a stack in a heap block). */
-void func_800B3CD4(s32 to, s32 frames, s32 red, s16 blue, u16 field4C, u16 field4E) {
+ * on a stack in a heap block). Defined without a prototype: callers pass
+ * the parameters unconverted (800B639C). */
+void func_800B3CD4(to, frames, red, blue, field4C, field4E)
+    s32 to;
+    s32 frames;
+    s32 red;
+    s16 blue;
+    u16 field4C;
+    u16 field4E;
+{
     LightFade *fade;
     u8 *stack;
 
@@ -686,25 +694,114 @@ void func_800B5FBC(BattleSprite *sprite) {
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6004);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B61B0);
+/* Draw sprite with 800B6004, uncoloured. */
+void func_800B61B0(BattleSprite *sprite) {
+    sprite->frame = 1;
+    func_8001CD64(sprite->task + 1, func_800B6004);
+    sprite->colourFlags = 0x40;
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B61F8);
+/* Script command: reset D_800D36BC and load stage object set args[0]
+ * (800A96B4, on a stack in a heap block). */
+void func_800B61F8(BattleSprite *sprite, u8 *args) {
+    u8 *stack = func_80031BDC(0x4000, 1);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B626C);
+    STACK_ENTER(stack + 0x3E00);
+    D_800D36BC = 0;
+    func_800A96B4(args[0]);
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
 
+/* Script command: free stage object 11 (800A9FF0, on a stack in a heap
+ * block). */
+void func_800B626C(void) {
+    u8 *stack = func_80031BDC(0x4000, 1);
+
+    STACK_ENTER(stack + 0x3E00);
+    func_800A9FF0(0xB);
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
+
+#ifdef NON_MATCHING
+/* Script command: show stage object 11 in mode args[0] (800BEE2C); mode 2
+ * first places it and shows it to the side of D_800C3E1C only. */
+void func_800B62C8(BattleSprite *sprite, u8 *args) {
+    u8 *stack = func_80031BDC(0x4000, 1);
+
+    STACK_ENTER(stack + 0x3E00);
+    if (args[0] == 2) {
+        func_800A979C(0xB, 0x300, 0x100, 0, 0x1DB);
+        func_800BEE2C(0xB, 1 << (((D_800C3E1C->motion.word & 3) << 2) | (D_800C3E1C->frameBits >> 30)), args[0]);
+    } else {
+        func_800BEE2C(0xB, D_800D3634, args[0]);
+    }
+    STACK_LEAVE();
+    func_800320E8(stack);
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B62C8);
+#endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B639C);
+/* Script command: fade the lights (800B3CD4) with the parameters at the
+ * relative offset in args. */
+void func_800B639C(BattleSprite *sprite, u8 *args) {
+    s8 *fade = (s8 *)(args + ((((s8 *)args)[1] << 8) | args[0]));
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B63F0);
+    func_800B3CD4((u8)fade[5], (u8)fade[3], (u8)fade[4], fade[0], fade[1], fade[2]);
+}
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6438);
+/* Script command: upload the images at the relative offset in args. */
+void func_800B63F0(BattleSprite *sprite, u8 *args) {
+    func_8002DDE4(args + ((((s8 *)args)[1] << 8) | args[0]), 0, 0, 0, 0, 0, 0);
+}
 
+/* Script command: draw sprite with the resident sprite drawer (80025A88). */
+void func_800B6438(BattleSprite *sprite) {
+    func_8001CD64(sprite->task + 1, func_80025A88);
+}
+
+#ifdef NON_MATCHING
+/* Script command: move the CLUTs of the sprite's parts by (args[0],
+ * args[1]). */
+void func_800B6464(BattleSprite *sprite, u8 *args) {
+    SpriteImagePart *part = sprite->view->part;
+    u32 count = sprite->partBits >> 2;
+    s16 i = 0;
+    s32 x;
+    s32 y;
+
+    if (count != 0) {
+        do {
+            i++;
+            x = (part->clut & 0x3F) + args[0];
+            y = ((part->clut >> 6) & 0x1FF) + args[1];
+            part->clut = x | (y << 6);
+            part++;
+        } while (i != count);
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6464);
+#endif
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B64D4);
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B6518);
+/* Script command: turn the sprite towards its target (on the x-z plane). */
+void func_800B6518(BattleSprite *sprite) {
+    Point2 position;
+    Point2 target;
+    s16 direction;
+
+    position.x = sprite->x.fixed >> 16;
+    position.y = sprite->z.fixed >> 16;
+    target.x = sprite->target[0];
+    target.y = sprite->target[2];
+    direction = func_80023124(target, position);
+    func_80021FE0(sprite, direction);
+    func_800223B0(sprite, direction);
+}
 
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_800B15D8", func_800B65B0);
 
