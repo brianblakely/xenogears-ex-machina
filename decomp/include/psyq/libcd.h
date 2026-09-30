@@ -37,6 +37,7 @@ void CdFlush(void);
 CdlCB CdSyncCallback(CdlCB func);
 CdlCB CdReadyCallback(CdlCB func);
 void (*CdDataCallback(void (*func)()))();
+CdlCB CdReadCallback(CdlCB func);
 int CdControl(u_char com, u_char *param, u_char *result);
 int CdSync(int mode, u_char *result);
 int CdGetSector(void *madr, int size);

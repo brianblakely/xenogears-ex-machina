@@ -1128,10 +1128,6 @@ void func_8007AB6C(u32 *ot, FieldMarker *marker, MATRIX *m, s32 buffer) {
     PopMatrix();
 }
 
-#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
-    (p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x1), (p)->y1 = (_y1), \
-    (p)->x2 = (_x2), (p)->y2 = (_y2), (p)->x3 = (_x3), (p)->y3 = (_y3)
-
 /* Project a quad, then replace it with a 16x10 screen-aligned sprite standing
  * on the midpoint of its projected bottom edge, and link it into the ordering
  * table entry. */

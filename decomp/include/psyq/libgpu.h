@@ -76,6 +76,36 @@ typedef struct {
     u_long tag;
     u_char r0, g0, b0, code;
     short x0, y0;
+    short x1, y1;
+    short x2, y2;
+    short x3, y3;
+} POLY_F4;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
+    u_char r1, g1, b1, pad1;
+    short x1, y1;
+    u_char r2, g2, b2, pad2;
+    short x2, y2;
+    u_char r3, g3, b3, pad3;
+    short x3, y3;
+} POLY_G4;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
+    short x1, y1;
+    short x2, y2;
+    u_long pad;
+} LINE_F3;
+
+typedef struct {
+    u_long tag;
+    u_char r0, g0, b0, code;
+    short x0, y0;
     u_char u0, v0;
     u_short clut;
     short x1, y1;
@@ -115,6 +145,9 @@ typedef struct {
 #define getaddr(p) (u_long)(((P_TAG *)(p))->addr)
 #define getcode(p) (u_char)(((P_TAG *)(p))->code)
 #define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = _r0, (p)->g0 = _g0, (p)->b0 = _b0)
+#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
+    (p)->x0 = _x0, (p)->y0 = _y0, (p)->x1 = _x1, (p)->y1 = _y1, \
+    (p)->x2 = _x2, (p)->y2 = _y2, (p)->x3 = _x3, (p)->y3 = _y3
 #define setSemiTrans(p, abe) \
     ((abe) ? setcode(p, getcode(p) | 0x02) : setcode(p, getcode(p) & ~0x02))
 #define setShadeTex(p, tge) \
@@ -140,10 +173,14 @@ void AddPrim(void *ot, void *p);
 void AddPrims(void *ot, void *p0, void *p1);
 void TermPrim(void *p);
 void SetPolyF3(POLY_F3 *p);
+void SetPolyF4(POLY_F4 *p);
+void SetPolyG4(POLY_G4 *p);
 void SetPolyFT4(POLY_FT4 *p);
+void SetLineF3(LINE_F3 *p);
 void SetTile(TILE *p);
 void SetSprt(SPRT *p);
 void SetSemiTrans(void *p, int abe);
+void SetShadeTex(void *p, int tge);
 void SetDrawMode(DR_MODE *p, int dfe, int dtd, int tpage, RECT *tw);
 void SetTexWindow(DR_TWIN *p, RECT *tw);
 void SetDrawTPage(DR_TPAGE *p, int dfe, int dtd, int tpage);

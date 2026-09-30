@@ -2,6 +2,8 @@
 #define PSYQ_LIBAPI_H
 
 /* PsyQ libapi (BIOS kernel services, controller and memory card startup). */
+long OpenEvent(unsigned long desc, long spec, long mode, long (*func)());
+long CloseEvent(long event);
 long EnableEvent(long event);
 long DisableEvent(long event);
 long EnterCriticalSection(void);
@@ -9,6 +11,7 @@ void ExitCriticalSection(void);
 void SwEnterCriticalSection(void);
 void SwExitCriticalSection(void);
 void FlushCache(void);
+long open(char *devname, unsigned long flag);
 void InitPAD(char *bufA, long lenA, char *bufB, long lenB);
 int StartPAD(void);
 void StopPAD(void);

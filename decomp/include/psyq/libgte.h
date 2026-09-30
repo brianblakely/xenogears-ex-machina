@@ -47,6 +47,8 @@ void SetRotMatrix(MATRIX *m);
 void SetTransMatrix(MATRIX *m);
 void RotTransSV(SVECTOR *v0, SVECTOR *v1, long *flag);
 long RotTransPers(SVECTOR *v0, long *sxy, long *p, long *flag);
+long RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, long *sxy0, long *sxy1, long *sxy2,
+                   long *p, long *flag);
 long RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1,
                    long *sxy2, long *sxy3, long *p, long *flag);
 long RotAverage4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, long *sxy0, long *sxy1,

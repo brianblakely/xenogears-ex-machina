@@ -3,6 +3,12 @@
 
 #include "common.h"
 #include "psyq/libapi.h"
+#include "psyq/libc.h"
+#include "psyq/libcd.h"
+#include "psyq/libetc.h"
+#include "psyq/libgpu.h"
+#include "psyq/libgte.h"
+#include "psyq/libsn.h"
 
 /*
  * Menu overlay (Disc 1 slot 39, loaded at 801c5000): the menu mode's state.
@@ -10,92 +16,6 @@
  * state's sub-blocks on entry and frees them on exit. Field names follow what
  * the overlay does with them; unknown bytes stay padding.
  */
-
-/* PlayStation library types (libgpu/libgte layouts). */
-typedef struct RECT {
-    s16 x, y;
-    s16 w, h;
-} RECT;
-
-typedef struct SVECTOR {
-    s16 vx, vy, vz, pad;
-} SVECTOR;
-
-typedef struct VECTOR {
-    s32 vx, vy, vz, pad;
-} VECTOR;
-
-typedef struct MATRIX {
-    s16 m[3][3];
-    s32 t[3];
-} MATRIX;
-
-/* libgs TIM image descriptor (ReadTIM). */
-typedef struct TIM_IMAGE {
-    u32 mode;
-    RECT *crect;
-    u32 *caddr;
-    RECT *prect;
-    u32 *paddr;
-} TIM_IMAGE;
-
-typedef struct POLY_G4 {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 r1, g1, b1, pad1;
-    s16 x1, y1;
-    u8 r2, g2, b2, pad2;
-    s16 x2, y2;
-    u8 r3, g3, b3, pad3;
-    s16 x3, y3;
-} POLY_G4;
-
-/* libgpu primitive macros. */
-#define setRGB0(p, _r0, _g0, _b0) ((p)->r0 = (_r0), (p)->g0 = (_g0), (p)->b0 = (_b0))
-#define setXY4(p, _x0, _y0, _x1, _y1, _x2, _y2, _x3, _y3) \
-    ((p)->x0 = (_x0), (p)->y0 = (_y0), (p)->x1 = (_x1), (p)->y1 = (_y1), \
-     (p)->x2 = (_x2), (p)->y2 = (_y2), (p)->x3 = (_x3), (p)->y3 = (_y3))
-
-typedef struct POLY_F4 {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    s16 x3, y3;
-} POLY_F4;
-
-typedef struct DR_MODE {
-    u32 tag;
-    u32 code[2];
-} DR_MODE;
-
-typedef struct LINE_F3 {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    u32 pad;
-} LINE_F3;
-
-typedef struct POLY_FT4 {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    u8 u0, v0;
-    u16 clut;
-    s16 x1, y1;
-    u8 u1, v1;
-    u16 tpage;
-    s16 x2, y2;
-    u8 u2, v2;
-    u16 pad1;
-    s16 x3, y3;
-    u8 u3, v3;
-    u16 pad2;
-} POLY_FT4;
 
 /* structs: begin */
 /* Party block (*(state + 33c)): per-part redraw flags, the label set and the party ids. */
@@ -1333,7 +1253,6 @@ extern s32 D_801EA048;
 extern u8 D_801EA8C4[0x20];    /* icon palette buffer */
 extern RECT D_801EA8E4;        /* icon image area */
 extern RECT D_801EA8EC;        /* icon palette area */
-void *memcpy(u8 *dst, u8 *src, s32 size); /* memcpy (PsyQ memory.h prototype, not the builtin) */
 extern s32 D_801EA900[2];     /* per port */
 extern u8 D_801EA6D0[2][16]; /* per port and save slot: a save of this game exists */
 extern u8 *D_801EA6F4;     /* the save information of the last matched file */
@@ -1342,7 +1261,6 @@ extern u8 D_801E9779;    /* frames between card checks */
 /* Resident services. */
 void *func_80031BDC(s32 size, s32 flags); /* allocate */
 void func_800320E8(void *block);          /* free */
-void bzero(void *dst, s32 size);  /* bzero */
 void func_8001B970(void);
 void func_80026338(void *sheet, s32 id, s32 *a, s32 *b, s32 *c, s32 *d, s32 *e, s32 *f);
 
@@ -1366,11 +1284,6 @@ void func_8003342C(void *archive);                /* relocate an offset table */
 void *func_80032E88(void *packed, s32 mode);     /* unpack into a new block */
 void func_8002DD20(void *list);                   /* load a TIM list */
 void func_80038428(void *bank);
-void OpenTIM(void *tim);                          /* OpenTIM */
-TIM_IMAGE *ReadTIM(TIM_IMAGE *image);             /* ReadTIM */
-void *memmove(void *dst, void *src, s32 size);    /* memmove */
-char *strcpy(char *dst, const char *src);         /* inlined for constant strings */
-char *strcat(char *dst, const char *src);
 void func_80028470(s32 arg0, s32 arg1);
 s32 func_800288EC(s32 file);                                 /* file size */
 void func_800295D8(s32 file, void *dst, s32 arg2, s32 arg3); /* read file */
@@ -1391,25 +1304,10 @@ void func_80037E8C(void);     /* resume sound */
 void func_80037EE4(void);     /* pause sound */
 void func_80039DB8(s32 id, s32 sound); /* play a sound effect */
 void func_800404C4(u32 event, s32 spec); /* UnDeliverEvent */
-void CloseEvent(s32 event);           /* EnableEvent */
 s32 func_80040494(s32 event);            /* TestEvent */
 u16 *func_800405C4(s32 code);   /* 16x16 font glyph of a two-byte code, -1 none */
-s32 CdSyncCallback(s32 callback);  /* previous callback */
-s32 CdReadyCallback(s32 callback);
-s32 CdReadCallback(s32 callback);
-s32 open(char *name, s32 mode);  /* open */
 s32 func_80040544(s32 fd, void *buf, s32 size); /* read */
 void func_80040564(s32 fd);               /* close */
-void AddPrim(u32 *ot, void *prim);  /* AddPrim */
-void SetSemiTrans(void *prim, s32 on);  /* SetSemiTrans */
-void SetShadeTex(void *prim, s32 on);  /* SetShadeTex */
-void SetPolyFT4(POLY_FT4 *poly);      /* SetPolyFT4 */
-void SetPolyG4(POLY_G4 *poly);       /* SetPolyG4 */
-void SetLineF3(LINE_F3 *line);       /* SetLineF3 */
-void SetPolyF4(POLY_F4 *poly);       /* SetPolyF4 */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y); /* GetTPage */
-u16 GetClut(s32 x, s32 y);          /* GetClut */
-void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 u32 func_801E1418(u8 slot, u8 row);
 void func_801E3A80(MenuTables *tables, u8 id);
 void func_801E433C(MenuTables *tables, u8 gear);
@@ -1422,32 +1320,7 @@ void func_801E8EAC(POLY_FT4 *poly, u8 mode);
 void func_801E920C(POLY_FT4 *poly, u16 x, u16 y, u8 u, u8 v, u16 w, u16 h);
 void func_801E927C(POLY_FT4 *poly);
 void func_8003F738(SVECTOR *angles, MATRIX *m); /* RotMatrix */
-void TransMatrix(MATRIX *m, VECTOR *t);      /* TransMatrix */
-void SetRotMatrix(MATRIX *m);                 /* SetRotMatrix */
-void SetTransMatrix(MATRIX *m);                 /* SetTransMatrix */
-void RotTransPers3(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, s32 *sxy0, s32 *sxy1, s32 *sxy2, s32 *p,
-                   s32 *flag); /* RotTransPers3 */
-void PushMatrix(void);
-void PopMatrix(void);
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
-u16 GetClut(s32 x, s32 y);                   /* GetClut */
-void ClearOTagR(u32 *ot, s32 count);  /* ClearOTagR */
-void MoveImage(RECT *rect, s32 x, s32 y); /* MoveImage */
-void DrawOTag(u32 *ot);             /* DrawOTag */
-void PutDrawEnv(void *env);           /* PutDrawEnv */
-void PutDispEnv(void *env);           /* PutDispEnv */
-void VSync(s32 mode);            /* VSync */
-s32 CdControlB(s32 command, u8 *param, u8 *result);
-void CdIntToPos(s32 sector, u8 *pos); /* CdIntToPos */
-void RotTransPers4(SVECTOR *v0, SVECTOR *v1, SVECTOR *v2, SVECTOR *v3, s32 *sxy0, s32 *sxy1, s32 *sxy2,
-                   s32 *sxy3, s32 *p, s32 *flag); /* RotTransPers4 */
-s32 PCopen(char *name, s32 flags, s32 perms);
-void PCclose(s32 handle);
-void func_8004C398(s32 handle, void *buffer, s32 size); /* PCread */
 s32 func_8004E784(s32 channel); /* start a card check */
-void ClearImage(RECT *rect, s32 r, s32 g, s32 b); /* ClearImage */
-void DrawSync(s32 mode);                /* DrawSync */
-void LoadImage(RECT *rect, void *pixels); /* LoadImage */
 void func_8003852C(void *bank);
 void func_8003A094(void *bank);
 
@@ -1462,7 +1335,6 @@ u8 *func_80033A5C(u8 id);  /* gear part name */
 u8 *func_80033728(u8 *table, s32 index); /* message of a table */
 u8 *func_80033818(u8 item);  /* item name text */
 u8 func_80034EAC(u8 *text, void *pixels, s32 width, s32 line); /* render a text line; its width */
-s32 OpenEvent(u32 cause, s32 type, s32 mode, void *handler);
 
 /* Overlay functions. */
 u8 func_801C531C(u8 offset);
@@ -1637,11 +1509,6 @@ void func_801D1D40(void);
 void func_801D1E80(void);
 void func_801D22C4(void);
 void func_801C8164(POLY_G4 *poly, u8 r, u8 g, u8 b);
-void SetLineF3(LINE_F3 *line);         /* SetLineF3 */
-void SetPolyF4(POLY_F4 *poly);         /* SetPolyF4 */
-u16 GetTPage(s32 tp, s32 abr, s32 x, s32 y);
-u16 GetClut(s32 x, s32 y);                   /* GetClut */ /* GetTPage */
-void SetDrawMode(DR_MODE *p, s32 dfe, s32 dtd, s32 tpage, RECT *tw); /* SetDrawMode */
 void func_801D22F4(u8 arg0);
 void func_801D2484(void);
 void func_801D2968(void);
