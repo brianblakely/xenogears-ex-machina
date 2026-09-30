@@ -283,7 +283,8 @@ typedef struct Actor {
     u8 unk913[0x3];
     s16 unk916;
     u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
-    u8 unk919[0x23];
+    u8 unk919[0x13];
+    Vector unk92C;       /* 0x92C: with home, spans the actor's extent */
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0x3C];
@@ -516,6 +517,7 @@ void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
 s32 func_80082488(Vector *position, s32 arg);
+void func_80082458(SVector *out);
 void func_800828F8(Vector *position, Vector *step, s32 limit);
 void func_80083738(Actor *actor, Actor *other);
 void func_80083C0C(s32 arg);

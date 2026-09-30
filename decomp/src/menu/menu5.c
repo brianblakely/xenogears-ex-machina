@@ -970,7 +970,73 @@ void func_80087AB0(Actor *actor) {
     actor->backdrop[1] = actor->backdrop[0];
 }
 
-INCLUDE_ASM(".local/decomp/menu/asm/nonmatchings/menu5", func_80087B74);
+/* Draw an actor's ground shadow: a square sized by its height, centred
+ * under it and tilted to the ground normal there. */
+void func_80087B74(Actor *actor, u32 *ot, Matrix *view) {
+    SVector corners[4];
+    Vector centre;
+    Vector unused; /* the original frame has 16 unused bytes here */
+    SVector normal;
+    Matrix m;
+    s32 otz;
+    s32 z0, z1, z2, z3;
+    PolyFT4 *quad;
+    s32 size;
+    s32 min;
+
+    if ((actor->flags & 0x60000000) != 0x20000000) {
+        size = (actor->home.vy + actor->unk92C.vy) / 32 + 0x90;
+        if (size > 0) {
+            centre.vx = (actor->home.vx + actor->unk92C.vx) / 2;
+            centre.vz = (actor->home.vz + actor->unk92C.vz) / 2;
+            centre.vy = 0;
+            corners[0].vx = corners[1].vx = corners[0].vz = corners[2].vz = -size;
+            corners[3].vx = corners[2].vx = corners[1].vz = corners[3].vz = size;
+            corners[0].vy = corners[1].vy = corners[2].vy = corners[3].vy = 0;
+            quad = &actor->backdrop[D_800928A0];
+            m.t[0] = centre.vx - D_80096FA8.vx;
+            m.t[1] = func_80082488(&centre, 0);
+            m.t[2] = centre.vz - D_80096FA8.vz;
+            func_80082458(&normal);
+            m.m[0][0] = 0x1000;
+            m.m[0][1] = 0;
+            m.m[0][2] = 0;
+            m.m[1][0] = normal.vx;
+            m.m[1][1] = normal.vy;
+            m.m[1][2] = normal.vz;
+            m.m[2][0] = 0;
+            m.m[2][1] = 0;
+            m.m[2][2] = 0x1000;
+            CompMatrix(view, &m, &m);
+            gte_SetRotMatrix(&m);
+            gte_SetTransMatrix(&m);
+            gte_ldv3c(corners);
+            gte_rtpt();
+            gte_nclip();
+            gte_stopz(&otz);
+            if (otz >= 0) {
+                gte_stsz3(&z0, &z1, &z2);
+                gte_stsxy3_ft4(quad);
+                gte_ldv0(&corners[3]);
+                gte_rtps();
+                gte_stsz(&z3);
+                gte_stsxy(&quad->x3);
+                min = z0;
+                if (z1 < min) {
+                    min = z1;
+                }
+                if (z2 < min) {
+                    min = z2;
+                }
+                if (z3 < min) {
+                    min = z3;
+                }
+                otz = min >> 4;
+                AddPrim(ot + otz, quad);
+            }
+        }
+    }
+}
 
 /* Record a position in the path list (up to 31 entries). Does not match:
  * the entry address is formed base-first and registers differ. */
