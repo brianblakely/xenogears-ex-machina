@@ -36,12 +36,15 @@ typedef struct Brain {
 } Brain;
 
 /* Which special moves an actor has learned and may use. */
+/* Per model id (D_80092874, 0x20 bytes each). */
 typedef struct MoveList {
     s16 base;       /* 0x00: scales the combo damage (percent per level) */
-    u8 unk2[0x4];
+    u8 unk2[0x2];
+    s16 level;      /* 0x04: level required to pick the model */
     u8 tendency[4]; /* 0x06: eagerness values for the brain */
-    u8 learned[14]; /* 0x0A: per combo number from 1 */
+    u8 learned[14]; /* 0x0A: per combo number from 1 (parts present) */
     u8 unk18;       /* 0x18: power of the charged shot */
+    u8 unk19[0x7];
 } MoveList;
 
 typedef struct MoveSlot {

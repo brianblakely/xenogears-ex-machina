@@ -2,6 +2,7 @@
 #define MENU_H
 
 #include "common.h"
+#include "gpu.h"
 
 /* libgte-layout vector: three 32-bit components and padding. */
 typedef struct {
@@ -131,9 +132,13 @@ typedef struct {
     s32 unk10;
 } SideHits;
 
-/* Header of an actor's move data (Actor 0x8FC). */
+/* Header of an actor's loaded model file (Actor 0x8FC). */
 typedef struct {
-    u8 unk0[0x14];
+    u8 unk0[0xE];
+    u8 unkE;
+    u8 unkF;
+    u8 unk10[3];
+    u8 unk13;
     s16 unk14;
     s16 unk16;
     s16 unk18;
@@ -146,7 +151,61 @@ typedef struct {
     s16 unk28;
     s16 unk2A;
     s16 unk2C;       /* nonzero: the winner keeps the stage */
+    u8 unk2E[0x2];
+    s32 unk30;       /* offset of a table from the header */
 } SceneHeader;
+
+typedef SceneHeader ModelHeader;
+
+/* A loaded model file. */
+typedef struct {
+    u8 unk0[0x10];
+    ModelHeader *header; /* 0x10 */
+    s32 unk14;
+    u8 (*parts)[4];    /* 0x18: byte 3 set = part kind A */
+    u8 unk1C[4];
+    u8 *image;         /* 0x20: palette and emblem pixels */
+} ModelData;
+
+
+/* Screen point (libgte DVECTOR). */
+typedef struct {
+    s16 vx;
+    s16 vy;
+} DVector;
+
+/* A scene light (position, then colour). */
+typedef struct {
+    s32 x, y, z;
+    s16 r, g, b;
+} LightData;
+
+typedef struct {
+    u32 unk0;
+    LightData *data;
+} LightRef;
+
+typedef struct {
+    u8 unk0[8];
+    LightRef *lights[3];
+} LightSet;
+
+
+/* A node of a loaded model hierarchy. */
+typedef struct ModelNode {
+    u8 unk0[4];
+    struct ModelNode *next; /* 0x04 */
+    u8 unk8[0x28];
+    void *unk30;
+} ModelNode;
+
+/* A placed scene object. */
+typedef struct {
+    u8 unk0[0x44];
+    SVector rotation;  /* 0x44 */
+} SceneObject;
+
+typedef struct MoveList ModelRecord;
 
 /* A character moved in the menu scene. */
 typedef struct Actor {
@@ -167,9 +226,11 @@ typedef struct Actor {
     s32 angle;           /* 0x54: facing, 4096 = full turn */
     s32 target_angle;    /* 0x58 */
     Node *node;          /* 0x5C: model set node */
-    u8 unk60[0x10];
+    void *object;        /* 0x60 */
+    u8 unk64[0xC];
     s32 unk70;
-    u8 unk74[0xC];
+    u8 unk74[0x8];
+    s32 unk7C;
     struct MoveSlot *move_slots; /* 0x80: one per combo number */
     u8 *unk84;
     u8 unk88[0x10];
@@ -178,12 +239,15 @@ typedef struct Actor {
     u8 unkA0[0x10];
     s32 floor_y;         /* 0xB0 */
     s16 hp;              /* 0xB4 */
-    s16 unkB6;           /* 0xB6: charge, 0x1000 = full */
+    s16 charge;          /* 0xB6: 0x1000 = full */
     u8 unkB8[0x2];
     s16 unkBA;
     s16 max_hp;          /* 0xBC */
     s16 unkBE;           /* 0xBE: charge a special move needs */
-    u8 unkC0[0x4];
+    u8 unkC0;
+    u8 unkC1;
+    u8 level;            /* 0xC2 */
+    u8 unkC3;
     u8 unkC4;
     u8 unkC5;
     u8 unkC6[0x4];
@@ -206,18 +270,20 @@ typedef struct Actor {
     u8 unk8B0[0x44];
     s32 nearest_dist;    /* 0x8F4: distance of the closest shot */
     Shot *nearest_shot;  /* 0x8F8 */
-    SceneHeader *unk8FC; /* 0x8FC */
-    u8 unk900[0x4];
+    SceneHeader *header; /* 0x8FC */
+    u8 *unk900;
     u8 *visible;         /* 0x904: objects shown by the current move */
     u8 visible_count;
-    u8 kind;             /* 0x909: model kind */
-    u8 unk90A;
+    u8 model_id;         /* 0x909 */
+    u8 kind;             /* 0x90A: bits 0-2 */
     u8 unk90B;
     u8 unk90C[0x5];
     u8 move_count;       /* 0x911: special moves the opponent may pick */
-    u8 unk912[0x4];
+    u8 parts_b;          /* 0x912 */
+    u8 unk913[0x3];
     s16 unk916;
-    u8 unk918[0x24];
+    u8 glow;             /* 0x918: light level, fades by 0x18 a frame */
+    u8 unk919[0x23];
     Vector home;         /* 0x93C */
     Vector core;         /* 0x94C: where shots home in */
     u8 unk95C[0x3C];
@@ -246,7 +312,7 @@ typedef struct Actor {
     u8 unk15F6[0x6];
     struct Brain *brain; /* 0x15FC: the computer opponent's state */
     struct MoveList *moves; /* 0x1600 */
-    u8 unk1604[0x50];
+    PolyFT4 backdrop[2]; /* 0x1604: one per buffer */
     s32 unk1654;
     s32 unk1658;
     u8 unk165C[0x8];
@@ -332,6 +398,7 @@ extern s32 D_80092A10;
 extern s32 D_80092A20;
 extern u8 D_80099D9A;
 extern u8 D_80099D9D;
+extern u8 D_80099D9E;
 extern u8 D_80099DA1;
 extern u8 D_80099DA2;
 extern s16 D_80099DA4;
@@ -428,7 +495,7 @@ void func_8007107C(void);
 void func_80071724(u32 *ot);
 void func_800732AC(void *dst, void *src, s32 size);
 void func_80073064(SVector *dir, SVector *out, s32 scale);
-void func_8008859C(Vector *v, SVector *unit);
+void func_8008859C(Vector *vector, void *out);
 s32 func_800886FC(Vector *v);
 void func_8007E31C(Vector *from, Vector *to, Color *color);
 void func_8008EBD0(Actor *actor, s32 sound, Shot *shot, s32 arg);
@@ -445,7 +512,6 @@ s32 func_8007D190(Vector *pos, u32 kind);
 s32 func_8007D25C(s32 type);
 void func_8007D65C(Vector *from, Vector *to, s32 code);
 void func_80079DF0(Actor *actor, Actor *other);
-u32 func_800828C4(Actor *actor);
 void func_8007191C(s32 scene);
 void func_80071DA4(Actor *actor);
 void func_8007E24C(void);
@@ -473,5 +539,51 @@ Node *func_8008C2C0(Node *source);
 void func_80080D10(void);
 void func_8008976C(s32 a0, s32 a1);
 void func_8008BC04(void);
+
+/* Idle scene camera. */
+extern s32 D_80092770;
+extern s32 D_80092774;
+extern u8 D_8009287C;
+extern s32 D_800927AC; /* orbit angle */
+extern s32 D_8009277C; /* framing heading */
+extern s32 D_800927B0; /* orbit speed */
+extern s32 D_80092794; /* scene mode */
+extern s32 D_80092790;
+
+void func_80083310(s32 arg);
+void func_8007A21C(s32 arg);
+void func_8007AC3C(void);
+
+/* Scene actor models. */
+typedef struct {
+    u16 file;
+    void *data;
+} Resource;
+
+extern void *D_800927B4[2]; /* loaded model of each actor slot */
+extern u8 D_80099D9E;
+
+void *func_800891C0(s32 id);
+s32 func_800288EC(s32 file);
+void func_80083BB4(s32 both);
+
+/* Menu mode exit. */
+extern s32 D_800927C4;
+extern s32 D_800917F0;
+void func_8003852C(s32 arg);
+void func_800399D4(s32 arg);
+void func_8001996C(s32 arg);
+void func_80019ACC(s32 arg); /* resident mode dispatcher */
+
+/* Resident flags. */
+extern s32 D_8006F980;
+extern u8 D_80091A6C[];
+
+/* Actor setup. */
+void *func_8008B38C(ModelData *data);
+void func_8008A168(void);
+void func_80084BEC(Actor *actor);
+void func_8008E6F8(Actor *actor);
+extern u8 D_80091FB0[];
 
 #endif

@@ -117,6 +117,8 @@ decomp/src/debug595/debug595.c
 decomp/src/field/field.c
 decomp/src/mdec/mdec.c
 decomp/src/menu/brain.h
+decomp/src/menu/gpu.h
+decomp/src/menu/gte.h
 decomp/src/menu/menu.c
 decomp/src/menu/menu.h
 decomp/src/menu/scene.h
@@ -124,6 +126,7 @@ decomp/src/menu/sound.h
 decomp/src/menu/spark.h
 decomp/src/menu/sparkle.h
 decomp/src/menu/system.h
+decomp/src/menu/window.h
 decomp/src/movie/movie.c
 decomp/src/ovl2143/ovl2143.c
 decomp/src/ovl2596/ovl2596.c

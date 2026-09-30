@@ -35,16 +35,6 @@ typedef struct {
     u32 tag;
     u8 r0, g0, b0, code;
     s16 x0, y0;
-    s16 x1, y1;
-    s16 x2, y2;
-    s16 x3, y3;
-    u32 pad;
-} LineF4;
-
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
 } Tile1Tag;
 
 #define setlen(p, _len) (((PrimTag *)(p))->len = (u8)(_len))

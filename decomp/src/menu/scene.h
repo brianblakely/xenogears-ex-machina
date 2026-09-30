@@ -119,19 +119,11 @@ extern char *D_800912F4[];
 extern u32 D_8009274C; /* pad buttons repeating this frame */
 extern u32 D_80092750; /* pad buttons pressed this frame */
 
-extern s8 D_8009273C;
-extern s8 D_80092740;
+extern u8 D_8009273C;
+extern u8 D_80092740;
 extern s32 D_80092744;
 extern s32 D_800912F0;
 /* A page of the settings/system menu (0x3C bytes; table at D_800915AC). */
-/* libgpu TILE layout. */
-typedef struct {
-    u32 tag;
-    u8 r0, g0, b0, code;
-    s16 x0, y0;
-    s16 w, h;
-} TileRgb;
-
 /* libgpu DR_MOVE layout. */
 typedef struct {
     u32 tag;
@@ -142,11 +134,11 @@ typedef struct {
 typedef struct {
     u8 unk0[0x14];
     u8 flags;
-} MenuItem;
+} PageItem;
 
 typedef struct {
     u8 unk0[4];
-    MenuItem *item; /* 0x04 */
+    PageItem *item; /* 0x04 */
     u8 unk8[2];
     s16 count;  /* 0x0A */
     u8 unkC[6];
@@ -176,9 +168,8 @@ void func_8007ECF0(u8 *text);
 void func_8007F948(MenuPage *page, s32 entry);
 s32 func_8003FBF8(char *out, char *format, ...); /* sprintf */
 
-extern MenuPage D_800915AC[];
-extern MenuPage *D_80092734; /* shown page */
-extern MenuPage *D_80092738; /* page to return to */
+/* D_800915AC, D_80092734 and D_80092738 are declared as Menu (window.h);
+ * the settings pages view them as MenuPage. */
 extern s32 D_80092924;
 extern s32 D_800928C8;
 extern u8 D_80092758;
@@ -192,19 +183,12 @@ void func_8007F8B4(void);
 void func_80031BB4(s32 high); /* choose the heap end to allocate from */
 void func_8004495C(Rect *rect, s32 x, s32 y); /* copy a VRAM area */
 void func_800448F8(Rect *rect, void *pixels);  /* read a VRAM area */
-extern s8 D_800926FC;
-extern s8 D_8009275C;
+extern u8 D_800926FC;
+extern u8 D_8009275C;
 void func_80080AA0(s32 forget);
 void func_8008509C(s32 a, s32 b);
 void *func_800891C0(s32 arg);
 void func_8007313C(void *src, void *dst);
-
-/* 32-byte records of the list at D_80092874; +4 is the required level. */
-typedef struct {
-    u8 unk0[4];
-    s16 level;
-    u8 unk6[0x1A];
-} ListSource;
 
 typedef struct {
     s32 id;
@@ -227,7 +211,7 @@ typedef struct {
 
 extern u16 D_8006EF64;
 extern ListEntry D_80091964[49];
-extern ListSource *D_80092874;
+extern struct MoveList *D_80092874; /* per model id */
 extern ListEntry **D_800928EC;
 extern s32 D_80092888;
 extern GridCell *D_8009270C;
