@@ -88,7 +88,44 @@ void func_800729A8(char *name, void *buffer, s32 size) {
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072A08);
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072D84);
+/* Set up the menu backdrop quads of both buffers at (x, y), w by h, with
+ * random dark blue corner fades. */
+void func_80072D84(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        D_80076F8C[i].r = (func_80074AF0() & 0xFF) / 32 + 8;
+        D_80076F8C[i].g = 8;
+        D_80076F8C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
+        D_80076F9C[i].r = (func_80074AF0() & 0xFF) / 32 + 8;
+        D_80076F9C[i].g = 8;
+        D_80076F9C[i].b = (func_80074AF0() & 0xFF) / 3 + 16;
+    }
+    for (i = 0; i < 4; i++) {
+        D_80076FAC[i] = 0;
+        D_80076FBC[i] = (func_80074AF0() & 0xFF) + 32;
+    }
+    SetPolyG4(poly0);
+    SetSemiTrans(poly0, 0);
+    poly0->x0 = x;
+    poly0->y0 = y;
+    poly0->x1 = x + w;
+    poly0->y1 = y;
+    poly0->x2 = x;
+    poly0->y2 = y + h;
+    poly0->x3 = x + w;
+    poly0->y3 = y + h;
+    SetPolyG4(poly1);
+    SetSemiTrans(poly1, 0);
+    poly1->x0 = x;
+    poly1->y0 = y;
+    poly1->x1 = x + w;
+    poly1->y1 = y;
+    poly1->x2 = x;
+    poly1->y2 = y + h;
+    poly1->x3 = x + w;
+    poly1->y3 = y + h;
+}
 
 #ifdef NON_MATCHING
 /* Add the menu backdrop to `ot`: a gouraud quad at (x, y), w by h, whose
@@ -156,7 +193,42 @@ void func_80072F98(u32 *ot, POLY_G4 *poly, s32 x, s32 y, s32 w, s32 h) {
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80072F98);
 #endif
 
-INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_80073328);
+/* Set up the menu frame quads of both buffers at (x, y), w by h, with random
+ * pale yellow corner fades. */
+void func_80073328(POLY_G4 *poly0, POLY_G4 *poly1, s32 x, s32 y, s32 w, s32 h) {
+    s32 i;
+
+    for (i = 0; i < 4; i++) {
+        D_80076FCC[i].r = 0xFF;
+        D_80076FCC[i].g = 0xFF;
+        D_80076FCC[i].b = (func_80074AF0() & 0x3F) - 0x42;
+        D_80076FDC[i].r = 0xFF;
+        D_80076FDC[i].g = 0xFF;
+        D_80076FDC[i].b = (func_80074AF0() & 0x3F) - 0x42;
+    }
+    for (i = 0; i < 4; i++) {
+        D_80076FEC[i] = 0;
+        D_80076FFC[i] = (func_80074AF0() & 0xFF) + 32;
+    }
+    SetPolyG4(poly0);
+    poly0->x0 = x;
+    poly0->y0 = y;
+    poly0->x1 = x + w;
+    poly0->y1 = y;
+    poly0->x2 = x;
+    poly0->y2 = y + h;
+    poly0->x3 = x + w;
+    poly0->y3 = y + h;
+    SetPolyG4(poly1);
+    poly1->x0 = x;
+    poly1->y0 = y;
+    poly1->x1 = x + w;
+    poly1->y1 = y;
+    poly1->x2 = x;
+    poly1->y2 = y + h;
+    poly1->x3 = x + w;
+    poly1->y3 = y + h;
+}
 
 INCLUDE_ASM(".local/decomp/movie/asm/nonmatchings/movie", func_800734B8);
 

@@ -139,6 +139,12 @@ extern CVECTOR D_80076F8C[4];   /* from */
 extern CVECTOR D_80076F9C[4];   /* to */
 extern s32 D_80076FAC[4];       /* frames into the fade */
 extern s32 D_80076FBC[4];       /* frames of the fade */
+extern CVECTOR D_80076FCC[4];   /* menu frame: from */
+extern CVECTOR D_80076FDC[4];   /* to */
+extern s32 D_80076FEC[4];
+extern s32 D_80076FFC[4];
+void SetPolyG4(POLY_G4 *p);
+void SetSemiTrans(void *p, s32 abe);
 
 /* The playback camera (unused by the movie path). */
 extern VECTOR D_8007702C;                      /* eye */
