@@ -137,6 +137,7 @@ typedef struct {
     s32 unk248;              /* 248 */
 } FieldView;
 
+
 /* One 0x138-byte event actor record. */
 typedef struct FieldActor {
     u32 flags;       /* 000 */
@@ -147,9 +148,17 @@ typedef struct FieldActor {
     u32 unk014;      /* 014 */
     u8 unk018[4];
     s32 gravity;     /* 01C */
-    u8 unk020[0xF4 - 0x20];
+    s32 position[3]; /* 020: 16.16 */
+    u8 unk02C[4];
+    s32 unk030;      /* 030 */
+    u8 unk034[4];
+    s32 unk038;      /* 038 */
+    u8 unk03C[0xF4 - 0x3C];
     s16 scale[3];    /* 0F4 */
-    u8 unk0FA[0x118 - 0xFA];
+    u8 unk0FA[0x104 - 0xFA];
+    s16 heading;     /* 104 */
+    s16 heading_goal; /* 106: bit 15 once turned */
+    u8 unk108[0x118 - 0x108];
     s32 *list;       /* 118 */
     u8 unk11C[0x138 - 0x11C];
 } FieldActor;
@@ -218,6 +227,12 @@ typedef struct {
 } FieldSlot6;
 
 /* Resident services. */
+extern s32 func_80028B14(void);
+extern void func_800295D8(s32 file, void *ring, s32, s32);
+extern void func_8003852C(void *bank);
+extern void func_80039F9C(s32 id, s32 voice, s16 volume, s16 pan);
+extern void func_80039FF8(void);
+extern void func_8003A20C(s32 voice);
 extern void func_80048D7C(VECTOR *v, SVECTOR *out); /* VectorNormalS */
 extern s32 func_8003F8B0(s32 angle); /* rcos */
 extern s32 func_8003F8CC(s32 angle); /* rsin */
@@ -262,6 +277,10 @@ extern void func_800496AC(void);                               /* PopMatrix */
 extern void func_8004A6DC(SVECTOR *v, s32 *out, s32 *flag); /* RotTrans */
 
 /* Field overlay. */
+extern void func_80081F80(void *owner, s32 heading);
+extern s32 func_800854D0(void);
+extern void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel);
+extern s32 func_80099A4C(s32 dx, s32 dz);
 extern s32 func_8007D8B4(s32 x, s32 y, s32 z);
 extern void func_8007F6F8(s16 window);
 extern void func_800775F8(void);
@@ -284,6 +303,8 @@ extern void func_80078C5C(void);
 extern void func_802815B0(void);
 
 /* Resident state. */
+extern s32 D_8004F32C;
+extern void *D_8006259C; /* field sound-effect bank */
 extern u8 D_80059179; /* battle-entry flag */
 extern s32 D_8004F308; /* pending sound; -1 until resolved */
 extern s32 D_8004F324;
@@ -293,6 +314,12 @@ extern s32 D_8004F34C; /* current map */
 extern u8 D_800625FC[2][0x22]; /* pad buffers */
 
 /* Field state. */
+extern void *D_800ADBB8; /* music-wave stream ring */
+extern s32 D_800ADBBC;   /* stream arrivals */
+extern void (*D_800AFEA4)(s32); /* stream chunk callback */
+extern s32 D_800B21B8; /* last sound effect */
+extern void *D_800B235C; /* movie sound-effect bank */
+extern s16 D_800C3A38;
 extern s32 D_800ADB58; /* descriptor whose list is read */
 extern s32 D_800ADB5C; /* list position */
 extern u32 *D_800AFB20; /* collision attributes */

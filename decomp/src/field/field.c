@@ -980,7 +980,12 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800815F0);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081C54);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081F5C);
+/* -1 when the actor's bits 9-10 meet bits 3-4 of +14, else 0. */
+s32 func_80081F5C(FieldActor *actor) {
+    u32 bits = (actor->flags >> 9) & 3;
+
+    return -((bits & (actor->unk014 >> 3)) != 0);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80081F80);
 
@@ -990,17 +995,72 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008237C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082494);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800825AC);
+/* Planar distance between two descriptors' actors (integer positions). */
+s32 func_800825AC(s32 from, s32 to) {
+    s32 to_x = D_800AFB10[to].actor->position[0] >> 16;
+    s32 to_z = D_800AFB10[to].actor->position[2] >> 16;
+    s32 from_x = D_800AFB10[from].actor->position[0] >> 16;
+    s32 from_z = D_800AFB10[from].actor->position[2] >> 16;
+
+    return func_80099A4C(to_x - from_x, to_z - from_z);
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082620);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80082BB8);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80083178);
+/* Ease `value` 0x4000 towards zero, bounded by +-`limit`. */
+s32 func_80083178(s32 value, s32 limit) {
+    if (value < 0) {
+        value += 0x4000;
+        if (value < -limit) {
+            value = -limit;
+        }
+        if (value > 0) {
+            value = 0;
+        }
+    } else {
+        value -= 0x4000;
+        if (value > limit) {
+            value = limit;
+        }
+        if (value < 0) {
+            value = 0;
+        }
+    }
+    return value;
+}
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800831D0);
+/* The integer parts of a 16.16 vector. */
+void func_800831D0(SVECTOR *out, VECTOR *in) {
+    out->vx = in->vx >> 16;
+    out->vy = in->vy >> 16;
+    out->vz = in->vz >> 16;
+}
 
+#ifdef NON_MATCHING
+/* While the actor moves, turn its heading a quarter (left with flag bit 0,
+ * else right) once, apply it, and mark the heading as turned. */
+void func_800831F4(void *owner, FieldActor *actor, s32 unused, s32 flags) {
+    s32 heading;
+
+    if (actor->unk030 != 0 || actor->unk038 != 0) {
+        heading = actor->heading_goal;
+        if (!(heading & 0x8000)) {
+            if (!(flags & 1)) {
+                heading += 0x400;
+            } else {
+                heading -= 0x400;
+            }
+            actor->heading = actor->heading_goal = heading & 0xFFF;
+            func_80081F80(owner, actor->heading);
+            actor->heading = actor->heading_goal = actor->heading_goal | 0x8000;
+        }
+    }
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800831F4);
+#endif
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80083288);
 
@@ -1015,29 +1075,99 @@ INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_8008492C);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80084A40);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800854D0);
+/* One music-wave stream step: pass arrivals to the chunk callback; -1 once
+ * the stream finished and its ring is released. */
+s32 func_800854D0(void) {
+    s32 arrived = func_80028B14();
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085560);
+    D_800ADBBC = arrived;
+    if (arrived != 0) {
+        D_800AFEA4(arrived);
+        return 0;
+    }
+    if (func_800286CC() != 0) {
+        return 0;
+    }
+    if (D_800ADBBC != 0) {
+        return 0;
+    }
+    func_800320E8(D_800ADBB8);
+    D_800ADB2C = 0;
+    return -1;
+}
 
+/* Start streaming music-wave `file` into an eight-sector ring with a chunk
+ * callback. */
+void func_80085560(s32 file, s32 unused, void (*callback)(s32)) {
+    void *ring;
+
+    D_800ADB2C = 1;
+    D_800ADBB8 = ring = func_8002A260(8, unused);
+    func_800295D8(file, ring, 0, 0x100);
+    D_800AFEA4 = callback;
+}
+
+#ifdef NON_MATCHING
+/* Play sound effect `id` on voice pair `channel` at a volume and pan. */
+void func_800855C8(s32 id, s32 volume, s32 pan, s32 channel) {
+    channel &= 7;
+    func_8003A20C(channel * 2);
+    func_80039F9C(id, channel * 2, volume, pan);
+}
+#else
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800855C8);
+#endif
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085634);
+/* Play sound effect `id` on `channel` at full volume and centre pan; id 0
+ * stops the channel. */
+void func_80085634(s32 id, s32 channel) {
+    channel &= 7;
+    if (id == 0) {
+        func_8003A20C(channel * 2);
+    } else {
+        D_800B21B8 = id;
+        func_800855C8(id, 0x7F, 0x40, channel);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085678);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085738);
+/* Release a movie's sound-effect bank, when one is loaded. */
+void func_80085738(void) {
+    if (D_800C3A38 != 0xFF) {
+        func_80039FF8();
+        func_8003852C(D_800B235C);
+        func_800320E8(D_800B235C);
+    }
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085788);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085890);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085988);
+/* Unlink and release the field's sound-effect bank. */
+void func_80085988(void) {
+    func_8003852C(D_8006259C);
+    func_800320B8(D_8006259C);
+    func_800320E8(D_8006259C);
+    D_8004F32C = -1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_800859DC);
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085B20);
 
-INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085C3C);
+/* Run up to five stream steps; 0 once the stream finished, else -1. */
+s32 func_80085C3C(void) {
+    s32 steps;
+
+    for (steps = 0; steps < 5; steps++) {
+        if (func_800854D0() == -1) {
+            return 0;
+        }
+    }
+    return -1;
+}
 
 INCLUDE_ASM(".local/decomp/field/asm/nonmatchings/field", func_80085C90);
 
