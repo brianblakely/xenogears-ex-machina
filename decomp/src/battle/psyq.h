@@ -121,5 +121,7 @@ void OuterProduct0(Vector *v0, Vector *v1, Vector *out);
 void SetLightMatrix(Matrix *m);
 void SetTransMatrix(Matrix *m);
 s32 SquareRoot0(s32 value);
+void SetBackColor(s32 rbk, s32 gbk, s32 bbk);
+void SetColorMatrix(Matrix *m);
 
 #endif

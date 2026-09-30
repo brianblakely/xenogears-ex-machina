@@ -94,6 +94,10 @@ typedef struct {
     s16 minX;        /* 0x34E */
     s16 minZ;        /* 0x350 */
     s16 maxZ;        /* 0x352 */
+    u8 pad354[0x474 - 0x354];
+    u8 ambient[3]; /* 0x474: the objects' back colour */
+    u8 pad477;
+    u8 shadow[3]; /* 0x478: the shadow sprites' colour */
 } BattleSceneData;
 
 /* An effect sprite record (0x7C bytes) of a sprite pool. */
@@ -259,7 +263,7 @@ s32 func_800A5A48(SVector *a, SVector *b, SVector *c, SVector *point);
 s32 func_800A5914(SVector *point, s32 triangle, s32 depth);
 s32 func_800A5D54(SVector *point, s32 triangle, s32 depth);
 s32 func_800AA650(s32 index);
-void func_800B10EC(s32 index, s16 x, s16 z, s32 y);
+void func_800B10EC(s32 index, s32 x, s32 z, s32 distance);
 void func_800A2D5C(SpritePool *pool);
 void func_800A3490(void);
 void func_800A3514(void);

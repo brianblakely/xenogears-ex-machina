@@ -18,6 +18,7 @@
 #include "gte.h"
 #include "mesh.h"
 #include "files.h"
+#include "stage.h"
 
 /* Whether gear part 50 + index is one of the parts of character 4's gear. */
 s32 func_8009E53C(u8 index) {
@@ -1313,7 +1314,96 @@ void func_800A979C(s32 index, s16 x, s16 y, s16 z, s16 angle) {
 INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A979C);
 #endif
 
-INCLUDE_ASM(".local/decomp/battle/asm/nonmatchings/battle_8009E53C", func_800A9A50);
+/* Run the stage for the elapsed frames (two frames per step, at most three
+ * steps): advance the waves and the highlight pulse, push the acting object
+ * and the objects it overlaps apart (800B10EC), animate the objects, run the
+ * effects, attach the child objects and draw the objects (the highlighted
+ * slots in the pulse colour) and the sprites. */
+void func_800A9A50(s32 arg0, s32 arg1, s32 arg2, s32 arg3) {
+    u8 pulse[3];
+    s32 steps;
+    s32 i;
+    s32 index;
+    BattleObject **others;
+    BattleObject **objects;
+    BattleObject *object;
+    ModelPart *self;
+    ModelPart *other;
+    s32 extent;
+
+    D_800C3E88 += 1 + D_800CCC5C;
+    steps = 0;
+    if (D_800C3E88 > 6) {
+        D_800C3E88 = 6;
+    }
+    while (D_800C3E88 >= 2) {
+        D_800C3E88 -= 2;
+        steps++;
+    }
+    D_800C3CF0 += steps * 56;
+    D_800D39E8 = (func_8003F8CC(D_800C3CF0) + 0x1000) / 800 + 4;
+    D_800C3B7C += 0x80;
+    D_800C3B80 = (func_8003F8CC(D_800C3B7C) + 0x1000) / 32;
+    pulse[0] = func_800AA514(D_800C3B80, 32, D_800658C8->ambient[0]);
+    pulse[1] = func_800AA514(D_800C3B80, 32, D_800658C8->ambient[1]);
+    pulse[2] = func_800AA514(D_800C3B80, 32, D_800658C8->ambient[2]);
+    if (D_800D3368[D_800C3D40] != NULL && !(D_800D3368[D_800C3D40]->flags4A & 0x20)) {
+        for (index = 0, others = D_800D3368; index < 11; index++, others++) {
+            if (*others != NULL && D_800C3D40 != index && (*others)->field5C == 0xFF &&
+                !((D_800C3E30 >> index) & 1) && (*others)->active) {
+                self = D_800D3368[D_800C3D40]->hierarchy;
+                extent = func_800AA600(index);
+                other = (*others)->hierarchy;
+                if (other->translation[1] - extent < self->translation[1]) {
+                    extent = func_800AA600(D_800C3D40);
+                    if (D_800D3368[D_800C3D40]->hierarchy->translation[1] - extent < other->translation[1]) {
+                        extent = func_800AA650(index);
+                        extent += func_800AA650(D_800C3D40);
+                        func_800B10EC(D_800C3D40, (*others)->hierarchy->translation[0],
+                                      (*others)->hierarchy->translation[2], extent);
+                    }
+                }
+            }
+        }
+        func_800A4CF8(D_800C3D40);
+    }
+    for (i = 0, objects = D_800D3368; i < 32; i++, objects++) {
+        if (*objects != NULL) {
+            func_800AAA20(*objects, (ModelList *)&D_800C3D0C, steps, arg3, D_800CCC5C);
+        }
+    }
+    if (D_800C3DF8 != 0) {
+        func_800B026C(&D_800C3D0C, steps, 0, arg3);
+    }
+    for (i = 0, objects = D_800D3368; i < 32; i++) {
+        object = *objects++;
+        if (object != NULL && object->field5C < 0xFF) {
+            func_800AAB34(object);
+        }
+    }
+    objects = D_800D3368;
+    func_800A44C0(objects);
+    SetColorMatrix(D_800D2FC0);
+    if (D_800C3B74 != 0) {
+        for (i = 0; i < 31; i++, objects++) {
+            if (*objects != NULL) {
+                if ((D_800C3D14 >> i) & 1) {
+                    SetBackColor(pulse[0], pulse[1], pulse[2]);
+                } else {
+                    SetBackColor(D_800658C8->ambient[0], D_800658C8->ambient[1], D_800658C8->ambient[2]);
+                }
+                if ((*objects)->flags4A & 0x40) {
+                    D_80050104 = 0;
+                } else {
+                    D_80050104 = 1;
+                }
+                func_8009F844(*objects, arg0, arg1, 1, D_800CCC5C, arg2, arg3);
+                D_80050104 = 0;
+            }
+        }
+    }
+    func_800A2FD8(&D_800C3D04, arg0, steps, arg2, arg3);
+}
 
 /* Free the stage objects (800A9FF0), the effect pool and the sprite pool. */
 void func_800A9F94(void) {
